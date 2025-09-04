@@ -3,7 +3,7 @@ from fastapi import FastAPI, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-ROOT = os.path.expanduser('~/Desktop/qbcc-site')
+ROOT = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(ROOT, 'qbcc.db')
 PDF_ROOT = os.path.join(ROOT, 'pdf')
 SITE_DIR = os.path.join(ROOT, "site")
