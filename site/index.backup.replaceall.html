@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>QBCC Adjudication Decisions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+    h1 { margin: 0 0 12px; }
+    .bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom: 12px; }
+    input, select, button { padding: 8px; font-size: 14px; }
+    #results .result { padding: 12px 0; border-bottom: 1px solid #ddd; }
+    #results h3 { margin: 0 0 6px; font-size: 16px; }
+    .meta { display:flex; flex-wrap:wrap; gap:12px; color:#444; font-size: 13px; margin-bottom: 6px; }
+    .snippet { background:#fafafa; padding:8px; border-radius:8px; }
+    mark { background:#ffe580; }
+    #status { margin: 6px 0; color: #666; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>QBCC Adjudication Decisions</h1>
+
+  <div class="bar">
+    <input id="q" placeholder='Search (quotes, AND/OR/NOT, w/N e.g. "progress payment" w/5 "reference date")' size="60" value="reference date">
+    <input id="claimant" placeholder="Claimant">
+    <input id="respondent" placeholder="Respondent">
+    <input id="date_from" type="date" title="From">
+    <input id="date_to" type="date" title="To">
+    <select id="limit" title="Per page"><option>20</option><option>50</option><option>100</option></select>
+    <button id="searchBtn" onclick="runSearch()">Search</button>
+  </div>
+
+  <div id="status">Ready.</div>
+  <div id="total" style="margin:8px 0;font-weight:600;"></div>
+  <div id="results"></div>
+
+<script>
+function $(sel){ return document.querySelector(sel); }
+function sanitize(s){ return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+function getFileName(path) {
+  if (!path) return '';
+  const cleaned = path.replace(/\\/g, '/').replace(/\?.*$/, '');
+  const parts = cleaned.split('/');
+  return parts[parts.length - 1] || '';
+}
+function buildPdfLinks(path) {
+  if (!path) return null;
+  if (path.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(path)) {
+    const open = `/open?p=${encodeURIComponent(path)}`;
+    return { open, download: `${open}&disposition=attachment` };
+  }
+  const open = `/pdf/${encodeURIComponent(path)}`;
+  return { open, download: `${open}?disposition=attachment` };
+}
+
+let state = { q:'', claimant:'', respondent:'', date_from:'', date_to:'', limit:20, offset:0, total:0 };
+
+function gatherInputs(){
+  state.q = $('#q')?.value.trim() || '';
+  state.claimant = $('#claimant')?.value.trim() || '';
+  state.respondent = $('#respondent')?.value.trim() || '';
+  state.date_from = $('#date_from')?.value || '';
+  state.date_to = $('#date_to')?.value || '';
+  state.limit = +($('#limit')?.value || 20);
+  state.offset = 0;
+}
+
+async function runSearch() {
+  try {
+    $('#status').textContent = 'Searching…';
+    gatherInputs();
+
+    const params = new URLSearchParams();
+    if (state.q) params.set('q', state.q);
+    if (state.claimant) params.set('claimant', state.claimant);
+    if (state.respondent) params.set('respondent', state.respondent);
+    if (state.date_from) params.set('date_from', state.date_from);
+    if (state.date_to) params.set('date_to', state.date_to);
+    params.set('limit', state.limit);
+    params.set('offset', state.offset);
+
+    const res = await fetch('/search?' + params.toString(), { headers: { 'Accept': 'application/json' }});
+    const ctype = (res.headers.get('Content-Type') || '').toLowerCase();
+    if (!ctype.includes('application/json')) {
+      const text = await res.text();
+      $('#status').textContent = 'Error: /search returned non-JSON.';
+      $('#results').innerHTML = `<pre style="white-space:pre-wrap;background:#f6f6f6;padding:8px;border-radius:6px;">${sanitize(text.slice(0,1200))}</pre>`;
+      return;
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      $('#status').textContent = 'Error: ' + (err.error || res.status);
+      return;
+    }
+    const data = await res.json();
+
+    state.total = data.total || 0;
+    $('#total').textContent = `Total: ${state.total.toLocaleString()} results`;
+    $('#status').textContent = 'Done.';
+
+    const items = data.items || [];
+    if (!items.length) {
+      $('#results').innerHTML = '<p>No results.</p>';
+      return;
+    }
+    $('#results').innerHTML = items.map(renderItem).join('');
+  } catch (e) {
+    $('#status').textContent = 'JS error: ' + (e && e.message ? e.message : String(e));
+  }
+}
+
+function renderItem(it) {
+  const pdf = buildPdfLinks(it.path);
+  const parties = `${sanitize(it.claimant)} v ${sanitize(it.respondent)}`;
+  const filename = it.path ? getFileName(it.path) : '';
+
+  const meta = `
+    <div class="meta">
+      <span>${sanitize(it.date || '')}</span>
+      <span>Filename: ${filename ? `<strong>${sanitize(filename)}</strong>` : '—'}</span>
+      ${it.adj_no ? `<span>Adjudication No: <strong>${sanitize(it.adj_no)}</strong></span>` : ''}
+      ${it.year ? `<span>Year: ${sanitize(it.year)}</span>` : ''}
+      ${it.reference ? `<span>Ref: ${sanitize(it.reference)}</span>` : ''}
+      ${it.adjudicator ? `<span>Adjudicator: ${sanitize(it.adjudicator)}</span>` : ''}
+    </div>`;
+
+  const links = pdf
+    ? `<div class="links">
+         <a href="${pdf.open}" target="_blank" rel="noopener">Open PDF</a>
+         <a href="${pdf.download}" rel="noopener">Download</a>
+       </div>`
+    : `<div class="links"><em>PDF path unavailable</em></div>`;
+
+  return `
+    <article class="result">
+      <h3>${parties}</h3>
+      ${meta}
+      ${it.snippet ? `<p class="snippet">${it.snippet}</p>` : ''}
+      ${links}
+    </article>`;
+}
+
+window.addEventListener('DOMContentLoaded', runSearch);
+</script>
+</body>
+</html>

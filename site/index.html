@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
+  <meta charset="utf-8">
+  <title>ADLD – Adjudication Decision Legal Database</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+
+
+  /* Light theme overrides */
+  .light {
+    background: #ffffff !important;
+    color: #222 !important;
+  }
+
+  .light body {
+    background: #ffffff !important;
+    color: #222 !important;
+  }
+
+  .light header {
+    background: #fdfdfd !important;
+    border-bottom: 1px solid #ccc !important;
+  }
+  .light header h1 { color: #000 !important; }
+  .light #themeToggle { color: #000 !important; }
+
+  .light .search-bar {
+    background: #ffffff !important;
+    border: 1px solid #ccc !important;
+  }
+  .light .search-bar input {
+    color: #000 !important;
+  }
+
+  .light .filters input,
+  .light .filters select {
+    background: #ffffff !important;
+    border: 1px solid #ccc !important;
+    color: #000 !important;
+  }
+
+  .light #results {
+    background: #ffffff !important;
+  }
+
+  .light .result {
+    border-bottom: 1px solid #ddd !important;
+  }
+
+  .light .result h3 { color: #000 !important; }
+  .light .meta { color: #555 !important; }
+  .light .snippet {
+    background: #f7f7f7 !important;
+    color: #222 !important;
+    border: 0.5px solid #ddd !important;
+  }
+  .light a { color: #0066cc !important; }
+  .light .pagination button { color: #0066cc !important; }
+
+  #themeToggle {
+    background: none;
+    border: none;
+    font-size: 11px;   /* smaller text */
+    cursor: pointer;
+    color: white;
+    opacity: 0.8;      /* make lighter */
+  }
+  #themeToggle:hover {
+    opacity: 1;        /* brighten on hover */
+  }
+  .light #themeToggle {
+    color: #000;
+  }
+
+  header {
+    height: 0; /* placeholder for future */
+  }
+
+  .search-header {
+    background: #fcfcfc;
+    padding: 20px 25px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .search-header .top-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .search-header .logo {
+    flex: 0 0 auto;       /* don’t shrink or grow */
+    font-size: 10px;      /* keep consistent size */
+    font-weight: bold;
+    color: #000;
+    margin-right: 10px;
+  }
+
+  .search-container {
+    margin-left: 20px;   /* match <main> */
+    max-width: 900px;     /* match <main> */
+    width: 100%;
+  }
+
+
+  .search-header .search-bar {
+    flex: 1;              /* takes middle space */
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 24px;
+    border: 1px solid #ccc;
+    padding: 6px 14px;
+    max-width: 900px;     /* stops it from stretching across screen */
+    /* shadow */
+    box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+  }
+
+  .search-header .search-bar input {
+    flex: 1;
+    padding: 8px;
+    font-size: 13px;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #000;
+  }
+
+  .search-header .search-bar button {
+    background: #10a37f;
+    border: none;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .search-header .search-bar button:hover {
+    background: #0d8a6c;
+  }
+
+
+
+#themeToggle {
+  background: none;
+  border: none;
+  font-size: 11px;   /* smaller text */
+  cursor: pointer;
+  color: white;
+  opacity: 0.8;      /* make lighter */
+  margin-left: auto;
+}
+#themeToggle:hover {
+  opacity: 1;        /* brighten on hover */
+}
+.light #themeToggle {
+  color: #000;
+}
+
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: rgba(33,33,33,255);
+      color: #e4e4e4;
+    }
+
+    header {
+      display: none;
+    }
+
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: white;
+      letter-spacing: 0.5px;
+    }
+
+
+    main {
+      margin-top: 35px;       /* space below header */
+      margin-right: auto;     /* let right side flow */
+      max-width: 720px;       /* Google uses ~600–700px */
+  margin-left: 180px; /* 220px sidebar + 40px gap */
+  padding: 0 1px;    /* breathing room inside results */
+}
+
+    }
+
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border-radius: 24px;
+      border: 1px solid #ccc;
+      padding: 6px 14px;
+      width: 100%;          /* full width of container */
+    }
+
+    .search-bar input {
+      flex: 1;
+      padding: 8px;
+      font-size: 15px;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #000;
+    }
+
+
+    .search-bar button {
+      background: #10a37f;
+      border: none;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .search-bar button:hover {
+      background: #0d8a6c;
+    }
+
+    .search-bar select {
+      margin-left: 12px;
+      padding: 6px 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+      color: #000;
+    }
+
+    .filters {
+      margin-top: 8px;
+      display: flex;
+      gap: 10px;
+      width: 100%;          /* match search-bar width */
+    }
+
+    .filters input, .filters select {
+      flex: 1;
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+      color: #000;
+    }
+
+
+    #status, #total {
+      margin: 10px 0;
+      font-size: 13px;
+      color: #aaa;
+    }
+
+    #results {
+      margin-top: 20px;
+    }
+
+    .result {
+      padding: 20px 0;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .result h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      color: #fff;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+
+    .snippet {
+      background: rgba(24,24,24,255);
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: #ddd;
+    }
+
+    mark {
+      background: #8BD69A;
+      color: black;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+
+    a {
+      color: #8BD69A;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* pagination bar */
+    .pagination {
+      margin: 30px 0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      font-size: 14px;
+    }
+    .pagination button {
+      background: transparent;
+      border: none;
+      color: #8BD69A;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+    .pagination button.active {
+      font-weight: bold;
+      border-bottom: 2px solid #8BD69A;
+    }
+    .pagination button:hover {
+      text-decoration: underline;
+    }
+    .footer {
+      background: #fcfcfc;
+      color: #333;
+      padding: 40px 20px 20px;
+      margin-top: 60px;
+      border-top: 1px solid #ddd;
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .footer-left {
+      max-width: 400px;
+    }
+
+    .footer-logo {
+      height: 24px;
+      margin-bottom: 10px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-links a {
+      color: #333;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: #00c853; /* green hover highlight */
+    }
+
+    .footer-bottom {
+      text-align: center;
+      border-top: 1px solid #eee;
+      margin-top: 20px;
+      padding-top: 15px;
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    .filters-sidebar {
+  position: fixed;
+  top: 70px;            /* below header */
+  left: 0;
+  background: #f9f9f9;
+  border-right: 1px solid #ddd;
+  height: calc(100% - 70px);
+  overflow-y: auto;
+  font-size: 13px;
+  width: 150px;
+  padding: 30px; /* more padding inside */
+}
+
+}
+
+.filters-sidebar h3 {
+  margin-top: 0;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.filters-sidebar label {
+  display: block;
+  margin: 8px 0 4px;
+}
+
+.filters-sidebar input[type="number"],
+.filters-sidebar select {
+  width: 85%;
+  padding: 6px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.filters-sidebar button {
+  width: 100%;
+  padding: 6px;
+  background: #10a37f;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
+.filters-sidebar button:hover {
+  background: #0d8a6c;
+}
+
+/* Slider styling */
+.noUi-target {
+  background: #e0e0e0;
+  border: none;
+  height: 3px;
+  border-radius: 3px;
+}
+
+.noUi-connect {
+  background: #10a37f; /* your green theme */
+}
+
+.noUi-handle {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10a37f; /* green */
+  border: none;
+  cursor: pointer;
+  top: -3px; /* center handle on bar */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+.noUi-handle:before,
+.noUi-handle:after {
+  display: none;
+}
+
+/* Input boxes under sliders */
+.slider-inputs {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 6px 0 14px;
+}
+
+.slider-inputs input {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.filters-sidebar {
+  display: none !important;
+}
+
+.open-btn {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 0px 0px;
+  border-radius: 0px;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.results-limit {
+  margin-left: 12px;
+  padding: 6px 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  color: #000;
+}
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#loadingBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 4px;
+  background: linear-gradient(to left, #21db87, #42ffaa);
+  transition: width 0.7s ease;
+  z-index: 9999;
+}
+
+
+  </style>
+</head>
+  <body class="light">
+    <div id="loadingBar"></div>
+
+    <div class="search-header">
+      <div class="top-row">
+        <div class="logo">
+    <a href="/">
+      <img src="assets/sopal-logo.png" alt="SOPAL" style="height:31px;">
+    </a>
+  </div>
+
+
+  <div class="search-container">
+    <div class="search-bar">
+      <input id="q" placeholder='Search adjudication decisions…'>
+      <button onclick="runSearch()">Search</button>
+    </div>
+
+    <select id="limit" class="results-limit">
+      <option value="20">20 results</option>
+      <option value="50">50 results</option>
+      <option value="100">100 results</option>
+    </select>
+
+    <select id="sort" class="results-limit">
+      <option value="relevance">Relevance</option>
+      <option value="newest">Date: Newest to Oldest</option>
+      <option value="oldest">Date: Oldest to Newest</option>
+      <option value="atoz">A → Z (Claimant)</option>
+      <option value="ztoa">Z → A (Claimant)</option>
+    </select>
+  </div>
+
+
+        <button id="themeToggle" onclick="toggleTheme()">Switch to Dark Mode 🌙</button>
+      </div>
+    </div>
+
+
+
+
+
+    <!-- Sidebar Filters -->
+
+
+    <aside class="filters-sidebar">
+      <h3>Filters</h3>
+
+      <!-- Jurisdiction -->
+      <label>
+        <input type="checkbox" id="jurisdiction"> Jurisdiction
+      </label>
+
+      <!-- Vexatious/Frivolous -->
+      <label>
+        <input type="checkbox" id="vexatious"> Vexatious / Frivolous
+      </label>
+
+      <!-- Year -->
+      <label for="year">Year</label>
+      <select id="year">
+        <option value="">Any</option>
+        <option>2025</option>
+        <option>2024</option>
+        <option>2023</option>
+        <!-- add dynamically later -->
+      </select>
+
+      <!-- Act -->
+      <label for="act">Act</label>
+      <select id="act">
+        <option value="">Any</option>
+        <option value="bif">BIF Act</option>
+        <option value="bcipa">BCIPA</option>
+      </select>
+
+      <!-- Amount ranges -->
+      <label>Payment Claim ($)</label>
+      <div id="claim-slider"></div>
+      <div class="slider-inputs">
+        <input type="number" id="claim-min" placeholder="Min">
+        <input type="number" id="claim-max" placeholder="Max">
+      </div>
+
+      <label>Payment Schedule ($)</label>
+      <div id="schedule-slider"></div>
+      <div class="slider-inputs">
+        <input type="number" id="schedule-min" placeholder="Min">
+        <input type="number" id="schedule-max" placeholder="Max">
+      </div>
+
+      <label>Adjudicated Amount ($)</label>
+      <div id="adj-slider"></div>
+      <div class="slider-inputs">
+        <input type="number" id="adj-min" placeholder="Min">
+        <input type="number" id="adj-max" placeholder="Max">
+      </div>
+
+      <button id="applyFilters">Apply Filters</button>
+    </aside>
+
+
+    <main>
+      <div id="status">Ready.</div>
+      <div id="total"></div>
+      <div id="results"></div>
+      <div class="pagination" id="pagination"></div>
+    </main>
+
+
+    <script>
+    function $(sel){ return document.querySelector(sel); }
+    function sanitize(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function getFileName(path){ if (!path) return ''; return path.split('/').pop(); }
+    function buildPdfLinks(path){
+      if (!path) return null;
+      const open = `/open?p=${encodeURIComponent(path)}`;
+      return { open, download: `${open}&disposition=attachment` };
+    }
+
+    let state = { q:'', claimant:'', respondent:'', limit:20, offset:0, total:0 };
+
+    async function runSearch(page=1){
+      $('#status').textContent = 'Searching…';
+      startLoadingBar();   // 🔥 ADD THIS LINE
+
+      state.q = ($('#q')?.value || '').trim();
+      state.claimant = ($('#claimant')?.value || '').trim();
+      state.respondent = ($('#respondent')?.value || '').trim();
+      state.limit = +($('#limit')?.value || 20);
+      state.offset = (page-1) * state.limit;
+      const params = new URLSearchParams();
+      state.sort = ($('#sort')?.value || 'relevance');
+      params.set('sort', state.sort);
+
+      if (state.q) params.set('q', state.q);
+      if (state.claimant) params.set('claimant', state.claimant);
+      if (state.respondent) params.set('respondent', state.respondent);
+      params.set('limit', state.limit);
+      params.set('offset', state.offset);
+
+      const res = await fetch('/search_fast?' + params.toString(), { headers: { 'Accept':'application/json' }});
+      const data = await res.json().catch(()=>({}));
+
+      finishLoadingBar();  // 🔥 ADD THIS LINE
+
+      state.total = data.total || 0;
+
+      $('#total').textContent = `Total: ${state.total.toLocaleString()} results`;
+      $('#status').textContent = 'Done.';
+
+      const items = data.items || [];
+      $('#results').innerHTML = items.length ? items.map(renderItem).join('') : '<p>No results.</p>';
+
+      const sortSel = document.getElementById('sort');
+      if (sortSel) {
+        sortSel.addEventListener('change', () => runSearch(1));
+      }
+
+      renderPagination(page);
+    }
+
+
+    function renderItem(it){
+      const pdf = buildPdfLinks(it.pdf_path);
+      const caseName = `${sanitize(it.claimant)} v ${sanitize(it.respondent)}`;
+      const caseNo = sanitize(it.case_no || it.adj_no || it.id || '');
+
+      return `
+        <div class="result">
+          <h3>${caseName}</h3>
+          <div class="meta">
+            ${caseNo ? `<strong>Decision No:</strong> ${caseNo}<br>` : ''}
+            ${it.decision_date_norm ? `<strong>Date:</strong> ${formatAusDate(it.decision_date_norm)}<br>` : '<strong>Date:</strong> Unknown<br>'}
+            ${it.adjudicator ? `<strong>Adjudicator:</strong> ${sanitize(it.adjudicator)}<br>` : ''}
+            ${it.claimant ? `<strong>Claimant:</strong> ${sanitize(it.claimant)}<br>` : ''}
+            ${it.respondent ? `<strong>Respondent:</strong> ${sanitize(it.respondent)}<br>` : ''}
+            ${it.act ? `<strong>Act:</strong> ${sanitize(it.act)}<br>` : ''}
+          </div>
+          ${it.snippet ? `<p class="snippet">${it.snippet}</p>` : ''}
+          ${pdf ? `<a class="open-btn" href="${pdf.open}" target="_blank">Open Decision (PDF)</a>` : ''}
+        </div>`;
+    }
+
+    function renderPagination(currentPage) {
+      const totalPages = Math.ceil(state.total / state.limit);
+      const container = $('#pagination');
+      container.innerHTML = '';
+      if (totalPages <= 1) return;
+
+      const maxVisible = 10;
+      let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+      let end = start + maxVisible - 1;
+      if (end > totalPages) {
+        end = totalPages;
+        start = Math.max(1, end - maxVisible + 1);
+      }
+
+      if (currentPage > 1) {
+        const prev = document.createElement('button');
+        prev.textContent = '‹ Previous';
+        prev.onclick = () => runSearch(currentPage - 1);
+        container.appendChild(prev);
+      }
+
+      if (start > 1) {
+        const first = document.createElement('button');
+        first.textContent = '1';
+        first.onclick = () => runSearch(1);
+        container.appendChild(first);
+        const dots = document.createElement('span');
+        dots.textContent = '...';
+        dots.style.color = '#aaa';
+        container.appendChild(dots);
+      }
+
+      for (let i = start; i <= end; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        if (i === currentPage) btn.classList.add('active');
+        btn.onclick = () => runSearch(i);
+        container.appendChild(btn);
+      }
+
+      if (end < totalPages) {
+        const dots = document.createElement('span');
+        dots.textContent = '...';
+        dots.style.color = '#aaa';
+        container.appendChild(dots);
+        const last = document.createElement('button');
+        last.textContent = totalPages;
+        last.onclick = () => runSearch(totalPages);
+        container.appendChild(last);
+      }
+
+      if (currentPage < totalPages) {
+        const next = document.createElement('button');
+        next.textContent = 'Next ›';
+        next.onclick = () => runSearch(currentPage + 1);
+        container.appendChild(next);
+      }
+
+      const info = document.createElement('div');
+      info.textContent = `Page ${currentPage} of ${totalPages}`;
+      info.style.fontSize = '12px';
+      info.style.color = '#aaa';
+      info.style.marginTop = '6px';
+      info.style.textAlign = 'right';
+      container.appendChild(info);
+    }
+
+    function toggleTheme(){
+      const body = document.body;
+      body.classList.toggle('light');
+      const isLight = body.classList.contains('light');
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+      document.getElementById('themeToggle').textContent =
+        isLight ? 'Switch to Dark Mode 🌙' : 'Switch to Light Mode ☀️';
+    }
+
+    // ---- Init on load ----
+    window.addEventListener('DOMContentLoaded', () => {
+      // Theme restore
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark') {
+        document.body.classList.remove('light');
+        document.getElementById('themeToggle').textContent = 'Switch to Light Mode ☀️';
+      } else {
+        document.body.classList.add('light');
+        document.getElementById('themeToggle').textContent = 'Switch to Dark Mode 🌙';
+      }
+
+      // Pressing Enter in the search bar
+      const input = document.getElementById('q');
+      if (input) {
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            runSearch(1);
+          }
+        });
+      }
+
+      // Changing results-per-page triggers new search
+      const limitSel = document.getElementById('limit');
+      if (limitSel) {
+        limitSel.addEventListener('change', () => runSearch(1));
+      }
+
+      // Initial search
+      runSearch();
+    });
+
+    function startLoadingBar() {
+  const bar = document.getElementById('loadingBar');
+  bar.style.width = '0%';
+  setTimeout(() => { bar.style.width = '50%'; }, 50); // jump to 50 quickly
+}
+
+function finishLoadingBar() {
+  const bar = document.getElementById('loadingBar');
+  bar.style.width = '100%';
+  setTimeout(() => { bar.style.width = '0%'; }, 400); // hide after fill
+}
+
+function formatAusDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d)) return null;
+  return d.toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+}
+
+    </script>
+
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-left">
+      <img src="assets/sopal-logo.png" alt="SOPAL" class="footer-logo">
+      <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+    </div>
+
+    <div class="footer-links">
+      <a href="#">Send feedback</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 SOPAL. All rights reserved.</p>
+  </div>
+
+
+</footer>
+
+</body>
+</html>
