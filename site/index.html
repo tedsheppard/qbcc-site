@@ -9,9 +9,7 @@
   <meta charset="utf-8">
   <title>Sopal – Adjudication Search</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-
-
+<style>
   /* Light theme overrides */
   .light {
     background: #ffffff !important;
@@ -34,9 +32,7 @@
     background: #ffffff !important;
     border: 1px solid #ccc !important;
   }
-  .light .search-bar input {
-    color: #000 !important;
-  }
+  .light .search-bar input { color: #000 !important; }
 
   .light .filters input,
   .light .filters select {
@@ -45,14 +41,8 @@
     color: #000 !important;
   }
 
-  .light #results {
-    background: #ffffff !important;
-  }
-
-  .light .result {
-    border-bottom: 1px solid #ddd !important;
-  }
-
+  .light #results { background: #ffffff !important; }
+  .light .result { border-bottom: 1px solid #ddd !important; }
   .light .result h3 { color: #000 !important; }
   .light .meta { color: #555 !important; }
   .light .snippet {
@@ -63,64 +53,71 @@
   .light a { color: #0066cc !important; }
   .light .pagination button { color: #0066cc !important; }
 
+  /* Theme toggle button */
   #themeToggle {
     background: none;
     border: none;
-    font-size: 11px;   /* smaller text */
+    font-size: 11px;
     cursor: pointer;
     color: white;
-    opacity: 0.8;      /* make lighter */
+    opacity: 0.8;
+    margin-left: auto;
   }
-  #themeToggle:hover {
-    opacity: 1;        /* brighten on hover */
-  }
-  .light #themeToggle {
-    color: #000;
+  #themeToggle:hover { opacity: 1; }
+  .light #themeToggle { color: #000; }
+
+  /* Base body + main layout */
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: rgba(33,33,33,255);
+    color: #e4e4e4;
   }
 
-  header {
-    height: 0; /* placeholder for future */
+  main {
+    margin-top: 35px;
+    margin-right: auto;
+    margin-left: 180px; /* sidebar space */
+    max-width: 720px;
+    padding: 0 1px;
   }
 
+  /* Search header */
   .search-header {
     background: #fcfcfc;
     padding: 20px 25px;
     border-bottom: 1px solid #ddd;
   }
-
   .search-header .top-row {
     display: flex;
     align-items: center;
   }
-
   .search-header .logo {
-    flex: 0 0 auto;       /* don’t shrink or grow */
-    font-size: 10px;      /* keep consistent size */
+    flex: 0 0 auto;
+    font-size: 10px;
     font-weight: bold;
     color: #000;
     margin-right: 10px;
   }
-
   .search-container {
-    margin-left: 20px;   /* match <main> */
-    max-width: 900px;     /* match <main> */
+    margin-left: 20px;
+    max-width: 900px;
     width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
-
-
   .search-header .search-bar {
-    flex: 1;              /* takes middle space */
+    flex: 1;
     display: flex;
     align-items: center;
     background: #fff;
     border-radius: 24px;
     border: 1px solid #ccc;
     padding: 6px 14px;
-    max-width: 900px;     /* stops it from stretching across screen */
-    /* shadow */
+    max-width: 900px;
     box-shadow: 0 1px 8px rgba(0,0,0,0.08);
   }
-
   .search-header .search-bar input {
     flex: 1;
     padding: 8px;
@@ -130,7 +127,6 @@
     background: transparent;
     color: #000;
   }
-
   .search-header .search-bar button {
     background: #10a37f;
     border: none;
@@ -140,418 +136,140 @@
     cursor: pointer;
     font-size: 13px;
   }
+  .search-header .search-bar button:hover { background: #0d8a6c; }
 
-  .search-header .search-bar button:hover {
-    background: #0d8a6c;
+  /* Results */
+  #status, #total {
+    margin: 10px 0;
+    font-size: 13px;
+    color: #aaa;
+  }
+  #results { margin-top: 20px; }
+  .result {
+    padding: 20px 0;
+    border-bottom: 1px solid #ddd;
+  }
+  .result h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    color: #fff;
+  }
+  .meta {
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 8px;
+  }
+  .snippet {
+    background: rgba(24,24,24,255);
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #ddd;
+  }
+  mark {
+    background: #8BD69A;
+    color: black;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+  a { color: #8BD69A; text-decoration: none; font-size: 14px; }
+  a:hover { text-decoration: underline; }
+
+  /* Pagination */
+  .pagination {
+    margin: 30px 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    font-size: 14px;
+  }
+  .pagination button {
+    background: transparent;
+    border: none;
+    color: #8BD69A;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+  .pagination button.active {
+    font-weight: bold;
+    border-bottom: 2px solid #8BD69A;
+  }
+  .pagination button:hover { text-decoration: underline; }
+
+  /* Footer */
+  .footer {
+    background: #fcfcfc;
+    color: #333;
+    padding: 40px 20px 20px;
+    margin-top: 60px;
+    border-top: 1px solid #ddd;
+  }
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: auto;
+  }
+  .footer-left { max-width: 400px; }
+  .footer-logo { height: 24px; margin-bottom: 10px; }
+  .footer-links { display: flex; gap: 20px; }
+  .footer-links a { color: #333; text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: #00c853; }
+  .footer-bottom {
+    text-align: center;
+    border-top: 1px solid #eee;
+    margin-top: 20px;
+    padding-top: 15px;
+    font-size: 0.85em;
+    color: #666;
   }
 
+  /* Filters sidebar (disabled for now) */
+  .filters-sidebar { display: none !important; }
 
+  /* Loading bar */
+  #loadingBar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 4px;
+    background: linear-gradient(to left, #21db87, #42ffaa);
+    transition: width 0.7s ease;
+    z-index: 9999;
+  }
 
-#themeToggle {
-  background: none;
-  border: none;
-  font-size: 11px;   /* smaller text */
-  cursor: pointer;
-  color: white;
-  opacity: 0.8;      /* make lighter */
-  margin-left: auto;
-}
-#themeToggle:hover {
-  opacity: 1;        /* brighten on hover */
-}
-.light #themeToggle {
-  color: #000;
-}
+  /* --- DARK THEME OVERRIDES --- */
+  .dark {
+    background: #0d0d0d !important;
+    color: #e0e0e0 !important;
+  }
+  .dark body {
+    background: #0d0d0d !important;
+    color: #e0e0e0 !important;
+  }
+  .dark header,
+  .dark footer {
+    background: #141414 !important;
+    color: #fff !important;
+    border-color: #333 !important;
+  }
+  .dark .search-header {
+    background: #141414 !important;
+    border-bottom: 1px solid #333 !important;
+  }
+  .dark .footer {
+    background: #141414 !important;
+    color: #fff !important;
+    border-top: 1px solid #333 !important;
+  }
+  .dark #themeToggle {
+    color: #ffffff !important;
+  }
+</style>
 
-
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: rgba(33,33,33,255);
-      color: #e4e4e4;
-    }
-
-    header {
-      display: none;
-    }
-
-
-    header h1 {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 600;
-      color: white;
-      letter-spacing: 0.5px;
-    }
-
-
-    main {
-      margin-top: 35px;       /* space below header */
-      margin-right: auto;     /* let right side flow */
-      max-width: 720px;       /* Google uses ~600–700px */
-  margin-left: 180px; /* 220px sidebar + 40px gap */
-  padding: 0 1px;    /* breathing room inside results */
-}
-
-    }
-
-
-    .search-bar {
-      display: flex;
-      align-items: center;
-      background: #fff;
-      border-radius: 24px;
-      border: 1px solid #ccc;
-      padding: 6px 14px;
-      width: 100%;          /* full width of container */
-    }
-
-    .search-bar input {
-      flex: 1;
-      padding: 8px;
-      font-size: 15px;
-      border: none;
-      outline: none;
-      background: transparent;
-      color: #000;
-    }
-
-
-    .search-bar button {
-      background: #10a37f;
-      border: none;
-      color: white;
-      padding: 8px 14px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .search-bar button:hover {
-      background: #0d8a6c;
-    }
-
-    .search-bar select {
-      margin-left: 12px;
-      padding: 6px 8px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      background: #fff;
-      color: #000;
-    }
-
-    .filters {
-      margin-top: 8px;
-      display: flex;
-      gap: 10px;
-      width: 100%;          /* match search-bar width */
-    }
-
-    .filters input, .filters select {
-      flex: 1;
-      padding: 8px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      background: #fff;
-      color: #000;
-    }
-
-
-    #status, #total {
-      margin: 10px 0;
-      font-size: 13px;
-      color: #aaa;
-    }
-
-    #results {
-      margin-top: 20px;
-    }
-
-    .result {
-      padding: 20px 0;
-      border-bottom: 1px solid #ddd;
-    }
-
-    .result h3 {
-      margin: 0 0 6px;
-      font-size: 16px;
-      color: #fff;
-    }
-
-    .meta {
-      font-size: 13px;
-      color: #aaa;
-      margin-bottom: 8px;
-    }
-
-    .snippet {
-      background: rgba(24,24,24,255);
-      padding: 8px;
-      border-radius: 6px;
-      font-size: 14px;
-      color: #ddd;
-    }
-
-    mark {
-      background: #8BD69A;
-      color: black;
-      padding: 0 2px;
-      border-radius: 2px;
-    }
-
-    a {
-      color: #8BD69A;
-      text-decoration: none;
-      font-size: 14px;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-
-    /* pagination bar */
-    .pagination {
-      margin: 30px 0;
-      display: flex;
-      justify-content: flex-end;
-      gap: 6px;
-      font-size: 14px;
-    }
-    .pagination button {
-      background: transparent;
-      border: none;
-      color: #8BD69A;
-      cursor: pointer;
-      padding: 4px 8px;
-    }
-    .pagination button.active {
-      font-weight: bold;
-      border-bottom: 2px solid #8BD69A;
-    }
-    .pagination button:hover {
-      text-decoration: underline;
-    }
-    .footer {
-      background: #fcfcfc;
-      color: #333;
-      padding: 40px 20px 20px;
-      margin-top: 60px;
-      border-top: 1px solid #ddd;
-    }
-
-    .footer-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      max-width: 1200px;
-      margin: auto;
-    }
-
-    .footer-left {
-      max-width: 400px;
-    }
-
-    .footer-logo {
-      height: 24px;
-      margin-bottom: 10px;
-    }
-
-    .footer-links {
-      display: flex;
-      gap: 20px;
-    }
-
-    .footer-links a {
-      color: #333;
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-
-    .footer-links a:hover {
-      color: #00c853; /* green hover highlight */
-    }
-
-    .footer-bottom {
-      text-align: center;
-      border-top: 1px solid #eee;
-      margin-top: 20px;
-      padding-top: 15px;
-      font-size: 0.85em;
-      color: #666;
-    }
-
-    .filters-sidebar {
-  position: fixed;
-  top: 70px;            /* below header */
-  left: 0;
-  background: #f9f9f9;
-  border-right: 1px solid #ddd;
-  height: calc(100% - 70px);
-  overflow-y: auto;
-  font-size: 13px;
-  width: 150px;
-  padding: 30px; /* more padding inside */
-}
-
-}
-
-.filters-sidebar h3 {
-  margin-top: 0;
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-
-.filters-sidebar label {
-  display: block;
-  margin: 8px 0 4px;
-}
-
-.filters-sidebar input[type="number"],
-.filters-sidebar select {
-  width: 85%;
-  padding: 6px;
-  font-size: 13px;
-  margin-bottom: 10px;
-}
-
-.filters-sidebar button {
-  width: 100%;
-  padding: 6px;
-  background: #10a37f;
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  border-radius: 4px;
-}
-
-.filters-sidebar button:hover {
-  background: #0d8a6c;
-}
-
-/* Slider styling */
-.noUi-target {
-  background: #e0e0e0;
-  border: none;
-  height: 3px;
-  border-radius: 3px;
-}
-
-.noUi-connect {
-  background: #10a37f; /* your green theme */
-}
-
-.noUi-handle {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #10a37f; /* green */
-  border: none;
-  cursor: pointer;
-  top: -3px; /* center handle on bar */
-  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-}
-
-.noUi-handle:before,
-.noUi-handle:after {
-  display: none;
-}
-
-/* Input boxes under sliders */
-.slider-inputs {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 6px 0 14px;
-}
-
-.slider-inputs input {
-  flex: 1;
-  padding: 4px 6px;
-  font-size: 13px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.filters-sidebar {
-  display: none !important;
-}
-
-.open-btn {
-  display: inline-block;
-  margin-top: 2px;
-  padding: 0px 0px;
-  border-radius: 0px;
-  font-size: 12px;
-  text-decoration: none;
-}
-
-.results-limit {
-  margin-left: 12px;
-  padding: 6px 8px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #fff;
-  color: #000;
-}
-.search-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-#loadingBar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 0%;
-  height: 4px;
-  background: linear-gradient(to left, #21db87, #42ffaa);
-  transition: width 0.7s ease;
-  z-index: 9999;
-}
-
-/* Dark theme overrides */
-.dark {
-  background: #0d0d0d !important;  /* general background */
-  color: #e0e0e0 !important;
-}
-
-.dark body {
-  background: #0d0d0d !important;  /* ensure body is dark */
-  color: #e0e0e0 !important;
-}
-
-.dark header,
-.dark footer {
-  background: #141414 !important;  /* search bar + footer area */
-  color: #fff !important;
-}
-
-/* Make sure toggle text is white in dark mode */
-.dark #themeToggle {
-  color: #ffffff !important;
-}
-
-   /* Dark theme fixes */
-.dark .search-header {
-  background: #141414 !important;
-  border-bottom: 1px solid #333 !important;
-}
-
-.dark .footer {
-  background: #141414 !important;
-  color: #fff !important;
-  border-top: 1px solid #333 !important;
-}
-
-.dark #themeToggle {
-  color: #ffffff !important; /* ensure toggle is readable */
-}
-
-  </style>
 </head>
   <body class="light">
     <div id="loadingBar"></div>
