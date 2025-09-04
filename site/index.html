@@ -513,6 +513,27 @@
   z-index: 9999;
 }
 
+/* Dark theme overrides */
+.dark {
+  background: #0d0d0d !important;  /* general background */
+  color: #e0e0e0 !important;
+}
+
+.dark body {
+  background: #0d0d0d !important;  /* ensure body is dark */
+  color: #e0e0e0 !important;
+}
+
+.dark header,
+.dark footer {
+  background: #141414 !important;  /* search bar + footer area */
+  color: #fff !important;
+}
+
+/* Make sure toggle text is white in dark mode */
+.dark #themeToggle {
+  color: #ffffff !important;
+}
 
   </style>
 </head>
