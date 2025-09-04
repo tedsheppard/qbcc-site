@@ -111,9 +111,23 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
     elif sort == "ztoa":
         payload["sort"] = ["claimant:desc"]
 
-    headers = {"Authorization": f"Bearer {MEILI_KEY}"}
-    res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
+    import os
+    
+    # at the top of server.py, after imports:
+    MEILI_URL = os.getenv("MEILI_URL", "http://127.0.0.1:7700")
+    MEILI_KEY = os.getenv("MEILI_MASTER_KEY", "")
+    MEILI_INDEX = "decisions"
+    
+    # inside your /search_fast route, replace with this:
+    headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
+    
+    res = requests.post(
+        f"{MEILI_URL}/indexes/{MEILI_INDEX}/search",
+        headers=headers,
+        json=payload
+    )
     data = res.json()
+
 
     items = []
     for hit in data.get("hits", []):
