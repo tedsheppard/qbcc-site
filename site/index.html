@@ -737,21 +737,49 @@
   }
 }
 
+@media (max-width: 768px) {
+  .search-header {
+    padding: 12px;
+  }
+
+  .search-header .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #themeToggle {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  .search-container {
+    flex-direction: column;
+    width: 100%;
+    margin-top: 12px;
+    gap: 8px;
+  }
+
+  .search-header .search-bar {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 28px;
+  }
+
+  #sort {
+    display: none; /* hide sorting on mobile */
+  }
+
+  .result {
+    padding: 24px 0;
+  }
+}
 
 </style>
 
 </head>
   <body class="light">
     <div id="loadingBar"></div>
-
-    <div class="search-header">
-      <div class="top-row">
-        <div class="logo">
-    <a href="/">
-      <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" style="height:31px;">
-    </a>
-  </div>
-
 
 <div class="search-header">
   <div class="top-row">
@@ -760,7 +788,6 @@
         <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" style="height:31px;">
       </a>
     </div>
-
     <button id="themeToggle" onclick="toggleTheme()">Switch to Dark Mode 🌙</button>
   </div>
 
@@ -769,10 +796,23 @@
       <input id="q" placeholder='Search adjudication decisions…'>
       <button onclick="runSearch()">Search</button>
     </div>
-    <select id="limit" class="results-limit">...</select>
-    <select id="sort" class="results-limit">...</select>
+
+    <select id="limit" class="results-limit">
+      <option value="20">20 results</option>
+      <option value="50">50 results</option>
+      <option value="100">100 results</option>
+    </select>
+
+    <select id="sort" class="results-limit">
+      <option value="relevance">Relevance</option>
+      <option value="newest" selected>Date: Newest to Oldest</option>
+      <option value="oldest">Date: Oldest to Newest</option>
+      <option value="atoz">A → Z (Claimant)</option>
+      <option value="ztoa">Z → A (Claimant)</option>
+    </select>
   </div>
 </div>
+
 
 
     <select id="limit" class="results-limit">
