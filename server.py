@@ -60,39 +60,48 @@ def health():
     return {"ok": True}
 
 @app.get("/search_fast")
-def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "relevance"):
-    # boolean / NEAR → SQLite
-    if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I) or re.search(r'\bw/\d+\b', q, flags=re.I) or re.search(r'\bNEAR/\d+\b', q, flags=re.I):
-        nq = preprocess_sqlite_query(q)
-        total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq}).fetchone()[0]
+def search_fast(
+    q: str = None,
+    claimant: str = None,
+    respondent: str = None,
+    limit: int = 20,
+    offset: int = 0,
+    sort: str = "newest"  # default newest
+):
+    search_params = {
+        "limit": limit,
+        "offset": offset
+    }
 
-        sql = """
-          SELECT
-            fts.rowid,
-            snippet(fts, 0, '<mark>', '</mark>', ' … ', 50) AS snippet,
-            bm25(fts) AS score
-          FROM fts
-          WHERE fts MATCH :q
-          ORDER BY score
-          LIMIT :limit OFFSET :offset
-        """
-        rows = con.execute(sql, {"q": nq, "limit": limit, "offset": offset}).fetchall()
+    # ✅ Sorting rules
+    if sort == "newest":
+        search_params["sort"] = ["id:desc"]   # highest EJS first
+    elif sort == "oldest":
+        search_params["sort"] = ["id:asc"]    # lowest EJS first
+    elif sort == "atoz":
+        search_params["sort"] = ["claimant:asc"]
+    elif sort == "ztoa":
+        search_params["sort"] = ["claimant:desc"]
 
-        items = []
-        for r in rows:
-            meta = con.execute("""
-              SELECT claimant, respondent, adjudicator, decision_date, decision_date_norm,
-                     act, reference, pdf_path
-              FROM docs_meta
-              LEFT JOIN docs_fresh ON docs_meta.ejs_id = docs_fresh.ejs_id
-              WHERE docs_fresh.id = ?
-            """, (r["rowid"],)).fetchone()
-            d = dict(meta) if meta else {}
-            d["id"] = r["rowid"]
-            d["snippet"] = r["snippet"]
-            items.append(d)
+    filter_clauses = []
+    if claimant:
+        filter_clauses.append(f'claimant = "{claimant}"')
+    if respondent:
+        filter_clauses.append(f'respondent = "{respondent}"')
+    if filter_clauses:
+        search_params["filter"] = " AND ".join(filter_clauses)
 
-        return {"total": total, "items": items}
+    # Build query
+    query = q or ""
+
+    resp = requests.post(
+        f"{MEILI_URL}/indexes/decisions/search",
+        headers={"Authorization": f"Bearer {MEILI_MASTER_KEY}"},
+        json={"q": query, **search_params}
+    )
+
+    return resp.json()
+
 
     # otherwise → Meili
     payload = {
