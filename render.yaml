@@ -2,6 +2,8 @@ services:
   - type: web
     name: qbcc-site
     env: python
-    buildCommand: ""
-    startCommand: uvicorn server:app --host 0.0.0.0 --port 10000
     plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      curl -L "https://storage.googleapis.com/sopal-bucket/qbcc.db" -o qbcc.db
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
