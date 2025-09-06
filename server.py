@@ -1,3 +1,14 @@
+import os, shutil
+
+DB_PATH = "/tmp/qbcc.db"
+
+# Copy the DB into RAM once at startup if not already present
+if not os.path.exists(DB_PATH):
+    shutil.copy("qbcc.db", DB_PATH)
+
+# Create a global connection so we don’t re-open each request
+import sqlite3
+con = sqlite3.connect(DB_PATH, check_same_thread=False)
 import os, sqlite3, re, requests
 from fastapi import FastAPI, Query
 from fastapi.responses import FileResponse, JSONResponse
@@ -87,25 +98,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         finally:
             con.close()
 
-@app.get("/search_test")
-def search_test(q: str):
-    import sqlite3, time, re
-    start = time.time()
-    # Replace invalid chars for FTS
-    nq = re.sub(r'[^a-zA-Z0-9*"\s]', ' ', q)
-
-    with sqlite3.connect("qbcc.db") as con:
-        rows = con.execute(
-            "SELECT rowid FROM fts WHERE fts MATCH :q LIMIT 20",
-            {"q": nq}
-        ).fetchall()
-    elapsed = time.time() - start
-    return {
-        "query": q,
-        "sanitized": nq,
-        "count": len(rows),
-        "elapsed_seconds": round(elapsed, 3)
-    }
 
     # --- Otherwise → Meilisearch ---
     payload = {
