@@ -348,6 +348,53 @@
   border-color: #aaa;
 }
 
+ .results-limit {
+  appearance: none;             /* remove OS styling */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  background: #1c1c1c;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 6px 24px 6px 10px;   /* right padding leaves space for arrow */
+  font-size: 13px;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: background 0.2s, border 0.2s;
+  position: relative;
+}
+
+/* hover effect */
+.results-limit:hover {
+  background: #2a2a2a;
+  border-color: #555;
+}
+
+/* custom arrow */
+.results-limit::after {
+  content: "▾";
+  position: absolute;
+  right: 8px;    /* closer to text */
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 11px;
+  color: #aaa;
+}
+
+/* Light mode */
+.light .results-limit {
+  background: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+}
+.light .results-limit:hover {
+  background: #f7f7f7;
+  border-color: #aaa;
+}
+
+
 </style>
 
 </head>
