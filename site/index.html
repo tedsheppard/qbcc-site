@@ -541,7 +541,7 @@
       state.limit = +($('#limit')?.value || 20);
       state.offset = (page-1) * state.limit;
       const params = new URLSearchParams();
-      state.sort = ($('#sort')?.value || 'relevance');
+      state.sort = ($('#sort')?.value || 'newest');
       params.set('sort', state.sort);
 
       if (state.q) params.set('q', state.q);
