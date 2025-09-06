@@ -1,31 +1,33 @@
-import os, shutil
-
-DB_PATH = "/tmp/qbcc.db"
-
-# Copy the DB into RAM once at startup if not already present
-if not os.path.exists(DB_PATH):
-    shutil.copy("qbcc.db", DB_PATH)
-
-# Create a global connection so we don’t re-open each request
-import sqlite3
-con = sqlite3.connect(DB_PATH, check_same_thread=False)
-import os, sqlite3, re, requests
+import os, re, shutil, sqlite3, requests
 from fastapi import FastAPI, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+# ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
-DB = os.path.join(ROOT, 'qbcc.db')
 PDF_ROOT = os.path.join(ROOT, 'pdf')
 SITE_DIR = os.path.join(ROOT, "site")
 
-MEILI_URL = "http://127.0.0.1:7700"
+# ensure DB lives in /tmp for faster access
+DB_PATH = "/tmp/qbcc.db"
+if not os.path.exists(DB_PATH):
+    shutil.copy("qbcc.db", DB_PATH)
+
+# create global sqlite connection
+con = sqlite3.connect(DB_PATH, check_same_thread=False)
+con.row_factory = sqlite3.Row
+con.execute("PRAGMA cache_size = -20000")   # ~20MB page cache
+con.execute("PRAGMA temp_store = MEMORY")
+con.execute("PRAGMA mmap_size = 30000000000")  # 30GB if kernel allows
+
+# meilisearch config
+MEILI_URL = os.getenv("MEILI_URL", "http://127.0.0.1:7700")
+MEILI_KEY = os.getenv("MEILI_MASTER_KEY", "")
 MEILI_INDEX = "decisions"
-MEILI_KEY = "sopal123"   # your master key
 
 app = FastAPI()
 
-# ---------- helpers ----------
+# ---------------- helpers ----------------
 def normalize_default(q: str) -> str:
     if not re.search(r'"|\bNEAR/\d+\b|\bw/\d+\b|\bAND\b|\bOR\b|\bNOT\b|\(|\)', q or "", flags=re.I):
         toks = re.findall(r'\w+', q or "")
@@ -52,54 +54,47 @@ def preprocess_sqlite_query(q: str) -> str:
     q = re.sub(r'\bnot\b', 'NOT', q, flags=re.I)
     return normalize_default(q)
 
-# ---------- routes ----------
+# ---------------- routes ----------------
 @app.get("/health")
 def health():
     return {"ok": True}
 
-# ---------- fast hybrid search ----------
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "relevance"):
-    # --- Detect boolean/NEAR queries → SQLite ---
-    # --- Detect boolean/NEAR queries → SQLite ---
+    # boolean / NEAR → SQLite
     if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I) or re.search(r'\bw/\d+\b', q, flags=re.I) or re.search(r'\bNEAR/\d+\b', q, flags=re.I):
-    # force SQLite path
-        con = sqlite3.connect(DB); con.row_factory = sqlite3.Row
-        try:
-            nq = preprocess_sqlite_query(q)
-            total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq}).fetchone()[0]
-            sql = """
-              SELECT
-                fts.rowid,
-                snippet(fts, 0, '<mark>', '</mark>', ' … ', 50) AS snippet,
-                bm25(fts) AS score
-              FROM fts
-              WHERE fts MATCH :q
-              ORDER BY score
-              LIMIT :limit OFFSET :offset
-            """
-            rows = con.execute(sql, {"q": nq, "limit": limit, "offset": offset}).fetchall()
+        nq = preprocess_sqlite_query(q)
+        total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq}).fetchone()[0]
 
-            items = []
-            for r in rows:
-                meta = con.execute("""
-                  SELECT claimant, respondent, adjudicator, decision_date, decision_date_norm,
-                         act, reference, pdf_path
-                  FROM docs_meta
-                  LEFT JOIN docs_fresh ON docs_meta.ejs_id = docs_fresh.ejs_id
-                  WHERE docs_fresh.id = ?
-                """, (r["rowid"],)).fetchone()
-                d = dict(meta) if meta else {}
-                d["id"] = r["rowid"]
-                d["snippet"] = r["snippet"]
-                items.append(d)
+        sql = """
+          SELECT
+            fts.rowid,
+            snippet(fts, 0, '<mark>', '</mark>', ' … ', 50) AS snippet,
+            bm25(fts) AS score
+          FROM fts
+          WHERE fts MATCH :q
+          ORDER BY score
+          LIMIT :limit OFFSET :offset
+        """
+        rows = con.execute(sql, {"q": nq, "limit": limit, "offset": offset}).fetchall()
 
-            return {"total": total, "items": items}
-        finally:
-            con.close()
+        items = []
+        for r in rows:
+            meta = con.execute("""
+              SELECT claimant, respondent, adjudicator, decision_date, decision_date_norm,
+                     act, reference, pdf_path
+              FROM docs_meta
+              LEFT JOIN docs_fresh ON docs_meta.ejs_id = docs_fresh.ejs_id
+              WHERE docs_fresh.id = ?
+            """, (r["rowid"],)).fetchone()
+            d = dict(meta) if meta else {}
+            d["id"] = r["rowid"]
+            d["snippet"] = r["snippet"]
+            items.append(d)
 
+        return {"total": total, "items": items}
 
-    # --- Otherwise → Meilisearch ---
+    # otherwise → Meili
     payload = {
         "q": q,
         "limit": limit,
@@ -125,23 +120,9 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
     elif sort == "ztoa":
         payload["sort"] = ["claimant:desc"]
 
-    import os
-    
-    # at the top of server.py, after imports:
-    MEILI_URL = os.getenv("MEILI_URL", "http://127.0.0.1:7700")
-    MEILI_KEY = os.getenv("MEILI_MASTER_KEY", "")
-    MEILI_INDEX = "decisions"
-    
-    # inside your /search_fast route, replace with this:
     headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
-    
-    res = requests.post(
-        f"{MEILI_URL}/indexes/{MEILI_INDEX}/search",
-        headers=headers,
-        json=payload
-    )
+    res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
     data = res.json()
-
 
     items = []
     for hit in data.get("hits", []):
