@@ -531,6 +531,94 @@
   }
 }
 
+ @media (max-width: 768px) {
+  /* Top row with logo + theme toggle */
+  .search-header .top-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #themeToggle {
+    margin: 0;
+    font-size: 14px;
+    opacity: 1;
+  }
+
+  /* Search bar full width with padding */
+  .search-container {
+    flex-direction: column;
+    width: 100%;
+    margin-left: 0;
+    margin-top: 10px;
+    gap: 8px;
+  }
+
+  .search-header .search-bar {
+    width: 100%;
+    padding: 12px 18px;
+    border-radius: 28px;
+  }
+
+  .search-header .search-bar input {
+    font-size: 16px;
+  }
+
+  /* Hide dropdowns, show Options button */
+  #limit, #sort {
+    display: none;
+  }
+
+  #mobileOptions {
+    display: block;
+    background: #f4f4f4;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 14px;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  /* Results spacing */
+  .result {
+    padding: 28px 0;
+  }
+
+  .result h3 {
+    font-size: 18px;
+  }
+
+  .meta {
+    font-size: 14px;
+  }
+
+  /* Status line */
+  #status, #total {
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+  }
+
+  /* Footer simplified */
+  .footer-content {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+  }
+}
+
+@media (min-width: 769px) {
+  #mobileOptions { display: none; }
+}
+
 
 
 </style>
@@ -553,6 +641,25 @@
       <input id="q" placeholder='Search adjudication decisions…'>
       <button onclick="runSearch()">Search</button>
     </div>
+   <button id="mobileOptions" onclick="toggleOptions()">⋮ Options</button>
+<div id="optionsPanel" style="display:none;">
+  <label>Results per page</label>
+  <select id="limit">
+    <option value="20">20 results</option>
+    <option value="50">50 results</option>
+    <option value="100">100 results</option>
+  </select>
+
+  <label>Sort order</label>
+  <select id="sort">
+    <option value="relevance">Relevance</option>
+    <option value="newest" selected>Date: Newest to Oldest</option>
+    <option value="oldest">Date: Oldest to Newest</option>
+    <option value="atoz">A → Z (Claimant)</option>
+    <option value="ztoa">Z → A (Claimant)</option>
+  </select>
+</div>
+
 
     <select id="limit" class="results-limit">
       <option value="20">20 results</option>
@@ -872,6 +979,12 @@ function formatAusDate(iso) {
     year: "numeric"
   });
 }
+
+ function toggleOptions() {
+  const panel = document.getElementById('optionsPanel');
+  panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
+}
+
 
     </script>
 
