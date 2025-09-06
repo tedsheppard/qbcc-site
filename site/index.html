@@ -492,18 +492,26 @@
 
 /* --- Mobile tweaks --- */
 @media (max-width: 768px) {
-  /* Move theme toggle above search bar next to logo */
   .search-header .top-row {
+    display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
   }
 
   #themeToggle {
-    margin-left: 0;
-    font-size: 13px;
+    margin: 0;
+    font-size: 14px;
+    opacity: 1;
   }
 
+  .search-container {
+    flex-direction: column;
+    width: 100%;
+    margin-top: 12px;
+    gap: 8px;
+  }
+}
   /* Add breathing room to search bar */
   .search-header .search-bar {
     padding: 10px 16px;
@@ -531,9 +539,9 @@
   }
 }
 
- @media (max-width: 768px) {
-  /* Top row with logo + theme toggle */
+@media (max-width: 768px) {
   .search-header .top-row {
+    display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
@@ -545,15 +553,13 @@
     opacity: 1;
   }
 
-  /* Search bar full width with padding */
   .search-container {
     flex-direction: column;
     width: 100%;
-    margin-left: 0;
-    margin-top: 10px;
+    margin-top: 12px;
     gap: 8px;
   }
-
+}
   .search-header .search-bar {
     width: 100%;
     padding: 12px 18px;
@@ -622,7 +628,9 @@
 /* --- Mobile clean layout --- */
 @media (max-width: 768px) {
   /* Top row: logo left, dark mode right */
+@media (max-width: 768px) {
   .search-header .top-row {
+    display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
@@ -634,11 +642,9 @@
     opacity: 1;
   }
 
-  /* Search bar full width with breathing room */
   .search-container {
     flex-direction: column;
     width: 100%;
-    margin-left: 0;
     margin-top: 12px;
     gap: 8px;
   }
@@ -662,21 +668,24 @@
 
  /* --- Mobile clean layout --- */
 @media (max-width: 768px) {
-  main {
-    margin-left: 0;
-    padding: 0 12px;
-    max-width: 100%;
-  }
-
-  .search-header {
-    padding: 12px;
-  }
-
-  /* Header: logo left, theme toggle right */
   .search-header .top-row {
+    display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+  }
+
+  #themeToggle {
+    margin: 0;
+    font-size: 14px;
+    opacity: 1;
+  }
+
+  .search-container {
+    flex-direction: column;
+    width: 100%;
+    margin-top: 12px;
+    gap: 8px;
   }
 
   #themeToggle {
@@ -744,12 +753,26 @@
   </div>
 
 
+<div class="search-header">
+  <div class="top-row">
+    <div class="logo">
+      <a href="/">
+        <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" style="height:31px;">
+      </a>
+    </div>
+
+    <button id="themeToggle" onclick="toggleTheme()">Switch to Dark Mode 🌙</button>
+  </div>
+
   <div class="search-container">
     <div class="search-bar">
       <input id="q" placeholder='Search adjudication decisions…'>
       <button onclick="runSearch()">Search</button>
     </div>
-  
+    <select id="limit" class="results-limit">...</select>
+    <select id="sort" class="results-limit">...</select>
+  </div>
+</div>
 
 
     <select id="limit" class="results-limit">
