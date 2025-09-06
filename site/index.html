@@ -241,93 +241,35 @@
     z-index: 9999;
   }
 
-  /* --- DARK THEME OVERRIDES --- */
-  .dark {
-    background: #0d0d0d !important;
-    color: #e0e0e0 !important;
-  }
-  .dark body {
-    background: #0d0d0d !important;
-    color: #e0e0e0 !important;
-  }
-  .dark header,
-  .dark footer {
-    background: #141414 !important;
-    color: #fff !important;
-    border-color: #333 !important;
-  }
-  .dark .search-header {
-    background: #141414 !important;
-    border-bottom: 1px solid #333 !important;
-  }
-  .dark .footer {
-    background: #141414 !important;
-    color: #fff !important;
-    border-top: 1px solid #333 !important;
-  }
-  .dark #themeToggle {
-    color: #ffffff !important;
-  }
-
- /* Smooth theme transition */
-body, .search-header, .search-bar, .results-limit, .footer {
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
- .dark .search-bar {
-  background: #222 !important;
-  border: 1px solid #444 !important;
-}
-
-.dark .search-bar input {
-  color: #fff !important;
-}
-
-.dark .results-limit {
-  background: #222 !important;
-  color: #fff !important;
-  border: 1px solid #444 !important;
-}
-
-
- /* Dark mode overrides */
+ /* Dark mode unified overrides */
 .dark body {
   background: #0d0d0d !important;
   color: #e0e0e0 !important;
 }
 
 .dark header,
-.dark footer {
+.dark footer,
+.dark .search-header,
+.dark .search-bar,
+.dark .results-limit {
   background: #141414 !important;
-  color: #e0e0e0 !important;
-  border: none;
-}
-
-.dark #searchBar,
-.dark .search-container {
-  background: #141414 !important;
-  border: 1px solid #333 !important;
   color: #f0f0f0 !important;
+  border: 1px solid #333 !important;
 }
 
-.dark #searchBar::placeholder {
-  color: #888 !important;
-}
-
-.dark .results {
+.dark #results,
+.dark .result {
   background: #0d0d0d !important;
   color: #f0f0f0 !important;
 }
 
-.dark .result-card {
+.dark .snippet {
   background: #141414 !important;
   border: 1px solid #222 !important;
-  color: #f0f0f0 !important;
 }
 
-.dark a {
-  color: #4da6ff !important; /* highlight links */
-}
+.dark a { color: #4da6ff !important; }
+.dark .pagination button.active { border-bottom: 2px solid #4da6ff; }
 
 </style>
 
@@ -486,9 +428,14 @@ body, .search-header, .search-bar, .results-limit, .footer {
       const items = data.items || [];
       $('#results').innerHTML = items.length ? items.map(renderItem).join('') : '<p>No results.</p>';
 
-      const sortSel = document.getElementById('sort');
-      if (sortSel) {
-        sortSel.addEventListener('change', () => runSearch(1));
+      const logo = document.getElementById('logo');
+      const footerLogo = document.getElementById('footerLogo');
+      if (isLight) {
+        logo.src = "assets/sopal_logo_v1.png";
+        footerLogo.src = "assets/sopal_logo_v1.png";
+      } else {
+        logo.src = "assets/sopal_logo_white_v1.png";
+        footerLogo.src = "assets/sopal_logo_white_v1.png";
       }
 
       renderPagination(page);
@@ -661,7 +608,7 @@ function formatAusDate(iso) {
 <footer class="footer">
   <div class="footer-content">
     <div class="footer-left">
-      <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+      <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
       <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
     </div>
 
