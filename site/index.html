@@ -395,11 +395,11 @@
 }
 
   :root {
-    --primary-green: #029c5d;
+    --primary-green: #08cc7c;
   }
 
   mark {
-    background: linear-gradient(120deg, var(--primary-green), #01805a);
+    background: linear-gradient(120deg, var(--primary-green), #09a867);
     color: white;
     padding: 2px 4px;
     border-radius: 3px;
@@ -433,13 +433,14 @@
       <option value="100">100 results</option>
     </select>
 
-    <select id="sort" class="results-limit">
-      <option value="relevance">Relevance</option>
-      <option value="newest">Date: Newest to Oldest</option>
-      <option value="oldest">Date: Oldest to Newest</option>
-      <option value="atoz">A → Z (Claimant)</option>
-      <option value="ztoa">Z → A (Claimant)</option>
-    </select>
+   <select id="sort" class="results-limit">
+     <option value="relevance">Relevance</option>
+     <option value="newest" selected>Date: Newest to Oldest</option>
+     <option value="oldest">Date: Oldest to Newest</option>
+     <option value="atoz">A → Z (Claimant)</option>
+     <option value="ztoa">Z → A (Claimant)</option>
+   </select>
+
   </div>
 
 
