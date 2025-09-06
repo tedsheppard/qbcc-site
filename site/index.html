@@ -290,6 +290,45 @@ body, .search-header, .search-bar, .results-limit, .footer {
 }
 
 
+ /* Dark mode overrides */
+.dark body {
+  background: #0d0d0d !important;
+  color: #e0e0e0 !important;
+}
+
+.dark header,
+.dark footer {
+  background: #141414 !important;
+  color: #e0e0e0 !important;
+  border: none;
+}
+
+.dark #searchBar,
+.dark .search-container {
+  background: #141414 !important;
+  border: 1px solid #333 !important;
+  color: #f0f0f0 !important;
+}
+
+.dark #searchBar::placeholder {
+  color: #888 !important;
+}
+
+.dark .results {
+  background: #0d0d0d !important;
+  color: #f0f0f0 !important;
+}
+
+.dark .result-card {
+  background: #141414 !important;
+  border: 1px solid #222 !important;
+  color: #f0f0f0 !important;
+}
+
+.dark a {
+  color: #4da6ff !important; /* highlight links */
+}
+
 </style>
 
 </head>
