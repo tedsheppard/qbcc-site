@@ -112,9 +112,9 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
     }
 
     if sort == "newest":
-        payload["sort"] = ["date:desc"]
+        payload["sort"] = ["id:desc"]   # highest EJS first
     elif sort == "oldest":
-        payload["sort"] = ["date:asc"]
+        payload["sort"] = ["id:asc"]    # lowest EJS first
     elif sort == "atoz":
         payload["sort"] = ["claimant:asc"]
     elif sort == "ztoa":
