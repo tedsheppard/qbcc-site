@@ -87,6 +87,21 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         finally:
             con.close()
 
+    @app.get("/search_test")
+    def search_test(q: str):
+        import sqlite3, time
+        start = time.time()
+        with sqlite3.connect("qbcc.db") as con:
+            rows = con.execute(
+                "SELECT rowid FROM fts WHERE fts MATCH :q LIMIT 20",
+                {"q": q}
+            ).fetchall()
+        elapsed = time.time() - start
+        return {
+            "count": len(rows),
+            "elapsed_seconds": round(elapsed, 3)
+    }
+
     # --- Otherwise → Meilisearch ---
     payload = {
         "q": q,
