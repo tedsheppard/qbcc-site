@@ -51,7 +51,7 @@ def health():
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "relevance"):
     # --- Detect boolean/NEAR queries → SQLite ---
     # --- Detect boolean/NEAR queries → SQLite ---
-if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I) or re.search(r'\bw/\d+\b', q, flags=re.I) or re.search(r'\bNEAR/\d+\b', q, flags=re.I):
+    if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I) or re.search(r'\bw/\d+\b', q, flags=re.I) or re.search(r'\bNEAR/\d+\b', q, flags=re.I):
     # force SQLite path
         con = sqlite3.connect(DB); con.row_factory = sqlite3.Row
         try:
