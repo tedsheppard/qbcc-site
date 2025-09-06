@@ -619,6 +619,46 @@
   #mobileOptions { display: none; }
 }
 
+/* --- Mobile clean layout --- */
+@media (max-width: 768px) {
+  /* Top row: logo left, dark mode right */
+  .search-header .top-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #themeToggle {
+    margin: 0;
+    font-size: 14px;
+    opacity: 1;
+  }
+
+  /* Search bar full width with breathing room */
+  .search-container {
+    flex-direction: column;
+    width: 100%;
+    margin-left: 0;
+    margin-top: 12px;
+    gap: 8px;
+  }
+
+  .search-header .search-bar {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 28px;
+  }
+
+  /* Results: give a touch more space */
+  .result {
+    padding: 24px 0;
+  }
+
+  /* Hide sorting dropdown only */
+  #sort {
+    display: none;
+  }
+}
 
 
 </style>
