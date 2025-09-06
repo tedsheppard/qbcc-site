@@ -142,40 +142,19 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
 
-# ---------- PDF serving ----------
-def _resolve_pdf_from_any(path_str: str) -> str:
-    if not path_str: raise ValueError("empty path")
-    m = re.search(r'(pdf/.*?\.pdf)$', path_str, flags=re.I)
-    rel = m.group(1) if m else path_str
-    if rel.lower().startswith('pdf/'): rel = rel[4:]
-    abs_path = os.path.normpath(os.path.join(PDF_ROOT, rel))
-    if not abs_path.startswith(os.path.abspath(PDF_ROOT)):
-        raise ValueError("invalid path traversal")
-    if not os.path.isfile(abs_path):
-        raise FileNotFoundError(abs_path)
-    return abs_path
+# ---------- PDF links via Google Cloud ----------
+GCS_BUCKET = "sopal-bucket"
+GCS_PREFIX = "pdfs"
+
+def build_gcs_url(file_name: str) -> str:
+    return f"https://storage.googleapis.com/{GCS_BUCKET}/{GCS_PREFIX}/{file_name}"
 
 @app.get("/open")
 def open_pdf(p: str, disposition: str = "inline"):
     try:
-        fpath = _resolve_pdf_from_any(p)
-        filename = os.path.basename(fpath)
-        headers = {"Content-Disposition": f'{disposition}; filename="{filename}"'}
-        return FileResponse(fpath, media_type="application/pdf", headers=headers)
-    except FileNotFoundError as e:
-        return JSONResponse({"error": "not found", "resolved": str(e)}, status_code=404)
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=400)
-
-@app.get("/pdf/{tail:path}")
-def pdf_tail(tail: str, disposition: str = "inline"):
-    try:
-        fpath = _resolve_pdf_from_any("pdf/" + tail)
-        filename = os.path.basename(fpath)
-        headers = {"Content-Disposition": f'{disposition}; filename="{filename}"'}
-        return FileResponse(fpath, media_type="application/pdf", headers=headers)
-    except FileNotFoundError as e:
-        return JSONResponse({"error": "not found", "resolved": str(e)}, status_code=404)
+        # Just take the filename part of whatever is stored in pdf_path
+        file_name = os.path.basename(p)
+        return {"url": build_gcs_url(file_name)}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
