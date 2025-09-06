@@ -406,89 +406,47 @@
     font-weight: 350;
   }
 
- /* --- Mobile responsiveness --- */
+/* --- Mobile tweaks --- */
 @media (max-width: 768px) {
-  main {
-    margin-left: 0;          /* remove sidebar space */
-    padding: 0 12px;         /* breathing room on small screens */
-    max-width: 100%;
-  }
-
-  .search-header {
-    padding: 12px;
-  }
-
+  /* Move theme toggle above search bar next to logo */
   .search-header .top-row {
-    flex-direction: column;  /* stack items vertically */
-    align-items: stretch;
-    gap: 12px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
 
-  .search-container {
-    flex-direction: column;
+  #themeToggle {
     margin-left: 0;
-    width: 100%;
-    gap: 8px;
+    font-size: 13px;
   }
 
+  /* Add breathing room to search bar */
   .search-header .search-bar {
-    width: 100%;
-    max-width: none;
+    padding: 10px 16px;
+    border-radius: 28px;
   }
 
   .search-header .search-bar input {
     font-size: 15px;
-    padding: 10px;
+    padding: 10px 8px;
   }
 
   .search-header .search-bar button {
-    font-size: 15px;
-    padding: 10px;
+    padding: 10px 16px;
+    font-size: 14px;
   }
 
-  .results-limit {
-    width: 100%;
+  /* Add slightly more padding to results */
+  .result {
+    padding: 24px 0;  /* was 20px */
   }
 
-  .result h3 {
-    font-size: 18px;
-  }
-
-  .snippet {
-    font-size: 15px;
-  }
-
-  .pagination {
-    justify-content: center; /* center buttons on mobile */
-    flex-wrap: wrap;
-  }
-
-  .footer-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .footer-links {
-    flex-wrap: wrap;
-    gap: 12px;
+  /* Hide sorting dropdown on mobile */
+  #sort {
+    display: none;
   }
 }
 
-@media (max-width: 480px) {
-  .search-header .search-bar input {
-    font-size: 14px;
-  }
-  .search-header .search-bar button {
-    font-size: 14px;
-  }
-  .result h3 {
-    font-size: 16px;
-  }
-  .snippet {
-    font-size: 14px;
-  }
-}
 
 
 </style>
