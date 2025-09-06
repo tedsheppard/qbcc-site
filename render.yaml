@@ -6,6 +6,7 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       echo "Downloading qbcc.db..."
-      curl -L "https://storage.googleapis.com/sopal-bucket/qbcc.db" -o qbcc.db
+      curl -f -L "https://storage.googleapis.com/sopal-bucket/qbcc.db" -o qbcc.db
       ls -lh qbcc.db
+      test -s qbcc.db || (echo "❌ qbcc.db missing!" && exit 1)
     startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
