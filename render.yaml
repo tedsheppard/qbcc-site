@@ -4,9 +4,15 @@ services:
     env: python
     plan: free
     buildCommand: |
+      echo ">>> Installing dependencies"
       pip install -r requirements.txt
-      echo "Downloading qbcc.db..."
+
+      echo ">>> Downloading qbcc.db"
       curl -f -L "https://storage.googleapis.com/sopal-bucket/qbcc.db" -o qbcc.db
+
+      echo ">>> Checking file size"
       ls -lh qbcc.db
       test -s qbcc.db || (echo "❌ qbcc.db missing!" && exit 1)
-    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    startCommand: |
+      echo ">>> Starting server"
+      uvicorn server:app --host 0.0.0.0 --port $PORT
