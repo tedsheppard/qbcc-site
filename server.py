@@ -89,15 +89,20 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
 @app.get("/search_test")
 def search_test(q: str):
-    import sqlite3, time
+    import sqlite3, time, re
     start = time.time()
+    # Replace invalid chars for FTS
+    nq = re.sub(r'[^a-zA-Z0-9*"\s]', ' ', q)
+
     with sqlite3.connect("qbcc.db") as con:
         rows = con.execute(
             "SELECT rowid FROM fts WHERE fts MATCH :q LIMIT 20",
-            {"q": q}
+            {"q": nq}
         ).fetchall()
     elapsed = time.time() - start
     return {
+        "query": q,
+        "sanitized": nq,
         "count": len(rows),
         "elapsed_seconds": round(elapsed, 3)
     }
