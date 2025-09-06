@@ -660,6 +660,74 @@
   }
 }
 
+ /* --- Mobile clean layout --- */
+@media (max-width: 768px) {
+  main {
+    margin-left: 0;
+    padding: 0 12px;
+    max-width: 100%;
+  }
+
+  .search-header {
+    padding: 12px;
+  }
+
+  /* Header: logo left, theme toggle right */
+  .search-header .top-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #themeToggle {
+    margin: 0;
+    font-size: 14px;
+    opacity: 1;
+  }
+
+  /* Search bar full width below header */
+  .search-container {
+    flex-direction: column;
+    width: 100%;
+    margin: 12px 0 0 0;
+    gap: 8px;
+  }
+
+  .search-header .search-bar {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 28px;
+  }
+
+  .search-header .search-bar input {
+    font-size: 15px;
+    padding: 10px 8px;
+  }
+
+  .search-header .search-bar button {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  /* Hide dropdowns on mobile */
+  #limit, #sort {
+    display: none;
+  }
+
+  /* Results spacing */
+  .result {
+    padding: 24px 0;
+  }
+
+  .result h3 {
+    font-size: 18px;
+  }
+
+  .snippet {
+    font-size: 15px;
+  }
+}
+
 
 </style>
 
@@ -681,24 +749,7 @@
       <input id="q" placeholder='Search adjudication decisions…'>
       <button onclick="runSearch()">Search</button>
     </div>
-   <button id="mobileOptions" onclick="toggleOptions()">⋮ Options</button>
-<div id="optionsPanel" style="display:none;">
-  <label>Results per page</label>
-  <select id="limit">
-    <option value="20">20 results</option>
-    <option value="50">50 results</option>
-    <option value="100">100 results</option>
-  </select>
-
-  <label>Sort order</label>
-  <select id="sort">
-    <option value="relevance">Relevance</option>
-    <option value="newest" selected>Date: Newest to Oldest</option>
-    <option value="oldest">Date: Oldest to Newest</option>
-    <option value="atoz">A → Z (Claimant)</option>
-    <option value="ztoa">Z → A (Claimant)</option>
-  </select>
-</div>
+  
 
 
     <select id="limit" class="results-limit">
@@ -1019,12 +1070,6 @@ function formatAusDate(iso) {
     year: "numeric"
   });
 }
-
- function toggleOptions() {
-  const panel = document.getElementById('optionsPanel');
-  panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
-}
-
 
     </script>
 
