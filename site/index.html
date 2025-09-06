@@ -526,8 +526,9 @@
     function getFileName(path){ if (!path) return ''; return path.split('/').pop(); }
     function buildPdfLinks(path){
       if (!path) return null;
-      const open = `/open?p=${encodeURIComponent(path)}`;
-      return { open, download: `${open}&disposition=attachment` };
+      const fileName = path.split("/").pop();  // just the filename
+      const open = `https://storage.googleapis.com/sopal-bucket/pdfs/${fileName}`;
+      return { open, download: open };
     }
 
     let state = { q:'', claimant:'', respondent:'', limit:20, offset:0, total:0 };
