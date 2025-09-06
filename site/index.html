@@ -271,6 +271,20 @@
 .dark a { color: #4da6ff !important; }
 .dark .pagination button.active { border-bottom: 2px solid #4da6ff; }
 
+ /* Results section should blend with background */
+.dark #results,
+.dark .result {
+  background: #0d0d0d !important; /* match page background */
+  color: #f0f0f0 !important;
+  border: none !important; /* remove the grey borders */
+}
+
+/* Footer divider should adapt */
+.dark .footer-bottom {
+  border-top: 1px solid #333 !important; /* subtle dark divider */
+  color: #aaa !important; /* soften footer text */
+}
+
 </style>
 
 </head>
