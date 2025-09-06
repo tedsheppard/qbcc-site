@@ -271,18 +271,23 @@
 .dark a { color: #4da6ff !important; }
 .dark .pagination button.active { border-bottom: 2px solid #4da6ff; }
 
- /* Results section should blend with background */
+/* --- Fix dark mode result cards + footer divider --- */
 .dark #results,
-.dark .result {
-  background: #0d0d0d !important; /* match page background */
+.dark #results .result {
+  background: #0d0d0d !important;  /* match page background */
+  border: none !important;
   color: #f0f0f0 !important;
-  border: none !important; /* remove the grey borders */
 }
 
-/* Footer divider should adapt */
+.dark .snippet {
+  background: #141414 !important;  /* slight contrast inside results */
+  border: 1px solid #222 !important;
+  color: #ddd !important;
+}
+
 .dark .footer-bottom {
-  border-top: 1px solid #333 !important; /* subtle dark divider */
-  color: #aaa !important; /* soften footer text */
+  border-top: 1px solid #333 !important; /* subtle divider */
+  color: #aaa !important;
 }
 
 </style>
