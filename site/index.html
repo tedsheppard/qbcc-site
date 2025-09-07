@@ -67,12 +67,14 @@
   .light #themeToggle { color: #000; }
 
   /* Base body + main layout */
-  body {
-    font-family: Inter, sans-serif;
-    margin: 0;
-    background: rgba(33,33,33,255);
-    color: #e4e4e4;
-  }
+body {
+  font-family: Inter, sans-serif;
+  margin: 0;
+  background: rgba(33,33,33,255);
+  color: #e4e4e4;
+  font-size: 80%;   /* 🔥 new line – shrinks everything ~20% */
+}
+
 
   main {
     margin-top: 35px;
@@ -138,12 +140,6 @@
   }
   .search-header .search-bar button:hover { background: #0d8a6c; }
 
-  /* Results */
-  #status, #total {
-    margin: 10px 0;
-    font-size: 13px;
-    color: #aaa;
-  }
   #results { margin-top: 20px; }
   .result {
     padding: 20px 0;
@@ -599,12 +595,6 @@
     font-size: 14px;
   }
 
-  /* Status line */
-  #status, #total {
-    text-align: center;
-    font-size: 14px;
-    color: #666;
-  }
 
   /* Footer simplified */
   .footer-content {
