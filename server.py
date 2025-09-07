@@ -210,13 +210,61 @@ async def rewrite_query(data: dict = Body(...)):
         return {"query": q}  # return unchanged
 
     # Otherwise, call OpenAI to rewrite into structured query
-    prompt = f"""
-    Rewrite the following natural-language search into a precise boolean-style query
-    suitable for a legal full-text search engine of adjudication decisions. Use AND/OR, quotes for phrases,
-    and section numbers if mentioned.  You can use "w/[number]" as well to indicate proximity of one word to another.  Output only the query string.
+   prompt = f"""
+You are a query rewriting assistant for a legal adjudication decision search engine.
 
-    Query: {q}
-    """
+TASK:
+Rewrite the following natural-language query into a boolean-style search query with expansions for legal synonyms and variants.
+
+RULES:
+- Always output ONLY the query string, no commentary.
+- Wrap all multi-word terms and statutory names in quotes ("…").
+- Expand legal/statutory terms into OR clusters of common variants (For example and without limitation):
+
+  • Statutory sections:
+    s 71 → ("s 71" OR s71 OR s.71 OR "s. 71" OR "section 71")
+  
+  • BIF Act:
+    ("BIF Act" OR "Building Industry Fairness (Security of Payment) Act 2017" 
+     OR BIFA OR "Security of Payment Act" OR "SOPA" OR "SOP Act" OR BIFSOPA)
+
+  • Nil:
+    (nil OR 0 OR zero)
+
+  • Take out right:
+    ("take out right" OR "take out")
+
+  • Extension of time:
+    (EOT OR "extension of time")
+
+  • Time at large:
+    ("time at large" OR "time became at large")
+
+- Preserve statutory references exactly as they appear, but also generate alternatives in OR form.
+- Use AND between essential concepts.
+- Use OR only inside synonym/variant groups.
+- Use w/N proximity if the query implies a relationship between terms 
+  (e.g. "payment claim valued nil" → "payment claim" w/5 (nil OR 0 OR zero)).
+- Drop filler words like: what, is, are, any, cases, about, because, of, etc.
+- Keep result concise, structured, and highly discriminating.
+
+EXAMPLES:
+
+Input: "are there any cases where a payment claim was valued nil under s 71 because of the exercise of a take out right?"
+Output: ("payment claim" w/5 (nil OR 0 OR zero)) AND ("s 71" OR s71 OR s.71 OR "s. 71" OR "section 71") AND ("take out right" OR "take out")
+
+Input: "how is a reference date defined under the BIF Act?"
+Output: ("reference date" w/5 defined) AND ("BIF Act" OR "Building Industry Fairness (Security of Payment) Act 2017" OR BIFA OR "Security of Payment Act" OR "SOPA" OR "SOP Act" OR BIFSOPA)
+
+Input: "cases about time at large when an EOT is wrongly refused"
+Output: ("time at large" OR "time became at large") AND (EOT OR "extension of time") AND (refused OR denial OR rejected)
+
+Input: "was a payment schedule served within 5 business days"
+Output: ("payment schedule" AND served) AND ("5 business days" OR ("business days" w/5 5))
+
+Query: {q}
+"""
+
 
     try:
         resp = openai.ChatCompletion.create(
