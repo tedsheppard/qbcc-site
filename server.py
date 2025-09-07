@@ -1,14 +1,7 @@
 import os, re, shutil, sqlite3, requests
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-
-# 🔹 Add this import
-from openai import OpenAI
-
-# 🔹 Create global client here
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -149,34 +142,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
 
-@app.post("/rewrite_query")
-async def rewrite_query(req: Request):
-    data = await req.json()
-    query = data.get("query", "").strip()
-    if not query:
-        return JSONResponse({"rewritten": ""})
-
-    # Skip rewriting if query looks boolean-style
-    if any(op in query.upper() for op in [" AND ", " OR ", " W/"]) or '"' in query or "(" in query or ")" in query:
-        return JSONResponse({"rewritten": query})
-
-    try:
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You rewrite verbose natural-language legal search questions into concise boolean/keyword queries."},
-                {"role": "user", "content": query}
-            ],
-            max_tokens=50,
-            temperature=0
-        )
-        rewritten = resp.choices[0].message.content.strip()
-        print(f"[GPT Rewrite] Original: {query} → Rewritten: {rewritten}")
-        return JSONResponse({"rewritten": rewritten})
-    except Exception as e:
-        print(f"[GPT Rewrite ERROR] {e}")
-        return JSONResponse({"rewritten": query, "error": str(e)})
-
 # ---------- PDF links via Google Cloud ----------
 GCS_BUCKET = "sopal-bucket"
 GCS_PREFIX = "pdfs"
@@ -192,8 +157,6 @@ def open_pdf(p: str, disposition: str = "inline"):
         return {"url": build_gcs_url(file_name)}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
-
-
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
