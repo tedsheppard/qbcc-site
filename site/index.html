@@ -1179,7 +1179,7 @@ async function runSearch(page=1) {
 
   state.total = data.total || 0;
   $('#total').textContent = `Total: ${state.total.toLocaleString()} results`;
-  $('#status').textContent = `Done.${rewritten !== original ? " (Rewritten: " + rewritten + ")" : ""}`;
+  $('#status').textContent = `Done.${rewritten !== original ? ""}`;
   $('#results').innerHTML = (data.items || []).map(renderItem).join('');
   renderPagination(page);
 
