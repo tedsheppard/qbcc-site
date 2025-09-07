@@ -1136,53 +1136,56 @@ body {
 
     let state = { q:'', claimant:'', respondent:'', limit:20, offset:0, total:0 };
 
-async function runSearch(page=1){
+async function runSearch(page=1) {
   $('#status').textContent = 'Searching…';
   startLoadingBar();
 
-  let rawQuery = ($('#q')?.value || '').trim();
+  let original = ($('#q')?.value || '').trim();
+  let rewritten = original;
 
-  // Ask backend to rewrite if it's natural language
-  const rewriteRes = await fetch("/rewrite_query", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ q: rawQuery })
-  });
-  const rewriteData = await rewriteRes.json();
-  state.q = rewriteData.query || rawQuery;
+  // Detect if the query looks boolean-style
+  const hasBooleanOps = /\b(AND|OR|W\/\d+)\b|["()]/i.test(original);
 
-  state.claimant = ($('#claimant')?.value || '').trim();
-  state.respondent = ($('#respondent')?.value || '').trim();
+  if (original && !hasBooleanOps) {
+    try {
+      let res = await fetch('/rewrite_query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: original })
+      });
+      let data = await res.json();
+      if (data.rewritten) rewritten = data.rewritten;
+    } catch (e) {
+      console.error("Rewrite failed", e);
+    }
+  }
+
+  // Use rewritten (or original if boolean-style) for the search
+  state.q = rewritten;
   state.limit = +($('#limit')?.value || 20);
   state.offset = (page-1) * state.limit;
   state.sort = ($('#sort')?.value || 'newest');
 
   const params = new URLSearchParams();
-  params.set('sort', state.sort);
   if (state.q) params.set('q', state.q);
-  if (state.claimant) params.set('claimant', state.claimant);
-  if (state.respondent) params.set('respondent', state.respondent);
   params.set('limit', state.limit);
   params.set('offset', state.offset);
+  params.set('sort', state.sort);
 
+  const res = await fetch('/search_fast?' + params.toString(), {
+    headers: { 'Accept': 'application/json' }
+  });
+  const data = await res.json().catch(()=>({}));
 
-      const res = await fetch('/search_fast?' + params.toString(), { headers: { 'Accept':'application/json' }});
-      const data = await res.json().catch(()=>({}));
+  state.total = data.total || 0;
+  $('#total').textContent = `Total: ${state.total.toLocaleString()} results`;
+  $('#status').textContent = `Done.${rewritten !== original ? " (Rewritten: " + rewritten + ")" : ""}`;
+  $('#results').innerHTML = (data.items || []).map(renderItem).join('');
+  renderPagination(page);
 
-      finishLoadingBar();  // 🔥 ADD THIS LINE
+  finishLoadingBar();
+}
 
-      state.total = data.total || 0;
-
-      $('#total').textContent = `Total: ${state.total.toLocaleString()} results`;
-      $('#status').textContent = 'Done.';
-
-      const items = data.items || [];
-      $('#results').innerHTML = items.length ? items.map(renderItem).join('') : '<p>No results.</p>';
-
-
-
-      renderPagination(page);
-    }
 
 
     function renderItem(it){
