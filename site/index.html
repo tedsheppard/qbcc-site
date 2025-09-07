@@ -892,6 +892,51 @@
   }
 }
 
+ /* --- Fix search bar size on desktop --- */
+@media (min-width: 769px) {
+  .search-header .search-bar {
+    max-width: 500px;   /* tighter width */
+    padding: 4px 10px;  /* smaller inside padding */
+    border-radius: 20px;
+  }
+
+  .search-header .search-bar input {
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+
+  .search-header .search-bar button {
+    font-size: 13px;
+    padding: 6px 12px;
+  }
+}
+
+/* --- Align status + result count to the left --- */
+#status, #total {
+  text-align: left !important;
+  margin-left: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+/* --- Reduce result card text sizes --- */
+.result h3 {
+  font-size: 15px;   /* was 16–18px */
+  margin-bottom: 4px;
+}
+
+.meta {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #777;
+}
+
+.snippet {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+
 </style>
 
 </head>
