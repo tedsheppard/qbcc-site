@@ -69,7 +69,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         sql = """
           SELECT
             fts.rowid,
-            snippet(fts, 0, '<mark>', '</mark>', ' … ', 50) AS snippet,
+            snippet(fts, 0, '<mark>', '</mark>', ' … ', 80) AS snippet,
             bm25(fts) AS score
           FROM fts
           WHERE fts MATCH :q
