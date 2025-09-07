@@ -158,5 +158,43 @@ def open_pdf(p: str, disposition: str = "inline"):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
+import openai
+import os
+from fastapi import Body
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+@app.post("/rewrite_query")
+async def rewrite_query(data: dict = Body(...)):
+    q = data.get("q", "").strip()
+    if not q:
+        return {"query": ""}
+
+    # Simple heuristic: detect if it's already a boolean query
+    if any(op in q.upper() for op in [" AND ", " OR ", " W/", '"']):
+        return {"query": q}  # return unchanged
+
+    # Otherwise, call OpenAI to rewrite into structured query
+    prompt = f"""
+    Rewrite the following natural-language search into a precise boolean-style query
+    suitable for a legal full-text search engine of adjudication decisions. Use AND/OR, quotes for phrases,
+    and section numbers if mentioned.  You can use "w/[number]" as well to indicate proximity of one word to another.  Output only the query string.
+
+    Query: {q}
+    """
+
+    try:
+        resp = openai.ChatCompletion.create(
+            model="gpt-4o-mini",  # cheapest/fastest
+            messages=[{"role": "system", "content": "You are a legal search query assistant."},
+                      {"role": "user", "content": prompt}],
+            max_tokens=100,
+            temperature=0
+        )
+        rewritten = resp["choices"][0]["message"]["content"].strip()
+        return {"query": rewritten}
+    except Exception as e:
+        return {"query": q, "error": str(e)}
+
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
