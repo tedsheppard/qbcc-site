@@ -3,8 +3,12 @@ from fastapi import FastAPI, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-# OpenAI client
+# 🔹 Add this import
 from openai import OpenAI
+
+# 🔹 Create global client here
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
