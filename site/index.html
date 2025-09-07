@@ -775,10 +775,18 @@
   }
 }
 
- @media (max-width: 768px) {
+/* Desktop: search bar stays full width of container */
+.search-header .search-bar {
+  flex: 1;
+  max-width: 900px;
+  margin: 0; /* no side margin on desktop */
+}
+
+/* Mobile: add side padding so it's not edge-to-edge */
+@media (max-width: 768px) {
   .search-header .search-bar {
-    margin: 0 40px;      /* space from left/right edges */
-    padding: 14px 18px;  /* taller inside padding */
+    margin: 0 14px;      /* breathing room left/right */
+    padding: 14px 18px;  /* taller inside */
     border-radius: 32px;
   }
 
@@ -792,6 +800,7 @@
     padding: 12px 18px;
   }
 }
+
 
 
 </style>
