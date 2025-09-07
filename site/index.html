@@ -1183,7 +1183,6 @@ body {
         <div class="result">
           <h3>${caseName}</h3>
           <div class="meta">
-            ${caseNo ? `<strong>Decision No:</strong> ${caseNo}<br>` : ''}
             ${it.decision_date_norm ? `<strong>Date:</strong> ${formatAusDate(it.decision_date_norm)}<br>` : '<strong>Date:</strong> Unknown<br>'}
             ${it.adjudicator ? `<strong>Adjudicator:</strong> ${sanitize(it.adjudicator)}<br>` : ''}
             ${it.claimant ? `<strong>Claimant:</strong> ${sanitize(it.claimant)}<br>` : ''}
