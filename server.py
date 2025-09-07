@@ -1,7 +1,10 @@
 import os, re, shutil, sqlite3, requests
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+
+# OpenAI client
+from openai import OpenAI
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -141,6 +144,34 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         })
 
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
+
+@app.post("/rewrite_query")
+async def rewrite_query(req: Request):
+    data = await req.json()
+    query = data.get("query", "").strip()
+    if not query:
+        return JSONResponse({"rewritten": ""})
+
+    # Skip rewriting if query looks boolean-style
+    if any(op in query.upper() for op in [" AND ", " OR ", " W/"]) or '"' in query or "(" in query or ")" in query:
+        return JSONResponse({"rewritten": query})
+
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You rewrite verbose natural-language legal search questions into concise boolean/keyword queries."},
+                {"role": "user", "content": query}
+            ],
+            max_tokens=50,
+            temperature=0
+        )
+        rewritten = resp.choices[0].message.content.strip()
+        print(f"[GPT Rewrite] Original: {query} → Rewritten: {rewritten}")
+        return JSONResponse({"rewritten": rewritten})
+    except Exception as e:
+        print(f"[GPT Rewrite ERROR] {e}")
+        return JSONResponse({"rewritten": query, "error": str(e)})
 
 # ---------- PDF links via Google Cloud ----------
 GCS_BUCKET = "sopal-bucket"
