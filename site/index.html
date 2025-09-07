@@ -86,7 +86,7 @@ body {
 
   /* Search header */
   .search-header {
-    background: #fdfdfd;
+    background: #fcfcfc;
     padding: 20px 25px;
     border-bottom: 1px solid #ddd;
   }
@@ -198,7 +198,7 @@ body {
 
   /* Footer */
   .footer {
-    background: #fdfdfd;
+    background: #fcfcfc;
     color: #333;
     padding: 40px 20px 20px;
     margin-top: 60px;
@@ -940,7 +940,7 @@ body {
 
  /* Footer */
 .footer {
-  background: #fdfdfd;
+  background: #fcfcfc;
   color: #333;
   padding: 40px 20px 20px;
   margin-top: 80px;
@@ -1136,56 +1136,42 @@ body {
 
     let state = { q:'', claimant:'', respondent:'', limit:20, offset:0, total:0 };
 
-async function runSearch(page=1) {
-  $('#status').textContent = 'Searching…';
-  startLoadingBar();
+    async function runSearch(page=1){
+      $('#status').textContent = 'Searching…';
+      startLoadingBar();   // 🔥 ADD THIS LINE
 
-  let original = ($('#q')?.value || '').trim();
-  let rewritten = original;
+      state.q = ($('#q')?.value || '').trim();
+      state.claimant = ($('#claimant')?.value || '').trim();
+      state.respondent = ($('#respondent')?.value || '').trim();
+      state.limit = +($('#limit')?.value || 20);
+      state.offset = (page-1) * state.limit;
+      const params = new URLSearchParams();
+      state.sort = ($('#sort')?.value || 'newest');
+      params.set('sort', state.sort);
 
-  // Detect if the query looks boolean-style
-  const hasBooleanOps = /\b(AND|OR|W\/\d+)\b|["()]/i.test(original);
+      if (state.q) params.set('q', state.q);
+      if (state.claimant) params.set('claimant', state.claimant);
+      if (state.respondent) params.set('respondent', state.respondent);
+      params.set('limit', state.limit);
+      params.set('offset', state.offset);
 
-  if (original && !hasBooleanOps) {
-    try {
-      let res = await fetch('/rewrite_query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: original })
-      });
-      let data = await res.json();
-      if (data.rewritten) rewritten = data.rewritten;
-    } catch (e) {
-      console.error("Rewrite failed", e);
+      const res = await fetch('/search_fast?' + params.toString(), { headers: { 'Accept':'application/json' }});
+      const data = await res.json().catch(()=>({}));
+
+      finishLoadingBar();  // 🔥 ADD THIS LINE
+
+      state.total = data.total || 0;
+
+      $('#total').textContent = `Total: ${state.total.toLocaleString()} results`;
+      $('#status').textContent = 'Done.';
+
+      const items = data.items || [];
+      $('#results').innerHTML = items.length ? items.map(renderItem).join('') : '<p>No results.</p>';
+
+
+
+      renderPagination(page);
     }
-  }
-
-  // Use rewritten (or original if boolean-style) for the search
-  state.q = rewritten;
-  state.limit = +($('#limit')?.value || 20);
-  state.offset = (page-1) * state.limit;
-  state.sort = ($('#sort')?.value || 'newest');
-
-  const params = new URLSearchParams();
-  if (state.q) params.set('q', state.q);
-  params.set('limit', state.limit);
-  params.set('offset', state.offset);
-  params.set('sort', state.sort);
-
-  const res = await fetch('/search_fast?' + params.toString(), {
-    headers: { 'Accept': 'application/json' }
-  });
-  const data = await res.json().catch(()=>({}));
-
-  state.total = data.total || 0;
-  $('#total').textContent = `Total: ${state.total.toLocaleString()} results`;
-  $('#status').textContent = `Done.${rewritten !== original ? ""}`;
-  $('#results').innerHTML = (data.items || []).map(renderItem).join('');
-  renderPagination(page);
-
-  finishLoadingBar();
-}
-
 
 
     function renderItem(it){
