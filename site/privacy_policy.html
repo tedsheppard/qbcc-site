@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Sopal – Privacy Policy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Base styles matching main site */
+    body {
+      font-family: Inter, sans-serif;
+      margin: 0;
+      background: #ffffff;
+      color: #222;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .header {
+      background: #fdfdfd;
+      padding: 20px 25px;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      height: 31px;
+      margin-right: 20px;
+    }
+
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      color: #333;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #00c97c;
+    }
+
+    .nav-links a.active {
+      color: #00c97c;
+      font-weight: 600;
+    }
+
+    /* Main content */
+    .container {
+      max-width: 800px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 16px;
+    }
+
+    .last-updated {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .content-section {
+      margin-bottom: 40px;
+    }
+
+    .content-section h2 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 16px;
+      margin-top: 40px;
+    }
+
+    .content-section h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+      margin-top: 24px;
+    }
+
+    .content-section p {
+      margin-bottom: 16px;
+      color: #444;
+    }
+
+    .content-section ul {
+      margin-bottom: 16px;
+      padding-left: 20px;
+    }
+
+    .content-section li {
+      margin-bottom: 8px;
+      color: #444;
+    }
+
+    .highlight-box {
+      background: #f0fdf4;
+      border-left: 4px solid #00c97c;
+      padding: 20px;
+      margin: 24px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .highlight-box h4 {
+      margin: 0 0 12px 0;
+      color: #166534;
+      font-weight: 600;
+    }
+
+    .highlight-box p {
+      margin: 0;
+      color: #166534;
+    }
+
+    .contact-info {
+      background: #f9f9f9;
+      border: 1px solid #e1e1e1;
+      border-radius: 8px;
+      padding: 24px;
+      margin: 32px 0;
+    }
+
+    .contact-info h4 {
+      margin: 0 0 16px 0;
+      color: #333;
+    }
+
+    .contact-info p {
+      margin: 8px 0;
+      color: #555;
+    }
+
+    .toc {
+      background: #f9f9f9;
+      border: 1px solid #e1e1e1;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 40px;
+    }
+
+    .toc h3 {
+      margin: 0 0 16px 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .toc ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .toc a {
+      color: #00c97c;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .toc a:hover {
+      color: #00a568;
+      text-decoration: underline;
+    }
+
+    /* Footer */
+    .footer {
+      background: #fcfcfc;
+      color: #333;
+      padding: 40px 20px 20px;
+      margin-top: 80px;
+      border-top: 1px solid #ddd;
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .footer-left {
+      max-width: 400px;
+    }
+
+    .footer-logo {
+      height: 24px;
+      margin-bottom: 10px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-links a {
+      color: #333;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: #00c853;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      border-top: 1px solid #eee;
+      margin-top: 20px;
+      padding-top: 15px;
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .container {
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+
+      .page-title {
+        font-size: 28px;
+      }
+
+      .content-section h2 {
+        font-size: 22px;
+      }
+
+      .header-content {
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .nav-links {
+        margin: 0;
+        flex-wrap: wrap;
+      }
+
+      .footer-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <a href="/">
+        <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+      </a>
+      <div class="nav-links">
+        <a href="/">Search</a>
+        <a href="/feedback">Feedback</a>
+        <a href="/privacy" class="active">Privacy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <h1 class="page-title">Privacy Policy</h1>
+    <div class="last-updated">Last updated: January 15, 2025</div>
+
+    <!-- Table of Contents -->
+    <div class="toc">
+      <h3>Contents</h3>
+      <ul>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#information-we-collect">Information We Collect</a></li>
+        <li><a href="#how-we-use-information">How We Use Information</a></li>
+        <li><a href="#information-sharing">Information Sharing</a></li>
+        <li><a href="#data-security">Data Security</a></li>
+        <li><a href="#cookies">Cookies and Tracking</a></li>
+        <li><a href="#your-rights">Your Rights</a></li>
+        <li><a href="#retention">Data Retention</a></li>
+        <li><a href="#changes">Changes to Policy</a></li>
+        <li><a href="#contact">Contact Information</a></li>
+      </ul>
+    </div>
+
+    <div class="highlight-box">
+      <h4>Key Privacy Highlights</h4>
+      <p>SOPAL is designed with privacy in mind. We collect minimal personal information, don't sell your data, and use industry-standard security practices to protect your information.</p>
+    </div>
+
+    <!-- Overview -->
+    <div class="content-section" id="overview">
+      <h2>1. Overview</h2>
+      <p>SOPAL ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard information when you use our adjudication decision search platform.</p>
+      <p>SOPAL provides access to publicly available adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld). Our service is designed to be a valuable resource for legal professionals, construction industry participants, and researchers.</p>
+    </div>
+
+    <!-- Information We Collect -->
+    <div class="content-section" id="information-we-collect">
+      <h2>2. Information We Collect</h2>
+
+      <h3>Information You Provide</h3>
+      <ul>
+        <li><strong>Search Queries:</strong> The terms and filters you use when searching for adjudication decisions</li>
+        <li><strong>Feedback:</strong> When you submit feedback, we may collect your name, email address, and comments (all optional)</li>
+        <li><strong>Contact Information:</strong> If you contact us directly, we collect the information you provide</li>
+      </ul>
+
+      <h3>Information Automatically Collected</h3>
+      <ul>
+        <li><strong>Usage Data:</strong> Pages visited, time spent, features used, and interaction patterns</li>
+        <li><strong>Technical Data:</strong> IP address, browser type, device information, and operating system</li>
+        <li><strong>Performance Data:</strong> Page load times, search response times, and error reports</li>
+      </ul>
+
+      <h3>Information We Do Not Collect</h3>
+      <p>We do not collect:</p>
+      <ul>
+        <li>Personal identification documents</li>
+        <li>Financial information</li>
+        <li>Biometric data</li>
+        <li>Location data (beyond general geographic region from IP)</li>
+      </ul>
+    </div>
+
+    <!-- How We Use Information -->
+    <div class="content-section" id="how-we-use-information">
+      <h2>3. How We Use Information</h2>
+      <p>We use the information we collect to:</p>
+      <ul>
+        <li><strong>Provide and improve our service:</strong> Process searches, display results, and enhance user experience</li>
+        <li><strong>Understand usage patterns:</strong> Analyze how the platform is used to guide improvements</li>
+        <li><strong>Maintain security:</strong> Detect and prevent abuse, spam, and unauthorized access</li>
+        <li><strong>Respond to inquiries:</strong> Address feedback, support requests, and communications</li>
+        <li><strong>Legal compliance:</strong> Comply with applicable laws and regulations</li>
+      </ul>
+    </div>
+
+    <!-- Information Sharing -->
+    <div class="content-section" id="information-sharing">
+      <h2>4. Information Sharing</h2>
+      <p>We do not sell, trade, or rent your personal information. We may share information in these limited circumstances:</p>
+
+      <h3>Service Providers</h3>
+      <p>We work with trusted third-party service providers who assist us in operating the platform. These providers:</p>
+      <ul>
+        <li>Are contractually bound to protect your information</li>
+        <li>Can only use information to provide services to us</li>
+        <li>Include hosting providers, analytics services, and security monitoring</li>
+      </ul>
+
+      <h3>Legal Requirements</h3>
+      <p>We may disclose information if required by law or court order, or to:</p>
+      <ul>
+        <li>Protect our rights and property</li>
+        <li>Ensure user safety and security</li>
+        <li>Investigate potential violations of our terms</li>
+      </ul>
+
+      <h3>Business Transfers</h3>
+      <p>In the event of a merger, acquisition, or asset sale, user information may be transferred as part of that transaction.</p>
+    </div>
+
+    <!-- Data Security -->
+    <div class="content-section" id="data-security">
+      <h2>5. Data Security</h2>
+      <p>We implement industry-standard security measures to protect your information:</p>
+      <ul>
+        <li><strong>Encryption:</strong> Data is encrypted in transit using HTTPS/TLS</li>
+        <li><strong>Access Controls:</strong> Strict access controls limit who can view personal information</li>
+        <li><strong>Regular Security Reviews:</strong> We regularly assess and update our security practices</li>
+        <li><strong>Incident Response:</strong> We have procedures to respond to potential security incidents</li>
+      </ul>
+      <p>While we strive to protect your information, no method of transmission over the Internet is 100% secure. We cannot guarantee absolute security but are committed to maintaining strong protective measures.</p>
+    </div>
+
+    <!-- Cookies -->
+    <div class="content-section" id="cookies">
+      <h2>6. Cookies and Tracking</h2>
+      <p>SOPAL uses minimal tracking technologies:</p>
+
+      <h3>Essential Cookies</h3>
+      <ul>
+        <li>Theme preferences (light/dark mode)</li>
+        <li>Basic session management</li>
+      </ul>
+
+      <h3>Analytics</h3>
+      <p>We use basic analytics to understand how the platform is used. This helps us improve functionality and user experience. All analytics data is aggregated and anonymized.</p>
+
+      <h3>Your Choices</h3>
+      <p>You can control cookies through your browser settings. Note that disabling certain cookies may affect platform functionality.</p>
+    </div>
+
+    <!-- Your Rights -->
+    <div class="content-section" id="your-rights">
+      <h2>7. Your Rights</h2>
+      <p>Depending on your location, you may have certain rights regarding your personal information:</p>
+      <ul>
+        <li><strong>Access:</strong> Request information about data we collect about you</li>
+        <li><strong>Correction:</strong> Request correction of inaccurate information</li>
+        <li><strong>Deletion:</strong> Request deletion of your personal information</li>
+        <li><strong>Portability:</strong> Request a copy of your data in a machine-readable format</li>
+        <li><strong>Objection:</strong> Object to certain processing of your information</li>
+      </ul>
+      <p>To exercise these rights, please contact us using the information provided below.</p>
+    </div>
+
+    <!-- Data Retention -->
+    <div class="content-section" id="retention">
+      <h2>8. Data Retention</h2>
+      <p>We retain information only as long as necessary to provide our services and comply with legal obligations:</p>
+      <ul>
+        <li><strong>Search queries:</strong> Anonymized and aggregated for analytics (indefinitely)</li>
+        <li><strong>Feedback submissions:</strong> Retained for as long as necessary to address your inquiry</li>
+        <li><strong>Usage logs:</strong> Typically retained for 12 months for security and performance analysis</li>
+        <li><strong>Technical data:</strong> Anonymized after 30 days, aggregated data retained indefinitely</li>
+      </ul>
+    </div>
+
+    <!-- Changes -->
+    <div class="content-section" id="changes">
+      <h2>9. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time to reflect changes in our practices or for legal, operational, or regulatory reasons.</p>
+      <p>When we make changes:</p>
+      <ul>
+        <li>We will update the "Last updated" date at the top of this policy</li>
+        <li>For material changes, we may provide additional notice on our platform</li>
+        <li>Your continued use of SOPAL after changes constitutes acceptance of the updated policy</li>
+      </ul>
+    </div>
+
+    <!-- Contact -->
+    <div class="content-section" id="contact">
+      <h2>10. Contact Information</h2>
+      <div class="contact-info">
+        <h4>Questions About This Privacy Policy?</h4>
+        <p>If you have questions about this Privacy Policy, need to exercise your privacy rights, or want to report a concern, please contact us:</p>
+        <p><strong>Email:</strong> privacy@sopal.com.au</p>
+        <p><strong>Feedback Form:</strong> <a href="/feedback">Submit feedback through our platform</a></p>
+        <p><strong>Response Time:</strong> We aim to respond to privacy inquiries within 7 business days</p>
+      </div>
+    </div>
+
+    <!-- Australian Privacy -->
+    <div class="content-section">
+      <h2>11. Australian Privacy Considerations</h2>
+      <p>As SOPAL focuses on Queensland adjudication decisions, we comply with Australian privacy laws including the Privacy Act 1988 (Cth) where applicable.</p>
+      <p>The adjudication decisions we provide access to are public documents that have been published by the relevant authorities. We do not create or modify this content - we simply provide a search interface to help users find relevant decisions.</p>
+      <p>If you believe your personal information appears inappropriately in an adjudication decision, you should contact the relevant adjudication authority, not SOPAL, as we do not control the content of these decisions.</p>
+    </div>
+
+    <div class="highlight-box">
+      <h4>Remember</h4>
+      <p>This Privacy Policy applies only to SOPAL. The adjudication decisions accessible through our platform are public documents governed by separate legal frameworks and privacy considerations.</p>
+    </div>

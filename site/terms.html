@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Sopal – Terms of Service</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Base styles matching main site */
+    body {
+      font-family: Inter, sans-serif;
+      margin: 0;
+      background: #ffffff;
+      color: #222;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .header {
+      background: #fdfdfd;
+      padding: 20px 25px;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      height: 31px;
+      margin-right: 20px;
+    }
+
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      color: #333;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #00c97c;
+    }
+
+    .nav-links a.active {
+      color: #00c97c;
+      font-weight: 600;
+    }
+
+    /* Main content */
+    .container {
+      max-width: 800px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 16px;
+    }
+
+    .last-updated {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .content-section {
+      margin-bottom: 40px;
+    }
+
+    .content-section h2 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 16px;
+      margin-top: 40px;
+    }
+
+    .content-section h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+      margin-top: 24px;
+    }
+
+    .content-section p {
+      margin-bottom: 16px;
+      color: #444;
+    }
+
+    .content-section ul {
+      margin-bottom: 16px;
+      padding-left: 20px;
+    }
+
+    .content-section li {
+      margin-bottom: 8px;
+      color: #444;
+    }
+
+    .highlight-box {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 20px;
+      margin: 24px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .highlight-box h4 {
+      margin: 0 0 12px 0;
+      color: #92400e;
+      font-weight: 600;
+    }
+
+    .highlight-box p {
+      margin: 0;
+      color: #92400e;
+    }
+
+    .legal-box {
+      background: #f0fdf4;
+      border-left: 4px solid #00c97c;
+      padding: 20px;
+      margin: 24px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .legal-box h4 {
+      margin: 0 0 12px 0;
+      color: #166534;
+      font-weight: 600;
+    }
+
+    .legal-box p {
+      margin: 0;
+      color: #166534;
+    }
+
+    .contact-info {
+      background: #f9f9f9;
+      border: 1px solid #e1e1e1;
+      border-radius: 8px;
+      padding: 24px;
+      margin: 32px 0;
+    }
+
+    .contact-info h4 {
+      margin: 0 0 16px 0;
+      color: #333;
+    }
+
+    .contact-info p {
+      margin: 8px 0;
+      color: #555;
+    }
+
+    .toc {
+      background: #f9f9f9;
+      border: 1px solid #e1e1e1;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 40px;
+    }
+
+    .toc h3 {
+      margin: 0 0 16px 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .toc ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .toc a {
+      color: #00c97c;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .toc a:hover {
+      color: #00a568;
+      text-decoration: underline;
+    }
+
+    .important-notice {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 32px 0;
+    }
+
+    .important-notice h4 {
+      margin: 0 0 12px 0;
+      color: #dc2626;
+      font-weight: 600;
+    }
+
+    .important-notice p {
+      margin: 8px 0;
+      color: #dc2626;
+    }
+
+    /* Footer */
+    .footer {
+      background: #fcfcfc;
+      color: #333;
+      padding: 40px 20px 20px;
+      margin-top: 80px;
+      border-top: 1px solid #ddd;
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .footer-left {
+      max-width: 400px;
+    }
+
+    .footer-logo {
+      height: 24px;
+      margin-bottom: 10px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-links a {
+      color: #333;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: #00c853;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      border-top: 1px solid #eee;
+      margin-top: 20px;
+      padding-top: 15px;
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .container {
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+
+      .page-title {
+        font-size: 28px;
+      }
+
+      .content-section h2 {
+        font-size: 22px;
+      }
+
+      .header-content {
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .nav-links {
+        margin: 0;
+        flex-wrap: wrap;
+      }
+
+      .footer-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <a href="/">
+        <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+      </a>
+      <div class="nav-links">
+        <a href="/">Search</a>
+        <a href="/feedback">Feedback</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms" class="active">Terms</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <h1 class="page-title">Terms of Service</h1>
+    <div class="last-updated">Last updated: January 15, 2025</div>
+
+    <!-- Table of Contents -->
+    <div class="toc">
+      <h3>Contents</h3>
+      <ul>
+        <li><a href="#acceptance">Acceptance of Terms</a></li>
+        <li><a href="#description">Service Description</a></li>
+        <li><a href="#user-obligations">User Obligations</a></li>
+        <li><a href="#prohibited-uses">Prohibited Uses</a></li>
+        <li><a href="#content">Content and Accuracy</a></li>
+        <li><a href="#intellectual-property">Intellectual Property</a></li>
+        <li><a href="#disclaimers">Disclaimers</a></li>
+        <li><a href="#limitation-liability">Limitation of Liability</a></li>
+        <li><a href="#indemnification">Indemnification</a></li>
+        <li><a href="#termination">Termination</a></li>
+        <li><a href="#governing-law">Governing Law</a></li>
+        <li><a href="#changes">Changes to Terms</a></li>
+        <li><a href="#contact">Contact Information</a></li>
+      </ul>
+    </div>
+
+    <div class="important-notice">
+      <h4>Important Legal Notice</h4>
+      <p>These terms contain important limitations on SOPAL's liability and your rights. Please read them carefully before using our service.</p>
+    </div>
+
+    <!-- Acceptance -->
+    <div class="content-section" id="acceptance">
+      <h2>1. Acceptance of Terms</h2>
+      <p>By accessing and using SOPAL (the "Service"), you accept and agree to be bound by the terms and provision of this agreement ("Terms of Service"). If you do not agree to these terms, you should not use this Service.</p>
+      <p>These Terms of Service apply to all users of the Service, including visitors, registered users, and any other users of the Service.</p>
+    </div>
+
+    <!-- Service Description -->
+    <div class="content-section" id="description">
+      <h2>2. Service Description</h2>
+      <p>SOPAL is a search platform that provides access to publicly available adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld) and related Queensland legislation.</p>
+
+      <h3>What We Provide</h3>
+      <ul>
+        <li>Search functionality across adjudication decisions</li>
+        <li>Document viewing and download capabilities</li>
+        <li>Filtering and sorting tools</li>
+        <li>Basic analytics and insights</li>
+      </ul>
+
+      <h3>What We Do Not Provide</h3>
+      <ul>
+        <li>Legal advice or interpretation</li>
+        <li>Creation or modification of decisions</li>
+        <li>Guarantees of completeness or accuracy</li>
+        <li>Real-time updates of new decisions</li>
+      </ul>
+    </div>
+
+    <!-- User Obligations -->
+    <div class="content-section" id="user-obligations">
+      <h2>3. User Obligations</h2>
+      <p>By using SOPAL, you agree to:</p>
+      <ul>
+        <li><strong>Use the Service lawfully:</strong> Comply with all applicable laws and regulations</li>
+        <li><strong>Respect intellectual property:</strong> Not infringe on copyrights or other intellectual property rights</li>
+        <li><strong>Maintain security:</strong> Keep any access credentials secure and confidential</li>
+        <li><strong>Use reasonable resources:</strong> Not overload or abuse our systems</li>
+        <li><strong>Provide accurate information:</strong> When submitting feedback or contacting us</li>
+      </ul>
+    </div>
+
+    <!-- Prohibited Uses -->
+    <div class="content-section" id="prohibited-uses">
+      <h2>4. Prohibited Uses</h2>
+      <p>You may not use SOPAL for any of the following purposes:</p>
+
+      <h3>Technical Abuse</h3>
+      <ul>
+        <li>Automated data scraping or bulk downloading without permission</li>
+        <li>Attempting to gain unauthorized access to our systems</li>
+        <li>Introducing viruses, malware, or other harmful code</li>
+        <li>Reverse engineering or attempting to derive source code</li>
+      </ul>
+
+      <h3>Content Misuse</h3>
+      <ul>
+        <li>Republishing decisions without acknowledging the original source</li>
+        <li>Modifying or misrepresenting decision content</li>
+        <li>Using content for defamatory or harassing purposes</li>
+        <li>Commercial exploitation without appropriate licensing</li>
+      </ul>
+
+      <h3>Legal Violations</h3>
+      <ul>
+        <li>Any illegal activity or violation of applicable laws</li>
+        <li>Breach of privacy or confidentiality obligations</li>
+        <li>Violation of court orders or legal restrictions</li>
+      </ul>
+    </div>
+
+    <!-- Content -->
+    <div class="content-section" id="content">
+      <h2>5. Content and Accuracy</h2>
+
+      <div class="legal-box">
+        <h4>Important: No Legal Advice</h4>
+        <p>SOPAL provides access to legal documents but does not provide legal advice. Always consult with qualified legal professionals for specific legal matters.</p>
+      </div>
+
+      <h3>Content Sources</h3>
+      <p>The adjudication decisions available through SOPAL are:</p>
+      <ul>
+        <li>Public documents published by relevant Queensland authorities</li>
+        <li>Reproduced in their original form without modification by SOPAL</li>
+        <li>Subject to the original copyright and licensing terms</li>
+        <li>May contain errors or omissions from the original publication process</li>
+      </ul>
+
+      <h3>Accuracy and Completeness</h3>
+      <p>While we strive to provide accurate and complete information:</p>
+      <ul>
+        <li>We do not guarantee the accuracy, completeness, or timeliness of any content</li>
+        <li>Decisions may not be available immediately upon publication</li>
+        <li>Technical issues may affect search results or document access</li>
+        <li>Users should verify information against official sources when critical</li>
+      </ul>
+    </div>
+
+    <!-- Intellectual Property -->
+    <div class="content-section" id="intellectual-property">
+      <h2>6. Intellectual Property</h2>
+
+      <h3>SOPAL Platform</h3>
+      <p>The SOPAL platform, including its design, functionality, and original content, is owned by SOPAL and protected by intellectual property laws. Users may not:</p>
+      <ul>
+        <li>Copy, modify, or distribute our platform code or design</li>
+        <li>Use our trademarks or branding without permission</li>
+        <li>Create derivative works based on our platform</li>
+      </ul>
+
+      <h3>Adjudication Decisions</h3>
+      <p>The adjudication decisions are:</p>
+      <ul>
+        <li>Public documents owned by the Queensland Government</li>
+        <li>Subject to Crown Copyright and other applicable licenses</li>
+        <li>Available for use under appropriate legal frameworks</li>
+        <li>Not owned or controlled by SOPAL</li>
+      </ul>
+    </div>
+
+    <!-- Disclaimers -->
+    <div class="content-section" id="disclaimers">
+      <h2>7. Disclaimers</h2>
+      <p>SOPAL is provided "as is" and "as available" without warranties of any kind, either express or implied, including but not limited to:</p>
+
+      <h3>No Warranties</h3>
+      <ul>
+        <li><strong>Accuracy:</strong> We do not warrant the accuracy of search results or document content</li>
+        <li><strong>Availability:</strong> We do not guarantee uninterrupted or error-free service</li>
+        <li><strong>Completeness:</strong> We do not warrant that all decisions are included or current</li>
+        <li><strong>Fitness for Purpose:</strong> We do not warrant suitability for any particular use</li>
+      </ul>
+
+      <h3>Third-Party Content</h3>
+      <p>SOPAL may contain links to third-party websites or reference third-party content. We are not responsible for the accuracy, legality, or content of external sites or resources.</p>
+    </div>
+
+    <!-- Limitation of Liability -->
+    <div class="content-section" id="limitation-liability">
+      <h2>8. Limitation of Liability</h2>
+
+      <div class="highlight-box">
+        <h4>Important Limitation</h4>
+        <p>To the fullest extent permitted by law, SOPAL shall not be liable for any indirect, incidental, special, consequential, or punitive damages.</p>
+      </div>
+
+      <p>In no event shall SOPAL's total liability to you exceed $100 AUD. This limitation applies to all claims, whether based on contract, tort, strict liability, or any other legal theory.</p>
+
+      <h3>Excluded Damages</h3>
+      <p>We are not liable for:</p>
+      <ul>
+        <li>Lost profits or business opportunities</li>
+        <li>Data loss or corruption</li>
+        <li>Legal costs or professional fees</li>
+        <li>Decisions made based on platform content</li>
+        <li>Service interruptions or technical issues</li>
+      </ul>
+    </div>
+
+    <!-- Indemnification -->
+    <div class="content-section" id="indemnification">
+      <h2>9. Indemnification</h2>
+      <p>You agree to indemnify and hold harmless SOPAL, its affiliates, officers, directors, employees, and agents from and against any claims, damages, obligations, losses, liabilities, costs, or debt, and expenses (including attorney's fees) arising from:</p>
+      <ul>
+        <li>Your use of the Service</li>
+        <li>Your violation of these Terms of Service</li>
+        <li>Your violation of any third-party rights, including intellectual property rights</li>
+        <li>Any content you submit or transmit through the Service</li>
+      </ul>
+    </div>
+
+    <!-- Termination -->
+    <div class="content-section" id="termination">
+      <h2>10. Termination</h2>
+      <p>We may terminate or suspend your access to SOPAL immediately, without prior notice, for any reason, including breach of these Terms of Service.</p>
+
+      <h3>Effect of Termination</h3>
+      <p>Upon termination:</p>
+      <ul>
+        <li>Your right to use the Service ceases immediately</li>
+        <li>We may delete any content or data associated with your use</li>
+        <li>Provisions regarding liability, indemnification, and dispute resolution survive</li>
+      </ul>
+    </div>
+
+    <!-- Governing Law -->
+    <div class="content-section" id="governing-law">
+      <h2>11. Governing Law</h2>
+      <p>These Terms of Service are governed by and construed in accordance with the laws of Queensland, Australia. Any disputes arising from these terms or your use of SOPAL shall be subject to the exclusive jurisdiction of the courts of Queensland.</p>
+
+      <h3>Dispute Resolution</h3>
+      <p>Before initiating formal legal proceedings, we encourage users to:</p>
+      <ul>
+        <li>Contact us directly to resolve issues informally</li>
+        <li>Provide clear details of any concerns or disputes</li>
+        <li>Allow reasonable time for us to investigate and respond</li>
+      </ul>
+    </div>
+
+    <!-- Changes -->
+    <div class="content-section" id="changes">
+      <h2>12. Changes to Terms</h2>
+      <p>We reserve the right to modify these Terms of Service at any time. When we make changes:</p>
+      <ul>
+        <li>We will update the "Last updated" date</li>
+        <li>Material changes will be prominently posted on the platform</li>
+        <li>Your continued use constitutes acceptance of the modified terms</li>
+        <li>If you disagree with changes, you should stop using the Service</li>
+      </ul>
+    </div>
+
+    <!-- Contact -->
+    <div class="content-section" id="contact">
+      <h2>13. Contact Information</h2>
+      <div class="contact-info">
+        <h4>Questions About These Terms?</h4>
+        <p>If you have questions about these Terms of Service, please contact us:</p>
+        <p><strong>Email:</strong> legal@sopal.com.au</p>
+        <p><strong>Feedback Form:</strong> <a href="/feedback">Submit through our platform</a></p>
+        <p><strong>Response Time:</strong> We aim to respond to legal inquiries within 7 business days</p>
+      </div>
+    </div>
+
+    <div class="legal-box">
+      <h4>Final Reminders</h4>
+      <p>These terms constitute the entire agreement between you and SOPAL regarding your use of the Service. If any provision is found unenforceable, the remainder shall remain in full force and effect.</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+        <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+      </div>
+      <div class="footer-links">
+        <a href="/feedback">Send feedback</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 SOPAL. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>
