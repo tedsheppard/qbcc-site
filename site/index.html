@@ -398,13 +398,21 @@ body {
     --primary-green: #08cc7c;
   }
 
-  mark {
-    background: linear-gradient(120deg, var(--primary-green), #09a867);
-    color: white;
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-weight: 350;
-  }
+/* Highlight style */
+mark {
+  background: #b9f6ca;   /* flat light green */
+  color: #000;           /* dark text */
+  padding: 0 1px;        /* very minimal padding */
+  border-radius: 1px;    /* subtle rounding */
+  font-weight: inherit;  /* don’t over-emphasise */
+}
+
+/* Dark mode highlight */
+.dark mark {
+  background: #2e7d32;   /* deep green for dark background */
+  color: #e0ffe0;        /* light text for contrast */
+}
+
 
  /* --- Mobile responsiveness --- */
 @media (max-width: 768px) {
