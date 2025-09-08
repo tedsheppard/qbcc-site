@@ -1,13 +1,13 @@
 import os, re, shutil, sqlite3, requests
-from fastapi import FastAPI, Query, Form
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Query, Form, Request
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from email.message import EmailMessage
 import aiosmtplib
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
-PDF_ROOT = os.path.join(ROOT, 'pdf')
+PDF_ROOT = os.path.join(ROOT, "pdf")
 SITE_DIR = os.path.join(ROOT, "site")
 
 # ensure DB lives in /tmp for faster access
@@ -26,10 +26,6 @@ con.execute("PRAGMA mmap_size = 30000000000")  # 30GB if kernel allows
 MEILI_URL = os.getenv("MEILI_URL", "http://127.0.0.1:7700")
 MEILI_KEY = os.getenv("MEILI_MASTER_KEY", "")
 MEILI_INDEX = "decisions"
-
-# smtp config (use your App Password via Render env var)
-SMTP_USER = "sopal.aus@gmail.com"
-SMTP_PASS = os.getenv("SMTP_PASSWORD")
 
 app = FastAPI()
 
@@ -67,11 +63,9 @@ def health():
 
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "relevance"):
-    # boolean / NEAR → SQLite
     if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I) or re.search(r'\bw/\d+\b', q, flags=re.I) or re.search(r'\bNEAR/\d+\b', q, flags=re.I):
         nq = preprocess_sqlite_query(q)
         total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq}).fetchone()[0]
-
         sql = """
           SELECT
             fts.rowid,
@@ -83,7 +77,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
           LIMIT :limit OFFSET :offset
         """
         rows = con.execute(sql, {"q": nq, "limit": limit, "offset": offset}).fetchall()
-
         items = []
         for r in rows:
             meta = con.execute("""
@@ -97,10 +90,8 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             d["id"] = r["rowid"]
             d["snippet"] = r["snippet"]
             items.append(d)
-
         return {"total": total, "items": items}
 
-    # otherwise → Meili
     payload = {
         "q": q,
         "limit": limit,
@@ -116,7 +107,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         "attributesToCrop": ["content"],
         "cropLength": 40
     }
-
     if sort == "newest":
         payload["sort"] = ["id:desc"]
     elif sort == "oldest":
@@ -125,11 +115,9 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         payload["sort"] = ["claimant:asc"]
     elif sort == "ztoa":
         payload["sort"] = ["claimant:desc"]
-
     headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
     res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
     data = res.json()
-
     items = []
     for hit in data.get("hits", []):
         snippet = hit.get("_formatted", {}).get("content", "")
@@ -144,7 +132,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             "act": hit.get("act"),
             "snippet": snippet
         })
-
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
 
 # ---------- PDF links via Google Cloud ----------
@@ -162,7 +149,7 @@ def open_pdf(p: str, disposition: str = "inline"):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
-# ---------- feedback email ----------
+# ---------- FEEDBACK FORM ----------
 @app.post("/send-feedback")
 async def send_feedback(
     type: str = Form(...),
@@ -175,10 +162,9 @@ async def send_feedback(
     device: str = Form("")
 ):
     msg = EmailMessage()
-    msg["From"] = f"SOPAL <{SMTP_USER}>"
-    msg["To"] = SMTP_USER
+    msg["From"] = "SOPAL <sopal.aus@gmail.com>"
+    msg["To"] = "sopal.aus@gmail.com"
     msg["Subject"] = f"[{type.upper()}] {subject}"
-
     body = f"""
 Feedback Type: {type}
 Name: {name}
@@ -198,8 +184,8 @@ Details:
             hostname="smtp.gmail.com",
             port=587,
             start_tls=True,
-            username=SMTP_USER,
-            password=SMTP_PASS,
+            username="sopal.aus@gmail.com",
+            password=os.getenv("SMTP_PASSWORD"),
         )
         return {"ok": True, "message": "Feedback sent successfully"}
     except Exception as e:
