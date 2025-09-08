@@ -204,5 +204,29 @@ async def send_feedback(
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
+import aiosmtplib
+
+@app.get("/test-email")
+async def test_email():
+    message = f"""From: SOPAL <sopal.aus@gmail.com>
+To: sopal.aus@gmail.com
+Subject: Test Email from SOPAL
+
+This is a test email from your Render server.
+"""
+
+    try:
+        await aiosmtplib.send(
+            message,
+            hostname="smtp.gmail.com",
+            port=587,
+            start_tls=True,
+            username="sopal.aus@gmail.com",
+            password=os.getenv("SMTP_PASSWORD"),  # your Google App Password
+        )
+        return {"ok": True, "message": "Email sent successfully"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
