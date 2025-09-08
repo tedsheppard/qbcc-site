@@ -1,7 +1,11 @@
 import os, re, shutil, sqlite3, requests
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+
+# NEW
+import aiosmtplib
+from email.message import EmailMessage
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -94,7 +98,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
         return {"total": total, "items": items}
 
-
     # otherwise → Meili
     payload = {
         "q": q,
@@ -113,9 +116,9 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
     }
 
     if sort == "newest":
-        payload["sort"] = ["id:desc"]   # highest EJS first
+        payload["sort"] = ["id:desc"]
     elif sort == "oldest":
-        payload["sort"] = ["id:asc"]    # lowest EJS first
+        payload["sort"] = ["id:asc"]
     elif sort == "atoz":
         payload["sort"] = ["claimant:asc"]
     elif sort == "ztoa":
@@ -152,11 +155,54 @@ def build_gcs_url(file_name: str) -> str:
 @app.get("/open")
 def open_pdf(p: str, disposition: str = "inline"):
     try:
-        # Just take the filename part of whatever is stored in pdf_path
         file_name = os.path.basename(p)
         return {"url": build_gcs_url(file_name)}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
+
+# ---------- feedback route ----------
+@app.post("/send-feedback")
+async def send_feedback(
+    type: str = Form(...),
+    name: str = Form(None),
+    email: str = Form(None),
+    subject: str = Form(...),
+    priority: str = Form(...),
+    details: str = Form(...),
+    browser: str = Form(None),
+    device: str = Form(None),
+):
+    msg = EmailMessage()
+    msg["From"] = "no-reply@sopal.com"
+    msg["To"] = "sopal.aus@gmail.com"
+    msg["Subject"] = f"[Feedback] {subject}"
+
+    body = f"""
+    Type: {type}
+    Name: {name}
+    Email: {email}
+    Priority: {priority}
+
+    Details:
+    {details}
+
+    Browser: {browser}
+    Device: {device}
+    """
+    msg.set_content(body)
+
+    try:
+        await aiosmtplib.send(
+            msg,
+            hostname="smtp.gmail.com",
+            port=587,
+            start_tls=True,
+            username="sopal.aus@gmail.com",
+            password=os.getenv("SMTP_PASSWORD")  # keep in env, not hardcoded
+        )
+        return {"success": True, "message": "Feedback sent"}
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
