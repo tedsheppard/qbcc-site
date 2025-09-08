@@ -162,7 +162,7 @@ async def send_feedback(
     device: str = Form("")
 ):
     msg = EmailMessage()
-    msg["From"] = "SOPAL <sopal.aus@gmail.com>"
+    msg["From"] = "sopal.aus@gmail.com"
     msg["To"] = "sopal.aus@gmail.com"
     msg["Subject"] = f"[{type.upper()}] {subject}"
     body = f"""
