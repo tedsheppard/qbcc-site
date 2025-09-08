@@ -161,58 +161,38 @@ def open_pdf(p: str, disposition: str = "inline"):
         return JSONResponse({"error": str(e)}, status_code=400)
 
 # ---------- feedback route ----------
+from fastapi import Form
+from email.message import EmailMessage
+import aiosmtplib
+
 @app.post("/send-feedback")
 async def send_feedback(
     type: str = Form(...),
-    name: str = Form(None),
-    email: str = Form(None),
+    name: str = Form(""),
+    email: str = Form(""),
     subject: str = Form(...),
     priority: str = Form(...),
     details: str = Form(...),
-    browser: str = Form(None),
-    device: str = Form(None),
+    browser: str = Form(""),
+    device: str = Form("")
 ):
-    msg = EmailMessage()
-    msg["From"] = "no-reply@sopal.com"
-    msg["To"] = "sopal.aus@gmail.com"
-    msg["Subject"] = f"[Feedback] {subject}"
-
-    body = f"""
-    Type: {type}
-    Name: {name}
-    Email: {email}
-    Priority: {priority}
-
-    Details:
-    {details}
-
-    Browser: {browser}
-    Device: {device}
-    """
-    msg.set_content(body)
-
-    try:
-        await aiosmtplib.send(
-            msg,
-            hostname="smtp.gmail.com",
-            port=587,
-            start_tls=True,
-            username="sopal.aus@gmail.com",
-            password=os.getenv("SMTP_PASSWORD")  # keep in env, not hardcoded
-        )
-        return {"success": True, "message": "Feedback sent"}
-    except Exception as e:
-        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
-
-import aiosmtplib
-
-@app.get("/test-email")
-async def test_email():
     msg = EmailMessage()
     msg["From"] = "sopal.aus@gmail.com"
     msg["To"] = "sopal.aus@gmail.com"
-    msg["Subject"] = "Test Email from SOPAL"
-    msg.set_content("This is a test email from your Render server.")
+    msg["Subject"] = f"[{type.upper()}] {subject}"
+
+    body = f"""
+Feedback Type: {type}
+Name: {name}
+Email: {email}
+Priority: {priority}
+Browser: {browser}
+Device: {device}
+
+Details:
+{details}
+"""
+    msg.set_content(body)
 
     try:
         await aiosmtplib.send(
@@ -223,7 +203,7 @@ async def test_email():
             username="sopal.aus@gmail.com",
             password=os.getenv("SMTP_PASSWORD"),
         )
-        return {"ok": True, "message": "Email sent successfully"}
+        return {"ok": True, "message": "Feedback sent successfully"}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
