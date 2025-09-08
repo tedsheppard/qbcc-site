@@ -63,8 +63,10 @@ def health():
 
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "relevance"):
+    # --- Boolean / proximity queries handled by SQLite FTS ---
     if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I) or re.search(r'\bw/\d+\b', q, flags=re.I) or re.search(r'\bNEAR/\d+\b', q, flags=re.I):
         nq = preprocess_sqlite_query(q)
+
         total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq}).fetchone()[0]
         sql = """
           SELECT
@@ -77,19 +79,23 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
           LIMIT :limit OFFSET :offset
         """
         rows = con.execute(sql, {"q": nq, "limit": limit, "offset": offset}).fetchall()
+
         items = []
         for r in rows:
+            # fetch metadata by joining docs_meta on docs.id
             meta = con.execute("""
-              SELECT claimant, respondent, adjudicator, decision_date, decision_date_norm,
-                     act, reference, pdf_path
-              FROM docs_meta
-              LEFT JOIN docs_fresh ON docs_meta.ejs_id = docs_fresh.ejs_id
-              WHERE docs_fresh.id = ?
+              SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
+                     m.act, m.reference, d.path AS pdf_path
+              FROM docs d
+              LEFT JOIN docs_meta m ON d.id = m.ejs_id
+              WHERE d.rowid = ?
             """, (r["rowid"],)).fetchone()
+
             d = dict(meta) if meta else {}
             d["id"] = r["rowid"]
             d["snippet"] = r["snippet"]
             items.append(d)
+
         return {"total": total, "items": items}
 
     payload = {
