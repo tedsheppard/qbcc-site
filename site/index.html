@@ -196,6 +196,36 @@ body {
   }
   .pagination button:hover { text-decoration: underline; }
 
+  /* Footer */
+  .footer {
+    background: #fcfcfc;
+    color: #333;
+    padding: 40px 20px 20px;
+    margin-top: 60px;
+    border-top: 1px solid #ddd;
+  }
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: auto;
+  }
+  .footer-left { max-width: 400px; }
+  .footer-logo { height: 24px; margin-bottom: 10px; }
+  .footer-links { display: flex; gap: 20px; }
+  .footer-links a { color: #333; text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: #00c853; }
+  .footer-bottom {
+    text-align: center;
+    border-top: 1px solid #eee;
+    margin-top: 20px;
+    padding-top: 15px;
+    font-size: 0.85em;
+    color: #666;
+  }
+
   /* Filters sidebar (disabled for now) */
   .filters-sidebar { display: none !important; }
 
@@ -577,6 +607,20 @@ mark {
     font-size: 14px;
   }
 
+
+  /* Footer simplified */
+  .footer-content {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+  }
 }
 
 @media (min-width: 769px) {
@@ -953,7 +997,6 @@ mark {
   color: #666;
 }
 
-
 </style>
 
 </head>
@@ -1315,22 +1358,24 @@ function formatAusDate(iso) {
 
     </script>
 
-<!-- Footer -->
 <footer class="footer">
   <div class="footer-content">
     <div class="footer-left">
-      <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+      <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
       <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
     </div>
-    <div class="footer-links">
-      <a href="/feedback.html">Send feedback</a>
-      <a href="/privacy.html">Privacy</a>
-      <a href="/terms.html">Terms</a>
-    </div>
+
+<div class="footer-links">
+  <a href="feedback.html">Send feedback</a>
+  <a href="privacy.html">Privacy</a>
+  <a href="terms.html">Terms</a>
+</div>
   </div>
   <div class="footer-bottom">
     <p>© 2025 SOPAL. All rights reserved.</p>
   </div>
+
+
 </footer>
 
 </body>
