@@ -1,11 +1,9 @@
 import os, re, shutil, sqlite3, requests
 from fastapi import FastAPI, Query, Form
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-
-# NEW
-import aiosmtplib
 from email.message import EmailMessage
+import aiosmtplib
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -28,6 +26,10 @@ con.execute("PRAGMA mmap_size = 30000000000")  # 30GB if kernel allows
 MEILI_URL = os.getenv("MEILI_URL", "http://127.0.0.1:7700")
 MEILI_KEY = os.getenv("MEILI_MASTER_KEY", "")
 MEILI_INDEX = "decisions"
+
+# smtp config (use your App Password via Render env var)
+SMTP_USER = "sopal.aus@gmail.com"
+SMTP_PASS = os.getenv("SMTP_PASSWORD")
 
 app = FastAPI()
 
@@ -160,11 +162,7 @@ def open_pdf(p: str, disposition: str = "inline"):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
-# ---------- feedback route ----------
-from fastapi import Form
-from email.message import EmailMessage
-import aiosmtplib
-
+# ---------- feedback email ----------
 @app.post("/send-feedback")
 async def send_feedback(
     type: str = Form(...),
@@ -177,8 +175,8 @@ async def send_feedback(
     device: str = Form("")
 ):
     msg = EmailMessage()
-    msg["From"] = "sopal.aus@gmail.com"
-    msg["To"] = "sopal.aus@gmail.com"
+    msg["From"] = f"SOPAL <{SMTP_USER}>"
+    msg["To"] = SMTP_USER
     msg["Subject"] = f"[{type.upper()}] {subject}"
 
     body = f"""
@@ -200,13 +198,12 @@ Details:
             hostname="smtp.gmail.com",
             port=587,
             start_tls=True,
-            username="sopal.aus@gmail.com",
-            password=os.getenv("SMTP_PASSWORD"),
+            username=SMTP_USER,
+            password=SMTP_PASS,
         )
         return {"ok": True, "message": "Feedback sent successfully"}
     except Exception as e:
         return {"ok": False, "error": str(e)}
-
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
