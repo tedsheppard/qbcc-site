@@ -208,25 +208,25 @@ import aiosmtplib
 
 @app.get("/test-email")
 async def test_email():
-    message = f"""From: SOPAL <sopal.aus@gmail.com>
-To: sopal.aus@gmail.com
-Subject: Test Email from SOPAL
-
-This is a test email from your Render server.
-"""
+    msg = EmailMessage()
+    msg["From"] = "sopal.aus@gmail.com"
+    msg["To"] = "sopal.aus@gmail.com"
+    msg["Subject"] = "Test Email from SOPAL"
+    msg.set_content("This is a test email from your Render server.")
 
     try:
         await aiosmtplib.send(
-            message,
+            msg,
             hostname="smtp.gmail.com",
             port=587,
             start_tls=True,
             username="sopal.aus@gmail.com",
-            password=os.getenv("SMTP_PASSWORD"),  # your Google App Password
+            password=os.getenv("SMTP_PASSWORD"),
         )
         return {"ok": True, "message": "Email sent successfully"}
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
