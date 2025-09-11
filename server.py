@@ -1,6 +1,6 @@
 import os, re, shutil, sqlite3, requests
 from fastapi import FastAPI, Query, Form, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from email.message import EmailMessage
 import aiosmtplib
@@ -26,7 +26,7 @@ con.execute("PRAGMA mmap_size = 30000000000")  # 30GB if kernel allows
 def ensure_fts():
     try:
         con.execute("DROP TABLE IF EXISTS fts;")
-        con.execute("CREATE VIRTUAL TABLE fts USING fts4(full_text, content='docs_fresh');")
+        con.execute("CREATE VIRTUAL TABLE fts USING fts4(full_text, content='docs_fresh', tokenize=unicode61);")
         con.execute("INSERT INTO fts(fts) VALUES('rebuild');")
         con.commit()
     except Exception as e:
@@ -57,7 +57,6 @@ def parse_near(q: str):
         left = left[1:-1]
     if right.startswith('"') and right.endswith('"'):
         right = right[1:-1]
-    # FTS4 supports NEAR/n
     return f'"{left}" NEAR/{dist} "{right}"'
 
 def preprocess_sqlite_query(q: str) -> str:
@@ -93,7 +92,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
         items = []
         for r in rows:
-            # fetch metadata by joining docs_fresh with docs_meta
             meta = con.execute("""
               SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
                      m.act, d.reference, d.pdf_path
@@ -104,7 +102,12 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
             d = dict(meta) if meta else {}
             d["id"] = r["rowid"]
-            d["snippet"] = r["snippet"].replace("[", "<mark>").replace("]", "</mark>")
+
+            # clean up snippet: strip stray digits, replace markers with <mark>
+            snippet_raw = r["snippet"]
+            snippet_clean = re.sub(r'\b\d+(?=[A-Za-z])', '', snippet_raw)
+            d["snippet"] = snippet_clean.replace("[", "<mark>").replace("]", "</mark>")
+
             items.append(d)
 
         return {"total": total, "items": items}
@@ -151,7 +154,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             "snippet": snippet
         })
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
-
 
 # ---------- PDF links via Google Cloud ----------
 GCS_BUCKET = "sopal-bucket"
