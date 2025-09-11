@@ -93,11 +93,12 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
         items = []
         for r in rows:
+            # fetch metadata by joining docs_fresh with docs_meta
             meta = con.execute("""
               SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
-                     m.act, m.reference, d.path AS pdf_path
-              FROM docs d
-              LEFT JOIN docs_meta m ON d.id = m.ejs_id
+                     m.act, d.reference, d.pdf_path
+              FROM docs_fresh d
+              LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
               WHERE d.rowid = ?
             """, (r["rowid"],)).fetchone()
 
@@ -150,6 +151,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             "snippet": snippet
         })
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
+
 
 # ---------- PDF links via Google Cloud ----------
 GCS_BUCKET = "sopal-bucket"
