@@ -85,10 +85,8 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
           SELECT
             fts.rowid,
             snippet(fts, 0, '<mark>', '</mark>', ' … ', 80) AS snippet,
-            bm25(fts) AS score
           FROM fts
           WHERE fts MATCH :q
-          ORDER BY score
           LIMIT :limit OFFSET :offset
         """
         rows = con.execute(sql, {"q": nq, "limit": limit, "offset": offset}).fetchall()
