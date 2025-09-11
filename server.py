@@ -83,7 +83,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         sql = """
           SELECT
             fts.rowid,
-            snippet(fts, 0, '[', ']', ' … ', 80) AS snippet
+            snippet(fts, 0, '', '', ' … ', 80) AS snippet
           FROM fts
           WHERE fts MATCH :q
           LIMIT :limit OFFSET :offset
@@ -92,6 +92,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
         items = []
         for r in rows:
+            # fetch metadata
             meta = con.execute("""
               SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
                      m.act, d.reference, d.pdf_path
@@ -103,11 +104,18 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             d = dict(meta) if meta else {}
             d["id"] = r["rowid"]
 
-            # clean up snippet: strip stray digits, replace markers with <mark>
+            # clean snippet and add custom highlighting
             snippet_raw = r["snippet"]
-            snippet_clean = re.sub(r'\b\d+(?=[A-Za-z])', '', snippet_raw)
-            d["snippet"] = snippet_clean.replace("[", "<mark>").replace("]", "</mark>")
+            terms = re.findall(r'\w+', q)  # extract all terms from query
+            snippet_clean = snippet_raw
+            for term in terms:
+                snippet_clean = re.sub(
+                    fr'(?i)\b({re.escape(term)})\b',
+                    r'<mark>\1</mark>',
+                    snippet_clean
+                )
 
+            d["snippet"] = snippet_clean
             items.append(d)
 
         return {"total": total, "items": items}
@@ -154,6 +162,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             "snippet": snippet
         })
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
+
 
 # ---------- PDF links via Google Cloud ----------
 GCS_BUCKET = "sopal-bucket"
