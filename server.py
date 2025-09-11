@@ -106,7 +106,14 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
             # clean snippet and add custom highlighting
             snippet_raw = r["snippet"]
-            terms = re.findall(r'\w+', q)  # extract all terms from query
+
+            # extract words but filter out operators and numbers
+            raw_terms = re.findall(r'\w+', q)
+            terms = [
+                t for t in raw_terms
+                if not re.fullmatch(r'\d+', t) and t.upper() not in {"W", "NEAR", "AND", "OR", "NOT"}
+            ]
+
             snippet_clean = snippet_raw
             for term in terms:
                 snippet_clean = re.sub(
@@ -162,7 +169,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             "snippet": snippet
         })
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
-
 
 # ---------- PDF links via Google Cloud ----------
 GCS_BUCKET = "sopal-bucket"
