@@ -84,7 +84,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         sql = """
           SELECT
             fts.rowid,
-            snippet(fts, 0, '<mark>', '</mark>', ' … ', 80) AS snippet
+            snippet(fts, 0, '[', ']', ' … ', 80) AS snippet
           FROM fts
           WHERE fts MATCH :q
           LIMIT :limit OFFSET :offset
@@ -104,7 +104,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
             d = dict(meta) if meta else {}
             d["id"] = r["rowid"]
-            d["snippet"] = r["snippet"]
+            d["snippet"] = r["snippet"].replace("[", "<mark>").replace("]", "</mark>")
             items.append(d)
 
         return {"total": total, "items": items}
