@@ -84,7 +84,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         sql = """
           SELECT
             fts.rowid,
-            snippet(fts, '<mark>', '</mark>', ' … ', 80) AS snippet
+            snippet(fts, 0, '<mark>', '</mark>', ' … ', 80) AS snippet
           FROM fts
           WHERE fts MATCH :q
           LIMIT :limit OFFSET :offset
