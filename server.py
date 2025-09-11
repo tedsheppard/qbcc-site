@@ -22,7 +22,19 @@ con.execute("PRAGMA cache_size = -20000")   # ~20MB page cache
 con.execute("PRAGMA temp_store = MEMORY")
 con.execute("PRAGMA mmap_size = 30000000000")  # 30GB if kernel allows
 
-# meilisearch config
+# ---------------- ensure FTS ----------------
+def ensure_fts():
+    try:
+        con.execute("DROP TABLE IF EXISTS fts;")
+        con.execute("CREATE VIRTUAL TABLE fts USING fts4(full_text, content='docs_fresh');")
+        con.execute("INSERT INTO fts(fts) VALUES('rebuild');")
+        con.commit()
+    except Exception as e:
+        print("Error rebuilding FTS index:", e)
+
+ensure_fts()
+
+# ---------------- meilisearch config ----------------
 MEILI_URL = os.getenv("MEILI_URL", "http://127.0.0.1:7700")
 MEILI_KEY = os.getenv("MEILI_MASTER_KEY", "")
 MEILI_INDEX = "decisions"
@@ -45,7 +57,8 @@ def parse_near(q: str):
         left = left[1:-1]
     if right.startswith('"') and right.endswith('"'):
         right = right[1:-1]
-    return f'NEAR("{left}" "{right}", {dist})'
+    # FTS4 supports NEAR/n
+    return f'"{left}" NEAR/{dist} "{right}"'
 
 def preprocess_sqlite_query(q: str) -> str:
     near_expr = parse_near(q)
@@ -82,7 +95,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
         items = []
         for r in rows:
-            # fetch metadata by joining docs_meta on docs.id
             meta = con.execute("""
               SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
                      m.act, m.reference, d.path AS pdf_path
@@ -98,6 +110,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
         return {"total": total, "items": items}
 
+    # --- Natural language via Meili ---
     payload = {
         "q": q,
         "limit": limit,
