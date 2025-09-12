@@ -80,7 +80,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
         total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq}).fetchone()[0]
         sql = """
-          SELECT fts.rowid, full_text, offsets(fts) as offs
+          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
           FROM fts
           WHERE fts MATCH :q
           LIMIT :limit OFFSET :offset
@@ -101,34 +101,18 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             d = dict(meta) if meta else {}
             d["id"] = r["rowid"]
 
-            # ---------------- snippet building ----------------
-            full_text = r["full_text"] or ""
-            words = full_text.split()
+            # ---------------- clean snippet ----------------
+            snippet_raw = r["snippet"]
 
-            spans = []
-            try:
-                parts = list(map(int, r["offs"].split()))
-                # offs = col, phrase, token, length
-                for i in range(0, len(parts), 4):
-                    token = parts[i+2]
-                    # extract ±50 words around token
-                    start = max(0, token - 50)
-                    end = min(len(words), token + 50)
-                    snippet = " ".join(words[start:end])
-                    spans.append(snippet)
-            except Exception:
-                spans.append(" ".join(words[:100]))
+            # remove weird "0word" artifacts from FTS output
+            snippet_clean = re.sub(r'\b\d+([A-Za-z]+)\b', r'\1', snippet_raw)
 
-            # keep max 2 spans
-            spans = spans[:2]
-
-            # join spans with ellipsis
-            snippet_raw = " … ".join(spans)
-
-            # highlight query terms
+            # highlight search terms manually
             raw_terms = re.findall(r'\w+', q)
-            terms = [t for t in raw_terms if not re.fullmatch(r'\d+', t) and t.upper() not in {"W", "NEAR", "AND", "OR", "NOT"}]
-            snippet_clean = snippet_raw
+            terms = [
+                t for t in raw_terms
+                if not re.fullmatch(r'\d+', t) and t.upper() not in {"W", "NEAR", "AND", "OR", "NOT"}
+            ]
             for term in terms:
                 snippet_clean = re.sub(
                     fr'(?i)\b({re.escape(term)})\b',
