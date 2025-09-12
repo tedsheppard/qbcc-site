@@ -965,6 +965,26 @@ mark {
   flex-direction: column;
   align-items: flex-start; /* ✅ keeps logo left, not stretched */
 }
+/* Final footer logo fix */
+.footer-logo {
+  height: 24px !important;       /* fixed height */
+  width: auto !important;        /* preserve aspect ratio */
+  max-width: 120px !important;   /* don’t let it stretch wider */
+  display: inline-block !important;
+  object-fit: contain !important;
+}
+
+.footer-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+@media (max-width: 768px) {
+  .footer-left {
+    align-items: center;   /* center logo/text on small screens */
+  }
+}
 
 
 </style>
