@@ -1,5 +1,5 @@
 import os, re, shutil, sqlite3, requests
-from fastapi import FastAPI, Query, Form, Request
+from fastapi import FastAPI, Query, Form
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from email.message import EmailMessage
@@ -7,7 +7,6 @@ import aiosmtplib
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
-PDF_ROOT = os.path.join(ROOT, "pdf")
 SITE_DIR = os.path.join(ROOT, "site")
 
 # ensure DB lives in /tmp for faster access
@@ -104,7 +103,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             d = dict(meta) if meta else {}
             d["id"] = r["rowid"]
 
-            # --- build clean snippet manually ---
+            # --- build clean ~100 word snippet manually ---
             full_text = r["full_text"]
 
             # extract real query terms (ignore operators/numbers)
@@ -114,23 +113,23 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
                 if not re.fullmatch(r'\d+', t) and t.upper() not in {"W", "NEAR", "AND", "OR", "NOT"}
             ]
 
-            # find first hit
-            first_hit = None
-            for term in terms:
-                m = re.search(fr'(?i)\b{re.escape(term)}\b', full_text)
-                if m:
-                    if first_hit is None or m.start() < first_hit:
-                        first_hit = m.start()
+            words = full_text.split()
+            first_hit_idx = None
+            for i, w in enumerate(words):
+                for term in terms:
+                    if re.fullmatch(fr'(?i){re.escape(term)}', w):
+                        first_hit_idx = i
+                        break
+                if first_hit_idx is not None:
+                    break
 
-            # extract ~120 chars around hit
-            if first_hit is not None:
-                start = max(0, first_hit - 60)
-                end = min(len(full_text), first_hit + 60)
-                snippet_raw = full_text[start:end]
+            if first_hit_idx is not None:
+                start = max(0, first_hit_idx - 50)
+                end = min(len(words), first_hit_idx + 50)
+                snippet_raw = " ".join(words[start:end])
             else:
-                snippet_raw = full_text[:120]
+                snippet_raw = " ".join(words[:100])
 
-            # highlight all terms
             snippet_clean = snippet_raw
             for term in terms:
                 snippet_clean = re.sub(
