@@ -14,12 +14,12 @@ DB_PATH = "/tmp/qbcc.db"
 if not os.path.exists(DB_PATH):
     shutil.copy("qbcc.db", DB_PATH)
 
-# create global sqlite connection
+# sqlite connection
 con = sqlite3.connect(DB_PATH, check_same_thread=False)
 con.row_factory = sqlite3.Row
-con.execute("PRAGMA cache_size = -20000")   # ~20MB page cache
+con.execute("PRAGMA cache_size = -20000")
 con.execute("PRAGMA temp_store = MEMORY")
-con.execute("PRAGMA mmap_size = 30000000000")  # 30GB if kernel allows
+con.execute("PRAGMA mmap_size = 30000000000")
 
 # ---------------- ensure FTS ----------------
 def ensure_fts():
@@ -74,15 +74,13 @@ def health():
 
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "relevance"):
-    # --- Boolean / proximity queries handled by SQLite FTS ---
+    # --- Boolean / proximity handled by SQLite ---
     if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I) or re.search(r'\bw/\d+\b', q, flags=re.I) or re.search(r'\bNEAR/\d+\b', q, flags=re.I):
         nq = preprocess_sqlite_query(q)
 
         total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq}).fetchone()[0]
         sql = """
-          SELECT
-            fts.rowid,
-            full_text
+          SELECT fts.rowid, full_text
           FROM fts
           WHERE fts MATCH :q
           LIMIT :limit OFFSET :offset
@@ -103,10 +101,10 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             d = dict(meta) if meta else {}
             d["id"] = r["rowid"]
 
-            # --- build clean ~100 word snippet manually ---
+            # ---------------- snippet building ----------------
             full_text = r["full_text"]
 
-            # extract real query terms (ignore operators/numbers)
+            # extract terms
             raw_terms = re.findall(r'\w+', q)
             terms = [
                 t for t in raw_terms
@@ -114,22 +112,43 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             ]
 
             words = full_text.split()
-            first_hit_idx = None
-            for i, w in enumerate(words):
-                for term in terms:
-                    if re.fullmatch(fr'(?i){re.escape(term)}', w):
-                        first_hit_idx = i
+            snippet_raw = None
+
+            # NEAR/w anchoring
+            m = re.search(r'(\w+)\s+(?:w|NEAR)\s*/\s*(\d+)\s+(\w+)', q, flags=re.I)
+            if m:
+                left, dist, right = m.group(1), int(m.group(2)), m.group(3)
+                left_lower, right_lower = left.lower(), right.lower()
+                for i, w in enumerate(words):
+                    if w.lower() == left_lower:
+                        window = words[i+1:i+dist+1]
+                        for j, w2 in enumerate(window):
+                            if w2.lower() == right_lower:
+                                start = max(0, i-50)
+                                end = min(len(words), i+dist+j+50)
+                                snippet_raw = " ".join(words[start:end])
+                                break
+                    if snippet_raw:
+                        break
+
+            # fallback: first hit
+            if not snippet_raw:
+                first_hit_idx = None
+                for i, w in enumerate(words):
+                    for term in terms:
+                        if re.fullmatch(fr'(?i){re.escape(term)}', w):
+                            first_hit_idx = i
+                            break
+                    if first_hit_idx is not None:
                         break
                 if first_hit_idx is not None:
-                    break
+                    start = max(0, first_hit_idx - 50)
+                    end = min(len(words), first_hit_idx + 50)
+                    snippet_raw = " ".join(words[start:end])
+                else:
+                    snippet_raw = " ".join(words[:100])
 
-            if first_hit_idx is not None:
-                start = max(0, first_hit_idx - 50)
-                end = min(len(words), first_hit_idx + 50)
-                snippet_raw = " ".join(words[start:end])
-            else:
-                snippet_raw = " ".join(words[:100])
-
+            # highlight
             snippet_clean = snippet_raw
             for term in terms:
                 snippet_clean = re.sub(
@@ -157,7 +176,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         "highlightPreTag": "<mark>",
         "highlightPostTag": "</mark>",
         "attributesToCrop": ["content"],
-        "cropLength": 40
+        "cropLength": 100
     }
     if sort == "newest":
         payload["sort"] = ["id:desc"]
