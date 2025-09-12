@@ -452,11 +452,6 @@ mark {
     flex-wrap: wrap;
   }
 
-
-  .footer-links {
-    flex-wrap: wrap;
-    gap: 13px;
-  }
 }
 
 @media (max-width: 480px) {
@@ -584,19 +579,7 @@ mark {
   }
 
 
-  /* Footer simplified */
-  .footer-content {
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    text-align: center;
-  }
-
-  .footer-links {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px;
-  }
+ 
 }
 
 @media (min-width: 769px) {
@@ -922,7 +905,7 @@ mark {
   text-align: left;      /* force left alignment */
 }
 
- /* Footer */
+/* Footer */
 .footer {
   background: #fcfcfc;
   color: #333;
@@ -946,7 +929,9 @@ mark {
 
 .footer-logo {
   height: 24px;
+  width: auto;      /* ✅ ensure it never stretches */
   margin-bottom: 10px;
+  display: block;   /* ✅ fixes any inline weirdness */
 }
 
 .footer-links {
