@@ -205,7 +205,35 @@ body {
   }
   .pagination button:hover { text-decoration: underline; }
 
-
+  /* Footer */
+  .footer {
+    background: #fcfcfc;
+    color: #333;
+    padding: 40px 20px 20px;
+    margin-top: 60px;
+    border-top: 1px solid #ddd;
+  }
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: auto;
+  }
+  .footer-left { max-width: 400px; }
+  .footer-logo { height: 24px; margin-bottom: 10px; }
+  .footer-links { display: flex; gap: 20px; }
+  .footer-links a { color: #333; text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: #00c853; }
+  .footer-bottom {
+    text-align: center;
+    border-top: 1px solid #eee;
+    margin-top: 20px;
+    padding-top: 15px;
+    font-size: 0.85em;
+    color: #666;
+  }
 
   /* Filters sidebar (disabled for now) */
   .filters-sidebar { display: none !important; }
@@ -452,6 +480,16 @@ mark {
     flex-wrap: wrap;
   }
 
+  .footer-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    gap: 13px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -579,7 +617,19 @@ mark {
   }
 
 
- 
+  /* Footer simplified */
+  .footer-content {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+  }
 }
 
 @media (min-width: 769px) {
@@ -905,7 +955,7 @@ mark {
   text-align: left;      /* force left alignment */
 }
 
-/* Footer */
+ /* Footer */
 .footer {
   background: #fcfcfc;
   color: #333;
@@ -927,6 +977,10 @@ mark {
   max-width: 400px;
 }
 
+.footer-logo {
+  height: 24px;
+  margin-bottom: 10px;
+}
 
 .footer-links {
   display: flex;
@@ -951,67 +1005,6 @@ mark {
   font-size: 0.85em;
   color: #666;
 }
-
- .footer-logo {
-  height: 24px !important;   /* fixed height */
-  width: auto !important;    /* keep aspect ratio */
-  max-width: 120px !important; /* never blow up */
-  display: inline-block !important;
-  object-fit: contain !important;
-}
-
- .footer-left {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start; /* ✅ keeps logo left, not stretched */
-}
-/* Final footer logo fix */
-.footer-logo {
-  height: 24px !important;       /* fixed height */
-  width: auto !important;        /* preserve aspect ratio */
-  max-width: 120px !important;   /* don’t let it stretch wider */
-  display: inline-block !important;
-  object-fit: contain !important;
-}
-
-.footer-left {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-@media (max-width: 768px) {
-  .footer-left {
-    align-items: center;   /* center logo/text on small screens */
-  }
-}
-
- footer img.footer-logo {
-  height: 24px !important;       /* fix height */
-  width: auto !important;        /* preserve aspect ratio */
-  max-width: 120px !important;   /* prevent stretching */
-  display: inline-block !important;
-  object-fit: contain !important;
-}
-
- footer img {
-  all: unset !important;         /* remove every inherited style */
-  height: 24px !important;
-  width: auto !important;
-  max-width: 120px !important;
-  display: inline-block !important;
-  object-fit: contain !important;
-}
-
- #footerLogo {
-  height: 24px !important;
-  width: auto !important;
-  max-width: 120px !important;
-  display: inline-block !important;
-  object-fit: contain !important;
-}
-
-
 
 </style>
 
@@ -1380,15 +1373,18 @@ function formatAusDate(iso) {
       <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
       <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
     </div>
-    <div class="footer-links">
-      <a href="feedback.html">Send feedback</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="terms.html">Terms</a>
-    </div>
+
+<div class="footer-links">
+  <a href="feedback.html">Send feedback</a>
+  <a href="privacy.html">Privacy</a>
+  <a href="terms.html">Terms</a>
+</div>
   </div>
   <div class="footer-bottom">
     <p>© 2025 SOPAL. All rights reserved.</p>
   </div>
+
+
 </footer>
 
 </body>
