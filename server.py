@@ -102,19 +102,11 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             d["id"] = r["rowid"]
 
             # ---------------- snippet building ----------------
-            full_text = r["full_text"]
-
-            # extract terms
-            raw_terms = re.findall(r'\w+', q)
-            terms = [
-                t for t in raw_terms
-                if not re.fullmatch(r'\d+', t) and t.upper() not in {"W", "NEAR", "AND", "OR", "NOT"}
-            ]
-
+            full_text = r["full_text"] or ""
             words = full_text.split()
             snippet_raw = None
 
-            # NEAR/w anchoring
+            # try to anchor NEAR/w queries
             m = re.search(r'(\w+)\s+(?:w|NEAR)\s*/\s*(\d+)\s+(\w+)', q, flags=re.I)
             if m:
                 left, dist, right = m.group(1), int(m.group(2)), m.group(3)
@@ -134,6 +126,8 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             # fallback: first hit
             if not snippet_raw:
                 first_hit_idx = None
+                raw_terms = re.findall(r'\w+', q)
+                terms = [t for t in raw_terms if not re.fullmatch(r'\d+', t) and t.upper() not in {"W", "NEAR", "AND", "OR", "NOT"}]
                 for i, w in enumerate(words):
                     for term in terms:
                         if re.fullmatch(fr'(?i){re.escape(term)}', w):
@@ -148,8 +142,10 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
                 else:
                     snippet_raw = " ".join(words[:100])
 
-            # highlight
+            # highlight query terms
             snippet_clean = snippet_raw
+            raw_terms = re.findall(r'\w+', q)
+            terms = [t for t in raw_terms if not re.fullmatch(r'\d+', t) and t.upper() not in {"W", "NEAR", "AND", "OR", "NOT"}]
             for term in terms:
                 snippet_clean = re.sub(
                     fr'(?i)\b({re.escape(term)})\b',
