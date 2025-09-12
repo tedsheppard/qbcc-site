@@ -80,7 +80,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
         total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq}).fetchone()[0]
         sql = """
-          SELECT fts.rowid, full_text
+          SELECT fts.rowid, full_text, offsets(fts) as offs
           FROM fts
           WHERE fts MATCH :q
           LIMIT :limit OFFSET :offset
@@ -104,48 +104,31 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             # ---------------- snippet building ----------------
             full_text = r["full_text"] or ""
             words = full_text.split()
-            snippet_raw = None
 
-            # try to anchor NEAR/w queries
-            m = re.search(r'(\w+)\s+(?:w|NEAR)\s*/\s*(\d+)\s+(\w+)', q, flags=re.I)
-            if m:
-                left, dist, right = m.group(1), int(m.group(2)), m.group(3)
-                left_lower, right_lower = left.lower(), right.lower()
-                for i, w in enumerate(words):
-                    if w.lower() == left_lower:
-                        window = words[i+1:i+dist+1]
-                        for j, w2 in enumerate(window):
-                            if w2.lower() == right_lower:
-                                start = max(0, i-50)
-                                end = min(len(words), i+dist+j+50)
-                                snippet_raw = " ".join(words[start:end])
-                                break
-                    if snippet_raw:
-                        break
+            spans = []
+            try:
+                parts = list(map(int, r["offs"].split()))
+                # offs = col, phrase, token, length
+                for i in range(0, len(parts), 4):
+                    token = parts[i+2]
+                    # extract ±50 words around token
+                    start = max(0, token - 50)
+                    end = min(len(words), token + 50)
+                    snippet = " ".join(words[start:end])
+                    spans.append(snippet)
+            except Exception:
+                spans.append(" ".join(words[:100]))
 
-            # fallback: first hit
-            if not snippet_raw:
-                first_hit_idx = None
-                raw_terms = re.findall(r'\w+', q)
-                terms = [t for t in raw_terms if not re.fullmatch(r'\d+', t) and t.upper() not in {"W", "NEAR", "AND", "OR", "NOT"}]
-                for i, w in enumerate(words):
-                    for term in terms:
-                        if re.fullmatch(fr'(?i){re.escape(term)}', w):
-                            first_hit_idx = i
-                            break
-                    if first_hit_idx is not None:
-                        break
-                if first_hit_idx is not None:
-                    start = max(0, first_hit_idx - 50)
-                    end = min(len(words), first_hit_idx + 50)
-                    snippet_raw = " ".join(words[start:end])
-                else:
-                    snippet_raw = " ".join(words[:100])
+            # keep max 2 spans
+            spans = spans[:2]
+
+            # join spans with ellipsis
+            snippet_raw = " … ".join(spans)
 
             # highlight query terms
-            snippet_clean = snippet_raw
             raw_terms = re.findall(r'\w+', q)
             terms = [t for t in raw_terms if not re.fullmatch(r'\d+', t) and t.upper() not in {"W", "NEAR", "AND", "OR", "NOT"}]
+            snippet_clean = snippet_raw
             for term in terms:
                 snippet_clean = re.sub(
                     fr'(?i)\b({re.escape(term)})\b',
