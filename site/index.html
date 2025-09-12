@@ -928,10 +928,10 @@ mark {
 }
 
 .footer-logo {
-  height: 24px;
-  width: auto;      /* ✅ ensure it never stretches */
-  margin-bottom: 10px;
-  display: block;   /* ✅ fixes any inline weirdness */
+  height: 24px !important;   /* force fixed height */
+  width: auto !important;    /* stop it stretching full width */
+  max-width: none !important;
+  display: inline-block !important;
 }
 
 .footer-links {
