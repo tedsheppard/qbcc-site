@@ -434,57 +434,42 @@
     </div>
   </footer>
 
-  <script>
-    // Feedback type selection
-    document.querySelectorAll('.feedback-type').forEach(type => {
-      type.addEventListener('click', function() {
-        document.querySelectorAll('.feedback-type').forEach(t => t.classList.remove('selected'));
-        this.classList.add('selected');
-        document.getElementById('feedbackType').value = this.dataset.type;
-      });
+<script>
+document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  // Must choose feedback type
+  if (!document.getElementById('feedbackType').value) {
+    alert('Please select a feedback type.');
+    return;
+  }
+
+  const formData = new FormData(this);
+
+  try {
+    const res = await fetch("/send-feedback", {
+      method: "POST",
+      body: formData
     });
 
-    // Auto-detect browser info
-    window.addEventListener('load', function() {
-      const browserInput = document.getElementById('browser');
-      const userAgent = navigator.userAgent;
-      let browserInfo = '';
+    const data = await res.json();
 
-      if (userAgent.includes('Chrome')) {
-        browserInfo = 'Chrome';
-      } else if (userAgent.includes('Firefox')) {
-        browserInfo = 'Firefox';
-      } else if (userAgent.includes('Safari')) {
-        browserInfo = 'Safari';
-      } else if (userAgent.includes('Edge')) {
-        browserInfo = 'Edge';
-      }
-
-      if (browserInfo) {
-        browserInput.placeholder = `Auto-detected: ${browserInfo}`;
-      }
-    });
-
-    // Form submission
-    document.getElementById('feedbackForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      // Simple validation
-      if (!document.getElementById('feedbackType').value) {
-        alert('Please select a feedback type.');
-        return;
-      }
-
-      // Show success message
+    if (data.ok) {
       document.getElementById('successMessage').style.display = 'block';
       this.style.display = 'none';
-
-      // Scroll to success message
       document.getElementById('successMessage').scrollIntoView({
         behavior: 'smooth',
         block: 'center'
       });
-    });
-  </script>
+    } else {
+      alert("Error sending feedback: " + data.error);
+    }
+  } catch (err) {
+    alert("Network error: " + err);
+  }
+});
+</script>
+
+  
 </body>
 </html>
