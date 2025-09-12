@@ -83,7 +83,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         sql = """
           SELECT
             fts.rowid,
-            snippet(fts, 0, '', '', ' … ', 80) AS snippet
+            full_text
           FROM fts
           WHERE fts MATCH :q
           LIMIT :limit OFFSET :offset
@@ -104,16 +104,33 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             d = dict(meta) if meta else {}
             d["id"] = r["rowid"]
 
-            # clean snippet and add custom highlighting
-            snippet_raw = r["snippet"]
+            # --- build clean snippet manually ---
+            full_text = r["full_text"]
 
-            # extract words but filter out operators and numbers
+            # extract real query terms (ignore operators/numbers)
             raw_terms = re.findall(r'\w+', q)
             terms = [
                 t for t in raw_terms
                 if not re.fullmatch(r'\d+', t) and t.upper() not in {"W", "NEAR", "AND", "OR", "NOT"}
             ]
 
+            # find first hit
+            first_hit = None
+            for term in terms:
+                m = re.search(fr'(?i)\b{re.escape(term)}\b', full_text)
+                if m:
+                    if first_hit is None or m.start() < first_hit:
+                        first_hit = m.start()
+
+            # extract ~120 chars around hit
+            if first_hit is not None:
+                start = max(0, first_hit - 60)
+                end = min(len(full_text), first_hit + 60)
+                snippet_raw = full_text[start:end]
+            else:
+                snippet_raw = full_text[:120]
+
+            # highlight all terms
             snippet_clean = snippet_raw
             for term in terms:
                 snippet_clean = re.sub(
