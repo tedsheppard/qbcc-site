@@ -435,10 +435,22 @@
   </footer>
 
 <script>
+// --- Feedback type selection ---
+document.querySelectorAll('.feedback-type').forEach(type => {
+  type.addEventListener('click', function() {
+    // remove 'selected' class from all
+    document.querySelectorAll('.feedback-type').forEach(t => t.classList.remove('selected'));
+    // add to clicked
+    this.classList.add('selected');
+    // update hidden input
+    document.getElementById('feedbackType').value = this.dataset.type;
+  });
+});
+
+// --- Form submission ---
 document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
   e.preventDefault();
 
-  // Must choose feedback type
   if (!document.getElementById('feedbackType').value) {
     alert('Please select a feedback type.');
     return;
@@ -469,6 +481,7 @@ document.getElementById('feedbackForm').addEventListener('submit', async functio
   }
 });
 </script>
+
 
   
 </body>
