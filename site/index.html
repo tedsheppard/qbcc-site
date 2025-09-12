@@ -958,6 +958,21 @@ mark {
   color: #666;
 }
 
+ .footer-logo {
+  height: 24px !important;   /* fixed height */
+  width: auto !important;    /* keep aspect ratio */
+  max-width: 120px !important; /* never blow up */
+  display: inline-block !important;
+  object-fit: contain !important;
+}
+
+ .footer-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* ✅ keeps logo left, not stretched */
+}
+
+
 </style>
 
 </head>
