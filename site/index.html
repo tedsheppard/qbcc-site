@@ -1522,13 +1522,17 @@ async function summariseDecision(id) {
   }
 }
 
-  function cleanAIText(text) {
+function cleanAIText(text) {
   if (!text) return '';
   return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // turn **bold** into <strong>
-    .replace(/\n\s*-\s*/g, '</li><li>')               // turn "- " into list items
-    .replace(/\n/g, '<br>');                          // keep normal line breaks
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')   // bold
+    .replace(/^### (.*$)/gim, '<h4>$1</h4>')            // ### heading → <h4>
+    .replace(/^## (.*$)/gim, '<h3>$1</h3>')             // ## heading → <h3>
+    .replace(/^# (.*$)/gim, '<h2>$1</h2>')              // # heading → <h2>
+    .replace(/\n\s*-\s*/g, '</li><li>')                 // - bullets
+    .replace(/\n/g, '<br>');                            // normal line breaks
 }
+
    
     </script>
 
