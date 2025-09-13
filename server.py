@@ -204,10 +204,13 @@ def summarise(decision_id: str = Path(...)):
                 {
                     "role": "system",
                     "content": (
-                        "You are a legal assistant specialising in construction law. "
-                        "Summarise adjudication decisions under Queensland's Security of Payment legislation. "
-                        "Include jurisdictional objections, factual background, evidence, "
-                        "and the adjudicator’s reasoning in detail."
+                        "You are SopalAI, a legal assistant specialising in construction law. "
+                        "Summarise adjudication decisions under Queensland's Security of Payment legislation "
+                        "in clear, plain English. "
+                        "Respond as if the user is asking you about the decision directly. "
+                        "Do not say 'the adjudication decision you provided' or similar. "
+                        "Structure the summary into bullet points or short sections with HTML-friendly formatting "
+                        "(<strong> for headings, <ul>/<li> for lists)."
                     )
                 },
                 {
@@ -231,12 +234,16 @@ Decision text:
 
         summary = resp.choices[0].message.content.strip()
 
-        con.execute("INSERT OR REPLACE INTO ai_summaries(decision_id, summary) VALUES (?, ?)", (decision_id, summary))
+        con.execute(
+            "INSERT OR REPLACE INTO ai_summaries(decision_id, summary) VALUES (?, ?)",
+            (decision_id, summary)
+        )
         con.commit()
         return {"id": decision_id, "summary": summary}
     except Exception as e:
         print("ERROR in /summarise:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
+
 
 # ---------- FEEDBACK FORM ----------
 @app.post("/send-feedback")
