@@ -4,25 +4,9 @@ import os
 
 # ---------------- CONFIG ----------------
 MEILI_URL = "https://meilisearch-v1-9-3xaz.onrender.com"
-MEILI_KEY = os.getenv("MEILI_MASTER_KEY")  # make sure set in Render env vars
+MEILI_KEY = os.getenv("MEILI_MASTER_KEY")  # must be set in Render env vars
 SQLITE_PATH = "/tmp/qbcc.db"
-BATCH_SIZE = 500
 # ----------------------------------------
-
-def get_meili_ids():
-    """Fetch just IDs from Meili in batches."""
-    ids = []
-    offset = 0
-    while True:
-        url = f"{MEILI_URL}/indexes/decisions/documents?limit={BATCH_SIZE}&offset={offset}&fields=ejs_id"
-        resp = requests.get(url, headers={"Authorization": f"Bearer {MEILI_KEY}"})
-        resp.raise_for_status()
-        batch = resp.json()
-        if not batch:
-            break
-        ids.extend([d["ejs_id"] for d in batch if "ejs_id" in d])
-        offset += BATCH_SIZE
-    return set(ids)
 
 def get_sqlite_ids(con):
     cur = con.cursor()
@@ -72,28 +56,52 @@ def main():
     con = sqlite3.connect(SQLITE_PATH)
     cur = con.cursor()
 
-    # Counts before
+    # Count before
     cur.execute("SELECT COUNT(*) FROM docs_fresh")
     before = cur.fetchone()[0]
     print(f"SQLite docs before: {before}")
 
-    # Compare
-    meili_ids = get_meili_ids()
+    # Fetch all IDs directly from Meili metadata endpoint
+    url = f"{MEILI_URL}/indexes/decisions/documents?limit=1&fields=ejs_id"
+    resp = requests.get(url, headers={"Authorization": f"Bearer {MEILI_KEY}"})
+    resp.raise_for_status()
+    stats = requests.get(f"{MEILI_URL}/indexes/decisions/stats", headers={"Authorization": f"Bearer {MEILI_KEY}"}).json()
+    meili_total = stats["numberOfDocuments"]
+    print(f"Meili docs: {meili_total}")
+
+    # Get local IDs
     sqlite_ids = get_sqlite_ids(con)
-    missing = meili_ids - sqlite_ids
-    print(f"Meili docs: {len(meili_ids)}")
-    print(f"SQLite docs: {len(sqlite_ids)}")
+
+    # Figure out missing IDs by comparing counts
+    # Simpler: loop through Meili docs in small pages but only fetch ejs_id
+    missing = []
+    offset = 0
+    while True:
+        page = requests.get(
+            f"{MEILI_URL}/indexes/decisions/documents?limit=200&offset={offset}&fields=ejs_id",
+            headers={"Authorization": f"Bearer {MEILI_KEY}"}
+        ).json()
+        if not page:
+            break
+        for d in page:
+            if d["ejs_id"] not in sqlite_ids:
+                missing.append(d["ejs_id"])
+        offset += 200
+        if offset % 1000 == 0:
+            print(f"Checked {offset} so far...")
+
     print(f"Missing docs to add: {len(missing)}")
 
     # Insert missing only
     for i, ejs_id in enumerate(missing, start=1):
         doc = fetch_doc(ejs_id)
         insert_doc(cur, doc)
-        if i % 10 == 0:
+        if i % 5 == 0:
             print(f"Inserted {i}/{len(missing)}...")
+
     con.commit()
 
-    # Counts after
+    # Count after
     cur.execute("SELECT COUNT(*) FROM docs_fresh")
     after = cur.fetchone()[0]
     print(f"SQLite docs after: {after}")
