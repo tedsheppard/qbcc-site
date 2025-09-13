@@ -294,7 +294,12 @@ def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
         resp = client.chat.completions.create(
             model="gpt-4o-mini",  # conversational, cost-effective
             messages=[
-                {"role": "system", "content": "You are SopalAI, a legal assistant that answers questions about adjudication decisions under the BIF Act. Be precise, structured, and cite parts of the decision text where useful."},
+                {"role": "system", "content": (
+                  "You are SopalAI, assisting users with adjudication decisions under the BIF Act or BCIPA (as the case may be). "
+                  "Respond directly to the user’s question as if they asked you about the decision. "
+                  "Do not say 'the adjudication decision you provided' or 'the text you gave me'. "
+                  "Write in clear, plain English with headings and bullet points formatted in HTML."
+                )}
                 {"role": "user", "content": f"Decision text:\n{text}"},
                 {"role": "user", "content": f"Question: {question}"}
             ],
