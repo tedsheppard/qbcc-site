@@ -1103,8 +1103,8 @@ mark {
     <div id="welcomeScreen">
       <div class="welcome-content">
         <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="welcome-logo">
-        <h1 class="welcome-title">Welcome to Sopal</h1>
-        <h2 class="welcome-subtitle">Building Industry Fairness (Security of Payment) Act 2017 (Qld) Adjudication Decision Search</h2>
+        <h1 class="welcome-title">Welcome to the Intelligence</h1>
+        <h2 class="welcome-subtitle">QBCC Decision Engine</h2>
       </div>
     </div>
 
@@ -1252,8 +1252,8 @@ mark {
         // Remove welcome screen from DOM after animation
         setTimeout(() => {
           welcomeScreen.remove();
-        }, 500);
-      }, 1500); // 2.5 seconds
+        }, 800);
+      }, 2500); // 2.5 seconds
     });
 
     function $(sel){ return document.querySelector(sel); }
@@ -1453,10 +1453,15 @@ if (saved === 'dark') {
         limitSel.addEventListener('change', () => runSearch(1));
       }
 
-      // Initial search - delayed until welcome screen finishes
-      setTimeout(() => {
-        runSearch();
-      }, 3000);
+      // Initial search - delayed for first-time visitors, immediate for returning visitors
+      const hasSeenWelcome = localStorage.getItem('sopal_welcome_seen');
+      if (!hasSeenWelcome) {
+        setTimeout(() => {
+          runSearch();
+        }, 2300); // Wait for welcome screen to finish
+      } else {
+        runSearch(); // Immediate search for returning visitors
+      }
     
 
     function startLoadingBar() {
