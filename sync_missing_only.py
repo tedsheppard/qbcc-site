@@ -65,7 +65,7 @@ def main():
     # Get SQLite IDs
     sqlite_ids = get_sqlite_ids(con)
 
-    # Get total Meili count
+    # Get total Meili count (hard stop)
     stats = requests.get(
         f"{MEILI_URL}/indexes/decisions/stats",
         headers={"Authorization": f"Bearer {MEILI_KEY}"}
@@ -76,7 +76,7 @@ def main():
     # Find missing IDs
     missing = []
     offset = 0
-    while True:
+    while offset < meili_total:   # <-- hard stop at real total
         resp = requests.get(
             f"{MEILI_URL}/indexes/decisions/documents?limit={PAGE_SIZE}&offset={offset}&fields=ejs_id",
             headers={"Authorization": f"Bearer {MEILI_KEY}"}
@@ -86,11 +86,7 @@ def main():
         if not page:
             break
         for d in page:
-            # Handle both dict and string formats
-            if isinstance(d, dict):
-                ejs_id = d.get("ejs_id")
-            else:
-                ejs_id = d
+            ejs_id = d["ejs_id"] if isinstance(d, dict) else d
             if ejs_id and ejs_id not in sqlite_ids:
                 missing.append(ejs_id)
         offset += PAGE_SIZE
