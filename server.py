@@ -198,14 +198,39 @@ def summarise(decision_id: str = Path(...)):
 
         text = r["full_text"][:15000]  # trim for cost
 
+        )
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "Summarise adjudication decisions clearly for a construction lawyer."},
-                {"role": "user", "content": f"Summarise this decision in 5 bullet points:\n{text}"}
-            ],
-            max_tokens=600,
-        )
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a legal assistant specialising in construction law. "
+                        "Your role is to carefully summarise adjudication decisions under "
+                        "the applicable Queensland security of payment legislation. "
+                        "Highlight jurisdictional objections, factual background, evidence, "
+                        "and the adjudicator’s reasoning in detail."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"""
+Summarise this adjudication decision in about 5–7 bullet points, covering:
+- The parties and the works
+- Payment claim amount and payment schedule response
+- Any jurisdictional challenges (late claim, invalid notice, reference date, etc.)
+- The factual disputes and evidence relied upon
+- The adjudicator’s reasoning on each major issue
+- The final outcome, amount awarded, and adjudicator's fee split
+
+Decision text:
+{text[:15000]}
+"""
+        }
+    ],
+    max_tokens=800,
+)
+
         summary = resp.choices[0].message.content.strip()
 
         con.execute("INSERT OR REPLACE INTO ai_summaries(decision_id, summary) VALUES (?, ?)", (decision_id, summary))
