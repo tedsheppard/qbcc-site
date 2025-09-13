@@ -277,6 +277,35 @@ Details:
         return {"ok": True, "message": "Feedback sent successfully"}
     except Exception as e:
         return {"ok": False, "error": str(e)}
+from fastapi import HTTPException
+from openai import OpenAI
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+@app.get("/summarise/{doc_id}")
+def summarise(doc_id: int):
+    try:
+        # get full text of decision
+        row = con.execute("SELECT full_text FROM docs_fresh WHERE rowid = ?", (doc_id,)).fetchone()
+        if not row or not row["full_text"]:
+            raise HTTPException(status_code=404, detail="Decision not found")
+
+        text = row["full_text"]
+
+        # call OpenAI to summarise
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",  # cheaper + good for summaries
+            messages=[
+                {"role": "system", "content": "You are an assistant that summarises legal adjudication decisions clearly and concisely."},
+                {"role": "user", "content": f"Summarise this adjudication decision in about 200 words:\n\n{text[:15000]}"}  # trim to keep token cost safe
+            ],
+        )
+
+        summary = response.choices[0].message.content.strip()
+        return {"summary": summary}
+
+    except Exception as e:
+        return {"error": str(e)}
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
