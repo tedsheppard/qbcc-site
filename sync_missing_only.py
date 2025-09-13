@@ -4,8 +4,9 @@ import os
 
 # ---------------- CONFIG ----------------
 MEILI_URL = "https://meilisearch-v1-9-3xaz.onrender.com"
-MEILI_KEY = os.getenv("MEILI_MASTER_KEY")  # must be set in Render env vars
+MEILI_KEY = os.getenv("MEILI_MASTER_KEY")  # make sure this is set in Render env vars
 SQLITE_PATH = "/tmp/qbcc.db"
+PAGE_SIZE = 200
 # ----------------------------------------
 
 def get_sqlite_ids(con):
@@ -61,36 +62,40 @@ def main():
     before = cur.fetchone()[0]
     print(f"SQLite docs before: {before}")
 
-    # Fetch all IDs directly from Meili metadata endpoint
-    url = f"{MEILI_URL}/indexes/decisions/documents?limit=1&fields=ejs_id"
-    resp = requests.get(url, headers={"Authorization": f"Bearer {MEILI_KEY}"})
-    resp.raise_for_status()
-    stats = requests.get(f"{MEILI_URL}/indexes/decisions/stats", headers={"Authorization": f"Bearer {MEILI_KEY}"}).json()
+    # Get SQLite IDs
+    sqlite_ids = get_sqlite_ids(con)
+
+    # Get total Meili count
+    stats = requests.get(
+        f"{MEILI_URL}/indexes/decisions/stats",
+        headers={"Authorization": f"Bearer {MEILI_KEY}"}
+    ).json()
     meili_total = stats["numberOfDocuments"]
     print(f"Meili docs: {meili_total}")
 
-    # Get local IDs
-    sqlite_ids = get_sqlite_ids(con)
-
-    # Figure out missing IDs by comparing counts
-    # Simpler: loop through Meili docs in small pages but only fetch ejs_id
+    # Find missing IDs (loop in pages, only pulling ejs_id field)
     missing = []
     offset = 0
     while True:
-        page = requests.get(
-            f"{MEILI_URL}/indexes/decisions/documents?limit=200&offset={offset}&fields=ejs_id",
+        resp = requests.get(
+            f"{MEILI_URL}/indexes/decisions/documents?limit={PAGE_SIZE}&offset={offset}&fields=ejs_id",
             headers={"Authorization": f"Bearer {MEILI_KEY}"}
-        ).json()
+        )
+        resp.raise_for_status()
+        page = resp.json()
         if not page:
             break
         for d in page:
-            if d["ejs_id"] not in sqlite_ids:
-                missing.append(d["ejs_id"])
-        offset += 200
+            ejs_id = d.get("ejs_id")
+            if ejs_id and ejs_id not in sqlite_ids:
+                missing.append(ejs_id)
+        offset += PAGE_SIZE
         if offset % 1000 == 0:
-            print(f"Checked {offset} so far...")
+            print(f"Checked {offset} docs...")
 
     print(f"Missing docs to add: {len(missing)}")
+    if missing:
+        print("Missing IDs:", missing)
 
     # Insert missing only
     for i, ejs_id in enumerate(missing, start=1):
@@ -98,7 +103,6 @@ def main():
         insert_doc(cur, doc)
         if i % 5 == 0:
             print(f"Inserted {i}/{len(missing)}...")
-
     con.commit()
 
     # Count after
