@@ -1208,6 +1208,8 @@ mark {
           </div>
           ${it.snippet ? `<p class="snippet">${it.snippet}</p>` : ''}
           ${pdf ? `<a class="open-btn" href="${pdf.open}" target="_blank">Open Decision (PDF)</a>` : ''}
+         <button class="summarise-btn" onclick="summariseDecision('${it.id}')">Summarise with AI</button>
+         <div id="summary-${it.id}" class="ai-summary" style="display:none; margin-top:10px; padding:10px; border:1px solid #444; border-radius:6px; font-size:13px;"></div>
         </div>`;
     }
 
@@ -1365,6 +1367,28 @@ function formatAusDate(iso) {
   });
 }
 
+ async function summariseDecision(id) {
+  const box = document.getElementById(`summary-${id}`);
+  if (!box) return;
+
+  box.style.display = 'block';
+  box.textContent = 'Summarising… ⏳';
+
+  try {
+    const res = await fetch(`/summarise/${id}`);
+    const data = await res.json();
+
+    if (data.summary) {
+      box.innerHTML = `<strong>AI Summary:</strong><br><br>${data.summary.replace(/\n/g,'<br>')}`;
+    } else {
+      box.textContent = '⚠️ Failed to generate summary.';
+    }
+  } catch (e) {
+    box.textContent = '⚠️ Error contacting server.';
+  }
+}
+
+     
     </script>
 
 <footer class="footer">
