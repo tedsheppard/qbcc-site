@@ -4,7 +4,7 @@ import os
 
 # ---------------- CONFIG ----------------
 MEILI_URL = "https://meilisearch-v1-9-3xaz.onrender.com"
-MEILI_KEY = os.getenv("MEILI_MASTER_KEY")  # must be set in Render env vars
+MEILI_KEY = os.getenv("MEILI_MASTER_KEY")
 SQLITE_PATH = "/tmp/qbcc.db"
 PAGE_SIZE = 200
 # ----------------------------------------
@@ -62,10 +62,9 @@ def main():
     before = cur.fetchone()[0]
     print(f"SQLite docs before: {before}")
 
-    # Get SQLite IDs
     sqlite_ids = get_sqlite_ids(con)
 
-    # Get total Meili count (hard stop)
+    # Meili stats
     stats = requests.get(
         f"{MEILI_URL}/indexes/decisions/stats",
         headers={"Authorization": f"Bearer {MEILI_KEY}"}
@@ -73,22 +72,26 @@ def main():
     meili_total = stats["numberOfDocuments"]
     print(f"Meili docs: {meili_total}")
 
-    # Find missing IDs
+    # Gather missing IDs
     missing = []
     offset = 0
-    while offset < meili_total:   # <-- hard stop at real total
+    while offset < meili_total:
         resp = requests.get(
             f"{MEILI_URL}/indexes/decisions/documents?limit={PAGE_SIZE}&offset={offset}&fields=ejs_id",
             headers={"Authorization": f"Bearer {MEILI_KEY}"}
         )
         resp.raise_for_status()
-        page = resp.json()
-        if not page:
+        data = resp.json()
+
+        results = data.get("results", [])
+        if not results:
             break
-        for d in page:
-            ejs_id = d["ejs_id"] if isinstance(d, dict) else d
+
+        for d in results:
+            ejs_id = d.get("ejs_id")
             if ejs_id and ejs_id not in sqlite_ids:
                 missing.append(ejs_id)
+
         offset += PAGE_SIZE
         if offset % 1000 == 0:
             print(f"Checked {offset} docs...")
@@ -97,7 +100,7 @@ def main():
     if missing:
         print("Missing IDs:", missing)
 
-    # Insert missing only
+    # Insert missing
     for i, ejs_id in enumerate(missing, start=1):
         doc = fetch_doc(ejs_id)
         insert_doc(cur, doc)
