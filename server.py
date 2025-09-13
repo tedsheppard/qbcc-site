@@ -198,7 +198,6 @@ def summarise(decision_id: str = Path(...)):
 
         text = r["full_text"][:15000]  # trim for cost
 
-        )
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -206,16 +205,15 @@ def summarise(decision_id: str = Path(...)):
                     "role": "system",
                     "content": (
                         "You are a legal assistant specialising in construction law. "
-                        "Your role is to carefully summarise adjudication decisions under "
-                        "the applicable Queensland security of payment legislation. "
-                        "Highlight jurisdictional objections, factual background, evidence, "
+                        "Summarise adjudication decisions under Queensland's Security of Payment legislation. "
+                        "Include jurisdictional objections, factual background, evidence, "
                         "and the adjudicator’s reasoning in detail."
                     )
                 },
                 {
                     "role": "user",
                     "content": f"""
-Summarise this adjudication decision in about 5–7 bullet points, covering:
+Summarise this adjudication decision in 5–7 bullet points, covering:
 - The parties and the works
 - Payment claim amount and payment schedule response
 - Any jurisdictional challenges (late claim, invalid notice, reference date, etc.)
@@ -224,12 +222,12 @@ Summarise this adjudication decision in about 5–7 bullet points, covering:
 - The final outcome, amount awarded, and adjudicator's fee split
 
 Decision text:
-{text[:15000]}
+{text}
 """
-        }
-    ],
-    max_tokens=800,
-)
+                }
+            ],
+            max_tokens=800,
+        )
 
         summary = resp.choices[0].message.content.strip()
 
