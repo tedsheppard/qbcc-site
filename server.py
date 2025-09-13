@@ -186,17 +186,15 @@ def open_pdf(p: str, disposition: str = "inline"):
 @app.get("/summarise/{decision_id}")
 def summarise(decision_id: str = Path(...)):
     try:
-        # check cache
         row = con.execute("SELECT summary FROM ai_summaries WHERE decision_id = ?", (decision_id,)).fetchone()
         if row:
             return {"id": decision_id, "summary": row["summary"]}
 
-        # get text
         r = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
         if not r or not r["full_text"]:
             raise HTTPException(status_code=404, detail="Decision not found")
 
-        text = r["full_text"][:300000]  # trim for cost
+        text = r["full_text"][:300000]
 
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -219,10 +217,10 @@ def summarise(decision_id: str = Path(...)):
 Summarise this adjudication decision in 5–7 bullet points, covering:
 - The parties and the works
 - Payment claim amount and payment schedule response
-- Any jurisdictional challenges (late claim, invalid notice, reference date, etc.)
-- The factual disputes and evidence relied upon
-- The adjudicator’s reasoning on each major issue
-- The final outcome, amount awarded, and adjudicator's fee split
+- Any jurisdictional challenges
+- The factual disputes and evidence
+- The adjudicator’s reasoning
+- The final outcome, amount awarded, and fee split
 
 Decision text:
 {text}
@@ -233,17 +231,12 @@ Decision text:
         )
 
         summary = resp.choices[0].message.content.strip()
-
-        con.execute(
-            "INSERT OR REPLACE INTO ai_summaries(decision_id, summary) VALUES (?, ?)",
-            (decision_id, summary)
-        )
+        con.execute("INSERT OR REPLACE INTO ai_summaries(decision_id, summary) VALUES (?, ?)", (decision_id, summary))
         con.commit()
         return {"id": decision_id, "summary": summary}
     except Exception as e:
         print("ERROR in /summarise:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
-
 
 # ---------- FEEDBACK FORM ----------
 @app.post("/send-feedback")
@@ -287,34 +280,36 @@ Details:
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
+# ---------- AI Ask ----------
 @app.post("/ask/{decision_id}")
 def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
     try:
-        # fetch decision text
         row = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
         if not row or not row["full_text"]:
             raise HTTPException(status_code=404, detail="Decision not found")
 
-        text = row["full_text"][:15000]  # keep it safe for cost/context
+        text = row["full_text"][:15000]
 
-        # ask GPT
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",  # conversational, cost-effective
+            model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": (
-                  "You are SopalAI, assisting users with adjudication decisions under the BIF Act or BCIPA (as the case may be). "
-                  "Respond directly to the user’s question as if they asked you about the decision. "
-                  "Do not say 'the adjudication decision you provided' or 'the text you gave me'. "
-                  "Write in clear, plain English with headings and bullet points formatted in HTML."
-                )}
+                {
+                    "role": "system",
+                    "content": (
+                        "You are SopalAI, assisting users with adjudication decisions under the BIF Act or BCIPA. "
+                        "Respond directly to the user’s question as if they asked you about the decision. "
+                        "Do not say 'the adjudication decision you provided' or 'the text you gave me'. "
+                        "Write in clear, plain English with headings and bullet points formatted in HTML."
+                    )
+                },
                 {"role": "user", "content": f"Decision text:\n{text}"},
                 {"role": "user", "content": f"Question: {question}"}
             ],
             max_tokens=600
         )
+
         answer = resp.choices[0].message.content.strip()
         return {"answer": answer}
-
     except Exception as e:
         print("ERROR in /ask:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
