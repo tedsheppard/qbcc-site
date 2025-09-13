@@ -1010,7 +1010,7 @@ mark {
   color: #0066cc;
   cursor: pointer;
   font-size: 14px;
-  margin-left: 20px;
+  margin-left: 50px;
 }
 .sopalai-link:hover {
   text-decoration: underline;
@@ -1218,7 +1218,9 @@ mark {
           </div>
           ${it.snippet ? `<p class="snippet">${it.snippet}</p>` : ''}
           ${pdf ? `<a class="open-btn" href="${pdf.open}" target="_blank">Open Decision (PDF)</a>` : ''}
-          <span class="sopalai-link" onclick="summariseDecision('${it.id}')">SopalAI Summary</span>
+         <a href="javascript:void(0)" class="open-btn" onclick="summariseDecision('${it.id}')">
+           SopalAI Summary
+         </a>
          <div id="summary-${it.id}" class="ai-summary" style="display:none; margin-top:10px; padding:10px; border:1px solid #444; border-radius:6px; font-size:13px;"></div>
         </div>`;
     }
