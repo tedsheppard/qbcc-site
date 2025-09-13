@@ -4,7 +4,7 @@ import os
 
 # ---------------- CONFIG ----------------
 MEILI_URL = "https://meilisearch-v1-9-3xaz.onrender.com"
-MEILI_KEY = os.getenv("MEILI_MASTER_KEY")  # make sure this is set in Render env vars
+MEILI_KEY = os.getenv("MEILI_MASTER_KEY")  # must be set in Render env vars
 SQLITE_PATH = "/tmp/qbcc.db"
 PAGE_SIZE = 200
 # ----------------------------------------
@@ -73,7 +73,7 @@ def main():
     meili_total = stats["numberOfDocuments"]
     print(f"Meili docs: {meili_total}")
 
-    # Find missing IDs (loop in pages, only pulling ejs_id field)
+    # Find missing IDs
     missing = []
     offset = 0
     while True:
@@ -86,7 +86,11 @@ def main():
         if not page:
             break
         for d in page:
-            ejs_id = d.get("ejs_id")
+            # Handle both dict and string formats
+            if isinstance(d, dict):
+                ejs_id = d.get("ejs_id")
+            else:
+                ejs_id = d
             if ejs_id and ejs_id not in sqlite_ids:
                 missing.append(ejs_id)
         offset += PAGE_SIZE
