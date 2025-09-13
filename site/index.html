@@ -1224,7 +1224,14 @@ function renderItem(it){
           SopalAI Summary
         </a>
       ` : ''}
-      <div id="summary-${it.id}" class="ai-summary" style="display:none; margin-top:10px; padding:10px; border:1px solid #444; border-radius:6px; font-size:13px;"></div>
+      <div id="summary-${it.id}" class="ai-summary" style="display:none; margin-top:10px; padding:10px; border:1px solid #444; border-radius:6px; font-size:13px;">
+        <div id="summary-text-${it.id}"></div>
+        <div class="qa-box" style="margin-top:10px;">
+          <input id="question-${it.id}" type="text" placeholder="Ask SopalAI about this decision..." style="width:80%; padding:4px;">
+          <button onclick="askSopalAI('${it.id}')">Ask</button>
+        </div>
+        <div id="answer-${it.id}" style="margin-top:8px; font-style:italic;"></div>
+      </div>
     </div>`;
 }
 
@@ -1401,6 +1408,25 @@ function formatAusDate(iso) {
     }
   } catch (e) {
     box.textContent = '⚠️ Error contacting server.';
+  }
+}
+
+ async function askSopalAI(id) {
+  const q = document.getElementById(`question-${id}`).value;
+  if (!q) return;
+
+  const res = await fetch(`/ask/${id}`, {
+    method: "POST",
+    body: new URLSearchParams({ question: q }),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" }
+  });
+
+  const data = await res.json();
+  const ansBox = document.getElementById(`answer-${id}`);
+  if (data.answer) {
+    ansBox.innerHTML = `<strong>Answer:</strong> ${data.answer}`;
+  } else {
+    ansBox.innerHTML = `<span style="color:red;">Error: ${data.error || "Failed to get answer"}</span>`;
   }
 }
 
