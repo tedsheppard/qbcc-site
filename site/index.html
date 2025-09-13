@@ -1390,19 +1390,26 @@ function formatAusDate(iso) {
   });
 }
 
- async function summariseDecision(id) {
+async function summariseDecision(id) {
   const box = document.getElementById(`summary-${id}`);
   if (!box) return;
 
   box.style.display = 'block';
-  box.textContent = 'Summarising… ⏳';
+  box.innerHTML = 'Summarising… ⏳';
 
   try {
     const res = await fetch(`/summarise/${id}`);
     const data = await res.json();
 
     if (data.summary) {
-      box.innerHTML = `<strong>AI Summary:</strong><br><br>${data.summary.replace(/\n/g,'<br>')}`;
+      box.innerHTML = `
+        <div><strong>AI Summary:</strong><br><br>${data.summary.replace(/\n/g,'<br>')}</div>
+        <div class="qa-box" style="margin-top:10px;">
+          <input id="question-${id}" type="text" placeholder="Ask SopalAI about this decision..." style="width:80%; padding:4px;">
+          <button onclick="askSopalAI('${id}')">Ask</button>
+        </div>
+        <div id="answer-${id}" style="margin-top:8px; font-style:italic;"></div>
+      `;
     } else {
       box.textContent = '⚠️ Failed to generate summary.';
     }
@@ -1410,6 +1417,7 @@ function formatAusDate(iso) {
     box.textContent = '⚠️ Error contacting server.';
   }
 }
+
 
  async function askSopalAI(id) {
   const q = document.getElementById(`question-${id}`).value;
