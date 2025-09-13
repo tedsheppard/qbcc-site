@@ -209,6 +209,8 @@ def summarise(decision_id: str = Path(...)):
                         "Do not say 'the adjudication decision you provided' or similar. "
                         "Structure the summary into bullet points or short sections with HTML-friendly formatting "
                         "(<strong> for headings, <ul>/<li> for lists)."
+                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
+                        "not Markdown (#, ##, ###)."
                     )
                 },
                 {
@@ -300,6 +302,8 @@ def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
                         "Respond directly to the user’s question as if they asked you about the decision. "
                         "Do not say 'the adjudication decision you provided' or 'the text you gave me'. "
                         "Write in clear, plain English with headings and bullet points formatted in HTML."
+                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
+                        "not Markdown (#, ##, ###)."
                     )
                 },
                 {"role": "user", "content": f"Decision text:\n{text}"},
