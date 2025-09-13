@@ -1473,18 +1473,7 @@ async function summariseDecision(id) {
   if (!box) return;
 
   box.style.display = 'block';
-  box.innerHTML = `
-  <div class="ai-summary">
-    <strong>AI Summary:</strong>
-    <ul><li>${cleanAIText(data.summary)}</li></ul>
-  </div>
-  <div class="qa-box" style="margin-top:10px;">
-    <input id="question-${id}" type="text" placeholder="Ask SopalAI about this decision..." style="width:80%; padding:4px;">
-    <button onclick="askSopalAI('${id}')">Ask</button>
-  </div>
-  <div id="answer-${id}" class="ai-answer"></div>
-`;
-
+  box.textContent = 'Summarising… ⏳';
 
   try {
     const res = await fetch(`/summarise/${id}`);
@@ -1492,7 +1481,7 @@ async function summariseDecision(id) {
 
     if (data.summary) {
       box.innerHTML = `
-        <div><strong>AI Summary:</strong><br><br>${data.summary.replace(/\n/g,'<br>')}</div>
+        <div class="ai-summary"><strong>AI Summary:</strong><br><br>${cleanAIText(data.summary)}</div>
         <div class="qa-box" style="margin-top:10px;">
           <input id="question-${id}" type="text" placeholder="Ask SopalAI about this decision..." style="width:80%; padding:4px;">
           <button onclick="askSopalAI('${id}')">Ask</button>
@@ -1506,6 +1495,7 @@ async function summariseDecision(id) {
     box.textContent = '⚠️ Error contacting server.';
   }
 }
+
 
 
  async function askSopalAI(id) {
