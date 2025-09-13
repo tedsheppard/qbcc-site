@@ -1016,6 +1016,31 @@ mark {
   text-decoration: underline;
 }
 
+ .ai-summary, .ai-answer {
+  max-width: 650px;
+  background: #f8f8f8;
+  border-left: 3px solid #00c97c;
+  padding: 10px 14px;
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #222;
+  white-space: normal;
+}
+
+.dark .ai-summary, .dark .ai-answer {
+  background: #1a1a1a;
+  border-left: 3px solid #21db87;
+  color: #eee;
+}
+
+.ai-summary ul, .ai-summary li {
+  margin: 4px 0;
+  padding: 0;
+  list-style-type: disc;
+  margin-left: 18px;
+}
+
 </style>
 
 </head>
@@ -1395,7 +1420,18 @@ async function summariseDecision(id) {
   if (!box) return;
 
   box.style.display = 'block';
-  box.innerHTML = 'Summarising… ⏳';
+  box.innerHTML = `
+  <div class="ai-summary">
+    <strong>AI Summary:</strong>
+    <ul><li>${cleanAIText(data.summary)}</li></ul>
+  </div>
+  <div class="qa-box" style="margin-top:10px;">
+    <input id="question-${id}" type="text" placeholder="Ask SopalAI about this decision..." style="width:80%; padding:4px;">
+    <button onclick="askSopalAI('${id}')">Ask</button>
+  </div>
+  <div id="answer-${id}" class="ai-answer"></div>
+`;
+
 
   try {
     const res = await fetch(`/summarise/${id}`);
@@ -1432,13 +1468,25 @@ async function summariseDecision(id) {
   const data = await res.json();
   const ansBox = document.getElementById(`answer-${id}`);
   if (data.answer) {
-    ansBox.innerHTML = `<strong>Answer:</strong> ${data.answer}`;
+    ansBox.innerHTML = `
+  <div class="ai-answer">
+    <strong>Answer:</strong><br>
+    ${cleanAIText(data.answer)}
+  </div>
+`;
   } else {
     ansBox.innerHTML = `<span style="color:red;">Error: ${data.error || "Failed to get answer"}</span>`;
   }
 }
 
-     
+  function cleanAIText(text) {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // turn **bold** into <strong>
+    .replace(/\n\s*-\s*/g, '</li><li>')               // turn "- " into list items
+    .replace(/\n/g, '<br>');                          // keep normal line breaks
+}
+   
     </script>
 
 <footer class="footer">
