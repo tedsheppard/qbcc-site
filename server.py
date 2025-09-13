@@ -4,6 +4,8 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from email.message import EmailMessage
 import aiosmtplib
+from openai import OpenAI
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -20,6 +22,16 @@ con.row_factory = sqlite3.Row
 con.execute("PRAGMA cache_size = -20000")
 con.execute("PRAGMA temp_store = MEMORY")
 con.execute("PRAGMA mmap_size = 30000000000")
+
+# OpenAI
+con.execute("""
+CREATE TABLE IF NOT EXISTS ai_summaries (
+    decision_id TEXT PRIMARY KEY,
+    summary TEXT
+)
+""")
+con.commit()
+
 
 # ---------------- ensure FTS ----------------
 def ensure_fts():
@@ -182,6 +194,47 @@ def open_pdf(p: str, disposition: str = "inline"):
         return {"url": build_gcs_url(file_name)}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
+
+@app.get("/summarise/{decision_id}")
+def summarise(decision_id: str):
+    # check cache first
+    row = con.execute("SELECT summary FROM ai_summaries WHERE decision_id = ?", (decision_id,)).fetchone()
+    if row:
+        return {"id": decision_id, "summary": row["summary"]}
+
+    # fetch full text
+    r = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
+    if not r:
+        return JSONResponse({"error": "Decision not found"}, status_code=404)
+    full_text = r["full_text"]
+
+    # send to OpenAI
+    prompt = f"""Summarise this adjudication decision in 5 bullet points:
+- Parties
+- Payment claim amount and defence
+- Main issues
+- Adjudicator’s reasoning
+- Outcome
+
+Decision text:
+{full_text[:300000]}"""  # safeguard: truncate to ~30k chars
+
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",   # cheapest 128k context
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=600,
+        )
+        summary = resp.choices[0].message.content.strip()
+
+        # save cache
+        con.execute("INSERT OR REPLACE INTO ai_summaries(decision_id, summary) VALUES(?, ?)", (decision_id, summary))
+        con.commit()
+
+        return {"id": decision_id, "summary": summary}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 
 # ---------- FEEDBACK FORM ----------
 @app.post("/send-feedback")
