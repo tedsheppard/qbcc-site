@@ -1,11 +1,10 @@
 import os, re, shutil, sqlite3, requests
-from fastapi import FastAPI, Query, Form
+from fastapi import FastAPI, Query, Form, Path, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from email.message import EmailMessage
 import aiosmtplib
 from openai import OpenAI
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -24,6 +23,7 @@ con.execute("PRAGMA temp_store = MEMORY")
 con.execute("PRAGMA mmap_size = 30000000000")
 
 # OpenAI
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 con.execute("""
 CREATE TABLE IF NOT EXISTS ai_summaries (
     decision_id TEXT PRIMARY KEY,
@@ -31,7 +31,6 @@ CREATE TABLE IF NOT EXISTS ai_summaries (
 )
 """)
 con.commit()
-
 
 # ---------------- ensure FTS ----------------
 def ensure_fts():
@@ -101,36 +100,24 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
         items = []
         for r in rows:
-            # fetch metadata
             meta = con.execute("""
               SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
-                     m.act, d.reference, d.pdf_path
+                     m.act, d.reference, d.pdf_path, d.ejs_id
               FROM docs_fresh d
               LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
               WHERE d.rowid = ?
             """, (r["rowid"],)).fetchone()
 
             d = dict(meta) if meta else {}
-            d["id"] = r["rowid"]
+            d["id"] = d.get("ejs_id", r["rowid"])
 
-            # ---------------- clean snippet ----------------
             snippet_raw = r["snippet"]
-
-            # remove weird "0word" artifacts from FTS output
             snippet_clean = re.sub(r'\b\d+([A-Za-z]+)\b', r'\1', snippet_raw)
 
-            # highlight search terms manually
             raw_terms = re.findall(r'\w+', q)
-            terms = [
-                t for t in raw_terms
-                if not re.fullmatch(r'\d+', t) and t.upper() not in {"W", "NEAR", "AND", "OR", "NOT"}
-            ]
+            terms = [t for t in raw_terms if not re.fullmatch(r'\d+', t) and t.upper() not in {"W","NEAR","AND","OR","NOT"}]
             for term in terms:
-                snippet_clean = re.sub(
-                    fr'(?i)\b({re.escape(term)})\b',
-                    r'<mark>\1</mark>',
-                    snippet_clean
-                )
+                snippet_clean = re.sub(fr'(?i)\b({re.escape(term)})\b', r'<mark>\1</mark>', snippet_clean)
 
             d["snippet"] = snippet_clean
             items.append(d)
@@ -180,7 +167,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         })
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
 
-# ---------- PDF links via Google Cloud ----------
+# ---------- PDF links ----------
 GCS_BUCKET = "sopal-bucket"
 GCS_PREFIX = "pdfs"
 
@@ -195,81 +182,38 @@ def open_pdf(p: str, disposition: str = "inline"):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
+# ---------- AI Summarise ----------
 @app.get("/summarise/{decision_id}")
-def summarise(decision_id: str):
-    # check cache first
-    row = con.execute("SELECT summary FROM ai_summaries WHERE decision_id = ?", (decision_id,)).fetchone()
-    if row:
-        return {"id": decision_id, "summary": row["summary"]}
-
-    # fetch full text
-    r = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
-    if not r:
-        return JSONResponse({"error": "Decision not found"}, status_code=404)
-    full_text = r["full_text"]
-
-    # send to OpenAI
-    prompt = f"""Summarise this adjudication decision in 5 bullet points:
-- Parties
-- Payment claim amount and defence
-- Main issues
-- Adjudicator’s reasoning
-- Outcome
-
-Decision text:
-{full_text[:300000]}"""  # safeguard: truncate to ~30k chars
-
+def summarise(decision_id: str = Path(...)):
     try:
+        # check cache
+        row = con.execute("SELECT summary FROM ai_summaries WHERE decision_id = ?", (decision_id,)).fetchone()
+        if row:
+            return {"id": decision_id, "summary": row["summary"]}
+
+        # get text
+        r = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
+        if not r or not r["full_text"]:
+            raise HTTPException(status_code=404, detail="Decision not found")
+
+        text = r["full_text"][:15000]  # trim for cost
+
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",   # cheapest 128k context
-            messages=[{"role": "user", "content": prompt}],
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "Summarise adjudication decisions clearly for a construction lawyer."},
+                {"role": "user", "content": f"Summarise this decision in 5 bullet points:\n{text}"}
+            ],
             max_tokens=600,
         )
         summary = resp.choices[0].message.content.strip()
 
-        # save cache
-        con.execute("INSERT OR REPLACE INTO ai_summaries(decision_id, summary) VALUES(?, ?)", (decision_id, summary))
+        con.execute("INSERT OR REPLACE INTO ai_summaries(decision_id, summary) VALUES (?, ?)", (decision_id, summary))
         con.commit()
-
         return {"id": decision_id, "summary": summary}
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
-
-from fastapi import Path
-from openai import OpenAI
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-@app.get("/summarise/{doc_id}")
-def summarise(doc_id: str = Path(...)):
-    try:
-        # Fetch the full text from your DB
-        row = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (doc_id,)).fetchone()
-        if not row:
-            return {"error": f"No decision found with ID {doc_id}"}
-
-        full_text = row["full_text"]
-        if not full_text:
-            return {"error": "Decision text is empty"}
-
-        # Truncate if too long (OpenAI context limit)
-        chunk = full_text[:12000]
-
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",   # cheap + fast
-            messages=[
-                {"role": "system", "content": "Summarise this adjudication decision in plain English for a construction lawyer."},
-                {"role": "user", "content": chunk}
-            ]
-        )
-
-        summary = resp.choices[0].message.content
-        return {"summary": summary}
-
-    except Exception as e:
         print("ERROR in /summarise:", e)
-        return {"error": str(e)}
-
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 # ---------- FEEDBACK FORM ----------
 @app.post("/send-feedback")
@@ -312,35 +256,6 @@ Details:
         return {"ok": True, "message": "Feedback sent successfully"}
     except Exception as e:
         return {"ok": False, "error": str(e)}
-from fastapi import HTTPException
-from openai import OpenAI
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-@app.get("/summarise/{doc_id}")
-def summarise(doc_id: int):
-    try:
-        # get full text of decision
-        row = con.execute("SELECT full_text FROM docs_fresh WHERE rowid = ?", (doc_id,)).fetchone()
-        if not row or not row["full_text"]:
-            raise HTTPException(status_code=404, detail="Decision not found")
-
-        text = row["full_text"]
-
-        # call OpenAI to summarise
-        response = client.chat.completions.create(
-            model="gpt-4.1-mini",  # cheaper + good for summaries
-            messages=[
-                {"role": "system", "content": "You are an assistant that summarises legal adjudication decisions clearly and concisely."},
-                {"role": "user", "content": f"Summarise this adjudication decision in about 200 words:\n\n{text[:15000]}"}  # trim to keep token cost safe
-            ],
-        )
-
-        summary = response.choices[0].message.content.strip()
-        return {"summary": summary}
-
-    except Exception as e:
-        return {"error": str(e)}
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
