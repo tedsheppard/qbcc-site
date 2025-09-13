@@ -196,7 +196,7 @@ def summarise(decision_id: str = Path(...)):
         if not r or not r["full_text"]:
             raise HTTPException(status_code=404, detail="Decision not found")
 
-        text = r["full_text"][:15000]  # trim for cost
+        text = r["full_text"][:300000]  # trim for cost
 
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
