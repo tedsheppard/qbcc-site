@@ -235,6 +235,41 @@ Decision text:
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+from fastapi import Path
+from openai import OpenAI
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+@app.get("/summarise/{doc_id}")
+def summarise(doc_id: str = Path(...)):
+    try:
+        # Fetch the full text from your DB
+        row = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (doc_id,)).fetchone()
+        if not row:
+            return {"error": f"No decision found with ID {doc_id}"}
+
+        full_text = row["full_text"]
+        if not full_text:
+            return {"error": "Decision text is empty"}
+
+        # Truncate if too long (OpenAI context limit)
+        chunk = full_text[:12000]
+
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",   # cheap + fast
+            messages=[
+                {"role": "system", "content": "Summarise this adjudication decision in plain English for a construction lawyer."},
+                {"role": "user", "content": chunk}
+            ]
+        )
+
+        summary = resp.choices[0].message.content
+        return {"summary": summary}
+
+    except Exception as e:
+        print("ERROR in /summarise:", e)
+        return {"error": str(e)}
+
 
 # ---------- FEEDBACK FORM ----------
 @app.post("/send-feedback")
