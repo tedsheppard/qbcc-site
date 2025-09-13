@@ -1201,29 +1201,33 @@ mark {
     }
 
 
-    function renderItem(it){
-      const pdf = buildPdfLinks(it.pdf_path);
-      const caseName = `${sanitize(it.claimant)} v ${sanitize(it.respondent)}`;
-      const caseNo = sanitize(it.case_no || it.adj_no || it.id || '');
+function renderItem(it){
+  const pdf = buildPdfLinks(it.pdf_path);
+  const caseName = `${sanitize(it.claimant)} v ${sanitize(it.respondent)}`;
+  const caseNo = sanitize(it.case_no || it.adj_no || it.id || '');
 
-      return `
-        <div class="result">
-          <h3>${caseName}</h3>
-          <div class="meta">
-            ${it.decision_date_norm ? `<strong>Date:</strong> ${formatAusDate(it.decision_date_norm)}<br>` : '<strong>Date:</strong> Unknown<br>'}
-            ${it.adjudicator ? `<strong>Adjudicator:</strong> ${sanitize(it.adjudicator)}<br>` : ''}
-            ${it.claimant ? `<strong>Claimant:</strong> ${sanitize(it.claimant)}<br>` : ''}
-            ${it.respondent ? `<strong>Respondent:</strong> ${sanitize(it.respondent)}<br>` : ''}
-            ${it.act ? `<strong>Act:</strong> ${sanitize(it.act)}<br>` : ''}
-          </div>
-          ${it.snippet ? `<p class="snippet">${it.snippet}</p>` : ''}
-          ${pdf ? `<a class="open-btn" href="${pdf.open}" target="_blank">Open Decision (PDF)</a>` : ''}
-         <a href="javascript:void(0)" class="open-btn" onclick="summariseDecision('${it.id}')">
-           SopalAI Summary
-         </a>
-         <div id="summary-${it.id}" class="ai-summary" style="display:none; margin-top:10px; padding:10px; border:1px solid #444; border-radius:6px; font-size:13px;"></div>
-        </div>`;
-    }
+  return `
+    <div class="result">
+      <h3>${caseName}</h3>
+      <div class="meta">
+        ${it.decision_date_norm ? `<strong>Date:</strong> ${formatAusDate(it.decision_date_norm)}<br>` : '<strong>Date:</strong> Unknown<br>'}
+        ${it.adjudicator ? `<strong>Adjudicator:</strong> ${sanitize(it.adjudicator)}<br>` : ''}
+        ${it.claimant ? `<strong>Claimant:</strong> ${sanitize(it.claimant)}<br>` : ''}
+        ${it.respondent ? `<strong>Respondent:</strong> ${sanitize(it.respondent)}<br>` : ''}
+        ${it.act ? `<strong>Act:</strong> ${sanitize(it.act)}<br>` : ''}
+      </div>
+      ${it.snippet ? `<p class="snippet">${it.snippet}</p>` : ''}
+      ${pdf ? `
+        <a class="open-btn" href="${pdf.open}" target="_blank">Open Decision (PDF)</a>
+        <span style="color:black; margin:0 6px;">|</span>
+        <a href="javascript:void(0)" class="open-btn" onclick="summariseDecision('${it.id}')">
+          SopalAI Summary
+        </a>
+      ` : ''}
+      <div id="summary-${it.id}" class="ai-summary" style="display:none; margin-top:10px; padding:10px; border:1px solid #444; border-radius:6px; font-size:13px;"></div>
+    </div>`;
+}
+
 
     function renderPagination(currentPage) {
       const totalPages = Math.ceil(state.total / state.limit);
