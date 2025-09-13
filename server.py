@@ -280,5 +280,32 @@ Details:
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
+@app.post("/ask/{decision_id}")
+def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
+    try:
+        # fetch decision text
+        row = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
+        if not row or not row["full_text"]:
+            raise HTTPException(status_code=404, detail="Decision not found")
+
+        text = row["full_text"][:15000]  # keep it safe for cost/context
+
+        # ask GPT
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",  # conversational, cost-effective
+            messages=[
+                {"role": "system", "content": "You are SopalAI, a legal assistant that answers questions about adjudication decisions under the BIF Act. Be precise, structured, and cite parts of the decision text where useful."},
+                {"role": "user", "content": f"Decision text:\n{text}"},
+                {"role": "user", "content": f"Question: {question}"}
+            ],
+            max_tokens=600
+        )
+        answer = resp.choices[0].message.content.strip()
+        return {"answer": answer}
+
+    except Exception as e:
+        print("ERROR in /ask:", e)
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
