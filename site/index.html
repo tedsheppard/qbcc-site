@@ -19,95 +19,6 @@
   <title>Sopal – Adjudication Search</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  /* Welcome Screen Styles */
-  #welcomeScreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: linear-gradient(135deg, #00c97c 0%, #21db87 50%, #42ffaa 100%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 99999;
-    opacity: 1;
-    transition: opacity 0.8s ease-out;
-    font-family: Inter, sans-serif;
-  }
-
-  #welcomeScreen.fade-out {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .welcome-content {
-    text-align: center;
-    animation: welcomeSlideUp 1.2s ease-out;
-  }
-
-  .welcome-title {
-    font-size: clamp(2.5rem, 8vw, 5rem);
-    font-weight: 800;
-    color: white;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    margin: 0 0 1rem 0;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-  }
-
-  .welcome-subtitle {
-    font-size: clamp(1.2rem, 3vw, 2rem);
-    font-weight: 400;
-    color: rgba(255, 255, 255, 0.95);
-    margin: 0;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  }
-
-  .welcome-logo {
-    width: clamp(80px, 15vw, 120px);
-    height: auto;
-    margin-bottom: 2rem;
-    filter: brightness(0) invert(1);
-    opacity: 0.9;
-    animation: logoFloat 2s ease-in-out infinite;
-  }
-
-  @keyframes welcomeSlideUp {
-    0% {
-      opacity: 0;
-      transform: translateY(50px) scale(0.9);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  @keyframes logoFloat {
-    0%, 100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-
-  /* Hide main content initially */
-  body.loading main,
-  body.loading .search-header,
-  body.loading .footer {
-    opacity: 0;
-  }
-
-  body.loaded main,
-  body.loaded .search-header,
-  body.loaded .footer {
-    opacity: 1;
-    transition: opacity 0.5s ease-in 0.3s;
-  }
-
   /* Light theme overrides */
   .light {
     background: #ffffff !important;
@@ -502,7 +413,7 @@ mark {
   color: #000;           /* dark text */
   padding: 0 1px;        /* very minimal padding */
   border-radius: 1px;    /* subtle rounding */
-  font-weight: inherit;  /* don't over-emphasise */
+  font-weight: inherit;  /* don’t over-emphasise */
 }
 
 /* Dark mode highlight */
@@ -1098,16 +1009,7 @@ mark {
 </style>
 
 </head>
-  <body class="light loading">
-    <!-- Welcome Screen -->
-    <div id="welcomeScreen">
-      <div class="welcome-content">
-        <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="welcome-logo">
-        <h1 class="welcome-title">Welcome to the Intelligence</h1>
-        <h2 class="welcome-subtitle">QBCC Decision Engine</h2>
-      </div>
-    </div>
-
+  <body class="light">
     <div id="loadingBar"></div>
 
 <div class="search-header">
@@ -1239,23 +1141,6 @@ mark {
 
 
     <script>
-    // Welcome screen animation
-    window.addEventListener('load', function() {
-      setTimeout(() => {
-        const welcomeScreen = document.getElementById('welcomeScreen');
-        const body = document.body;
-        
-        welcomeScreen.classList.add('fade-out');
-        body.classList.remove('loading');
-        body.classList.add('loaded');
-        
-        // Remove welcome screen from DOM after animation
-        setTimeout(() => {
-          welcomeScreen.remove();
-        }, 800);
-      }, 2500); // 2.5 seconds
-    });
-
     function $(sel){ return document.querySelector(sel); }
     function sanitize(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function getFileName(path){ if (!path) return ''; return path.split('/').pop(); }
@@ -1453,15 +1338,8 @@ if (saved === 'dark') {
         limitSel.addEventListener('change', () => runSearch(1));
       }
 
-      // Initial search - delayed for first-time visitors, immediate for returning visitors
-      const hasSeenWelcome = localStorage.getItem('sopal_welcome_seen');
-      if (!hasSeenWelcome) {
-        setTimeout(() => {
-          runSearch();
-        }, 2300); // Wait for welcome screen to finish
-      } else {
-        runSearch(); // Immediate search for returning visitors
-      }
+      // Initial search
+      runSearch();
     
 
     function startLoadingBar() {
