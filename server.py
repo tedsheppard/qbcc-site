@@ -6,6 +6,13 @@ from email.message import EmailMessage
 import aiosmtplib
 from openai import OpenAI
 
+from fastapi.responses import FileResponse
+
+@app.get("/download-db")
+async def download_db():
+    return FileResponse("/tmp/qbcc.db", filename="qbcc.db")
+
+
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SITE_DIR = os.path.join(ROOT, "site")
