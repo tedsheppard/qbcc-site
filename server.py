@@ -211,7 +211,7 @@ def summarise(decision_id: str = Path(...)):
                         "Respond as if the user is asking you about the decision directly. "
                         "Do not say 'the adjudication decision you provided' or similar. "
                         "Structure the summary into bullet points or short sections with HTML-friendly formatting "
-                        "(<strong> for headings, <ul>/<li> for lists)."
+                        "(<strong> for headings, <ul>/<li> for lists) with compact spacing (no double/triple lines)."
                         "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
                         "not Markdown (#, ##, ###)."
                     )
