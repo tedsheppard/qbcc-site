@@ -1150,21 +1150,6 @@ mark {
         <button onclick="runSearch()">Search</button>
       </div>
 
-      <select id="limit" class="results-limit">
-        <option value="20">20 results</option>
-        <option value="50">50 results</option>
-        <option value="100">100 results</option>
-      </select>
-
-      <select id="sort" class="results-limit">
-        <option value="relevance">Relevance</option>
-        <option value="newest" selected>Date: Newest to Oldest</option>
-        <option value="oldest">Date: Oldest to Newest</option>
-        <option value="atoz">A → Z (Claimant)</option>
-        <option value="ztoa">Z → A (Claimant)</option>
-      </select>
-    </div>
-
     <button id="themeToggle" onclick="toggleTheme()">Switch to Dark Mode 🌙</button>
   </div>
 </div>
@@ -1315,7 +1300,7 @@ mark {
     }
 
 
-function renderItem(it){
+function renderItem(it, query) {
   const pdf = buildPdfLinks(it.pdf_path);
   const caseName = `${sanitize(it.claimant)} v ${sanitize(it.respondent)}`;
   const caseNo = sanitize(it.case_no || it.adj_no || it.id || '');
@@ -1329,7 +1314,7 @@ function renderItem(it){
         ${it.claimant ? `<strong>Claimant:</strong> ${sanitize(it.claimant)}<br>` : ''}
         ${it.respondent ? `<strong>Respondent:</strong> ${sanitize(it.respondent)}<br>` : ''}
       </div>
-      ${it.snippet ? `<p class="snippet">${it.snippet}</p>` : ''}
+      ${query ? (it.snippet ? `<p class="snippet">${it.snippet}</p>` : '') : ''}
       ${pdf ? `
         <a class="open-btn" href="${pdf.open}" target="_blank">Open Decision (PDF)</a>
         <span style="color:black; margin:0 6px;">|</span>
