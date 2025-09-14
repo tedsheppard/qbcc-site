@@ -226,6 +226,7 @@ Summarise this adjudication decision in 5–7 bullet points, covering:
 - The factual disputes and evidence
 - The adjudicator’s reasoning
 - The final outcome, amount awarded, and fee split
+Don't actually title it "Summary" or the like please, go straight into bullet points
 
 Decision text:
 {text}
