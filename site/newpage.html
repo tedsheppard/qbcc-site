@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Sopal – Document Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Base styles matching main site */
+    body {
+      font-family: Inter, sans-serif;
+      margin: 0;
+      background: #ffffff;
+      color: #222;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .header {
+      background: #fdfdfd;
+      padding: 20px 25px;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      height: 31px;
+      margin-right: 20px;
+    }
+
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      color: #333;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #00c97c;
+    }
+
+    /* Main layout */
+    .main-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      min-height: calc(100vh - 120px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: #f9f9f9;
+      border-right: 1px solid #e1e1e1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .sidebar-section {
+      margin-bottom: 30px;
+    }
+
+    .sidebar-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .project-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .project-item {
+      background: white;
+      border: 1px solid #e1e1e1;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .project-item:hover {
+      border-color: #00c97c;
+      background: #f0fdf4;
+    }
+
+    .project-item.active {
+      border-color: #00c97c;
+      background: #f0fdf4;
+      box-shadow: 0 2px 8px rgba(0, 201, 124, 0.15);
+    }
+
+    .project-name {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .project-meta {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .new-project-btn {
+      width: 100%;
+      background: #00c97c;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 20px;
+    }
+
+    .new-project-btn:hover {
+      background: #00a568;
+    }
+
+    /* Main content area */
+    .content-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top bar */
+    .top-bar {
+      background: white;
+      border-bottom: 1px solid #e1e1e1;
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .project-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #000;
+    }
+
+    .upload-btn {
+      background: #00c97c;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .upload-btn:hover {
+      background: #00a568;
+      transform: translateY(-1px);
+    }
+
+    /* Document area */
+    .document-area {
+      flex: 1;
+      display: flex;
+    }
+
+    /* Document list */
+    .document-list {
+      width: 350px;
+      background: white;
+      border-right: 1px solid #e1e1e1;
+      overflow-y: auto;
+    }
+
+    .document-header {
+      background: #f9f9f9;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e1e1e1;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .document-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .document-item:hover {
+      background: #f9f9f9;
+    }
+
+    .document-item.selected {
+      background: #f0fdf4;
+      border-left: 3px solid #00c97c;
+    }
+
+    .document-name {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+      color: #333;
+    }
+
+    .document-type {
+      font-size: 12px;
+      color: #666;
+      background: #f0f0f0;
+      padding: 2px 8px;
+      border-radius: 12px;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+
+    .document-date {
+      font-size: 12px;
+      color: #999;
+    }
+
+    /* Chat area */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: white;
+    }
+
+    .chat-header {
+      background: #f9f9f9;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e1e1e1;
+      font-weight: 600;
+      color: #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background: #fafafa;
+    }
+
+    .message {
+      margin-bottom: 20px;
+      max-width: 80%;
+    }
+
+    .message.user {
+      margin-left: auto;
+    }
+
+    .message.ai {
+      margin-right: auto;
+    }
+
+    .message-content {
+      background: white;
+      padding: 16px 20px;
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .message.user .message-content {
+      background: #00c97c;
+      color: white;
+    }
+
+    .message-meta {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .message.ai .message-meta {
+      text-align: left;
+    }
+
+    .chat-input-area {
+      background: white;
+      border-top: 1px solid #e1e1e1;
+      padding: 20px;
+    }
+
+    .chat-input {
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 15px;
+      resize: none;
+      min-height: 60px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: #00c97c;
+      box-shadow: 0 0 0 3px rgba(0, 201, 124, 0.1);
+    }
+
+    .send-btn {
+      background: #00c97c;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 12px;
+      float: right;
+    }
+
+    .send-btn:hover {
+      background: #00a568;
+    }
+
+    .send-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+
+    .empty-state h3 {
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    /* Upload + Project overlay (shared look) */
+    .upload-overlay, .project-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .upload-modal, .project-modal {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .upload-modal h3, .project-modal h3 {
+      margin-top: 0;
+      margin-bottom: 20px;
+    }
+
+    .file-drop-area {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 20px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .file-drop-area.dragover {
+      border-color: #00c97c;
+      background: #f0fdf4;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .document-type-selector {
+      margin-bottom: 20px;
+    }
+
+    .document-type-selector label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .document-type-selector select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    /* New Project modal inputs */
+    .project-form label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .project-form input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+    }
+    .project-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .btn-secondary {
+      background: #ccc;
+      color: #222;
+    }
+    .btn, .upload-btn { /* share look */
+      background: #00c97c;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover { background: #00a568; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .main-container { flex-direction: column; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #e1e1e1; }
+      .document-area { flex-direction: column; }
+      .document-list { width: 100%; border-right: none; border-bottom: 1px solid #e1e1e1; }
+    }
+
+    .ai-thinking { color: #666; font-style: italic; }
+    .document-quote { background: #f0f0f0; border-left: 3px solid #00c97c; padding: 12px; margin: 12px 0; border-radius: 4px; }
+    .quick-actions { display: flex; gap: 8px; margin-bottom: 16px; }
+    .quick-action { background: #f9f9f9; border: 1px solid #e1e1e1; border-radius: 20px; padding: 8px 16px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+    .quick-action:hover { background: #f0fdf4; border-color: #00c97c; }
+
+    /* Footer */
+    .footer { background: #f9f9f9; border-top: 1px solid #ddd; padding: 20px; }
+    .footer-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .footer-left { display: flex; align-items: center; gap: 12px; }
+    .footer-logo { height: 24px; }
+    .footer-links a { margin-left: 12px; color: #333; text-decoration: none; font-size: 14px; }
+    .footer-links a:hover { color: #00c97c; }
+    .footer-bottom { max-width: 1400px; margin: 10px auto 0; color: #666; font-size: 12px; text-align: center; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <a href="/">
+        <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Search</a>
+        <a href="documents.html" style="color: #00c97c;">Documents</a>
+        <a href="feedback.html">Feedback</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="main-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <button class="new-project-btn" onclick="showProjectModal()">+ New Project</button>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Your Projects</div>
+        <ul class="project-list" id="projectList">
+          <li class="project-item active" onclick="selectProject(this, 'Westfield Shopping Centre')">
+            <div class="project-name">Westfield Shopping Centre</div>
+            <div class="project-meta">15 documents • Created 2 days ago</div>
+          </li>
+          <li class="project-item" onclick="selectProject(this, 'Brisbane City Apartments')">
+            <div class="project-name">Brisbane City Apartments</div>
+            <div class="project-meta">8 documents • Created 1 week ago</div>
+          </li>
+          <li class="project-item" onclick="selectProject(this, 'Gold Coast Highway')">
+            <div class="project-name">Gold Coast Highway</div>
+            <div class="project-meta">23 documents • Created 2 weeks ago</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <!-- Top Bar -->
+      <div class="top-bar">
+        <h1 class="project-title" id="currentProjectTitle">Westfield Shopping Centre</h1>
+        <button class="upload-btn" onclick="showUploadModal()">📄 Upload Documents</button>
+      </div>
+
+      <!-- Document Area -->
+      <div class="document-area">
+        <!-- Document List -->
+        <div class="document-list" id="documentList">
+          <!-- Will be populated by JS -->
+        </div>
+
+        <!-- Chat Area -->
+        <div class="chat-area">
+          <div class="chat-header">
+            <span>AI Assistant</span>
+            <span style="font-size: 12px; font-weight: normal; color: #666;">Powered by GPT-5</span>
+          </div>
+
+          <div class="chat-messages" id="chatMessages">
+            <div class="message ai">
+              <div class="message-content">
+                Hello! I've analyzed your project documents. I can help you draft contractual notices, answer questions about specific clauses, or extract information from your uploaded files. What would you like to know?
+              </div>
+              <div class="message-meta">AI Assistant • Just now</div>
+            </div>
+
+            <div class="quick-actions">
+              <div class="quick-action" onclick="askQuickQuestion('What does clause 14 say about delay costs?')">Ask about delay costs</div>
+              <div class="quick-action" onclick="askQuickQuestion('Draft an EOT request')">Draft EOT request</div>
+              <div class="quick-action" onclick="askQuickQuestion('Summarize latest correspondence')">Summarize correspondence</div>
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <textarea class="chat-input" id="chatInput" placeholder="Ask about your documents, request drafts, or get clause interpretations..." onkeypress="handleChatKeypress(event)"></textarea>
+            <button class="send-btn" onclick="sendMessage()">Send</button>
+            <div style="clear: both;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Overlay -->
+  <div class="upload-overlay" id="uploadOverlay">
+    <div class="upload-modal">
+      <button class="close-btn" onclick="hideUploadModal()">×</button>
+      <h3>Upload Documents</h3>
+
+      <div class="document-type-selector">
+        <label for="docType">Document Type:</label>
+        <select id="docType">
+          <option value="contract">Contract (AS4000, etc.)</option>
+          <option value="correspondence">Correspondence (Email, Letter)</option>
+          <option value="payment">Payment Claim/Schedule</option>
+          <option value="variation">Variation Order</option>
+          <option value="photos">Photos/Images</option>
+          <option value="eot">Extension of Time</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="file-drop-area" id="fileDropArea" onclick="document.getElementById('fileInput').click()">
+        <div>📄</div>
+        <div><strong>Click to upload</strong> or drag files here</div>
+        <div style="font-size: 12px; color: #666; margin-top: 8px;">Supports PDF, DOC, DOCX, images up to 50MB</div>
+      </div>
+
+      <input type="file" id="fileInput" style="display: none;" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+
+      <div style="display: flex; gap: 12px;">
+        <button class="btn" style="flex:1;" onclick="uploadFiles()">Upload Selected Files</button>
+        <button class="btn btn-secondary" style="flex:0 0 auto;" onclick="hideUploadModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Project Overlay -->
+  <div class="project-overlay" id="projectOverlay">
+    <div class="project-modal">
+      <button class="close-btn" onclick="hideProjectModal()">×</button>
+      <h3>Create New Project</h3>
+      <div class="project-form">
+        <label for="projectNameInput">Project name</label>
+        <input id="projectNameInput" type="text" placeholder="e.g., Westfield Shopping Centre Stage 2" />
+      </div>
+      <div class="project-actions">
+        <button class="btn" onclick="saveNewProject()">Create</button>
+        <button class="btn btn-secondary" onclick="hideProjectModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // -------------------- State --------------------
+  let projects = {
+    "Westfield Shopping Centre": {
+      created: "2 days ago",
+      documents: [
+        { name: "AS4000-1997 Subcontract", type: "Contract", date: "Uploaded 2 days ago" },
+        { name: "Variation Order #12", type: "Variation", date: "Uploaded 1 day ago" },
+        { name: "Email - Superintendent 15 July", type: "Correspondence", date: "Uploaded 1 day ago" },
+        { name: "Progress Claim #8", type: "Payment Claim", date: "Uploaded 3 hours ago" },
+        { name: "Site Photos - Week 12", type: "Photos", date: "Uploaded 2 hours ago" }
+      ]
+    },
+    "Brisbane City Apartments": {
+      created: "1 week ago",
+      documents: []
+    },
+    "Gold Coast Highway": {
+      created: "2 weeks ago",
+      documents: []
+    }
+  };
+
+  let currentProject = "Westfield Shopping Centre";
+
+  // -------------------- Helpers --------------------
+  function qs(sel, root=document){ return root.querySelector(sel); }
+  function qsa(sel, root=document){ return Array.from(root.querySelectorAll(sel)); }
+  function escapeHTML(str){ return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[s])); }
+
+  // -------------------- Project management --------------------
+  function selectProject(element, projectName) {
+    qsa('.project-item').forEach(item => item.classList.remove('active'));
+    element.classList.add('active');
+    currentProject = projectName;
+    qs('#currentProjectTitle').textContent = projectName;
+    loadProjectDocuments(projectName);
+  }
+
+  function showProjectModal(){
+    qs('#projectOverlay').style.display = 'flex';
+    setTimeout(() => { qs('#projectNameInput').focus(); }, 0);
+  }
+
+  function hideProjectModal(){
+    qs('#projectOverlay').style.display = 'none';
+    qs('#projectNameInput').value = '';
+  }
+
+  function saveNewProject(){
+    const name = qs('#projectNameInput').value.trim();
+    if(!name){ alert('Please enter a project name'); return; }
+    if(projects[name]){ alert('A project with this name already exists.'); return; }
+
+    // Create in state
+    projects[name] = { created: 'just now', documents: [] };
+
+    // Add to sidebar list
+    const projectList = qs('#projectList');
+    const li = document.createElement('li');
+    li.className = 'project-item';
+    li.onclick = () => selectProject(li, name);
+    li.innerHTML = `<div class="project-name">${escapeHTML(name)}</div><div class="project-meta">0 documents • Created just now</div>`;
+    projectList.appendChild(li);
+
+    // Make it the active project immediately
+    selectProject(li, name);
+
+    hideProjectModal();
+  }
+
+  // -------------------- Documents --------------------
+  function loadProjectDocuments(projectName) {
+    const list = qs('#documentList');
+    const project = projects[projectName];
+
+    list.innerHTML = `<div class="document-header">Documents (${project.documents.length})</div>`;
+
+    project.documents.forEach((doc, i) => {
+      const item = document.createElement('div');
+      item.className = 'document-item' + (i === 0 ? ' selected' : '');
+      item.onclick = () => selectDocument(item);
+      item.innerHTML = `
+        <div class="document-name">${escapeHTML(doc.name)}</div>
+        <div class="document-type">${escapeHTML(doc.type)}</div>
+        <div class="document-date">${escapeHTML(doc.date)}</div>
+      `;
+      list.appendChild(item);
+    });
+
+    // Reset chat
+    const chat = qs('#chatMessages');
+    chat.innerHTML = `
+      <div class="message ai">
+        <div class="message-content">Project "${escapeHTML(projectName)}" loaded. I've analyzed your documents and I'm ready to help with contractual questions, drafting, and document analysis.</div>
+        <div class="message-meta">AI Assistant • Just now</div>
+      </div>
+      <div class="quick-actions">
+        <div class="quick-action" onclick="askQuickQuestion('What does clause 14 say about delay costs?')">Ask about delay costs</div>
+        <div class="quick-action" onclick="askQuickQuestion('Draft an EOT request')">Draft EOT request</div>
+        <div class="quick-action" onclick="askQuickQuestion('Summarize latest correspondence')">Summarize correspondence</div>
+      </div>
+    `;
+
+    // Update active project's meta text
+    const activeMeta = qs('.project-item.active .project-meta');
+    if (activeMeta) {
+      const count = project.documents.length;
+      activeMeta.textContent = `${count} document${count !== 1 ? 's' : ''} • Created ${project.created}`;
+    }
+  }
+
+  function selectDocument(element) {
+    qsa('.document-item').forEach(item => item.classList.remove('selected'));
+    element.classList.add('selected');
+  }
+
+  // -------------------- Chat functionality --------------------
+  function sendMessage() {
+    const input = qs('#chatInput');
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage('user', escapeHTML(message));
+    input.value = '';
+
+    // Show AI thinking
+    addMessage('ai', '<div class="ai-thinking">Analyzing your documents...</div>', true);
+
+    // Simulate AI response
+    setTimeout(() => {
+      removeThinkingMessage();
+      simulateAIResponse(message);
+    }, 1000);
+  }
+
+  function addMessage(type, content, isThinking = false) {
+    const messagesContainer = qs('#chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}`;
+    if (isThinking) messageDiv.id = 'thinking-message';
+
+    messageDiv.innerHTML = `
+      <div class="message-content">${content}</div>
+      <div class="message-meta">${type === 'user' ? 'You' : 'AI Assistant'} • Just now</div>
+    `;
+
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  function removeThinkingMessage() {
+    const thinkingMessage = qs('#thinking-message');
+    if (thinkingMessage) thinkingMessage.remove();
+  }
+
+  function simulateAIResponse(userMessage) {
+    const text = userMessage.toLowerCase();
+    let response = '';
+
+    if (text.includes('clause 14') || text.includes('delay')) {
+      response = `Based on your AS4000 Subcontract, Clause 14 states:
+
+<div class="document-quote">
+"The Subcontractor shall be entitled to an extension of time if completion of the subcontract works is or will be delayed by... [reasons including variations, inclement weather, and other qualifying causes]"
+</div>
+
+Regarding delay costs, the clause specifies that extensions of time may be granted but additional costs are only recoverable in specific circumstances outlined in subclauses 14.3 and 14.4.
+
+Would you like me to draft an Extension of Time request based on this clause?`;
+    } else if (text.includes('eot') || text.includes('extension')) {
+      const today = new Date().toLocaleDateString();
+      response = `I'll draft an Extension of Time request for you. Based on your contract and recent correspondence, here's a template:
+
+<strong>EXTENSION OF TIME REQUEST</strong><br>
+To: [Superintendent/Principal]<br>
+Project: ${escapeHTML(currentProject)}<br>
+Date: ${escapeHTML(today)}<br><br>
+We hereby request an extension of time of [X] days for the following reasons:
+<ol>
+<li>[Reason based on contract clauses]</li>
+<li>[Supporting documentation reference]</li>
+</ol>
+This request is made pursuant to Clause 14 of the Subcontract. Please find supporting documentation attached.<br><br>
+Would you like me to customize this further or add specific details from your documents?`;
+    } else if (text.includes('summarize') || text.includes('summary')) {
+      response = `Here's a short summary of your most recent correspondence:
+<ul>
+<li><em>Email - Superintendent 15 July</em>: Confirmation of site access windows and request for updated programme.</li>
+<li><em>Variation Order #12</em>: Scope addition for tenancy fit-out; pricing due within 5 business days.</li>
+<li><em>Progress Claim #8</em>: Submitted; valuation period closes Friday.</li>
+</ul>
+Want me to produce a one-page brief (issues, dates, actions)?`;
+    } else {
+      response = `I've searched through your project documents. Could you be more specific about what you're looking for? I can help with:
+<ul>
+<li>Interpreting specific contract clauses</li>
+<li>Drafting legal notices and requests</li>
+<li>Analyzing correspondence and decisions</li>
+<li>Extracting key dates and obligations</li>
+<li>Reviewing payment schedules</li>
+</ul>
+What specific document or clause would you like me to focus on?`;
+    }
+
+    addMessage('ai', response);
+  }
+
+  function askQuickQuestion(question) {
+    qs('#chatInput').value = question;
+    sendMessage();
+  }
+
+  function handleChatKeypress(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
+  }
+
+  // -------------------- Upload modal + file handling --------------------
+  function showUploadModal() {
+    qs('#uploadOverlay').style.display = 'flex';
+  }
+
+  function hideUploadModal() {
+    qs('#uploadOverlay').style.display = 'none';
+  }
+
+  function uploadFiles() {
+    const fileInput = qs('#fileInput');
+    const docType = qs('#docType').value;
+
+    if (fileInput.files.length === 0) {
+      alert('Please select files to upload');
+      return;
+    }
+
+    const project = projects[currentProject];
+    const docTypeMap = { 'contract': 'Contract', 'correspondence': 'Correspondence', 'payment': 'Payment Claim', 'variation': 'Variation', 'photos': 'Photos', 'eot': 'Extension of Time', 'other': 'Other' };
+
+    Array.from(fileInput.files).forEach(file => {
+      project.documents.push({ name: file.name, type: docTypeMap[docType] || 'Other', date: 'Uploaded just now' });
+    });
+
+    // Update sidebar project count text for active project
+    const activeProjectItemMeta = qs('.project-item.active .project-meta');
+    if (activeProjectItemMeta) {
+      const count = project.documents.length;
+      activeProjectItemMeta.textContent = `${count} document${count !== 1 ? 's' : ''} • Created ${project.created}`;
+    }
+
+    // Reload document list for current project
+    loadProjectDocuments(currentProject);
+
+    // Simulate successful upload
+    alert(`${fileInput.files.length} file(s) uploaded successfully to ${currentProject}!`);
+    hideUploadModal();
+
+    // Reset form
+    fileInput.value = '';
+    qs('#docType').selectedIndex = 0;
+  }
+
+  // Drag & drop wiring for upload modal
+  document.addEventListener('DOMContentLoaded', () => {
+    const fileDropArea = qs('#fileDropArea');
+    fileDropArea.addEventListener('dragover', (e) => { e.preventDefault(); fileDropArea.classList.add('dragover'); });
+    fileDropArea.addEventListener('dragleave', () => { fileDropArea.classList.remove('dragover'); });
+    fileDropArea.addEventListener('drop', (e) => { e.preventDefault(); fileDropArea.classList.remove('dragover'); qs('#fileInput').files = e.dataTransfer.files; });
+  });
+
+  // -------------------- Init --------------------
+  document.addEventListener('DOMContentLoaded', () => {
+    // Build initial document list from state
+    loadProjectDocuments(currentProject);
+
+    // ESC to close modals
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { hideUploadModal(); hideProjectModal(); }
+    });
+
+    // Click outside to close modals
+    qs('#uploadOverlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) hideUploadModal(); });
+    qs('#projectOverlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) hideProjectModal(); });
+
+    // Enter to submit new project
+    qs('#projectNameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') saveNewProject(); });
+  });
+  </script>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+        <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+      </div>
+      <div class="footer-links">
+        <a href="/feedback.html">Send feedback</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/terms.html">Terms</a>
+      </div>
+    </div>
+    <div class="footer-bottom"><p>© 2025 SOPAL. All rights reserved.</p></div>
+  </footer>
+
+</body>
+</html>
