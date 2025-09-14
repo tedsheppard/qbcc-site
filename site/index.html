@@ -1292,7 +1292,9 @@ mark {
       $('#status').textContent = 'Done.';
 
       const items = data.items || [];
-      $('#results').innerHTML = items.length ? items.map(renderItem).join('') : '<p>No results.</p>';
+      $('#results').innerHTML = items.length 
+        ? items.map(it => renderItem(it, state.q && state.q.length > 0)).join('') 
+        : '<p>No results.</p>';
 
 
 
