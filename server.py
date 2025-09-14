@@ -6,11 +6,7 @@ from email.message import EmailMessage
 import aiosmtplib
 from openai import OpenAI
 
-from fastapi.responses import FileResponse
 
-@app.get("/download-db")
-async def download_db():
-    return FileResponse("/tmp/qbcc.db", filename="qbcc.db")
 
 
 # ---------------- setup ----------------
@@ -324,6 +320,12 @@ def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
     except Exception as e:
         print("ERROR in /ask:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
+
+from fastapi.responses import FileResponse
+
+@app.get("/download-db")
+async def download_db():
+    return FileResponse("/tmp/qbcc.db", filename="qbcc.db")
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
