@@ -1,13 +1,11 @@
-import os, re, shutil, sqlite3, requests
+import os, re, shutil, sqlite3, requests, unicodedata
+from urllib.parse import unquote_plus
 from fastapi import FastAPI, Query, Form, Path, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from email.message import EmailMessage
 import aiosmtplib
 from openai import OpenAI
-
-
-
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -55,6 +53,26 @@ MEILI_INDEX = "decisions"
 app = FastAPI()
 
 # ---------------- helpers ----------------
+def normalize_query(q: str) -> str:
+    """Decode once if double-encoded, strip smart quotes/dashes, normalize whitespace."""
+    s = q or ""
+    # decode at most twice
+    for _ in range(2):
+        s2 = unquote_plus(s)
+        if s2 == s:
+            break
+        s = s2
+    # normalize unicode
+    s = unicodedata.normalize("NFKC", s)
+    s = s.translate(str.maketrans({
+        '“':'"', '”':'"', '‘':"'", '’':"'", '—':'-', '–':'-', '‐':'-'
+    }))
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+def escape_fts_phrase(s: str) -> str:
+    return s.replace('"', '""')
+
 def normalize_default(q: str) -> str:
     if not re.search(r'"|\bNEAR/\d+\b|\bw/\d+\b|\bAND\b|\bOR\b|\bNOT\b|\(|\)', q or "", flags=re.I):
         toks = re.findall(r'\w+', q or "")
@@ -88,18 +106,40 @@ def health():
 
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "relevance"):
-    # --- Boolean / proximity handled by SQLite ---
-    if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I) or re.search(r'\bw/\d+\b', q, flags=re.I) or re.search(r'\bNEAR/\d+\b', q, flags=re.I):
-        nq = preprocess_sqlite_query(q)
+    q_norm = normalize_query(q)
 
-        total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq}).fetchone()[0]
-        sql = """
-          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-          FROM fts
-          WHERE fts MATCH :q
-          LIMIT :limit OFFSET :offset
-        """
-        rows = con.execute(sql, {"q": nq, "limit": limit, "offset": offset}).fetchall()
+    # Handle phrase search if wrapped in quotes
+    if len(q_norm) >= 2 and q_norm[0] == '"' and q_norm[-1] == '"':
+        inner = q_norm[1:-1]
+        nq = f"\"{escape_fts_phrase(inner)}\""
+    else:
+        nq = q_norm
+
+    # --- Boolean / proximity handled by SQLite ---
+    if (re.search(r'\b(AND|OR|NOT)\b', nq, flags=re.I)
+        or re.search(r'\bw/\d+\b', nq, flags=re.I)
+        or re.search(r'\bNEAR/\d+\b', nq, flags=re.I)
+        or nq.startswith('"')):
+        try:
+            nq2 = preprocess_sqlite_query(nq)
+            total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq2}).fetchone()[0]
+            sql = """
+              SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+              FROM fts
+              WHERE fts MATCH :q
+              LIMIT :limit OFFSET :offset
+            """
+            rows = con.execute(sql, {"q": nq2, "limit": limit, "offset": offset}).fetchall()
+        except sqlite3.OperationalError:
+            safe = ' '.join(re.findall(r'[\w.-]+', nq))
+            total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": safe}).fetchone()[0]
+            sql = """
+              SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+              FROM fts
+              WHERE fts MATCH :q
+              LIMIT :limit OFFSET :offset
+            """
+            rows = con.execute(sql, {"q": safe, "limit": limit, "offset": offset}).fetchall()
 
         items = []
         for r in rows:
@@ -117,7 +157,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             snippet_raw = r["snippet"]
             snippet_clean = re.sub(r'\b\d+([A-Za-z]+)\b', r'\1', snippet_raw)
 
-            raw_terms = re.findall(r'\w+', q)
+            raw_terms = re.findall(r'\w+', nq)
             terms = [t for t in raw_terms if not re.fullmatch(r'\d+', t) and t.upper() not in {"W","NEAR","AND","OR","NOT"}]
             for term in terms:
                 snippet_clean = re.sub(fr'(?i)\b({re.escape(term)})\b', r'<mark>\1</mark>', snippet_clean)
@@ -129,7 +169,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 
     # --- Natural language via Meili ---
     payload = {
-        "q": q,
+        "q": q_norm,
         "limit": limit,
         "offset": offset,
         "attributesToRetrieve": [
@@ -322,8 +362,7 @@ def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
         print("ERROR in /ask:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
 
-from fastapi.responses import FileResponse
-
+# ---------- DB Download ----------
 @app.get("/download-db")
 async def download_db():
     return FileResponse("/tmp/qbcc.db", filename="qbcc.db")
