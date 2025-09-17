@@ -1266,7 +1266,7 @@ mark {
       $('#status').textContent = 'Searching…';
       startLoadingBar();   // 🔥 ADD THIS LINE
 
-      state.q = ($('#q')?.value || '').trim();
+      state.q = normalizeInput($('#q')?.value);
       state.claimant = ($('#claimant')?.value || '').trim();
       state.respondent = ($('#respondent')?.value || '').trim();
       state.limit = +($('#limit')?.value || 20);
@@ -1275,7 +1275,7 @@ mark {
       state.sort = ($('#sort')?.value || 'newest');
       params.set('sort', state.sort);
 
-      if (state.q) params.set('q', encodeURIComponent(state.q));
+      if (state.q) params.set('q', state.q);
       if (state.claimant) params.set('claimant', state.claimant);
       if (state.respondent) params.set('respondent', state.respondent);
       params.set('limit', state.limit);
@@ -1553,6 +1553,15 @@ function cleanAIText(text) {
     .replace(/^# (.*$)/gim, '<h2>$1</h2>')              // # heading → <h2>
     .replace(/\n\s*-\s*/g, '</li><li>')                 // - bullets
     .replace(/\n/g, '<br>');                            // normal line breaks
+}
+
+function normalizeInput(s) {
+  return (s || '')
+    .replace(/[“”]/g, '"')   // smart double → straight
+    .replace(/[‘’]/g, "'")   // smart single → straight
+    .replace(/[‐-–—]/g, '-') // hyphen variants → hyphen
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
    
