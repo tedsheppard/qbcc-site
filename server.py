@@ -91,13 +91,21 @@ def parse_near(q: str):
     return f'"{left}" NEAR/{dist} "{right}"'
 
 def preprocess_sqlite_query(q: str) -> str:
+    # Handle proximity
     near_expr = parse_near(q)
     if near_expr:
         return near_expr
+
+    # Strip quotes if they wrap a single word only
+    q = re.sub(r'^"(\w+)"$', r'\1', q)
+
+    # Normalise operators
     q = re.sub(r'\band\b', 'AND', q, flags=re.I)
     q = re.sub(r'\bor\b', 'OR', q, flags=re.I)
     q = re.sub(r'\bnot\b', 'NOT', q, flags=re.I)
+
     return normalize_default(q)
+
 
 # ---------------- routes ----------------
 @app.get("/health")
