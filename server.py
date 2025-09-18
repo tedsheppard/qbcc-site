@@ -54,15 +54,12 @@ app = FastAPI()
 
 # ---------------- helpers ----------------
 def normalize_query(q: str) -> str:
-    """Decode once if double-encoded, strip smart quotes/dashes, normalize whitespace."""
     s = q or ""
-    # decode at most twice
     for _ in range(2):
         s2 = unquote_plus(s)
         if s2 == s:
             break
         s = s2
-    # normalize unicode
     s = unicodedata.normalize("NFKC", s)
     s = s.translate(str.maketrans({
         '“':'"', '”':'"', '‘':"'", '’':"'", '—':'-', '–':'-', '‐':'-'
@@ -91,24 +88,15 @@ def parse_near(q: str):
     return f'"{left}" NEAR/{dist} "{right}"'
 
 def preprocess_sqlite_query(q: str) -> str:
-    # Normalise Boolean operators
     q = re.sub(r'\band\b', 'AND', q, flags=re.I)
     q = re.sub(r'\bor\b', 'OR', q, flags=re.I)
     q = re.sub(r'\bnot\b', 'NOT', q, flags=re.I)
-
-    # Handle proximity
     near_expr = parse_near(q)
     if near_expr:
         return near_expr
-
-    # Unwrap quotes if they enclose just one word
-    q = re.sub(r'"(\w+)"', r'\1', q)
-
-    # Inject ANDs if no Boolean operators found
+    # unwrap single-word quotes
+    q = re.sub(r'"([\w.-]+)"', r'\1', q)
     return normalize_default(q)
-
-
-
 
 # ---------------- routes ----------------
 @app.get("/health")
@@ -118,21 +106,15 @@ def health():
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "relevance"):
     q_norm = normalize_query(q)
+    nq = q_norm
 
-    # Handle phrase search if wrapped in quotes
-    if len(q_norm) >= 2 and q_norm[0] == '"' and q_norm[-1] == '"':
-        inner = q_norm[1:-1]
-        nq = f"\"{escape_fts_phrase(inner)}\""
-    else:
-        nq = q_norm
-
-    # --- Boolean / proximity handled by SQLite ---
     if (re.search(r'\b(AND|OR|NOT)\b', nq, flags=re.I)
         or re.search(r'\bw/\d+\b', nq, flags=re.I)
         or re.search(r'\bNEAR/\d+\b', nq, flags=re.I)
         or nq.startswith('"')):
         try:
             nq2 = preprocess_sqlite_query(nq)
+            print("Executing MATCH with:", nq2)
             total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq2}).fetchone()[0]
             sql = """
               SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
@@ -143,33 +125,15 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             rows = con.execute(sql, {"q": nq2, "limit": limit, "offset": offset}).fetchall()
         except sqlite3.OperationalError as e:
             print("FTS MATCH error for:", nq, "->", e)
-        
-            # Preserve quotes and boolean operators when falling back
-            tokens = re.findall(r'"[^"]+"|\bAND\b|\bOR\b|\bNOT\b|[\w.-]+', nq, flags=re.I)
-            safe = ' '.join(
-                t if (t.upper() in {"AND","OR","NOT"} or (t.startswith('"') and t.endswith('"')))
-                else t
-                for t in tokens
-            )
-        
-            # Normalise operators to uppercase
-            safe = re.sub(r'\band\b', 'AND', safe, flags=re.I)
-            safe = re.sub(r'\bor\b', 'OR',  safe, flags=re.I)
-            safe = re.sub(r'\bnot\b', 'NOT', safe, flags=re.I)
-        
-            # Strip quotes around single-word phrases
-            safe = re.sub(r'"([\w.-]+)"', r'\1', safe)
-        
-            total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": safe}).fetchone()[0]
+            # fallback: just retry the raw normalized query
+            total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq}).fetchone()[0]
             sql = """
               SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
               FROM fts
               WHERE fts MATCH :q
               LIMIT :limit OFFSET :offset
             """
-            rows = con.execute(sql, {"q": safe, "limit": limit, "offset": offset}).fetchall()
-
-
+            rows = con.execute(sql, {"q": nq, "limit": limit, "offset": offset}).fetchall()
 
         items = []
         for r in rows:
@@ -180,24 +144,19 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
               LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
               WHERE d.rowid = ?
             """, (r["rowid"],)).fetchone()
-
             d = dict(meta) if meta else {}
             d["id"] = d.get("ejs_id", r["rowid"])
-
             snippet_raw = r["snippet"]
             snippet_clean = re.sub(r'\b\d+([A-Za-z]+)\b', r'\1', snippet_raw)
-
             raw_terms = re.findall(r'\w+', nq)
-            terms = [t for t in raw_terms if not re.fullmatch(r'\d+', t) and t.upper() not in {"W","NEAR","AND","OR","NOT"}]
+            terms = [t for t in raw_terms if t.upper() not in {"W","NEAR","AND","OR","NOT"}]
             for term in terms:
                 snippet_clean = re.sub(fr'(?i)\b({re.escape(term)})\b', r'<mark>\1</mark>', snippet_clean)
-
             d["snippet"] = snippet_clean
             items.append(d)
-
         return {"total": total, "items": items}
 
-    # --- Natural language via Meili ---
+    # Natural language → Meili
     payload = {
         "q": q_norm,
         "limit": limit,
@@ -213,14 +172,10 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         "attributesToCrop": ["content"],
         "cropLength": 100
     }
-    if sort == "newest":
-        payload["sort"] = ["id:desc"]
-    elif sort == "oldest":
-        payload["sort"] = ["id:asc"]
-    elif sort == "atoz":
-        payload["sort"] = ["claimant:asc"]
-    elif sort == "ztoa":
-        payload["sort"] = ["claimant:desc"]
+    if sort == "newest": payload["sort"] = ["id:desc"]
+    elif sort == "oldest": payload["sort"] = ["id:asc"]
+    elif sort == "atoz": payload["sort"] = ["claimant:asc"]
+    elif sort == "ztoa": payload["sort"] = ["claimant:desc"]
     headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
     res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
     data = res.json()
@@ -262,50 +217,19 @@ def summarise(decision_id: str = Path(...)):
         row = con.execute("SELECT summary FROM ai_summaries WHERE decision_id = ?", (decision_id,)).fetchone()
         if row:
             return {"id": decision_id, "summary": row["summary"]}
-
         r = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
         if not r or not r["full_text"]:
             raise HTTPException(status_code=404, detail="Decision not found")
-
         text = r["full_text"][:300000]
-
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are SopalAI, a legal assistant specialising in construction law. "
-                        "Summarise adjudication decisions under Queensland's Security of Payment legislation "
-                        "in clear, plain English. "
-                        "Respond as if the user is asking you about the decision directly. "
-                        "Do not say 'the adjudication decision you provided' or similar. "
-                        "Structure the summary into bullet points or short sections with HTML-friendly formatting "
-                        "(<strong> for headings, <ul>/<li> for lists) with compact spacing (no double/triple lines)."
-                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
-                        "not Markdown (#, ##, ###)."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": f"""
-Summarise this adjudication decision in 5–7 bullet points, covering:
-- The parties and the works
-- Payment claim amount and payment schedule response
-- Any jurisdictional challenges
-- The factual disputes and evidence
-- The adjudicator’s reasoning
-- The final outcome, amount awarded, and fee split
-Don't actually title it "Summary" or the like please, go straight into bullet points
-
-Decision text:
-{text}
-"""
-                }
-            ],
+            messages=[{"role":"system","content":(
+                "You are SopalAI, a legal assistant specialising in construction law. "
+                "Summarise adjudication decisions under Queensland's Security of Payment legislation "
+                "in clear, plain English. Use HTML (<strong>, <ul>, <li>, <p>).")},
+                {"role":"user","content":text}],
             max_tokens=800,
         )
-
         summary = resp.choices[0].message.content.strip()
         con.execute("INSERT OR REPLACE INTO ai_summaries(decision_id, summary) VALUES (?, ?)", (decision_id, summary))
         con.commit()
@@ -330,27 +254,12 @@ async def send_feedback(
     msg["From"] = "sopal.aus@gmail.com"
     msg["To"] = "sopal.aus@gmail.com"
     msg["Subject"] = f"[{type.upper()}] {subject}"
-    body = f"""
-Feedback Type: {type}
-Name: {name}
-Email: {email}
-Priority: {priority}
-Browser: {browser}
-Device: {device}
-
-Details:
-{details}
-"""
+    body = f"Feedback Type: {type}\nName: {name}\nEmail: {email}\nPriority: {priority}\nBrowser: {browser}\nDevice: {device}\n\nDetails:\n{details}"
     msg.set_content(body)
-
     try:
         await aiosmtplib.send(
-            msg,
-            hostname="smtp.gmail.com",
-            port=587,
-            start_tls=True,
-            username="sopal.aus@gmail.com",
-            password=os.getenv("SMTP_PASSWORD"),
+            msg, hostname="smtp.gmail.com", port=587, start_tls=True,
+            username="sopal.aus@gmail.com", password=os.getenv("SMTP_PASSWORD"),
         )
         return {"ok": True, "message": "Feedback sent successfully"}
     except Exception as e:
@@ -363,29 +272,16 @@ def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
         row = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
         if not row or not row["full_text"]:
             raise HTTPException(status_code=404, detail="Decision not found")
-
         text = row["full_text"][:15000]
-
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are SopalAI, assisting users with adjudication decisions under the BIF Act or BCIPA. "
-                        "Respond directly to the user’s question as if they asked you about the decision. "
-                        "Do not say 'the adjudication decision you provided' or 'the text you gave me'. "
-                        "Write in clear, plain English with headings and bullet points formatted in HTML."
-                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
-                        "not Markdown (#, ##, ###)."
-                    )
-                },
-                {"role": "user", "content": f"Decision text:\n{text}"},
-                {"role": "user", "content": f"Question: {question}"}
-            ],
+            messages=[{"role":"system","content":(
+                "You are SopalAI, assisting users with adjudication decisions. "
+                "Use HTML (<strong>, <ul>, <li>, <p>).")},
+                {"role":"user","content":f"Decision text:\n{text}"},
+                {"role":"user","content":f"Question: {question}"}],
             max_tokens=600
         )
-
         answer = resp.choices[0].message.content.strip()
         return {"answer": answer}
     except Exception as e:
