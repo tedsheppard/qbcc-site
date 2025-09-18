@@ -100,15 +100,21 @@ def _parse_near_robust(q: str) -> str | None:
     return f'"{left}" NEAR/{dist} "{right}"'
 
 def preprocess_sqlite_query(q: str) -> str:
+    # Normalise Boolean operators
     q = re.sub(r'\band\b', 'AND', q, flags=re.I)
     q = re.sub(r'\bor\b',  'OR',  q, flags=re.I)
     q = re.sub(r'\bnot\b', 'NOT', q, flags=re.I)
 
+    # Proximity first
     near_expr = _parse_near_robust(q)
     if near_expr:
         return near_expr
 
-    q = re.sub(r'"([\w.-]+)"', r'\1', q)
+    # If it's a Boolean query (AND/OR/NOT), keep quotes as-is
+    if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I):
+        return q.strip()
+
+    # Otherwise, no operators → auto-AND
     return normalize_default(q)
 
 # ---------------- routes ----------------
