@@ -141,8 +141,25 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
               LIMIT :limit OFFSET :offset
             """
             rows = con.execute(sql, {"q": nq2, "limit": limit, "offset": offset}).fetchall()
-        except sqlite3.OperationalError:
-            safe = ' '.join(re.findall(r'[\w.-]+', nq))
+        except sqlite3.OperationalError as e:
+            print("FTS MATCH error for:", nq, "->", e)
+        
+            # Preserve quotes and boolean operators when falling back
+            tokens = re.findall(r'"[^"]+"|\bAND\b|\bOR\b|\bNOT\b|[\w.-]+', nq, flags=re.I)
+            safe = ' '.join(
+                t if (t.upper() in {"AND","OR","NOT"} or (t.startswith('"') and t.endswith('"')))
+                else t
+                for t in tokens
+            )
+        
+            # Normalise operators to uppercase
+            safe = re.sub(r'\band\b', 'AND', safe, flags=re.I)
+            safe = re.sub(r'\bor\b', 'OR',  safe, flags=re.I)
+            safe = re.sub(r'\bnot\b', 'NOT', safe, flags=re.I)
+        
+            # Strip quotes around single-word phrases
+            safe = re.sub(r'"([\w.-]+)"', r'\1', safe)
+        
             total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": safe}).fetchone()[0]
             sql = """
               SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
@@ -151,6 +168,8 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
               LIMIT :limit OFFSET :offset
             """
             rows = con.execute(sql, {"q": safe, "limit": limit, "offset": offset}).fetchall()
+
+
 
         items = []
         for r in rows:
