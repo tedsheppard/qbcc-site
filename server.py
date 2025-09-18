@@ -91,20 +91,22 @@ def parse_near(q: str):
     return f'"{left}" NEAR/{dist} "{right}"'
 
 def preprocess_sqlite_query(q: str) -> str:
-    # Handle proximity
-    near_expr = parse_near(q)
-    if near_expr:
-        return near_expr
-
-    # Strip quotes if they wrap a single word only
-    q = re.sub(r'^"(\w+)"$', r'\1', q)
-
-    # Normalise operators
+    # 1. Normalise Boolean operators (make sure OR is uppercase)
     q = re.sub(r'\band\b', 'AND', q, flags=re.I)
     q = re.sub(r'\bor\b', 'OR', q, flags=re.I)
     q = re.sub(r'\bnot\b', 'NOT', q, flags=re.I)
 
+    # 2. Handle proximity
+    near_expr = parse_near(q)
+    if near_expr:
+        return near_expr
+
+    # 3. Strip quotes if they wrap a single word
+    q = re.sub(r'^"(\w+)"$', r'\1', q)
+
+    # 4. Default: inject ANDs if no Boolean ops
     return normalize_default(q)
+
 
 
 # ---------------- routes ----------------
