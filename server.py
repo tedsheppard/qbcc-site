@@ -84,42 +84,33 @@ def _fix_unbalanced_quotes(s: str) -> str:
 def _parse_near_robust(q: str) -> str | None:
     """
     Parse expressions like:
-      word w/5 phrase
-      "foo bar" w/10 baz
-      "foo bar" w/10 "baz qux"
-    And return a valid FTS NEAR/x clause.
+      foo w/5 bar
+      "foo" w/10 "bar baz"
+      foo NEAR/3 "bar baz"
+    and return a valid FTS MATCH string.
     """
     s = _fix_unbalanced_quotes(q)
     s = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', s, flags=re.I)
 
-    # Match either single word OR quoted phrase on both sides
-    m = re.search(r'(".*?"|\w+)\s+NEAR/(\d+)\s+(".*?"|\w+)', s, flags=re.I)
+    # Match both quoted phrases and single words
+    m = re.search(r'(".*?"|\S+)\s+NEAR/(\d+)\s+(".*?"|\S+)', s, flags=re.I)
     if not m:
         return None
 
-    left  = m.group(1).strip()
+    def clean_token(tok: str) -> str:
+        tok = tok.strip()
+        if tok.startswith('"') and tok.endswith('"'):
+            tok = tok[1:-1]  # strip quotes
+        # reapply quotes if multi-word
+        if " " in tok:
+            return f"\"{tok}\""
+        return f"\"{tok}\""
+
+    left  = clean_token(m.group(1))
     dist  = int(m.group(2))
-    right = m.group(3).strip()
-
-    # Strip surrounding quotes
-    if left.startswith('"') and left.endswith('"'):
-        left = left[1:-1]
-    if right.startswith('"') and right.endswith('"'):
-        right = right[1:-1]
-
-    # Re-quote if phrase contains spaces
-    if " " in left:
-        left = f"\"{left}\""
-    else:
-        left = f"\"{left}\""
-
-    if " " in right:
-        right = f"\"{right}\""
-    else:
-        right = f"\"{right}\""
+    right = clean_token(m.group(3))
 
     return f"{left} NEAR/{dist} {right}"
-
 
 
 def preprocess_sqlite_query(q: str) -> str:
