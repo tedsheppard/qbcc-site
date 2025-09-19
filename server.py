@@ -101,13 +101,25 @@ def _parse_near_robust(q: str) -> str | None:
     dist  = int(m.group(2))
     right = m.group(3).strip()
 
-    # Ensure both sides are quoted properly if they contain spaces
-    if " " in left.strip('"'):
-        left = f"\"{left.strip('\"')}\""
-    if " " in right.strip('"'):
-        right = f"\"{right.strip('\"')}\""
+    # Strip surrounding quotes
+    if left.startswith('"') and left.endswith('"'):
+        left = left[1:-1]
+    if right.startswith('"') and right.endswith('"'):
+        right = right[1:-1]
+
+    # Re-quote if phrase contains spaces
+    if " " in left:
+        left = f"\"{left}\""
+    else:
+        left = f"\"{left}\""
+
+    if " " in right:
+        right = f"\"{right}\""
+    else:
+        right = f"\"{right}\""
 
     return f"{left} NEAR/{dist} {right}"
+
 
 
 def preprocess_sqlite_query(q: str) -> str:
