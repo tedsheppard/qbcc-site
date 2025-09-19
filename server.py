@@ -11,19 +11,16 @@ from openai import OpenAI
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SITE_DIR = os.path.join(ROOT, "site")
 
-# ensure DB lives in /tmp for faster access
 DB_PATH = "/tmp/qbcc.db"
 if not os.path.exists(DB_PATH):
     shutil.copy("qbcc.db", DB_PATH)
 
-# sqlite connection
 con = sqlite3.connect(DB_PATH, check_same_thread=False)
 con.row_factory = sqlite3.Row
 con.execute("PRAGMA cache_size = -20000")
 con.execute("PRAGMA temp_store = MEMORY")
 con.execute("PRAGMA mmap_size = 30000000000")
 
-# OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 con.execute("""
 CREATE TABLE IF NOT EXISTS ai_summaries (
@@ -33,7 +30,6 @@ CREATE TABLE IF NOT EXISTS ai_summaries (
 """)
 con.commit()
 
-# ---------------- ensure FTS ----------------
 def ensure_fts():
     try:
         con.execute("DROP TABLE IF EXISTS fts;")
@@ -81,28 +77,20 @@ def _fix_unbalanced_quotes(s: str) -> str:
         s = s + '"'
     return s
 
-def _parse_near_robust(q: str) -> str | None:
+def _parse_near_phrase(q: str):
     """
-    Return a canonical NEAR form with both sides quoted:
-      "LEFT" NEAR/N "RIGHT"
-    Accepts w/N and NEAR/N, words or quoted phrases, and fixes a missing quote.
+    Detects patterns like "foo" w/5 "time bar" and splits them
+    into (left, dist, right_phrase_tokens).
     """
     s = _fix_unbalanced_quotes(q)
     s = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', s, flags=re.I)
 
-    m = re.search(r'("([^"]+)"|(\w+))\s+NEAR/(\d+)\s+("([^"]+)"|(\w+))', s, flags=re.I)
+    m = re.search(r'"([^"]+)"\s+NEAR/(\d+)\s+"([^"]+)"', s, flags=re.I)
     if not m:
-        s2 = s.replace('"', '')
-        m = re.search(r'(\w+)\s+NEAR/(\d+)\s+(\w+)', s2, flags=re.I)
-        if not m:
-            return None
-        left, dist, right = m.group(1), int(m.group(2)), m.group(3)
-        return f'"{left}" NEAR/{dist} "{right}"'
-
-    left  = m.group(2) or m.group(3)
-    dist  = int(m.group(4))
-    right = m.group(6) or m.group(7)
-    return f'"{left}" NEAR/{dist} "{right}"'
+        return None
+    left, dist, right_phrase = m.group(1), int(m.group(2)), m.group(3)
+    right_tokens = right_phrase.split()
+    return left, dist, right_tokens
 
 def preprocess_sqlite_query(q: str) -> str:
     # Normalise Boolean operators
@@ -110,95 +98,30 @@ def preprocess_sqlite_query(q: str) -> str:
     q = re.sub(r'\bor\b',  'OR',  q, flags=re.I)
     q = re.sub(r'\bnot\b', 'NOT', q, flags=re.I)
 
-    # Proximity first
-    near_expr = _parse_near_robust(q)
-    if near_expr:
-        return near_expr
+    # Handle proximity with multi-word phrase
+    parsed = _parse_near_phrase(q)
+    if parsed:
+        left, dist, right_tokens = parsed
+        # loose expansion: EOT NEAR/x token1 AND EOT NEAR/x token2 ...
+        parts = [f'"{left}" NEAR/{dist} "{tok}"' for tok in right_tokens]
+        return " AND ".join(parts)
 
-    # If it's a Boolean query (AND/OR/NOT), keep quotes as-is
-    if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I):
-        return q.strip()
-
-    # Otherwise, no operators → auto-AND
     return normalize_default(q)
 
-# -------- phrase-aware proximity filtering (true phrase NEAR) --------
-_word_re = re.compile(r"\w+", flags=re.UNICODE)
-
-def _tokenize(text: str):
-    # returns list of lowercase tokens
-    return _word_re.findall(text.lower())
-
-def _phrase_positions(tokens: list[str], phrase: str) -> list[int]:
-    """Return start indices where the exact multi-word phrase occurs (token-wise)."""
-    words = _word_re.findall(phrase.lower())
-    if not words:
-        return []
-    if len(words) == 1:
-        # single-word 'phrase'
-        w = words[0]
-        return [i for i, t in enumerate(tokens) if t == w]
-    L = len(words)
-    out = []
-    for i in range(0, len(tokens) - L + 1):
-        if tokens[i:i+L] == words:
-            out.append(i)
-    return out
-
-def _extract_near_components(nq2: str):
-    """From canonical '"LEFT" NEAR/N "RIGHT"' return (left, n, right)."""
-    m = re.search(r'"([^"]+)"\s+NEAR/(\d+)\s+"([^"]+)"', nq2, flags=re.I)
-    if not m:
-        return None
-    return m.group(1), int(m.group(2)), m.group(3)
-
-def _filter_rows_for_true_phrase_near(rows, nq2):
+def _filter_phrase_proximity(text: str, left: str, right_tokens: list[str], dist: int) -> bool:
     """
-    If NEAR and either side is a multi-word phrase, require the exact phrase
-    to be within N tokens of the other side. Otherwise return rows unchanged.
+    Post-filter: check if `left` is within `dist` tokens of the phrase `right_tokens`.
     """
-    comp = _extract_near_components(nq2)
-    if not comp:
-        return rows
-    left, dist, right = comp
-    left_is_phrase  = ' ' in left.strip()
-    right_is_phrase = ' ' in right.strip()
-    if not (left_is_phrase or right_is_phrase):
-        return rows  # both single words → SQLite NEAR already correct
+    tokens = re.findall(r"\w+", text.lower())
+    left = left.lower()
+    right_tokens = [t.lower() for t in right_tokens]
 
-    filtered = []
-    # collect rowids to fetch full_text in one go
-    rowids = [r["rowid"] for r in rows]
-    if not rowids:
-        return rows
-
-    # Batch pull full_texts
-    qmarks = ",".join(["?"]*len(rowids))
-    text_rows = con.execute(f"SELECT rowid, full_text FROM docs_fresh WHERE rowid IN ({qmarks})", rowids).fetchall()
-    text_map = {tr["rowid"]: tr["full_text"] or "" for tr in text_rows}
-
-    for r in rows:
-        ft = text_map.get(r["rowid"], "")
-        if not ft:
-            continue
-        toks = _tokenize(ft)
-        left_positions  = _phrase_positions(toks, left)
-        right_positions = _phrase_positions(toks, right)
-        if not left_positions or not right_positions:
-            continue
-
-        ok = False
-        # define the representative index for a phrase as its first token
-        for li in left_positions:
-            for ri in right_positions:
-                if abs(ri - li) <= dist:
-                    ok = True
-                    break
-            if ok:
-                break
-        if ok:
-            filtered.append(r)
-    return filtered
+    for i, tok in enumerate(tokens):
+        if tok == left:
+            for j in range(max(0, i - dist), min(len(tokens), i + dist + 1)):
+                if tokens[j:j+len(right_tokens)] == right_tokens:
+                    return True
+    return False
 
 # ---------------- routes ----------------
 @app.get("/health")
@@ -208,80 +131,26 @@ def health():
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "relevance"):
     q_norm = normalize_query(q)
+    nq = q_norm
 
-    if len(q_norm) >= 2 and q_norm[0] == '"' and q_norm[-1] == '"':
-        inner = q_norm[1:-1]
-        nq = f"\"{escape_fts_phrase(inner)}\""
-    else:
-        nq = q_norm
+    phrase_near = _parse_near_phrase(nq)
 
     if (re.search(r'\b(AND|OR|NOT)\b', nq, flags=re.I)
         or re.search(r'\bw/\d+\b', nq, flags=re.I)
         or re.search(r'\bNEAR/\d+\b', nq, flags=re.I)
         or nq.startswith('"')):
 
-        try:
-            nq2 = preprocess_sqlite_query(nq)
-            print("Executing MATCH with:", nq2)
-            total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq2}).fetchone()[0]
-            sql = """
-              SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-              FROM fts
-              WHERE fts MATCH :q
-              LIMIT :limit OFFSET :offset
-            """
-            rows = con.execute(sql, {"q": nq2, "limit": limit, "offset": offset}).fetchall()
+        nq2 = preprocess_sqlite_query(nq)
+        print("Executing MATCH with:", nq2)
+        rows = con.execute(f"""
+          SELECT fts.rowid, full_text, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+          FROM fts
+          WHERE fts MATCH :q
+          LIMIT :limit OFFSET :offset
+        """, {"q": nq2, "limit": limit*3, "offset": offset}).fetchall()  # fetch extra for filtering
 
-        except sqlite3.OperationalError as e:
-            print("FTS MATCH error for:", nq, "->", e)
-            if re.search(r'\b(w|near)\s*/\s*\d+', nq, flags=re.I):
-                repaired = _parse_near_robust(nq)
-                if repaired:
-                    print("Retrying with repaired proximity:", repaired)
-                    total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": repaired}).fetchone()[0]
-                    rows = con.execute("""
-                      SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                      FROM fts
-                      WHERE fts MATCH :q
-                      LIMIT :limit OFFSET :offset
-                    """, {"q": repaired, "limit": limit, "offset": offset}).fetchall()
-                    nq2 = repaired  # downstream needs canonical value
-                else:
-                    degraded = re.sub(r'\b(?:w|near)\s*/\s*\d+\b', 'AND', nq, flags=re.I)
-                    print("Degrading proximity to AND:", degraded)
-                    total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": degraded}).fetchone()[0]
-                    rows = con.execute("""
-                      SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                      FROM fts
-                      WHERE fts MATCH :q
-                      LIMIT :limit OFFSET :offset
-                    """, {"q": degraded, "limit": limit, "offset": offset}).fetchall()
-                    nq2 = degraded
-            else:
-                total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq}).fetchone()[0]
-                rows = con.execute("""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  WHERE fts MATCH :q
-                  LIMIT :limit OFFSET :offset
-                """, {"q": nq, "limit": limit, "offset": offset}).fetchall()
-                nq2 = nq
-
-        # ---- TRUE PHRASE PROXIMITY FILTER (only when needed) ----
-        if "NEAR/" in nq2:
-            # If either side of NEAR is a multi-word phrase, apply precise filter
-            comp = _extract_near_components(nq2)
-            if comp:
-                left, _, right = comp
-                if (' ' in left.strip()) or (' ' in right.strip()):
-                    before = len(rows)
-                    rows = _filter_rows_for_true_phrase_near(rows, nq2)
-                    total = len(rows)  # reflect filtered count (simple but clear)
-                    print(f"Phrase-proximity filtered: {before} → {total}")
-
-        # ---- build items & phrase-aware highlighting ----
         items = []
-        for r in rows[offset:offset+limit]:
+        for r in rows:
             meta = con.execute("""
               SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
                      m.act, d.reference, d.pdf_path, d.ejs_id
@@ -289,30 +158,25 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
               LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
               WHERE d.rowid = ?
             """, (r["rowid"],)).fetchone()
+            if not meta:
+                continue
 
-            d = dict(meta) if meta else {}
+            # If phrase_near, enforce exact phrase check
+            if phrase_near:
+                left, dist, right_tokens = phrase_near
+                if not _filter_phrase_proximity(r["full_text"], left, right_tokens, dist):
+                    continue
+
+            d = dict(meta)
             d["id"] = d.get("ejs_id", r["rowid"])
-
-            snippet_raw = r["snippet"]
-            snippet_clean = re.sub(r'\b\d+([A-Za-z]+)\b', r'\1', snippet_raw)
-
-            # phrase-aware highlighter
-            phrase_terms = re.findall(r'"([^"]+)"', nq2)
-            word_terms = [w for w in re.findall(r'\b\w+\b', nq2)
-                          if w.upper() not in {"W","NEAR","AND","OR","NOT"} and not w.isdigit()]
-
-            # highlight phrases first
-            for phrase in sorted(set(phrase_terms), key=len, reverse=True):
-                snippet_clean = re.sub(fr'(?i){re.escape(phrase)}', f"<mark>{phrase}</mark>", snippet_clean)
-
-            # then words
-            for term in sorted(set(word_terms), key=len, reverse=True):
-                snippet_clean = re.sub(fr'(?i)\b({re.escape(term)})\b', r'<mark>\1</mark>', snippet_clean)
-
+            snippet_clean = r["snippet"]
             d["snippet"] = snippet_clean
             items.append(d)
 
-        return {"total": total, "items": items}
+            if len(items) >= limit:
+                break
+
+        return {"total": len(items), "items": items}
 
     # --- Natural language via Meili ---
     payload = {
@@ -330,14 +194,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         "attributesToCrop": ["content"],
         "cropLength": 100
     }
-    if sort == "newest":
-        payload["sort"] = ["id:desc"]
-    elif sort == "oldest":
-        payload["sort"] = ["id:asc"]
-    elif sort == "atoz":
-        payload["sort"] = ["claimant:asc"]
-    elif sort == "ztoa":
-        payload["sort"] = ["claimant:desc"]
     headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
     res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
     data = res.json()
@@ -360,7 +216,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
 # ---------- PDF links ----------
 GCS_BUCKET = "sopal-bucket"
 GCS_PREFIX = "pdfs"
-
 def build_gcs_url(file_name: str) -> str:
     return f"https://storage.googleapis.com/{GCS_BUCKET}/{GCS_PREFIX}/{file_name}"
 
@@ -379,95 +234,41 @@ def summarise(decision_id: str = Path(...)):
         row = con.execute("SELECT summary FROM ai_summaries WHERE decision_id = ?", (decision_id,)).fetchone()
         if row:
             return {"id": decision_id, "summary": row["summary"]}
-
         r = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
         if not r or not r["full_text"]:
             raise HTTPException(status_code=404, detail="Decision not found")
-
         text = r["full_text"][:300000]
-
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are SopalAI, a legal assistant specialising in construction law. "
-                        "Summarise adjudication decisions under Queensland's Security of Payment legislation "
-                        "in clear, plain English. "
-                        "Respond as if the user is asking you about the decision directly. "
-                        "Do not say 'the adjudication decision you provided' or similar. "
-                        "Structure the summary into bullet points or short sections with HTML-friendly formatting "
-                        "(<strong> for headings, <ul>/<li> for lists) with compact spacing (no double/triple lines)."
-                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
-                        "not Markdown (#, ##, ###)."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": f"""
-Summarise this adjudication decision in 5–7 bullet points, covering:
-- The parties and the works
-- Payment claim amount and payment schedule response
-- Any jurisdictional challenges
-- The factual disputes and evidence
-- The adjudicator’s reasoning
-- The final outcome, amount awarded, and fee split
-Don't actually title it "Summary" or the like please, go straight into bullet points
-
-Decision text:
-{text}
-"""
-                }
+                {"role": "system", "content": "You are SopalAI, a legal assistant specialising in construction law."},
+                {"role": "user", "content": f"Summarise this adjudication decision:\n{text}"}
             ],
             max_tokens=800,
         )
-
         summary = resp.choices[0].message.content.strip()
         con.execute("INSERT OR REPLACE INTO ai_summaries(decision_id, summary) VALUES (?, ?)", (decision_id, summary))
         con.commit()
         return {"id": decision_id, "summary": summary}
     except Exception as e:
-        print("ERROR in /summarise:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
 
 # ---------- FEEDBACK FORM ----------
 @app.post("/send-feedback")
 async def send_feedback(
-    type: str = Form(...),
-    name: str = Form(""),
-    email: str = Form(""),
-    subject: str = Form(...),
-    priority: str = Form(...),
-    details: str = Form(...),
-    browser: str = Form(""),
-    device: str = Form("")
+    type: str = Form(...), name: str = Form(""), email: str = Form(""),
+    subject: str = Form(...), priority: str = Form(...), details: str = Form(...),
+    browser: str = Form(""), device: str = Form("")
 ):
     msg = EmailMessage()
     msg["From"] = "sopal.aus@gmail.com"
     msg["To"] = "sopal.aus@gmail.com"
     msg["Subject"] = f"[{type.upper()}] {subject}"
-    body = f"""
-Feedback Type: {type}
-Name: {name}
-Email: {email}
-Priority: {priority}
-Browser: {browser}
-Device: {device}
-
-Details:
-{details}
-"""
-    msg.set_content(body)
-
+    msg.set_content(details)
     try:
         await aiosmtplib.send(
-            msg,
-            hostname="smtp.gmail.com",
-            port=587,
-            start_tls=True,
-            username="sopal.aus@gmail.com",
-            password=os.getenv("SMTP_PASSWORD"),
+            msg, hostname="smtp.gmail.com", port=587, start_tls=True,
+            username="sopal.aus@gmail.com", password=os.getenv("SMTP_PASSWORD"),
         )
         return {"ok": True, "message": "Feedback sent successfully"}
     except Exception as e:
@@ -480,33 +281,16 @@ def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
         row = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
         if not row or not row["full_text"]:
             raise HTTPException(status_code=404, detail="Decision not found")
-
         text = row["full_text"][:15000]
-
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are SopalAI, assisting users with adjudication decisions under the BIF Act or BCIPA. "
-                        "Respond directly to the user’s question as if they asked you about the decision. "
-                        "Do not say 'the adjudication decision you provided' or 'the text you gave me'. "
-                        "Write in clear, plain English with headings and bullet points formatted in HTML."
-                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
-                        "not Markdown (#, ##, ###)."
-                    )
-                },
-                {"role": "user", "content": f"Decision text:\n{text}"},
-                {"role": "user", "content": f"Question: {question}"}
-            ],
+            messages=[{"role": "system", "content": "You are SopalAI."},
+                      {"role": "user", "content": f"Decision text:\n{text}"},
+                      {"role": "user", "content": f"Question: {question}"}],
             max_tokens=600
         )
-
-        answer = resp.choices[0].message.content.strip()
-        return {"answer": answer}
+        return {"answer": resp.choices[0].message.content.strip()}
     except Exception as e:
-        print("ERROR in /ask:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
 
 # ---------- DB Download ----------
