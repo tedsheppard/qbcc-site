@@ -83,32 +83,31 @@ def _fix_unbalanced_quotes(s: str) -> str:
 
 def _parse_near_robust(q: str) -> str | None:
     """
-    Parse expressions like:
+    Parse proximity queries like:
       foo w/5 bar
       "foo" w/10 "bar baz"
       foo NEAR/3 "bar baz"
-    and return a valid FTS MATCH string.
+    and return a valid MATCH expression.
     """
     s = _fix_unbalanced_quotes(q)
     s = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', s, flags=re.I)
 
-    # Match both quoted phrases and single words
+    # Match left token, distance, right token
     m = re.search(r'(".*?"|\S+)\s+NEAR/(\d+)\s+(".*?"|\S+)', s, flags=re.I)
     if not m:
         return None
 
-    def clean_token(tok: str) -> str:
+    def clean(tok: str) -> str:
         tok = tok.strip()
         if tok.startswith('"') and tok.endswith('"'):
-            tok = tok[1:-1]  # strip quotes
-        # reapply quotes if multi-word
-        if " " in tok:
+            tok = tok[1:-1]  # remove surrounding quotes
+        if " " in tok:       # multi-word phrase
             return f"\"{tok}\""
-        return f"\"{tok}\""
+        return f"\"{tok}\""  # single word still quoted
 
-    left  = clean_token(m.group(1))
+    left  = clean(m.group(1))
     dist  = int(m.group(2))
-    right = clean_token(m.group(3))
+    right = clean(m.group(3))
 
     return f"{left} NEAR/{dist} {right}"
 
