@@ -322,7 +322,7 @@ def health():
     return {"ok": True}
 
 @app.get("/search_fast")
-def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "relevance"):
+def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newest"):
     q_norm = normalize_query(q)
     nq = q_norm  # Use normalized query as-is
 
@@ -698,3 +698,4 @@ async def download_db():
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
+
