@@ -1,4 +1,4 @@
-import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd
+import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io
 from urllib.parse import unquote_plus
 from fastapi import FastAPI, Query, Form, Path, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
@@ -59,10 +59,17 @@ def fetch_and_update_rba_rates():
     print("Scheduler: Starting RBA rate update job...")
     try:
         url = "https://www.rba.gov.au/statistics/tables/xls/f01d.xlsx"
-        # Use pandas to read the Excel file directly from the URL
-        df = pd.read_excel(url, sheet_name='Data', header=1)
         
-        # CORRECTED: The RBA file uses 'Title' for the date column header.
+        # IMPROVED: Use requests to download the file with a user-agent header
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}
+        response = requests.get(url, headers=headers)
+        response.raise_for_status() # Will raise an exception for bad status codes
+
+        # Read the content from memory using io.BytesIO
+        excel_data = io.BytesIO(response.content)
+        df = pd.read_excel(excel_data, sheet_name='Data', header=1)
+        
+        # The RBA file uses 'Title' for the date column header.
         date_col = 'Title' 
         rate_col = 'EOD 3-month BABs/NCDs'
 
@@ -575,7 +582,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             # Highlight phrases first (longer matches take precedence)
             for phrase in sorted(set(phrase_terms), key=len, reverse=True):
                 pattern = re.escape(phrase)
-                snippet_clean = re.sub(f'(?i)\\b{pattern}\\b', f"<mark>{phrase}</mark>", snippet_clean)
+                snippet_clean = re.sub(f'(?i}\\b{pattern}\\b', f"<mark>{phrase}</mark>", snippet_clean)
 
             # Then highlight individual words (excluding those already in phrases)
             for term in sorted(set(word_terms), key=len, reverse=True):
@@ -806,3 +813,4 @@ async def download_db():
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
+
