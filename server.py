@@ -433,16 +433,23 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
                 nq2 = fallback
 
         # ---- TRUE PHRASE PROXIMITY FILTER (only when needed) ----
-        if "NEAR/" in nq2:
-            # If either side of NEAR is a multi-word phrase, apply precise filter
+        # This custom filter ensures multi-word phrases in NEAR queries are exact.
+        # It should only run on simple NEAR queries, not ones combined with AND/OR,
+        # as the current filter logic doesn't support boolean combinations.
+        is_simple_near_query = "NEAR/" in nq2 and " AND " not in nq2 and " OR " not in nq2
+
+        if is_simple_near_query:
             comp = _extract_near_components(nq2)
             if comp:
                 left, _, right = comp
+                # Check if either side of the NEAR operator is a multi-word phrase
                 if (' ' in left.strip()) or (' ' in right.strip()):
+                    print(f"Applying true-phrase proximity filter for simple NEAR query.")
                     before = len(rows)
                     rows = _filter_rows_for_true_phrase_near(rows, nq2)
-                    total = len(rows)  # reflect filtered count (simple but clear)
-                    print(f"Phrase-proximity filtered: {before} → {total}")
+                    # Note: The 'total' count is not updated post-filtering to avoid
+                    # performance issues, so it may be a slight overestimate.
+                    print(f"Phrase-proximity filtered page results: {before} → {len(rows)}")
 
         # ---- build items & enhanced highlighting ----
         items = []
@@ -691,4 +698,3 @@ async def download_db():
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
-
