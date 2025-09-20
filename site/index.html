@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googlegletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -754,48 +754,6 @@ mark {
 
     let state = { q:'', claimant:'', respondent:'', limit:20, offset:0, total:0 };
 
-    // --- MOCK DATA ---
-    const mockDatabase = [
-        { id: '1', claimant: 'Mayla Family Trust', respondent: 'Frank Cole Waterproofing Pty Ltd', decision_date_norm: '2025-09-05', adjudicator: 'Roger Sleeman', pdf_path: 'mock.pdf', snippet: 'This is a sample snippet about the case. The claimant sought payment for waterproofing services...' },
-        { id: '2', claimant: 'Winslow Pty Ltd', respondent: 'Millwood Rise Developments Pty Ltd', decision_date_norm: '2025-09-04', adjudicator: 'Craig Tanzer', pdf_path: 'mock.pdf', snippet: 'A dispute arose regarding progress claims and variations under the contract...' },
-        { id: '3', claimant: 'James Construction Queensland Pty Ltd', respondent: 'Mornington Shire Council', decision_date_norm: '2025-08-29', adjudicator: 'Michael O\'Brien', pdf_path: 'mock.pdf', snippet: 'The council disputed the validity of the payment claim due to alleged defects...' },
-        { id: '4', claimant: 'Phoenix Form Pty Ltd', respondent: 'Z Group2 Pty Ltd', decision_date_norm: '2025-08-26', adjudicator: 'Neva Recchia', pdf_path: 'mock.pdf', snippet: 'This case involved complex arguments about time bars and extensions of time (EOT)...' },
-        { id: '5', claimant: 'KDV Sport Pty Ltd', respondent: 'Buildcorp Group Pty Ltd', decision_date_norm: '2025-08-22', adjudicator: 'John Smith', pdf_path: 'mock.pdf', snippet: 'A key issue was whether section 68 of the Act applied to the claim...' },
-    ];
-
-    async function mockFetch(url) {
-        console.log(`Mock fetching: ${url}`);
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-
-        if (url.startsWith('/search_fast')) {
-            return {
-                ok: true,
-                json: () => Promise.resolve({
-                    total: mockDatabase.length,
-                    items: mockDatabase,
-                }),
-            };
-        }
-        if (url.startsWith('/summarise/')) {
-            return {
-                ok: true,
-                json: () => Promise.resolve({
-                    summary: 'This is a **mock AI summary** of the decision. It highlights the key findings, the amounts claimed, and the final adjudicated amount. The primary dispute was related to waterproofing defects.'
-                }),
-            };
-        }
-        if (url.startsWith('/ask/')) {
-            return {
-                ok: true,
-                json: () => Promise.resolve({
-                    answer: 'This is a **mock AI answer**. Based on the mock data, the adjudicator found in favor of the claimant regarding the disputed variations.'
-                }),
-            };
-        }
-        return { ok: false, status: 404 };
-    }
-
-
     async function runSearch(page=1){
       $('#status').textContent = 'Searching…';
       startLoadingBar();
@@ -810,8 +768,7 @@ mark {
       params.set('limit', state.limit);
       params.set('offset', state.offset);
       
-      // Use the mockFetch function instead of a real network call
-      const res = await mockFetch(`/search_fast?${params.toString()}`);
+      const res = await fetch(`/search_fast?${params.toString()}`, { headers: { 'Accept':'application/json' }});
       const data = await res.json().catch(()=>({}));
 
       finishLoadingBar();
@@ -1026,7 +983,7 @@ async function summariseDecision(id) {
   box.innerHTML = 'Summarising… ⏳';
 
   try {
-    const res = await mockFetch(`/summarise/${id}`);
+    const res = await fetch(`/summarise/${id}`);
     const data = await res.json();
 
     if (data.summary) {
@@ -1052,7 +1009,12 @@ async function summariseDecision(id) {
   const q = document.getElementById(`question-${id}`).value;
   if (!q) return;
 
-  const res = await mockFetch(`/ask/${id}`);
+    const res = await fetch(`/ask/${id}`, {
+    method: "POST",
+    body: new URLSearchParams({ question: q }),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" }
+  });
+
   const data = await res.json();
   const ansBox = document.getElementById(`answer-${id}`);
   if (data.answer) {
