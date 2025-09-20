@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link rel="icon" href="https://placehold.co/32x32/00c97c/ffffff?text=S" type="image/x-icon">
+  <link rel="shortcut icon" href="https://placehold.co/32x32/00c97c/ffffff?text=S" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Sopal – How-To Guide</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Base styles matching main site */
+    body {
+      font-family: Inter, sans-serif;
+      margin: 0;
+      background: #ffffff;
+      color: #222;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .header {
+      background: #fdfdfd;
+      padding: 20px 25px;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+      background-color: rgba(253, 253, 253, 0.85);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      height: 31px;
+      margin-right: 20px;
+    }
+
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      color: #333;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #00c97c;
+    }
+
+    .nav-links a.active {
+      color: #00c97c;
+      font-weight: 600;
+    }
+
+    /* Main content */
+    .container {
+      max-width: 800px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 16px;
+    }
+
+    .last-updated {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .content-section {
+      margin-bottom: 40px;
+    }
+
+    .content-section h2 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 16px;
+      margin-top: 40px;
+    }
+
+    .content-section p {
+      margin-bottom: 16px;
+      color: #444;
+    }
+
+    .content-section ul {
+      margin-bottom: 16px;
+      padding-left: 20px;
+    }
+
+    .content-section li {
+      margin-bottom: 8px;
+      color: #444;
+    }
+
+    .highlight-box {
+      background: #f0fdf4;
+      border-left: 4px solid #00c97c;
+      padding: 20px;
+      margin: 24px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .highlight-box h4 {
+      margin: 0 0 12px 0;
+      color: #166534;
+      font-weight: 600;
+    }
+
+    .highlight-box p {
+      margin: 0;
+      color: #166534;
+    }
+    
+    code {
+        background-color: #f1f1f1;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.9em;
+    }
+
+    /* Table styles */
+    .connector-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 24px 0;
+        font-size: 14px;
+    }
+    .connector-table th, .connector-table td {
+        border: 1px solid #e1e1e1;
+        padding: 12px 15px;
+        text-align: left;
+    }
+    .connector-table th {
+        background-color: #f9f9f9;
+        font-weight: 600;
+        color: #333;
+    }
+    .connector-table tr:nth-child(even) {
+        background-color: #fdfdfd;
+    }
+    .connector-table code {
+        font-size: 0.95em;
+    }
+    
+    /* Footer */
+    .footer {
+      background: #fcfcfc;
+      color: #333;
+      padding: 40px 20px 20px;
+      margin-top: 80px;
+      border-top: 1px solid #ddd;
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .container {
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      .page-title {
+        font-size: 28px;
+      }
+      .content-section h2 {
+        font-size: 22px;
+      }
+      .header-content {
+        flex-direction: column;
+        gap: 16px;
+      }
+      .nav-links {
+        margin: 0;
+        flex-wrap: wrap;
+      }
+      .footer-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <a href="/">
+        <img src="https://sopal.com.au/assets/sopal_logo_v1.png" onerror="this.onerror=null;this.src='https://placehold.co/124x40/f0f0f0/333333?text=Sopal';" alt="SOPAL" class="logo">
+      </a>
+      <div class="nav-links">
+        <a href="#search">Search</a>
+        <a href="#how-to" class="active">How-To Guide</a>
+        <a href="#feedback">Feedback</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#terms">Terms</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <h1 class="page-title">Search Connectors: How-To Guide</h1>
+    <div class="last-updated">Last updated: 20 September 2025</div>
+
+    <div class="content-section" id="overview">
+        <p>Sopal enables powerful full-text searching of adjudication decisions. By using special commands called "search connectors," you can refine your searches to find exactly what you need. This guide explains how to use them effectively.</p>
+    </div>
+
+    <!-- Basic Connectors -->
+    <div class="content-section" id="connectors">
+      <h2>Search Connector Reference</h2>
+      <p>Use the following connectors to build advanced search queries. Remember to use double quotation marks for exact phrases and when using connectors.</p>
+      
+      <table class="connector-table">
+        <thead>
+          <tr>
+            <th>Connector</th>
+            <th>Example</th>
+            <th>Explanation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>AND</code></td>
+            <td><code>"EOT" AND "delay"</code></td>
+            <td>Both terms must appear anywhere in the decision's text.</td>
+          </tr>
+          <tr>
+            <td><code>OR</code></td>
+            <td><code>"EOT" OR "extension of time"</code></td>
+            <td>Either of the terms must appear in the decision's text. Useful for searching synonyms.</td>
+          </tr>
+          <tr>
+            <td><code>NOT</code></td>
+            <td><code>"EOT" NOT "liquidated damages"</code></td>
+            <td>The first term must appear, but not the second term.</td>
+          </tr>
+          <tr>
+            <td><code>w/n</code></td>
+            <td><code>"termination" w/15 "notice"</code></td>
+            <td>Both terms must appear within 'n' words of each other. In the example, "termination" and "notice" must be within 15 words of each other.</td>
+          </tr>
+          <tr>
+            <td><code>!</code> (Wildcard)</td>
+            <td><code>contra!</code></td>
+            <td>The root of a word must appear. The example would find decisions containing "contract", "contractual", "contravention", etc.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="highlight-box">
+      <h4>Power Tip: Combining Connectors</h4>
+      <p>You can combine multiple connectors to create highly specific searches. For example: <code>("payment schedule" OR "payment claim") AND "validity" NOT "unlicensed"</code></p>
+    </div>
+
+    <!-- Practical Examples -->
+    <div class="content-section" id="examples">
+        <h2>Practical Examples</h2>
+        <p>Here’s how you could apply these connectors to real-world search scenarios:</p>
+        <ul>
+            <li><strong>Finding discussions on defects near contract completion:</strong><br>
+            <code>"defect" w/25 ("practical completion" OR "final certificate")</code>
+            </li>
+            <li><strong>Looking for cases about variations but excluding those related to latent conditions:</strong><br>
+            <code>"variation" AND "direction" NOT "latent condition"</code>
+            </li>
+            <li><strong>Searching for various forms of security:</strong><br>
+            <code>secur! w/10 ("unconditional undertaking" OR "bank guarantee")</code>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Key Rules -->
+    <div class="content-section" id="rules">
+      <h2>Key Rules & Further Notes</h2>
+      <ul>
+        <li><strong>Use Uppercase:</strong> Connectors like <code>AND</code>, <code>OR</code>, and <code>NOT</code> must be written in uppercase.</li>
+        <li><strong>Use Quotation Marks:</strong> Always use double quotation marks (e.g., <code>"my phrase"</code>) for exact phrases and when using any search connectors.</li>
+        <li><strong>No Case Sensitivity:</strong> Search terms themselves are not case sensitive. Searching for <code>"contract"</code> is the same as searching for <code>"Contract"</code>.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-content">
+        <p>© 2025 Sopal. Intelligent adjudication search.</p>
+        <div class="footer-links">
+            <a href="https://www.sopal.com.au">sopal.com.au</a>
+        </div>
+    </div>
+  </div>
+
+</body>
+</html>
