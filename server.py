@@ -6,15 +6,35 @@ from fastapi.staticfiles import StaticFiles
 from email.message import EmailMessage
 import aiosmtplib
 from openai import OpenAI
+from google.cloud import storage
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SITE_DIR = os.path.join(ROOT, "site")
-
-# ensure DB lives in /tmp for faster access
 DB_PATH = "/tmp/qbcc.db"
+
+# Download DB from GCS on startup if it doesn't exist in /tmp
 if not os.path.exists(DB_PATH):
-    shutil.copy("qbcc.db", DB_PATH)
+    try:
+        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
+        gcs_db_object_name = os.getenv("GCS_DB_OBJECT_NAME", "qbcc.db")
+        
+        if gcs_bucket_name:
+            print(f"Database not found at {DB_PATH}. Downloading from GCS bucket '{gcs_bucket_name}'...")
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(gcs_bucket_name)
+            blob = bucket.blob(gcs_db_object_name)
+            blob.download_to_filename(DB_PATH)
+            print("Database downloaded successfully.")
+        else:
+            # Fallback for local development if GCS env var isn't set
+            print("GCS_BUCKET_NAME not set. Trying to copy local 'qbcc.db'.")
+            if os.path.exists("qbcc.db"):
+                shutil.copy("qbcc.db", DB_PATH)
+            else:
+                print("FATAL: No local 'qbcc.db' found and GCS bucket not configured.")
+    except Exception as e:
+        print(f"FATAL: Failed to download database from GCS. Error: {e}")
 
 # sqlite connection
 con = sqlite3.connect(DB_PATH, check_same_thread=False)
