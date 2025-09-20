@@ -97,43 +97,43 @@ def expand_wildcards(q: str) -> str:
 def _parse_near_robust(q: str) -> str | None:
     """
     Enhanced NEAR parsing that properly handles quoted phrases, wildcards, and mixed combinations
-    Examples: 
-    - "EOT" w/5 "time bar" -> "EOT" NEAR/5 "time bar"
-    - "GST" w/5 exclu! -> "GST" NEAR/5 "exclu*"
-    - word1 w/5 word2 -> "word1" NEAR/5 "word2"
     """
     s = _fix_unbalanced_quotes(q)
     
     # First expand wildcards
     s = expand_wildcards(s)
     
-    # Normalize w/N and NEAR/N
+    # Check for any w/N or NEAR/N pattern first
+    if not re.search(r'\b(?:w|near)\s*/\s*\d+\b', s, flags=re.I):
+        return None
+    
+    # Normalize w/N and NEAR/N to NEAR/N
     s = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', s, flags=re.I)
 
-    # Try to match any NEAR pattern - quoted phrases, wildcards, or plain words
-    patterns = [
-        # Both sides quoted: "phrase1" NEAR/5 "phrase2"
-        r'"([^"]+)"\s+NEAR/(\d+)\s+"([^"]+)"',
-        # Left quoted, right not: "phrase" NEAR/5 word*
-        r'"([^"]+)"\s+NEAR/(\d+)\s+(\S+)',
-        # Left not quoted, right quoted: word* NEAR/5 "phrase"
-        r'(\S+)\s+NEAR/(\d+)\s+"([^"]+)"',
-        # Neither quoted: word1 NEAR/5 word2*
-        r'(\S+)\s+NEAR/(\d+)\s+(\S+)'
-    ]
+    # Try to match NEAR pattern with flexible quoting
+    # Pattern captures: (left_term) NEAR/N (right_term)
+    pattern = r'(["\']?[^"\'\s]+["\']?|\S+)\s+NEAR/(\d+)\s+(["\']?[^"\'\s]+["\']?|\S+)'
+    m = re.search(pattern, s, flags=re.I)
     
-    for pattern in patterns:
-        m = re.search(pattern, s, flags=re.I)
-        if m:
-            if len(m.groups()) == 3:  # Both sides quoted or neither quoted
-                left, dist, right = m.group(1), int(m.group(2)), m.group(3)
-            else:  # Mixed quoting (shouldn't happen with current patterns but safety)
-                continue
-                
-            # Ensure both sides are quoted for SQLite FTS
-            return f'"{left}" NEAR/{dist} "{right}"'
+    if not m:
+        return None
     
-    return None
+    left_raw = m.group(1).strip()
+    dist = int(m.group(2))
+    right_raw = m.group(3).strip()
+    
+    # Clean and ensure proper quoting
+    def clean_term(term):
+        # Remove existing quotes if present
+        if (term.startswith('"') and term.endswith('"')) or (term.startswith("'") and term.endswith("'")):
+            return term[1:-1]
+        return term
+    
+    left_clean = clean_term(left_raw)
+    right_clean = clean_term(right_raw)
+    
+    # Always quote both sides for SQLite FTS consistency
+    return f'"{left_clean}" NEAR/{dist} "{right_clean}"'
 
 def preprocess_sqlite_query(q: str) -> str:
     """Enhanced query preprocessing with proper phrase and operator handling"""
@@ -288,7 +288,8 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         re.search(r'\bw/\d+\b', nq, flags=re.I) or
         re.search(r'\bNEAR/\d+\b', nq, flags=re.I) or
         nq.startswith('"') or
-        '!' in nq  # wildcard queries
+        '!' in nq or  # wildcard queries
+        '*' in nq     # already expanded wildcards
     )
 
     if is_complex_query:
@@ -392,7 +393,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             # Highlight phrases first (longer matches take precedence)
             for phrase in sorted(set(phrase_terms), key=len, reverse=True):
                 pattern = re.escape(phrase)
-                snippet_clean = re.sub(f'(?i){pattern}', f"<mark>{phrase}</mark>", snippet_clean)
+                snippet_clean = re.sub(f'(?i)\\b{pattern}\\b', f"<mark>{phrase}</mark>", snippet_clean)
 
             # Then highlight individual words (excluding those already in phrases)
             for term in sorted(set(word_terms), key=len, reverse=True):
@@ -400,8 +401,14 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
                 if any(term.lower() in phrase.lower() for phrase in phrase_terms):
                     continue
                 
-                pattern = re.escape(term)
-                snippet_clean = re.sub(f'(?i)\\b({pattern})\\b', r'<mark>\1</mark>', snippet_clean)
+                # Handle wildcard terms - highlight any word starting with the stem
+                if term.endswith('*'):
+                    stem = term[:-1]
+                    pattern = f'\\b({re.escape(stem)}\\w*)'
+                    snippet_clean = re.sub(pattern, r'<mark>\1</mark>', snippet_clean, flags=re.I)
+                else:
+                    pattern = re.escape(term)
+                    snippet_clean = re.sub(f'(?i)\\b({pattern})\\b', r'<mark>\1</mark>', snippet_clean)
 
             d["snippet"] = snippet_clean
             items.append(d)
