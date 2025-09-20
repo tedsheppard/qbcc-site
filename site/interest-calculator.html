@@ -348,12 +348,13 @@
     const calcDate = new Date(document.getElementById('contract-calc-date').value);
 
     if (isNaN(principal) || isNaN(annualRate) || isNaN(dueDate.getTime()) || isNaN(calcDate.getTime())) {
-      alert('Please fill in all fields with valid numbers and dates.');
+      // Use a more modern, non-blocking notification
+      displayError('Please fill in all fields with valid numbers and dates.');
       return;
     }
     
     if (calcDate < dueDate) {
-      alert('The "Date Interest Calculated To" must be after the "Due Date for Payment".');
+      displayError('The "Date Interest Calculated To" must be after the "Due Date for Payment".');
       return;
     }
 
@@ -379,23 +380,25 @@
       const calcDate = new Date(document.getElementById('qbcc-calc-date').value);
 
       if (isNaN(principal) || isNaN(dueDate.getTime()) || isNaN(calcDate.getTime())) {
-        alert('Please fill in all fields with valid numbers and dates.');
+        displayError('Please fill in all fields with valid numbers and dates.');
         return;
       }
 
       if (calcDate < dueDate) {
-        alert('The "Date Interest Calculated To" must be after the "Due Date for Payment".');
+        displayError('The "Date Interest Calculated To" must be after the "Due Date for Payment".');
         return;
       }
 
       // Format date as YYYY-MM-DD for the API
       const dateStr = calcDate.toISOString().split('T')[0];
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '<p>Fetching latest RBA rate...</p>';
 
       try {
         const response = await fetch(`/get_interest_rate?date=${dateStr}`);
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to fetch interest rate.');
+            throw new Error(errorData.detail || 'Failed to fetch interest rate from the server.');
         }
         const data = await response.json();
         const rbaRate = data.rate;
@@ -403,7 +406,7 @@
         const penaltyRate = 10.0 + rbaRate;
         
         const timeDiff = calcDate.getTime() - dueDate.getTime();
-        const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // Inclusive of the last day
         const dailyRate = penaltyRate / 365;
         const interest = principal * (dailyRate / 100) * days;
 
@@ -419,9 +422,13 @@
         });
 
       } catch (error) {
-          alert(`Error: ${error.message}`);
-          document.getElementById('results').innerHTML = `<p style="color: red;">Could not retrieve the RBA interest rate. Please try again later.</p>`;
+          displayError(`Error: ${error.message}`);
       }
+  }
+  
+  function displayError(message) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = `<p style="color: red; border: 1px solid red; padding: 10px; border-radius: 6px; background-color: #ffebee;">${message}</p>`;
   }
 
   function displayResults(data) {
@@ -480,24 +487,37 @@
         text += `${header}:\t${value}\n`;
     }
 
-    // Fallback for browsers that might not support navigator.clipboard in this context
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-        document.execCommand('copy');
-        alert('Calculation table copied to clipboard!');
-    } catch (err) {
-        alert('Failed to copy text.');
+    // Use modern clipboard API if available, with a fallback
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Calculation table copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy with navigator.clipboard:', err);
+            copyFallback(text);
+        });
+    } else {
+        copyFallback(text);
     }
-    document.body.removeChild(textArea);
+  }
+
+  function copyFallback(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = 'fixed'; // Prevent scrolling to bottom of page in MS Edge.
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+          document.execCommand('copy');
+          alert('Calculation table copied to clipboard!');
+      } catch (err) {
+          alert('Failed to copy text.');
+      }
+      document.body.removeChild(textArea);
   }
 
 </script>
 
 </body>
 </html>
-
 
