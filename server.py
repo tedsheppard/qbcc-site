@@ -62,13 +62,13 @@ def fetch_and_update_rba_rates():
         # Use pandas to read the Excel file directly from the URL
         df = pd.read_excel(url, sheet_name='Data', header=1)
         
-        # Identify correct columns - 'Date' and 'EOD 3-month BABs/NCDs'
-        date_col = 'Date' 
+        # CORRECTED: The RBA file uses 'Title' for the date column header.
+        date_col = 'Title' 
         rate_col = 'EOD 3-month BABs/NCDs'
 
         # Ensure columns exist
         if date_col not in df.columns or rate_col not in df.columns:
-            print(f"Scheduler ERROR: Required columns not found in RBA file.")
+            print(f"Scheduler ERROR: Required columns ('{date_col}', '{rate_col}') not found in RBA file.")
             return
 
         # Select, clean, and filter data
@@ -396,7 +396,7 @@ def highlight_wildcard_matches(text: str, stem: str) -> str:
 def health():
     return {"ok": True}
 
-# --- NEW: API Endpoint for RBA Rate ---
+# --- API Endpoint for RBA Rate ---
 @app.get("/get_interest_rate")
 def get_interest_rate(date_str: str = Query(..., alias="date")):
     try:
@@ -806,4 +806,3 @@ async def download_db():
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
-
