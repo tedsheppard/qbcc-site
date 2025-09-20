@@ -61,9 +61,15 @@ def normalize_query(q: str) -> str:
             break
         s = s2
     s = unicodedata.normalize("NFKC", s)
-    s = s.translate(str.maketrans({
-        'â€œ':'"', 'â€':'"', 'â€˜':"'", 'â€™':"'", 'â€"':'-', 'â€"':'-', 'â€':'-'
-    }))
+    
+    # Fix Unicode characters using replace instead of translate
+    replacements = {
+        'â€œ': '"', 'â€': '"', 'â€˜': "'", 'â€™': "'", 
+        'â€"': '-', 'â€"': '-', 'â€': '-'
+    }
+    for old, new in replacements.items():
+        s = s.replace(old, new)
+    
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
