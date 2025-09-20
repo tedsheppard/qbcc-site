@@ -110,37 +110,34 @@ def _parse_near_robust(q: str) -> str | None:
     # Normalize w/N and NEAR/N to NEAR/N
     s = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', s, flags=re.I)
 
-    # Simple but robust approach: find quoted phrases and words separately
-    # First, extract all quoted phrases
-    quoted_phrases = re.findall(r'"([^"]+)"', s)
-    
     # Then find the NEAR pattern
     near_match = re.search(r'NEAR/(\d+)', s, flags=re.I)
     if not near_match:
         return None
-    
     dist = int(near_match.group(1))
-    
-    # If we found exactly 2 quoted phrases, use them
-    if len(quoted_phrases) == 2:
-        left, right = quoted_phrases[0], quoted_phrases[1]
-        print(f"_parse_near_robust - left: '{left}', dist: {dist}, right: '{right}'")
-        return f'"{left}" NEAR/{dist} "{right}"'
     
     # Fallback: try to parse around NEAR
     parts = re.split(r'\s+NEAR/\d+\s+', s, flags=re.I)
     if len(parts) == 2:
         left_part = parts[0].strip()
         right_part = parts[1].strip()
-        
-        # Remove quotes if present
-        if left_part.startswith('"') and left_part.endswith('"'):
-            left_part = left_part[1:-1]
-        if right_part.startswith('"') and right_part.endswith('"'):
-            right_part = right_part[1:-1]
+
+        # Clean up both parts by stripping outer parentheses and quotes
+        def clean_term(term):
+            term = term.strip()
+            # Repeatedly strip parentheses and whitespace
+            while term.startswith('(') and term.endswith(')'):
+                term = term[1:-1].strip()
+            # Finally strip quotes
+            if term.startswith('"') and term.endswith('"'):
+                term = term[1:-1].strip()
+            return term
+
+        left_clean = clean_term(left_part)
+        right_clean = clean_term(right_part)
             
-        print(f"_parse_near_robust - left: '{left_part}', dist: {dist}, right: '{right_part}'")
-        return f'"{left_part}" NEAR/{dist} "{right_part}"'
+        print(f"_parse_near_robust - left: '{left_clean}', dist: {dist}, right: '{right_clean}'")
+        return f'"{left_clean}" NEAR/{dist} "{right_clean}"'
     
     return None
 
