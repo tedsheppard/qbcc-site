@@ -179,7 +179,7 @@
     background: #e0e0e0;
   }
 
-  /* New box styles */
+  /* Collapsible box styles */
   .provision-box {
     margin-top: 20px;
     padding: 20px;
@@ -188,24 +188,31 @@
     border-radius: 4px;
     font-size: 14px;
   }
-  .provision-box h3 {
-    margin-top: 0;
+  .provision-box summary {
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
     color: #059669;
+  }
+  .provision-box[open] summary {
+      margin-bottom: 15px;
+  }
+  .provision-box summary::marker {
+      color: #059669;
   }
   .provision-box ul {
     padding-left: 20px;
+    list-style-type: none;
   }
-  .info-box {
-    margin-top: 30px;
-    padding: 20px;
-    background: #f3f4f6;
-    border-left: 4px solid #6b7280;
-    border-radius: 4px;
+   .provision-box ul ul {
+    padding-left: 20px;
+    list-style-type: disc;
   }
-  .info-box h3 {
-      margin-top: 0;
-      color: #4b5563;
+  .provision-content p {
+      margin-top: 10px;
+      margin-bottom: 10px;
   }
+
 
   /* Disclaimer styles */
   .disclaimer {
@@ -275,58 +282,59 @@
   
   <p>Interest is payable on late progress payments under section 73 of the BIF Act.</p>
 
-  <div class="provision-box">
-    <h3>Building Industry Fairness (Security of Payment) Act 2017 – Section 73</h3>
-    <p><strong>73 Due date for payment</strong></p>
-    <ul>
-        <li>(1) A progress payment under a construction contract becomes payable—
-            <ul>
-                <li>(a) if the contract provides for the matter—on the day on which the payment becomes payable under the contract; or</li>
-                <li>(b) if the contract does not provide for the matter—on the day that is 10 business days after the day a payment claim for the progress payment is made under part 3.</li>
-            </ul>
-        </li>
-        <li>(2) Interest for a construction contract is payable on the unpaid amount of a progress payment that has become payable at the greater of the following rates—
-            <ul>
-                <li>(a) the rate stated in the contract;</li>
-                <li>(b) the rate prescribed under the Civil Proceedings Act 2011, section 59(3) for a money order debt.</li>
-            </ul>
-        </li>
-        <li>(3) However, for a construction contract to which the Queensland Building and Construction Commission Act 1991, section 67P applies because it is a building contract, interest is payable at the penalty rate under that section.</li>
-    </ul>
-  </div>
+  <details class="provision-box">
+    <summary>Building Industry Fairness (Security of Payment) Act 2017 – Section 73</summary>
+    <div class="provision-content">
+        <p><strong>73 Due date for payment</strong></p>
+        <ul>
+            <li>(1) A progress payment under a construction contract becomes payable—
+                <ul>
+                    <li>(a) if the contract provides for the matter—on the day on which the payment becomes payable under the contract; or</li>
+                    <li>(b) if the contract does not provide for the matter—on the day that is 10 business days after the day a payment claim for the progress payment is made under part 3.</li>
+                </ul>
+            </li>
+            <li>(2) Interest for a construction contract is payable on the unpaid amount of a progress payment that has become payable at the greater of the following rates—
+                <ul>
+                    <li>(a) the rate stated in the contract;</li>
+                    <li>(b) the rate prescribed under the Civil Proceedings Act 2011, section 59(3) for a money order debt.</li>
+                </ul>
+            </li>
+            <li>(3) However, for a construction contract to which the Queensland Building and Construction Commission Act 1991, section 67P applies because it is a building contract, interest is payable at the penalty rate under that section.</li>
+        </ul>
+    </div>
+  </details>
 
   <p style="margin-top: 20px;">As per s 73(3) of the BIF Act, the penalty interest rate under section 67P of the <em>Queensland Building and Construction Commission Act 1991</em> (QBCC Act) may apply. That section provides:</p>
 
-  <div class="provision-box">
-      <h3>Queensland Building and Construction Commission Act 1991 – Section 67P</h3>
-      <p><strong>67P Late progress payments</strong></p>
-      <ul>
-          <li>(1) This section applies if—
-              <ul>
-                  <li>(a) the contracting party for a building contract is required to pay an amount (the progress amount) to the contracted party for the building contract; and</li>
-                  <li>(b) the progress amount is payable as the whole or a part of a progress payment; and</li>
-                  <li>(c) the time (the payment time) by which the progress amount is required to be paid has passed, and the progress amount, or a part of the progress amount, has not been paid.</li>
-              </ul>
-          </li>
-          <li>(2) For the period for which the progress amount, or the part of the progress amount, is still unpaid after the payment time, the contracting party is also required to pay the contracted party interest at the penalty rate, as applying from time to time, for each day the amount is unpaid.</li>
-          <li>(3) In this section— <strong><em>penalty rate</em></strong> means—
-              <ul>
-                  <li>(a) the rate made up of the sum of the following—
-                      <ul>
-                          <li>(i) 10% a year;</li>
-                          <li>(ii) the rate comprising the annual rate, as published from time to time by the Reserve Bank of Australia, for 90 day bills; or</li>
-                      </ul>
-                  </li>
-                  <li>(b) if the building contract provides for a higher rate of interest than the rate worked out under paragraph (a)—the higher rate.</li>
-              </ul>
-          </li>
-      </ul>
-  </div>
+  <details class="provision-box">
+      <summary>Queensland Building and Construction Commission Act 1991 – Section 67P</summary>
+      <div class="provision-content">
+          <p><strong>67P Late progress payments</strong></p>
+          <ul>
+              <li>(1) This section applies if—
+                  <ul>
+                      <li>(a) the contracting party for a building contract is required to pay an amount (the progress amount) to the contracted party for the building contract; and</li>
+                      <li>(b) the progress amount is payable as the whole or a part of a progress payment; and</li>
+                      <li>(c) the time (the payment time) by which the progress amount is required to be paid has passed, and the progress amount, or a part of the progress amount, has not been paid.</li>
+                  </ul>
+              </li>
+              <li>(2) For the period for which the progress amount, or the part of the progress amount, is still unpaid after the payment time, the contracting party is also required to pay the contracted party interest at the penalty rate, as applying from time to time, for each day the amount is unpaid.</li>
+              <li>(3) In this section— <strong><em>penalty rate</em></strong> means—
+                  <ul>
+                      <li>(a) the rate made up of the sum of the following—
+                          <ul>
+                              <li>(i) 10% a year;</li>
+                              <li>(ii) the rate comprising the annual rate, as published from time to time by the Reserve Bank of Australia, for 90 day bills; or</li>
+                          </ul>
+                      </li>
+                      <li>(b) if the building contract provides for a higher rate of interest than the rate worked out under paragraph (a)—the higher rate.</li>
+                  </ul>
+              </li>
+          </ul>
+      </div>
+  </details>
 
-  <div class="info-box">
-      <h3>Automated Daily Rate Updates</h3>
-      <p>Calculating the QBCC Act penalty rate requires the 90-day Bank Bill Swap Rate (BBSW), which is published daily by the Reserve Bank of Australia. This calculator does the hard work for you by automatically fetching the latest official RBA statistics every day, ensuring your interest calculations are based on the correct variable rate for any given period.</p>
-  </div>
+  <p style="margin-top: 30px;">Calculating the QBCC Act penalty rate requires the 90-day Bank Bill Swap Rate (BBSW), which is published daily by the Reserve Bank of Australia. This calculator does the hard work for you by automatically fetching the latest official RBA statistics every day, ensuring your interest calculations are based on the correct variable rate for any given period.</p>
 
 
   <div class="calculator-container">
