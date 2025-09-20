@@ -1,8 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
- <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+ <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -19,6 +18,44 @@
   <title>Sopal – Adjudication Search</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
+  /* Header from Privacy Page */
+  .header {
+    background: #fdfdfd;
+    padding: 20px 25px;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-content {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .logo {
+    height: 31px;
+    margin-right: 20px;
+  }
+  .nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+  }
+  .nav-links a {
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover {
+    color: #00c97c;
+  }
+  .nav-links a.active {
+    color: #00c97c;
+    font-weight: 600;
+  }
+
   /* Light theme overrides */
   .light {
     background: #ffffff !important;
@@ -425,6 +462,17 @@ mark {
 
  /* --- Mobile responsiveness --- */
 @media (max-width: 768px) {
+  /* Header from Privacy Page */
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .nav-links {
+    margin: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
   main {
     margin-left: 0;          /* remove sidebar space */
     padding: 0 13px;         /* breathing room on small screens */
@@ -1138,20 +1186,28 @@ mark {
   <body class="light">
     <div id="loadingBar"></div>
 
+<div class="header">
+  <div class="header-content">
+    <a href="/">
+      <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Search</a>
+      <a href="feedback.html">Feedback</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+    </div>
+  </div>
+</div>
+
 <div class="search-header">
   <div class="top-row">
-    <div class="logo">
-      <a href="/">
-        <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" style="height:31px;">
-      </a>
-    </div>
-
     <div class="search-container">
       <div class="search-bar">
         <input id="q" placeholder="Search adjudication decisions… (e.g. ''s 68'' AND ''KDV''; ''EOT'' w/10 ''time bar'')">
         <button onclick="runSearch()">Search</button>
       </div>
-
+    </div>
     <button id="themeToggle" onclick="toggleTheme()">Switch to Dark Mode 🌙</button>
   </div>
 </div>
@@ -1183,33 +1239,25 @@ mark {
 
 
 
-    <!-- Sidebar Filters -->
-
-
     <aside class="filters-sidebar">
       <h3>Filters</h3>
 
-      <!-- Jurisdiction -->
       <label>
         <input type="checkbox" id="jurisdiction"> Jurisdiction
       </label>
 
-      <!-- Vexatious/Frivolous -->
       <label>
         <input type="checkbox" id="vexatious"> Vexatious / Frivolous
       </label>
 
-      <!-- Year -->
       <label for="year">Year</label>
       <select id="year">
         <option value="">Any</option>
         <option>2025</option>
         <option>2024</option>
         <option>2023</option>
-        <!-- add dynamically later -->
-      </select>
+        </select>
 
-      <!-- Act -->
       <label for="act">Act</label>
       <select id="act">
         <option value="">Any</option>
@@ -1217,7 +1265,6 @@ mark {
         <option value="bcipa">BCIPA</option>
       </select>
 
-      <!-- Amount ranges -->
       <label>Payment Claim ($)</label>
       <div id="claim-slider"></div>
       <div class="slider-inputs">
@@ -1294,8 +1341,8 @@ mark {
       $('#status').textContent = 'Done.';
 
       const items = data.items || [];
-      $('#results').innerHTML = items.length 
-        ? items.map(it => renderItem(it, state.q && state.q.length > 0)).join('') 
+      $('#results').innerHTML = items.length
+        ? items.map(it => renderItem(it, state.q && state.q.length > 0)).join('')
         : '<p>No results.</p>';
 
 
