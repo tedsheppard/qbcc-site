@@ -1,6 +1,6 @@
 import os, re, shutil, sqlite3, requests, unicodedata
 from urllib.parse import unquote_plus
-from fastapi import FastAPI, Query, Form, Path, HTTPException
+from fastapi import FastAPI, Form, Path, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from email.message import EmailMessage
@@ -33,11 +33,23 @@ CREATE TABLE IF NOT EXISTS ai_summaries (
 """)
 con.commit()
 
-# ---------------- ensure FTS ----------------
+# ---------------- ensure FTS (with PREFIX for wildcard !) ----------------
 def ensure_fts():
+    """
+    Rebuilds FTS4 index with unicode61 tokenizer and PREFIX indexes so that
+    prefix queries (term*) are fast and so our Lexis-style `!` works.
+    """
     try:
         con.execute("DROP TABLE IF EXISTS fts;")
-        con.execute("CREATE VIRTUAL TABLE fts USING fts4(full_text, content='docs_fresh', tokenize=unicode61);")
+        # IMPORTANT: prefix="2 3 4 5" enables fast prefix queries for stems >=2 chars
+        con.execute("""
+            CREATE VIRTUAL TABLE fts USING fts4(
+                full_text,
+                content='docs_fresh',
+                tokenize=unicode61,
+                prefix="2 3 4 5"
+            );
+        """)
         con.execute("INSERT INTO fts(fts) VALUES('rebuild');")
         con.commit()
     except Exception as e:
@@ -53,6 +65,8 @@ MEILI_INDEX = "decisions"
 app = FastAPI()
 
 # ---------------- helpers ----------------
+OP_SET = {"W", "NEAR", "AND", "OR", "NOT"}
+
 def normalize_query(q: str) -> str:
     s = q or ""
     for _ in range(2):
@@ -71,71 +85,88 @@ def escape_fts_phrase(s: str) -> str:
     return s.replace('"', '""')
 
 def normalize_default(q: str) -> str:
+    # auto-AND only when the user provided no operators/quotes/proximity
     if not re.search(r'"|\bNEAR/\d+\b|\bw/\d+\b|\bAND\b|\bOR\b|\bNOT\b|\(|\)', q or "", flags=re.I):
-        toks = re.findall(r'\w+', q or "")
+        toks = re.findall(r'\w+!?', q or "")
+        # convert ! -> * for FTS (handled later too; safe to leave here)
+        toks = [t[:-1] + '*' if t.endswith('!') and len(t[:-1]) >= 2 else t for t in toks]
         q = ' AND '.join(toks)
     return q
 
 def _fix_unbalanced_quotes(s: str) -> str:
+    # balance double-quotes to avoid parser blowups
     if s.count('"') % 2 == 1:
         s = s + '"'
     return s
 
+def _lexis_wildcards_to_fts(s: str) -> str:
+    """
+    Lexis ! → FTS prefix * (for words with >= 2-char stem).
+    We convert only when ! is at the end of a token.
+    """
+    def repl(m):
+        stem = m.group(1)
+        return stem + '*' if len(stem) >= 2 else stem  # avoid 1-char prefixes
+    return re.sub(r'(\w+)!', repl, s)
+
 def _parse_near_robust(q: str) -> str | None:
     """
-    Return a canonical NEAR form with both sides quoted:
+    Build canonical NEAR form with both sides properly quoted:
       "LEFT" NEAR/N "RIGHT"
-    Accepts w/N and NEAR/N, words or quoted phrases, and fixes a missing quote.
+    Accepts: w/N or near/N; single words or quoted phrases (which may contain spaces).
     """
     s = _fix_unbalanced_quotes(q)
+    s = _lexis_wildcards_to_fts(s)
     s = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', s, flags=re.I)
 
-    m = re.search(r'("([^"]+)"|(\w+))\s+NEAR/(\d+)\s+("([^"]+)"|(\w+))', s, flags=re.I)
+    # Match either a quoted phrase OR a non-space token on both sides
+    m = re.search(r'(".*?"|\S+)\s+NEAR/(\d+)\s+(".*?"|\S+)', s, flags=re.I)
     if not m:
-        s2 = s.replace('"', '')
-        m = re.search(r'(\w+)\s+NEAR/(\d+)\s+(\w+)', s2, flags=re.I)
-        if not m:
-            return None
-        left, dist, right = m.group(1), int(m.group(2)), m.group(3)
-        return f'"{left}" NEAR/{dist} "{right}"'
+        return None
 
-    left  = m.group(2) or m.group(3)
-    dist  = int(m.group(4))
-    right = m.group(6) or m.group(7)
-    return f'"{left}" NEAR/{dist} "{right}"'
+    def clean(tok: str) -> str:
+        tok = tok.strip()
+        if tok.startswith('"') and tok.endswith('"'):
+            tok = tok[1:-1]
+        return f"\"{tok}\""  # always quote the final tokens
+
+    left  = clean(m.group(1))
+    dist  = int(m.group(2))
+    right = clean(m.group(3))
+    return f"{left} NEAR/{dist} {right}"
 
 def preprocess_sqlite_query(q: str) -> str:
-    # Normalise Boolean operators
+    # 1) Uppercase boolean ops (for clarity), leave phrases intact
     q = re.sub(r'\band\b', 'AND', q, flags=re.I)
     q = re.sub(r'\bor\b',  'OR',  q, flags=re.I)
     q = re.sub(r'\bnot\b', 'NOT', q, flags=re.I)
 
-    # Proximity first
+    # 2) Lexis ! to FTS * (prefix search). This handles non-proximity cases too.
+    q = _lexis_wildcards_to_fts(q)
+
+    # 3) Proximity canonicalization first (so it can see repaired quotes)
     near_expr = _parse_near_robust(q)
     if near_expr:
         return near_expr
 
-    # If it's a Boolean query (AND/OR/NOT), keep quotes as-is
+    # 4) If explicitly boolean, keep as-is (with * already converted)
     if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I):
         return q.strip()
 
-    # Otherwise, no operators → auto-AND
+    # 5) Otherwise auto-AND
     return normalize_default(q)
 
-# -------- phrase-aware proximity filtering (true phrase NEAR) --------
+# ---- phrase-aware proximity filtering (true phrase NEAR) ----
 _word_re = re.compile(r"\w+", flags=re.UNICODE)
 
 def _tokenize(text: str):
-    # returns list of lowercase tokens
     return _word_re.findall(text.lower())
 
 def _phrase_positions(tokens: list[str], phrase: str) -> list[int]:
-    """Return start indices where the exact multi-word phrase occurs (token-wise)."""
     words = _word_re.findall(phrase.lower())
     if not words:
         return []
     if len(words) == 1:
-        # single-word 'phrase'
         w = words[0]
         return [i for i, t in enumerate(tokens) if t == w]
     L = len(words)
@@ -146,7 +177,6 @@ def _phrase_positions(tokens: list[str], phrase: str) -> list[int]:
     return out
 
 def _extract_near_components(nq2: str):
-    """From canonical '"LEFT" NEAR/N "RIGHT"' return (left, n, right)."""
     m = re.search(r'"([^"]+)"\s+NEAR/(\d+)\s+"([^"]+)"', nq2, flags=re.I)
     if not m:
         return None
@@ -164,17 +194,17 @@ def _filter_rows_for_true_phrase_near(rows, nq2):
     left_is_phrase  = ' ' in left.strip()
     right_is_phrase = ' ' in right.strip()
     if not (left_is_phrase or right_is_phrase):
-        return rows  # both single words → SQLite NEAR already correct
+        return rows
 
     filtered = []
-    # collect rowids to fetch full_text in one go
     rowids = [r["rowid"] for r in rows]
     if not rowids:
         return rows
 
-    # Batch pull full_texts
     qmarks = ",".join(["?"]*len(rowids))
-    text_rows = con.execute(f"SELECT rowid, full_text FROM docs_fresh WHERE rowid IN ({qmarks})", rowids).fetchall()
+    text_rows = con.execute(
+        f"SELECT rowid, full_text FROM docs_fresh WHERE rowid IN ({qmarks})", rowids
+    ).fetchall()
     text_map = {tr["rowid"]: tr["full_text"] or "" for tr in text_rows}
 
     for r in rows:
@@ -188,7 +218,6 @@ def _filter_rows_for_true_phrase_near(rows, nq2):
             continue
 
         ok = False
-        # define the representative index for a phrase as its first token
         for li in left_positions:
             for ri in right_positions:
                 if abs(ri - li) <= dist:
@@ -209,79 +238,49 @@ def health():
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "relevance"):
     q_norm = normalize_query(q)
 
+    # Phrase-only search passed through as phrase
     if len(q_norm) >= 2 and q_norm[0] == '"' and q_norm[-1] == '"':
         inner = q_norm[1:-1]
         nq = f"\"{escape_fts_phrase(inner)}\""
     else:
         nq = q_norm
 
+    # If boolean/prox/phrase, use SQLite FTS path; else Meili
     if (re.search(r'\b(AND|OR|NOT)\b', nq, flags=re.I)
         or re.search(r'\bw/\d+\b', nq, flags=re.I)
         or re.search(r'\bNEAR/\d+\b', nq, flags=re.I)
-        or nq.startswith('"')):
-
+        or '"' in nq
+        or '!' in nq  # our wildcard
+    ):
         try:
             nq2 = preprocess_sqlite_query(nq)
             print("Executing MATCH with:", nq2)
             total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq2}).fetchone()[0]
-            sql = """
+            rows = con.execute("""
               SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
               FROM fts
               WHERE fts MATCH :q
               LIMIT :limit OFFSET :offset
-            """
-            rows = con.execute(sql, {"q": nq2, "limit": limit, "offset": offset}).fetchall()
+            """, {"q": nq2, "limit": limit, "offset": offset}).fetchall()
 
         except sqlite3.OperationalError as e:
             print("FTS MATCH error for:", nq, "->", e)
-            if re.search(r'\b(w|near)\s*/\s*\d+', nq, flags=re.I):
-                repaired = _parse_near_robust(nq)
-                if repaired:
-                    print("Retrying with repaired proximity:", repaired)
-                    total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": repaired}).fetchone()[0]
-                    rows = con.execute("""
-                      SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                      FROM fts
-                      WHERE fts MATCH :q
-                      LIMIT :limit OFFSET :offset
-                    """, {"q": repaired, "limit": limit, "offset": offset}).fetchall()
-                    nq2 = repaired  # downstream needs canonical value
-                else:
-                    degraded = re.sub(r'\b(?:w|near)\s*/\s*\d+\b', 'AND', nq, flags=re.I)
-                    print("Degrading proximity to AND:", degraded)
-                    total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": degraded}).fetchone()[0]
-                    rows = con.execute("""
-                      SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                      FROM fts
-                      WHERE fts MATCH :q
-                      LIMIT :limit OFFSET :offset
-                    """, {"q": degraded, "limit": limit, "offset": offset}).fetchall()
-                    nq2 = degraded
-            else:
-                total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH :q", {"q": nq}).fetchone()[0]
-                rows = con.execute("""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  WHERE fts MATCH :q
-                  LIMIT :limit OFFSET :offset
-                """, {"q": nq, "limit": limit, "offset": offset}).fetchall()
-                nq2 = nq
+            return {"total": 0, "items": []}
 
-        # ---- TRUE PHRASE PROXIMITY FILTER (only when needed) ----
+        # True phrase proximity (when one side is multi-word)
         if "NEAR/" in nq2:
-            # If either side of NEAR is a multi-word phrase, apply precise filter
             comp = _extract_near_components(nq2)
             if comp:
                 left, _, right = comp
                 if (' ' in left.strip()) or (' ' in right.strip()):
                     before = len(rows)
                     rows = _filter_rows_for_true_phrase_near(rows, nq2)
-                    total = len(rows)  # reflect filtered count (simple but clear)
+                    total = len(rows)
                     print(f"Phrase-proximity filtered: {before} → {total}")
 
-        # ---- build items & phrase-aware highlighting ----
+        # Build items + smart highlighting
         items = []
-        for r in rows[offset:offset+limit]:
+        for r in rows:
             meta = con.execute("""
               SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
                      m.act, d.reference, d.pdf_path, d.ejs_id
@@ -293,21 +292,42 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
             d = dict(meta) if meta else {}
             d["id"] = d.get("ejs_id", r["rowid"])
 
+            # Clean snippet artifacts (e.g., "0Time")
             snippet_raw = r["snippet"]
-            snippet_clean = re.sub(r'\b\d+([A-Za-z]+)\b', r'\1', snippet_raw)
+            snippet_clean = re.sub(r'\b0+([A-Za-z])', r'\1', snippet_raw)
 
-            # phrase-aware highlighter
+            # Collect phrases (quoted) and words (excluding operators/numbers)
             phrase_terms = re.findall(r'"([^"]+)"', nq2)
-            word_terms = [w for w in re.findall(r'\b\w+\b', nq2)
-                          if w.upper() not in {"W","NEAR","AND","OR","NOT"} and not w.isdigit()]
+            # Remove phrases from the base string to avoid double counting words inside phrases
+            base_for_words = re.sub(r'"[^"]+"', ' ', nq2)
+            word_terms = [w for w in re.findall(r'\b\w+\*?\b', base_for_words)
+                          if w.upper() not in OP_SET and not w.isdigit()]
 
-            # highlight phrases first
+            # Highlight phrases first (exact, case-insensitive)
             for phrase in sorted(set(phrase_terms), key=len, reverse=True):
-                snippet_clean = re.sub(fr'(?i){re.escape(phrase)}', f"<mark>{phrase}</mark>", snippet_clean)
+                snippet_clean = re.sub(
+                    fr'(?i){re.escape(phrase)}',
+                    lambda m: f"<mark>{m.group(0)}</mark>",
+                    snippet_clean
+                )
 
-            # then words
-            for term in sorted(set(word_terms), key=len, reverse=True):
-                snippet_clean = re.sub(fr'(?i)\b({re.escape(term)})\b', r'<mark>\1</mark>', snippet_clean)
+            # Then wildcard stems: foo* → highlight foo + fooX…
+            stems = [w[:-1] for w in word_terms if w.endswith('*') and len(w) > 1]
+            for stem in sorted(set(stems), key=len, reverse=True):
+                snippet_clean = re.sub(
+                    fr'(?i)\b({re.escape(stem)}\w*)\b',
+                    r'<mark>\1</mark>',
+                    snippet_clean
+                )
+
+            # Then remaining single words (non-operators, no wildcard)
+            singles = [w for w in word_terms if not w.endswith('*')]
+            for term in sorted(set(singles), key=len, reverse=True):
+                snippet_clean = re.sub(
+                    fr'(?i)\b({re.escape(term)})\b',
+                    r'<mark>\1</mark>',
+                    snippet_clean
+                )
 
             d["snippet"] = snippet_clean
             items.append(d)
@@ -394,31 +414,11 @@ def summarise(decision_id: str = Path(...)):
                     "content": (
                         "You are SopalAI, a legal assistant specialising in construction law. "
                         "Summarise adjudication decisions under Queensland's Security of Payment legislation "
-                        "in clear, plain English. "
-                        "Respond as if the user is asking you about the decision directly. "
-                        "Do not say 'the adjudication decision you provided' or similar. "
-                        "Structure the summary into bullet points or short sections with HTML-friendly formatting "
-                        "(<strong> for headings, <ul>/<li> for lists) with compact spacing (no double/triple lines)."
-                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
-                        "not Markdown (#, ##, ###)."
+                        "in clear, plain English. Respond as if the user is asking you about the decision directly. "
+                        "Use compact HTML (<strong>, <ul>, <li>, <p>)."
                     )
                 },
-                {
-                    "role": "user",
-                    "content": f"""
-Summarise this adjudication decision in 5–7 bullet points, covering:
-- The parties and the works
-- Payment claim amount and payment schedule response
-- Any jurisdictional challenges
-- The factual disputes and evidence
-- The adjudicator’s reasoning
-- The final outcome, amount awarded, and fee split
-Don't actually title it "Summary" or the like please, go straight into bullet points
-
-Decision text:
-{text}
-"""
-                }
+                {"role": "user", "content": f"Decision text:\n{text}"}
             ],
             max_tokens=800,
         )
@@ -490,11 +490,7 @@ def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
                     "role": "system",
                     "content": (
                         "You are SopalAI, assisting users with adjudication decisions under the BIF Act or BCIPA. "
-                        "Respond directly to the user’s question as if they asked you about the decision. "
-                        "Do not say 'the adjudication decision you provided' or 'the text you gave me'. "
-                        "Write in clear, plain English with headings and bullet points formatted in HTML."
-                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
-                        "not Markdown (#, ##, ###)."
+                        "Respond directly to the user’s question with compact HTML."
                     )
                 },
                 {"role": "user", "content": f"Decision text:\n{text}"},
