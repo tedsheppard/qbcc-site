@@ -278,12 +278,12 @@
 
 <main>
   <h1>Interest Calculator</h1>
-  <p>This tool helps calculate interest on late progress payments under a construction contract in Queensland, pursuant to the <em>Building Industry Fairness (Security of Payment) Act 2017</em> (BIF Act).</p>
+  <p>This tool helps calculate interest on late progress payments under a construction contract in Queensland, pursuant to the <em>Building Industry Fairness (Security of Payment) Act 2017</em> (Qld) (BIF Act).</p>
   
   <p>Interest is payable on late progress payments under section 73 of the BIF Act.</p>
 
   <details class="provision-box">
-    <summary>Building Industry Fairness (Security of Payment) Act 2017 – Section 73</summary>
+    <summary>Building Industry Fairness (Security of Payment) Act 2017 (Qld) – section 73</summary>
     <div class="provision-content">
         <p><strong>73 Due date for payment</strong></p>
         <ul>
@@ -304,10 +304,10 @@
     </div>
   </details>
 
-  <p style="margin-top: 20px;">As per s 73(3) of the BIF Act, the penalty interest rate under section 67P of the <em>Queensland Building and Construction Commission Act 1991</em> (QBCC Act) may apply. That section provides:</p>
+  <p style="margin-top: 20px;">As per section 73(3) of the BIF Act, the penalty interest rate under section 67P of the <em>Queensland Building and Construction Commission Act 1991</em> (QBCC Act) may apply. That section provides:</p>
 
   <details class="provision-box">
-      <summary>Queensland Building and Construction Commission Act 1991 – Section 67P</summary>
+      <summary>Queensland Building and Construction Commission Act 1991 (Qld) – section 67P</summary>
       <div class="provision-content">
           <p><strong>67P Late progress payments</strong></p>
           <ul>
@@ -334,13 +334,13 @@
       </div>
   </details>
 
-  <p style="margin-top: 30px;">Calculating the QBCC Act penalty rate requires the 90-day Bank Bill Swap Rate (BBSW), which is published daily by the Reserve Bank of Australia. This calculator does the hard work for you by automatically fetching the latest official RBA statistics every day, ensuring your interest calculations are based on the correct variable rate for any given period.</p>
+  <p style="margin-top: 30px;">Calculating the QBCC Act penalty rate requires the 90-day Bank Bill Swap Rate (BBSW), which is published daily by the Reserve Bank of Australia. Our calculator automatically fetches the latest official RBA statistics every day. By using the calculator, you acknolwedge and agree to our disclaimer below.</p>
 
 
   <div class="calculator-container">
     <div class="tabs">
       <button class="tab-button active" onclick="openTab(event, 'contractual')">Interest at Contractual Rate</button>
-      <button class="tab-button" onclick="openTab(event, 'qbcc')">Interest at s 67P QBCC Act Rate</button>
+      <button class="tab-button" onclick="openTab(event, 'qbcc')">Interest at section 67P QBCC Act Rate</button>
     </div>
 
     <!-- Contractual Rate Calculator -->
@@ -369,7 +369,7 @@
 
     <!-- QBCC Act Rate Calculator -->
     <div id="qbcc" class="tab-content">
-      <p>Calculate interest at the penalty rate under s 67P of the <em>Queensland Building and Construction Commission Act 1991</em> (QBCC Act). This rate is 10% plus the 90-day Bank Bill Swap Rate (BBSW), which is updated daily.</p>
+      <p>Calculate interest at the penalty rate under section 67P of the <em>Queensland Building and Construction Commission Act 1991</em> (Qld) (QBCC Act). This rate is 10% plus the 90-day Bank Bill Swap Rate (BBSW), which is updated daily.</p>
       <div class="form-grid">
         <div class="form-group">
           <label for="qbcc-amount">Progress Payment Amount ($)</label>
@@ -392,8 +392,8 @@
 
   <div class="disclaimer">
     <h3>Disclaimer</h3>
-    <p>This interest calculator is provided as a guide only and should not be relied upon as a substitute for professional legal or financial advice. The calculations are based on the inputs you provide and, for the QBCC Act rate, on publicly available data from the Reserve Bank of Australia which is updated daily.</p>
-    <p>While we strive for accuracy, Sopal provides no warranty and accepts no liability for any loss or damage arising from the use of this calculator. Users should independently verify all calculations before inclusion in any formal submission or legal document.</p>
+    <p>This interest calculator is provided as a guide only and should not be relied upon as a substitute for professional legal or financial advice. The calculations are based on the inputs you provide and, for the QBCC Act rate, on publicly available data from the Reserve Bank of Australia which we endeavour to updated daily.</p>
+    <p>While we strive for accuracy, Sopal provides no warranty and accepts no liability for any loss or damage arising from the use of this calculator. Users should independently verify all calculations and, where applicable, the underlying RBA rates, before inclusion in any formal submission or legal document.</p>
   </div>
 </main>
 
@@ -516,7 +516,7 @@
           calcDate,
           days,
           interest: totalInterest,
-          rateType: 'QBCC Act s 67P',
+          rateType: 'QBCC Act section 67P',
           rbaRate: {min: minRate, max: maxRate},
           dailyRates: data.dailyRates
         });
@@ -538,7 +538,7 @@
     let rateDisplay, calcDisplay;
     let breakdownHtml = '';
 
-    if (rateType === 'QBCC Act s 67P') {
+    if (rateType === 'QBCC Act section 67P') {
         if (rbaRate.min.toFixed(2) === rbaRate.max.toFixed(2)) {
             rateDisplay = `${annualRate.max.toFixed(2)}% (10% + ${rbaRate.max.toFixed(2)}% RBA Rate)`;
             calcDisplay = `${principal.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })} × (${annualRate.max.toFixed(2)}% / 365) × ${days} days`;
