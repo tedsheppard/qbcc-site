@@ -1,4 +1,4 @@
-import os, re, shutil, sqlite3, requests, unicodedata
+import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd
 from urllib.parse import unquote_plus
 from fastapi import FastAPI, Query, Form, Path, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
@@ -7,6 +7,8 @@ from email.message import EmailMessage
 import aiosmtplib
 from openai import OpenAI
 from google.cloud import storage
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -42,6 +44,59 @@ con.row_factory = sqlite3.Row
 con.execute("PRAGMA cache_size = -20000")
 con.execute("PRAGMA temp_store = MEMORY")
 con.execute("PRAGMA mmap_size = 30000000000")
+
+# --- NEW: RBA Interest Rate Setup ---
+def setup_rba_table():
+    con.execute("""
+    CREATE TABLE IF NOT EXISTS rba_rates (
+        rate_date DATE PRIMARY KEY,
+        rate_value REAL NOT NULL
+    )
+    """)
+    con.commit()
+
+def fetch_and_update_rba_rates():
+    print("Scheduler: Starting RBA rate update job...")
+    try:
+        url = "https://www.rba.gov.au/statistics/tables/xls/f01d.xlsx"
+        # Use pandas to read the Excel file directly from the URL
+        df = pd.read_excel(url, sheet_name='Data', header=1)
+        
+        # Identify correct columns - 'Date' and 'EOD 3-month BABs/NCDs'
+        date_col = 'Date' 
+        rate_col = 'EOD 3-month BABs/NCDs'
+
+        # Ensure columns exist
+        if date_col not in df.columns or rate_col not in df.columns:
+            print(f"Scheduler ERROR: Required columns not found in RBA file.")
+            return
+
+        # Select, clean, and filter data
+        rates_df = df[[date_col, rate_col]].copy()
+        rates_df.columns = ['rate_date', 'rate_value']
+        rates_df.dropna(subset=['rate_date', 'rate_value'], inplace=True)
+        rates_df['rate_date'] = pd.to_datetime(rates_df['rate_date']).dt.date
+
+        # Insert new rates into the database
+        cursor = con.cursor()
+        for index, row in rates_df.iterrows():
+            cursor.execute("""
+                INSERT OR IGNORE INTO rba_rates (rate_date, rate_value) VALUES (?, ?)
+            """, (row['rate_date'], row['rate_value']))
+        con.commit()
+        print(f"Scheduler: RBA rate update complete. {len(rates_df)} rows processed.")
+
+    except Exception as e:
+        print(f"Scheduler ERROR: Failed to fetch or update RBA rates. Error: {e}")
+
+# Setup and run the scheduler
+setup_rba_table()
+scheduler = BackgroundScheduler()
+scheduler.add_job(fetch_and_update_rba_rates, 'interval', days=1)
+scheduler.start()
+# Run once on startup as well
+fetch_and_update_rba_rates()
+
 
 # OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -340,6 +395,32 @@ def highlight_wildcard_matches(text: str, stem: str) -> str:
 @app.get("/health")
 def health():
     return {"ok": True}
+
+# --- NEW: API Endpoint for RBA Rate ---
+@app.get("/get_interest_rate")
+def get_interest_rate(date_str: str = Query(..., alias="date")):
+    try:
+        calc_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        cursor = con.cursor()
+        # Find the most recent rate on or before the requested date
+        cursor.execute("""
+            SELECT rate_value FROM rba_rates
+            WHERE rate_date <= ?
+            ORDER BY rate_date DESC
+            LIMIT 1
+        """, (calc_date,))
+        row = cursor.fetchone()
+        if row:
+            return {"rate": row["rate_value"]}
+        else:
+            # Fallback if no rate is found (e.g., for very old dates)
+            raise HTTPException(status_code=404, detail="No interest rate found for the specified date or earlier.")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Please use YYYY-MM-DD.")
+    except Exception as e:
+        print(f"Error in /get_interest_rate: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newest"):
