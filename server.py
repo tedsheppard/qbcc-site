@@ -158,32 +158,41 @@ def preprocess_sqlite_query(q: str) -> str:
     q = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', q, flags=re.I) # Normalize w/N to NEAR/N
     print(f"After operator normalization: {q}")
 
-    # NEW: Handle <term> NEAR/d (<term1> OR <term2>) pattern
-    near_or_pattern = re.compile(r'(".*?"|\S+)\s+NEAR/(\d+)\s+\((.*?)\)', flags=re.I)
-    m = near_or_pattern.search(q)
+    # Handle <term> NEAR/d (<term1> OP <term2>) pattern
+    near_group_pattern = re.compile(r'(".*?"|\S+)\s+NEAR/(\d+)\s+\((.*?)\)', flags=re.I)
+    m = near_group_pattern.search(q)
     
     if m:
         left_term = m.group(1).strip()
         dist = m.group(2)
         right_group = m.group(3).strip()
         
-        # Split the content within parentheses by OR
-        right_terms = re.split(r'\s+OR\s+', right_group, flags=re.I)
+        # Determine the operator inside the group and split
+        operator = None
+        terms = []
+        # Check for AND first as it can be part of a phrase, then OR
+        if ' AND ' in right_group:
+            operator = ' AND '
+            terms = re.split(r'\s+AND\s+', right_group, flags=re.I)
+        elif ' OR ' in right_group:
+            operator = ' OR '
+            terms = re.split(r'\s+OR\s+', right_group, flags=re.I)
         
-        if len(right_terms) > 1:
+        if operator and len(terms) > 1:
             expanded_clauses = []
-            for term in right_terms:
+            for term in terms:
                 # Ensure each part is a clean, singly-quoted phrase
                 clean_left = left_term.strip().strip('"')
                 clean_right = term.strip().strip('"')
                 
+                # FTS queries need phrases to be double-quoted
                 expanded_clauses.append(f'("{clean_left}" NEAR/{dist} "{clean_right}")')
             
-            final_query = f"({' OR '.join(expanded_clauses)})"
-            print(f"Expanded NEAR/OR query to: {final_query}")
+            final_query = f"({operator.join(expanded_clauses)})"
+            print(f"Expanded NEAR/{operator.strip()} query to: {final_query}")
             return final_query
 
-    # Handle simple proximity operators if the complex OR pattern didn't match
+    # Handle simple proximity operators if the complex pattern didn't match
     near_expr = _parse_near_robust(q)
     if near_expr:
         print(f"Found NEAR expression: {near_expr}")
@@ -685,3 +694,4 @@ async def download_db():
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
+
