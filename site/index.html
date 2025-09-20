@@ -44,7 +44,7 @@
     gap: 20px;
   }
   .nav-links a {
-    color: black; /* Changed from #333 */
+    color: black; 
     text-decoration: none;
     font-size: 14px;
     transition: color 0.2s;
@@ -53,7 +53,7 @@
     color: #00c97c;
   }
   .nav-links a.active {
-    color: #00c97c;
+    color: #008a5c; /* Darker green for active link */
     font-weight: 600;
   }
 
@@ -97,8 +97,7 @@
     color: #222 !important;
     border: 0.5px solid #ddd !important;
   }
-  .light a { color: #0066cc !important; }
-  .light .pagination button { color: #0066cc !important; }
+  .light .pagination button { color: #8BD69A !important; }
 
   /* Theme toggle button */
   #themeToggle {
@@ -215,8 +214,18 @@ body {
     padding: 0 2px;
     border-radius: 2px;
   }
-  a { color: #8BD69A; text-decoration: none; font-size: 14px; }
-  a:hover { text-decoration: underline; }
+  
+  /* UPDATED General link styling */
+  a {
+    color: black;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  a:hover {
+    color: #00c97c; /* Green on hover */
+    text-decoration: none;
+  }
 
   /* Pagination */
   .pagination {
@@ -244,28 +253,41 @@ body {
   .footer {
     background: #fcfcfc;
     color: #333;
-    padding: 40px 20px 20px;
+    padding: 40px 25px 20px;
     margin-top: 60px;
     border-top: 1px solid #ddd;
   }
   .footer-content {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     flex-wrap: wrap;
     max-width: 1200px;
     margin: auto;
   }
-  .footer-left { max-width: 400px; }
+  .footer-left { 
+    max-width: 400px;
+    text-align: left;
+  }
   .footer-logo { height: 24px; margin-bottom: 10px; }
-  .footer-links { display: flex; gap: 20px; }
-  .footer-links a { color: #333; text-decoration: none; transition: color 0.2s; }
-  .footer-links a:hover { color: #00c853; }
+  
+  /* NEW Footer Links layout */
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 40px;
+    text-align: left;
+  }
+  .footer-links a {
+    font-size: 13px; /* Smaller text */
+  }
+
   .footer-bottom {
     text-align: center;
     border-top: 1px solid #eee;
-    margin-top: 20px;
-    padding-top: 15px;
+    margin-top: 30px; /* Increased space */
+    padding-top: 20px;
+    width: 100%;
     font-size: 0.85em;
     color: #666;
   }
@@ -302,11 +324,14 @@ body {
   border-color: #333 !important;
 }
 
-.dark .nav-links a {
+.dark .nav-links a, .dark .footer-links a {
   color: #f0f0f0; /* Light text for dark mode header */
 }
-.dark .nav-links a:hover {
+.dark a:hover {
   color: #00c97c;
+}
+.dark .nav-links a.active {
+    color: #008a5c; /* Darker green for active link */
 }
 
 
@@ -315,7 +340,7 @@ body {
   border: 1px solid #222 !important;
 }
 
-.dark a { color: #4da6ff !important; }
+.dark .result a { color: #4da6ff !important; }
 .dark .pagination button.active { border-bottom: 2px solid #4da6ff; }
 
 /* --- Fix dark mode result cards + footer divider --- */
@@ -361,9 +386,9 @@ body {
   -webkit-appearance: none;
   -moz-appearance: none;
 
-  background: #1c1c1c;      /* dark rectangle */
-  color: #fff;
-  border: 1px solid #333;
+  background: #fff;
+  color: #000;
+  border: 1px solid #ccc;
   border-radius: 6px;
   padding: 5px 24px 5px 12px; /* Adjusted padding */
   font-size: 12px; /* Reduced font size */
@@ -373,9 +398,19 @@ body {
   width: 180px; /* NEW: Set a fixed width */
   text-align: left; /* NEW: Align text to the left */
 }
+.dark .results-limit {
+  background: #1c1c1c;
+  color: #fff;
+  border-color: #333;
+}
+
 
 /* Hover effect: greyed rectangle */
 .results-limit:hover {
+  background: #f7f7f7;
+  border-color: #aaa;
+}
+.dark .results-limit:hover {
   background: #2a2a2a;
   border-color: #555;
 }
@@ -391,16 +426,6 @@ body {
   color: #aaa;
 }
 
-/* Light mode adjustments */
-.light .results-limit {
-  background: #fff;
-  color: #000;
-  border: 1px solid #ccc;
-}
-.light .results-limit:hover {
-  background: #f7f7f7;
-  border-color: #aaa;
-}
 
   :root {
     --primary-green: #08cc7c;
@@ -432,6 +457,18 @@ mark {
     margin: 0;
     flex-wrap: wrap;
     justify-content: center;
+  }
+  .footer-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .footer-left {
+    margin-bottom: 25px;
+  }
+  .footer-links {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on mobile */
+    gap: 15px;
   }
 
   main {
@@ -466,15 +503,6 @@ mark {
   text-align: left;
 }
 
- .sopalai-link {
-  color: #0066cc;
-  cursor: pointer;
-  font-size: 14px;
-  margin-left: 50px;
-}
-.sopalai-link:hover {
-  text-decoration: underline;
-}
 
  .ai-summary, .ai-answer {
   max-width: 650px;
@@ -605,10 +633,11 @@ mark {
       <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
     </a>
     <div class="nav-links">
-      <a href="index.html">Search</a>
+      <a href="index.html" class="active">Search</a>
+      <a href="interest_calculator.html">Interest Calculator</a>
+      <a href="due-date-calculator.html">Due Date Calculator</a>
       <a href="feedback.html">Feedback</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="terms.html">Terms</a>
+      <a href="how-to.html">How-To Guide</a>
     </div>
   </div>
 </div>
@@ -630,8 +659,8 @@ mark {
       </select>
   
      <select id="sort" class="results-limit">
-       <option value="relevance" selected>Relevance</option>
-       <option value="newest">Date: Newest to Oldest</option>
+       <option value="relevance">Relevance</option>
+       <option value="newest" selected>Date: Newest to Oldest</option>
        <option value="oldest">Date: Oldest to Newest</option>
        <option value="atoz">A → Z (Claimant)</option>
        <option value="ztoa">Z → A (Claimant)</option>
@@ -727,7 +756,7 @@ mark {
       state.limit = +($('#limit')?.value || 20);
       state.offset = (page-1) * state.limit;
       const params = new URLSearchParams();
-      state.sort = ($('#sort')?.value || 'relevance');
+      state.sort = ($('#sort')?.value || 'newest');
       params.set('sort', state.sort);
       if (state.q) params.set('q', state.q);
       params.set('limit', state.limit);
@@ -759,7 +788,7 @@ function renderItem(it, query) {
 
   return `
     <div class="result">
-      <h3>${caseName}</h3>
+      <h3><a href="#">${caseName}</a></h3>
       <div class="meta">
         ${it.decision_date_norm ? `<strong>Date:</strong> ${formatAusDate(it.decision_date_norm)}<br>` : '<strong>Date:</strong> Unknown<br>'}
         ${it.adjudicator ? `<strong>Adjudicator:</strong> ${sanitize(it.adjudicator)}<br>` : ''}
@@ -913,6 +942,11 @@ if (saved === 'dark') {
       if (limitSel) {
         limitSel.addEventListener('change', () => runSearch(1));
       }
+      
+      const sortSel = document.getElementById('sort');
+      if (sortSel) {
+        sortSel.addEventListener('change', () => runSearch(1));
+      }
 
       // Initial search
       runSearch();
@@ -1026,13 +1060,17 @@ function normalizeInput(s) {
     </div>
 
 <div class="footer-links">
-  <a href="feedback.html">Send feedback</a>
-  <a href="privacy.html">Privacy</a>
-  <a href="terms.html">Terms</a>
+    <a href="index.html">Search</a>
+    <a href="interest_calculator.html">Interest Calculator</a>
+    <a href="due-date-calculator.html">Due Date Calculator</a>
+    <a href="feedback.html">Feedback</a>
+    <a href="how-to.html">How-To Guide</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
 </div>
   </div>
   <div class="footer-bottom">
-    <p>© 2025 SOPAL. All rights reserved.</p>
+    <p>© 2025 Sopal Australia. All rights reserved.</p>
   </div>
 
 
@@ -1044,3 +1082,4 @@ function normalizeInput(s) {
    
 </body>
 </html>
+
