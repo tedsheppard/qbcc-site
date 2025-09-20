@@ -91,7 +91,9 @@ def expand_wildcards(q: str) -> str:
     """Expand ! wildcards to SQLite GLOB patterns"""
     # Replace ! with * for SQLite FTS GLOB matching
     # This handles cases like "exclusiv!" -> "exclusiv*"
+    print(f"Before wildcard expansion: {q}")
     expanded = re.sub(r'(\w+)!', r'\1*', q)
+    print(f"After wildcard expansion: {expanded}")
     return expanded
 
 def _parse_near_robust(q: str) -> str | None:
@@ -99,9 +101,6 @@ def _parse_near_robust(q: str) -> str | None:
     Enhanced NEAR parsing that properly handles quoted phrases, wildcards, and mixed combinations
     """
     s = _fix_unbalanced_quotes(q)
-    
-    # First expand wildcards
-    s = expand_wildcards(s)
     
     # Check for any w/N or NEAR/N pattern first
     if not re.search(r'\b(?:w|near)\s*/\s*\d+\b', s, flags=re.I):
