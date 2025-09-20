@@ -110,30 +110,39 @@ def _parse_near_robust(q: str) -> str | None:
     # Normalize w/N and NEAR/N to NEAR/N
     s = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', s, flags=re.I)
 
-    # Try to match NEAR pattern with flexible quoting
-    # Pattern captures: (left_term) NEAR/N (right_term)
-    pattern = r'(["\']?[^"\'\s]+["\']?|\S+)\s+NEAR/(\d+)\s+(["\']?[^"\'\s]+["\']?|\S+)'
-    m = re.search(pattern, s, flags=re.I)
+    # Simple but robust approach: find quoted phrases and words separately
+    # First, extract all quoted phrases
+    quoted_phrases = re.findall(r'"([^"]+)"', s)
     
-    if not m:
+    # Then find the NEAR pattern
+    near_match = re.search(r'NEAR/(\d+)', s, flags=re.I)
+    if not near_match:
         return None
     
-    left_raw = m.group(1).strip()
-    dist = int(m.group(2))
-    right_raw = m.group(3).strip()
+    dist = int(near_match.group(1))
     
-    # Clean and ensure proper quoting
-    def clean_term(term):
-        # Remove existing quotes if present
-        if (term.startswith('"') and term.endswith('"')) or (term.startswith("'") and term.endswith("'")):
-            return term[1:-1]
-        return term
+    # If we found exactly 2 quoted phrases, use them
+    if len(quoted_phrases) == 2:
+        left, right = quoted_phrases[0], quoted_phrases[1]
+        print(f"_parse_near_robust - left: '{left}', dist: {dist}, right: '{right}'")
+        return f'"{left}" NEAR/{dist} "{right}"'
     
-    left_clean = clean_term(left_raw)
-    right_clean = clean_term(right_raw)
+    # Fallback: try to parse around NEAR
+    parts = re.split(r'\s+NEAR/\d+\s+', s, flags=re.I)
+    if len(parts) == 2:
+        left_part = parts[0].strip()
+        right_part = parts[1].strip()
+        
+        # Remove quotes if present
+        if left_part.startswith('"') and left_part.endswith('"'):
+            left_part = left_part[1:-1]
+        if right_part.startswith('"') and right_part.endswith('"'):
+            right_part = right_part[1:-1]
+            
+        print(f"_parse_near_robust - left: '{left_part}', dist: {dist}, right: '{right_part}'")
+        return f'"{left_part}" NEAR/{dist} "{right_part}"'
     
-    # Always quote both sides for SQLite FTS consistency
-    return f'"{left_clean}" NEAR/{dist} "{right_clean}"'
+    return None
 
 def preprocess_sqlite_query(q: str) -> str:
     """Enhanced query preprocessing with proper phrase and operator handling"""
@@ -180,7 +189,7 @@ def get_highlight_terms(query: str) -> tuple[list[str], list[str]]:
     
     # Remove quoted content and operators to find individual words
     query_no_quotes = re.sub(r'"[^"]*"', '', query)
-    words = re.findall(r'\b\w+\b', query_no_quotes)
+    words = re.findall(r'\b\w+\*?\b', query_no_quotes)  # Include wildcards
     
     # Filter out operators and numbers
     operators = {'AND', 'OR', 'NOT', 'NEAR', 'W'}
@@ -188,13 +197,9 @@ def get_highlight_terms(query: str) -> tuple[list[str], list[str]]:
         if (word.upper() not in operators and 
             not word.isdigit() and 
             not re.match(r'\d+', word)):
-            # Handle wildcard terms
-            if word.endswith('*'):
-                # For highlighting, we'll use the stem without the wildcard
-                word_terms.append(word[:-1])
-            else:
-                word_terms.append(word)
+            word_terms.append(word)
     
+    print(f"get_highlight_terms - phrase_terms: {phrase_terms}, word_terms: {word_terms}")
     return phrase_terms, word_terms
 
 # -------- phrase-aware proximity filtering (true phrase NEAR) --------
