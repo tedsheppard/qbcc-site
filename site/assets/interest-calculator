@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Sopal – Interest Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* Base styles matching main site */
+  body {
+    font-family: Inter, sans-serif;
+    margin: 0;
+    background: #ffffff;
+    color: #222;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Header */
+  .header {
+    background: #fdfdfd;
+    padding: 20px 25px;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-content {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .logo {
+    height: 31px;
+    margin-right: 20px;
+  }
+  .nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+  }
+  .nav-links a {
+    color: black;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover {
+    color: #00c97c;
+  }
+  .nav-links a.active {
+    color: #00c97c;
+    font-weight: 600;
+  }
+  main {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 25px;
+  }
+  h1 {
+    font-size: 28px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+  }
+
+  /* Calculator styles */
+  .calculator-container {
+    background: #fdfdfd;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 25px;
+  }
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px;
+  }
+  .tab-button {
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    color: #555;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab-button.active {
+    color: #00c97c;
+    border-bottom: 3px solid #00c97c;
+    font-weight: 600;
+  }
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .form-group label {
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 14px;
+  }
+  .form-group input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: Inter, sans-serif;
+  }
+  .calculate-btn {
+    margin-top: 25px;
+    padding: 12px 20px;
+    background: #00c97c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  .calculate-btn:hover {
+    background: #00a568;
+  }
+  #results {
+    margin-top: 30px;
+  }
+  .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  .results-table th, .results-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+  }
+  .results-table th {
+    background-color: #f7f7f7;
+  }
+  .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+  }
+  .copy-btn {
+    padding: 8px 12px;
+    background: #efefef;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
+  }
+  .copy-btn:hover {
+    background: #e0e0e0;
+  }
+
+  /* Disclaimer styles */
+  .disclaimer {
+    margin-top: 40px;
+    padding: 20px;
+    background: #fffbeb;
+    border-left: 4px solid #fbbF24;
+    border-radius: 4px;
+  }
+  .disclaimer h3 {
+    margin-top: 0;
+    color: #b45309;
+  }
+  
+  /* Footer */
+  .footer {
+    background: #fcfcfc;
+    color: #333;
+    padding: 40px 20px 20px;
+    margin-top: 60px;
+    border-top: 1px solid #ddd;
+  }
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: auto;
+  }
+  .footer-left { max-width: 400px; }
+  .footer-logo { height: 24px; margin-bottom: 10px; }
+  .footer-links { display: flex; gap: 20px; }
+  .footer-links a { color: #333; text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: #00c853; }
+  .footer-bottom {
+    text-align: center;
+    border-top: 1px solid #eee;
+    margin-top: 20px;
+    padding-top: 15px;
+    font-size: 0.85em;
+    color: #666;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-content">
+    <a href="/">
+      <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Search</a>
+      <a href="interest_calculator.html" class="active">Interest Calculator</a>
+      <a href="feedback.html">Feedback</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+    </div>
+  </div>
+</div>
+
+<main>
+  <h1>Interest Calculator</h1>
+  <p>This tool helps calculate interest on late progress payments under a construction contract in Queensland, pursuant to the <em>Building Industry Fairness (Security of Payment) Act 2017</em> (BIF Act).</p>
+
+  <div class="calculator-container">
+    <div class="tabs">
+      <button class="tab-button active" onclick="openTab(event, 'contractual')">Interest at Contractual Rate</button>
+      <button class="tab-button" onclick="openTab(event, 'qbcc')">Interest at s 67P QBCC Act Rate</button>
+    </div>
+
+    <!-- Contractual Rate Calculator -->
+    <div id="contractual" class="tab-content active">
+      <p>Calculate simple interest based on an interest rate specified in your contract.</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="contract-amount">Progress Payment Amount ($)</label>
+          <input type="number" id="contract-amount" placeholder="e.g., 100000">
+        </div>
+        <div class="form-group">
+          <label for="contract-rate">Annual Interest Rate (%)</label>
+          <input type="number" id="contract-rate" placeholder="e.g., 5.5">
+        </div>
+        <div class="form-group">
+          <label for="contract-due-date">Due Date for Payment</label>
+          <input type="date" id="contract-due-date">
+        </div>
+        <div class="form-group">
+          <label for="contract-calc-date">Date Interest Calculated To</label>
+          <input type="date" id="contract-calc-date">
+        </div>
+      </div>
+      <button class="calculate-btn" onclick="calculateContractualInterest()">Calculate Interest</button>
+    </div>
+
+    <!-- QBCC Act Rate Calculator -->
+    <div id="qbcc" class="tab-content">
+      <p>Calculate interest at the penalty rate under s 67P of the <em>Queensland Building and Construction Commission Act 1991</em> (QBCC Act). This rate is 10% plus the 90-day Bank Bill Swap Rate (BBSW), which is updated daily.</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="qbcc-amount">Progress Payment Amount ($)</label>
+          <input type="number" id="qbcc-amount" placeholder="e.g., 100000">
+        </div>
+        <div class="form-group">
+          <label for="qbcc-due-date">Due Date for Payment</label>
+          <input type="date" id="qbcc-due-date">
+        </div>
+        <div class="form-group">
+          <label for="qbcc-calc-date">Date Interest Calculated To</label>
+          <input type="date" id="qbcc-calc-date">
+        </div>
+      </div>
+      <button class="calculate-btn" onclick="calculateQbccInterest()">Calculate Interest</button>
+    </div>
+  </div>
+
+  <div id="results"></div>
+
+  <div class="disclaimer">
+    <h3>Disclaimer</h3>
+    <p>This interest calculator is provided as a guide only and should not be relied upon as a substitute for professional legal or financial advice. The calculations are based on the inputs you provide and, for the QBCC Act rate, on publicly available data from the Reserve Bank of Australia which is updated daily.</p>
+    <p>While we strive for accuracy, Sopal provides no warranty and accepts no liability for any loss or damage arising from the use of this calculator. Users should independently verify all calculations before inclusion in any formal submission or legal document.</p>
+  </div>
+</main>
+
+<footer class="footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+        <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+      </div>
+      <div class="footer-links">
+        <a href="feedback.html">Send feedback</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 SOPAL. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+  // Set default calculation date to today
+  document.getElementById('contract-calc-date').valueAsDate = new Date();
+  document.getElementById('qbcc-calc-date').valueAsDate = new Date();
+
+  function openTab(evt, tabName) {
+    let i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tab-button");
+    for (i = 0; i < tablinks.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+    document.getElementById('results').innerHTML = ''; // Clear results on tab switch
+  }
+
+  function calculateContractualInterest() {
+    const principal = parseFloat(document.getElementById('contract-amount').value);
+    const annualRate = parseFloat(document.getElementById('contract-rate').value);
+    const dueDate = new Date(document.getElementById('contract-due-date').value);
+    const calcDate = new Date(document.getElementById('contract-calc-date').value);
+
+    if (isNaN(principal) || isNaN(annualRate) || isNaN(dueDate.getTime()) || isNaN(calcDate.getTime())) {
+      alert('Please fill in all fields with valid numbers and dates.');
+      return;
+    }
+    
+    if (calcDate < dueDate) {
+      alert('The "Date Interest Calculated To" must be after the "Due Date for Payment".');
+      return;
+    }
+
+    const timeDiff = calcDate.getTime() - dueDate.getTime();
+    const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    const dailyRate = annualRate / 365;
+    const interest = principal * (dailyRate / 100) * days;
+
+    displayResults({
+      principal,
+      annualRate,
+      dueDate,
+      calcDate,
+      days,
+      interest,
+      rateType: 'Contractual'
+    });
+  }
+
+  async function calculateQbccInterest() {
+    const principal = parseFloat(document.getElementById('qbcc-amount').value);
+    const dueDate = new Date(document.getElementById('qbcc-due-date').value);
+    const calcDate = new Date(document.getElementById('qbcc-calc-date').value);
+
+    if (isNaN(principal) || isNaN(dueDate.getTime()) || isNaN(calcDate.getTime())) {
+      alert('Please fill in all fields with valid numbers and dates.');
+      return;
+    }
+
+    if (calcDate < dueDate) {
+      alert('The "Date Interest Calculated To" must be after the "Due Date for Payment".');
+      return;
+    }
+    
+    // In a real application, this rate would be fetched from a backend endpoint.
+    // The backend would fetch the XLSX file from the RBA daily and store the latest rate.
+    // For this example, we'll use a realistic placeholder rate.
+    const rbaRate = 4.35; // Placeholder for 90-day bill rate
+    const penaltyRate = 10.0 + rbaRate;
+    
+    const timeDiff = calcDate.getTime() - dueDate.getTime();
+    const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    const dailyRate = penaltyRate / 365;
+    const interest = principal * (dailyRate / 100) * days;
+
+    displayResults({
+      principal,
+      annualRate: penaltyRate,
+      dueDate,
+      calcDate,
+      days,
+      interest,
+      rateType: 'QBCC Act s 67P',
+      rbaRate: rbaRate
+    });
+  }
+
+  function displayResults(data) {
+    const resultsDiv = document.getElementById('results');
+    const { principal, annualRate, dueDate, calcDate, days, interest, rateType, rbaRate } = data;
+
+    const rateExplanation = rbaRate 
+        ? `(10% + ${rbaRate.toFixed(2)}% RBA 90-Day Bill Rate)`
+        : '';
+        
+    const tableHtml = `
+      <div class="results-header">
+        <h2>Calculation Results</h2>
+        <button class="copy-btn" onclick="copyResultsToClipboard()">Copy Table</button>
+      </div>
+      <table class="results-table" id="results-table-content">
+        <tbody>
+          <tr>
+            <th>Principal Amount</th>
+            <td>${principal.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })}</td>
+          </tr>
+          <tr>
+            <th>Applicable Annual Interest Rate</th>
+            <td>${annualRate.toFixed(2)}% ${rateExplanation}</td>
+          </tr>
+          <tr>
+            <th>Interest Period</th>
+            <td>From ${dueDate.toLocaleDateString('en-AU')} to ${calcDate.toLocaleDateString('en-AU')}</td>
+          </tr>
+          <tr>
+            <th>Number of Days</th>
+            <td>${days}</td>
+          </tr>
+          <tr>
+            <th>Calculation</th>
+            <td>${principal.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })} × (${annualRate.toFixed(2)}% / 365) × ${days} days</td>
+          </tr>
+          <tr>
+            <th><strong>Total Interest Due</strong></th>
+            <td><strong>${interest.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+    resultsDiv.innerHTML = tableHtml;
+  }
+
+  function copyResultsToClipboard() {
+    const table = document.getElementById('results-table-content');
+    let text = '';
+    // Use a simpler text format for pasting into documents
+    const rows = table.getElementsByTagName('tr');
+    for (let i = 0; i < rows.length; i++) {
+        const header = rows[i].getElementsByTagName('th')[0].innerText;
+        const value = rows[i].getElementsByTagName('td')[0].innerText;
+        text += `${header}:\t${value}\n`;
+    }
+
+    // Fallback for browsers that might not support navigator.clipboard in this context
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        alert('Calculation table copied to clipboard!');
+    } catch (err) {
+        alert('Failed to copy text.');
+    }
+    document.body.removeChild(textArea);
+  }
+
+</script>
+
+</body>
+</html>
