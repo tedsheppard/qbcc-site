@@ -80,6 +80,7 @@
     border: 1px solid #ddd;
     border-radius: 8px;
     padding: 25px;
+    margin-top: 30px;
   }
   .tabs {
     display: flex;
@@ -178,6 +179,34 @@
     background: #e0e0e0;
   }
 
+  /* New box styles */
+  .provision-box {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f0f9f4;
+    border-left: 4px solid #10b981;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  .provision-box h3 {
+    margin-top: 0;
+    color: #059669;
+  }
+  .provision-box ul {
+    padding-left: 20px;
+  }
+  .info-box {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f3f4f6;
+    border-left: 4px solid #6b7280;
+    border-radius: 4px;
+  }
+  .info-box h3 {
+      margin-top: 0;
+      color: #4b5563;
+  }
+
   /* Disclaimer styles */
   .disclaimer {
     margin-top: 40px;
@@ -243,6 +272,62 @@
 <main>
   <h1>Interest Calculator</h1>
   <p>This tool helps calculate interest on late progress payments under a construction contract in Queensland, pursuant to the <em>Building Industry Fairness (Security of Payment) Act 2017</em> (BIF Act).</p>
+  
+  <p>Interest is payable on late progress payments under section 73 of the BIF Act.</p>
+
+  <div class="provision-box">
+    <h3>Building Industry Fairness (Security of Payment) Act 2017 – Section 73</h3>
+    <p><strong>73 Due date for payment</strong></p>
+    <ul>
+        <li>(1) A progress payment under a construction contract becomes payable—
+            <ul>
+                <li>(a) if the contract provides for the matter—on the day on which the payment becomes payable under the contract; or</li>
+                <li>(b) if the contract does not provide for the matter—on the day that is 10 business days after the day a payment claim for the progress payment is made under part 3.</li>
+            </ul>
+        </li>
+        <li>(2) Interest for a construction contract is payable on the unpaid amount of a progress payment that has become payable at the greater of the following rates—
+            <ul>
+                <li>(a) the rate stated in the contract;</li>
+                <li>(b) the rate prescribed under the Civil Proceedings Act 2011, section 59(3) for a money order debt.</li>
+            </ul>
+        </li>
+        <li>(3) However, for a construction contract to which the Queensland Building and Construction Commission Act 1991, section 67P applies because it is a building contract, interest is payable at the penalty rate under that section.</li>
+    </ul>
+  </div>
+
+  <p style="margin-top: 20px;">As per s 73(3) of the BIF Act, the penalty interest rate under section 67P of the <em>Queensland Building and Construction Commission Act 1991</em> (QBCC Act) may apply. That section provides:</p>
+
+  <div class="provision-box">
+      <h3>Queensland Building and Construction Commission Act 1991 – Section 67P</h3>
+      <p><strong>67P Late progress payments</strong></p>
+      <ul>
+          <li>(1) This section applies if—
+              <ul>
+                  <li>(a) the contracting party for a building contract is required to pay an amount (the progress amount) to the contracted party for the building contract; and</li>
+                  <li>(b) the progress amount is payable as the whole or a part of a progress payment; and</li>
+                  <li>(c) the time (the payment time) by which the progress amount is required to be paid has passed, and the progress amount, or a part of the progress amount, has not been paid.</li>
+              </ul>
+          </li>
+          <li>(2) For the period for which the progress amount, or the part of the progress amount, is still unpaid after the payment time, the contracting party is also required to pay the contracted party interest at the penalty rate, as applying from time to time, for each day the amount is unpaid.</li>
+          <li>(3) In this section— <strong><em>penalty rate</em></strong> means—
+              <ul>
+                  <li>(a) the rate made up of the sum of the following—
+                      <ul>
+                          <li>(i) 10% a year;</li>
+                          <li>(ii) the rate comprising the annual rate, as published from time to time by the Reserve Bank of Australia, for 90 day bills; or</li>
+                      </ul>
+                  </li>
+                  <li>(b) if the building contract provides for a higher rate of interest than the rate worked out under paragraph (a)—the higher rate.</li>
+              </ul>
+          </li>
+      </ul>
+  </div>
+
+  <div class="info-box">
+      <h3>Automated Daily Rate Updates</h3>
+      <p>Calculating the QBCC Act penalty rate requires the 90-day Bank Bill Swap Rate (BBSW), which is published daily by the Reserve Bank of Australia. This calculator does the hard work for you by automatically fetching the latest official RBA statistics every day, ensuring your interest calculations are based on the correct variable rate for any given period.</p>
+  </div>
+
 
   <div class="calculator-container">
     <div class="tabs">
@@ -402,32 +487,30 @@
         const data = await response.json();
         
         let totalInterest = 0;
-        const dailyPrincipal = principal / 365;
-
+        
         for(const dailyData of data.dailyRates) {
             const penaltyRate = 10.0 + dailyData.rate;
-            const dailyInterest = dailyPrincipal * (penaltyRate / 100);
+            const dailyInterest = (principal / 365) * (penaltyRate / 100);
             totalInterest += dailyInterest;
         }
         
         const timeDiff = calcDate.getTime() - dueDate.getTime();
         const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
 
-        // For display, find the min and max rates in the period
         const rates = data.dailyRates.map(r => r.rate);
         const minRate = Math.min(...rates);
         const maxRate = Math.max(...rates);
 
         displayResults({
           principal,
-          // We show a range for the annual rate now
           annualRate: {min: 10 + minRate, max: 10 + maxRate},
           dueDate,
           calcDate,
           days,
           interest: totalInterest,
           rateType: 'QBCC Act s 67P',
-          rbaRate: {min: minRate, max: maxRate}
+          rbaRate: {min: minRate, max: maxRate},
+          dailyRates: data.dailyRates
         });
 
       } catch (error) {
@@ -442,9 +525,10 @@
 
   function displayResults(data) {
     const resultsDiv = document.getElementById('results');
-    const { principal, annualRate, dueDate, calcDate, days, interest, rateType, rbaRate } = data;
+    const { principal, annualRate, dueDate, calcDate, days, interest, rateType, rbaRate, dailyRates } = data;
 
     let rateDisplay, calcDisplay;
+    let breakdownHtml = '';
 
     if (rateType === 'QBCC Act s 67P') {
         if (rbaRate.min.toFixed(2) === rbaRate.max.toFixed(2)) {
@@ -452,19 +536,51 @@
             calcDisplay = `${principal.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })} × (${annualRate.max.toFixed(2)}% / 365) × ${days} days`;
         } else {
             rateDisplay = `From ${annualRate.min.toFixed(2)}% to ${annualRate.max.toFixed(2)}% (variable daily rate)`;
-            calcDisplay = `Sum of daily interest calculated for ${days} days`;
+            calcDisplay = `Sum of daily interest calculated for ${days} days (see breakdown below)`;
+        }
+
+        if (dailyRates && dailyRates.length > 0) {
+            breakdownHtml = `
+              <h3 style="margin-top: 30px;">Daily Interest Breakdown</h3>
+              <table class="results-table" id="results-breakdown-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>RBA Rate (%)</th>
+                    <th>Penalty Rate (%)</th>
+                    <th>Interest Accrued ($)</th>
+                  </tr>
+                </thead>
+                <tbody>`;
+            
+            dailyRates.forEach(item => {
+                const penaltyRate = 10.0 + item.rate;
+                const dailyInterest = (principal / 365) * (penaltyRate / 100);
+                // Adjust for timezone issues when creating date from YYYY-MM-DD string
+                const itemDate = new Date(item.date);
+                const displayDate = new Date(itemDate.getTime() + itemDate.getTimezoneOffset() * 60000);
+
+                breakdownHtml += `
+                  <tr>
+                    <td>${displayDate.toLocaleDateString('en-AU')}</td>
+                    <td>${item.rate.toFixed(2)}</td>
+                    <td>${penaltyRate.toFixed(2)}</td>
+                    <td>${dailyInterest.toLocaleString('en-AU', { style: 'currency', currency: 'AUD', minimumFractionDigits: 4 })}</td>
+                  </tr>`;
+            });
+            breakdownHtml += '</tbody></table>';
         }
     } else {
         rateDisplay = `${annualRate.toFixed(2)}%`;
         calcDisplay = `${principal.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })} × (${annualRate.toFixed(2)}% / 365) × ${days} days`;
     }
         
-    const tableHtml = `
+    const summaryTableHtml = `
       <div class="results-header">
         <h2>Calculation Results</h2>
-        <button class="copy-btn" onclick="copyResultsToClipboard()">Copy Table</button>
+        <button class="copy-btn" onclick="copyResultsToClipboard()">Copy All Results</button>
       </div>
-      <table class="results-table" id="results-table-content">
+      <table class="results-table" id="results-summary-table">
         <tbody>
           <tr>
             <th>Principal Amount</th>
@@ -493,22 +609,38 @@
         </tbody>
       </table>
     `;
-    resultsDiv.innerHTML = tableHtml;
+
+    resultsDiv.innerHTML = summaryTableHtml + breakdownHtml;
   }
 
   function copyResultsToClipboard() {
-    const table = document.getElementById('results-table-content');
-    let text = '';
-    const rows = table.getElementsByTagName('tr');
-    for (let i = 0; i < rows.length; i++) {
-        const header = rows[i].getElementsByTagName('th')[0].innerText;
-        const value = rows[i].getElementsByTagName('td')[0].innerText;
-        text += `${header}:\t${value}\n`;
+    const summaryTable = document.getElementById('results-summary-table');
+    const breakdownTable = document.getElementById('results-breakdown-table');
+    let text = '--- Calculation Summary ---\n';
+
+    const tableToTabText = (table) => {
+        let tableText = "";
+        if (!table) return tableText;
+
+        const rows = table.querySelectorAll('tr');
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('th, td');
+            const rowText = Array.from(cells).map(cell => cell.innerText).join('\t');
+            tableText += rowText + '\n';
+        });
+        return tableText;
+    }
+    
+    text += tableToTabText(summaryTable);
+
+    if (breakdownTable) {
+        text += "\n--- Daily Interest Breakdown ---\n";
+        text += tableToTabText(breakdownTable);
     }
 
     if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
-            alert('Calculation table copied to clipboard!');
+            alert('Calculation results copied to clipboard!');
         }).catch(err => {
             console.error('Failed to copy with navigator.clipboard:', err);
             copyFallback(text);
@@ -527,7 +659,7 @@
       textArea.select();
       try {
           document.execCommand('copy');
-          alert('Calculation table copied to clipboard!');
+          alert('Calculation results copied to clipboard!');
       } catch (err) {
           alert('Failed to copy text.');
       }
