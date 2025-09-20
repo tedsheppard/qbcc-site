@@ -348,7 +348,6 @@
     const calcDate = new Date(document.getElementById('contract-calc-date').value);
 
     if (isNaN(principal) || isNaN(annualRate) || isNaN(dueDate.getTime()) || isNaN(calcDate.getTime())) {
-      // Use a more modern, non-blocking notification
       displayError('Please fill in all fields with valid numbers and dates.');
       return;
     }
@@ -359,7 +358,7 @@
     }
 
     const timeDiff = calcDate.getTime() - dueDate.getTime();
-    const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
     const dailyRate = annualRate / 365;
     const interest = principal * (dailyRate / 100) * days;
 
@@ -389,36 +388,46 @@
         return;
       }
 
-      // Format date as YYYY-MM-DD for the API
-      const dateStr = calcDate.toISOString().split('T')[0];
+      const startDateStr = dueDate.toISOString().split('T')[0];
+      const endDateStr = calcDate.toISOString().split('T')[0];
       const resultsDiv = document.getElementById('results');
-      resultsDiv.innerHTML = '<p>Fetching latest RBA rate...</p>';
+      resultsDiv.innerHTML = '<p>Fetching latest RBA rates for the period...</p>';
 
       try {
-        const response = await fetch(`/get_interest_rate?date=${dateStr}`);
+        const response = await fetch(`/get_interest_rate?startDate=${startDateStr}&endDate=${endDateStr}`);
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to fetch interest rate from the server.');
+            throw new Error(errorData.detail || 'Failed to fetch interest rates from the server.');
         }
         const data = await response.json();
-        const rbaRate = data.rate;
         
-        const penaltyRate = 10.0 + rbaRate;
+        let totalInterest = 0;
+        const dailyPrincipal = principal / 365;
+
+        for(const dailyData of data.dailyRates) {
+            const penaltyRate = 10.0 + dailyData.rate;
+            const dailyInterest = dailyPrincipal * (penaltyRate / 100);
+            totalInterest += dailyInterest;
+        }
         
         const timeDiff = calcDate.getTime() - dueDate.getTime();
-        const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // Inclusive of the last day
-        const dailyRate = penaltyRate / 365;
-        const interest = principal * (dailyRate / 100) * days;
+        const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+        // For display, find the min and max rates in the period
+        const rates = data.dailyRates.map(r => r.rate);
+        const minRate = Math.min(...rates);
+        const maxRate = Math.max(...rates);
 
         displayResults({
           principal,
-          annualRate: penaltyRate,
+          // We show a range for the annual rate now
+          annualRate: {min: 10 + minRate, max: 10 + maxRate},
           dueDate,
           calcDate,
           days,
-          interest,
+          interest: totalInterest,
           rateType: 'QBCC Act s 67P',
-          rbaRate: rbaRate
+          rbaRate: {min: minRate, max: maxRate}
         });
 
       } catch (error) {
@@ -435,9 +444,20 @@
     const resultsDiv = document.getElementById('results');
     const { principal, annualRate, dueDate, calcDate, days, interest, rateType, rbaRate } = data;
 
-    const rateExplanation = rbaRate 
-        ? `(10% + ${rbaRate.toFixed(2)}% RBA 90-Day Bill Rate)`
-        : '';
+    let rateDisplay, calcDisplay;
+
+    if (rateType === 'QBCC Act s 67P') {
+        if (rbaRate.min.toFixed(2) === rbaRate.max.toFixed(2)) {
+            rateDisplay = `${annualRate.max.toFixed(2)}% (10% + ${rbaRate.max.toFixed(2)}% RBA Rate)`;
+            calcDisplay = `${principal.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })} × (${annualRate.max.toFixed(2)}% / 365) × ${days} days`;
+        } else {
+            rateDisplay = `From ${annualRate.min.toFixed(2)}% to ${annualRate.max.toFixed(2)}% (variable daily rate)`;
+            calcDisplay = `Sum of daily interest calculated for ${days} days`;
+        }
+    } else {
+        rateDisplay = `${annualRate.toFixed(2)}%`;
+        calcDisplay = `${principal.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })} × (${annualRate.toFixed(2)}% / 365) × ${days} days`;
+    }
         
     const tableHtml = `
       <div class="results-header">
@@ -452,7 +472,7 @@
           </tr>
           <tr>
             <th>Applicable Annual Interest Rate</th>
-            <td>${annualRate.toFixed(2)}% ${rateExplanation}</td>
+            <td>${rateDisplay}</td>
           </tr>
           <tr>
             <th>Interest Period</th>
@@ -464,7 +484,7 @@
           </tr>
           <tr>
             <th>Calculation</th>
-            <td>${principal.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })} × (${annualRate.toFixed(2)}% / 365) × ${days} days</td>
+            <td>${calcDisplay}</td>
           </tr>
           <tr>
             <th><strong>Total Interest Due</strong></th>
@@ -479,7 +499,6 @@
   function copyResultsToClipboard() {
     const table = document.getElementById('results-table-content');
     let text = '';
-    // Use a simpler text format for pasting into documents
     const rows = table.getElementsByTagName('tr');
     for (let i = 0; i < rows.length; i++) {
         const header = rows[i].getElementsByTagName('th')[0].innerText;
@@ -487,7 +506,6 @@
         text += `${header}:\t${value}\n`;
     }
 
-    // Use modern clipboard API if available, with a fallback
     if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
             alert('Calculation table copied to clipboard!');
@@ -503,7 +521,7 @@
   function copyFallback(text) {
       const textArea = document.createElement("textarea");
       textArea.value = text;
-      textArea.style.position = 'fixed'; // Prevent scrolling to bottom of page in MS Edge.
+      textArea.style.position = 'fixed';
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
