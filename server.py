@@ -532,6 +532,12 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
         "attributesToCrop": ["content"],
         "cropLength": 100
     }
+    
+    # If the search is for relevance but the query is empty (initial page load), 
+    # default to newest instead.
+    if sort == "relevance" and not q_norm:
+        sort = "newest"
+
     if sort == "newest":
         payload["sort"] = ["date:desc"]
     elif sort == "oldest":
@@ -540,6 +546,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
         payload["sort"] = ["claimant:asc"]
     elif sort == "ztoa":
         payload["sort"] = ["claimant:desc"]
+        
     headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
     res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
     data = res.json()
