@@ -96,33 +96,44 @@ def expand_wildcards(q: str) -> str:
 
 def _parse_near_robust(q: str) -> str | None:
     """
-    Enhanced NEAR parsing that properly handles quoted phrases
-    Example: "EOT" w/5 "time bar" -> "EOT" NEAR/5 "time bar"
+    Enhanced NEAR parsing that properly handles quoted phrases, wildcards, and mixed combinations
+    Examples: 
+    - "EOT" w/5 "time bar" -> "EOT" NEAR/5 "time bar"
+    - "GST" w/5 exclu! -> "GST" NEAR/5 "exclu*"
+    - word1 w/5 word2 -> "word1" NEAR/5 "word2"
     """
     s = _fix_unbalanced_quotes(q)
+    
+    # First expand wildcards
+    s = expand_wildcards(s)
     
     # Normalize w/N and NEAR/N
     s = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', s, flags=re.I)
 
-    # Match quoted phrases or single words around NEAR
-    pattern = r'"([^"]+)"\s+NEAR/(\d+)\s+"([^"]+)"'
-    m = re.search(pattern, s, flags=re.I)
+    # Try to match any NEAR pattern - quoted phrases, wildcards, or plain words
+    patterns = [
+        # Both sides quoted: "phrase1" NEAR/5 "phrase2"
+        r'"([^"]+)"\s+NEAR/(\d+)\s+"([^"]+)"',
+        # Left quoted, right not: "phrase" NEAR/5 word*
+        r'"([^"]+)"\s+NEAR/(\d+)\s+(\S+)',
+        # Left not quoted, right quoted: word* NEAR/5 "phrase"
+        r'(\S+)\s+NEAR/(\d+)\s+"([^"]+)"',
+        # Neither quoted: word1 NEAR/5 word2*
+        r'(\S+)\s+NEAR/(\d+)\s+(\S+)'
+    ]
     
-    if not m:
-        # Try pattern without quotes
-        pattern2 = r'(\w+)\s+NEAR/(\d+)\s+(\w+)'
-        m = re.search(pattern2, s, flags=re.I)
-        if not m:
-            return None
-        left, dist, right = m.group(1), int(m.group(2)), m.group(3)
-        return f'"{left}" NEAR/{dist} "{right}"'
-
-    # Extract components from quoted version
-    left = m.group(1)
-    dist = int(m.group(2))
-    right = m.group(3)
+    for pattern in patterns:
+        m = re.search(pattern, s, flags=re.I)
+        if m:
+            if len(m.groups()) == 3:  # Both sides quoted or neither quoted
+                left, dist, right = m.group(1), int(m.group(2)), m.group(3)
+            else:  # Mixed quoting (shouldn't happen with current patterns but safety)
+                continue
+                
+            # Ensure both sides are quoted for SQLite FTS
+            return f'"{left}" NEAR/{dist} "{right}"'
     
-    return f'"{left}" NEAR/{dist} "{right}"'
+    return None
 
 def preprocess_sqlite_query(q: str) -> str:
     """Enhanced query preprocessing with proper phrase and operator handling"""
