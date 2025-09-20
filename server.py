@@ -148,28 +148,53 @@ def preprocess_sqlite_query(q: str) -> str:
     """Enhanced query preprocessing with proper phrase and operator handling"""
     print(f"preprocess_sqlite_query input: {q}")
     
-    # Handle wildcard expansion first (new feature)
     q = expand_wildcards(q)
     print(f"After expand_wildcards: {q}")
     
-    # Normalize Boolean operators (case insensitive)
+    # Normalize operators
     q = re.sub(r'\band\b', 'AND', q, flags=re.I)
     q = re.sub(r'\bor\b', 'OR', q, flags=re.I)  
     q = re.sub(r'\bnot\b', 'NOT', q, flags=re.I)
+    q = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', q, flags=re.I) # Normalize w/N to NEAR/N
     print(f"After operator normalization: {q}")
 
-    # Handle proximity operators - check for phrases first
+    # NEW: Handle <term> NEAR/d (<term1> OR <term2>) pattern
+    near_or_pattern = re.compile(r'(".*?"|\S+)\s+NEAR/(\d+)\s+\((.*?)\)', flags=re.I)
+    m = near_or_pattern.search(q)
+    
+    if m:
+        left_term = m.group(1).strip()
+        dist = m.group(2)
+        right_group = m.group(3).strip()
+        
+        # Split the content within parentheses by OR
+        right_terms = re.split(r'\s+OR\s+', right_group, flags=re.I)
+        
+        if len(right_terms) > 1:
+            expanded_clauses = []
+            for term in right_terms:
+                # Ensure each part is a clean, singly-quoted phrase
+                clean_left = left_term.strip().strip('"')
+                clean_right = term.strip().strip('"')
+                
+                expanded_clauses.append(f'("{clean_left}" NEAR/{dist} "{clean_right}")')
+            
+            final_query = f"({' OR '.join(expanded_clauses)})"
+            print(f"Expanded NEAR/OR query to: {final_query}")
+            return final_query
+
+    # Handle simple proximity operators if the complex OR pattern didn't match
     near_expr = _parse_near_robust(q)
     if near_expr:
         print(f"Found NEAR expression: {near_expr}")
         return near_expr
 
-    # If it contains Boolean operators, preserve the structure
+    # If it contains other Boolean operators, preserve the structure
     if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I):
-        print(f"Contains boolean operators, returning: {q}")
+        print(f"Contains boolean operators, returning: {q.strip()}")
         return q.strip()
 
-    # Otherwise, default to AND all terms
+    # Otherwise, default to ANDing all terms
     result = normalize_default(q)
     print(f"normalize_default result: {result}")
     return result
@@ -313,13 +338,39 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         try:
             nq2 = preprocess_sqlite_query(nq)
             print("Executing MATCH with:", nq2)
+            
             total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (nq2,)).fetchone()[0]
-            sql = """
-              SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-              FROM fts
-              WHERE fts MATCH ?
-              LIMIT ? OFFSET ?
-            """
+
+            # Build the ORDER BY clause
+            order_clause = ""
+            if sort == "newest":
+                order_clause = "ORDER BY m.decision_date_norm DESC"
+            elif sort == "oldest":
+                order_clause = "ORDER BY m.decision_date_norm ASC"
+            elif sort == "atoz":
+                order_clause = "ORDER BY m.claimant ASC"
+            elif sort == "ztoa":
+                order_clause = "ORDER BY m.claimant DESC"
+
+            # The query needs a join for sorting, but not for relevance
+            if order_clause:
+                sql = f"""
+                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                  FROM fts
+                  JOIN docs_fresh d ON fts.rowid = d.rowid
+                  LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+                  WHERE fts MATCH ?
+                  {order_clause}
+                  LIMIT ? OFFSET ?
+                """
+            else: # Relevance search (default), no join needed for the main query
+                sql = """
+                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                  FROM fts
+                  WHERE fts MATCH ?
+                  LIMIT ? OFFSET ?
+                """
+            
             rows = con.execute(sql, (nq2, limit, offset)).fetchall()
 
         except sqlite3.OperationalError as e:
@@ -391,7 +442,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
         items = []
         phrase_terms, word_terms = get_highlight_terms(nq2)
         
-        for r in rows[offset:offset+limit]:
+        for r in rows:
             meta = con.execute("""
               SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
                      m.act, d.reference, d.pdf_path, d.ejs_id
