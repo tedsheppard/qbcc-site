@@ -105,24 +105,22 @@ def _parse_near_robust(q: str) -> str | None:
     s = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', s, flags=re.I)
 
     # Match quoted phrases or single words around NEAR
-    # This regex now properly captures quoted multi-word phrases
-    pattern = r'("([^"]+)"|(\S+))\s+NEAR/(\d+)\s+("([^"]+)"|(\S+))'
+    pattern = r'"([^"]+)"\s+NEAR/(\d+)\s+"([^"]+)"'
     m = re.search(pattern, s, flags=re.I)
     
     if not m:
-        # Try simpler pattern without explicit NEAR syntax
-        s2 = s.replace('"', '')
-        simple_pattern = r'(\S+)\s+NEAR/(\d+)\s+(\S+)'
-        m = re.search(simple_pattern, s2, flags=re.I)
+        # Try pattern without quotes
+        pattern2 = r'(\w+)\s+NEAR/(\d+)\s+(\w+)'
+        m = re.search(pattern2, s, flags=re.I)
         if not m:
             return None
         left, dist, right = m.group(1), int(m.group(2)), m.group(3)
         return f'"{left}" NEAR/{dist} "{right}"'
 
-    # Extract components - handle both quoted phrases and single words
-    left = m.group(2) if m.group(2) else m.group(3)
-    dist = int(m.group(4))
-    right = m.group(6) if m.group(6) else m.group(7)
+    # Extract components from quoted version
+    left = m.group(1)
+    dist = int(m.group(2))
+    right = m.group(3)
     
     return f'"{left}" NEAR/{dist} "{right}"'
 
@@ -271,13 +269,7 @@ def health():
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "relevance"):
     q_norm = normalize_query(q)
-
-    # Handle exact phrase queries
-    if len(q_norm) >= 2 and q_norm[0] == '"' and q_norm[-1] == '"':
-        inner = q_norm[1:-1]
-        nq = f'"{escape_fts_phrase(inner)}"'
-    else:
-        nq = q_norm
+    nq = q_norm  # Use normalized query as-is
 
     # Check if this is a complex query requiring FTS processing
     is_complex_query = (
