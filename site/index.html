@@ -44,7 +44,7 @@
     gap: 20px;
   }
   .nav-links a {
-    color: #333;
+    color: black; /* Changed from #333 */
     text-decoration: none;
     font-size: 14px;
     transition: color 0.2s;
@@ -153,7 +153,7 @@ body {
     background: #fff;
     border-radius: 20px;
     border: 1px solid #ccc;
-    padding: 4px 13px;
+    padding: 6px 15px; /* Slightly smaller height */
     box-shadow: 0 1px 8px rgba(0,0,0,0.08);
     width: 100%;
     max-width: 800px; /* Gives the search bar a max width so it doesn't look too wide */
@@ -162,7 +162,7 @@ body {
 .search-header .search-bar input {
   flex: 1;
   padding: 6px;
-  font-size: 10px;
+  font-size: 13px; /* Increased font size */
   border: none;
   outline: none;
   background: transparent;
@@ -173,10 +173,10 @@ body {
   background: #10a37f;
   border: none;
   color: white;
-  padding: 6px 10px;
+  padding: 8px 16px; /* Adjusted padding for new height */
   border-radius: 18px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 13px; /* Match input text size */
 }
 
   .search-header .search-bar button:hover { background: #0d8a6c; }
@@ -222,7 +222,8 @@ body {
   .pagination {
     margin: 30px 0;
     display: flex;
-    justify-content: flex-end;
+    justify-content: center; /* Changed from flex-end */
+    flex-wrap: wrap; /* Add wrap for mobile */
     gap: 6px;
     font-size: 14px;
   }
@@ -291,13 +292,21 @@ body {
 }
 
 .dark header,
+.dark .header, /* Added dark mode for main header */
 .dark footer,
 .dark .search-header,
 .dark .search-bar,
 .dark .results-limit {
   background: #141414 !important;
   color: #f0f0f0 !important;
-  border: 1px solid #333 !important;
+  border-color: #333 !important;
+}
+
+.dark .nav-links a {
+  color: #f0f0f0; /* Light text for dark mode header */
+}
+.dark .nav-links a:hover {
+  color: #00c97c;
 }
 
 
@@ -332,10 +341,10 @@ body {
   background: #00c97c;  /* brighter green */
   border: none;
   color: white;
-  padding: 8px 14px;
+  padding: 8px 16px; /* Adjusted padding for new height */
   border-radius: 20px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 13px; /* Match input text size */
 }
 .search-header .search-bar button:hover {
   background: #00a568;  /* darker on hover */
@@ -356,8 +365,8 @@ body {
   color: #fff;
   border: 1px solid #333;
   border-radius: 6px;
-  padding: 6px 28px 6px 13px;
-  font-size: 13px;
+  padding: 5px 24px 5px 12px; /* Adjusted padding */
+  font-size: 12px; /* Reduced font size */
   cursor: pointer;
   transition: background 0.2s, border 0.2s;
   position: relative;
@@ -400,8 +409,8 @@ body {
   color: #fff;
   border: 1px solid #333;
   border-radius: 6px;
-  padding: 6px 24px 6px 10px;   /* right padding leaves space for arrow */
-  font-size: 13px;
+  padding: 5px 24px 5px 10px; /* right padding leaves space for arrow */
+  font-size: 12px; /* Reduced font size */
   cursor: pointer;
   line-height: 1.4;
   transition: background 0.2s, border 0.2s;
@@ -665,8 +674,8 @@ mark {
       </select>
   
      <select id="sort" class="results-limit">
-       <option value="relevance">Relevance</option>
-       <option value="newest" selected>Date: Newest to Oldest</option>
+       <option value="relevance" selected>Relevance</option>
+       <option value="newest">Date: Newest to Oldest</option>
        <option value="oldest">Date: Oldest to Newest</option>
        <option value="atoz">A → Z (Claimant)</option>
        <option value="ztoa">Z → A (Claimant)</option>
@@ -762,7 +771,7 @@ mark {
       state.limit = +($('#limit')?.value || 20);
       state.offset = (page-1) * state.limit;
       const params = new URLSearchParams();
-      state.sort = ($('#sort')?.value || 'newest');
+      state.sort = ($('#sort')?.value || 'relevance');
       params.set('sort', state.sort);
       if (state.q) params.set('q', state.q);
       params.set('limit', state.limit);
@@ -884,7 +893,8 @@ function renderItem(it, query) {
       info.style.fontSize = '13px';
       info.style.color = '#aaa';
       info.style.marginTop = '6px';
-      info.style.textAlign = 'right';
+      info.style.textAlign = 'center'; // Changed from right
+      info.style.width = '100%'; // Ensure it takes full width to center
       container.appendChild(info);
     }
 
