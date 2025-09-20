@@ -188,7 +188,7 @@ def preprocess_sqlite_query(q: str) -> str:
                 # FTS queries need phrases to be double-quoted
                 expanded_clauses.append(f'("{clean_left}" NEAR/{dist} "{clean_right}")')
             
-            final_query = f"({operator.join(expanded_clauses)})"
+            final_query = operator.join(expanded_clauses)
             print(f"Expanded NEAR/{operator.strip()} query to: {final_query}")
             return final_query
 
