@@ -1130,54 +1130,6 @@ mark {
   margin: 10px 0 4px 0;
 }
 
- /* --- Temporary Upgrade Popup --- */
-:root { --modal-green:#00c97c; }
-.light { --modal-bg:#ffffff; --modal-fg:#111; --modal-border:#e8e8e8; }
-.dark  { --modal-bg:#161616; --modal-fg:#f2f2f2; --modal-border:#2a2a2a; }
-
-#upgradeOverlay{
-  position:fixed; inset:0; z-index:10000;
-  display:none; /* toggled by JS */
-  align-items:center; justify-content:center;
-  background:rgba(0,0,0,.55);
-  backdrop-filter:saturate(120%) blur(2px);
-}
-.upgrade-modal{
-  width:min(92vw,560px);
-  background:var(--modal-bg);
-  color:var(--modal-fg);
-  border:1px solid var(--modal-border);
-  border-radius:20px;
-  box-shadow:0 12px 40px rgba(0,0,0,.35);
-  padding:22px 22px 18px;
-  text-align:center;
-}
-.upgrade-modal h2{
-  margin:0 0 6px; font-size:18px; font-weight:700;
-}
-.upgrade-modal p{
-  margin:6px 0 16px; font-size:13px; line-height:1.5;
-}
-.upgrade-badge{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:8px 12px; border-radius:999px;
-  background:rgba(0,201,124,0.12); color:var(--modal-fg);
-  font-size:12px; font-weight:600; margin-bottom:10px;
-  border:1px solid var(--modal-border);
-}
-.upgrade-actions{
-  display:flex; gap:10px; justify-content:center; margin-top:6px;
-}
-.upgrade-actions .btn{
-  border:none; border-radius:12px; cursor:pointer; font-size:13px;
-  padding:10px 14px;
-}
-.btn-primary{ background:var(--modal-green); color:#fff; }
-.btn-primary:hover{ filter:brightness(.95); }
-.btn-ghost{
-  background:transparent; color:var(--modal-fg); border:1px solid var(--modal-border);
-}
-.btn-ghost:hover{ background:rgba(0,0,0,.05); }
 
 
 </style>
@@ -1655,41 +1607,7 @@ function normalizeInput(s) {
   </div>
 </div>
 
-<script>
-(() => {
-  // Brisbane window: 20 Sep 2025 06:00 to 21 Sep 2025 23:59 AEST (UTC+10)
-  const START = new Date('2025-09-20T06:00:00+10:00').getTime();
-  const END   = new Date('2025-09-21T23:59:00+10:00').getTime();
 
-  const overlay = document.getElementById('upgradeOverlay');
-  const modal   = document.getElementById('upgradeModal');
-  const btn     = document.getElementById('upgradeContinueBtn');
-
-  function show() {
-    overlay.style.display = 'flex';
-    document.documentElement.style.overflow = 'hidden'; // prevent background scroll
-    try { modal.focus(); } catch(_) {}
-  }
-  function hide() {
-    overlay.style.display = 'none';
-    document.documentElement.style.overflow = '';
-    // remember for this tab so it doesn't pop again during the window
-    sessionStorage.setItem('sopal_upgrade_dismissed', '1');
-  }
-
-  // Only show during the window AND if not already dismissed in this tab
-  const now = Date.now();
-  const dismissed = sessionStorage.getItem('sopal_upgrade_dismissed') === '1';
-  if (now >= START && now <= END && !dismissed) show();
-
-  // Dismiss events
-  btn?.addEventListener('click', hide);
-  overlay?.addEventListener('click', (e) => { if (e.target === overlay) hide(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.style.display === 'flex') hide(); });
-
-  // Optional: if user toggles theme after open, modal colors will follow CSS vars automatically
-})();
-</script>
 
    
 </body>
