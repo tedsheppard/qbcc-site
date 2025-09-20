@@ -374,41 +374,54 @@
   }
 
   async function calculateQbccInterest() {
-    const principal = parseFloat(document.getElementById('qbcc-amount').value);
-    const dueDate = new Date(document.getElementById('qbcc-due-date').value);
-    const calcDate = new Date(document.getElementById('qbcc-calc-date').value);
+      const principal = parseFloat(document.getElementById('qbcc-amount').value);
+      const dueDate = new Date(document.getElementById('qbcc-due-date').value);
+      const calcDate = new Date(document.getElementById('qbcc-calc-date').value);
 
-    if (isNaN(principal) || isNaN(dueDate.getTime()) || isNaN(calcDate.getTime())) {
-      alert('Please fill in all fields with valid numbers and dates.');
-      return;
-    }
+      if (isNaN(principal) || isNaN(dueDate.getTime()) || isNaN(calcDate.getTime())) {
+        alert('Please fill in all fields with valid numbers and dates.');
+        return;
+      }
 
-    if (calcDate < dueDate) {
-      alert('The "Date Interest Calculated To" must be after the "Due Date for Payment".');
-      return;
-    }
-    
-    // In a real application, this rate would be fetched from a backend endpoint.
-    // The backend would fetch the XLSX file from the RBA daily and store the latest rate.
-    // For this example, we'll use a realistic placeholder rate.
-    const rbaRate = 4.35; // Placeholder for 90-day bill rate
-    const penaltyRate = 10.0 + rbaRate;
-    
-    const timeDiff = calcDate.getTime() - dueDate.getTime();
-    const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    const dailyRate = penaltyRate / 365;
-    const interest = principal * (dailyRate / 100) * days;
+      if (calcDate < dueDate) {
+        alert('The "Date Interest Calculated To" must be after the "Due Date for Payment".');
+        return;
+      }
 
-    displayResults({
-      principal,
-      annualRate: penaltyRate,
-      dueDate,
-      calcDate,
-      days,
-      interest,
-      rateType: 'QBCC Act s 67P',
-      rbaRate: rbaRate
-    });
+      // Format date as YYYY-MM-DD for the API
+      const dateStr = calcDate.toISOString().split('T')[0];
+
+      try {
+        const response = await fetch(`/get_interest_rate?date=${dateStr}`);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to fetch interest rate.');
+        }
+        const data = await response.json();
+        const rbaRate = data.rate;
+        
+        const penaltyRate = 10.0 + rbaRate;
+        
+        const timeDiff = calcDate.getTime() - dueDate.getTime();
+        const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        const dailyRate = penaltyRate / 365;
+        const interest = principal * (dailyRate / 100) * days;
+
+        displayResults({
+          principal,
+          annualRate: penaltyRate,
+          dueDate,
+          calcDate,
+          days,
+          interest,
+          rateType: 'QBCC Act s 67P',
+          rbaRate: rbaRate
+        });
+
+      } catch (error) {
+          alert(`Error: ${error.message}`);
+          document.getElementById('results').innerHTML = `<p style="color: red;">Could not retrieve the RBA interest rate. Please try again later.</p>`;
+      }
   }
 
   function displayResults(data) {
@@ -486,3 +499,4 @@
 
 </body>
 </html>
+
