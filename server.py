@@ -78,7 +78,8 @@ def escape_fts_phrase(s: str) -> str:
 
 def normalize_default(q: str) -> str:
     if not re.search(r'"|\bNEAR/\d+\b|\bw/\d+\b|\bAND\b|\bOR\b|\bNOT\b|\(|\)', q or "", flags=re.I):
-        toks = re.findall(r'\w+', q or "")
+        # Modified to preserve wildcards (*)
+        toks = re.findall(r'\w+\*?', q or "")
         q = ' AND '.join(toks)
     return q
 
@@ -136,25 +137,33 @@ def _parse_near_robust(q: str) -> str | None:
 
 def preprocess_sqlite_query(q: str) -> str:
     """Enhanced query preprocessing with proper phrase and operator handling"""
+    print(f"preprocess_sqlite_query input: {q}")
+    
     # Handle wildcard expansion first (new feature)
     q = expand_wildcards(q)
+    print(f"After expand_wildcards: {q}")
     
     # Normalize Boolean operators (case insensitive)
     q = re.sub(r'\band\b', 'AND', q, flags=re.I)
     q = re.sub(r'\bor\b', 'OR', q, flags=re.I)  
     q = re.sub(r'\bnot\b', 'NOT', q, flags=re.I)
+    print(f"After operator normalization: {q}")
 
     # Handle proximity operators - check for phrases first
     near_expr = _parse_near_robust(q)
     if near_expr:
+        print(f"Found NEAR expression: {near_expr}")
         return near_expr
 
     # If it contains Boolean operators, preserve the structure
     if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I):
+        print(f"Contains boolean operators, returning: {q}")
         return q.strip()
 
     # Otherwise, default to AND all terms
-    return normalize_default(q)
+    result = normalize_default(q)
+    print(f"normalize_default result: {result}")
+    return result
 
 def get_highlight_terms(query: str) -> tuple[list[str], list[str]]:
     """
@@ -282,13 +291,17 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "rele
     nq = q_norm  # Use normalized query as-is
 
     # Check if this is a complex query requiring FTS processing
+    # First expand wildcards to check for them properly
+    nq_expanded = expand_wildcards(nq)
+    
     is_complex_query = (
         re.search(r'\b(AND|OR|NOT)\b', nq, flags=re.I) or
         re.search(r'\bw/\d+\b', nq, flags=re.I) or
         re.search(r'\bNEAR/\d+\b', nq, flags=re.I) or
         nq.startswith('"') or
         '!' in nq or  # wildcard queries
-        '*' in nq     # already expanded wildcards
+        '*' in nq_expanded or  # expanded wildcards  
+        nq != nq_expanded  # any transformation happened
     )
 
     if is_complex_query:
