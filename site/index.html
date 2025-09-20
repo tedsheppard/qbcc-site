@@ -194,8 +194,14 @@ body {
   .result h3 {
     margin: 0 0 6px;
     font-size: 16px;
-    color: #fff;
   }
+  .result h3 a {
+      color: #fff; /* White for dark mode titles */
+  }
+   .light .result h3 a {
+      color: #000; /* Black for light mode titles */
+  }
+
   .meta {
     font-size: 13px;
     color: #aaa;
@@ -215,7 +221,7 @@ body {
     border-radius: 2px;
   }
   
-  /* UPDATED General link styling */
+  /* General link styling */
   a {
     color: black;
     text-decoration: none;
@@ -226,6 +232,16 @@ body {
     color: #00c97c; /* Green on hover */
     text-decoration: none;
   }
+  
+  /* NEW: Specific style for result action links */
+  .result .open-btn {
+      color: #0066cc;
+  }
+   .result .open-btn:hover {
+      color: #004c99;
+      text-decoration: underline;
+  }
+
 
   /* Pagination */
   .pagination {
@@ -271,7 +287,6 @@ body {
   }
   .footer-logo { height: 24px; margin-bottom: 10px; }
   
-  /* NEW Footer Links layout */
   .footer-links {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -324,7 +339,7 @@ body {
   border-color: #333 !important;
 }
 
-.dark .nav-links a, .dark .footer-links a {
+.dark .nav-links a, .dark .footer-links a, .dark a {
   color: #f0f0f0; /* Light text for dark mode header */
 }
 .dark a:hover {
@@ -340,7 +355,7 @@ body {
   border: 1px solid #222 !important;
 }
 
-.dark .result a { color: #4da6ff !important; }
+.dark .result .open-btn { color: #4da6ff !important; }
 .dark .pagination button.active { border-bottom: 2px solid #4da6ff; }
 
 /* --- Fix dark mode result cards + footer divider --- */
