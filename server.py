@@ -8,7 +8,7 @@ import aiosmtplib
 from openai import OpenAI
 from google.cloud import storage
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -77,9 +77,7 @@ def fetch_and_update_rba_rates():
         rates_df = df[[date_col, rate_col]].copy()
         rates_df.columns = ['rate_date', 'rate_value']
         
-        # FIX: Coerce errors will turn unparseable strings (like 'Description') into NaT
         rates_df['rate_date'] = pd.to_datetime(rates_df['rate_date'], errors='coerce')
-        # Now drop rows with NaT in the date column or NaN in the value column
         rates_df.dropna(subset=['rate_date', 'rate_value'], inplace=True)
         
         rates_df['rate_date'] = rates_df['rate_date'].dt.date
@@ -357,26 +355,47 @@ def health():
     return {"ok": True}
 
 @app.get("/get_interest_rate")
-def get_interest_rate(date_str: str = Query(..., alias="date")):
+def get_interest_rate(start_date_str: str = Query(..., alias="startDate"), end_date_str: str = Query(..., alias="endDate")):
     try:
-        calc_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        
         cursor = con.cursor()
+        
+        # Create a temporary table of all dates in the range
+        cursor.execute("CREATE TEMP TABLE date_range (day DATE)")
+        current_date = start_date
+        while current_date <= end_date:
+            cursor.execute("INSERT INTO date_range (day) VALUES (?)", (current_date,))
+            current_date += timedelta(days=1)
+
+        # For each date in our range, find the most recent RBA rate
         cursor.execute("""
-            SELECT rate_value FROM rba_rates
-            WHERE rate_date <= ?
-            ORDER BY rate_date DESC
-            LIMIT 1
-        """, (calc_date,))
-        row = cursor.fetchone()
-        if row:
-            return {"rate": row["rate_value"]}
-        else:
-            raise HTTPException(status_code=404, detail="No interest rate found for the specified date or earlier.")
+            SELECT 
+                dr.day,
+                (SELECT rate_value FROM rba_rates WHERE rate_date <= dr.day ORDER BY rate_date DESC LIMIT 1) as rate
+            FROM date_range dr
+        """)
+        
+        rows = cursor.fetchall()
+        
+        if not rows:
+             raise HTTPException(status_code=404, detail="No interest rates found for the specified date range.")
+
+        # Convert rows to a list of dictionaries
+        daily_rates = [{"date": row["day"], "rate": row["rate"]} for row in rows if row["rate"] is not None]
+
+        if not daily_rates:
+             raise HTTPException(status_code=404, detail="No valid interest rates could be mapped to the specified date range.")
+
+        return {"dailyRates": daily_rates}
+
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Please use YYYY-MM-DD.")
     except Exception as e:
         print(f"Error in /get_interest_rate: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
 
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newest"):
@@ -514,7 +533,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
 
             for phrase in sorted(set(phrase_terms), key=len, reverse=True):
                 pattern = re.escape(phrase)
-                # FIX: Corrected a typo in the f-string for regex and used a raw f-string.
                 snippet_clean = re.sub(fr'(?i)\b{pattern}\b', f"<mark>{phrase}</mark>", snippet_clean)
 
             for term in sorted(set(word_terms), key=len, reverse=True):
@@ -741,3 +759,4 @@ async def download_db():
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
+
