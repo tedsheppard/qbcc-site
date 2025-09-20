@@ -582,7 +582,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             # Highlight phrases first (longer matches take precedence)
             for phrase in sorted(set(phrase_terms), key=len, reverse=True):
                 pattern = re.escape(phrase)
-                snippet_clean = re.sub(f'(?i}\\b{pattern}\\b', f"<mark>{phrase}</mark>", snippet_clean)
+                snippet_clean = re.sub(f'(?i)\\b{pattern}\\b', f"<mark>{phrase}</mark>", snippet_clean)
 
             # Then highlight individual words (excluding those already in phrases)
             for term in sorted(set(word_terms), key=len, reverse=True):
