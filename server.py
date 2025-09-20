@@ -45,7 +45,7 @@ con.execute("PRAGMA cache_size = -20000")
 con.execute("PRAGMA temp_store = MEMORY")
 con.execute("PRAGMA mmap_size = 30000000000")
 
-# --- NEW: RBA Interest Rate Setup ---
+# --- RBA Interest Rate Setup ---
 def setup_rba_table():
     con.execute("""
     CREATE TABLE IF NOT EXISTS rba_rates (
