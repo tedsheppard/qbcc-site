@@ -1,23 +1,300 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <!-- keep all your <head> exactly as in index.html -->
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+
+  <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="/assets/favicon.ico" type="image/x-icon">
+
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
+
+  <meta charset="utf-8">
+  <title>{% block title %}Sopal – Adjudication Search{% endblock %}</title>
+  <meta name="description" content="Sopal is an intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act) in Queensland, Australia. Search decisions by keyword, adjudicator, date, and more.">
+  <meta name="keywords" content="Sopal, adjudication decisions, BIF Act, Building Industry Fairness, Security of Payment Act, Queensland, construction law, payment disputes, QBCC search, adjudicator search, construction adjudication">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    /* Header */
+    .header {
+      background: #fdfdfd;
+      padding: 20px 25px;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-content {
+      display: flex;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .logo { height: 31px; margin-right: 20px; }
+    .nav-links { margin-left: auto; display: flex; gap: 20px; }
+    .nav-links a {
+      color: black; text-decoration: none; font-size: 14px; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: #00c97c; }
+    .nav-links a.active { color: #008a5c; font-weight: 600; }
+
+    /* Light theme overrides */
+    .light { background: #ffffff !important; color: #222 !important; }
+    .light body { background: #ffffff !important; color: #222 !important; }
+    .light header { background: #fdfdfd !important; border-bottom: 1px solid #ccc !important; }
+    .light header h1 { color: #000 !important; }
+    .light #themeToggle { color: #000 !important; }
+
+    .light .search-bar { background: #ffffff !important; border: 1px solid #ccc !important; }
+    .light .search-bar input { color: #000 !important; }
+
+    .light .filters input,
+    .light .filters select {
+      background: #ffffff !important; border: 1px solid #ccc !important; color: #000 !important;
+    }
+
+    .light #results { background: #ffffff !important; }
+    .light .result { border-bottom: 1px solid #ddd !important; }
+    .light .result h3 { color: #000 !important; }
+    .light .meta { color: #555 !important; }
+    .light .snippet {
+      background: #f7f7f7 !important; color: #222 !important; border: 0.5px solid #ddd !important;
+    }
+    .light .pagination button { color: #8BD69A !important; }
+
+    /* Theme toggle */
+    #themeToggle {
+      background: none; border: none; font-size: 11px; cursor: pointer; color: white; opacity: 0.8;
+    }
+    #themeToggle:hover { opacity: 1; }
+    .light #themeToggle { color: #000; }
+
+    /* Base body + main layout */
+    body {
+      font-family: Inter, sans-serif;
+      margin: 0;
+      background: rgba(33,33,33,255);
+      color: #e4e4e4;
+      font-size: 80%;
+    }
+    main {
+      max-width: 1200px;
+      margin: 35px auto 0;
+      padding: 0 25px;
+      min-height: 40vh;
+    }
+
+    /* Result styles (safe to keep globally) */
+    #results { margin-top: 20px; }
+    .result { padding: 20px 0; border-bottom: 1px solid #ddd; }
+    .result h3 { margin: 0 0 6px; font-size: 16px; }
+    .result h3 a { color: #fff; }
+    .light .result h3 a { color: #000; }
+    .meta { font-size: 13px; color: #aaa; margin-bottom: 8px; }
+    .snippet { background: rgba(24,24,24,255); padding: 8px; border-radius: 6px; font-size: 12px; color: #ddd; }
+    mark { background: #8BD69A; color: black; padding: 0 2px; border-radius: 2px; }
+
+    /* General links */
+    a { color: black; text-decoration: none; font-size: 14px; transition: color 0.2s; }
+    a:hover { color: #00c97c; text-decoration: none; }
+
+    /* Pagination */
+    .pagination { margin: 30px 0; display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; font-size: 14px; }
+    .pagination button { background: transparent; border: none; color: #8BD69A; cursor: pointer; padding: 4px 8px; }
+    .pagination button.active { font-weight: bold; border-bottom: 2px solid #8BD69A; }
+    .pagination button:hover { text-decoration: underline; }
+
+    /* Footer */
+    .footer {
+      background: #fcfcfc; color: #333; padding: 40px 25px 20px; margin-top: 60px; border-top: 1px solid #ddd;
+    }
+    .footer-content {
+      display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;
+      max-width: 1200px; margin: auto;
+    }
+    .footer-left { max-width: 400px; text-align: left; }
+    .footer-logo { height: 24px; margin-bottom: 10px; }
+
+    .footer-links {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 40px; text-align: left;
+    }
+    .footer-links a { font-size: 13px; }
+
+    .footer-bottom {
+      text-align: center; border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px;
+      width: 100%; font-size: 0.85em; color: #666;
+    }
+
+    /* Loading bar */
+    #loadingBar {
+      position: fixed; top: 0; left: 0; width: 0%; height: 4px;
+      background: linear-gradient(to left, #21db87, #42ffaa);
+      transition: width 0.7s ease; z-index: 9999;
+    }
+
+    /* Dark theme */
+    .dark body { background: #0d0d0d !important; color: #e0e0e0 !important; }
+    .dark .header, .dark footer, .dark .search-header, .dark .search-bar, .dark .results-limit {
+      background: #141414 !important; color: #f0f0f0 !important; border-color: #333 !important;
+    }
+    .dark .nav-links a, .dark .footer-links a, .dark a { color: #f0f0f0; }
+    .dark a:hover { color: #00c97c; }
+    .dark .nav-links a.active { color: #008a5c; }
+    .dark .snippet { background: #141414 !important; border: 1px solid #222 !important; }
+    .dark .result .open-btn { color: #4da6ff !important; }
+    .dark .pagination button.active { border-bottom: 2px solid #4da6ff; }
+    .dark #results, .dark #results .result { border: none !important; color: #f0f0f0 !important; }
+    .dark .snippet { background: #141414 !important; border: 1px solid #222 !important; color: #ddd !important; }
+    .dark .footer-bottom { border-top: 1px solid #333 !important; color: #aaa !important; }
+
+    .search-header .search-bar button { background: #00c97c; border: none; color: white; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 13px; }
+    .search-header .search-bar button:hover { background: #00a568; }
+    .dark .search-bar input { color: #fff !important; }
+
+    .results-limit {
+      appearance: none; -webkit-appearance: none; -moz-appearance: none;
+      background: #fff; color: #000; border: 1px solid #ccc; border-radius: 6px;
+      padding: 5px 24px 5px 12px; font-size: 12px; cursor: pointer; transition: background 0.2s, border 0.2s;
+      position: relative; width: 180px; text-align: left;
+    }
+    .dark .results-limit { background: #1c1c1c; color: #fff; border-color: #333; }
+    .results-limit:hover { background: #f7f7f7; border-color: #aaa; }
+    .dark .results-limit:hover { background: #2a2a2a; border-color: #555; }
+    .results-limit::after {
+      content: "▾"; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #aaa;
+    }
+
+    :root { --primary-green: #08cc7c; }
+
+    mark { background: #b9f6ca; color: #000; padding: 0 1px; border-radius: 1px; font-weight: inherit; }
+    .dark mark { background: #2e7d32; color: #e0ffe0; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header-content { flex-direction: column; gap: 16px; }
+      .nav-links { margin: 0; flex-wrap: wrap; justify-content: center; }
+      .footer-content { flex-direction: column; align-items: center; text-align: center; }
+      .footer-left { margin-bottom: 25px; }
+      .footer-links { grid-template-columns: repeat(2, 1fr); gap: 15px; }
+      main { padding: 0 13px; max-width: 100%; }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
 </head>
 <body class="light">
   <div id="loadingBar"></div>
 
-  <!-- Header (keep as-is) -->
-  <div class="header"> ... </div>
-  <div class="search-header"> ... </div>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <a href="/">
+        <img id="logo" src="/assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+      </a>
+      <div class="nav-links">
+        <a href="/index" class="{% block nav_search_active %}{% endblock %}">Search</a>
+        <a href="/interest-calculator" class="{% block nav_interest_active %}{% endblock %}">Interest Calculator</a>
+        <a href="/due-date-calculator" class="{% block nav_due_active %}{% endblock %}">Due Date Calculator</a>
+        <a href="/how-to" class="{% block nav_howto_active %}{% endblock %}">How-To Guide</a>
+        <a href="/feedback" class="{% block nav_feedback_active %}{% endblock %}">Feedback</a>
+      </div>
+      <button id="themeToggle" onclick="toggleTheme()" style="margin-left:12px;">Switch to Dark Mode 🌙</button>
+    </div>
+  </div>
 
-  <!-- PAGE CONTENT -->
+  <!-- Page content -->
   <main>
     {% block content %}{% endblock %}
   </main>
 
-  <!-- Footer (keep as-is) -->
-  <footer class="footer"> ... </footer>
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <img id="footerLogo" src="/assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+        <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+      </div>
 
-  <!-- keep all your <script> tags as in index.html -->
+      <div class="footer-links">
+        <a href="/index">Search</a>
+        <a href="/interest-calculator">Interest Calculator</a>
+        <a href="/due-date-calculator">Due Date Calculator</a>
+        <a href="/feedback">Feedback</a>
+        <a href="/how-to">How-To Guide</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 Sopal Australia. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    function startLoadingBar() {
+      const bar = document.getElementById('loadingBar');
+      if (!bar) return;
+      bar.style.width = '0%';
+      setTimeout(() => { bar.style.width = '50%'; }, 50);
+    }
+    function finishLoadingBar() {
+      const bar = document.getElementById('loadingBar');
+      if (!bar) return;
+      bar.style.width = '100%';
+      setTimeout(() => { bar.style.width = '0%'; }, 400);
+    }
+
+    function toggleTheme() {
+      const body = document.body;
+      const isDark = body.classList.contains('dark');
+
+      if (isDark) {
+        body.classList.remove('dark');
+        body.classList.add('light');
+        localStorage.setItem('theme', 'light');
+        const t = document.getElementById('themeToggle');
+        if (t) t.textContent = 'Switch to Dark Mode 🌙';
+      } else {
+        body.classList.remove('light');
+        body.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        const t = document.getElementById('themeToggle');
+        if (t) t.textContent = 'Switch to Light Mode ☀️';
+      }
+
+      const logo = document.getElementById('logo');
+      const footerLogo = document.getElementById('footerLogo');
+      if (logo && footerLogo) {
+        const dark = document.body.classList.contains('dark');
+        logo.src = dark ? "/assets/sopal_logo_white_v1.png" : "/assets/sopal_logo_v1.png";
+        footerLogo.src = dark ? "/assets/sopal_logo_white_v1.png" : "/assets/sopal_logo_v1.png";
+      }
+    }
+
+    // Init theme from localStorage
+    (function initTheme(){
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark') {
+        document.body.classList.remove('light');
+        document.body.classList.add('dark');
+        const t = document.getElementById('themeToggle');
+        if (t) t.textContent = 'Switch to Light Mode ☀️';
+      } else {
+        document.body.classList.add('light');
+        const t = document.getElementById('themeToggle');
+        if (t) t.textContent = 'Switch to Dark Mode 🌙';
+      }
+    })();
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
 </body>
 </html>
