@@ -1,10 +1,18 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <link rel="icon" href="https://placehold.co/32x32/00c97c/ffffff?text=S" type="image/x-icon">
-  <link rel="shortcut icon" href="https://placehold.co/32x32/00c97c/ffffff?text=S" type="image/x-icon">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
   <meta charset="utf-8">
-  <title>Sopal – How-To Guide</title>
+  <title>Sopal — How-To Guide</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     /* Base styles matching main site */
@@ -25,8 +33,6 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      backdrop-filter: blur(8px);
-      background-color: rgba(253, 253, 253, 0.85);
     }
 
     .header-content {
@@ -48,7 +54,7 @@
     }
 
     .nav-links a {
-      color: #333;
+      color: black;
       text-decoration: none;
       font-size: 14px;
       transition: color 0.2s;
@@ -59,7 +65,7 @@
     }
 
     .nav-links a.active {
-      color: #00c97c;
+      color: #008a5c;
       font-weight: 600;
     }
 
@@ -167,22 +173,73 @@
     .footer {
       background: #fcfcfc;
       color: #333;
-      padding: 40px 20px 20px;
-      margin-top: 80px;
+      padding: 40px 25px 20px;
+      margin-top: 60px;
       border-top: 1px solid #ddd;
     }
-
     .footer-content {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       flex-wrap: wrap;
       max-width: 1200px;
       margin: auto;
     }
+    .footer-left { 
+      max-width: 400px;
+      text-align: left;
+    }
+    .footer-logo { height: 24px; margin-bottom: 10px; }
+    
+    .footer-links {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px 40px;
+      text-align: left;
+    }
+    .footer-links a {
+      font-size: 13px;
+      color: black;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover {
+      color: #00c97c;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      border-top: 1px solid #eee;
+      margin-top: 30px;
+      padding-top: 20px;
+      width: 100%;
+      font-size: 0.85em;
+      color: #666;
+    }
 
     /* Mobile responsiveness */
     @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        gap: 16px;
+      }
+      .nav-links {
+        margin: 0;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .footer-content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .footer-left {
+        margin-bottom: 25px;
+      }
+      .footer-links {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+      }
       .container {
         margin: 40px auto;
         padding: 0 16px;
@@ -193,19 +250,6 @@
       .content-section h2 {
         font-size: 22px;
       }
-      .header-content {
-        flex-direction: column;
-        gap: 16px;
-      }
-      .nav-links {
-        margin: 0;
-        flex-wrap: wrap;
-      }
-      .footer-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-      }
     }
   </style>
 </head>
@@ -214,14 +258,14 @@
   <div class="header">
     <div class="header-content">
       <a href="/">
-        <img src="https://sopal.com.au/assets/sopal_logo_v1.png" onerror="this.onerror=null;this.src='https://placehold.co/124x40/f0f0f0/333333?text=Sopal';" alt="SOPAL" class="logo">
+        <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
       </a>
       <div class="nav-links">
-        <a href="#search">Search</a>
-        <a href="#how-to" class="active">How-To Guide</a>
-        <a href="#feedback">Feedback</a>
-        <a href="#privacy">Privacy</a>
-        <a href="#terms">Terms</a>
+        <a href="index.html">Search</a>
+        <a href="interest-calculator.html">Interest Calculator</a>
+        <a href="due-date-calculator.html">Due Date Calculator</a>
+        <a href="how-to.html" class="active">How-To Guide</a>
+        <a href="feedback.html">Feedback</a>
       </div>
     </div>
   </div>
@@ -286,7 +330,7 @@
     <!-- Practical Examples -->
     <div class="content-section" id="examples">
         <h2>Practical Examples</h2>
-        <p>Here’s how you could apply these connectors to real-world search scenarios:</p>
+        <p>Here's how you could apply these connectors to real-world search scenarios:</p>
         <ul>
             <li><strong>Finding discussions on defects near contract completion:</strong><br>
             <code>"defect" w/25 ("practical completion" OR "final certificate")</code>
@@ -312,15 +356,27 @@
 
   </div>
 
-  <!-- Footer -->
-  <div class="footer">
+  <footer class="footer">
     <div class="footer-content">
-        <p>© 2025 Sopal. Intelligent adjudication search.</p>
-        <div class="footer-links">
-            <a href="https://www.sopal.com.au">sopal.com.au</a>
-        </div>
+      <div class="footer-left">
+        <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+        <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+      </div>
+
+      <div class="footer-links">
+        <a href="index.html">Search</a>
+        <a href="interest-calculator.html">Interest Calculator</a>
+        <a href="due-date-calculator.html">Due Date Calculator</a>
+        <a href="how-to.html">How-To Guide</a>
+        <a href="feedback.html">Feedback</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </div>
     </div>
-  </div>
+    <div class="footer-bottom">
+      <p>© 2025 Sopal Australia. All rights reserved.</p>
+    </div>
+  </footer>
 
 </body>
 </html>
