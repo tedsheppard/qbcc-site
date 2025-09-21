@@ -1,6 +1,14 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
   <meta charset="utf-8">
@@ -46,7 +54,7 @@
     }
 
     .nav-links a {
-      color: #333;
+      color: black;
       text-decoration: none;
       font-size: 14px;
       transition: color 0.2s;
@@ -57,7 +65,7 @@
     }
 
     .nav-links a.active {
-      color: #00c97c;
+      color: #008a5c;
       font-weight: 600;
     }
 
@@ -227,82 +235,82 @@
     .footer {
       background: #fcfcfc;
       color: #333;
-      padding: 40px 20px 20px;
-      margin-top: 80px;
+      padding: 40px 25px 20px;
+      margin-top: 60px;
       border-top: 1px solid #ddd;
     }
-
     .footer-content {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       flex-wrap: wrap;
       max-width: 1200px;
       margin: auto;
     }
-
-    .footer-left {
+    .footer-left { 
       max-width: 400px;
+      text-align: left;
     }
-
-    .footer-logo {
-      height: 24px;
-      margin-bottom: 10px;
-    }
-
+    .footer-logo { height: 24px; margin-bottom: 10px; }
+    
     .footer-links {
-      display: flex;
-      gap: 20px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px 40px;
+      text-align: left;
     }
-
     .footer-links a {
-      color: #333;
+      font-size: 13px;
+      color: black;
       text-decoration: none;
       transition: color 0.2s;
     }
-
     .footer-links a:hover {
-      color: #00c853;
+      color: #00c97c;
     }
 
     .footer-bottom {
       text-align: center;
       border-top: 1px solid #eee;
-      margin-top: 20px;
-      padding-top: 15px;
+      margin-top: 30px;
+      padding-top: 20px;
+      width: 100%;
       font-size: 0.85em;
       color: #666;
     }
 
     /* Mobile responsiveness */
     @media (max-width: 768px) {
-      .container {
-        margin: 40px auto;
-        padding: 0 16px;
-      }
-
-      .page-title {
-        font-size: 28px;
-      }
-
-      .content-section h2 {
-        font-size: 22px;
-      }
-
       .header-content {
         flex-direction: column;
         gap: 16px;
       }
-
       .nav-links {
         margin: 0;
         flex-wrap: wrap;
+        justify-content: center;
       }
-
       .footer-content {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
+        align-items: center;
+        text-align: center;
+      }
+      .footer-left {
+        margin-bottom: 25px;
+      }
+      .footer-links {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+      }
+      .container {
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      .page-title {
+        font-size: 28px;
+      }
+      .content-section h2 {
+        font-size: 22px;
       }
     }
   </style>
@@ -312,21 +320,22 @@
   <div class="header">
     <div class="header-content">
       <a href="/">
-        <img src="assets/sopal_logo_v1.png" alt="Sopal" class="logo">
+        <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
       </a>
-<div class="nav-links">
-  <a href="index.html">Search</a>  <!-- or just "/" -->
-  <a href="feedback.html">Feedback</a>
-  <a href="privacy.html">Privacy</a>
-  <a href="terms.html">Terms</a>
-</div>
+      <div class="nav-links">
+        <a href="index.html">Search</a>
+        <a href="interest-calculator">Interest Calculator</a>
+        <a href="due-date-calculator">Due Date Calculator</a>
+        <a href="how-to">How-To Guide</a>
+        <a href="feedback">Feedback</a>
+      </div>
     </div>
   </div>
 
   <!-- Main Content -->
   <div class="container">
     <h1 class="page-title">Terms of Service</h1>
-    <div class="last-updated">Last updated: 20 September 2025</div>
+    <div class="last-updated">Last updated: 21 September 2025</div>
 
     <!-- Table of Contents -->
     <div class="toc">
@@ -358,6 +367,7 @@
       <h2>1. Acceptance of Terms</h2>
       <p>By accessing and using Sopal Australia (Sopal) (the "Service"), you accept and agree to be bound by the terms and provision of this agreement ("Terms of Service"). If you do not agree to these terms, you should not use this Service.</p>
       <p>These Terms of Service apply to all users of the Service, including visitors, registered users, and any other users of the Service.</p>
+      <p>Any disclaimers, terms, conditions, or notices appearing elsewhere on the Sopal website or platform are incorporated by reference into these Terms of Service and form part of the agreement between you and Sopal.</p>
     </div>
 
     <!-- Service Description -->
@@ -370,7 +380,9 @@
         <li>Search functionality across adjudication decisions</li>
         <li>Document viewing and download capabilities</li>
         <li>Filtering and sorting tools</li>
-        <li>Basic analytics and insights</li>
+        <li>AI-powered analysis and question-answering features (SopalAI)</li>
+        <li>Due date calculation tools</li>
+        <li>Interest calculation tools</li>
       </ul>
 
       <h3>What We Do Not Provide</h3>
@@ -392,6 +404,7 @@
         <li><strong>Maintain security:</strong> Keep any access credentials secure and confidential</li>
         <li><strong>Use reasonable resources:</strong> Not overload or abuse our systems</li>
         <li><strong>Provide accurate information:</strong> When submitting feedback or contacting us</li>
+        <li><strong>Protect confidentiality:</strong> Not submit confidential or sensitive information through AI features</li>
       </ul>
     </div>
 
@@ -449,6 +462,7 @@
         <li>Decisions may not be available immediately upon publication</li>
         <li>Technical issues may affect search results or document access</li>
         <li>Users should verify information against official sources when critical</li>
+        <li>AI-generated responses may contain errors and should not be relied upon as authoritative</li>
       </ul>
     </div>
 
@@ -457,15 +471,21 @@
       <h2>6. Intellectual Property</h2>
 
       <h3>Adjudication Decisions</h3>
-<p>The adjudication decisions accessible through Sopal are public documents originally published by the Queensland Building and Construction Commission (QBCC). Unless otherwise indicated, these materials are made available by the QBCC under the <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International Licence (CC BY 4.0)</a>.</p>
-<ul>
-  <li>Sopal does not claim ownership of adjudication decisions.</li>
-  <li>All rights in the decisions remain with the State of Queensland and the QBCC.</li>
-  <li>When using, reproducing or sharing decisions obtained through Sopal, you must provide appropriate attribution to the QBCC as the source of the material, in accordance with the CC BY 4.0 licence.</li>
-  <li>This licence does not apply to QBCC’s logos, trademarks, or to material that is expressly excluded from the Creative Commons licence (such as some images, video or multimedia).</li>
-</ul>
-<p>By using Sopal, you acknowledge that adjudication decisions are provided for research and informational purposes only, and you agree to comply with the applicable licence terms. Sopal is not responsible for any misuse of these materials by users.</p>
+      <p>The adjudication decisions accessible through Sopal are public documents originally published by the Queensland Building and Construction Commission (QBCC). Unless otherwise indicated, these materials are made available by the QBCC under the <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International Licence (CC BY 4.0)</a>.</p>
+      <ul>
+        <li>Sopal does not claim ownership of adjudication decisions.</li>
+        <li>All rights in the decisions remain with the State of Queensland and the QBCC.</li>
+        <li>When using, reproducing or sharing decisions obtained through Sopal, you must provide appropriate attribution to the QBCC as the source of the material, in accordance with the CC BY 4.0 licence.</li>
+        <li>This licence does not apply to QBCC's logos, trademarks, or to material that is expressly excluded from the Creative Commons licence (such as some images, video or multimedia).</li>
+      </ul>
+      <p>By using Sopal, you acknowledge that adjudication decisions are provided for research and informational purposes only, and you agree to comply with the applicable licence terms. Sopal is not responsible for any misuse of these materials by users.</p>
 
+      <h3>Sopal Platform</h3>
+      <ul>
+        <li>The Sopal platform, including its search functionality, user interface, and proprietary features, is owned by Sopal Australia.</li>
+        <li>You are granted a limited, non-exclusive, non-transferable licence to use the platform for its intended purposes.</li>
+        <li>You may not reproduce, distribute, or create derivative works based on the platform without permission.</li>
+      </ul>
     </div>
 
     <!-- Disclaimers -->
@@ -479,6 +499,7 @@
         <li><strong>Availability:</strong> We do not guarantee uninterrupted or error-free service</li>
         <li><strong>Completeness:</strong> We do not warrant that all decisions are included or current</li>
         <li><strong>Fitness for Purpose:</strong> We do not warrant suitability for any particular use</li>
+        <li><strong>AI Responses:</strong> We do not warrant the accuracy or reliability of AI-generated content</li>
       </ul>
 
       <h3>Third-Party Content</h3>
@@ -502,8 +523,9 @@
         <li>Lost profits or business opportunities</li>
         <li>Data loss or corruption</li>
         <li>Legal costs or professional fees</li>
-        <li>Decisions made based on platform content</li>
+        <li>Decisions made based on platform content or AI responses</li>
         <li>Service interruptions or technical issues</li>
+        <li>Reliance on calculation tools or AI-generated analysis</li>
       </ul>
     </div>
 
@@ -516,6 +538,7 @@
         <li>Your violation of these Terms of Service</li>
         <li>Your violation of any third-party rights, including intellectual property rights</li>
         <li>Any content you submit or transmit through the Service</li>
+        <li>Your reliance on information, calculations, or AI responses provided by the Service</li>
       </ul>
     </div>
 
@@ -566,7 +589,7 @@
         <h4>Questions About These Terms?</h4>
         <p>If you have questions about these Terms of Service, please contact us:</p>
         <p><strong>Email:</strong> info@sopal.com.au</p>
-        <p><strong>Feedback Form:</strong> <a href="/feedback">Submit through our platform</a></p>
+        <p><strong>Feedback Form:</strong> <a href="/feedback.html">Submit through our platform</a></p>
         <p><strong>Response Time:</strong> We aim to respond to legal inquiries within 7 business days</p>
       </div>
     </div>
@@ -577,17 +600,21 @@
     </div>
   </div>
 
-  <!-- Footer -->
   <footer class="footer">
     <div class="footer-content">
       <div class="footer-left">
-        <img src="assets/sopal_logo_v1.png" alt="Sopal" class="footer-logo">
+        <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
         <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
       </div>
+
       <div class="footer-links">
-        <a href="/feedback.html">Send feedback</a>
-        <a href="/privacy.html">Privacy</a>
-        <a href="/terms.html">Terms</a>
+        <a href="index.html">Search</a>
+        <a href="interest-calculator">Interest Calculator</a>
+        <a href="due-date-calculator">Due Date Calculator</a>
+        <a href="how-to">How-To Guide</a>
+        <a href="feedback">Feedback</a>
+        <a href="privacy">Privacy</a>
+        <a href="terms">Terms</a>
       </div>
     </div>
     <div class="footer-bottom">
