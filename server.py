@@ -1,4 +1,4 @@
-import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io
+import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io, json
 from urllib.parse import unquote_plus
 from fastapi import FastAPI, Query, Form, Path, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse, FileResponse
@@ -632,7 +632,7 @@ def summarise(decision_id: str = Path(...)):
         text = r["full_text"][:300000]
 
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[
                 {
                     "role": "system",
@@ -655,7 +655,7 @@ Summarise this adjudication decision in 5–7 bullet points, covering:
 - The parties and the works
 - Payment claim amount and payment schedule response
 - Any jurisdictional challenges
-- The factual disputes and evidence
+- The factual disputes and evidence (provide at least 5 sentences of detail on this point, be thorough)
 - The adjudicator's reasoning
 - The final outcome, amount awarded, and fee split
 Don't actually title it "Summary" or the like please, go straight into bullet points
@@ -665,7 +665,7 @@ Decision text:
 """
                 }
             ],
-            max_tokens=800,
+            max_tokens=1024,
         )
 
         summary = resp.choices[0].message.content.strip()
@@ -720,32 +720,42 @@ Details:
 
 # ---------- AI Ask ----------
 @app.post("/ask/{decision_id}")
-def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
+def ask_ai(decision_id: str = Path(...), question: str = Form(...), history: str = Form("[]")):
     try:
         row = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
         if not row or not row["full_text"]:
             raise HTTPException(status_code=404, detail="Decision not found")
 
-        text = row["full_text"][:15000]
+        text = row["full_text"][:30000] # Increased context for chat
+
+        try:
+            chat_history = json.loads(history)
+            if not isinstance(chat_history, list):
+                chat_history = []
+        except json.JSONDecodeError:
+            chat_history = []
+
+        system_prompt = {
+            "role": "system",
+            "content": (
+                "You are SopalAI, assisting users with adjudication decisions under the BIF Act or BCIPA. "
+                "Respond directly to the user's question as if they asked you about the decision. "
+                "Do not say 'the adjudication decision you provided' or 'the text you gave me'. "
+                "Write in clear, plain English with headings and bullet points formatted in HTML."
+                "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
+                "not Markdown (#, ##, ###). The user has already seen your initial summary, "
+                "so your follow-up answers should be concise and directly address their question."
+            )
+        }
+        
+        context_prompt = {"role": "user", "content": f"Here is the context from the decision document. Answer questions based on this. CONTEXT:\n{text}"}
+
+        messages = [system_prompt, context_prompt] + chat_history + [{"role": "user", "content": question}]
 
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are SopalAI, assisting users with adjudication decisions under the BIF Act or BCIPA. "
-                        "Respond directly to the user's question as if they asked you about the decision. "
-                        "Do not say 'the adjudication decision you provided' or 'the text you gave me'. "
-                        "Write in clear, plain English with headings and bullet points formatted in HTML."
-                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
-                        "not Markdown (#, ##, ###)."
-                    )
-                },
-                {"role": "user", "content": f"Decision text:\n{text}"},
-                {"role": "user", "content": f"Question: {question}"}
-            ],
-            max_tokens=600
+            model="gpt-4o",
+            messages=messages,
+            max_tokens=1024
         )
 
         answer = resp.choices[0].message.content.strip()
@@ -753,6 +763,7 @@ def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
     except Exception as e:
         print("ERROR in /ask:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
+
 
 # ---------- Compliance Checker AI Endpoint ----------
 
@@ -837,7 +848,7 @@ async def analyse_document(doc_type: str = Form(...), file: UploadFile = File(..
 
         # Make the call to OpenAI API
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -876,4 +887,3 @@ async def serve_html_page(path_name: str):
 
 # keep the old mount for static assets like CSS/JS/images
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
-
