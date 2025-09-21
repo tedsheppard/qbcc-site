@@ -1,762 +1,1103 @@
-import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io
-from urllib.parse import unquote_plus
-from fastapi import FastAPI, Query, Form, Path, HTTPException
-from fastapi.responses import JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
-from email.message import EmailMessage
-import aiosmtplib
-from openai import OpenAI
-from google.cloud import storage
-from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timedelta
+<!doctype html>
+<html lang="en">
+<head>
+ <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-# ---------------- setup ----------------
-ROOT = os.path.dirname(os.path.abspath(__file__))
-SITE_DIR = os.path.join(ROOT, "site")
-DB_PATH = "/tmp/qbcc.db"
+  gtag('config', 'G-QEN3X3DQLR');
+</script>
+ <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+<link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
 
-# Download DB from GCS on startup if it doesn't exist in /tmp
-if not os.path.exists(DB_PATH):
-    try:
-        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
-        gcs_db_object_name = os.getenv("GCS_DB_OBJECT_NAME", "qbcc.db")
-        
-        if gcs_bucket_name:
-            print(f"Database not found at {DB_PATH}. Downloading from GCS bucket '{gcs_bucket_name}'...")
-            storage_client = storage.Client()
-            bucket = storage_client.bucket(gcs_bucket_name)
-            blob = bucket.blob(gcs_db_object_name)
-            blob.download_to_filename(DB_PATH)
-            print("Database downloaded successfully.")
-        else:
-            # Fallback for local development if GCS env var isn't set
-            print("GCS_BUCKET_NAME not set. Trying to copy local 'qbcc.db'.")
-            if os.path.exists("qbcc.db"):
-                shutil.copy("qbcc.db", DB_PATH)
-            else:
-                print("FATAL: No local 'qbcc.db' found and GCS bucket not configured.")
-    except Exception as e:
-        print(f"FATAL: Failed to download database from GCS. Error: {e}")
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
+  <meta charset="utf-8">
+  <title>Sopal – Adjudication Search</title>
+  <meta name="description" content="Sopal is an intelligent search tool for finding adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act) in Queensland, Australia. Search decisions by keyword, adjudicator, date, and more.">
+  <meta name="keywords" content="Sopal, adjudication decisions, BIF Act, Building Industry Fairness, Security of Payment Act, Queensland, construction law, payment disputes, QBCC search, adjudicator search, construction adjudication">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* Header from Privacy Page */
+  .header {
+    background: #fdfdfd;
+    padding: 20px 25px;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-content {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .logo {
+    height: 31px;
+    margin-right: 20px;
+  }
+  .nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+  }
+  .nav-links a {
+    color: black; 
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover {
+    color: #00c97c;
+  }
+  .nav-links a.active {
+    color: #008a5c; /* Darker green for active link */
+    font-weight: 600;
+  }
 
-# sqlite connection
-con = sqlite3.connect(DB_PATH, check_same_thread=False)
-con.row_factory = sqlite3.Row
-con.execute("PRAGMA cache_size = -20000")
-con.execute("PRAGMA temp_store = MEMORY")
-con.execute("PRAGMA mmap_size = 30000000000")
+  /* Light theme overrides */
+  .light {
+    background: #ffffff !important;
+    color: #222 !important;
+  }
 
-# --- RBA Interest Rate Setup ---
-def setup_rba_table():
-    con.execute("""
-    CREATE TABLE IF NOT EXISTS rba_rates (
-        rate_date DATE PRIMARY KEY,
-        rate_value REAL NOT NULL
-    )
-    """)
-    con.commit()
+  .light body {
+    background: #ffffff !important;
+    color: #222 !important;
+  }
 
-def fetch_and_update_rba_rates():
-    print("Scheduler: Starting RBA rate update job...")
-    try:
-        url = "https://www.rba.gov.au/statistics/tables/xls/f01d.xlsx"
-        
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
+  .light header {
+    background: #fdfdfd !important;
+    border-bottom: 1px solid #ccc !important;
+  }
+  .light header h1 { color: #000 !important; }
+  .light #themeToggle { color: #000 !important; }
 
-        excel_data = io.BytesIO(response.content)
-        df = pd.read_excel(excel_data, sheet_name='Data', header=1)
-        
-        date_col = 'Title' 
-        rate_col = 'EOD 3-month BABs/NCDs'
+  .light .search-bar {
+    background: #ffffff !important;
+    border: 1px solid #ccc !important;
+  }
+  .light .search-bar input { color: #000 !important; }
 
-        if date_col not in df.columns or rate_col not in df.columns:
-            print(f"Scheduler ERROR: Required columns ('{date_col}', '{rate_col}') not found in RBA file.")
-            return
+  .light .filters input,
+  .light .filters select {
+    background: #ffffff !important;
+    border: 1px solid #ccc !important;
+    color: #000 !important;
+  }
 
-        rates_df = df[[date_col, rate_col]].copy()
-        rates_df.columns = ['rate_date', 'rate_value']
-        
-        rates_df['rate_date'] = pd.to_datetime(rates_df['rate_date'], errors='coerce')
-        rates_df.dropna(subset=['rate_date', 'rate_value'], inplace=True)
-        
-        rates_df['rate_date'] = rates_df['rate_date'].dt.date
+  .light #results { background: #ffffff !important; }
+  .light .result { border-bottom: 1px solid #ddd !important; }
+  .light .result h3 { color: #000 !important; }
+  .light .meta { color: #555 !important; }
+  .light .snippet {
+    background: #f7f7f7 !important;
+    color: #222 !important;
+    border: 0.5px solid #ddd !important;
+  }
+  .light .pagination button { color: #8BD69A !important; }
 
-        cursor = con.cursor()
-        for index, row in rates_df.iterrows():
-            cursor.execute("""
-                INSERT OR IGNORE INTO rba_rates (rate_date, rate_value) VALUES (?, ?)
-            """, (row['rate_date'], row['rate_value']))
-        con.commit()
-        print(f"Scheduler: RBA rate update complete. {len(rates_df)} rows processed.")
+  /* Theme toggle button */
+  #themeToggle {
+    background: none;
+    border: none;
+    font-size: 11px;
+    cursor: pointer;
+    color: white;
+    opacity: 0.8;
+  }
+  #themeToggle:hover { opacity: 1; }
+  .light #themeToggle { color: #000; }
 
-    except Exception as e:
-        print(f"Scheduler ERROR: Failed to fetch or update RBA rates. Error: {e}")
+  /* Base body + main layout */
+body {
+  font-family: Inter, sans-serif;
+  margin: 0;
+  background: rgba(33,33,33,255);
+  color: #e4e4e4;
+  font-size: 80%;
+}
 
-# Setup and run the scheduler
-setup_rba_table()
-scheduler = BackgroundScheduler()
-scheduler.add_job(fetch_and_update_rba_rates, 'interval', days=1)
-scheduler.start()
-# Run once on startup as well
-fetch_and_update_rba_rates()
+  /* Main content alignment */
+  main {
+    max-width: 1200px;
+    margin: 35px auto 0; /* Centers and adds top margin */
+    padding: 0 25px; /* Matches header horizontal padding */
+  }
+
+  /* Search header */
+  .search-header {
+    background: #fcfcfc;
+    padding: 20px 25px;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .search-header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .search-header .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .search-header .search-bar {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    padding: 6px 15px; /* Slightly smaller height */
+    box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+    width: 100%;
+    max-width: 800px; /* Gives the search bar a max width so it doesn't look too wide */
+  }
+
+.search-header .search-bar input {
+  flex: 1;
+  padding: 6px;
+  font-size: 13px; /* Increased font size */
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #000;
+}
+
+.search-header .search-bar button {
+  background: #10a37f;
+  border: none;
+  color: white;
+  padding: 8px 16px; /* Adjusted padding for new height */
+  border-radius: 18px;
+  cursor: pointer;
+  font-size: 13px; /* Match input text size */
+}
+
+  .search-header .search-bar button:hover { background: #0d8a6c; }
+
+  .search-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+  }
+
+  #results { margin-top: 20px; }
+  .result {
+    padding: 20px 0;
+    border-bottom: 1px solid #ddd;
+  }
+  .result h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+  }
+  .result h3 a {
+      color: #fff; /* White for dark mode titles */
+  }
+   .light .result h3 a {
+      color: #000; /* Black for light mode titles */
+  }
+
+  .meta {
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 8px;
+  }
+  .snippet {
+    background: rgba(24,24,24,255);
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #ddd;
+  }
+  mark {
+    background: #8BD69A;
+    color: black;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+  
+  /* General link styling */
+  a {
+    color: black;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  a:hover {
+    color: #00c97c; /* Green on hover */
+    text-decoration: none;
+  }
+  
+  /* NEW: Specific style for result action links */
+  .result .open-btn {
+      color: #0066cc;
+  }
+   .result .open-btn:hover {
+      color: #004c99;
+      text-decoration: underline;
+  }
 
 
-# OpenAI
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-con.execute("""
-CREATE TABLE IF NOT EXISTS ai_summaries (
-    decision_id TEXT PRIMARY KEY,
-    summary TEXT
-)
-""")
-con.commit()
+  /* Pagination */
+  .pagination {
+    margin: 30px 0;
+    display: flex;
+    justify-content: center; /* Changed from flex-end */
+    flex-wrap: wrap; /* Add wrap for mobile */
+    gap: 6px;
+    font-size: 14px;
+  }
+  .pagination button {
+    background: transparent;
+    border: none;
+    color: #8BD69A;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+  .pagination button.active {
+    font-weight: bold;
+    border-bottom: 2px solid #8BD69A;
+  }
+  .pagination button:hover { text-decoration: underline; }
 
-# ---------------- ensure FTS ----------------
-def ensure_fts():
-    try:
-        con.execute("DROP TABLE IF EXISTS fts;")
-        con.execute("CREATE VIRTUAL TABLE fts USING fts4(full_text, content='docs_fresh', tokenize=unicode61);")
-        con.execute("INSERT INTO fts(fts) VALUES('rebuild');")
-        con.commit()
-    except Exception as e:
-        print("Error rebuilding FTS index:", e)
+  /* Footer */
+  .footer {
+    background: #fcfcfc;
+    color: #333;
+    padding: 40px 25px 20px;
+    margin-top: 60px;
+    border-top: 1px solid #ddd;
+  }
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: auto;
+  }
+  .footer-left { 
+    max-width: 400px;
+    text-align: left;
+  }
+  .footer-logo { height: 24px; margin-bottom: 10px; }
+  
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 40px;
+    text-align: left;
+  }
+  .footer-links a {
+    font-size: 13px; /* Smaller text */
+  }
 
-ensure_fts()
+  .footer-bottom {
+    text-align: center;
+    border-top: 1px solid #eee;
+    margin-top: 30px; /* Increased space */
+    padding-top: 20px;
+    width: 100%;
+    font-size: 0.85em;
+    color: #666;
+  }
 
-# ---------------- meilisearch config ----------------
-MEILI_URL = os.getenv("MEILI_URL", "http://127.0.0.1:7700")
-MEILI_KEY = os.getenv("MEILI_MASTER_KEY", "")
-MEILI_INDEX = "decisions"
+  /* Filters sidebar (disabled for now) */
+  .filters-sidebar { display: none !important; }
 
-app = FastAPI()
+  /* Loading bar */
+  #loadingBar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 4px;
+    background: linear-gradient(to left, #21db87, #42ffaa);
+    transition: width 0.7s ease;
+    z-index: 9999;
+  }
 
-# ---------------- helpers ----------------
-def normalize_query(q: str) -> str:
-    s = q or ""
-    for _ in range(2):
-        s2 = unquote_plus(s)
-        if s2 == s:
-            break
-        s = s2
-    s = unicodedata.normalize("NFKC", s)
-    
-    replacements = {
-        'â€œ': '"', 'â€': '"', 'â€˜': "'", 'â€™': "'", 
-        'â€"': '-', 'â€"': '-', 'â€': '-'
+ /* Dark mode unified overrides */
+.dark body {
+  background: #0d0d0d !important;
+  color: #e0e0e0 !important;
+}
+
+.dark header,
+.dark .header, /* Added dark mode for main header */
+.dark footer,
+.dark .search-header,
+.dark .search-bar,
+.dark .results-limit {
+  background: #141414 !important;
+  color: #f0f0f0 !important;
+  border-color: #333 !important;
+}
+
+.dark .nav-links a, .dark .footer-links a, .dark a {
+  color: #f0f0f0; /* Light text for dark mode header */
+}
+.dark a:hover {
+  color: #00c97c;
+}
+.dark .nav-links a.active {
+    color: #008a5c; /* Darker green for active link */
+}
+
+
+.dark .snippet {
+  background: #141414 !important;
+  border: 1px solid #222 !important;
+}
+
+.dark .result .open-btn { color: #4da6ff !important; }
+.dark .pagination button.active { border-bottom: 2px solid #4da6ff; }
+
+/* --- Fix dark mode result cards + footer divider --- */
+.dark #results,
+.dark #results .result {
+  border: none !important;
+  color: #f0f0f0 !important;
+}
+
+.dark .snippet {
+  background: #141414 !important;  /* slight contrast inside results */
+  border: 1px solid #222 !important;
+  color: #ddd !important;
+}
+
+.dark .footer-bottom {
+  border-top: 1px solid #333 !important; /* subtle divider */
+  color: #aaa !important;
+}
+
+/* Search button colors */
+.search-header .search-bar button {
+  background: #00c97c;  /* brighter green */
+  border: none;
+  color: white;
+  padding: 8px 16px; /* Adjusted padding for new height */
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px; /* Match input text size */
+}
+.search-header .search-bar button:hover {
+  background: #00a568;  /* darker on hover */
+}
+
+/* Dark mode search bar input text */
+.dark .search-bar input {
+  color: #fff !important;
+}
+
+ /* Base style */
+.results-limit {
+  appearance: none;         /* hide default arrow */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  background: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 5px 24px 5px 12px; /* Adjusted padding */
+  font-size: 12px; /* Reduced font size */
+  cursor: pointer;
+  transition: background 0.2s, border 0.2s;
+  position: relative;
+  width: 180px; /* NEW: Set a fixed width */
+  text-align: left; /* NEW: Align text to the left */
+}
+.dark .results-limit {
+  background: #1c1c1c;
+  color: #fff;
+  border-color: #333;
+}
+
+
+/* Hover effect: greyed rectangle */
+.results-limit:hover {
+  background: #f7f7f7;
+  border-color: #aaa;
+}
+.dark .results-limit:hover {
+  background: #2a2a2a;
+  border-color: #555;
+}
+
+/* Add a custom arrow */
+.results-limit::after {
+  content: "▾";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #aaa;
+}
+
+
+  :root {
+    --primary-green: #08cc7c;
+  }
+
+/* Highlight style */
+mark {
+  background: #b9f6ca;   /* flat light green */
+  color: #000;           /* dark text */
+  padding: 0 1px;        /* very minimal padding */
+  border-radius: 1px;    /* subtle rounding */
+  font-weight: inherit;  /* don’t over-emphasise */
+}
+
+/* Dark mode highlight */
+.dark mark {
+  background: #2e7d32;   /* deep green for dark background */
+  color: #e0ffe0;        /* light text for contrast */
+}
+
+ /* --- Mobile responsiveness --- */
+@media (max-width: 768px) {
+  /* Header from Privacy Page */
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .nav-links {
+    margin: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .footer-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .footer-left {
+    margin-bottom: 25px;
+  }
+  .footer-links {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on mobile */
+    gap: 15px;
+  }
+
+  main {
+    padding: 0 13px;
+    max-width: 100%;
+  }
+
+  .search-header {
+    padding: 13px;
+  }
+  
+  .search-header-content {
+    padding: 0;
+  }
+
+  .search-header .top-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 13px;
+  }
+  
+  .search-header .search-bar {
+    max-width: none;
+  }
+}
+
+ #status, #total {
+  margin: 0 0 10px 0;
+  padding: 0;
+  font-size: 11px;
+  color: #666;
+  text-align: left;
+}
+
+
+ .ai-summary, .ai-answer {
+  max-width: 650px;
+  background: #f8f8f8;
+  border-left: 3px solid #00c97c;
+  padding: 10px 14px;
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #222;
+  white-space: normal;
+}
+
+.dark .ai-summary, .dark .ai-answer {
+  background: #1a1a1a;
+  border-left: 3px solid #21db87;
+  color: #eee;
+}
+
+.ai-summary ul, .ai-summary li {
+  margin: 4px 0;
+  padding: 0;
+  list-style-type: disc;
+  margin-left: 18px;
+}
+
+ /* ---- Ask SopalAI bar ---- */
+.qa-box {
+  display: flex;
+  align-items: center;
+  margin-top: 12px;
+  max-width: 600px;
+}
+
+.qa-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 20px 0 0 20px;
+  font-size: 13px;
+  outline: none;
+}
+
+.qa-button {
+  background: #10a37f;
+  border: none;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 0 20px 20px 0;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.qa-button:hover {
+  background: #0d8a6c;
+}
+
+/* ---- Inverted AI summary/answer boxes ---- */
+.ai-summary, .ai-answer {
+  max-width: 650px;
+  border-radius: 6px;
+  padding: 14px;
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: normal;
+}
+
+/* Light mode: dark box */
+.light .ai-summary, .light .ai-answer {
+  background: #222;
+  color: #f5f5f5;
+}
+
+/* Dark mode: light box */
+.dark .ai-summary, .dark .ai-answer {
+  background: #f5f5f5;
+  color: #111;
+}
+
+.ai-output {
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #222;
+  max-width: 800px;
+}
+
+.ai-output p {
+  margin: 4px 0 6px 0;
+}
+
+.ai-output strong {
+  display: block;
+  margin: 10px 0 4px 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ai-output ul {
+  margin: 4px 0 8px 18px;
+  padding: 0;
+}
+
+.ai-output li {
+  margin: 2px 0;
+}
+
+.ai-output h3,
+.ai-output h4 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 10px 0 4px 0;
+}
+
+
+
+</style>
+
+</head>
+  <body class="light">
+    <div id="loadingBar"></div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-content">
+    <a href="/">
+      <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+    </a>
+    <div class="nav-links">
+      <a href="index.html" class="active">Search</a>
+      <a href="interest-calculator.html">Interest Calculator</a>
+      <a href="due-date-calculator.html">Due Date Calculator</a>
+      <a href="feedback.html">Feedback</a>
+      <a href="how-to.html">How-To Guide</a>
+    </div>
+  </div>
+</div>
+
+<div class="search-header">
+  <div class="search-header-content">
+    <div class="top-row">
+      <div class="search-bar">
+        <input id="q" placeholder="Search adjudication decisions… (e.g. ''s 68'' AND ''KDV''; ''EOT'' w/10 ''time bar'')">
+        <button onclick="runSearch()">Search</button>
+      </div>
+      <button id="themeToggle" onclick="toggleTheme()">Switch to Dark Mode 🌙</button>
+    </div>
+    <div class="search-controls">
+      <select id="limit" class="results-limit">
+        <option value="20">20 results</option>
+        <option value="50">50 results</option>
+        <option value="100">100 results</option>
+      </select>
+  
+     <select id="sort" class="results-limit">
+       <option value="relevance">Relevance</option>
+       <option value="newest" selected>Date: Newest to Oldest</option>
+       <option value="oldest">Date: Oldest to Newest</option>
+       <option value="atoz">A → Z (Claimant)</option>
+       <option value="ztoa">Z → A (Claimant)</option>
+     </select>
+    </div>
+  </div>
+</div>
+
+    <!-- Sidebar Filters -->
+    <aside class="filters-sidebar">
+      <h3>Filters</h3>
+
+      <!-- Jurisdiction -->
+      <label>
+        <input type="checkbox" id="jurisdiction"> Jurisdiction
+      </label>
+
+      <!-- Vexatious/Frivolous -->
+      <label>
+        <input type="checkbox" id="vexatious"> Vexatious / Frivolous
+      </label>
+
+      <!-- Year -->
+      <label for="year">Year</label>
+      <select id="year">
+        <option value="">Any</option>
+        <option>2025</option>
+        <option>2024</option>
+        <option>2023</option>
+        <!-- add dynamically later -->
+      </select>
+
+      <!-- Act -->
+      <label for="act">Act</label>
+      <select id="act">
+        <option value="">Any</option>
+        <option value="bif">BIF Act</option>
+        <option value="bcipa">BCIPA</option>
+      </select>
+
+      <!-- Amount ranges -->
+      <label>Payment Claim ($)</label>
+      <div id="claim-slider"></div>
+      <div class="slider-inputs">
+        <input type="number" id="claim-min" placeholder="Min">
+        <input type="number" id="claim-max" placeholder="Max">
+      </div>
+
+      <label>Payment Schedule ($)</label>
+      <div id="schedule-slider"></div>
+      <div class="slider-inputs">
+        <input type="number" id="schedule-min" placeholder="Min">
+        <input type="number" id="schedule-max" placeholder="Max">
+      </div>
+
+      <label>Adjudicated Amount ($)</label>
+      <div id="adj-slider"></div>
+      <div class="slider-inputs">
+        <input type="number" id="adj-min" placeholder="Min">
+        <input type="number" id="adj-max" placeholder="Max">
+      </div>
+
+      <button id="applyFilters">Apply Filters</button>
+    </aside>
+
+
+    <main>
+      <div id="status">Ready.</div>
+      <div id="total"></div>
+      <div id="results"></div>
+      <div class="pagination" id="pagination"></div>
+    </main>
+
+
+    <script>
+    function $(sel){ return document.querySelector(sel); }
+    function sanitize(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function getFileName(path){ if (!path) return ''; return path.split('/').pop(); }
+    function buildPdfLinks(path){
+      if (!path) return null;
+      const fileName = path.split("/").pop();  // just the filename
+      const open = `https://storage.googleapis.com/sopal-bucket/pdfs/${fileName}`;
+      return { open, download: open };
     }
-    for old, new in replacements.items():
-        s = s.replace(old, new)
-    
-    s = re.sub(r"\s+", " ", s).strip()
-    return s
 
-def escape_fts_phrase(s: str) -> str:
-    return s.replace('"', '""')
+    let state = { q:'', claimant:'', respondent:'', limit:20, offset:0, total:0 };
 
-def normalize_default(q: str) -> str:
-    if not re.search(r'"|\bNEAR/\d+\b|\bw/\d+\b|\bAND\b|\bOR\b|\bNOT\b|\(|\)', q or "", flags=re.I):
-        toks = re.findall(r'\w+\*?', q or "")
-        q = ' AND '.join(toks)
-    return q
+    async function runSearch(page=1){
+      window.scrollTo(0, 0); // Scroll to top on new search/page
+      $('#status').textContent = 'Searching…';
+      startLoadingBar();
 
-def _fix_unbalanced_quotes(s: str) -> str:
-    if s.count('"') % 2 == 1:
-        s = s + '"'
-    return s
+      state.q = normalizeInput($('#q')?.value);
+      state.limit = +($('#limit')?.value || 20);
+      state.offset = (page-1) * state.limit;
+      const params = new URLSearchParams();
+      state.sort = ($('#sort')?.value || 'newest');
+      params.set('sort', state.sort);
+      if (state.q) params.set('q', state.q);
+      params.set('limit', state.limit);
+      params.set('offset', state.offset);
+      
+      const res = await fetch(`/search_fast?${params.toString()}`, { headers: { 'Accept':'application/json' }});
+      const data = await res.json().catch(()=>({}));
 
-def expand_wildcards(q: str) -> str:
-    print(f"Before wildcard expansion: {q}")
-    expanded = re.sub(r'(\w+)!', r'\1*', q)
-    print(f"After wildcard expansion: {expanded}")
-    return expanded
+      finishLoadingBar();
 
-def _parse_near_robust(q: str) -> str | None:
-    s = _fix_unbalanced_quotes(q)
-    
-    if not re.search(r'\b(?:w|near)\s*/\s*\d+\b', s, flags=re.I):
-        return None
-    
-    s = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', s, flags=re.I)
+      state.total = data.total || 0;
 
-    near_match = re.search(r'NEAR/(\d+)', s, flags=re.I)
-    if not near_match:
-        return None
-    dist = int(near_match.group(1))
-    
-    parts = re.split(r'\s+NEAR/\d+\s+', s, flags=re.I)
-    if len(parts) == 2:
-        left_part = parts[0].strip()
-        right_part = parts[1].strip()
+      $('#total').textContent = `Total: ${state.total.toLocaleString()} results`;
+      $('#status').textContent = 'Done.';
 
-        def clean_term(term):
-            term = term.strip()
-            while term.startswith('(') and term.endswith(')'):
-                term = term[1:-1].strip()
-            if term.startswith('"') and term.endswith('"'):
-                term = term[1:-1].strip()
-            return term
+      const items = data.items || [];
+      $('#results').innerHTML = items.length
+        ? items.map(it => renderItem(it, state.q && state.q.length > 0)).join('')
+        : '<p>No results.</p>';
 
-        left_clean = clean_term(left_part)
-        right_clean = clean_term(right_part)
-            
-        print(f"_parse_near_robust - left: '{left_clean}', dist: {dist}, right: '{right_clean}'")
-        return f'"{left_clean}" NEAR/{dist} "{right_clean}"'
-    
-    return None
-
-def preprocess_sqlite_query(q: str) -> str:
-    print(f"preprocess_sqlite_query input: {q}")
-    
-    q = expand_wildcards(q)
-    print(f"After expand_wildcards: {q}")
-    
-    q = re.sub(r'\band\b', 'AND', q, flags=re.I)
-    q = re.sub(r'\bor\b', 'OR', q, flags=re.I)  
-    q = re.sub(r'\bnot\b', 'NOT', q, flags=re.I)
-    q = re.sub(r'\b(?:w|near)\s*/\s*(\d+)\b', r'NEAR/\1', q, flags=re.I)
-    print(f"After operator normalization: {q}")
-
-    near_group_pattern = re.compile(r'(".*?"|\S+)\s+NEAR/(\d+)\s+\((.*?)\)', flags=re.I)
-    m = near_group_pattern.search(q)
-    
-    if m:
-        left_term = m.group(1).strip()
-        dist = m.group(2)
-        right_group = m.group(3).strip()
-        
-        operator = None
-        terms = []
-        if ' AND ' in right_group:
-            operator = ' AND '
-            terms = re.split(r'\s+AND\s+', right_group, flags=re.I)
-        elif ' OR ' in right_group:
-            operator = ' OR '
-            terms = re.split(r'\s+OR\s+', right_group, flags=re.I)
-        
-        if operator and len(terms) > 1:
-            expanded_clauses = []
-            for term in terms:
-                clean_left = left_term.strip().strip('"')
-                clean_right = term.strip().strip('"')
-                expanded_clauses.append(f'("{clean_left}" NEAR/{dist} "{clean_right}")')
-            
-            final_query = operator.join(expanded_clauses)
-            print(f"Expanded NEAR/{operator.strip()} query to: {final_query}")
-            return final_query
-
-    near_expr = _parse_near_robust(q)
-    if near_expr:
-        print(f"Found NEAR expression: {near_expr}")
-        return near_expr
-
-    if re.search(r'\b(AND|OR|NOT)\b', q, flags=re.I):
-        print(f"Contains boolean operators, returning: {q.strip()}")
-        return q.strip()
-
-    result = normalize_default(q)
-    print(f"normalize_default result: {result}")
-    return result
-
-def get_highlight_terms(query: str) -> tuple[list[str], list[str]]:
-    phrase_terms = []
-    word_terms = []
-    
-    phrases = re.findall(r'"([^"]+)"', query)
-    for phrase in phrases:
-        phrase_terms.append(phrase)
-    
-    query_no_quotes = re.sub(r'"[^"]*"', '', query)
-    words = re.findall(r'\b\w+\*?\b', query_no_quotes)
-    
-    operators = {'AND', 'OR', 'NOT', 'NEAR', 'W'}
-    for word in words:
-        if (word.upper() not in operators and 
-            not word.isdigit() and 
-            not re.match(r'\d+', word)):
-            word_terms.append(word)
-    
-    print(f"get_highlight_terms - phrase_terms: {phrase_terms}, word_terms: {word_terms}")
-    return phrase_terms, word_terms
-
-_word_re = re.compile(r"\w+", flags=re.UNICODE)
-
-def _tokenize(text: str):
-    return _word_re.findall(text.lower())
-
-def _phrase_positions(tokens: list[str], phrase: str) -> list[int]:
-    words = _word_re.findall(phrase.lower())
-    if not words:
-        return []
-    if len(words) == 1:
-        w = words[0]
-        return [i for i, t in enumerate(tokens) if t == w]
-    L = len(words)
-    out = []
-    for i in range(0, len(tokens) - L + 1):
-        if tokens[i:i+L] == words:
-            out.append(i)
-    return out
-
-def _extract_near_components(nq2: str):
-    m = re.search(r'"([^"]+)"\s+NEAR/(\d+)\s+"([^"]+)"', nq2, flags=re.I)
-    if not m:
-        return None
-    return m.group(1), int(m.group(2)), m.group(3)
-
-def _filter_rows_for_true_phrase_near(rows, nq2):
-    comp = _extract_near_components(nq2)
-    if not comp:
-        return rows
-    left, dist, right = comp
-    left_is_phrase  = ' ' in left.strip()
-    right_is_phrase = ' ' in right.strip()
-    if not (left_is_phrase or right_is_phrase):
-        return rows
-
-    filtered = []
-    rowids = [r["rowid"] for r in rows]
-    if not rowids:
-        return rows
-
-    qmarks = ",".join(["?"]*len(rowids))
-    text_rows = con.execute(f"SELECT rowid, full_text FROM docs_fresh WHERE rowid IN ({qmarks})", rowids).fetchall()
-    text_map = {tr["rowid"]: tr["full_text"] or "" for tr in text_rows}
-
-    for r in rows:
-        ft = text_map.get(r["rowid"], "")
-        if not ft:
-            continue
-        toks = _tokenize(ft)
-        left_positions  = _phrase_positions(toks, left)
-        right_positions = _phrase_positions(toks, right)
-        if not left_positions or not right_positions:
-            continue
-
-        ok = False
-        for li in left_positions:
-            for ri in right_positions:
-                if abs(ri - li) <= dist:
-                    ok = True
-                    break
-            if ok:
-                break
-        if ok:
-            filtered.append(r)
-    return filtered
-
-def highlight_wildcard_matches(text: str, stem: str) -> str:
-    pattern = f'\\b({re.escape(stem)}\\w*)'
-    return re.sub(pattern, r'<mark>\1</mark>', text, flags=re.I)
-
-# ---------------- routes ----------------
-@app.get("/health")
-def health():
-    return {"ok": True}
-
-@app.get("/get_interest_rate")
-def get_interest_rate(start_date_str: str = Query(..., alias="startDate"), end_date_str: str = Query(..., alias="endDate")):
-    try:
-        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-        
-        cursor = con.cursor()
-        
-        # Create a temporary table of all dates in the range
-        cursor.execute("CREATE TEMP TABLE date_range (day DATE)")
-        current_date = start_date
-        while current_date <= end_date:
-            cursor.execute("INSERT INTO date_range (day) VALUES (?)", (current_date,))
-            current_date += timedelta(days=1)
-
-        # For each date in our range, find the most recent RBA rate
-        cursor.execute("""
-            SELECT 
-                dr.day,
-                (SELECT rate_value FROM rba_rates WHERE rate_date <= dr.day ORDER BY rate_date DESC LIMIT 1) as rate
-            FROM date_range dr
-        """)
-        
-        rows = cursor.fetchall()
-        
-        if not rows:
-             raise HTTPException(status_code=404, detail="No interest rates found for the specified date range.")
-
-        # Convert rows to a list of dictionaries
-        daily_rates = [{"date": row["day"], "rate": row["rate"]} for row in rows if row["rate"] is not None]
-
-        if not daily_rates:
-             raise HTTPException(status_code=404, detail="No valid interest rates could be mapped to the specified date range.")
-
-        return {"dailyRates": daily_rates}
-
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format. Please use YYYY-MM-DD.")
-    except Exception as e:
-        print(f"Error in /get_interest_rate: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@app.get("/search_fast")
-def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newest"):
-    q_norm = normalize_query(q)
-    nq = q_norm
-
-    nq_expanded = expand_wildcards(nq)
-    
-    is_complex_query = (
-        re.search(r'\b(AND|OR|NOT)\b', nq, flags=re.I) or
-        re.search(r'\bw/\d+\b', nq, flags=re.I) or
-        re.search(r'\bNEAR/\d+\b', nq, flags=re.I) or
-        nq.startswith('"') or
-        '!' in nq or
-        '*' in nq_expanded or
-        nq != nq_expanded
-    )
-
-    if is_complex_query:
-        try:
-            nq2 = preprocess_sqlite_query(nq)
-            print("Executing MATCH with:", nq2)
-            
-            total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (nq2,)).fetchone()[0]
-
-            order_clause = ""
-            if sort == "newest":
-                order_clause = "ORDER BY m.decision_date_norm DESC"
-            elif sort == "oldest":
-                order_clause = "ORDER BY m.decision_date_norm ASC"
-            elif sort == "atoz":
-                order_clause = "ORDER BY m.claimant ASC"
-            elif sort == "ztoa":
-                order_clause = "ORDER BY m.claimant DESC"
-
-            if order_clause:
-                sql = f"""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  JOIN docs_fresh d ON fts.rowid = d.rowid
-                  LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-                  WHERE fts MATCH ?
-                  {order_clause}
-                  LIMIT ? OFFSET ?
-                """
-            else:
-                sql = """
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  WHERE fts MATCH ?
-                  LIMIT ? OFFSET ?
-                """
-            
-            rows = con.execute(sql, (nq2, limit, offset)).fetchall()
-
-        except sqlite3.OperationalError as e:
-            print("FTS MATCH error for:", nq, "->", e)
-            if re.search(r'\b(w|near)\s*/\s*\d+', nq, flags=re.I):
-                repaired = _parse_near_robust(nq)
-                if repaired:
-                    print("Retrying with repaired proximity:", repaired)
-                    try:
-                        total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (repaired,)).fetchone()[0]
-                        rows = con.execute("""
-                          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                          FROM fts
-                          WHERE fts MATCH ?
-                          LIMIT ? OFFSET ?
-                        """, (repaired, limit, offset)).fetchall()
-                        nq2 = repaired
-                    except sqlite3.OperationalError:
-                        degraded = re.sub(r'\b(?:w|near)\s*/\s*\d+\b', 'AND', nq, flags=re.I)
-                        degraded = re.sub(r'[!*]', '', degraded)
-                        print("Degrading to:", degraded)
-                        total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (degraded,)).fetchone()[0]
-                        rows = con.execute("""
-                          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                          FROM fts
-                          WHERE fts MATCH ?
-                          LIMIT ? OFFSET ?
-                        """, (degraded, limit, offset)).fetchall()
-                        nq2 = degraded
-                else:
-                    degraded = re.sub(r'\b(?:w|near)\s*/\s*\d+\b', 'AND', nq, flags=re.I)
-                    degraded = re.sub(r'[!*]', '', degraded)
-                    print("Degrading proximity to AND:", degraded)
-                    total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (degraded,)).fetchone()[0]
-                    rows = con.execute("""
-                      SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                      FROM fts
-                      WHERE fts MATCH ?
-                      LIMIT ? OFFSET ?
-                    """, (degraded, limit, offset)).fetchall()
-                    nq2 = degraded
-            else:
-                fallback = re.sub(r'[!*]', '', nq)
-                total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (fallback,)).fetchone()[0]
-                rows = con.execute("""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  WHERE fts MATCH ?
-                  LIMIT ? OFFSET ?
-                """, (fallback, limit, offset)).fetchall()
-                nq2 = fallback
-
-        is_simple_near_query = "NEAR/" in nq2 and " AND " not in nq2 and " OR " not in nq2
-
-        if is_simple_near_query:
-            comp = _extract_near_components(nq2)
-            if comp:
-                left, _, right = comp
-                if (' ' in left.strip()) or (' ' in right.strip()):
-                    print(f"Applying true-phrase proximity filter for simple NEAR query.")
-                    before = len(rows)
-                    rows = _filter_rows_for_true_phrase_near(rows, nq2)
-                    print(f"Phrase-proximity filtered page results: {before} → {len(rows)}")
-
-        items = []
-        phrase_terms, word_terms = get_highlight_terms(nq2)
-        
-        for r in rows:
-            meta = con.execute("""
-              SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
-                     m.act, d.reference, d.pdf_path, d.ejs_id
-              FROM docs_fresh d
-              LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-              WHERE d.rowid = ?
-            """, (r["rowid"],)).fetchone()
-
-            d = dict(meta) if meta else {}
-            d["id"] = d.get("ejs_id", r["rowid"])
-
-            snippet_raw = r["snippet"]
-            snippet_clean = re.sub(r'\b\d+([A-Za-z]+)\b', r'\1', snippet_raw)
-
-            for phrase in sorted(set(phrase_terms), key=len, reverse=True):
-                pattern = re.escape(phrase)
-                snippet_clean = re.sub(fr'(?i)\b{pattern}\b', f"<mark>{phrase}</mark>", snippet_clean)
-
-            for term in sorted(set(word_terms), key=len, reverse=True):
-                if any(term.lower() in phrase.lower() for phrase in phrase_terms):
-                    continue
-                
-                if term.endswith('*'):
-                    stem = term[:-1]
-                    pattern = f'\\b({re.escape(stem)}\\w*)'
-                    snippet_clean = re.sub(pattern, r'<mark>\1</mark>', snippet_clean, flags=re.I)
-                else:
-                    pattern = re.escape(term)
-                    snippet_clean = re.sub(fr'(?i)\b({pattern})\b', r'<mark>\1</mark>', snippet_clean)
-
-            d["snippet"] = snippet_clean
-            items.append(d)
-
-        return {"total": total, "items": items}
-
-    # --- Natural language via Meili ---
-    payload = {
-        "q": q_norm,
-        "limit": limit,
-        "offset": offset,
-        "attributesToRetrieve": [
-            "id", "reference", "pdf_path",
-            "claimant", "respondent", "adjudicator",
-            "date", "act", "content"
-        ],
-        "attributesToHighlight": ["content"],
-        "highlightPreTag": "<mark>",
-        "highlightPostTag": "</mark>",
-        "attributesToCrop": ["content"],
-        "cropLength": 100
+      renderPagination(page);
     }
+
+
+function renderItem(it, query) {
+  const pdf = buildPdfLinks(it.pdf_path);
+  const caseName = `${sanitize(it.claimant)} v ${sanitize(it.respondent)}`;
+  const caseNo = sanitize(it.case_no || it.adj_no || it.id || '');
+
+  return `
+    <div class="result">
+      <h3><a href="#">${caseName}</a></h3>
+      <div class="meta">
+        ${it.decision_date_norm ? `<strong>Date:</strong> ${formatAusDate(it.decision_date_norm)}<br>` : '<strong>Date:</strong> Unknown<br>'}
+        ${it.adjudicator ? `<strong>Adjudicator:</strong> ${sanitize(it.adjudicator)}<br>` : ''}
+        ${it.claimant ? `<strong>Claimant:</strong> ${sanitize(it.claimant)}<br>` : ''}
+        ${it.respondent ? `<strong>Respondent:</strong> ${sanitize(it.respondent)}<br>` : ''}
+      </div>
+      ${query ? (it.snippet ? `<p class="snippet">${it.snippet}</p>` : '') : ''}
+      ${pdf ? `
+        <a class="open-btn" href="${pdf.open}" target="_blank">Open Decision (PDF)</a>
+        <span style="color:black; margin:0 6px;">|</span>
+        <a href="javascript:void(0)" class="open-btn" onclick="summariseDecision('${it.id}')">
+          Ask SopalAI
+        </a>
+      ` : ''}
+      <div id="summary-${it.id}" class="ai-summary" style="display:none; margin-top:10px;">
+        <div id="summary-text-${it.id}"></div>
+        <div class="qa-box">
+          <input id="question-${it.id}" class="qa-input" type="text" placeholder="Ask SopalAI about this decision…">
+          <button class="qa-button" onclick="askSopalAI('${it.id}')">Ask</button>
+        </div>
+        <div id="answer-${it.id}" class="ai-answer"></div>
+      </div>
+    </div>`;
+}
+
+
+    function renderPagination(currentPage) {
+      const totalPages = Math.ceil(state.total / state.limit);
+      const container = $('#pagination');
+      container.innerHTML = '';
+      if (totalPages <= 1) return;
+
+      const maxVisible = 10;
+      let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+      let end = start + maxVisible - 1;
+      if (end > totalPages) {
+        end = totalPages;
+        start = Math.max(1, end - maxVisible + 1);
+      }
+
+      if (currentPage > 1) {
+        const prev = document.createElement('button');
+        prev.textContent = '‹ Previous';
+        prev.onclick = () => runSearch(currentPage - 1);
+        container.appendChild(prev);
+      }
+
+      if (start > 1) {
+        const first = document.createElement('button');
+        first.textContent = '1';
+        first.onclick = () => runSearch(1);
+        container.appendChild(first);
+        const dots = document.createElement('span');
+        dots.textContent = '...';
+        dots.style.color = '#aaa';
+        container.appendChild(dots);
+      }
+
+      for (let i = start; i <= end; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        if (i === currentPage) btn.classList.add('active');
+        btn.onclick = () => runSearch(i);
+        container.appendChild(btn);
+      }
+
+      if (end < totalPages) {
+        const dots = document.createElement('span');
+        dots.textContent = '...';
+        dots.style.color = '#aaa';
+        container.appendChild(dots);
+        const last = document.createElement('button');
+        last.textContent = totalPages;
+        last.onclick = () => runSearch(totalPages);
+        container.appendChild(last);
+      }
+
+      if (currentPage < totalPages) {
+        const next = document.createElement('button');
+        next.textContent = 'Next ›';
+        next.onclick = () => runSearch(currentPage + 1);
+        container.appendChild(next);
+      }
+
+      const info = document.createElement('div');
+      info.textContent = `Page ${currentPage} of ${totalPages}`;
+      info.style.fontSize = '13px';
+      info.style.color = '#aaa';
+      info.style.marginTop = '6px';
+      info.style.textAlign = 'center'; // Changed from right
+      info.style.width = '100%'; // Ensure it takes full width to center
+      container.appendChild(info);
+    }
+
+function toggleTheme() {
+  const body = document.body;
+  const isDark = body.classList.contains('dark');
+
+  if (isDark) {
+    body.classList.remove('dark');
+    body.classList.add('light');
+    localStorage.setItem('theme', 'light');
+    document.getElementById('themeToggle').textContent = 'Switch to Dark Mode 🌙';
+  } else {
+    body.classList.remove('light');
+    body.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+    document.getElementById('themeToggle').textContent = 'Switch to Light Mode ☀️';
+  }
+
+  const logo = document.getElementById('logo');
+  const footerLogo = document.getElementById('footerLogo');
+  if (logo && footerLogo) {
+    logo.src = body.classList.contains('dark')
+      ? "assets/sopal_logo_white_v1.png"
+      : "assets/sopal_logo_v1.png";
+    footerLogo.src = body.classList.contains('dark')
+      ? "assets/sopal_logo_white_v1.png"
+      : "assets/sopal_logo_v1.png";
+  }
+}
+
+
+
+
+    // ---- Init on load ----
+const saved = localStorage.getItem('theme');
+if (saved === 'dark') {
+  document.body.classList.remove('light');
+  document.body.classList.add('dark');
+  document.getElementById('themeToggle').textContent = 'Switch to Light Mode ☀️';
+} else {
+  document.body.classList.add('light');
+  document.getElementById('themeToggle').textContent = 'Switch to Dark Mode 🌙';
+}
+
+
+      // Pressing Enter in the search bar
+      const input = document.getElementById('q');
+      if (input) {
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            runSearch(1);
+          }
+        });
+      }
+
+      // Changing results-per-page triggers new search
+      const limitSel = document.getElementById('limit');
+      if (limitSel) {
+        limitSel.addEventListener('change', () => runSearch(1));
+      }
+      
+      const sortSel = document.getElementById('sort');
+      if (sortSel) {
+        sortSel.addEventListener('change', () => runSearch(1));
+      }
+
+      // Initial search
+      runSearch();
     
-    if sort == "relevance" and not q_norm:
-        sort = "newest"
 
-    if sort == "newest":
-        payload["sort"] = ["id:desc"]
-    elif sort == "oldest":
-        payload["sort"] = ["id:asc"]
-    elif sort == "atoz":
-        payload["sort"] = ["claimant:asc"]
-    elif sort == "ztoa":
-        payload["sort"] = ["claimant:desc"]
-        
-    headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
-    res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
-    data = res.json()
-    items = []
-    for hit in data.get("hits", []):
-        snippet = hit.get("_formatted", {}).get("content", "")
-        items.append({
-            "id": hit.get("id"),
-            "reference": hit.get("reference"),
-            "pdf_path": hit.get("pdf_path"),
-            "claimant": hit.get("claimant"),
-            "respondent": hit.get("respondent"),
-            "adjudicator": hit.get("adjudicator"),
-            "decision_date_norm": hit.get("date"),
-            "act": hit.get("act"),
-            "snippet": snippet
-        })
-    return {"total": data.get("estimatedTotalHits", 0), "items": items}
+    function startLoadingBar() {
+  const bar = document.getElementById('loadingBar');
+  bar.style.width = '0%';
+  setTimeout(() => { bar.style.width = '50%'; }, 50); // jump to 50 quickly
+}
 
-# ---------- PDF links ----------
-GCS_BUCKET = "sopal-bucket"
-GCS_PREFIX = "pdfs"
+function finishLoadingBar() {
+  const bar = document.getElementById('loadingBar');
+  bar.style.width = '100%';
+  setTimeout(() => { bar.style.width = '0%'; }, 400); // hide after fill
+}
 
-def build_gcs_url(file_name: str) -> str:
-    return f"https://storage.googleapis.com/{GCS_BUCKET}/{GCS_PREFIX}/{file_name}"
+function formatAusDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d)) return null;
+  return d.toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+}
 
-@app.get("/open")
-def open_pdf(p: str, disposition: str = "inline"):
-    try:
-        file_name = os.path.basename(p)
-        return {"url": build_gcs_url(file_name)}
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=400)
+async function summariseDecision(id) {
+  const box = document.getElementById(`summary-${id}`);
+  if (!box) return;
 
-# ---------- AI Summarise ----------
-@app.get("/summarise/{decision_id}")
-def summarise(decision_id: str = Path(...)):
-    try:
-        row = con.execute("SELECT summary FROM ai_summaries WHERE decision_id = ?", (decision_id,)).fetchone()
-        if row:
-            return {"id": decision_id, "summary": row["summary"]}
+  box.style.display = 'block';
+  box.innerHTML = 'Summarising… ⏳';
 
-        r = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
-        if not r or not r["full_text"]:
-            raise HTTPException(status_code=404, detail="Decision not found")
+  try {
+    const res = await fetch(`/summarise/${id}`);
+    const data = await res.json();
 
-        text = r["full_text"][:300000]
+    if (data.summary) {
+      box.innerHTML = `
+        <div class="ai-summary"><strong>AI Summary:</strong><br><br>${cleanAIText(data.summary)}</div>
+        <div class="qa-box" style="margin-top:10px;">
+          <input id="question-${id}" type="text" placeholder="Ask SopalAI about this decision..." style="width:80%; padding:4px;">
+          <button onclick="askSopalAI('${id}')">Ask</button>
+        </div>
+        <div id="answer-${id}" style="margin-top:8px; font-style:italic;"></div>
+      `;
+    } else {
+      box.innerHTML = '⚠️ Failed to generate summary.';
+    }
+  } catch (e) {
+    box.innerHTML = '⚠️ Error contacting server.';
+  }
+}
 
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are SopalAI, a legal assistant specialising in construction law. "
-                        "Summarise adjudication decisions under Queensland's Security of Payment legislation "
-                        "in clear, plain English. "
-                        "Respond as if the user is asking you about the decision directly. "
-                        "Do not say 'the adjudication decision you provided' or similar. "
-                        "Structure the summary into bullet points or short sections with HTML-friendly formatting "
-                        "(<strong> for headings, <ul>/<li> for lists) with compact spacing (no double/triple lines)."
-                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
-                        "not Markdown (#, ##, ###)."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": f"""
-Summarise this adjudication decision in 5–7 bullet points, covering:
-- The parties and the works
-- Payment claim amount and payment schedule response
-- Any jurisdictional challenges
-- The factual disputes and evidence
-- The adjudicator's reasoning
-- The final outcome, amount awarded, and fee split
-Don't actually title it "Summary" or the like please, go straight into bullet points
 
-Decision text:
-{text}
-"""
-                }
-            ],
-            max_tokens=800,
-        )
 
-        summary = resp.choices[0].message.content.strip()
-        con.execute("INSERT OR REPLACE INTO ai_summaries(decision_id, summary) VALUES (?, ?)", (decision_id, summary))
-        con.commit()
-        return {"id": decision_id, "summary": summary}
-    except Exception as e:
-        print("ERROR in /summarise:", e)
-        return JSONResponse({"error": str(e)}, status_code=500)
+ async function askSopalAI(id) {
+  const q = document.getElementById(`question-${id}`).value;
+  if (!q) return;
 
-# ---------- FEEDBACK FORM ----------
-@app.post("/send-feedback")
-async def send_feedback(
-    type: str = Form(...),
-    name: str = Form(""),
-    email: str = Form(""),
-    subject: str = Form(...),
-    priority: str = Form(...),
-    details: str = Form(...),
-    browser: str = Form(""),
-    device: str = Form("")
-):
-    msg = EmailMessage()
-    msg["From"] = "sopal.aus@gmail.com"
-    msg["To"] = "sopal.aus@gmail.com"
-    msg["Subject"] = f"[{type.upper()}] {subject}"
-    body = f"""
-Feedback Type: {type}
-Name: {name}
-Email: {email}
-Priority: {priority}
-Browser: {browser}
-Device: {device}
+    const res = await fetch(`/ask/${id}`, {
+    method: "POST",
+    body: new URLSearchParams({ question: q }),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" }
+  });
 
-Details:
-{details}
-"""
-    msg.set_content(body)
+  const data = await res.json();
+  const ansBox = document.getElementById(`answer-${id}`);
+  if (data.answer) {
+    ansBox.innerHTML = `
+  <div class="ai-answer">
+    <strong>Answer:</strong><br>
+    ${cleanAIText(data.answer)}
+  </div>
+`;
+  } else {
+    ansBox.innerHTML = `<span style="color:red;">Error: ${data.error || "Failed to get answer"}</span>`;
+  }
+}
 
-    try:
-        await aiosmtplib.send(
-            msg,
-            hostname="smtp.gmail.com",
-            port=587,
-            start_tls=True,
-            username="sopal.aus@gmail.com",
-            password=os.getenv("SMTP_PASSWORD"),
-        )
-        return {"ok": True, "message": "Feedback sent successfully"}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
+function cleanAIText(text) {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')   // bold
+    .replace(/^### (.*$)/gim, '<h4>$1</h4>')            // ### heading → <h4>
+    .replace(/^## (.*$)/gim, '<h3>$1</h3>')             // ## heading → <h3>
+    .replace(/^# (.*$)/gim, '<h2>$1</h2>')              // # heading → <h2>
+    .replace(/\n\s*-\s*/g, '</li><li>')                 // - bullets
+    .replace(/\n/g, '<br>');                            // normal line breaks
+}
 
-# ---------- AI Ask ----------
-@app.post("/ask/{decision_id}")
-def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
-    try:
-        row = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
-        if not row or not row["full_text"]:
-            raise HTTPException(status_code=404, detail="Decision not found")
+function normalizeInput(s) {
+  return (s || '')
+    .replace(/[“”]/g, '"')   // smart double → straight
+    .replace(/[‘’]/g, "'")   // smart single → straight
+    .replace(/[‐-–—]/g, '-') // hyphen variants → hyphen
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-        text = row["full_text"][:15000]
+   
+    </script>
 
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are SopalAI, assisting users with adjudication decisions under the BIF Act or BCIPA. "
-                        "Respond directly to the user's question as if they asked you about the decision. "
-                        "Do not say 'the adjudication decision you provided' or 'the text you gave me'. "
-                        "Write in clear, plain English with headings and bullet points formatted in HTML."
-                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
-                        "not Markdown (#, ##, ###)."
-                    )
-                },
-                {"role": "user", "content": f"Decision text:\n{text}"},
-                {"role": "user", "content": f"Question: {question}"}
-            ],
-            max_tokens=600
-        )
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-left">
+      <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+      <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+    </div>
 
-        answer = resp.choices[0].message.content.strip()
-        return {"answer": answer}
-    except Exception as e:
-        print("ERROR in /ask:", e)
-        return JSONResponse({"error": str(e)}, status_code=500)
+<div class="footer-links">
+    <a href="index.html">Search</a>
+    <a href="interest-calculator.html">Interest Calculator</a>
+    <a href="due-date-calculator.html">Due Date Calculator</a>
+    <a href="feedback.html">Feedback</a>
+    <a href="how-to.html">How-To Guide</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+</div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 Sopal Australia. All rights reserved.</p>
+  </div>
 
-# ---------- DB Download ----------
-@app.get("/download-db")
-async def download_db():
-    return FileResponse("/tmp/qbcc.db", filename="qbcc.db")
 
-# ---------- serve frontend ----------
-app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
+</footer>
+
+
+
+
+   
+</body>
+</html>
 
