@@ -412,7 +412,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
 
             if order_clause:
                 sql = f"""
-                  SELECT fts.rowid, snippet(fts, 0, '<mark>', '</mark>', '...', 30) AS snippet
+                  SELECT fts.rowid, snippet(fts, '<mark>', '</mark>', '...', 30) AS snippet
                   FROM fts
                   JOIN docs_fresh d ON fts.rowid = d.rowid
                   LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
@@ -422,7 +422,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                 """
             else: # relevance sort
                 sql = """
-                  SELECT fts.rowid, snippet(fts, 0, '<mark>', '</mark>', '...', 30) AS snippet
+                  SELECT fts.rowid, snippet(fts, '<mark>', '</mark>', '...', 30) AS snippet
                   FROM fts
                   WHERE fts MATCH ?
                   LIMIT ? OFFSET ?
@@ -436,7 +436,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             fallback_query = re.sub(r'[!*"]', '', nq) # Simple fallback
             total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (fallback_query,)).fetchone()[0]
             rows = con.execute("""
-                SELECT fts.rowid, snippet(fts, 0, '<mark>', '</mark>', '...', 30) AS snippet
+                SELECT fts.rowid, snippet(fts, '<mark>', '</mark>', '...', 30) AS snippet
                 FROM fts
                 WHERE fts MATCH ?
                 LIMIT ? OFFSET ?
