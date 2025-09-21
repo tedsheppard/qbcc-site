@@ -8,3 +8,6 @@ google-cloud-storage
 pandas
 openpyxl
 APScheduler
+aiosmtplib
+PyPDF2
+python-docx
