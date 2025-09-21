@@ -1,10 +1,18 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
   <meta charset="utf-8">
-  <title>Sopal – Privacy Policy</title>
+  <title>Sopal — Privacy Policy</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     /* Base styles matching main site */
@@ -46,7 +54,7 @@
     }
 
     .nav-links a {
-      color: #333;
+      color: black;
       text-decoration: none;
       font-size: 14px;
       transition: color 0.2s;
@@ -57,7 +65,7 @@
     }
 
     .nav-links a.active {
-      color: #00c97c;
+      color: #008a5c;
       font-weight: 600;
     }
 
@@ -137,6 +145,25 @@
       color: #166534;
     }
 
+    .warning-box {
+      background: #fefce8;
+      border-left: 4px solid #f59e0b;
+      padding: 20px;
+      margin: 24px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .warning-box h4 {
+      margin: 0 0 12px 0;
+      color: #92400e;
+      font-weight: 600;
+    }
+
+    .warning-box p {
+      margin: 0;
+      color: #92400e;
+    }
+
     .contact-info {
       background: #f9f9f9;
       border: 1px solid #e1e1e1;
@@ -189,82 +216,82 @@
     .footer {
       background: #fcfcfc;
       color: #333;
-      padding: 40px 20px 20px;
-      margin-top: 80px;
+      padding: 40px 25px 20px;
+      margin-top: 60px;
       border-top: 1px solid #ddd;
     }
-
     .footer-content {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       flex-wrap: wrap;
       max-width: 1200px;
       margin: auto;
     }
-
-    .footer-left {
+    .footer-left { 
       max-width: 400px;
+      text-align: left;
     }
-
-    .footer-logo {
-      height: 24px;
-      margin-bottom: 10px;
-    }
-
+    .footer-logo { height: 24px; margin-bottom: 10px; }
+    
     .footer-links {
-      display: flex;
-      gap: 20px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px 40px;
+      text-align: left;
     }
-
     .footer-links a {
-      color: #333;
+      font-size: 13px;
+      color: black;
       text-decoration: none;
       transition: color 0.2s;
     }
-
     .footer-links a:hover {
-      color: #00c853;
+      color: #00c97c;
     }
 
     .footer-bottom {
       text-align: center;
       border-top: 1px solid #eee;
-      margin-top: 20px;
-      padding-top: 15px;
+      margin-top: 30px;
+      padding-top: 20px;
+      width: 100%;
       font-size: 0.85em;
       color: #666;
     }
 
     /* Mobile responsiveness */
     @media (max-width: 768px) {
-      .container {
-        margin: 40px auto;
-        padding: 0 16px;
-      }
-
-      .page-title {
-        font-size: 28px;
-      }
-
-      .content-section h2 {
-        font-size: 22px;
-      }
-
       .header-content {
         flex-direction: column;
         gap: 16px;
       }
-
       .nav-links {
         margin: 0;
         flex-wrap: wrap;
+        justify-content: center;
       }
-
       .footer-content {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
+        align-items: center;
+        text-align: center;
+      }
+      .footer-left {
+        margin-bottom: 25px;
+      }
+      .footer-links {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+      }
+      .container {
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      .page-title {
+        font-size: 28px;
+      }
+      .content-section h2 {
+        font-size: 22px;
       }
     }
   </style>
@@ -274,21 +301,22 @@
   <div class="header">
     <div class="header-content">
       <a href="/">
-        <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+        <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
       </a>
-<div class="nav-links">
-  <a href="index.html">Search</a>  <!-- or just "/" -->
-  <a href="feedback.html">Feedback</a>
-  <a href="privacy.html">Privacy</a>
-  <a href="terms.html">Terms</a>
-</div>
+      <div class="nav-links">
+        <a href="index.html">Search</a>
+        <a href="interest-calculator.html">Interest Calculator</a>
+        <a href="due-date-calculator.html">Due Date Calculator</a>
+        <a href="how-to.html">How-To Guide</a>
+        <a href="feedback.html">Feedback</a>
+      </div>
     </div>
   </div>
 
   <!-- Main Content -->
   <div class="container">
     <h1 class="page-title">Privacy Policy</h1>
-    <div class="last-updated">Last updated: 20 September 2025</div>
+    <div class="last-updated">Last updated: 21 September 2025</div>
 
     <!-- Table of Contents -->
     <div class="toc">
@@ -298,6 +326,7 @@
         <li><a href="#information-we-collect">Information We Collect</a></li>
         <li><a href="#how-we-use-information">How We Use Information</a></li>
         <li><a href="#information-sharing">Information Sharing</a></li>
+        <li><a href="#ai-queries">AI Queries and Third-Party Services</a></li>
         <li><a href="#data-security">Data Security</a></li>
         <li><a href="#cookies">Cookies and Tracking</a></li>
         <li><a href="#your-rights">Your Rights</a></li>
@@ -310,6 +339,11 @@
     <div class="highlight-box">
       <h4>Key Privacy Highlights</h4>
       <p>Sopal is designed with privacy in mind. We collect minimal personal information, don't sell your data, and use industry-standard security practices to protect your information.</p>
+    </div>
+
+    <div class="warning-box">
+      <h4>Important Notice: SopalAI Feature</h4>
+      <p>When using SopalAI (our AI-powered question and answer feature), your queries may be processed by third-party AI services via APIs. Do not submit confidential, sensitive, or personal information through SopalAI features.</p>
     </div>
 
     <!-- Overview -->
@@ -326,6 +360,7 @@
       <h3>Information You Provide</h3>
       <ul>
         <li><strong>Search Queries:</strong> The terms and filters you use when searching for adjudication decisions</li>
+        <li><strong>AI Queries:</strong> Questions you submit to SopalAI for analysis of decisions</li>
         <li><strong>Feedback:</strong> When you submit feedback, we may collect your name, email address, and comments (all optional)</li>
         <li><strong>Contact Information:</strong> If you contact us directly, we collect the information you provide</li>
       </ul>
@@ -353,6 +388,7 @@
       <p>We use the information we collect to:</p>
       <ul>
         <li><strong>Provide and improve our service:</strong> Process searches, display results, and enhance user experience</li>
+        <li><strong>Power AI features:</strong> Process SopalAI queries to provide intelligent responses about decisions</li>
         <li><strong>Understand usage patterns:</strong> Analyze how the platform is used to guide improvements</li>
         <li><strong>Maintain security:</strong> Detect and prevent abuse, spam, and unauthorized access</li>
         <li><strong>Respond to inquiries:</strong> Address feedback, support requests, and communications</li>
@@ -385,9 +421,46 @@
       <p>In the event of a merger, acquisition, or asset sale, user information may be transferred as part of that transaction.</p>
     </div>
 
+    <!-- AI Queries Section -->
+    <div class="content-section" id="ai-queries">
+      <h2>5. AI Queries and Third-Party Services</h2>
+      
+      <h3>SopalAI Processing</h3>
+      <p>When you use SopalAI features to ask questions about adjudication decisions:</p>
+      <ul>
+        <li><strong>Third-Party APIs:</strong> Your queries may be sent to third-party AI service providers (such as OpenAI, Anthropic, or other AI platforms) to generate responses</li>
+        <li><strong>Data Processing:</strong> These third parties may process your questions according to their own privacy policies and terms of service</li>
+        <li><strong>No Control:</strong> We cannot control how third-party AI services handle your queries once transmitted</li>
+        <li><strong>Logging:</strong> Some third-party AI services may log queries for their own improvement purposes</li>
+      </ul>
+
+      <h3>Important Recommendations</h3>
+      <div class="warning-box">
+        <h4>Confidentiality Warning</h4>
+        <p><strong>Do not submit confidential, sensitive, or personal information through SopalAI.</strong> This includes client-specific details, privileged information, personal data, or any information you would not want shared with third parties. Treat SopalAI queries as public communications.</p>
+      </div>
+
+      <h3>Safe Usage Examples</h3>
+      <p>Appropriate SopalAI queries focus on general legal principles from published decisions:</p>
+      <ul>
+        <li>"What factors do adjudicators consider when assessing variations?"</li>
+        <li>"How do adjudicators typically approach extension of time claims?"</li>
+        <li>"What evidence is usually required for defect claims?"</li>
+      </ul>
+
+      <h3>Queries to Avoid</h3>
+      <p>Do not include in SopalAI queries:</p>
+      <ul>
+        <li>Client names, project details, or case-specific information</li>
+        <li>Confidential commercial information</li>
+        <li>Personal details or contact information</li>
+        <li>Privileged or sensitive legal strategy</li>
+      </ul>
+    </div>
+
     <!-- Data Security -->
     <div class="content-section" id="data-security">
-      <h2>5. Data Security</h2>
+      <h2>6. Data Security</h2>
       <p>We implement industry-standard security measures to protect your information:</p>
       <ul>
         <li><strong>Encryption:</strong> Data is encrypted in transit using HTTPS/TLS</li>
@@ -400,7 +473,7 @@
 
     <!-- Cookies -->
     <div class="content-section" id="cookies">
-      <h2>6. Cookies and Tracking</h2>
+      <h2>7. Cookies and Tracking</h2>
       <p>Sopal uses minimal tracking technologies:</p>
 
       <h3>Essential Cookies</h3>
@@ -418,7 +491,7 @@
 
     <!-- Your Rights -->
     <div class="content-section" id="your-rights">
-      <h2>7. Your Rights</h2>
+      <h2>8. Your Rights</h2>
       <p>Depending on your location, you may have certain rights regarding your personal information:</p>
       <ul>
         <li><strong>Access:</strong> Request information about data we collect about you</li>
@@ -428,14 +501,16 @@
         <li><strong>Objection:</strong> Object to certain processing of your information</li>
       </ul>
       <p>To exercise these rights, please contact us using the information provided below.</p>
+      <p><strong>Note:</strong> We cannot control or delete information you have shared with third-party AI services through SopalAI queries.</p>
     </div>
 
     <!-- Data Retention -->
     <div class="content-section" id="retention">
-      <h2>8. Data Retention</h2>
+      <h2>9. Data Retention</h2>
       <p>We retain information only as long as necessary to provide our services and comply with legal obligations:</p>
       <ul>
         <li><strong>Search queries:</strong> Anonymized and aggregated for analytics (indefinitely)</li>
+        <li><strong>AI queries:</strong> May be retained by third-party AI services according to their policies</li>
         <li><strong>Feedback submissions:</strong> Retained for as long as necessary to address your inquiry</li>
         <li><strong>Usage logs:</strong> Typically retained for 12 months for security and performance analysis</li>
         <li><strong>Technical data:</strong> Anonymized after 30 days, aggregated data retained indefinitely</li>
@@ -444,7 +519,7 @@
 
     <!-- Changes -->
     <div class="content-section" id="changes">
-      <h2>9. Changes to This Policy</h2>
+      <h2>10. Changes to This Policy</h2>
       <p>We may update this Privacy Policy from time to time to reflect changes in our practices or for legal, operational, or regulatory reasons.</p>
       <p>When we make changes:</p>
       <ul>
@@ -456,7 +531,7 @@
 
     <!-- Contact -->
     <div class="content-section" id="contact">
-      <h2>10. Contact Information</h2>
+      <h2>11. Contact Information</h2>
       <div class="contact-info">
         <h4>Questions About This Privacy Policy?</h4>
         <p>If you have questions about this Privacy Policy, need to exercise your privacy rights, or want to report a concern, please contact us:</p>
@@ -468,7 +543,7 @@
 
     <!-- Australian Privacy -->
     <div class="content-section">
-      <h2>11. Australian Privacy Considerations</h2>
+      <h2>12. Australian Privacy Considerations</h2>
       <p>As Sopal focuses on Queensland adjudication decisions, we comply with Australian privacy laws including the Privacy Act 1988 (Cth) where applicable.</p>
       <p>The adjudication decisions we provide access to are public documents that have been published by the relevant authorities. We do not create or modify this content - we simply provide a search interface to help users find relevant decisions.</p>
       <p>If you believe your personal information appears inappropriately in an adjudication decision, you should contact the relevant adjudication authority, not Sopal, as we do not control the content of these decisions.</p>
@@ -476,5 +551,31 @@
 
     <div class="highlight-box">
       <h4>Remember</h4>
-      <p>This Privacy Policy applies only to Sopal. The adjudication decisions accessible through our platform are public documents governed by separate legal frameworks and privacy considerations.</p>
+      <p>This Privacy Policy applies only to Sopal. The adjudication decisions accessible through our platform are public documents governed by separate legal frameworks and privacy considerations. When using SopalAI, your queries may be subject to third-party AI service privacy policies.</p>
     </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+        <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+      </div>
+
+      <div class="footer-links">
+        <a href="index.html">Search</a>
+        <a href="interest-calculator.html">Interest Calculator</a>
+        <a href="due-date-calculator.html">Due Date Calculator</a>
+        <a href="how-to.html">How-To Guide</a>
+        <a href="feedback.html">Feedback</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 Sopal Australia. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>
