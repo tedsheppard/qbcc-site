@@ -235,9 +235,15 @@
       transition: color 0.2s;
     }
 
-    .footer-links a:hover {
-      color: #00c853;
-    }
+.footer-links a {
+  font-size: 13px;
+  color: black;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-links a:hover {
+  color: #00c97c;
+}
 
     .footer-bottom {
       text-align: center;
@@ -299,6 +305,33 @@
       font-weight: 500;
       display: none;
     }
+    /* Mobile responsiveness */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .nav-links {
+    margin: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .footer-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .footer-left {
+    margin-bottom: 25px;
+  }
+  .footer-links {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+  main {
+    padding: 0 13px;
+  }
+}
   </style>
 </head>
 <body>
@@ -309,10 +342,11 @@
         <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
       </a>
 <div class="nav-links">
-  <a href="index.html">Search</a>  <!-- or just "/" -->
-  <a href="feedback.html">Feedback</a>
-  <a href="privacy.html">Privacy</a>
-  <a href="terms.html">Terms</a>
+  <a href="index.html">Search</a>
+  <a href="interest-calculator">Interest Calculator</a>
+  <a href="due-date-calculator" class="active">Due Date Calculator</a>
+  <a href="how-to">How-To Guide</a>
+  <a href="feedback">Feedback</a>
 </div>
     </div>
   </div>
@@ -423,11 +457,15 @@
         <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
         <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
       </div>
-      <div class="footer-links">
-        <a href="/feedback.html">Send feedback</a>
-        <a href="/privacy.html">Privacy</a>
-        <a href="/terms.html">Terms</a>
-      </div>
+<div class="footer-links">
+  <a href="index.html">Search</a>
+  <a href="interest-calculator">Interest Calculator</a>
+  <a href="due-date-calculator">Due Date Calculator</a>
+  <a href="how-to">How-To Guide</a>
+  <a href="feedback">Feedback</a>
+  <a href="privacy">Privacy</a>
+  <a href="terms">Terms</a>
+</div>
     </div>
     <div class="footer-bottom">
       <p>© 2025 SOPAL. All rights reserved.</p>
