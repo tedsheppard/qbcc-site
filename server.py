@@ -1,6 +1,6 @@
 import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io
 from urllib.parse import unquote_plus
-from fastapi import FastAPI, Query, Form, Path, HTTPException
+from fastapi import FastAPI, Query, Form, Path, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from email.message import EmailMessage
@@ -9,6 +9,8 @@ from openai import OpenAI
 from google.cloud import storage
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
+import PyPDF2
+import docx
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -751,6 +753,107 @@ def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
     except Exception as e:
         print("ERROR in /ask:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
+
+# ---------- Compliance Checker AI Endpoint ----------
+
+def extract_text_from_file(file: io.BytesIO, filename: str) -> str:
+    """Extracts text from PDF, DOCX, or TXT files."""
+    text = ""
+    try:
+        if filename.lower().endswith('.pdf'):
+            reader = PyPDF2.PdfReader(file)
+            for page in reader.pages:
+                text += page.extract_text() or ""
+        elif filename.lower().endswith('.docx'):
+            doc = docx.Document(file)
+            for para in doc.paragraphs:
+                text += para.text + "\n"
+        elif filename.lower().endswith('.txt'):
+            text = file.read().decode('utf-8')
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: {filename}")
+    except Exception as e:
+        print(f"Error extracting text from {filename}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to process file: {filename}")
+    return text
+
+def get_system_prompt(doc_type: str) -> str:
+    """Returns the expert system prompt for the AI based on document type."""
+    if doc_type == 'pc':
+        return """
+You are an expert construction lawyer in Queensland, specialising in the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act). 
+Your task is to analyse the text from a document purporting to be a payment claim.
+Check it for compliance against the key requirements from the BIF Act and relevant case law.
+For each check, provide a status ('pass', 'warning', or 'fail'), a short title, and a clear, concise feedback paragraph.
+Your entire response must be a single JSON object with a key "checks" which is an array of check objects. Do not include any text outside of this JSON object.
+
+The check objects should cover:
+1.  **Claimed Amount Stated**: Check if a clear monetary amount is claimed (section 68(1)(b)).
+2.  **Identification of Works**: Check if the work/goods/services are sufficiently identified (section 68(1)(a)).
+3.  **Request for Payment**: Check if there's a clear request for payment. Note that the word 'Invoice' is sufficient (section 68(3)).
+4.  **Reference Date Validity**: Assess if a reference date is mentioned or can be inferred. If not, this is a 'fail'.
+5.  **Timeliness of Claim**: Provide a 'warning' reminding the user to check serving time limits under section 75.
+6.  **Correct Service**: Provide a 'warning' reminding the user to confirm service on the correct party/address.
+"""
+    elif doc_type == 'ps':
+        return """
+You are an expert construction lawyer in Queensland, specialising in the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act). 
+Your task is to analyse the text from a document purporting to be a payment schedule.
+Check it for compliance against the key requirements from the BIF Act and relevant case law.
+For each check, provide a status ('pass', 'warning', or 'fail'), a short title, and a clear, concise feedback paragraph.
+Your entire response must be a single JSON object with a key "checks" which is an array of check objects. Do not include any text outside of this JSON object.
+
+The check objects should cover:
+1.  **Identifies Payment Claim**: Check if the schedule clearly identifies the payment claim it's responding to (section 69(a)).
+2.  **Scheduled Amount Stated**: Check if it states the amount (even if zero) the respondent proposes to pay (section 69(b)).
+3.  **Reasons for Withholding**: This is critical. Assess if the reasons for withholding payment are specific and detailed. Generic reasons like "defective work" are a 'fail'. The reasons must be sufficient for the claimant to understand the case against them.
+4.  **Timeliness of Schedule**: Provide a 'warning' reminding the user to confirm the schedule was served within the strict time limit (section 76).
+5.  **Correct Service**: Provide a 'warning' reminding the user to confirm service on the correct party/address.
+"""
+    return ""
+
+@app.post("/analyse-document")
+async def analyse_document(doc_type: str = Form(...), file: UploadFile = File(...)):
+    if not file:
+        raise HTTPException(status_code=400, detail="No file uploaded.")
+
+    try:
+        # Read file content into a BytesIO object for processing
+        file_content = await file.read()
+        file_stream = io.BytesIO(file_content)
+        
+        extracted_text = extract_text_from_file(file_stream, file.filename)
+        
+        if not extracted_text.strip():
+            raise HTTPException(status_code=400, detail="Could not extract any text from the document.")
+
+        system_prompt = get_system_prompt(doc_type)
+        if not system_prompt:
+            raise HTTPException(status_code=400, detail="Invalid document type specified.")
+            
+        user_prompt = f"Here is the text from the document to be analysed:\n\n---DOCUMENT START---\n{extracted_text}\n---DOCUMENT END---"
+
+        # Make the call to OpenAI API
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+        
+        ai_response_content = response.choices[0].message.content
+        
+        # The response should be a JSON string, which we parse and return
+        return JSONResponse(content=ai_response_content)
+
+    except HTTPException as e:
+        # Re-raise HTTP exceptions to be handled by FastAPI
+        raise e
+    except Exception as e:
+        print(f"ERROR in /analyse-document: {e}")
+        return JSONResponse({"error": f"An unexpected error occurred: {str(e)}"}, status_code=500)
 
 # ---------- DB Download ----------
 @app.get("/download-db")
