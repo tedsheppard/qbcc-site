@@ -324,9 +324,44 @@ def _filter_rows_for_true_phrase_near(rows, nq2):
             filtered.append(r)
     return filtered
 
-def highlight_wildcard_matches(text: str, stem: str) -> str:
-    pattern = f'\\b({re.escape(stem)}\\w*)'
-    return re.sub(pattern, r'<mark>\1</mark>', text, flags=re.I)
+def highlight_snippet(snippet: str, query: str) -> str:
+    """
+    Highlights terms from an FTS query within a snippet using regex.
+    This provides more control than the built-in FTS snippet highlighting.
+    """
+    # Handle phrases first, removing them from the query string
+    phrases = re.findall(r'"([^"]+)"', query)
+    query_no_phrases = re.sub(r'"[^"]+"', '', query)
+    
+    # Then handle individual words (including wildcards)
+    words = re.findall(r'\b\w+\*?\b', query_no_phrases)
+    
+    # Filter out FTS operators and numbers that might be part of NEAR/ syntax
+    operators = {'AND', 'OR', 'NOT', 'NEAR'}
+    clean_words = [word for word in words if word.upper() not in operators and not word.isdigit()]
+    
+    # Combine, and sort by length (longest first) to avoid partial matches (e.g., 'test' in 'testing')
+    highlight_terms = sorted(phrases + clean_words, key=len, reverse=True)
+    
+    highlighted_snippet = snippet
+    for term in highlight_terms:
+        try:
+            if '*' in term:
+                # Handle wildcard searches (e.g., 'del*')
+                stem = re.escape(term[:-1])
+                pattern = f'(\\b{stem}\\w*)'
+            else:
+                # Handle exact word or phrase searches
+                pattern = f'(\\b{re.escape(term)}\\b)'
+            
+            # Apply highlighting, ignoring case
+            highlighted_snippet = re.sub(pattern, r'<mark>\1</mark>', highlighted_snippet, flags=re.IGNORECASE)
+        except re.error as e:
+            # Log regex errors but don't crash
+            print(f"Regex error for term '{term}': {e}")
+            continue
+
+    return highlighted_snippet
 
 # ---------------- routes ----------------
 @app.get("/health")
@@ -410,12 +445,10 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             elif sort == "ztoa":
                 order_clause = "ORDER BY m.claimant DESC NULLS LAST"
 
-            start_marker = "b4de2a19c8" # Unique marker for start of highlight
-            end_marker = "c8a192ed4b"   # Unique marker for end of highlight
-
+            # Get a raw snippet from SQLite without its internal highlighting
             if order_clause:
                 sql = f"""
-                  SELECT fts.rowid, snippet(fts, 0, '{start_marker}', '{end_marker}', '...', 30) AS snippet
+                  SELECT fts.rowid, snippet(fts, 0, '', '', '...', 30) AS snippet
                   FROM fts
                   JOIN docs_fresh d ON fts.rowid = d.rowid
                   LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
@@ -425,7 +458,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                 """
             else: # relevance sort
                 sql = f"""
-                  SELECT fts.rowid, snippet(fts, 0, '{start_marker}', '{end_marker}', '...', 30) AS snippet
+                  SELECT fts.rowid, snippet(fts, 0, '', '', '...', 30) AS snippet
                   FROM fts
                   WHERE fts MATCH ?
                   LIMIT ? OFFSET ?
@@ -439,7 +472,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             fallback_query = re.sub(r'[!*"]', '', nq) # Simple fallback
             total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (fallback_query,)).fetchone()[0]
             rows = con.execute(f"""
-                SELECT fts.rowid, snippet(fts, 0, '{start_marker}', '{end_marker}', '...', 30) AS snippet
+                SELECT fts.rowid, snippet(fts, 0, '', '', '...', 30) AS snippet
                 FROM fts
                 WHERE fts MATCH ?
                 LIMIT ? OFFSET ?
@@ -474,9 +507,9 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             d = dict(meta) if meta else {}
             d["id"] = d.get("ejs_id", r["rowid"])
 
-            snippet_text = r["snippet"]
-            # Replace markers with actual HTML tags
-            snippet_text = snippet_text.replace(start_marker, '<mark>').replace(end_marker, '</mark>')
+            raw_snippet = r["snippet"]
+            # Use our robust Python highlighter
+            snippet_text = highlight_snippet(raw_snippet, nq2)
             
             # Truncate snippet by character length
             if len(snippet_text) > MAX_SNIPPET_LEN:
@@ -706,5 +739,6 @@ async def download_db():
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
+
 
 
