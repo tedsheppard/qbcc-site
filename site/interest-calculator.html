@@ -59,7 +59,7 @@
     color: #00c97c;
   }
   .nav-links a.active {
-    color: #00c97c;
+    color: #008a5c;
     font-weight: 600;
   }
   main {
@@ -231,30 +231,76 @@
   .footer {
     background: #fcfcfc;
     color: #333;
-    padding: 40px 20px 20px;
+    padding: 40px 25px 20px;
     margin-top: 60px;
     border-top: 1px solid #ddd;
   }
   .footer-content {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     flex-wrap: wrap;
     max-width: 1200px;
     margin: auto;
   }
-  .footer-left { max-width: 400px; }
+  .footer-left { 
+    max-width: 400px;
+    text-align: left;
+  }
   .footer-logo { height: 24px; margin-bottom: 10px; }
-  .footer-links { display: flex; gap: 20px; }
-  .footer-links a { color: #333; text-decoration: none; transition: color 0.2s; }
-  .footer-links a:hover { color: #00c853; }
+  
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 40px;
+    text-align: left;
+  }
+  .footer-links a {
+    font-size: 13px;
+    color: black;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover {
+    color: #00c97c;
+  }
+
   .footer-bottom {
     text-align: center;
     border-top: 1px solid #eee;
-    margin-top: 20px;
-    padding-top: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    width: 100%;
     font-size: 0.85em;
     color: #666;
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    .header-content {
+      flex-direction: column;
+      gap: 16px;
+    }
+    .nav-links {
+      margin: 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .footer-content {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .footer-left {
+      margin-bottom: 25px;
+    }
+    .footer-links {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+    main {
+      padding: 0 13px;
+    }
   }
 </style>
 </head>
@@ -268,10 +314,10 @@
     </a>
     <div class="nav-links">
       <a href="index.html">Search</a>
-      <a href="interest_calculator.html" class="active">Interest Calculator</a>
-      <a href="feedback.html">Feedback</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="terms.html">Terms</a>
+      <a href="interest-calculator" class="active">Interest Calculator</a>
+      <a href="due-date-calculator">Due Date Calculator</a>
+      <a href="how-to">How-To Guide</a>
+      <a href="feedback">Feedback</a>
     </div>
   </div>
 </div>
@@ -334,7 +380,7 @@
       </div>
   </details>
 
-  <p style="margin-top: 30px;">Calculating the QBCC Act penalty rate requires the 90-day Bank Bill Swap Rate (BBSW), which is published daily by the Reserve Bank of Australia. Our calculator automatically fetches the latest official RBA statistics every day. By using the calculator, you acknolwedge and agree to our disclaimer below.</p>
+  <p style="margin-top: 30px;">Calculating the QBCC Act penalty rate requires the 90-day Bank Bill Swap Rate (BBSW), which is published daily by the Reserve Bank of Australia. Our calculator automatically fetches the latest official RBA statistics every day. By using the calculator, you acknowledge and agree to our disclaimer below.</p>
 
 
   <div class="calculator-container">
@@ -392,26 +438,31 @@
 
   <div class="disclaimer">
     <h3>Disclaimer</h3>
-    <p>This interest calculator is provided as a guide only and should not be relied upon as a substitute for professional legal or financial advice. The calculations are based on the inputs you provide and, for the QBCC Act rate, on publicly available data from the Reserve Bank of Australia which we endeavour to updated daily.</p>
+    <p>This interest calculator is provided as a guide only and should not be relied upon as a substitute for professional legal or financial advice. The calculations are based on the inputs you provide and, for the QBCC Act rate, on publicly available data from the Reserve Bank of Australia which we endeavour to update daily.</p>
     <p>While we strive for accuracy, Sopal provides no warranty and accepts no liability for any loss or damage arising from the use of this calculator. Users should independently verify all calculations and, where applicable, the underlying RBA rates, before inclusion in any formal submission or legal document.</p>
   </div>
 </main>
 
 <footer class="footer">
-    <div class="footer-content">
-      <div class="footer-left">
-        <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
-        <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
-      </div>
-      <div class="footer-links">
-        <a href="feedback.html">Send feedback</a>
-        <a href="privacy.html">Privacy</a>
-        <a href="terms.html">Terms</a>
-      </div>
+  <div class="footer-content">
+    <div class="footer-left">
+      <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+      <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
     </div>
-    <div class="footer-bottom">
-      <p>© 2025 SOPAL. All rights reserved.</p>
+
+    <div class="footer-links">
+      <a href="index.html">Search</a>
+      <a href="interest-calculator">Interest Calculator</a>
+      <a href="due-date-calculator">Due Date Calculator</a>
+      <a href="how-to">How-To Guide</a>
+      <a href="feedback">Feedback</a>
+      <a href="privacy">Privacy</a>
+      <a href="terms">Terms</a>
     </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 Sopal Australia. All rights reserved.</p>
+  </div>
 </footer>
 
 <script>
