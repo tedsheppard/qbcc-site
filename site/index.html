@@ -17,6 +17,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
   <meta charset="utf-8">
   <title>Sopal – Adjudication Search</title>
+  <meta name="description" content="Sopal is an intelligent search tool for finding adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act) in Queensland, Australia. Search decisions by keyword, adjudicator, date, and more.">
+  <meta name="keywords" content="Sopal, adjudication decisions, BIF Act, Building Industry Fairness, Security of Payment Act, Queensland, construction law, payment disputes, QBCC search, adjudicator search, construction adjudication">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   /* Header from Privacy Page */
@@ -764,6 +766,7 @@ mark {
     let state = { q:'', claimant:'', respondent:'', limit:20, offset:0, total:0 };
 
     async function runSearch(page=1){
+      window.scrollTo(0, 0); // Scroll to top on new search/page
       $('#status').textContent = 'Searching…';
       startLoadingBar();
 
