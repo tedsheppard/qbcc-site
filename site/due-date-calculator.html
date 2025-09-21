@@ -251,9 +251,15 @@
     gap: 10px 40px;
     text-align: left;
   }
-  .footer-links a {
-    font-size: 13px;
-  }
+.footer-links a {
+  font-size: 13px;
+  color: black;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-links a:hover {
+  color: #00c97c;
+}
 
   .footer-bottom {
     text-align: center;
@@ -264,6 +270,34 @@
     font-size: 0.85em;
     color: #666;
   }
+
+  /* Mobile responsiveness */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .nav-links {
+    margin: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .footer-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .footer-left {
+    margin-bottom: 25px;
+  }
+  .footer-links {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+  main {
+    padding: 0 13px;
+  }
+}
 </style>
 </head>
 <body>
@@ -278,8 +312,8 @@
       <a href="index.html">Search</a>
       <a href="interest-calculator.html">Interest Calculator</a>
       <a href="due-date-calculator.html" class="active">Due Date Calculator</a>
-      <a href="feedback.html">Feedback</a>
       <a href="how-to.html">How-To Guide</a>
+      <a href="feedback.html">Feedback</a>
     </div>
   </div>
 </div>
@@ -472,13 +506,13 @@
     </div>
 
 <div class="footer-links">
-    <a href="index.html">Search</a>
-    <a href="interest-calculator.html">Interest Calculator</a>
-    <a href="due-date-calculator.html">Due Date Calculator</a>
-    <a href="feedback.html">Feedback</a>
-    <a href="how-to.html">How-To Guide</a>
-    <a href="privacy.html">Privacy</a>
-    <a href="terms.html">Terms</a>
+    <a href="index">Search</a>
+    <a href="interest-calculator">Interest Calculator</a>
+    <a href="due-date-calculator">Due Date Calculator</a>
+    <a href="feedback">Feedback</a>
+    <a href="how-to">How-To Guide</a>
+    <a href="privacy">Privacy</a>
+    <a href="terms">Terms</a>
 </div>
   </div>
   <div class="footer-bottom">
