@@ -757,6 +757,17 @@ def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
 async def download_db():
     return FileResponse("/tmp/qbcc.db", filename="qbcc.db")
 
-# ---------- serve frontend ----------
+from fastapi.responses import RedirectResponse
+
+# ---------- serve frontend with clean URLs ----------
+@app.get("/{path_name}")
+async def serve_html_page(path_name: str):
+    file_path = os.path.join(SITE_DIR, f"{path_name}.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    # if path doesn't exist, fall back to index.html (so SPA-style routing still works)
+    return FileResponse(os.path.join(SITE_DIR, "index.html"))
+
+# keep the old mount for static assets like CSS/JS/images
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
 
