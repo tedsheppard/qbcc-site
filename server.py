@@ -258,6 +258,27 @@ def preprocess_sqlite_query(q: str) -> str:
     print(f"normalize_default result: {result}")
     return result
 
+def get_highlight_terms(query: str) -> tuple[list[str], list[str]]:
+    phrase_terms = []
+    word_terms = []
+    
+    phrases = re.findall(r'"([^"]+)"', query)
+    for phrase in phrases:
+        phrase_terms.append(phrase)
+    
+    query_no_quotes = re.sub(r'"[^"]*"', '', query)
+    words = re.findall(r'\b\w+\*?\b', query_no_quotes)
+    
+    operators = {'AND', 'OR', 'NOT', 'NEAR', 'W'}
+    for word in words:
+        if (word.upper() not in operators and 
+            not word.isdigit() and 
+            not re.match(r'\d+', word)):
+            word_terms.append(word)
+    
+    print(f"get_highlight_terms - phrase_terms: {phrase_terms}, word_terms: {word_terms}")
+    return phrase_terms, word_terms
+
 _word_re = re.compile(r"\w+", flags=re.UNICODE)
 
 def _tokenize(text: str):
@@ -324,44 +345,9 @@ def _filter_rows_for_true_phrase_near(rows, nq2):
             filtered.append(r)
     return filtered
 
-def highlight_snippet(snippet: str, query: str) -> str:
-    """
-    Highlights terms from an FTS query within a snippet using regex.
-    This provides more control than the built-in FTS snippet highlighting.
-    """
-    # Handle phrases first, removing them from the query string
-    phrases = re.findall(r'"([^"]+)"', query)
-    query_no_phrases = re.sub(r'"[^"]+"', '', query)
-    
-    # Then handle individual words (including wildcards)
-    words = re.findall(r'\b\w+\*?\b', query_no_phrases)
-    
-    # Filter out FTS operators and numbers that might be part of NEAR/ syntax
-    operators = {'AND', 'OR', 'NOT', 'NEAR'}
-    clean_words = [word for word in words if word.upper() not in operators and not word.isdigit()]
-    
-    # Combine, and sort by length (longest first) to avoid partial matches (e.g., 'test' in 'testing')
-    highlight_terms = sorted(phrases + clean_words, key=len, reverse=True)
-    
-    highlighted_snippet = snippet
-    for term in highlight_terms:
-        try:
-            if '*' in term:
-                # Handle wildcard searches (e.g., 'del*')
-                stem = re.escape(term[:-1])
-                pattern = f'(\\b{stem}\\w*)'
-            else:
-                # Handle exact word or phrase searches
-                pattern = f'(\\b{re.escape(term)}\\b)'
-            
-            # Apply highlighting, ignoring case
-            highlighted_snippet = re.sub(pattern, r'<mark>\1</mark>', highlighted_snippet, flags=re.IGNORECASE)
-        except re.error as e:
-            # Log regex errors but don't crash
-            print(f"Regex error for term '{term}': {e}")
-            continue
-
-    return highlighted_snippet
+def highlight_wildcard_matches(text: str, stem: str) -> str:
+    pattern = f'\\b({re.escape(stem)}\\w*)'
+    return re.sub(pattern, r'<mark>\1</mark>', text, flags=re.I)
 
 # ---------------- routes ----------------
 @app.get("/health")
@@ -437,18 +423,17 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
 
             order_clause = ""
             if sort == "newest":
-                order_clause = "ORDER BY m.decision_date_norm DESC NULLS LAST"
+                order_clause = "ORDER BY m.decision_date_norm DESC"
             elif sort == "oldest":
-                order_clause = "ORDER BY m.decision_date_norm ASC NULLS LAST"
+                order_clause = "ORDER BY m.decision_date_norm ASC"
             elif sort == "atoz":
-                order_clause = "ORDER BY m.claimant ASC NULLS LAST"
+                order_clause = "ORDER BY m.claimant ASC"
             elif sort == "ztoa":
-                order_clause = "ORDER BY m.claimant DESC NULLS LAST"
+                order_clause = "ORDER BY m.claimant DESC"
 
-            # Get a raw snippet from SQLite without its internal highlighting
             if order_clause:
                 sql = f"""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', '...', 30) AS snippet
+                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
                   FROM fts
                   JOIN docs_fresh d ON fts.rowid = d.rowid
                   LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
@@ -456,9 +441,9 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                   {order_clause}
                   LIMIT ? OFFSET ?
                 """
-            else: # relevance sort
-                sql = f"""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', '...', 30) AS snippet
+            else:
+                sql = """
+                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
                   FROM fts
                   WHERE fts MATCH ?
                   LIMIT ? OFFSET ?
@@ -468,17 +453,53 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
 
         except sqlite3.OperationalError as e:
             print("FTS MATCH error for:", nq, "->", e)
-            # Fallback logic in case of FTS syntax error
-            fallback_query = re.sub(r'[!*"]', '', nq) # Simple fallback
-            total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (fallback_query,)).fetchone()[0]
-            rows = con.execute(f"""
-                SELECT fts.rowid, snippet(fts, 0, '', '', '...', 30) AS snippet
-                FROM fts
-                WHERE fts MATCH ?
-                LIMIT ? OFFSET ?
-            """, (fallback_query, limit, offset)).fetchall()
-            nq2 = fallback_query
-
+            if re.search(r'\b(w|near)\s*/\s*\d+', nq, flags=re.I):
+                repaired = _parse_near_robust(nq)
+                if repaired:
+                    print("Retrying with repaired proximity:", repaired)
+                    try:
+                        total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (repaired,)).fetchone()[0]
+                        rows = con.execute("""
+                          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                          FROM fts
+                          WHERE fts MATCH ?
+                          LIMIT ? OFFSET ?
+                        """, (repaired, limit, offset)).fetchall()
+                        nq2 = repaired
+                    except sqlite3.OperationalError:
+                        degraded = re.sub(r'\b(?:w|near)\s*/\s*\d+\b', 'AND', nq, flags=re.I)
+                        degraded = re.sub(r'[!*]', '', degraded)
+                        print("Degrading to:", degraded)
+                        total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (degraded,)).fetchone()[0]
+                        rows = con.execute("""
+                          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                          FROM fts
+                          WHERE fts MATCH ?
+                          LIMIT ? OFFSET ?
+                        """, (degraded, limit, offset)).fetchall()
+                        nq2 = degraded
+                else:
+                    degraded = re.sub(r'\b(?:w|near)\s*/\s*\d+\b', 'AND', nq, flags=re.I)
+                    degraded = re.sub(r'[!*]', '', degraded)
+                    print("Degrading proximity to AND:", degraded)
+                    total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (degraded,)).fetchone()[0]
+                    rows = con.execute("""
+                      SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                      FROM fts
+                      WHERE fts MATCH ?
+                      LIMIT ? OFFSET ?
+                    """, (degraded, limit, offset)).fetchall()
+                    nq2 = degraded
+            else:
+                fallback = re.sub(r'[!*]', '', nq)
+                total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (fallback,)).fetchone()[0]
+                rows = con.execute("""
+                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                  FROM fts
+                  WHERE fts MATCH ?
+                  LIMIT ? OFFSET ?
+                """, (fallback, limit, offset)).fetchall()
+                nq2 = fallback
 
         is_simple_near_query = "NEAR/" in nq2 and " AND " not in nq2 and " OR " not in nq2
 
@@ -493,8 +514,8 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                     print(f"Phrase-proximity filtered page results: {before} → {len(rows)}")
 
         items = []
-        MAX_SNIPPET_LEN = 350 # Max characters for a snippet
-
+        phrase_terms, word_terms = get_highlight_terms(nq2)
+        
         for r in rows:
             meta = con.execute("""
               SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
@@ -507,27 +528,26 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             d = dict(meta) if meta else {}
             d["id"] = d.get("ejs_id", r["rowid"])
 
-            raw_snippet = r["snippet"]
-            # Use our robust Python highlighter
-            snippet_text = highlight_snippet(raw_snippet, nq2)
-            
-            # Truncate snippet by character length
-            if len(snippet_text) > MAX_SNIPPET_LEN:
-                truncated_text = snippet_text[:MAX_SNIPPET_LEN]
-                last_space = truncated_text.rfind(' ')
-                if last_space != -1:
-                    truncated_text = truncated_text[:last_space]
+            snippet_raw = r["snippet"]
+            snippet_clean = re.sub(r'\b\d+([A-Za-z]+)\b', r'\1', snippet_raw)
 
-                # Ensure we don't have open highlight tags
-                open_tags = truncated_text.count('<mark>')
-                closed_tags = truncated_text.count('</mark>')
-                if open_tags > closed_tags:
-                    truncated_text += '</mark>'
+            for phrase in sorted(set(phrase_terms), key=len, reverse=True):
+                pattern = re.escape(phrase)
+                snippet_clean = re.sub(fr'(?i)\b{pattern}\b', f"<mark>{phrase}</mark>", snippet_clean)
+
+            for term in sorted(set(word_terms), key=len, reverse=True):
+                if any(term.lower() in phrase.lower() for phrase in phrase_terms):
+                    continue
                 
-                snippet_text = truncated_text + '...'
+                if term.endswith('*'):
+                    stem = term[:-1]
+                    pattern = f'\\b({re.escape(stem)}\\w*)'
+                    snippet_clean = re.sub(pattern, r'<mark>\1</mark>', snippet_clean, flags=re.I)
+                else:
+                    pattern = re.escape(term)
+                    snippet_clean = re.sub(fr'(?i)\b({pattern})\b', r'<mark>\1</mark>', snippet_clean)
 
-
-            d["snippet"] = snippet_text
+            d["snippet"] = snippet_clean
             items.append(d)
 
         return {"total": total, "items": items}
@@ -739,6 +759,4 @@ async def download_db():
 
 # ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
-
-
 
