@@ -8,7 +8,7 @@ import aiosmtplib
 from openai import OpenAI
 from google.cloud import storage
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timedelta
+from datetime import datetime, date
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -60,12 +60,13 @@ def fetch_and_update_rba_rates():
     try:
         url = "https://www.rba.gov.au/statistics/tables/xls/f01d.xlsx"
         
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}
+        headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers)
         response.raise_for_status()
 
         excel_data = io.BytesIO(response.content)
-        df = pd.read_excel(excel_data, sheet_name='Data', header=1)
+        # Skip the initial metadata rows to get to the actual headers
+        df = pd.read_excel(excel_data, sheet_name='Data', header=10)
         
         date_col = 'Title' 
         rate_col = 'EOD 3-month BABs/NCDs'
@@ -77,9 +78,9 @@ def fetch_and_update_rba_rates():
         rates_df = df[[date_col, rate_col]].copy()
         rates_df.columns = ['rate_date', 'rate_value']
         
+        # Convert date column, coercing errors to NaT (Not a Time)
         rates_df['rate_date'] = pd.to_datetime(rates_df['rate_date'], errors='coerce')
         rates_df.dropna(subset=['rate_date', 'rate_value'], inplace=True)
-        
         rates_df['rate_date'] = rates_df['rate_date'].dt.date
 
         cursor = con.cursor()
@@ -142,8 +143,8 @@ def normalize_query(q: str) -> str:
     s = unicodedata.normalize("NFKC", s)
     
     replacements = {
-        'â€œ': '"', 'â€': '"', 'â€˜': "'", 'â€™': "'", 
-        'â€"': '-', 'â€"': '-', 'â€': '-'
+        '“': '"', '”': '"', '‘': "'", '’': "'", 
+        '—': '-', '–': '-', '‐': '-'
     }
     for old, new in replacements.items():
         s = s.replace(old, new)
@@ -235,12 +236,7 @@ def preprocess_sqlite_query(q: str) -> str:
             terms = re.split(r'\s+OR\s+', right_group, flags=re.I)
         
         if operator and len(terms) > 1:
-            expanded_clauses = []
-            for term in terms:
-                clean_left = left_term.strip().strip('"')
-                clean_right = term.strip().strip('"')
-                expanded_clauses.append(f'("{clean_left}" NEAR/{dist} "{clean_right}")')
-            
+            expanded_clauses = [f'("{left_term.strip().strip(" ")}" NEAR/{dist} "{term.strip().strip(" ")}")' for term in terms]
             final_query = operator.join(expanded_clauses)
             print(f"Expanded NEAR/{operator.strip()} query to: {final_query}")
             return final_query
@@ -259,22 +255,15 @@ def preprocess_sqlite_query(q: str) -> str:
     return result
 
 def get_highlight_terms(query: str) -> tuple[list[str], list[str]]:
-    phrase_terms = []
-    word_terms = []
-    
-    phrases = re.findall(r'"([^"]+)"', query)
-    for phrase in phrases:
-        phrase_terms.append(phrase)
-    
+    phrase_terms = re.findall(r'"([^"]+)"', query)
     query_no_quotes = re.sub(r'"[^"]*"', '', query)
     words = re.findall(r'\b\w+\*?\b', query_no_quotes)
     
     operators = {'AND', 'OR', 'NOT', 'NEAR', 'W'}
-    for word in words:
-        if (word.upper() not in operators and 
-            not word.isdigit() and 
-            not re.match(r'\d+', word)):
-            word_terms.append(word)
+    word_terms = [
+        word for word in words 
+        if word.upper() not in operators and not word.isdigit()
+    ]
     
     print(f"get_highlight_terms - phrase_terms: {phrase_terms}, word_terms: {word_terms}")
     return phrase_terms, word_terms
@@ -286,8 +275,7 @@ def _tokenize(text: str):
 
 def _phrase_positions(tokens: list[str], phrase: str) -> list[int]:
     words = _word_re.findall(phrase.lower())
-    if not words:
-        return []
+    if not words: return []
     if len(words) == 1:
         w = words[0]
         return [i for i, t in enumerate(tokens) if t == w]
@@ -300,463 +288,242 @@ def _phrase_positions(tokens: list[str], phrase: str) -> list[int]:
 
 def _extract_near_components(nq2: str):
     m = re.search(r'"([^"]+)"\s+NEAR/(\d+)\s+"([^"]+)"', nq2, flags=re.I)
-    if not m:
-        return None
+    if not m: return None
     return m.group(1), int(m.group(2)), m.group(3)
 
 def _filter_rows_for_true_phrase_near(rows, nq2):
     comp = _extract_near_components(nq2)
-    if not comp:
-        return rows
+    if not comp: return rows
     left, dist, right = comp
-    left_is_phrase  = ' ' in left.strip()
-    right_is_phrase = ' ' in right.strip()
-    if not (left_is_phrase or right_is_phrase):
+    if ' ' not in left.strip() and ' ' not in right.strip():
         return rows
 
-    filtered = []
     rowids = [r["rowid"] for r in rows]
-    if not rowids:
-        return rows
+    if not rowids: return rows
 
     qmarks = ",".join(["?"]*len(rowids))
     text_rows = con.execute(f"SELECT rowid, full_text FROM docs_fresh WHERE rowid IN ({qmarks})", rowids).fetchall()
     text_map = {tr["rowid"]: tr["full_text"] or "" for tr in text_rows}
-
+    
+    filtered = []
     for r in rows:
         ft = text_map.get(r["rowid"], "")
-        if not ft:
-            continue
+        if not ft: continue
         toks = _tokenize(ft)
         left_positions  = _phrase_positions(toks, left)
         right_positions = _phrase_positions(toks, right)
-        if not left_positions or not right_positions:
-            continue
+        if not left_positions or not right_positions: continue
 
-        ok = False
-        for li in left_positions:
-            for ri in right_positions:
-                if abs(ri - li) <= dist:
-                    ok = True
-                    break
-            if ok:
-                break
+        ok = any(abs(ri - li) <= dist for li in left_positions for ri in right_positions)
         if ok:
             filtered.append(r)
     return filtered
 
-def highlight_wildcard_matches(text: str, stem: str) -> str:
-    pattern = f'\\b({re.escape(stem)}\\w*)'
-    return re.sub(pattern, r'<mark>\1</mark>', text, flags=re.I)
-
 # ---------------- routes ----------------
 @app.get("/health")
-def health():
-    return {"ok": True}
+def health(): return {"ok": True}
 
 @app.get("/get_interest_rate")
-def get_interest_rate(start_date_str: str = Query(..., alias="startDate"), end_date_str: str = Query(..., alias="endDate")):
+def get_interest_rate(startDate: date, endDate: date):
     try:
-        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-        
         cursor = con.cursor()
         
-        # Create a temporary table of all dates in the range
-        cursor.execute("CREATE TEMP TABLE date_range (day DATE)")
-        current_date = start_date
-        while current_date <= end_date:
-            cursor.execute("INSERT INTO date_range (day) VALUES (?)", (current_date,))
-            current_date += timedelta(days=1)
-
-        # For each date in our range, find the most recent RBA rate
         cursor.execute("""
-            SELECT 
-                dr.day,
-                (SELECT rate_value FROM rba_rates WHERE rate_date <= dr.day ORDER BY rate_date DESC LIMIT 1) as rate
-            FROM date_range dr
-        """)
-        
+            SELECT rate_date, rate_value FROM rba_rates
+            WHERE rate_date >= ? AND rate_date <= ?
+            ORDER BY rate_date ASC
+        """, (startDate, endDate))
         rows = cursor.fetchall()
+
+        daily_rates = {row['rate_date']: row['rate_value'] for row in rows}
         
-        if not rows:
-             raise HTTPException(status_code=404, detail="No interest rates found for the specified date range.")
+        # Fill in missing dates (weekends/holidays) with the last known rate
+        all_dates = pd.date_range(start=startDate, end=endDate)
+        filled_rates = []
+        last_rate = None
 
-        # Convert rows to a list of dictionaries
-        daily_rates = [{"date": row["day"], "rate": row["rate"]} for row in rows if row["rate"] is not None]
+        # Get the last known rate before the start date for the initial fill
+        cursor.execute("""
+            SELECT rate_value FROM rba_rates WHERE rate_date < ? ORDER BY rate_date DESC LIMIT 1
+        """, (startDate,))
+        res = cursor.fetchone()
+        if res: last_rate = res['rate_value']
 
-        if not daily_rates:
-             raise HTTPException(status_code=404, detail="No valid interest rates could be mapped to the specified date range.")
+        for dt in all_dates:
+            current_date_str = dt.strftime('%Y-%m-%d')
+            if current_date_str in daily_rates:
+                last_rate = daily_rates[current_date_str]
+            
+            if last_rate is not None:
+                 filled_rates.append({"date": current_date_str, "rate": last_rate})
+            else:
+                # This should ideally not happen if the DB is populated
+                raise HTTPException(status_code=404, detail=f"No rate data available for {current_date_str} or earlier.")
 
-        return {"dailyRates": daily_rates}
-
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format. Please use YYYY-MM-DD.")
+        return {"dailyRates": filled_rates}
     except Exception as e:
         print(f"Error in /get_interest_rate: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newest"):
     q_norm = normalize_query(q)
-    nq = q_norm
-
-    nq_expanded = expand_wildcards(nq)
     
     is_complex_query = (
-        re.search(r'\b(AND|OR|NOT)\b', nq, flags=re.I) or
-        re.search(r'\bw/\d+\b', nq, flags=re.I) or
-        re.search(r'\bNEAR/\d+\b', nq, flags=re.I) or
-        nq.startswith('"') or
-        '!' in nq or
-        '*' in nq_expanded or
-        nq != nq_expanded
+        re.search(r'\b(AND|OR|NOT|w/|NEAR/)\b', q_norm, flags=re.I) or
+        '"' in q_norm or '!' in q_norm
     )
 
     if is_complex_query:
         try:
-            nq2 = preprocess_sqlite_query(nq)
+            nq2 = preprocess_sqlite_query(q_norm)
             print("Executing MATCH with:", nq2)
             
-            total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (nq2,)).fetchone()[0]
+            total_sql = "SELECT COUNT(*) FROM fts WHERE fts MATCH ?"
+            total = con.execute(total_sql, (nq2,)).fetchone()[0]
 
             order_clause = ""
-            if sort == "newest":
-                order_clause = "ORDER BY m.decision_date_norm DESC"
-            elif sort == "oldest":
-                order_clause = "ORDER BY m.decision_date_norm ASC"
-            elif sort == "atoz":
-                order_clause = "ORDER BY m.claimant ASC"
-            elif sort == "ztoa":
-                order_clause = "ORDER BY m.claimant DESC"
+            if sort == "newest": order_clause = "ORDER BY m.decision_date_norm DESC NULLS LAST"
+            elif sort == "oldest": order_clause = "ORDER BY m.decision_date_norm ASC NULLS LAST"
+            elif sort == "atoz": order_clause = "ORDER BY m.claimant ASC NULLS LAST"
+            elif sort == "ztoa": order_clause = "ORDER BY m.claimant DESC NULLS LAST"
 
             if order_clause:
                 sql = f"""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
+                  SELECT fts.rowid FROM fts
                   JOIN docs_fresh d ON fts.rowid = d.rowid
                   LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-                  WHERE fts MATCH ?
-                  {order_clause}
-                  LIMIT ? OFFSET ?
+                  WHERE fts MATCH ? {order_clause} LIMIT ? OFFSET ?
                 """
             else:
-                sql = """
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  WHERE fts MATCH ?
-                  LIMIT ? OFFSET ?
-                """
+                sql = "SELECT rowid FROM fts WHERE fts MATCH ? LIMIT ? OFFSET ?"
             
-            rows = con.execute(sql, (nq2, limit, offset)).fetchall()
+            rowid_rows = con.execute(sql, (nq2, limit, offset)).fetchall()
+            rowids = [r['rowid'] for r in rowid_rows]
+            
+            if not rowids: return {"total": total, "items": []}
+
+            qmarks = ",".join(["?"]*len(rowids))
+            
+            # Fetch metadata and snippets in separate queries
+            meta_sql = f"""
+                SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
+                       m.act, d.reference, d.pdf_path, d.ejs_id, d.rowid
+                FROM docs_fresh d
+                LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+                WHERE d.rowid IN ({qmarks})
+            """
+            meta_rows = con.execute(meta_sql, rowids).fetchall()
+            meta_map = {r['rowid']: dict(r) for r in meta_rows}
+
+            snippet_sql = f"""
+                SELECT rowid, snippet(fts, '[', ']', '…', 35, 35) AS snippet FROM fts WHERE rowid IN ({qmarks})
+            """
+            snippet_rows = con.execute(snippet_sql, rowids).fetchall()
+            snippet_map = {r['rowid']: r['snippet'] for r in snippet_rows}
+
+            items = []
+            phrase_terms, word_terms = get_highlight_terms(nq2)
+            
+            # Reorder items to match the sorted rowids
+            for rowid in rowids:
+                d = meta_map.get(rowid, {})
+                d["id"] = d.get("ejs_id", rowid)
+                
+                snippet_raw = snippet_map.get(rowid, "")
+                # Clean snippet: remove leading zeros from numbers
+                snippet_clean = re.sub(r'\b0+(\d+)', r'\1', snippet_raw)
+
+                # Highlight phrases
+                for phrase in sorted(set(phrase_terms), key=len, reverse=True):
+                    pattern = re.escape(phrase)
+                    snippet_clean = re.sub(f'(?i)({pattern})', r'<mark>\1</mark>', snippet_clean)
+
+                # Highlight individual and wildcard terms
+                for term in sorted(set(word_terms), key=len, reverse=True):
+                    # Skip if term is part of an already highlighted phrase
+                    if any(term.lower() in phrase.lower() for phrase in phrase_terms):
+                        continue
+                    
+                    if term.endswith('*'):
+                        stem = re.escape(term[:-1])
+                        pattern = f'\\b({stem}\\w*)'
+                    else:
+                        pattern = f'\\b({re.escape(term)})\\b'
+                    # Use a function to avoid re-highlighting inside <mark> tags
+                    snippet_clean = re.sub(pattern, lambda m: f'<mark>{m.group(0)}</mark>', snippet_clean, flags=re.I)
+
+
+                d["snippet"] = snippet_clean.replace('[','').replace(']','')
+                items.append(d)
+
+            return {"total": total, "items": items}
 
         except sqlite3.OperationalError as e:
-            print("FTS MATCH error for:", nq, "->", e)
-            if re.search(r'\b(w|near)\s*/\s*\d+', nq, flags=re.I):
-                repaired = _parse_near_robust(nq)
-                if repaired:
-                    print("Retrying with repaired proximity:", repaired)
-                    try:
-                        total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (repaired,)).fetchone()[0]
-                        rows = con.execute("""
-                          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                          FROM fts
-                          WHERE fts MATCH ?
-                          LIMIT ? OFFSET ?
-                        """, (repaired, limit, offset)).fetchall()
-                        nq2 = repaired
-                    except sqlite3.OperationalError:
-                        degraded = re.sub(r'\b(?:w|near)\s*/\s*\d+\b', 'AND', nq, flags=re.I)
-                        degraded = re.sub(r'[!*]', '', degraded)
-                        print("Degrading to:", degraded)
-                        total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (degraded,)).fetchone()[0]
-                        rows = con.execute("""
-                          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                          FROM fts
-                          WHERE fts MATCH ?
-                          LIMIT ? OFFSET ?
-                        """, (degraded, limit, offset)).fetchall()
-                        nq2 = degraded
-                else:
-                    degraded = re.sub(r'\b(?:w|near)\s*/\s*\d+\b', 'AND', nq, flags=re.I)
-                    degraded = re.sub(r'[!*]', '', degraded)
-                    print("Degrading proximity to AND:", degraded)
-                    total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (degraded,)).fetchone()[0]
-                    rows = con.execute("""
-                      SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                      FROM fts
-                      WHERE fts MATCH ?
-                      LIMIT ? OFFSET ?
-                    """, (degraded, limit, offset)).fetchall()
-                    nq2 = degraded
-            else:
-                fallback = re.sub(r'[!*]', '', nq)
-                total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (fallback,)).fetchone()[0]
-                rows = con.execute("""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  WHERE fts MATCH ?
-                  LIMIT ? OFFSET ?
-                """, (fallback, limit, offset)).fetchall()
-                nq2 = fallback
-
-        is_simple_near_query = "NEAR/" in nq2 and " AND " not in nq2 and " OR " not in nq2
-
-        if is_simple_near_query:
-            comp = _extract_near_components(nq2)
-            if comp:
-                left, _, right = comp
-                if (' ' in left.strip()) or (' ' in right.strip()):
-                    print(f"Applying true-phrase proximity filter for simple NEAR query.")
-                    before = len(rows)
-                    rows = _filter_rows_for_true_phrase_near(rows, nq2)
-                    print(f"Phrase-proximity filtered page results: {before} → {len(rows)}")
-
-        items = []
-        phrase_terms, word_terms = get_highlight_terms(nq2)
-        
-        for r in rows:
-            meta = con.execute("""
-              SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
-                     m.act, d.reference, d.pdf_path, d.ejs_id
-              FROM docs_fresh d
-              LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-              WHERE d.rowid = ?
-            """, (r["rowid"],)).fetchone()
-
-            d = dict(meta) if meta else {}
-            d["id"] = d.get("ejs_id", r["rowid"])
-
-            snippet_raw = r["snippet"]
-            snippet_clean = re.sub(r'\b\d+([A-Za-z]+)\b', r'\1', snippet_raw)
-
-            for phrase in sorted(set(phrase_terms), key=len, reverse=True):
-                pattern = re.escape(phrase)
-                snippet_clean = re.sub(fr'(?i)\b{pattern}\b', f"<mark>{phrase}</mark>", snippet_clean)
-
-            for term in sorted(set(word_terms), key=len, reverse=True):
-                if any(term.lower() in phrase.lower() for phrase in phrase_terms):
-                    continue
-                
-                if term.endswith('*'):
-                    stem = term[:-1]
-                    pattern = f'\\b({re.escape(stem)}\\w*)'
-                    snippet_clean = re.sub(pattern, r'<mark>\1</mark>', snippet_clean, flags=re.I)
-                else:
-                    pattern = re.escape(term)
-                    snippet_clean = re.sub(fr'(?i)\b({pattern})\b', r'<mark>\1</mark>', snippet_clean)
-
-            d["snippet"] = snippet_clean
-            items.append(d)
-
-        return {"total": total, "items": items}
+            print(f"FTS MATCH error for: {q_norm} -> {e}")
+            return {"total": 0, "items": []}
 
     # --- Natural language via Meili ---
-    payload = {
-        "q": q_norm,
-        "limit": limit,
-        "offset": offset,
-        "attributesToRetrieve": [
-            "id", "reference", "pdf_path",
-            "claimant", "respondent", "adjudicator",
-            "date", "act", "content"
-        ],
-        "attributesToHighlight": ["content"],
-        "highlightPreTag": "<mark>",
-        "highlightPostTag": "</mark>",
-        "attributesToCrop": ["content"],
-        "cropLength": 100
-    }
-    
-    if sort == "relevance" and not q_norm:
-        sort = "newest"
-
-    if sort == "newest":
-        payload["sort"] = ["id:desc"]
-    elif sort == "oldest":
-        payload["sort"] = ["id:asc"]
-    elif sort == "atoz":
-        payload["sort"] = ["claimant:asc"]
-    elif sort == "ztoa":
-        payload["sort"] = ["claimant:desc"]
+    payload = {"q": q_norm, "limit": limit, "offset": offset}
+    if sort == "newest": payload["sort"] = ["id:desc"]
+    elif sort == "oldest": payload["sort"] = ["id:asc"]
+    elif sort == "atoz": payload["sort"] = ["claimant:asc"]
+    elif sort == "ztoa": payload["sort"] = ["claimant:desc"]
         
     headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
     res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
     data = res.json()
     items = []
     for hit in data.get("hits", []):
-        snippet = hit.get("_formatted", {}).get("content", "")
         items.append({
-            "id": hit.get("id"),
-            "reference": hit.get("reference"),
-            "pdf_path": hit.get("pdf_path"),
-            "claimant": hit.get("claimant"),
-            "respondent": hit.get("respondent"),
-            "adjudicator": hit.get("adjudicator"),
-            "decision_date_norm": hit.get("date"),
-            "act": hit.get("act"),
-            "snippet": snippet
+            "id": hit.get("id"), "reference": hit.get("reference"), "pdf_path": hit.get("pdf_path"),
+            "claimant": hit.get("claimant"), "respondent": hit.get("respondent"),
+            "adjudicator": hit.get("adjudicator"), "decision_date_norm": hit.get("date"),
+            "act": hit.get("act"), "snippet": hit.get("content","")[:300]
         })
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
 
-# ---------- PDF links ----------
-GCS_BUCKET = "sopal-bucket"
-GCS_PREFIX = "pdfs"
-
-def build_gcs_url(file_name: str) -> str:
-    return f"https://storage.googleapis.com/{GCS_BUCKET}/{GCS_PREFIX}/{file_name}"
-
-@app.get("/open")
-def open_pdf(p: str, disposition: str = "inline"):
-    try:
-        file_name = os.path.basename(p)
-        return {"url": build_gcs_url(file_name)}
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=400)
-
-# ---------- AI Summarise ----------
-@app.get("/summarise/{decision_id}")
-def summarise(decision_id: str = Path(...)):
-    try:
-        row = con.execute("SELECT summary FROM ai_summaries WHERE decision_id = ?", (decision_id,)).fetchone()
-        if row:
-            return {"id": decision_id, "summary": row["summary"]}
-
-        r = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
-        if not r or not r["full_text"]:
-            raise HTTPException(status_code=404, detail="Decision not found")
-
-        text = r["full_text"][:300000]
-
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are SopalAI, a legal assistant specialising in construction law. "
-                        "Summarise adjudication decisions under Queensland's Security of Payment legislation "
-                        "in clear, plain English. "
-                        "Respond as if the user is asking you about the decision directly. "
-                        "Do not say 'the adjudication decision you provided' or similar. "
-                        "Structure the summary into bullet points or short sections with HTML-friendly formatting "
-                        "(<strong> for headings, <ul>/<li> for lists) with compact spacing (no double/triple lines)."
-                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
-                        "not Markdown (#, ##, ###)."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": f"""
-Summarise this adjudication decision in 5–7 bullet points, covering:
-- The parties and the works
-- Payment claim amount and payment schedule response
-- Any jurisdictional challenges
-- The factual disputes and evidence
-- The adjudicator's reasoning
-- The final outcome, amount awarded, and fee split
-Don't actually title it "Summary" or the like please, go straight into bullet points
-
-Decision text:
-{text}
-"""
-                }
-            ],
-            max_tokens=800,
-        )
-
-        summary = resp.choices[0].message.content.strip()
-        con.execute("INSERT OR REPLACE INTO ai_summaries(decision_id, summary) VALUES (?, ?)", (decision_id, summary))
-        con.commit()
-        return {"id": decision_id, "summary": summary}
-    except Exception as e:
-        print("ERROR in /summarise:", e)
-        return JSONResponse({"error": str(e)}, status_code=500)
-
-# ---------- FEEDBACK FORM ----------
 @app.post("/send-feedback")
 async def send_feedback(
-    type: str = Form(...),
-    name: str = Form(""),
-    email: str = Form(""),
-    subject: str = Form(...),
-    priority: str = Form(...),
-    details: str = Form(...),
-    browser: str = Form(""),
-    device: str = Form("")
+    type: str = Form(...), name: str = Form(""), email: str = Form(""),
+    subject: str = Form(...), priority: str = Form(...), details: str = Form(...),
+    browser: str = Form(""), device: str = Form("")
 ):
     msg = EmailMessage()
     msg["From"] = "sopal.aus@gmail.com"
     msg["To"] = "sopal.aus@gmail.com"
     msg["Subject"] = f"[{type.upper()}] {subject}"
-    body = f"""
-Feedback Type: {type}
-Name: {name}
-Email: {email}
-Priority: {priority}
-Browser: {browser}
-Device: {device}
-
-Details:
-{details}
-"""
+    body = f"Feedback Type: {type}\nName: {name}\nEmail: {email}\nPriority: {priority}\nBrowser: {browser}\nDevice: {device}\n\nDetails:\n{details}"
     msg.set_content(body)
-
     try:
         await aiosmtplib.send(
-            msg,
-            hostname="smtp.gmail.com",
-            port=587,
-            start_tls=True,
-            username="sopal.aus@gmail.com",
-            password=os.getenv("SMTP_PASSWORD"),
+            msg, hostname="smtp.gmail.com", port=587, start_tls=True,
+            username="sopal.aus@gmail.com", password=os.getenv("SMTP_PASSWORD"),
         )
         return {"ok": True, "message": "Feedback sent successfully"}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
-# ---------- AI Ask ----------
 @app.post("/ask/{decision_id}")
 def ask_ai(decision_id: str = Path(...), question: str = Form(...)):
     try:
         row = con.execute("SELECT full_text FROM docs_fresh WHERE ejs_id = ?", (decision_id,)).fetchone()
         if not row or not row["full_text"]:
             raise HTTPException(status_code=404, detail="Decision not found")
-
         text = row["full_text"][:15000]
-
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are SopalAI, assisting users with adjudication decisions under the BIF Act or BCIPA. "
-                        "Respond directly to the user's question as if they asked you about the decision. "
-                        "Do not say 'the adjudication decision you provided' or 'the text you gave me'. "
-                        "Write in clear, plain English with headings and bullet points formatted in HTML."
-                        "Structure the summary using only HTML tags (<strong>, <ul>, <li>, <p>), "
-                        "not Markdown (#, ##, ###)."
-                    )
-                },
+                {"role": "system", "content": "You are SopalAI..."},
                 {"role": "user", "content": f"Decision text:\n{text}"},
                 {"role": "user", "content": f"Question: {question}"}
-            ],
-            max_tokens=600
+            ], max_tokens=600
         )
-
-        answer = resp.choices[0].message.content.strip()
-        return {"answer": answer}
+        return {"answer": resp.choices[0].message.content.strip()}
     except Exception as e:
-        print("ERROR in /ask:", e)
+        print(f"ERROR in /ask: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
-# ---------- DB Download ----------
-@app.get("/download-db")
-async def download_db():
-    return FileResponse("/tmp/qbcc.db", filename="qbcc.db")
-
-# ---------- serve frontend ----------
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
 
