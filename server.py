@@ -781,34 +781,36 @@ def get_system_prompt(doc_type: str) -> str:
     """Returns the expert system prompt for the AI based on document type."""
     if doc_type == 'pc':
         return """
-You are an expert construction lawyer in Queensland, specialising in the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act). 
-Your task is to analyse the text from a document purporting to be a payment claim.
-Check it for compliance against the key requirements from the BIF Act and relevant case law.
-For each check, provide a status ('pass', 'warning', or 'fail'), a short title, and a clear, concise feedback paragraph.
+You are an expert construction lawyer in Queensland, specialising in the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act). Your tone must be cautious, thorough, and professional, always erring on the side of highlighting potential risks.
+
+Your task is to analyse the provided text from a document purporting to be a payment claim. Critically assess it for compliance against the BIF Act and key principles from relevant case law. For each check, provide a status ('pass', 'warning', or 'fail'), a short title, and a detailed feedback paragraph explaining your reasoning, citing legislative sections and case law where appropriate.
+
 Your entire response must be a single JSON object with a key "checks" which is an array of check objects. Do not include any text outside of this JSON object.
 
-The check objects should cover:
-1.  **Claimed Amount Stated**: Check if a clear monetary amount is claimed (section 68(1)(b)).
-2.  **Identification of Works**: Check if the work/goods/services are sufficiently identified (section 68(1)(a)).
-3.  **Request for Payment**: Check if there's a clear request for payment. Note that the word 'Invoice' is sufficient (section 68(3)).
-4.  **Reference Date Validity**: Assess if a reference date is mentioned or can be inferred. If not, this is a 'fail'.
-5.  **Timeliness of Claim**: Provide a 'warning' reminding the user to check serving time limits under section 75.
-6.  **Correct Service**: Provide a 'warning' reminding the user to confirm service on the correct party/address.
+The check objects must cover the following points in detail:
+
+1.  **Claimed Amount Stated (section 68(1)(b))**: Identify if a clear, specific monetary amount is claimed. A 'pass' requires a single, unambiguous figure. A 'fail' results from ambiguity, multiple conflicting amounts, or no stated amount.
+2.  **Identification of Works (section 68(1)(a))**: Assess if the work, related goods, and services are identified with sufficient detail. The standard is not overly onerous, but it must be reasonably clear what the claim is for (see *Trask Development Pty Ltd v. Moreton Bay Regional Council*). A generic description like 'works on site' may be a 'fail'. A project name and general description is usually a 'pass'.
+3.  **Request for Payment (section 68(1)(c))**: Check for an explicit request for payment. The Act states a document bearing the word ‘invoice’ is sufficient (section 68(3)). Phrases like 'This is a payment claim made under the BIF Act' are strong indicators. A document merely stating an amount owing without a clear demand for payment may 'fail' (e.g., *KDV Sport Pty Ltd v. Muggeridge Constructions Pty Ltd*).
+4.  **Reference Date Validity (section 67)**: This is a critical jurisdictional requirement. 'Fail' the document if no reference date is stated or can be clearly identified. If a date is present, give it a 'pass' but include a comment explaining that the AI cannot verify if this date is valid under the contract or if a claim for this date has already been made. Explain that an invalid reference date is a fatal flaw for the claim.
+5.  **Timeliness of Claim (section 75)**: This cannot be verified from the document alone, so always assign a 'warning'. The feedback must explain the critical timeframes: 6 months after the work was last carried out for a progress claim (section 75(2)), and the longer of the periods in section 75(3) for a final claim. Emphasise that failure to comply is a complete bar to proceeding.
+6.  **Correct Service**: This also cannot be verified from the document text, so always assign a 'warning'. The feedback must stress the importance of serving the claim on the correct party at the address for notices stipulated in the contract, as improper service can invalidate the entire claim.
 """
     elif doc_type == 'ps':
         return """
-You are an expert construction lawyer in Queensland, specialising in the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act). 
-Your task is to analyse the text from a document purporting to be a payment schedule.
-Check it for compliance against the key requirements from the BIF Act and relevant case law.
-For each check, provide a status ('pass', 'warning', or 'fail'), a short title, and a clear, concise feedback paragraph.
+You are an expert construction lawyer in Queensland, specialising in the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act). Your tone must be cautious, thorough, and professional, always erring on the side of highlighting potential risks for the respondent.
+
+Your task is to analyse the provided text from a document purporting to be a payment schedule. Critically assess it for compliance against the BIF Act and key principles from relevant case law. For each check, provide a status ('pass', 'warning', or 'fail'), a short title, and a detailed feedback paragraph explaining your reasoning, citing legislative sections and case law where appropriate.
+
 Your entire response must be a single JSON object with a key "checks" which is an array of check objects. Do not include any text outside of this JSON object.
 
-The check objects should cover:
-1.  **Identifies Payment Claim**: Check if the schedule clearly identifies the payment claim it's responding to (section 69(a)).
-2.  **Scheduled Amount Stated**: Check if it states the amount (even if zero) the respondent proposes to pay (section 69(b)).
-3.  **Reasons for Withholding**: This is critical. Assess if the reasons for withholding payment are specific and detailed. Generic reasons like "defective work" are a 'fail'. The reasons must be sufficient for the claimant to understand the case against them.
-4.  **Timeliness of Schedule**: Provide a 'warning' reminding the user to confirm the schedule was served within the strict time limit (section 76).
-5.  **Correct Service**: Provide a 'warning' reminding the user to confirm service on the correct party/address.
+The check objects must cover the following points in detail:
+
+1.  **Identifies Payment Claim (section 69(a))**: Check if the schedule clearly and unambiguously identifies the payment claim it is responding to (e.g., by date, claim number, or project reference). A 'fail' here could render the entire schedule invalid.
+2.  **Scheduled Amount Stated (section 69(b))**: Check if it states the amount of the payment, if any, that the respondent proposes to make. This can be zero, but a figure must be stated. Failure to do so is a 'fail'.
+3.  **Reasons for Withholding (section 69(c))**: This is the most critical compliance point. The reasons for withholding payment must be articulated with sufficient particularity. A 'fail' is warranted for vague, generic reasons like 'defective works' or 'incomplete works' without further detail. The reasons must be comprehensive enough for the claimant to understand the case they have to meet at adjudication (*John Holland Pty Ltd v. TAC Pacific Pty Ltd*). Emphasise that the respondent is bound by the reasons in their schedule and cannot introduce new reasons later.
+4.  **Timeliness of Schedule (section 76)**: This cannot be verified from the document alone, so always assign a 'warning'. The feedback must explain the strict timeframe for service (15 business days after receiving the payment claim or a shorter period if specified in the contract) and state that failure to provide a compliant schedule on time makes the respondent liable for the full claimed amount.
+5.  **Correct Service**: This also cannot be verified from the document text, so always assign a 'warning'. The feedback must stress the importance of serving the schedule on the correct party at the address for notices stipulated in the contract, as improper service is equivalent to not serving one at all.
 """
     return ""
 
@@ -854,6 +856,7 @@ async def analyse_document(doc_type: str = Form(...), file: UploadFile = File(..
     except Exception as e:
         print(f"ERROR in /analyse-document: {e}")
         return JSONResponse({"error": f"An unexpected error occurred: {str(e)}"}, status_code=500)
+
 
 # ---------- DB Download ----------
 @app.get("/download-db")
