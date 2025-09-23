@@ -1,11 +1,13 @@
+import os
 import sqlite3
 import time
 from meilisearch import Client
+from meilisearch.errors import MeilisearchCommunicationError
 
 # ---- CONFIG ----
 DB_PATH = "/tmp/qbcc.db"
-MEILI_HOST = "http://localhost:7700"    # use your Render Meili URL if not localhost
-MEILI_KEY = "YOUR_MEILI_API_KEY"        # replace with the same key in your env
+MEILI_HOST = "https://meilisearch-v1-9-3xaz.onrender.com"
+MEILI_KEY = os.getenv("MEILI_MASTER_KEY")  # make sure this is set in Render
 EJS_IDS = ("EJS07378","EJS07379","EJS07380","EJS07381","EJS07382","EJS07383","EJS07384")
 
 # ---- CONNECT TO SQLITE ----
@@ -35,21 +37,27 @@ if not docs:
     exit(0)
 
 # ---- CONNECT TO MEILI ----
-client = Client(MEILI_HOST, MEILI_KEY)
-index = client.index("decisions")
+try:
+    client = Client(MEILI_HOST, MEILI_KEY)
+    index = client.index("decisions")
 
-# ---- PUSH TO MEILI ----
-task = index.add_documents(docs)
-task_uid = task["taskUid"]
-print(f"Pushed {len(docs)} docs. Task UID: {task_uid}")
+    # ---- PUSH TO MEILI ----
+    task = index.add_documents(docs)
+    task_uid = task["taskUid"]
+    print(f"Pushed {len(docs)} docs. Task UID: {task_uid}")
 
-# ---- POLL STATUS ----
-while True:
-    status = client.get_task(task_uid)
-    if status["status"] in ("succeeded", "failed"):
-        print("Final status:", status["status"])
-        if status["status"] == "failed":
-            print(status)
-        break
-    print("Task still processing... waiting 2s")
-    time.sleep(2)
+    # ---- POLL STATUS ----
+    while True:
+        status = client.get_task(task_uid)
+        if status["status"] in ("succeeded", "failed"):
+            print("Final status:", status["status"])
+            if status["status"] == "failed":
+                print(status)
+            break
+        print("Task still processing... waiting 2s")
+        time.sleep(2)
+
+except MeilisearchCommunicationError as e:
+    print("❌ Could not connect to MeiliSearch. Check MEILI_HOST and MEILI_KEY.")
+    print(str(e))
+    exit(1)
