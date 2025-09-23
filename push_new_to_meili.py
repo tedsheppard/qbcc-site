@@ -41,21 +41,21 @@ try:
     client = Client(MEILI_HOST, MEILI_KEY)
     index = client.index("decisions")
 
-    # ---- PUSH TO MEILI ----
-    task = index.add_documents(docs)
-    task_uid = task["taskUid"]
-    print(f"Pushed {len(docs)} docs. Task UID: {task_uid}")
+# ---- PUSH TO MEILI ----
+task = index.add_documents(docs)
+task_uid = task.task_uid
+print(f"Pushed {len(docs)} docs. Task UID: {task_uid}")
 
-    # ---- POLL STATUS ----
-    while True:
-        status = client.get_task(task_uid)
-        if status["status"] in ("succeeded", "failed"):
-            print("Final status:", status["status"])
-            if status["status"] == "failed":
-                print(status)
-            break
-        print("Task still processing... waiting 2s")
-        time.sleep(2)
+# ---- POLL STATUS ----
+while True:
+    status = client.get_task(task_uid)
+    if status.status in ("succeeded", "failed"):
+        print("Final status:", status.status)
+        if status.status == "failed":
+            print(status)
+        break
+    print("Task still processing... waiting 2s")
+    time.sleep(2)
 
 except MeilisearchCommunicationError as e:
     print("❌ Could not connect to MeiliSearch. Check MEILI_HOST and MEILI_KEY.")
