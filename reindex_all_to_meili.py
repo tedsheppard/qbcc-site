@@ -1,4 +1,4 @@
-import os, sqlite3, math, time
+import os, sqlite3, time
 from meilisearch import Client
 
 DB_PATH = "/tmp/qbcc.db"
@@ -7,20 +7,21 @@ MEILI_KEY  = os.environ["MEILI_MASTER_KEY"]
 INDEX_UID  = "decisions"
 BATCH_SIZE = 1000
 
+# Use actual column names from your DB
 sql = """
 SELECT
-  id            AS ejs_id,      -- Meili primary key
-  id            AS id,          -- frontend also expects 'id'
+  ejs_id,                        -- primary key
+  ejs_id AS id,                  -- keep 'id' for frontend compatibility
   reference,
   pdf_path,
   claimant,
   respondent,
   adjudicator,
-  date,                         -- frontend expects 'date'
+  decision_date_norm AS date,     -- frontend expects 'date'
   act,
   content
 FROM search_index
-ORDER BY id
+ORDER BY ejs_id
 """
 
 con = sqlite3.connect(DB_PATH)
@@ -33,7 +34,7 @@ print(f"Found {cnt} rows in search_index.")
 client = Client(MEILI_HOST, MEILI_KEY)
 index = client.index(INDEX_UID)
 
-# Ensure primary key is correct (won't recreate the index; safe to call)
+# Ensure primary key is correct
 try:
     idx_info = client.get_index(INDEX_UID)
     if idx_info.get("primaryKey") != "ejs_id":
@@ -51,7 +52,7 @@ while True:
     docs = [dict(r) for r in rows]
     task = index.add_documents(docs)
     task_uid = getattr(task, "uid", getattr(task, "taskUid", None))
-    # Simple poll
+    # Poll task status
     while True:
         st = client.get_task(task_uid)
         if st["status"] in ("succeeded", "failed"):
