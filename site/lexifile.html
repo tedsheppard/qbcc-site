@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LexiFile - AI Document Renaming for Legal Professionals</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .blurry-gradient-bg {
+            position: absolute;
+            top: -200px;
+            left: -200px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+            z-index: -1;
+        }
+        .blurry-gradient-bg-2 {
+            position: absolute;
+            bottom: -200px;
+            right: -200px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+            z-index: -1;
+        }
+        .file-item.selected {
+            background-color: #eef2ff; /* indigo-50 */
+            border-left-color: #4f46e5; /* indigo-600 */
+        }
+        .loader {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #4f46e5;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 overflow-hidden relative">
+    <div class="blurry-gradient-bg"></div>
+    <div class="blurry-gradient-bg-2"></div>
+
+    <!-- Page: Landing -->
+    <div id="landingPage" class="h-screen overflow-y-auto">
+        <header class="p-4 sm:p-6 flex justify-between items-center bg-white/80 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-200">
+            <div class="flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
+                <span class="font-bold text-xl text-gray-800">LexiFile</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="showPage('loginPage')" class="text-gray-600 hover:text-blue-500 font-medium transition">Log In</button>
+                <button onclick="showPage('loginPage')" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-600 transition shadow-sm">Start Free Trial</button>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-4 py-16 sm:py-24 text-center">
+            <h1 class="text-4xl sm:text-6xl font-extrabold text-gray-900 tracking-tight">
+                Stop Wasting Billable Hours on <span class="gradient-text">Document Drudgery.</span>
+            </h1>
+            <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-600">
+                LexiFile uses AI to instantly rename your legal documents into a clean, court-ready format. Go from <code class="bg-gray-200 text-gray-700 px-1 py-0.5 rounded">IMG_2851.pdf</code> to <code class="bg-gray-200 text-gray-700 px-1 py-0.5 rounded">20250924_Affidavit_John-Smith.pdf</code> in seconds.
+            </p>
+            <div class="mt-8 flex justify-center space-x-4">
+                <button onclick="showPage('loginPage')" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-blue-700 transition shadow-lg">Start Your Free 14-Day Trial</button>
+            </div>
+            <div class="mt-16 max-w-4xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200">
+                <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center space-x-2">
+                    <span class="w-3 h-3 bg-red-400 rounded-full"></span>
+                    <span class="w-3 h-3 bg-yellow-400 rounded-full"></span>
+                    <span class="w-3 h-3 bg-green-400 rounded-full"></span>
+                </div>
+                <img src="https://placehold.co/1200x600/F3F4F6/374151?text=App+Screenshot+Showing+Drag+and+Drop" alt="LexiFile App Screenshot" class="w-full object-cover">
+            </div>
+        </main>
+        
+        <!-- How it works -->
+        <section class="bg-white py-20 sm:py-24">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl font-bold text-center text-gray-900">How It Works</h2>
+                <p class="text-center mt-4 text-gray-600 max-w-xl mx-auto">A simple, three-step process to reclaim your time and organize your case files effortlessly.</p>
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <div class="text-center">
+                        <div class="flex justify-center items-center w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full mx-auto">
+                            <i data-lucide="upload-cloud"></i>
+                        </div>
+                        <h3 class="mt-6 text-xl font-semibold text-gray-900">1. Upload</h3>
+                        <p class="mt-2 text-gray-600">Drag and drop hundreds of documents at once. We support PDF, DOCX, DOC, MSG, and more.</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="flex justify-center items-center w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full mx-auto">
+                            <i data-lucide="sparkles"></i>
+                        </div>
+                        <h3 class="mt-6 text-xl font-semibold text-gray-900">2. AI Rename</h3>
+                        <p class="mt-2 text-gray-600">Our AI reads each document to identify the date, document type, parties, and subject matter.</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="flex justify-center items-center w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full mx-auto">
+                            <i data-lucide="download"></i>
+                        </div>
+                        <h3 class="mt-6 text-xl font-semibold text-gray-900">3. Review & Export</h3>
+                        <p class="mt-2 text-gray-600">Quickly review suggestions, make edits, and download all your files in a neatly organized `.zip` archive.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="py-20 sm:py-24">
+            <!-- Testimonial Section is omitted for brevity but would go here -->
+        </section>
+        
+        <footer class="bg-gray-800 text-white text-center p-8">
+            <p>&copy; 2025 LexiFile Inc. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Page: Login -->
+    <div id="loginPage" class="hidden h-screen flex items-center justify-center bg-gray-100">
+        <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+            <div class="flex items-center justify-center space-x-2 mb-6">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
+                <span class="font-bold text-2xl text-gray-800">LexiFile</span>
+            </div>
+            <h2 class="text-2xl font-bold text-center text-gray-800">Welcome Back</h2>
+            <p class="text-center text-gray-500 mb-8">Log in to continue to your workspace.</p>
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" value="junior.associate@example.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" value="Demo123!" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow">Log In</button>
+            </form>
+            <p class="text-center text-sm text-gray-500 mt-6">
+                Don't have an account? <a href="#" class="font-medium text-blue-600 hover:underline">Sign Up</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Page: App Wizard -->
+    <div id="appPage" class="hidden h-screen flex flex-col">
+        <!-- App Header -->
+        <header class="flex-shrink-0 bg-white border-b border-gray-200 p-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
+                <span class="font-bold text-lg text-gray-800">LexiFile</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="downloadBtn" disabled class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2">
+                    <i data-lucide="download"></i>
+                    <span>Download (.zip)</span>
+                </button>
+                <img src="https://placehold.co/32x32/E0E7FF/4F46E5?text=JA" class="rounded-full" alt="User Avatar">
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <main class="flex-grow flex min-h-0">
+            <!-- Panel 1: File Queue -->
+            <div class="w-1/3 border-r border-gray-200 flex flex-col bg-white">
+                <div class="p-4 border-b border-gray-200 flex-shrink-0">
+                    <label for="fileUpload" class="w-full cursor-pointer bg-blue-50 text-blue-700 border-2 border-dashed border-blue-200 rounded-lg flex flex-col items-center justify-center p-4 hover:bg-blue-100 transition">
+                        <i data-lucide="upload" class="mb-2"></i>
+                        <span class="font-semibold text-sm">Upload Documents</span>
+                        <span class="text-xs">or drag and drop</span>
+                    </label>
+                    <input type="file" id="fileUpload" class="hidden" multiple>
+                </div>
+                <div id="fileQueue" class="flex-grow overflow-y-auto p-2 space-y-1">
+                    <!-- Placeholder -->
+                    <div id="fileQueuePlaceholder" class="text-center p-10 text-gray-500">
+                        <i data-lucide="folder-open" class="mx-auto h-12 w-12 text-gray-400"></i>
+                        <p class="mt-4 font-medium">Your document queue is empty.</p>
+                        <p class="text-sm">Upload files to get started.</p>
+                    </div>
+                    <!-- File items will be injected here -->
+                </div>
+            </div>
+
+            <!-- Panel 2: Document Preview -->
+            <div class="w-1/2 flex flex-col bg-gray-100">
+                <div class="flex-grow flex items-center justify-center p-4">
+                    <div id="documentPreview" class="w-full h-full bg-white rounded-lg shadow-inner border border-gray-200 p-8 overflow-y-auto">
+                        <div id="previewPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
+                            <i data-lucide="file-text" class="h-16 w-16"></i>
+                            <p class="mt-4 font-medium text-lg">Select a file to preview</p>
+                            <p class="text-sm">The document content will be displayed here.</p>
+                        </div>
+                        <div id="previewContent" class="hidden prose max-w-none">
+                            <!-- Document content will be injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 3: Smart Editor -->
+            <div class="w-1/3 border-l border-gray-200 flex flex-col bg-white">
+                <div id="editorPanel" class="flex-grow p-6 space-y-6">
+                    <div id="editorPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
+                        <i data-lucide="edit-3" class="h-16 w-16"></i>
+                        <p class="mt-4 font-medium text-lg text-center">Select a file to edit its name</p>
+                    </div>
+                    <div id="editorForm" class="hidden space-y-6">
+                        <div>
+                            <label for="editorDate" class="block text-sm font-bold text-gray-800 mb-1">Date</label>
+                            <p class="text-xs text-gray-500 mb-2">AI-detected date from the document.</p>
+                            <input type="text" id="editorDate" placeholder="YYYYMMDD" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                        </div>
+                        <div>
+                            <label for="editorDocType" class="block text-sm font-bold text-gray-800 mb-1">Document Type (Strict Name)</label>
+                             <p class="text-xs text-gray-500 mb-2">AI-classified document category.</p>
+                            <input type="text" id="editorDocType" list="docTypes" placeholder="e.g., Letter from X to Y" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <datalist id="docTypes">
+                                <option value="Affidavit of Service"></option>
+                                <option value="Contract for Services"></option>
+                                <option value="Letter from X to Y"></option>
+                                <option value="Pleading"></option>
+                                <option value="Notice of Motion"></option>
+                                <option value="Discovery Request"></option>
+                            </datalist>
+                        </div>
+                        <div>
+                            <label for="editorDescription" class="block text-sm font-bold text-gray-800 mb-1">Description (Looser Description)</label>
+                             <p class="text-xs text-gray-500 mb-2">AI-summarized subject matter.</p>
+                            <textarea id="editorDescription" placeholder="e.g., Security for Costs" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                        <div class="pt-4 border-t border-gray-200">
+                             <h4 class="text-sm font-bold text-gray-800 mb-2">Live Filename Preview</h4>
+                             <div class="p-3 bg-gray-100 rounded-lg text-gray-700 text-sm break-all font-mono">
+                                <span id="previewDate"></span> - 
+                                <span id="previewDocType"></span> - 
+                                <span id="previewDescription"></span>.
+                                <span id="previewExtension"></span>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-2 transition-all duration-300">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            currentPage: 'landingPage',
+            files: [],
+            selectedFileId: null,
+        };
+
+        // --- DOM Elements ---
+        const pages = {
+            landingPage: document.getElementById('landingPage'),
+            loginPage: document.getElementById('loginPage'),
+            appPage: document.getElementById('appPage'),
+        };
+        const loginForm = document.getElementById('loginForm');
+        const fileUpload = document.getElementById('fileUpload');
+        const fileQueue = document.getElementById('fileQueue');
+        const fileQueuePlaceholder = document.getElementById('fileQueuePlaceholder');
+        const documentPreview = document.getElementById('documentPreview');
+        const previewPlaceholder = document.getElementById('previewPlaceholder');
+        const previewContent = document.getElementById('previewContent');
+        const editorPanel = document.getElementById('editorPanel');
+        const editorPlaceholder = document.getElementById('editorPlaceholder');
+        const editorForm = document.getElementById('editorForm');
+        const editorDate = document.getElementById('editorDate');
+        const editorDocType = document.getElementById('editorDocType');
+        const editorDescription = document.getElementById('editorDescription');
+        const previewDate = document.getElementById('previewDate');
+        const previewDocType = document.getElementById('previewDocType');
+        const previewDescription = document.getElementById('previewDescription');
+        const previewExtension = document.getElementById('previewExtension');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+
+        // --- Mock AI and Data ---
+        const mockDocTypes = ["Letter from X to Y", "Contract for Services", "Affidavit of Service", "Statement of Claim", "Notice of Motion"];
+        const mockDescriptions = ["Security for Costs", "Client Onboarding", "Regarding Case #12345", "Draft Agreement", "Evidence Submission"];
+        
+        function simulateAIAnalysis(file) {
+            // Simulate processing delay
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const randomDate = new Date(+new Date() - Math.floor(Math.random() * 10000000000));
+                    const yyyymmdd = randomDate.toISOString().slice(0,10).replace(/-/g,"");
+                    const docType = mockDocTypes[Math.floor(Math.random() * mockDocTypes.length)];
+                    const description = mockDescriptions[Math.floor(Math.random() * mockDescriptions.length)];
+                    resolve({ date: yyyymmdd, docType, description });
+                }, 500 + Math.random() * 500);
+            });
+        }
+
+        function getMockDocumentContent(fileData) {
+            return `
+                <h1 class="font-bold text-2xl mb-4">${fileData.docType}</h1>
+                <p class="text-sm text-gray-500 mb-6"><strong>Date:</strong> ${fileData.date.slice(0,4)}-${fileData.date.slice(4,6)}-${fileData.date.slice(6,8)}</p>
+                <p class="mb-4">This document, concerning <strong>${fileData.description}</strong>, is a legally binding agreement entered into on the aforementioned date.</p>
+                <p class="mb-4">This is a simulated preview of the document <em>${fileData.originalName}</em>. The AI has highlighted key information it used to generate the filename components. In a real application, this would be a high-fidelity render of the actual document.</p>
+                <div class="p-4 bg-yellow-100 border-l-4 border-yellow-400 rounded-r-lg my-4">
+                    <p><strong>AI Detected Date:</strong> ${fileData.date}</p>
+                </div>
+                <p class="mb-4">Further clauses and stipulations would follow here, outlining the terms and conditions of the agreement or the statements made in the affidavit. The purpose of this preview is to demonstrate how LexiFile shows the user the context for the suggested filename.</p>
+                <div class="p-4 bg-blue-100 border-l-4 border-blue-400 rounded-r-lg my-4">
+                    <p><strong>AI Detected Subject:</strong> ${fileData.description}</p>
+                </div>
+            `;
+        }
+
+
+        // --- Rendering ---
+        function renderFileQueue() {
+            if (state.files.length === 0) {
+                fileQueuePlaceholder.classList.remove('hidden');
+                downloadBtn.disabled = true;
+                return;
+            }
+            fileQueuePlaceholder.classList.add('hidden');
+            downloadBtn.disabled = false;
+
+            fileQueue.innerHTML = state.files.map(file => {
+                const isSelected = file.id === state.selectedFileId;
+                const newName = `${file.date} - ${file.docType} - ${file.description}.${file.extension}`;
+                let statusIcon;
+                switch(file.status) {
+                    case 'processing': statusIcon = `<div class="loader"></div>`; break;
+                    case 'review': statusIcon = `<i data-lucide="alert-circle" class="text-yellow-500"></i>`; break;
+                    case 'approved': statusIcon = `<i data-lucide="check-circle-2" class="text-green-500"></i>`; break;
+                }
+
+                return `
+                    <div class="file-item p-3 border-l-4 ${isSelected ? 'selected' : 'border-transparent'} rounded-md cursor-pointer hover:bg-gray-100 transition" data-id="${file.id}">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-2">
+                                ${statusIcon}
+                                <span class="text-sm font-medium text-gray-800 truncate" title="${file.originalName}">${file.originalName}</span>
+                            </div>
+                            <button class="approve-btn text-gray-400 hover:text-green-600 ${file.status === 'approved' ? 'hidden' : ''}" data-id="${file.id}" title="Approve">
+                                <i data-lucide="check" class="h-5 w-5"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-blue-600 font-mono truncate" title="${newName}">${newName}</p>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function renderEditor() {
+            if (!state.selectedFileId) {
+                editorPlaceholder.classList.remove('hidden');
+                editorForm.classList.add('hidden');
+                previewPlaceholder.classList.remove('hidden');
+                previewContent.classList.add('hidden');
+                return;
+            }
+            
+            const file = state.files.find(f => f.id === state.selectedFileId);
+            if (!file) return;
+
+            editorPlaceholder.classList.add('hidden');
+            editorForm.classList.remove('hidden');
+            previewPlaceholder.classList.add('hidden');
+            previewContent.classList.remove('hidden');
+
+            editorDate.value = file.date;
+            editorDocType.value = file.docType;
+            editorDescription.value = file.description;
+            
+            updateFilenamePreview();
+            
+            previewContent.innerHTML = getMockDocumentContent(file);
+        }
+
+        function updateFilenamePreview() {
+            const file = state.files.find(f => f.id === state.selectedFileId);
+            if (!file) return;
+            
+            previewDate.textContent = editorDate.value;
+            previewDocType.textContent = editorDocType.value;
+            previewDescription.textContent = editorDescription.value;
+            previewExtension.textContent = file.extension;
+        }
+
+        // --- Event Handlers & Logic ---
+        function showPage(pageId) {
+            state.currentPage = pageId;
+            Object.values(pages).forEach(page => page.classList.add('hidden'));
+            pages[pageId].classList.remove('hidden');
+            lucide.createIcons(); // Re-render icons on page change
+        }
+        
+        function handleLogin(e) {
+            e.preventDefault();
+            // Basic validation simulation
+            if (email.value === 'junior.associate@example.com' && password.value === 'Demo123!') {
+                showPage('appPage');
+            } else {
+                alert('Invalid credentials. Please use the provided sample login.');
+            }
+        }
+
+        async function handleFileUpload(e) {
+            const uploadedFiles = e.target.files;
+            if (uploadedFiles.length === 0) return;
+
+            const newFiles = Array.from(uploadedFiles).map(file => ({
+                id: crypto.randomUUID(),
+                originalName: file.name,
+                extension: file.name.split('.').pop(),
+                status: 'processing', // processing, review, approved
+                date: '...',
+                docType: 'Analyzing...',
+                description: '...'
+            }));
+            
+            state.files.push(...newFiles);
+            renderFileQueue();
+
+            for (const file of newFiles) {
+                const aiResult = await simulateAIAnalysis(file);
+                const fileIndex = state.files.findIndex(f => f.id === file.id);
+                if (fileIndex > -1) {
+                    state.files[fileIndex] = { ...state.files[fileIndex], ...aiResult, status: 'review' };
+                }
+                renderFileQueue();
+            }
+        }
+        
+        function handleFileSelect(e) {
+            const target = e.target.closest('.file-item');
+            if (!target) return;
+            
+            const fileId = target.dataset.id;
+            const file = state.files.find(f => f.id === fileId);
+            if (file && file.status !== 'processing') {
+                state.selectedFileId = fileId;
+                renderFileQueue();
+                renderEditor();
+            }
+        }
+
+        function handleEditorChange() {
+            if (!state.selectedFileId) return;
+            const fileIndex = state.files.findIndex(f => f.id === state.selectedFileId);
+            if (fileIndex > -1) {
+                state.files[fileIndex].date = editorDate.value;
+                state.files[fileIndex].docType = editorDocType.value;
+                state.files[fileIndex].description = editorDescription.value;
+                state.files[fileIndex].status = 'review';
+                renderFileQueue();
+                updateFilenamePreview();
+            }
+        }
+        
+        function handleApprove(e) {
+            const button = e.target.closest('.approve-btn');
+            if (!button) return;
+            e.stopPropagation(); // prevent file selection
+            
+            const fileId = button.dataset.id;
+            const fileIndex = state.files.findIndex(f => f.id === fileId);
+            if (fileIndex > -1) {
+                state.files[fileIndex].status = 'approved';
+                renderFileQueue();
+            }
+        }
+        
+        function handleDownload() {
+            if (state.files.length === 0) return;
+            showToast('Preparing your .zip file for download...', 'info');
+            // In a real app, this would trigger a server-side process to zip and download files.
+            setTimeout(() => {
+                showToast('Download started!', 'success');
+            }, 1500);
+        }
+
+        function showToast(message) {
+            toastMessage.textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 3000);
+        }
+        
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            showPage('landingPage');
+
+            loginForm.addEventListener('submit', handleLogin);
+            fileUpload.addEventListener('change', handleFileUpload);
+            fileQueue.addEventListener('click', handleFileSelect);
+            fileQueue.addEventListener('click', handleApprove);
+            
+            editorDate.addEventListener('input', handleEditorChange);
+            editorDocType.addEventListener('input', handleEditorChange);
+            editorDescription.addEventListener('input', handleEditorChange);
+            
+            downloadBtn.addEventListener('click', handleDownload);
+        });
+    </script>
+</body>
+</html>
