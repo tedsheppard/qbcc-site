@@ -20,7 +20,7 @@ SELECT m.ejs_id,
        m.claimant,
        m.respondent,
        m.adjudicator,
-       m.decision_date_norm AS decision_date,
+       m.decision_date_norm AS decision_date_norm,
        f.full_text AS content
 FROM docs_meta m
 JOIN docs_fresh f ON m.ejs_id = f.ejs_id
