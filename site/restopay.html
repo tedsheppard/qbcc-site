@@ -1,0 +1,867 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sopal – RestoPay Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary-color: #00c97c;
+    --primary-darker: #008a5c;
+    --light-gray: #f8f9fa;
+    --medium-gray: #e9ecef;
+    --dark-gray: #6c757d;
+    --text-color: #212529;
+    --border-color: #dee2e6;
+    --danger-color: #dc3545;
+    --white-color: #fff;
+    --sidebar-bg: #1e293b;
+    --sidebar-text: #cbd5e1;
+    --sidebar-active: #00c97c;
+  }
+  
+  /* Base styles */
+  body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    background: var(--light-gray);
+    color: var(--text-color);
+    font-size: 16px;
+    line-height: 1.6;
+    display: flex;
+  }
+  
+  /* Sidebar Navigation */
+  .sidebar {
+    width: 240px;
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1001;
+  }
+  .sidebar-header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #334155;
+  }
+  .sidebar-logo {
+    height: 35px;
+  }
+  .sidebar-nav {
+    flex-grow: 1;
+    list-style: none;
+    padding: 20px 0;
+    margin: 0;
+  }
+  .sidebar-nav li a {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 20px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-nav li a:hover {
+    background-color: #334155;
+  }
+  .sidebar-nav li a.active {
+    background-color: #0f172a;
+    color: var(--sidebar-active);
+    border-left-color: var(--sidebar-active);
+  }
+  .sidebar-nav li a svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Main Content Area */
+  .main-content {
+    margin-left: 240px;
+    flex-grow: 1;
+    padding: 0;
+  }
+  .top-header {
+    background-color: var(--white-color);
+    padding: 15px 30px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0;
+  }
+  .user-profile {
+      font-size: 14px;
+  }
+
+  .content-wrapper {
+      padding: 30px;
+  }
+  
+  .view { display: none; }
+  .view.active { display: block; animation: fadeIn 0.5s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  
+  /* Common Styles for Cards, Forms, Buttons */
+  .card {
+    background-color: var(--white-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border-color);
+  }
+   .card-header h3 {
+      margin: 0;
+      font-size: 18px;
+  }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+  .form-group { margin-bottom: 15px; }
+  .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px; }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;
+    font-size: 15px; font-family: inherit; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(0, 201, 124, 0.2);
+  }
+  
+  .btn {
+    padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px;
+    font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn.primary { background: var(--primary-color); color: white; }
+  .btn.primary:hover { background: var(--primary-darker); }
+  .btn.primary:disabled { background-color: var(--dark-gray); cursor: not-allowed; }
+  .btn.secondary { background-color: var(--medium-gray); color: var(--text-color); }
+  .btn.secondary:hover { background-color: #d3d9df; }
+  .btn.danger { background-color: #fff1f0; color: var(--danger-color); border: 1px solid #ffa39e; }
+  .btn.danger:hover { background-color: var(--danger-color); color: white; }
+  .btn-sm { padding: 5px 10px; font-size: 13px; }
+  
+  .navigation-buttons { margin-top: 40px; display: flex; justify-content: space-between; }
+
+
+  /* Table Styles */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+  .data-table thead th { background-color: var(--light-gray); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--dark-gray); }
+  .data-table tbody tr:hover { background-color: #f1f3f5; }
+  .data-table .actions { text-align: right; }
+  .status-badge {
+      padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+      display: inline-block; text-align: center; min-width: 60px;
+  }
+  .status-issued { background-color: #e6f7ff; color: #1890ff; }
+  .status-paid { background-color: #f6ffed; color: #52c41a; }
+  .status-disputed { background-color: #fff1f0; color: #f5222d; }
+  
+  /* Modal styles */
+    .modal {
+        display: none; position: fixed; z-index: 2000; left: 0; top: 0;
+        width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);
+        animation: fadeIn 0.3s; align-items: center; justify-content: center;
+    }
+    .modal-content {
+        background-color: #fefefe; padding: 25px; border: 1px solid #888;
+        width: 90%; max-width: 600px; border-radius: 8px;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-header h2 { margin: 0; }
+    .close-button { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+    .close-button:hover { color: black; }
+  
+  /* File Upload Area */
+    .file-drop-area {
+        border: 2px dashed var(--border-color); border-radius: 8px; padding: 30px;
+        text-align: center; background-color: var(--light-gray);
+    }
+    .file-drop-area.dragover { border-color: var(--primary-color); background-color: #e6fffb; }
+    
+  /* Claim Creator Specific */
+    .creator-container {
+        background: var(--white-color); border: 1px solid var(--border-color);
+        border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .progress-bar {
+        display: flex; background-color: var(--light-gray); border-bottom: 1px solid var(--border-color);
+    }
+    .progress-step {
+        flex: 1; text-align: center; padding: 15px; font-weight: 600; color: var(--dark-gray);
+        position: relative; font-size: 14px;
+    }
+    .progress-step.active { color: var(--primary-darker); }
+    .progress-step.active::after {
+        content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 3px;
+        background-color: var(--primary-color);
+    }
+    .form-content { padding: 30px; }
+    .form-step { display: none; }
+    .form-step.active { display: block; }
+    .jurisdiction-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+    .jurisdiction-selector input[type="radio"] { display: none; }
+    .jurisdiction-selector label {
+        padding: 20px; border: 2px solid var(--border-color); border-radius: 8px;
+        cursor: pointer; text-align: center; font-size: 16px; font-weight: 600;
+        transition: all 0.2s ease-in-out;
+    }
+    .jurisdiction-selector input[type="radio"]:checked + label {
+        border-color: var(--primary-color); color: var(--primary-darker);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <img src="assets/sopal_logo_white_v1.png" alt="Sopal Logo" class="sidebar-logo">
+    </div>
+    <ul class="sidebar-nav">
+        <li><a href="#" class="nav-link active" data-view="dashboard">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+            Dashboard
+        </a></li>
+        <li><a href="#" class="nav-link" data-view="create-claim">
+             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            Create Claim
+        </a></li>
+        <li><a href="#" class="nav-link" data-view="claim-register">
+             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>
+            Claim Register
+        </a></li>
+        <li><a href="#" class="nav-link" data-view="projects">
+             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h7.5" /></svg>
+            Projects
+        </a></li>
+        <li><a href="#" class="nav-link" data-view="clients">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-4.663v.001z" /></svg>
+            Clients
+        </a></li>
+        <li><a href="#" class="nav-link" data-view="settings">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.242 1.411l-1.086.954a.978.978 0 010 1.642l1.086.954a1.125 1.125 0 01.242 1.411l-1.296 2.247a1.125 1.125 0 01-1.37.49l-1.217-.456a1.125 1.125 0 01-1.075.124.978.978 0 01-.22.127c-.331.183-.581.495-.645.87l-.213 1.281c-.09.543-.56.94-1.11.94h-2.593c-.55 0-1.02-.398-1.11-.94l-.213-1.281a1.125 1.125 0 01-.645-.87.978.978 0 01-.22-.127 1.125 1.125 0 01-1.075-.124l-1.217.456a1.125 1.125 0 01-1.37-.49l-1.296-2.247a1.125 1.125 0 01.242-1.411l1.086-.954a.978.978 0 010-1.642l-1.086-.954a1.125 1.125 0 01-.242-1.411l1.296-2.247a1.125 1.125 0 011.37-.49l1.217.456a1.125 1.125 0 011.075-.124.978.978 0 01.22-.127c.332-.183.582-.495.645-.87l.213-1.281z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            Settings
+        </a></li>
+    </ul>
+</aside>
+
+<div class="main-content">
+    <header class="top-header">
+        <h1 id="page-title" class="page-title">Dashboard</h1>
+        <div class="user-profile">
+            <span>Welcome, <strong id="user-business-name">Your Company</strong></span>
+        </div>
+    </header>
+
+    <div class="content-wrapper">
+        <div id="dashboard" class="view active"></div>
+        <div id="create-claim" class="view"></div>
+        <div id="claim-register" class="view"></div>
+        <div id="projects" class="view"></div>
+        <div id="project-details" class="view"></div>
+        <div id="clients" class="view"></div>
+        <div id="settings" class="view"></div>
+    </div>
+</div>
+
+<!-- Modal for Forms -->
+<div id="form-modal" class="modal">
+    <div class="modal-content" id="modal-content-area"></div>
+</div>
+
+<script>
+// --- CORE APP LOGIC ---
+document.addEventListener('DOMContentLoaded', () => {
+    initApp();
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            switchView(link.getAttribute('data-view'));
+        });
+    });
+});
+
+function initApp() {
+    if (DB.get('clients').length === 0) {
+        DB.set('clients', [
+            {id: 1, name: 'State Insurance Group', abn: '12345678901', address: '123 Eagle St, Brisbane QLD 4000', email: 'claims@stateins.com'},
+            {id: 2, name: 'BuildRight Constructions', abn: '98765432109', address: '456 Commercial Rd, Fortitude Valley QLD 4006', email: 'accounts@buildright.com'}
+        ]);
+    }
+    if (DB.get('projects').length === 0) {
+         DB.set('projects', [
+            {id: 1, clientId: 1, siteAddress: '101 Smith St, Toowong QLD 4066', contract: 'Claim #A123-456', documents: []},
+            {id: 2, clientId: 2, siteAddress: 'Riverfront Apartments, New Farm QLD 4005', contract: 'Contract #RFAP-2025-03', documents: []}
+        ]);
+    }
+    switchView('dashboard');
+    loadSettings();
+}
+
+function switchView(viewId, context = null) {
+    document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+    const viewElement = document.getElementById(viewId);
+    if (viewElement) viewElement.classList.add('active');
+
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    let activeLink = document.querySelector(`.nav-link[data-view="${viewId}"]`);
+    if (viewId === 'project-details') {
+        activeLink = document.querySelector(`.nav-link[data-view="projects"]`);
+    }
+    if (activeLink) activeLink.classList.add('active');
+
+    const pageTitles = {
+        'dashboard': 'Dashboard', 'create-claim': 'Create New Payment Claim', 'claim-register': 'Claim Register',
+        'clients': 'Clients', 'projects': 'Projects', 'settings': 'Settings', 'project-details': 'Project Details'
+    };
+    document.getElementById('page-title').textContent = pageTitles[viewId] || 'Portal';
+
+    if (viewId === 'dashboard') renderDashboard();
+    if (viewId === 'create-claim') renderCreateClaimForm();
+    if (viewId === 'claim-register') renderClaimRegister();
+    if (viewId === 'projects') renderProjectsView();
+    if (viewId === 'project-details') renderProjectDetailsView(context);
+    if (viewId === 'clients') renderClientsView();
+    if (viewId === 'settings') renderSettingsView();
+}
+
+const DB = {
+    get: (key) => JSON.parse(localStorage.getItem(key) || '[]'),
+    set: (key, data) => localStorage.setItem(key, JSON.stringify(data)),
+    getSettings: () => JSON.parse(localStorage.getItem('restoPaySettings') || '{}'),
+    setSettings: (data) => localStorage.setItem('restoPaySettings', JSON.stringify(data)),
+    getNextId: (key) => {
+        const items = DB.get(key);
+        return items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1;
+    }
+};
+
+// --- SETTINGS ---
+function renderSettingsView() {
+    const view = document.getElementById('settings');
+    view.innerHTML = `
+        <div class="card">
+            <h3>Your Business Details</h3>
+            <p>This information will be used to auto-populate the 'Claimant' details on all new payment claims.</p>
+            <form id="settings-form" class="form-grid">
+                 <div class="form-group"><label for="setting-name">Business Name</label><input type="text" id="setting-name"></div>
+                 <div class="form-group"><label for="setting-abn">ABN</label><input type="text" id="setting-abn"></div>
+                 <div class="form-group"><label for="setting-address">Address</label><input type="text" id="setting-address"></div>
+                 <div class="form-group"><label for="setting-email">Email</label><input type="email" id="setting-email"></div>
+            </form>
+            <button class="btn primary" style="margin-top: 10px;" onclick="saveSettings()">Save Settings</button>
+        </div>`;
+    loadSettings();
+}
+function saveSettings() {
+    const settings = {
+        claimantName: document.getElementById('setting-name').value,
+        claimantAbn: document.getElementById('setting-abn').value,
+        claimantAddress: document.getElementById('setting-address').value,
+        claimantEmail: document.getElementById('setting-email').value,
+    };
+    DB.setSettings(settings);
+    loadSettings();
+    alert('Settings saved successfully!');
+}
+function loadSettings() {
+    const settings = DB.getSettings();
+    const settingsForm = document.getElementById('settings-form');
+    if (settingsForm) {
+        document.getElementById('setting-name').value = settings.claimantName || '';
+        document.getElementById('setting-abn').value = settings.claimantAbn || '';
+        document.getElementById('setting-address').value = settings.claimantAddress || '';
+        document.getElementById('setting-email').value = settings.claimantEmail || '';
+    }
+    document.getElementById('user-business-name').textContent = settings.claimantName || 'Your Company';
+}
+
+// --- VIEWS & RENDERING ---
+function renderDashboard() {
+    const view = document.getElementById('dashboard');
+    const claims = DB.get('claims');
+    let totalClaimed = 0, totalOutstanding = 0, claimsIssued30Days = 0;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    claims.forEach(claim => {
+        const amount = parseFloat(claim.totalAmount) || 0;
+        totalClaimed += amount;
+        if (claim.status !== 'Paid') totalOutstanding += amount;
+        if (new Date(claim.claimDate) > thirtyDaysAgo) claimsIssued30Days++;
+    });
+    const recentClaims = claims.slice(-5).reverse();
+    const clients = DB.get('clients');
+    const clientMap = new Map(clients.map(c => [c.id, c.name]));
+    view.innerHTML = `
+        <div class="stats-grid">
+            <div class="stat-card"><div class="label">Total Amount Claimed</div><div class="value">$${totalClaimed.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div></div>
+            <div class="stat-card"><div class="label">Total Outstanding</div><div class="value">$${totalOutstanding.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div></div>
+            <div class="stat-card"><div class="label">Claims Issued (30 Days)</div><div class="value">${claimsIssued30Days}</div></div>
+        </div>
+        <div class="card" style="margin-top: 30px;">
+            <div class="card-header"><h3>Recent Claims</h3><button class="btn secondary" onclick="switchView('claim-register')">View All Claims</button></div>
+            <table class="data-table">
+                <thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Status</th></tr></thead>
+                <tbody>${recentClaims.map(claim => {
+                    const project = DB.get('projects').find(p => p.id === claim.details.projectId);
+                    const clientName = project ? clientMap.get(project.clientId) : 'N/A';
+                    return `<tr><td>${claim.claimDate}</td><td>${clientName}</td>
+                    <td>$${parseFloat(claim.totalAmount).toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td><span class="status-badge status-${claim.status.toLowerCase()}">${claim.status}</span></td></tr>`}).join('')}
+                </tbody>
+            </table>
+        </div>`;
+}
+function renderClaimRegister() {
+    const view = document.getElementById('claim-register');
+    const claims = DB.get('claims').reverse();
+    const projects = DB.get('projects');
+    const clients = DB.get('clients');
+    const projectMap = new Map(projects.map(p => [p.id, p]));
+    const clientMap = new Map(clients.map(c => [c.id, c.name]));
+
+    view.innerHTML = `
+    <div class="card">
+        <div class="card-header"><h3>All Payment Claims</h3><button class="btn primary" onclick="switchView('create-claim')">Create New Claim</button></div>
+        <table class="data-table">
+            <thead><tr><th>Date</th><th>Client</th><th>Project</th><th>Amount</th><th>Status</th><th class="actions">Actions</th></tr></thead>
+            <tbody>${claims.map(claim => {
+                const project = projectMap.get(claim.details.projectId);
+                const clientName = project ? clientMap.get(project.clientId) : 'N/A';
+                return `<tr><td>${claim.claimDate}</td><td>${clientName}</td><td>${project ? project.siteAddress : 'N/A'}</td>
+                <td>$${parseFloat(claim.totalAmount).toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td><select onchange="updateClaimStatus(${claim.id}, this.value)">
+                    <option value="Issued" ${claim.status === 'Issued' ? 'selected' : ''}>Issued</option>
+                    <option value="Paid" ${claim.status === 'Paid' ? 'selected' : ''}>Paid</option>
+                    <option value="Disputed" ${claim.status === 'Disputed' ? 'selected' : ''}>Disputed</option>
+                </select></td>
+                <td class="actions"><button class="btn btn-sm secondary">View</button></td></tr>`}).join('')}
+            </tbody>
+        </table>
+    </div>`;
+}
+function renderClientsView() {
+    const view = document.getElementById('clients');
+    const clients = DB.get('clients');
+    view.innerHTML = `
+        <div class="card">
+            <div class="card-header"><h3>Client Database</h3><button class="btn primary" onclick="openClientForm()">Add New Client</button></div>
+            <table class="data-table">
+                <thead><tr><th>Name</th><th>ABN</th><th>Address</th><th class="actions">Actions</th></tr></thead>
+                <tbody>${clients.map(c => `
+                    <tr><td>${c.name}</td><td>${c.abn}</td><td>${c.address}</td>
+                    <td class="actions">
+                        <button class="btn btn-sm secondary" onclick="openClientForm(${c.id})">Edit</button>
+                        <button class="btn btn-sm danger" onclick="deleteClient(${c.id})">Delete</button>
+                    </td></tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
+}
+function renderProjectsView() {
+    const view = document.getElementById('projects');
+    const projects = DB.get('projects');
+    const clients = DB.get('clients');
+    const clientMap = new Map(clients.map(c => [c.id, c.name]));
+    view.innerHTML = `
+        <div class="card">
+            <div class="card-header"><h3>Project Register</h3><button class="btn primary" onclick="openProjectForm()">Add New Project</button></div>
+            <table class="data-table">
+                <thead><tr><th>Site Address</th><th>Client</th><th>Contract Ref.</th><th class="actions">Actions</th></tr></thead>
+                <tbody>${projects.map(p => `
+                    <tr><td>${p.siteAddress}</td><td>${clientMap.get(p.clientId) || 'N/A'}</td><td>${p.contract || ''}</td>
+                    <td class="actions">
+                        <button class="btn btn-sm primary" onclick="switchView('project-details', ${p.id})">View Details</button>
+                    </td></tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
+}
+function renderProjectDetailsView(projectId) {
+    const view = document.getElementById('project-details');
+    const project = DB.get('projects').find(p => p.id === projectId);
+    if (!project) { view.innerHTML = 'Project not found.'; return; }
+    
+    const client = DB.get('clients').find(c => c.id === project.clientId);
+    const documents = project.documents || [];
+
+    view.innerHTML = `
+        <button class="btn secondary" onclick="switchView('projects')">← Back to Projects</button>
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-header"><h3>${project.siteAddress}</h3><button class="btn secondary" onclick="openProjectForm(${project.id})">Edit Project</button></div>
+            <div class="form-grid">
+                <div><strong>Client:</strong> ${client ? client.name : 'N/A'}</div>
+                <div><strong>Contract Ref:</strong> ${project.contract || 'N/A'}</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><h3>Project Documents</h3></div>
+            <div class="file-drop-area" id="file-drop-area-${projectId}">
+                <p>Drag & Drop files here or click to upload</p>
+                <input type="file" multiple style="display: none;" onchange="handleFileUpload(${projectId}, this.files)">
+            </div>
+            <table class="data-table" style="margin-top: 20px;">
+                <thead><tr><th>Filename</th><th>Type</th><th>Uploaded</th><th class="actions">Actions</th></tr></thead>
+                <tbody id="project-documents-table">${documents.map(d => `
+                    <tr><td>${d.name}</td><td>${d.type}</td><td>${d.date}</td>
+                    <td class="actions"><button class="btn btn-sm danger" onclick="deleteDocument(${projectId}, '${d.name}')">Delete</button></td></tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
+
+    const dropArea = document.getElementById(`file-drop-area-${projectId}`);
+    dropArea.addEventListener('click', () => dropArea.querySelector('input').click());
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); });
+    });
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropArea.addEventListener(eventName, () => dropArea.classList.add('dragover'));
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, () => dropArea.classList.remove('dragover'));
+    });
+    dropArea.addEventListener('drop', e => handleFileUpload(projectId, e.dataTransfer.files));
+}
+
+// --- MODALS ---
+function openModal(content) {
+    const modal = document.getElementById('form-modal');
+    document.getElementById('modal-content-area').innerHTML = content;
+    modal.style.display = 'flex';
+}
+function closeModal() {
+    document.getElementById('form-modal').style.display = 'none';
+    document.getElementById('modal-content-area').innerHTML = '';
+}
+
+// --- DATA MANAGEMENT (Clients, Projects, Documents) ---
+function saveClient() {
+    const form = document.getElementById('client-form');
+    const id = parseInt(form.querySelector('[name="id"]').value);
+    const clientData = {
+        name: form.querySelector('[name="name"]').value,
+        abn: form.querySelector('[name="abn"]').value,
+        address: form.querySelector('[name="address"]').value,
+        email: form.querySelector('[name="email"]').value
+    };
+    if (!clientData.name) { alert('Client name is required.'); return; }
+    let clients = DB.get('clients');
+    if (id) {
+        const index = clients.findIndex(c => c.id === id);
+        clients[index] = { ...clients[index], ...clientData };
+    } else {
+        clientData.id = DB.getNextId('clients');
+        clients.push(clientData);
+    }
+    DB.set('clients', clients);
+    closeModal();
+    renderClientsView();
+}
+function deleteClient(clientId) {
+    if (!confirm('Are you sure you want to delete this client? This cannot be undone.')) return;
+    let clients = DB.get('clients').filter(c => c.id !== clientId);
+    DB.set('clients', clients);
+    renderClientsView();
+}
+function saveProject() {
+    const form = document.getElementById('project-form');
+    const id = parseInt(form.querySelector('[name="id"]').value);
+    const projectData = {
+        clientId: parseInt(form.querySelector('[name="clientId"]').value),
+        siteAddress: form.querySelector('[name="siteAddress"]').value,
+        contract: form.querySelector('[name="contract"]').value,
+    };
+    if (!projectData.siteAddress || !projectData.clientId) { alert('Site Address and Client are required.'); return; }
+    let projects = DB.get('projects');
+    if (id) {
+        const index = projects.findIndex(p => p.id === id);
+        projects[index] = { ...projects[index], ...projectData, documents: projects[index].documents || [] };
+    } else {
+        projectData.id = DB.getNextId('projects');
+        projectData.documents = [];
+        projects.push(projectData);
+    }
+    DB.set('projects', projects);
+    closeModal();
+    renderProjectsView();
+}
+function handleFileUpload(projectId, files) {
+    let projects = DB.get('projects');
+    const projectIndex = projects.findIndex(p => p.id === projectId);
+    if (projectIndex === -1) return;
+    if (!projects[projectIndex].documents) projects[projectIndex].documents = [];
+    
+    for (const file of files) {
+        projects[projectIndex].documents.push({ name: file.name, type: file.type, date: new Date().toLocaleDateString('en-AU') });
+    }
+    DB.set('projects', projects);
+    renderProjectDetailsView(projectId);
+}
+function deleteDocument(projectId, docName) {
+    if (!confirm(`Are you sure you want to delete ${docName}?`)) return;
+    let projects = DB.get('projects');
+    const projectIndex = projects.findIndex(p => p.id === projectId);
+    if (projectIndex > -1) {
+        projects[projectIndex].documents = projects[projectIndex].documents.filter(d => d.name !== docName);
+        DB.set('projects', projects);
+        renderProjectDetailsView(projectId);
+    }
+}
+function openClientForm(clientId = null) {
+    const clients = DB.get('clients');
+    const client = clientId ? clients.find(c => c.id === clientId) : {};
+    const title = clientId ? 'Edit Client' : 'Add New Client';
+    const formHtml = `
+        <div class="modal-header"><h2>${title}</h2><span class="close-button" onclick="closeModal()">&times;</span></div>
+        <form id="client-form" class="form-grid">
+            <input type="hidden" name="id" value="${client.id || ''}">
+            <div class="form-group"><label>Name</label><input type="text" name="name" value="${client.name || ''}" required></div>
+            <div class="form-group"><label>ABN</label><input type="text" name="abn" value="${client.abn || ''}"></div>
+            <div class="form-group"><label>Address</label><input type="text" name="address" value="${client.address || ''}"></div>
+            <div class="form-group"><label>Email</label><input type="email" name="email" value="${client.email || ''}"></div>
+        </form>
+        <div class="navigation-buttons"><span></span><button class="btn primary" onclick="saveClient()">Save Client</button></div>`;
+    openModal(formHtml);
+}
+function openProjectForm(projectId = null) {
+    const projects = DB.get('projects');
+    const project = projectId ? projects.find(p => p.id === projectId) : {};
+    const clients = DB.get('clients');
+    const clientOptions = clients.map(c => `<option value="${c.id}" ${project && project.clientId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
+    const title = projectId ? 'Edit Project' : 'Add New Project';
+    const formHtml = `
+        <div class="modal-header"><h2>${title}</h2><span class="close-button" onclick="closeModal()">&times;</span></div>
+        <form id="project-form" class="form-grid">
+            <input type="hidden" name="id" value="${project.id || ''}">
+            <div class="form-group"><label>Client</label><select name="clientId">${clientOptions}</select></div>
+            <div class="form-group"><label>Site Address</label><input type="text" name="siteAddress" value="${project.siteAddress || ''}" required></div>
+            <div class="form-group"><label>Contract Reference</label><input type="text" name="contract" value="${project.contract || ''}"></div>
+        </form>
+        <div class="navigation-buttons"><span></span><button class="btn primary" onclick="saveProject()">Save Project</button></div>`;
+    openModal(formHtml);
+}
+
+// --- CLAIM CREATION WORKFLOW ---
+let claimState = {};
+function renderCreateClaimForm() {
+    const view = document.getElementById('create-claim');
+    const projects = DB.get('projects');
+    if (projects.length === 0) {
+        view.innerHTML = `<div class="card"><p>You need to create a project before you can make a claim.</p><button class="btn primary" onclick="openProjectForm()">Create Your First Project</button></div>`;
+        return;
+    }
+    const projectOptions = projects.map(p => `<option value="${p.id}">${p.siteAddress}</option>`).join('');
+    view.innerHTML = `
+        <div class="card">
+            <h3>Start a New Claim</h3>
+            <p>Select a project to auto-fill details, or create a new one first from the Projects tab.</p>
+            <div class="form-grid" style="grid-template-columns: 2fr 1fr;">
+                <div class="form-group">
+                    <label for="project-select">Choose an existing project</label>
+                    <select id="project-select"><option value="">-- Select a Project --</option>${projectOptions}</select>
+                </div>
+                 <div class="form-group" style="align-self: end;">
+                    <button type="button" class="btn primary" onclick="startClaimFromProject()">Start Claim</button>
+                </div>
+            </div>
+        </div>
+        <div id="claim-form-container"></div>`;
+}
+function startClaimFromProject() {
+    const projectId = document.getElementById('project-select').value;
+    if (!projectId) { alert('Please select a project to start a claim.'); return; }
+    
+    const project = DB.get('projects').find(p => p.id === parseInt(projectId));
+    const client = DB.get('clients').find(c => c.id === project.clientId);
+    const settings = DB.getSettings();
+
+    const container = document.getElementById('claim-form-container');
+    container.innerHTML = `
+    <form id="wdr-claim-form" class="creator-container" style="margin-top:30px">
+        <!-- Hidden inputs for data -->
+        <input type="hidden" name="projectId" value="${projectId}">
+        <input type="hidden" name="claimantName" value="${settings.claimantName || ''}">
+        <input type="hidden" name="claimantAbn" value="${settings.claimantAbn || ''}">
+        <input type="hidden" name="claimantAddress" value="${settings.claimantAddress || ''}">
+        <input type="hidden" name="claimantEmail" value="${settings.claimantEmail || ''}">
+        <input type="hidden" name="respondentName" value="${client.name || ''}">
+        <input type="hidden" name="respondentAbn" value="${client.abn || ''}">
+        <input type="hidden" name="respondentAddress" value="${client.address || ''}">
+        <input type="hidden" name="respondentEmail" value="${client.email || ''}">
+
+        <div class="progress-bar">
+            <div id="progress-1" class="progress-step">1. Location</div>
+            <div id="progress-2" class="progress-step">2. Details</div>
+            <div id="progress-3" class="progress-step">3. Scope & Costs</div>
+            <div id="progress-4" class="progress-step">4. Review</div>
+        </div>
+        <div class="form-content">
+            <div id="step-1" class="form-step">
+                 <h2>Project Location</h2><p>Select the state where work was performed.</p>
+                 <div class="form-group"><div class="jurisdiction-selector">
+                    <input type="radio" id="qld" name="jurisdiction" value="QLD" checked><label for="qld">Queensland</label>
+                    <input type="radio" id="nsw" name="jurisdiction" value="NSW"><label for="nsw">New South Wales</label>
+                    <input type="radio" id="vic" name="jurisdiction" value="VIC"><label for="vic">Victoria</label>
+                 </div></div>
+                 <div class="navigation-buttons"><span></span><button type="button" class="btn primary" onclick="showStep(2)">Next</button></div>
+            </div>
+            <div id="step-2" class="form-step">
+                <h2>Details</h2>
+                <div class="card"><h3>Claimant</h3><p>${settings.claimantName || 'N/A'}<br>${settings.claimantAddress || ''}</p></div>
+                <div class="card"><h3>Respondent</h3><p>${client.name || 'N/A'}<br>${client.address || ''}</p></div>
+                <div class="card"><h3>Project</h3><div class="form-grid">
+                     <div class="form-group"><label>Site Address</label><input type="text" name="siteAddress" value="${project.siteAddress}" readonly></div>
+                     <div class="form-group"><label>Contract</label><input type="text" name="contractRef" value="${project.contract || ''}" placeholder="e.g., Services Agreement dated 15 August 2025"></div>
+                     <div class="form-group"><label>Date of Claim</label><input type="date" id="claim-date" name="claimDate" required></div>
+                </div></div>
+                <div class="navigation-buttons"><button type="button" class="btn secondary" onclick="showStep(1)">Back</button><button type="button" class="btn primary" onclick="showStep(3)">Next</button></div>
+            </div>
+            <div id="step-3" class="form-step">
+                <h2>WDR Scope of Works & Costs</h2>
+                <table class="data-table">
+                    <thead><tr><th style="width: 35%;">Description</th><th>Type</th><th>Qty/Units</th><th>Unit Type</th><th>Rate (ex. GST)</th><th>GST?</th><th style="text-align:right">Total</th><th></th></tr></thead>
+                    <tbody id="line-items-container"></tbody>
+                </table>
+                <button type="button" class="btn secondary" onclick="addLineItem()" style="margin-top: 20px;">+ Add Item</button>
+                <div id="totals-summary" style="float: right; width: 300px; margin-top: 20px;">
+                     <div style="display:flex; justify-content: space-between;"><span>Sub-total (ex. GST)</span><span id="sub-total">$0.00</span></div>
+                     <div style="display:flex; justify-content: space-between;"><span>Total GST</span><span id="gst-total">$0.00</span></div>
+                     <div style="display:flex; justify-content: space-between; font-weight: bold; border-top: 1px solid black; padding-top: 10px; margin-top:10px;"><span>Total Claimed Amount</span><span id="grand-total">$0.00</span></div>
+                </div>
+                <div style="clear:both;"></div>
+                <div class="navigation-buttons"><button type="button" class="btn secondary" onclick="showStep(2)">Back</button><button type="button" class="btn primary" onclick="buildSummary()">Next</button></div>
+            </div>
+            <div id="step-4" class="form-step">
+                 <h2>Review & Generate</h2><div id="summary-view" class="card"></div>
+                 <div class="navigation-buttons"><button type="button" class="btn secondary" onclick="showStep(3)">Back</button><button type="submit" class="btn primary">Generate PDF</button></div>
+            </div>
+        </div>
+    </form>`;
+    
+    document.getElementById('claim-date').valueAsDate = new Date();
+    claimState = { lineItemCounter: 0, itemMemory: new Set() };
+    showStep(1);
+    addLineItem();
+    document.getElementById('wdr-claim-form').addEventListener('submit', handleFormSubmit);
+}
+function showStep(step) {
+    const formContainer = document.getElementById('claim-form-container');
+    if (!formContainer) return;
+    formContainer.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+    formContainer.querySelector(`#step-${step}`)?.classList.add('active');
+    formContainer.querySelectorAll('.progress-step').forEach(p => p.classList.remove('active'));
+    for (let i = 1; i <= step; i++) {
+        formContainer.querySelector(`#progress-${i}`)?.classList.add('active');
+    }
+}
+function addLineItem() {
+    claimState.lineItemCounter++;
+    const id = claimState.lineItemCounter;
+    const container = document.getElementById('line-items-container');
+    const row = document.createElement('tr');
+    row.id = `line-item-${id}`;
+    row.innerHTML = `<td><input type="text" name="desc-${id}" placeholder="e.g., LGR Dehumidifier Hire" required list="item-suggestions" oninput="rememberItem(this.value)"></td><td><select name="type-${id}" onchange="updateGrandTotal()"><option value="charge">Charge</option><option value="discount">Discount</option></select></td><td><input type="number" name="qty-${id}" value="1" min="0" oninput="updateGrandTotal()"></td><td><select name="unit-${id}"><option value="unit">unit</option><option value="hr">hr</option><option value="day">day</option><option value="wk">wk</option><option value="m">m</option><option value="m²">m²</option><option value="m³">m³</option><option value="L">L</option><option value="kg">kg</option><option value="tonne">tonne</option><option value="item">item</option><option value="lump sum">lump sum</option></select></td><td><input type="number" name="rate-${id}" placeholder="150.00" step="0.01" min="0" oninput="updateGrandTotal()"></td><td><select name="gst-${id}" onchange="updateGrandTotal()"><option value="yes">Yes</option><option value="no">No</option></select></td><td class="total-cell" style="text-align:right;">$<span id="total-span-${id}">0.00</span></td><td><button type="button" class="btn btn-sm danger" onclick="removeLineItem(${id})">X</button></td>`;
+    container.appendChild(row);
+    updateGrandTotal();
+}
+function removeLineItem(id) { document.getElementById(`line-item-${id}`).remove(); updateGrandTotal(); }
+function updateGrandTotal() {
+    let subTotal = 0; let totalGst = 0;
+    document.querySelectorAll('#line-items-container tr').forEach(row => {
+        const id = row.id.split('-')[2];
+        const type = document.querySelector(`select[name=type-${id}]`).value;
+        const qty = parseFloat(document.querySelector(`input[name=qty-${id}]`).value) || 0;
+        const rate = parseFloat(document.querySelector(`input[name=rate-${id}]`).value) || 0;
+        let lineTotal = qty * rate;
+        if (type === 'discount') lineTotal = -Math.abs(lineTotal);
+        document.getElementById(`total-span-${id}`).textContent = lineTotal.toFixed(2);
+        subTotal += lineTotal;
+        if (document.querySelector(`select[name=gst-${id}]`).value === 'yes') {
+             totalGst += lineTotal * 0.10;
+        }
+    });
+    const grandTotal = subTotal + totalGst;
+    document.getElementById('sub-total').textContent = `$${subTotal.toFixed(2)}`;
+    document.getElementById('gst-total').textContent = `$${totalGst.toFixed(2)}`;
+    document.getElementById('grand-total').textContent = `$${grandTotal.toFixed(2)}`;
+}
+function rememberItem(value) {
+    if (value.trim()) claimState.itemMemory.add(value.trim());
+    let datalist = document.getElementById('item-suggestions');
+    if (!datalist) { datalist = document.createElement('datalist'); datalist.id = 'item-suggestions'; document.body.appendChild(datalist); }
+    datalist.innerHTML = ''; claimState.itemMemory.forEach(item => { const option = document.createElement('option'); option.value = item; datalist.appendChild(option); });
+}
+function buildSummary() {
+    const summaryView = document.getElementById('summary-view');
+    const form = document.getElementById('wdr-claim-form');
+    const data = new FormData(form);
+    const formData = Object.fromEntries(data.entries());
+    let lineItemsTable = `<table class="data-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Total</th></tr></thead><tbody>`;
+    let subTotal = 0, totalGst = 0;
+    for (let i = 1; i <= claimState.lineItemCounter; i++) {
+        const desc = formData[`desc-${i}`];
+        if (desc) {
+            const type = formData[`type-${i}`], qty = parseFloat(formData[`qty-${i}`])||0, unit = formData[`unit-${i}`], rate = parseFloat(formData[`rate-${i}`])||0, gst = formData[`gst-${i}`];
+            let lineTotal = qty * rate;
+            if (type === 'discount') lineTotal = -Math.abs(lineTotal);
+            subTotal += lineTotal;
+            if (gst === 'yes') totalGst += lineTotal * 0.10;
+            lineItemsTable += `<tr><td>${desc} ${type==='discount'?'(Discount)':''}</td><td>${qty}</td><td>${unit}</td><td>$${rate.toFixed(2)}</td><td>$${lineTotal.toFixed(2)}</td></tr>`;
+        }
+    }
+    const grandTotal = subTotal + totalGst;
+    lineItemsTable += `</tbody><tfoot>
+        <tr><td colspan="4" style="text-align:right;">Sub-total (ex. GST)</td><td style="font-weight:bold;">$${subTotal.toFixed(2)}</td></tr>
+        <tr><td colspan="4" style="text-align:right;">Total GST</td><td style="font-weight:bold;">$${totalGst.toFixed(2)}</td></tr>
+        <tr><td colspan="4" style="text-align:right; font-weight:bold;">Total Claimed Amount</td><td style="font-weight:bold;">$${grandTotal.toFixed(2)}</td></tr>
+    </tfoot></table>`;
+    summaryView.innerHTML = `<table class="data-table">
+        <tr><th>Jurisdiction:</th><td>${formData.jurisdiction}</td></tr>
+        <tr><th>Claimant:</th><td>${formData.claimantName} (${formData.claimantAbn})<br>${formData.claimantAddress}</td></tr>
+        <tr><th>Respondent:</th><td>${formData.respondentName}<br>${formData.respondentAddress}</td></tr>
+        <tr><th>Site:</th><td>${formData.siteAddress}</td></tr>
+        <tr><th>Contract:</th><td>${formData.contractRef}</td></tr>
+    </table>${lineItemsTable}`;
+    showStep(4);
+}
+function updateClaimStatus(claimId, newStatus) {
+    let claims = DB.get('claims');
+    const claimIndex = claims.findIndex(c => c.id === claimId);
+    if (claimIndex > -1) {
+        claims[claimIndex].status = newStatus;
+        DB.set('claims', claims);
+    }
+}
+function handleFormSubmit(e) { e.preventDefault(); /* ... PDF generation logic ... */ }
+
+</script>
+</body>
+</html>
+
