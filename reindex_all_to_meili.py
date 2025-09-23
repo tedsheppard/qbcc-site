@@ -7,19 +7,24 @@ MEILI_KEY  = os.environ["MEILI_MASTER_KEY"]
 INDEX_UID  = "decisions"
 BATCH_SIZE = 1000
 
-# Use actual column names from your DB
 sql = """
 SELECT
-  ejs_id,                        -- primary key
-  ejs_id AS id,                  -- keep 'id' for frontend compatibility
+  ejs_id,
+  ejs_id        AS id,       -- frontend expects 'id'
   reference,
   pdf_path,
   claimant,
   respondent,
   adjudicator,
-  decision_date_norm AS date,     -- frontend expects 'date'
+  decision_date AS date,      -- alias so frontend gets 'date'
+  application_no,
+  payment_claim_amount,
+  payment_schedule_amount,
+  adjudicated_amount,
+  jurisdiction_issue,
+  frivolous_or_vexatious,
   act,
-  content
+  full_text     AS content   -- alias so frontend gets 'content'
 FROM search_index
 ORDER BY ejs_id
 """
@@ -51,8 +56,7 @@ while True:
         break
     docs = [dict(r) for r in rows]
     task = index.add_documents(docs)
-    task_uid = getattr(task, "uid", getattr(task, "taskUid", None))
-    # Poll task status
+    task_uid = task["uid"] if "uid" in task else task.get("taskUid")
     while True:
         st = client.get_task(task_uid)
         if st["status"] in ("succeeded", "failed"):
@@ -65,3 +69,4 @@ while True:
     print(f"Pushed {pushed}/{cnt}")
 
 print("Reindex done.")
+
