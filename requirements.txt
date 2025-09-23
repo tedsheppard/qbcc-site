@@ -11,3 +11,4 @@ APScheduler
 aiosmtplib
 PyPDF2
 python-docx
+meilisearch
