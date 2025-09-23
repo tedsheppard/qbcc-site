@@ -42,8 +42,8 @@ index = client.index(INDEX_UID)
 # Ensure primary key is correct
 try:
     idx_info = client.get_index(INDEX_UID)
-    if idx_info.get("primaryKey") != "ejs_id":
-        client.index(INDEX_UID).update(primary_key="ejs_id")
+    if idx_info.primary_key != "ejs_id":
+        index.update(primary_key="ejs_id")
 except Exception:
     client.create_index(INDEX_UID, {"primaryKey": "ejs_id"})
 
@@ -56,11 +56,12 @@ while True:
         break
     docs = [dict(r) for r in rows]
     task = index.add_documents(docs)
-    task_uid = task["uid"] if "uid" in task else task.get("taskUid")
+    task_uid = task.uid   # ✅ TaskInfo object has .uid
+    # Poll
     while True:
         st = client.get_task(task_uid)
-        if st["status"] in ("succeeded", "failed"):
-            if st["status"] == "failed":
+        if st.status in ("succeeded", "failed"):  # ✅ .status is attr
+            if st.status == "failed":
                 print("Batch failed:", st)
                 raise SystemExit(1)
             break
@@ -69,4 +70,3 @@ while True:
     print(f"Pushed {pushed}/{cnt}")
 
 print("Reindex done.")
-
