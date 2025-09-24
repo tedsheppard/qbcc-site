@@ -3,6 +3,7 @@ from urllib.parse import unquote_plus
 from fastapi import FastAPI, Query, Form, Path, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from email.message import EmailMessage
 import aiosmtplib
 from openai import OpenAI
@@ -46,6 +47,17 @@ con.row_factory = sqlite3.Row
 con.execute("PRAGMA cache_size = -20000")
 con.execute("PRAGMA temp_store = MEMORY")
 con.execute("PRAGMA mmap_size = 30000000000")
+
+app = FastAPI()
+
+# --- FIX: Add CORS Middleware ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In production, restrict this to your domain e.g., "https://sopal.com.au"
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- RBA Interest Rate Setup ---
 def setup_rba_table():
@@ -130,8 +142,6 @@ ensure_fts()
 MEILI_URL = os.getenv("MEILI_URL", "http://127.0.0.1:7700")
 MEILI_KEY = os.getenv("MEILI_MASTER_KEY", "")
 MEILI_INDEX = "decisions"
-
-app = FastAPI()
 
 # ---------------- helpers ----------------
 def normalize_query(q: str) -> str:
@@ -859,14 +869,71 @@ async def analyse_document(doc_type: str = Form(...), file: UploadFile = File(..
         ai_response_content = response.choices[0].message.content
         
         # The response should be a JSON string, which we parse and return
-        return JSONResponse(content=ai_response_content)
+        return json.loads(ai_response_content)
 
     except HTTPException as e:
         # Re-raise HTTP exceptions to be handled by FastAPI
         raise e
     except Exception as e:
         print(f"ERROR in /analyse-document: {e}")
-        return JSONResponse({"error": f"An unexpected error occurred: {str(e)}"}, status_code=500)
+        return JSONResponse(content={"error": f"An unexpected error occurred: {str(e)}"}, status_code=500)
+
+# -------------------------------------------------------------------
+# --- START: LEXIFILE FUNCTIONALITY (MERGED) ---
+# -------------------------------------------------------------------
+
+def get_renaming_system_prompt() -> str:
+    """Returns the expert system prompt for the AI to rename documents."""
+    return """
+You are an expert legal assistant AI named LexiFile. Your task is to analyze text from a legal document and extract key information to suggest a structured filename. The required format is: YYYYMMDD - Strict Name - Looser Description.
+
+Your entire response must be a single, valid JSON object. Do not include any text, notes, or apologies outside of this JSON object.
+
+The JSON object must have the following three keys:
+1.  "date": A string representing the primary date found in the document, formatted as YYYYMMDD. Find the execution date, letter date, or filing date. Do not use the file's metadata creation date. If no date can be found, use "00000000".
+2.  "docType": A string for the "Strict Name". This should be a concise, formal classification of the document. Examples: "Letter from X to Y", "Contract for Services", "Affidavit of John Smith", "Statement of Claim".
+3.  "description": A string for the "Looser Description". This should be a brief, 2-5 word summary of the document's subject matter. Examples: "Security for Costs", "Discovery Request", "Evidence of Service".
+
+Analyze the text and provide the best possible values for these three keys.
+"""
+
+@app.post("/rename-document")
+async def rename_document(file: UploadFile = File(...)):
+    """Handles the document upload and renaming logic for LexiFile."""
+    if not file:
+        raise HTTPException(status_code=400, detail="No file uploaded.")
+    try:
+        file_content = await file.read()
+        file_stream = io.BytesIO(file_content)
+        extracted_text = extract_text_from_file(file_stream, file.filename)
+        
+        if not extracted_text.strip():
+            raise HTTPException(status_code=400, detail="Could not extract any text from the document.")
+
+        system_prompt = get_renaming_system_prompt()
+        user_prompt = f"Please analyze the following document text and return the structured JSON for renaming:\n\n---DOCUMENT TEXT---\n{extracted_text[:12000]}\n---END TEXT---"
+
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+        ai_response_content = response.choices[0].message.content
+        return json.loads(ai_response_content)
+    except json.JSONDecodeError:
+         raise HTTPException(status_code=500, detail="AI returned an invalid JSON response.")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"ERROR in /rename-document: {e}")
+        return JSONResponse(content={"error": f"An unexpected error occurred: {str(e)}"}, status_code=500)
+
+# -------------------------------------------------------------------
+# --- END: LEXIFILE FUNCTIONALITY ---
+# -------------------------------------------------------------------
 
 
 # ---------- DB Download ----------
