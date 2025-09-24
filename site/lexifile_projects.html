@@ -57,15 +57,15 @@
                     <form id="projectForm" class="space-y-4">
                         <div>
                             <label for="projectName" class="text-left block text-sm font-medium text-gray-700">Project Name</label>
-                            <input type="text" id="projectName" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Smith v Jones Discovery">
+                            <input type="text" id="projectName" name="projectName" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Smith v Jones Discovery">
                         </div>
                         <div>
                             <label for="clientName" class="text-left block text-sm font-medium text-gray-700">Client Name</label>
-                            <input type="text" id="clientName" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Acme Corporation">
+                            <input type="text" id="clientName" name="clientName" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Acme Corporation">
                         </div>
                         <div>
                             <label for="matterNumber" class="text-left block text-sm font-medium text-gray-700">Matter Number</label>
-                            <input type="text" id="matterNumber" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., ACME-2025-001">
+                            <input type="text" id="matterNumber" name="matterNumber" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., ACME-2025-001">
                         </div>
                     </form>
                 </div>
@@ -116,14 +116,27 @@
 
         async function handleCreateProject(e) {
             e.preventDefault();
-            const formData = new FormData(projectForm);
+            
+            // FIX: Use URLSearchParams for simple form data instead of FormData
+            const body = new URLSearchParams({
+                projectName: projectForm.projectName.value,
+                clientName: projectForm.clientName.value,
+                matterNumber: projectForm.matterNumber.value
+            });
             
             try {
                 const response = await fetch('/create-project', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: body
                 });
-                if (!response.ok) throw new Error('Failed to create project');
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({detail: 'An unknown error occurred.'}));
+                    throw new Error(errorData.detail || 'Failed to create project');
+                }
                 
                 projectForm.reset();
                 toggleModal(false);
@@ -144,3 +157,4 @@
     </script>
 </body>
 </html>
+
