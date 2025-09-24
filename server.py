@@ -903,7 +903,7 @@ The JSON object must have the following keys:
 6.  "metadata": An object with the following keys. If the information is not present, use an empty string "" as the value.
     - "privileged": A string, either "Yes" or "No". Infer this if the document contains phrases like "privileged and confidential". Default to "No".
     - "author": A string for the document author, if identifiable.
-    - "createdDate": A string for the creation date, if different from the primary date.
+    - "createdDate": A string for the creation date, if different from the primary date, formatted as YYYY-MM-DD.
     - "lastModified": A string for the last modified date, if available.
 """
 
