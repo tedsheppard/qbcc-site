@@ -4,6 +4,7 @@ import json
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 import PyPDF2
 import docx
@@ -12,6 +13,18 @@ from pathlib import Path
 # --- Setup ---
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 app = FastAPI()
+
+# --- FIX: Add CORS Middleware ---
+# This resolves the "405 Method Not Allowed" error by allowing
+# your frontend to make POST requests to this backend server.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For production, you might want to restrict this to your actual domain
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
+
 
 # --- Helper Functions ---
 
@@ -85,33 +98,23 @@ async def rename_document(file: UploadFile = File(...)):
         return JSONResponse(content={"error": f"An unexpected error occurred: {str(e)}"}, status_code=500)
 
 # --- Static File Serving ---
-# This setup allows you to serve the HTML files directly.
-# For example, accessing http://127.0.0.1:8000/lexifile_portal.html will work.
-
-# Define the directory where your HTML files are located.
-# We'll assume they are in the same directory as the script for simplicity.
 STATIC_DIR = Path(__file__).parent.absolute()
 
-# This route will catch requests for specific HTML files.
 @app.get("/{file_name}")
 async def get_html(file_name: str):
-    file_path = os.path.join(STATIC_DIR, file_name)
-    if file_name.endswith('.html') and os.path.exists(file_path):
+    # This now assumes clean URLs and looks for the corresponding .html file
+    file_path = os.path.join(STATIC_DIR, f"{file_name}.html")
+    if os.path.exists(file_path):
         return FileResponse(file_path)
+    
+    # Fallback for static assets that might be requested through this route
+    static_file_path = os.path.join(STATIC_DIR, file_name)
+    if os.path.exists(static_file_path):
+        return FileResponse(static_file_path)
+
     raise HTTPException(status_code=404, detail="File not found")
 
-# Serve the main landing page at the root URL.
 @app.get("/")
 async def get_index():
     return FileResponse(os.path.join(STATIC_DIR, "lexifile_index.html"))
-
-# To run this server:
-# 1. Place lexifile_index.html, lexifile_login.html, and lexifile_portal.html in the same directory as this script.
-# 2. Make sure you have the required libraries:
-#    pip install fastapi uvicorn python-multipart openai pypdf2 python-docx
-# 3. Set your OpenAI API key as an environment variable:
-#    export OPENAI_API_KEY='your_secret_key'
-# 4. Run the server from your terminal:
-#    uvicorn lexifile_server:app --reload
-# 5. Open http://127.0.0.1:8000 in your browser.
 
