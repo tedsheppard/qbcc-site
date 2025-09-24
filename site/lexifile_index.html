@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LexiFile - AI Document Renaming for Legal Professionals</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .blurry-gradient-bg {
+            position: absolute;
+            top: -200px;
+            left: -200px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+            z-index: -1;
+        }
+        .blurry-gradient-bg-2 {
+            position: absolute;
+            bottom: -200px;
+            right: -200px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 relative">
+    <div class="blurry-gradient-bg"></div>
+    <div class="blurry-gradient-bg-2"></div>
+
+    <div class="h-screen overflow-y-auto">
+        <header class="p-4 sm:p-6 flex justify-between items-center bg-white/80 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-200">
+            <div class="flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
+                <span class="font-bold text-xl text-gray-800">LexiFile</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="/lexifile_login.html" class="text-gray-600 hover:text-blue-500 font-medium transition">Log In</a>
+                <a href="/lexifile_login.html" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-600 transition shadow-sm">Start Free Trial</a>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-4 py-16 sm:py-24 text-center">
+            <h1 class="text-4xl sm:text-6xl font-extrabold text-gray-900 tracking-tight">
+                Stop Wasting Billable Hours on <span class="gradient-text">Document Drudgery.</span>
+            </h1>
+            <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-600">
+                LexiFile uses AI to instantly rename your legal documents into a clean, court-ready format. Go from <code class="bg-gray-200 text-gray-700 px-1 py-0.5 rounded">IMG_2851.pdf</code> to <code class="bg-gray-200 text-gray-700 px-1 py-0.5 rounded">20250924_Affidavit_John-Smith.pdf</code> in seconds.
+            </p>
+            <div class="mt-8 flex justify-center space-x-4">
+                <a href="/lexifile_login.html" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-blue-700 transition shadow-lg">Start Your Free 14-Day Trial</a>
+            </div>
+            <div class="mt-16 max-w-4xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200">
+                <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center space-x-2">
+                    <span class="w-3 h-3 bg-red-400 rounded-full"></span>
+                    <span class="w-3 h-3 bg-yellow-400 rounded-full"></span>
+                    <span class="w-3 h-3 bg-green-400 rounded-full"></span>
+                </div>
+                <img src="https://placehold.co/1200x600/F3F4F6/374151?text=App+Screenshot+Showing+Drag+and+Drop" alt="LexiFile App Screenshot" class="w-full object-cover">
+            </div>
+        </main>
+        
+        <section class="bg-white py-20 sm:py-24">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl font-bold text-center text-gray-900">How It Works</h2>
+                <p class="text-center mt-4 text-gray-600 max-w-xl mx-auto">A simple, three-step process to reclaim your time and organize your case files effortlessly.</p>
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <div class="text-center">
+                        <div class="flex justify-center items-center w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full mx-auto">
+                            <i data-lucide="upload-cloud"></i>
+                        </div>
+                        <h3 class="mt-6 text-xl font-semibold text-gray-900">1. Upload</h3>
+                        <p class="mt-2 text-gray-600">Drag and drop hundreds of documents at once. We support PDF, DOCX, DOC, MSG, and more.</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="flex justify-center items-center w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full mx-auto">
+                            <i data-lucide="sparkles"></i>
+                        </div>
+                        <h3 class="mt-6 text-xl font-semibold text-gray-900">2. AI Rename</h3>
+                        <p class="mt-2 text-gray-600">Our AI reads each document to identify the date, document type, parties, and subject matter.</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="flex justify-center items-center w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full mx-auto">
+                            <i data-lucide="download"></i>
+                        </div>
+                        <h3 class="mt-6 text-xl font-semibold text-gray-900">3. Review & Export</h3>
+                        <p class="mt-2 text-gray-600">Quickly review suggestions, make edits, and download all your files in a neatly organized `.zip` archive.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <footer class="bg-gray-800 text-white text-center p-8">
+            <p>&copy; 2025 LexiFile Inc. All rights reserved.</p>
+        </footer>
+    </div>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
