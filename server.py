@@ -9,7 +9,7 @@ import aiosmtplib
 from openai import OpenAI
 from google.cloud import storage
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import PyPDF2
 import docx
 import extract_msg # Added for .msg and .eml support
@@ -450,20 +450,20 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
 
             if order_clause:
                 sql = f"""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  JOIN docs_fresh d ON fts.rowid = d.rowid
-                  LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-                  WHERE fts MATCH ?
-                  {order_clause}
-                  LIMIT ? OFFSET ?
+                    SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                    FROM fts
+                    JOIN docs_fresh d ON fts.rowid = d.rowid
+                    LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+                    WHERE fts MATCH ?
+                    {order_clause}
+                    LIMIT ? OFFSET ?
                 """
             else:
                 sql = """
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  WHERE fts MATCH ?
-                  LIMIT ? OFFSET ?
+                    SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                    FROM fts
+                    WHERE fts MATCH ?
+                    LIMIT ? OFFSET ?
                 """
             
             rows = con.execute(sql, (nq2, limit, offset)).fetchall()
@@ -477,10 +477,10 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                     try:
                         total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (repaired,)).fetchone()[0]
                         rows = con.execute("""
-                          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                          FROM fts
-                          WHERE fts MATCH ?
-                          LIMIT ? OFFSET ?
+                            SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                            FROM fts
+                            WHERE fts MATCH ?
+                            LIMIT ? OFFSET ?
                         """, (repaired, limit, offset)).fetchall()
                         nq2 = repaired
                     except sqlite3.OperationalError:
@@ -489,10 +489,10 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                         print("Degrading to:", degraded)
                         total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (degraded,)).fetchone()[0]
                         rows = con.execute("""
-                          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                          FROM fts
-                          WHERE fts MATCH ?
-                          LIMIT ? OFFSET ?
+                            SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                            FROM fts
+                            WHERE fts MATCH ?
+                            LIMIT ? OFFSET ?
                         """, (degraded, limit, offset)).fetchall()
                         nq2 = degraded
                 else:
@@ -511,10 +511,10 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                 fallback = re.sub(r'[!*]', '', nq)
                 total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (fallback,)).fetchone()[0]
                 rows = con.execute("""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  WHERE fts MATCH ?
-                  LIMIT ? OFFSET ?
+                    SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                    FROM fts
+                    WHERE fts MATCH ?
+                    LIMIT ? OFFSET ?
                 """, (fallback, limit, offset)).fetchall()
                 nq2 = fallback
 
@@ -535,11 +535,11 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
         
         for r in rows:
             meta = con.execute("""
-              SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
-                     m.act, d.reference, d.pdf_path, d.ejs_id
-              FROM docs_fresh d
-              LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-              WHERE d.rowid = ?
+                SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
+                       m.act, d.reference, d.pdf_path, d.ejs_id
+                FROM docs_fresh d
+                LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+                WHERE d.rowid = ?
             """, (r["rowid"],)).fetchone()
 
             d = dict(meta) if meta else {}
@@ -978,7 +978,7 @@ async def rename_document(file: UploadFile = File(...)):
         ai_response_content = response.choices[0].message.content
         return json.loads(ai_response_content)
     except json.JSONDecodeError:
-         raise HTTPException(status_code=500, detail="AI returned an invalid JSON response.")
+       raise HTTPException(status_code=500, detail="AI returned an invalid JSON response.")
     except Exception as e:
         print(f"ERROR in /rename-document: {e}")
         return JSONResponse(content={"error": f"An unexpected error occurred: {str(e)}"}, status_code=500)
@@ -1043,3 +1043,4 @@ async def serve_html_page(path_name: str):
 
 # keep the old mount for static assets like CSS/JS/images
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
+
