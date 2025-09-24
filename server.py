@@ -372,56 +372,49 @@ def health():
     return {"ok": True}
 
 @app.get("/get_interest_rate")
-def get_interest_rate(startDate: date, endDate: date):
+def get_interest_rate(start_date_str: str = Query(..., alias="startDate"), end_date_str: str = Query(..., alias="endDate")):
     try:
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        
         cursor = con.cursor()
         
-        # Fetch all relevant rates from the database that could possibly be needed
+        # Create a temporary table of all dates in the range
+        cursor.execute("CREATE TEMP TABLE date_range (day DATE)")
+        current_date = start_date
+        while current_date <= end_date:
+            cursor.execute("INSERT INTO date_range (day) VALUES (?)", (current_date,))
+            current_date += timedelta(days=1)
+
+        # For each date in our range, find the most recent RBA rate
         cursor.execute("""
-            SELECT rate_date, rate_value FROM rba_rates
-            WHERE rate_date <= ?
-            ORDER BY rate_date ASC
-        """, (endDate,))
+            SELECT 
+                dr.day,
+                (SELECT rate_value FROM rba_rates WHERE rate_date <= dr.day ORDER BY rate_date DESC LIMIT 1) as rate
+            FROM date_range dr
+        """)
+        
         rows = cursor.fetchall()
         
         if not rows:
-             raise HTTPException(status_code=404, detail="No historical rate data found in the database.")
+             raise HTTPException(status_code=404, detail="No interest rates found for the specified date range.")
 
-        # Create a dictionary for quick lookups, ensuring keys are date objects
-        db_rates = {datetime.strptime(row['rate_date'], '%Y-%m-%d').date(): row['rate_value'] for row in rows}
-        
-        # Get a sorted list of dates for which we have rates
-        sorted_db_dates = sorted(db_rates.keys())
-        
-        # Fill in missing dates (weekends/holidays) with the last known rate
-        all_dates = pd.date_range(start=startDate, end=endDate)
-        filled_rates = []
-        last_rate = None
+        # Convert rows to a list of dictionaries
+        daily_rates = [{"date": row["day"], "rate": row["rate"]} for row in rows if row["rate"] is not None]
 
-        # Find the last known rate on or before the start date for the initial fill
-        initial_fill_dates = [d for d in sorted_db_dates if d < startDate]
-        if initial_fill_dates:
-            last_rate = db_rates[initial_fill_dates[-1]]
-        else:
-             first_rate_date = sorted_db_dates[0]
-             if startDate <= first_rate_date:
-                 last_rate = db_rates[first_rate_date]
+        if not daily_rates:
+             raise HTTPException(status_code=404, detail="No valid interest rates could be mapped to the specified date range.")
 
+        return {"dailyRates": daily_rates}
 
-        for dt in all_dates:
-            current_date = dt.date()
-            if current_date in db_rates:
-                last_rate = db_rates[current_date]
-            
-            if last_rate is not None:
-                 filled_rates.append({"date": current_date.isoformat(), "rate": last_rate})
-            else:
-                 raise HTTPException(status_code=404, detail=f"Could not determine an interest rate for {current_date.isoformat()}. The database might be missing very old data.")
-
-        return {"dailyRates": filled_rates}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Please use YYYY-MM-DD.")
     except Exception as e:
         print(f"Error in /get_interest_rate: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
+    finally:
+        # Ensure the temporary table is dropped
+        cursor.execute("DROP TABLE IF EXISTS date_range")
 
 
 @app.get("/search_fast")
@@ -1053,6 +1046,4 @@ async def serve_html_page(path_name: str):
 
 # keep the old mount for static assets like CSS/JS/images
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
-
-" and can you please make the changes?
 
