@@ -197,12 +197,6 @@
     </div>
 
     <script>
-        // --- CONFIGURATION ---
-        // **IMPORTANT**: This URL must point to where your lexifile_server.py is running.
-        // If you run it on a different port, change it here.
-        const API_BASE_URL = 'http://127.0.0.1:8000'; 
-        // --- END CONFIGURATION ---
-
         const state = {
             files: [],
             selectedFileId: null,
@@ -345,8 +339,9 @@
                 formData.append('file', file.fileObject);
 
                 try {
-                    // **FIX**: Use the full, absolute URL to the backend API
-                    const response = await fetch(`${API_BASE_URL}/rename-document`, {
+                    // **FIX**: Use a relative path. This assumes your web server is configured
+                    // to proxy requests from /rename-document to your Python backend.
+                    const response = await fetch(`/rename-document`, {
                         method: 'POST',
                         body: formData,
                     });
