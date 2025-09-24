@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal - LexiFile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .file-item.selected {
+            background-color: #eef2ff;
+            border-left-color: #4f46e5;
+        }
+        .loader {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #4f46e5;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 overflow-hidden">
+    <div id="appPage" class="h-screen flex flex-col">
+        <!-- App Header -->
+        <header class="flex-shrink-0 bg-white border-b border-gray-200 p-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
+                <a href="/lexifile_index.html" class="font-bold text-lg text-gray-800">LexiFile</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="downloadBtn" disabled class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2">
+                    <i data-lucide="download"></i>
+                    <span>Download (.zip)</span>
+                </button>
+                <img src="https://placehold.co/32x32/E0E7FF/4F46E5?text=JA" class="rounded-full" alt="User Avatar">
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <main class="flex-grow flex min-h-0">
+            <!-- Panel 1: File Queue -->
+            <div class="w-1/3 border-r border-gray-200 flex flex-col bg-white">
+                <div class="p-4 border-b border-gray-200 flex-shrink-0">
+                    <label for="fileUpload" class="w-full cursor-pointer bg-blue-50 text-blue-700 border-2 border-dashed border-blue-200 rounded-lg flex flex-col items-center justify-center p-4 hover:bg-blue-100 transition">
+                        <i data-lucide="upload" class="mb-2"></i>
+                        <span class="font-semibold text-sm">Upload Documents</span>
+                        <span class="text-xs">or drag and drop</span>
+                    </label>
+                    <input type="file" id="fileUpload" class="hidden" multiple>
+                </div>
+                <div id="fileQueue" class="flex-grow overflow-y-auto p-2 space-y-1">
+                    <div id="fileQueuePlaceholder" class="text-center p-10 text-gray-500">
+                        <i data-lucide="folder-open" class="mx-auto h-12 w-12 text-gray-400"></i>
+                        <p class="mt-4 font-medium">Your document queue is empty.</p>
+                        <p class="text-sm">Upload files to get started.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 2: Document Preview -->
+            <div class="w-1/2 flex flex-col bg-gray-100">
+                <div class="flex-grow flex items-center justify-center p-4">
+                    <div id="documentPreview" class="w-full h-full bg-white rounded-lg shadow-inner border border-gray-200 p-8 overflow-y-auto">
+                        <div id="previewPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
+                            <i data-lucide="file-text" class="h-16 w-16"></i>
+                            <p class="mt-4 font-medium text-lg">Select a file to preview</p>
+                        </div>
+                        <div id="previewContent" class="hidden prose max-w-none"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 3: Smart Editor -->
+            <div class="w-1/3 border-l border-gray-200 flex flex-col bg-white">
+                <div id="editorPanel" class="flex-grow p-6 space-y-6">
+                    <div id="editorPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
+                        <i data-lucide="edit-3" class="h-16 w-16"></i>
+                        <p class="mt-4 font-medium text-lg text-center">Select a file to edit</p>
+                    </div>
+                    <div id="editorForm" class="hidden space-y-6">
+                        <div>
+                            <label for="editorDate" class="block text-sm font-bold text-gray-800 mb-1">Date</label>
+                            <input type="text" id="editorDate" placeholder="YYYYMMDD" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono">
+                        </div>
+                        <div>
+                            <label for="editorDocType" class="block text-sm font-bold text-gray-800 mb-1">Document Type</label>
+                            <input type="text" id="editorDocType" list="docTypes" placeholder="e.g., Letter from X to Y" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <datalist id="docTypes">
+                                <option value="Affidavit of Service"></option>
+                                <option value="Contract for Services"></option>
+                                <option value="Letter from X to Y"></option>
+                            </datalist>
+                        </div>
+                        <div>
+                            <label for="editorDescription" class="block text-sm font-bold text-gray-800 mb-1">Description</label>
+                            <textarea id="editorDescription" placeholder="e.g., Security for Costs" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                        </div>
+                        <div class="pt-4 border-t border-gray-200">
+                             <h4 class="text-sm font-bold text-gray-800 mb-2">Live Filename Preview</h4>
+                             <div class="p-3 bg-gray-100 rounded-lg text-gray-700 text-sm break-all font-mono">
+                                <span id="previewDate"></span> - 
+                                <span id="previewDocType"></span> - 
+                                <span id="previewDescription"></span>.
+                                <span id="previewExtension"></span>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div id="toast" class="fixed top-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-2 transition-all duration-300">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+        const state = {
+            files: [],
+            selectedFileId: null,
+        };
+
+        const fileUpload = document.getElementById('fileUpload');
+        const fileQueue = document.getElementById('fileQueue');
+        const fileQueuePlaceholder = document.getElementById('fileQueuePlaceholder');
+        const previewPlaceholder = document.getElementById('previewPlaceholder');
+        const previewContent = document.getElementById('previewContent');
+        const editorPlaceholder = document.getElementById('editorPlaceholder');
+        const editorForm = document.getElementById('editorForm');
+        const editorDate = document.getElementById('editorDate');
+        const editorDocType = document.getElementById('editorDocType');
+        const editorDescription = document.getElementById('editorDescription');
+        const previewDate = document.getElementById('previewDate');
+        const previewDocType = document.getElementById('previewDocType');
+        const previewDescription = document.getElementById('previewDescription');
+        const previewExtension = document.getElementById('previewExtension');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+
+        function getMockDocumentContent(fileData) {
+            return `
+                <h1 class="font-bold text-2xl mb-4">${fileData.docType}</h1>
+                <p class="text-sm text-gray-500 mb-6"><strong>Date:</strong> ${fileData.date.slice(0,4)}-${fileData.date.slice(4,6)}-${fileData.date.slice(6,8)}</p>
+                <p class="mb-4">This is a simulated preview for <em>${fileData.originalName}</em>. The AI identified the content as relating to <strong>${fileData.description}</strong>.</p>
+                <div class="p-4 bg-blue-100 border-l-4 border-blue-400 rounded-r-lg my-4">
+                    <p>In a real application, a high-fidelity preview of the actual document would be rendered here.</p>
+                </div>
+            `;
+        }
+
+        function renderFileQueue() {
+            if (state.files.length === 0) {
+                fileQueuePlaceholder.classList.remove('hidden');
+                downloadBtn.disabled = true;
+                return;
+            }
+            fileQueuePlaceholder.classList.add('hidden');
+            const allApproved = state.files.every(f => f.status === 'approved');
+            downloadBtn.disabled = !allApproved;
+
+
+            fileQueue.innerHTML = state.files.map(file => {
+                const isSelected = file.id === state.selectedFileId;
+                const newName = `${file.date} - ${file.docType} - ${file.description}.${file.extension}`;
+                let statusIcon;
+                switch(file.status) {
+                    case 'processing': statusIcon = `<div class="loader"></div>`; break;
+                    case 'review': statusIcon = `<i data-lucide="alert-circle" class="text-yellow-500"></i>`; break;
+                    case 'approved': statusIcon = `<i data-lucide="check-circle-2" class="text-green-500"></i>`; break;
+                    case 'error': statusIcon = `<i data-lucide="x-circle" class="text-red-500"></i>`; break;
+                }
+
+                return `
+                    <div class="file-item p-3 border-l-4 ${isSelected ? 'selected' : 'border-transparent'} rounded-md cursor-pointer hover:bg-gray-100 transition" data-id="${file.id}">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-2 min-w-0">
+                                ${statusIcon}
+                                <span class="text-sm font-medium text-gray-800 truncate" title="${file.originalName}">${file.originalName}</span>
+                            </div>
+                            <button class="approve-btn text-gray-400 hover:text-green-600 ${file.status === 'approved' ? 'hidden' : ''}" data-id="${file.id}" title="Approve">
+                                <i data-lucide="check" class="h-5 w-5"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-blue-600 font-mono truncate" title="${newName}">${file.status === 'error' ? file.description : newName}</p>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function renderEditor() {
+            if (!state.selectedFileId) {
+                editorPlaceholder.classList.remove('hidden');
+                editorForm.classList.add('hidden');
+                previewPlaceholder.classList.remove('hidden');
+                previewContent.classList.add('hidden');
+                return;
+            }
+            
+            const file = state.files.find(f => f.id === state.selectedFileId);
+            if (!file || file.status === 'error') {
+                 editorPlaceholder.classList.remove('hidden');
+                 editorForm.classList.add('hidden');
+                 previewContent.innerHTML = `<p class="text-red-500">Could not process this file.</p>`;
+                 previewContent.classList.remove('hidden');
+                 previewPlaceholder.classList.add('hidden');
+                 return;
+            };
+
+            editorPlaceholder.classList.add('hidden');
+            editorForm.classList.remove('hidden');
+            previewPlaceholder.classList.add('hidden');
+            previewContent.classList.remove('hidden');
+
+            editorDate.value = file.date;
+            editorDocType.value = file.docType;
+            editorDescription.value = file.description;
+            
+            updateFilenamePreview();
+            
+            previewContent.innerHTML = getMockDocumentContent(file);
+        }
+
+        function updateFilenamePreview() {
+            const file = state.files.find(f => f.id === state.selectedFileId);
+            if (!file) return;
+            
+            previewDate.textContent = editorDate.value;
+            previewDocType.textContent = editorDocType.value;
+            previewDescription.textContent = editorDescription.value;
+            previewExtension.textContent = file.extension;
+        }
+
+        async function handleFileUpload(e) {
+            const uploadedFiles = e.target.files;
+            if (uploadedFiles.length === 0) return;
+
+            const newFiles = Array.from(uploadedFiles).map(file => ({
+                id: crypto.randomUUID(),
+                originalName: file.name,
+                fileObject: file,
+                extension: file.name.split('.').pop(),
+                status: 'processing',
+                date: '...',
+                docType: 'Analyzing...',
+                description: '...'
+            }));
+            
+            state.files.push(...newFiles);
+            renderFileQueue();
+
+            for (const file of newFiles) {
+                const formData = new FormData();
+                formData.append('file', file.fileObject);
+
+                try {
+                    const response = await fetch('/rename-document', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    const fileIndex = state.files.findIndex(f => f.id === file.id);
+                    if (fileIndex > -1) {
+                        state.files[fileIndex] = { ...state.files[fileIndex], ...result, status: 'review' };
+                    }
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    const fileIndex = state.files.findIndex(f => f.id === file.id);
+                    if (fileIndex > -1) {
+                        state.files[fileIndex].status = 'error';
+                        state.files[fileIndex].description = 'Failed to analyze.';
+                    }
+                } finally {
+                    renderFileQueue();
+                }
+            }
+        }
+        
+        function handleFileSelect(e) {
+            const target = e.target.closest('.file-item');
+            if (!target) return;
+            
+            const fileId = target.dataset.id;
+            const file = state.files.find(f => f.id === fileId);
+            if (file && file.status !== 'processing') {
+                state.selectedFileId = fileId;
+                renderFileQueue();
+                renderEditor();
+            }
+        }
+
+        function handleEditorChange() {
+            if (!state.selectedFileId) return;
+            const fileIndex = state.files.findIndex(f => f.id === state.selectedFileId);
+            if (fileIndex > -1) {
+                state.files[fileIndex].date = editorDate.value;
+                state.files[fileIndex].docType = editorDocType.value;
+                state.files[fileIndex].description = editorDescription.value;
+                state.files[fileIndex].status = 'review';
+                renderFileQueue();
+                updateFilenamePreview();
+            }
+        }
+        
+        function handleApprove(e) {
+            const button = e.target.closest('.approve-btn');
+            if (!button) return;
+            e.stopPropagation();
+            
+            const fileId = button.dataset.id;
+            const fileIndex = state.files.findIndex(f => f.id === fileId);
+            if (fileIndex > -1) {
+                state.files[fileIndex].status = 'approved';
+                renderFileQueue();
+            }
+        }
+        
+        function handleDownload() {
+            if (!state.files.every(f => f.status === 'approved')) return;
+            showToast('Preparing your .zip file for download...');
+            // In a real app, you would collect the approved filenames and send them
+            // to a backend endpoint that would create and provide a zip file.
+            // This is a placeholder for that functionality.
+            setTimeout(() => {
+                showToast('Download started!');
+            }, 1500);
+        }
+
+        function showToast(message) {
+            toastMessage.textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 3000);
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            fileUpload.addEventListener('change', handleFileUpload);
+            fileQueue.addEventListener('click', handleFileSelect);
+            fileQueue.addEventListener('click', handleApprove);
+            editorDate.addEventListener('input', handleEditorChange);
+            editorDocType.addEventListener('input', handleEditorChange);
+            editorDescription.addEventListener('input', handleEditorChange);
+            downloadBtn.addEventListener('click', handleDownload);
+        });
+    </script>
+</body>
+</html>
