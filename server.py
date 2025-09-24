@@ -885,16 +885,26 @@ async def analyse_document(doc_type: str = Form(...), file: UploadFile = File(..
 def get_renaming_system_prompt() -> str:
     """Returns the expert system prompt for the AI to rename documents."""
     return """
-You are an expert legal assistant AI named LexiFile. Your task is to analyze text from a legal document and extract key information to suggest a structured filename. The required format is: YYYYMMDD - Strict Name - Looser Description.
+You are an expert legal assistant AI named LexiFile. Your task is to analyze text from a legal document and extract key information.
 
 Your entire response must be a single, valid JSON object. Do not include any text, notes, or apologies outside of this JSON object.
 
-The JSON object must have the following three keys:
-1.  "date": A string representing the primary date found in the document, formatted as YYYYMMDD. Find the execution date, letter date, or filing date. Do not use the file's metadata creation date. If no date can be found, use "00000000".
-2.  "docType": A string for the "Strict Name". This should be a concise, formal classification of the document. Examples: "Letter from X to Y", "Contract for Services", "Affidavit of John Smith", "Statement of Claim".
-3.  "description": A string for the "Looser Description". This should be a brief, 2-5 word summary of the document's subject matter. Examples: "Security for Costs", "Discovery Request", "Evidence of Service".
-
-Analyze the text and provide the best possible values for these three keys.
+The JSON object must have the following keys:
+1.  "date": A string representing the primary date found in the document, formatted as YYYYMMDD. Find the execution date, letter date, or filing date. If no date can be found, use "00000000".
+2.  "docType": A string for the "Strict Name". This must follow a strict, uniform format.
+    - For letters/emails: "Letter from [Sender] to [Recipient]" or "Email from [Sender] to [Recipient]". Identify parties by name.
+    - For contracts/agreements: "Contract between [Party 1] and [Party 2]".
+    - For court documents: "Affidavit of [Name]", "Statement of Claim", "Notice of Motion".
+    - For other common types: "Invoice", "Receipt", "Photograph", "Meeting Minutes".
+    - Be specific. "Letter of Offer" is not specific enough. It should be "Letter from [Company] to [Applicant]".
+3.  "description": A string for the "Looser Description". This should be a brief, 2-5 word summary of the document's subject matter.
+4.  "summary": A concise, one-sentence summary of the document's main purpose.
+5.  "keywords": An array of up to 10 relevant string keywords extracted from the document.
+6.  "metadata": An object with the following keys. If the information is not present, use an empty string "" as the value.
+    - "privileged": A string, either "Yes" or "No". Infer this if the document contains phrases like "privileged and confidential". Default to "No".
+    - "author": A string for the document author, if identifiable.
+    - "createdDate": A string for the creation date, if different from the primary date.
+    - "lastModified": A string for the last modified date, if available.
 """
 
 @app.post("/rename-document")
@@ -908,7 +918,20 @@ async def rename_document(file: UploadFile = File(...)):
         extracted_text = extract_text_from_file(file_stream, file.filename)
         
         if not extracted_text.strip():
-            raise HTTPException(status_code=400, detail="Could not extract any text from the document.")
+            # For files with no text (like images), create a default response
+            return {
+                "date": "00000000",
+                "docType": "Photograph",
+                "description": "Image file",
+                "summary": "This is an image file with no extractable text.",
+                "keywords": ["image", file.filename.split('.')[-1]],
+                "metadata": {
+                    "privileged": "No",
+                    "author": "",
+                    "createdDate": "",
+                    "lastModified": ""
+                }
+            }
 
         system_prompt = get_renaming_system_prompt()
         user_prompt = f"Please analyze the following document text and return the structured JSON for renaming:\n\n---DOCUMENT TEXT---\n{extracted_text[:12000]}\n---END TEXT---"
