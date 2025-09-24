@@ -25,8 +25,21 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* For sidebar tooltip */
         .group:hover .group-hover\:scale-100 { transform: scale(1); }
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 overflow-hidden">
@@ -138,12 +151,14 @@
                         <h2 class="font-semibold text-lg">Document Preview</h2>
                     </div>
                     <div class="flex-grow flex items-center justify-center p-4">
-                        <div id="documentPreview" class="w-full h-full bg-white rounded-lg shadow-inner border border-gray-200 p-8 overflow-y-auto">
+                        <div class="w-full h-full bg-white rounded-lg shadow-inner border border-gray-200 p-6 overflow-y-auto">
                             <div id="previewPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
                                 <i data-lucide="file-text" class="h-16 w-16"></i>
                                 <p class="mt-4 font-medium text-lg">Select a file to preview</p>
                             </div>
-                            <div id="previewContent" class="hidden prose max-w-none"></div>
+                            <div id="previewContent" class="hidden prose max-w-none">
+                                <!-- AI Content will be injected here -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -153,12 +168,12 @@
                     <div class="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
                         <h2 class="font-semibold text-lg">Smart Editor</h2>
                     </div>
-                    <div id="editorPanel" class="flex-grow p-6 space-y-6 overflow-y-auto">
+                    <div id="editorPanel" class="flex-grow p-6 overflow-y-auto">
                         <div id="editorPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
                             <i data-lucide="edit-3" class="h-16 w-16"></i>
                             <p class="mt-4 font-medium text-lg text-center">Select a file to edit</p>
                         </div>
-                        <div id="editorForm" class="hidden space-y-6">
+                        <div id="editorForm" class="hidden space-y-5">
                             <div>
                                 <label for="editorDate" class="block text-sm font-bold text-gray-800 mb-1">Date</label>
                                 <input type="text" id="editorDate" placeholder="YYYYMMDD" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono">
@@ -168,15 +183,16 @@
                                 <input type="text" id="editorDocType" list="docTypes" placeholder="e.g., Letter from X to Y" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                                 <datalist id="docTypes">
                                     <option value="Affidavit of Service"></option>
-                                    <option value="Contract for Services"></option>
+                                    <option value="Contract between X and Y"></option>
                                     <option value="Letter from X to Y"></option>
+                                    <option value="Email from X to Y"></option>
                                 </datalist>
                             </div>
                             <div>
                                 <label for="editorDescription" class="block text-sm font-bold text-gray-800 mb-1">Description</label>
-                                <textarea id="editorDescription" placeholder="e.g., Security for Costs" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                                <textarea id="editorDescription" placeholder="e.g., Security for Costs" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
                             </div>
-                            <div class="pt-4 border-t border-gray-200">
+                             <div class="pt-4 border-t border-gray-200">
                                  <h4 class="text-sm font-bold text-gray-800 mb-2">Live Filename Preview</h4>
                                  <div class="p-3 bg-gray-100 rounded-lg text-gray-700 text-sm break-all font-mono">
                                     <span id="previewDate"></span> - 
@@ -184,6 +200,31 @@
                                     <span id="previewDescription"></span>.
                                     <span id="previewExtension"></span>
                                  </div>
+                            </div>
+                             <!-- Editable Properties Section -->
+                            <div id="metadataEditor" class="pt-4 border-t border-gray-200">
+                                <h4 class="text-sm font-bold text-gray-800 mb-3">Editable Properties</h4>
+                                <div class="space-y-3 text-sm">
+                                    <div class="grid grid-cols-3 items-center">
+                                        <label for="metaPrivileged" class="font-medium text-gray-600 col-span-1">Privileged</label>
+                                        <select id="metaPrivileged" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
+                                            <option value="No">No</option>
+                                            <option value="Yes">Yes</option>
+                                        </select>
+                                    </div>
+                                    <div class="grid grid-cols-3 items-center">
+                                        <label for="metaAuthor" class="font-medium text-gray-600 col-span-1">Author</label>
+                                        <input type="text" id="metaAuthor" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
+                                    </div>
+                                    <div class="grid grid-cols-3 items-center">
+                                        <label for="metaCreated" class="font-medium text-gray-600 col-span-1">Created</label>
+                                        <input type="text" id="metaCreated" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
+                                    </div>
+                                    <div class="grid grid-cols-3 items-center">
+                                        <label for="metaModified" class="font-medium text-gray-600 col-span-1">Modified</label>
+                                        <input type="text" id="metaModified" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -202,6 +243,7 @@
             selectedFileId: null,
         };
 
+        // --- DOM Elements ---
         const fileUpload = document.getElementById('fileUpload');
         const fileQueue = document.getElementById('fileQueue');
         const fileQueuePlaceholder = document.getElementById('fileQueuePlaceholder');
@@ -221,18 +263,12 @@
         const toastMessage = document.getElementById('toastMessage');
         const profileButton = document.getElementById('profileButton');
         const profilePopup = document.getElementById('profilePopup');
+        const metaPrivileged = document.getElementById('metaPrivileged');
+        const metaAuthor = document.getElementById('metaAuthor');
+        const metaCreated = document.getElementById('metaCreated');
+        const metaModified = document.getElementById('metaModified');
 
-        function getMockDocumentContent(fileData) {
-            return `
-                <h2 class="font-bold text-xl mb-4">${fileData.docType}</h2>
-                <p class="text-sm text-gray-500 mb-6"><strong>Date:</strong> ${fileData.date.slice(0,4)}-${fileData.date.slice(4,6)}-${fileData.date.slice(6,8)}</p>
-                <p>This is a simulated preview for <em>${fileData.originalName}</em>. The AI identified the content as relating to <strong>${fileData.description}</strong>.</p>
-                <div class="p-4 bg-gray-100 border rounded-lg my-4">
-                    <p>In a real production app, a high-fidelity, scrollable preview of the actual PDF or DOCX would be rendered here.</p>
-                </div>
-            `;
-        }
-
+        // --- Render Functions ---
         function renderFileQueue() {
             if (state.files.length === 0) {
                 fileQueuePlaceholder.classList.remove('hidden');
@@ -273,7 +309,7 @@
             lucide.createIcons();
         }
 
-        function renderEditor() {
+        function renderEditorAndPreview() {
             if (!state.selectedFileId) {
                 editorPlaceholder.classList.remove('hidden');
                 editorForm.classList.add('hidden');
@@ -286,24 +322,54 @@
             if (!file || file.status === 'error') {
                  editorPlaceholder.classList.remove('hidden');
                  editorForm.classList.add('hidden');
-                 previewContent.innerHTML = `<p class="text-red-500">Could not process this file.</p>`;
+                 previewContent.innerHTML = `<div class="text-red-600 p-4 bg-red-50 rounded-lg">
+                    <p class="font-bold mb-2">Could not process this file.</p>
+                    <p class="text-sm">${file ? file.description : 'An unknown error occurred.'}</p>
+                 </div>`;
                  previewContent.classList.remove('hidden');
                  previewPlaceholder.classList.add('hidden');
                  return;
             };
 
+            // Show form, hide placeholders
             editorPlaceholder.classList.add('hidden');
             editorForm.classList.remove('hidden');
             previewPlaceholder.classList.add('hidden');
             previewContent.classList.remove('hidden');
 
+            // --- Populate Editor Form ---
             editorDate.value = file.date;
             editorDocType.value = file.docType;
             editorDescription.value = file.description;
             
+            // --- Populate Metadata ---
+            metaPrivileged.value = file.metadata.privileged || 'No';
+            metaAuthor.value = file.metadata.author || '';
+            metaCreated.value = file.metadata.createdDate || '';
+            metaModified.value = file.metadata.lastModified || '';
+            
             updateFilenamePreview();
             
-            previewContent.innerHTML = getMockDocumentContent(file);
+            // --- Populate Preview Panel ---
+            const keywordsHTML = file.keywords.map(kw => `<span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${kw}</span>`).join('');
+
+            previewContent.innerHTML = `
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold text-gray-800 mb-2">AI Summary</h3>
+                    <p class="text-gray-600 text-sm">${file.summary || 'No summary available.'}</p>
+                </div>
+                 <div class="mb-8">
+                    <h3 class="text-sm font-bold text-gray-800 mb-2">Keywords</h3>
+                    <div class="flex flex-wrap">${keywordsHTML}</div>
+                </div>
+                <div class="border-t border-gray-200 pt-6">
+                    <h3 class="text-sm font-bold text-gray-800 mb-2">Document Body Preview</h3>
+                    <div class="p-4 bg-gray-50 border rounded-lg text-sm text-gray-500">
+                        <p>This is a simulated preview for <em>${file.originalName}</em>.</p>
+                        <p class="mt-2">In a real production app, a high-fidelity, scrollable preview of the actual PDF or DOCX would be rendered here.</p>
+                    </div>
+                </div>
+            `;
         }
 
         function updateFilenamePreview() {
@@ -315,7 +381,8 @@
             previewDescription.textContent = editorDescription.value;
             previewExtension.textContent = file.extension;
         }
-
+        
+        // --- Event Handlers ---
         async function handleFileUpload(e) {
             const uploadedFiles = e.target.files;
             if (uploadedFiles.length === 0) return;
@@ -328,7 +395,10 @@
                 status: 'processing',
                 date: '...',
                 docType: 'Analyzing...',
-                description: '...'
+                description: '...',
+                summary: '',
+                keywords: [],
+                metadata: {}
             }));
             
             state.files.push(...newFiles);
@@ -339,8 +409,6 @@
                 formData.append('file', file.fileObject);
 
                 try {
-                    // **FIX**: Use a relative path. This assumes your web server is configured
-                    // to proxy requests from /rename-document to your Python backend.
                     const response = await fetch(`/rename-document`, {
                         method: 'POST',
                         body: formData,
@@ -350,7 +418,8 @@
                          const err = await response.json().catch(() => ({ detail: `Server error: ${response.statusText}` }));
                          throw new Error(err.detail);
                     }
-
+                    
+                    // The server now returns a complex JSON object.
                     const result = await response.json();
                     
                     const fileIndex = state.files.findIndex(f => f.id === file.id);
@@ -366,6 +435,10 @@
                     }
                 } finally {
                     renderFileQueue();
+                    // If this was the first file selected, render the editor
+                    if (state.selectedFileId === file.id) {
+                        renderEditorAndPreview();
+                    }
                 }
             }
         }
@@ -379,7 +452,7 @@
             if (file && file.status !== 'processing') {
                 state.selectedFileId = fileId;
                 renderFileQueue();
-                renderEditor();
+                renderEditorAndPreview();
             }
         }
 
@@ -387,9 +460,17 @@
             if (!state.selectedFileId) return;
             const fileIndex = state.files.findIndex(f => f.id === state.selectedFileId);
             if (fileIndex > -1) {
+                // Update filename parts
                 state.files[fileIndex].date = editorDate.value;
                 state.files[fileIndex].docType = editorDocType.value;
                 state.files[fileIndex].description = editorDescription.value;
+                
+                // Update metadata parts
+                state.files[fileIndex].metadata.privileged = metaPrivileged.value;
+                state.files[fileIndex].metadata.author = metaAuthor.value;
+                state.files[fileIndex].metadata.createdDate = metaCreated.value;
+                state.files[fileIndex].metadata.lastModified = metaModified.value;
+
                 state.files[fileIndex].status = 'review';
                 renderFileQueue();
                 updateFilenamePreview();
@@ -422,21 +503,24 @@
             }, 3000);
         }
         
+        // --- Initial Setup ---
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             fileUpload.addEventListener('change', handleFileUpload);
             fileQueue.addEventListener('click', handleFileSelect);
             fileQueue.addEventListener('click', handleApprove);
-            editorDate.addEventListener('input', handleEditorChange);
-            editorDocType.addEventListener('input', handleEditorChange);
-            editorDescription.addEventListener('input', handleEditorChange);
+            
+            // Add event listeners for all editor fields
+            const editorFields = [editorDate, editorDocType, editorDescription, metaPrivileged, metaAuthor, metaCreated, metaModified];
+            editorFields.forEach(field => field.addEventListener('input', handleEditorChange));
+
             downloadBtn.addEventListener('click', handleDownload);
 
+            // Profile popup logic
             profileButton.addEventListener('click', (e) => {
                 e.stopPropagation();
                 profilePopup.classList.toggle('hidden');
             });
-
             document.addEventListener('click', (e) => {
                 if (!profilePopup.contains(e.target) && e.target !== profileButton) {
                     profilePopup.classList.add('hidden');
