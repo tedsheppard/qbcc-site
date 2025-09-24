@@ -7,6 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- PDF.js and JSZip libraries for preview and download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         .file-item.selected {
@@ -40,25 +43,26 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
-        /* Ensure iframe in preview panel respects flex container */
-        #previewContent iframe {
-            min-height: 100%;
+        #pdf-viewer canvas {
+            margin-bottom: 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 overflow-hidden">
-    <div class="h-screen flex">
+    <div class="h-screen flex flex-col md:flex-row">
         <!-- Sidebar Navigation -->
-        <nav class="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-4">
-            <a href="/lexifile_index" class="mb-8">
+        <nav class="w-full md:w-20 bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-row md:flex-col items-center py-2 md:py-4 flex-shrink-0">
+            <a href="/lexifile_index" class="mb-0 md:mb-8 mx-4 md:mx-0">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
             </a>
-            <ul class="space-y-2">
+            <ul class="flex flex-row md:flex-col space-x-2 md:space-x-0 md:space-y-2">
                 <li class="group relative">
                     <a href="/lexifile_portal" class="flex justify-center items-center h-12 w-12 bg-indigo-100 text-indigo-600 rounded-lg">
                         <i data-lucide="layout-grid"></i>
                     </a>
-                    <span class="absolute left-full ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
+                    <span class="absolute top-full md:left-full mt-2 md:mt-0 md:ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
                       Dashboard
                     </span>
                 </li>
@@ -66,7 +70,7 @@
                     <a href="#" class="flex justify-center items-center h-12 w-12 hover:bg-gray-100 text-gray-500 hover:text-gray-800 rounded-lg transition-colors">
                         <i data-lucide="history"></i>
                     </a>
-                     <span class="absolute left-full ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
+                     <span class="absolute top-full md:left-full mt-2 md:mt-0 md:ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
                       Batch History
                     </span>
                 </li>
@@ -74,7 +78,7 @@
                     <a href="#" class="flex justify-center items-center h-12 w-12 hover:bg-gray-100 text-gray-500 hover:text-gray-800 rounded-lg transition-colors">
                         <i data-lucide="file-cog"></i>
                     </a>
-                     <span class="absolute left-full ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
+                     <span class="absolute top-full md:left-full mt-2 md:mt-0 md:ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
                       Custom Rules
                     </span>
                 </li>
@@ -82,12 +86,12 @@
                     <a href="#" class="flex justify-center items-center h-12 w-12 hover:bg-gray-100 text-gray-500 hover:text-gray-800 rounded-lg transition-colors">
                         <i data-lucide="share-2"></i>
                     </a>
-                     <span class="absolute left-full ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
+                     <span class="absolute top-full md:left-full mt-2 md:mt-0 md:ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
                       Integrations
                     </span>
                 </li>
             </ul>
-             <ul class="mt-auto space-y-2">
+             <ul class="hidden md:flex mt-auto space-y-2">
                  <li class="group relative">
                     <a href="#" class="flex justify-center items-center h-12 w-12 hover:bg-gray-100 text-gray-500 hover:text-gray-800 rounded-lg transition-colors">
                         <i data-lucide="help-circle"></i>
@@ -99,7 +103,7 @@
              </ul>
         </nav>
 
-        <div id="appPage" class="flex-1 flex flex-col">
+        <div id="appPage" class="flex-1 flex flex-col min-h-0">
             <!-- App Header -->
             <header class="flex-shrink-0 bg-white border-b border-gray-200 p-3 flex justify-between items-center">
                 <div>
@@ -129,9 +133,9 @@
             </header>
 
             <!-- Main Content Grid -->
-            <main class="flex-grow flex min-h-0">
+            <main class="flex-grow flex flex-col md:flex-row min-h-0">
                 <!-- Panel 1: File Queue -->
-                <div class="w-1/4 border-r border-gray-200 flex flex-col bg-white">
+                <div class="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col bg-white">
                     <div class="p-4 border-b border-gray-200 flex-shrink-0">
                         <label for="fileUpload" class="w-full cursor-pointer bg-blue-50 text-blue-700 border-2 border-dashed border-blue-200 rounded-lg flex flex-col items-center justify-center p-4 hover:bg-blue-100 transition">
                             <i data-lucide="upload" class="mb-2"></i>
@@ -150,7 +154,7 @@
                 </div>
 
                 <!-- Panel 2: Document Preview -->
-                <div class="w-1/2 flex flex-col bg-gray-100">
+                <div class="w-full md:w-1/2 flex flex-col bg-gray-100">
                      <div class="flex-shrink-0 p-4 border-b border-gray-200 bg-white flex items-center justify-between">
                         <h2 class="font-semibold text-lg">Document Preview</h2>
                     </div>
@@ -160,15 +164,15 @@
                                 <i data-lucide="file-text" class="h-16 w-16"></i>
                                 <p class="mt-4 font-medium text-lg">Select a file to preview</p>
                             </div>
-                            <div id="previewContent" class="hidden prose max-w-none h-full">
-                                <!-- AI Content will be injected here -->
+                            <div id="previewContent" class="hidden">
+                                <!-- AI Content and Real Preview will be injected here -->
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Panel 3: Smart Editor -->
-                <div class="w-1/4 border-l border-gray-200 flex flex-col bg-white">
+                <div class="w-full md:w-1/3 border-t md:border-t-0 md:border-l border-gray-200 flex flex-col bg-white">
                     <div class="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
                         <h2 class="font-semibold text-lg">Smart Editor</h2>
                     </div>
@@ -222,11 +226,11 @@
                                     </div>
                                     <div class="grid grid-cols-3 items-center">
                                         <label for="metaCreated" class="font-medium text-gray-600 col-span-1">Created</label>
-                                        <input type="text" id="metaCreated" placeholder="YYYY-MM-DD" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
+                                        <input type="text" id="metaCreated" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
                                     </div>
                                     <div class="grid grid-cols-3 items-center">
                                         <label for="metaModified" class="font-medium text-gray-600 col-span-1">Modified</label>
-                                        <input type="text" id="metaModified" placeholder="YYYY-MM-DD" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
+                                        <input type="text" id="metaModified" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
                                     </div>
                                 </div>
                             </div>
@@ -242,6 +246,9 @@
     </div>
 
     <script>
+        // Set workerSrc for PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
+
         const state = {
             files: [],
             selectedFileId: null,
@@ -313,7 +320,7 @@
             lucide.createIcons();
         }
 
-        function renderEditorAndPreview() {
+        async function renderEditorAndPreview() {
             if (!state.selectedFileId) {
                 editorPlaceholder.classList.remove('hidden');
                 editorForm.classList.add('hidden');
@@ -356,52 +363,63 @@
             
             // --- Populate Preview Panel ---
             const keywordsHTML = file.keywords.map(kw => `<span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${kw}</span>`).join('');
-            
-            let previewHTML = '';
-            const fileType = file.extension.toLowerCase();
-
-            // Revoke any previous URL for this file object to prevent memory leaks
-            if (file.objectUrl) {
-                URL.revokeObjectURL(file.objectUrl);
-            }
-            file.objectUrl = URL.createObjectURL(file.fileObject);
-            
-            if (['pdf', 'txt', 'html', 'svg'].includes(fileType) || file.fileObject.type.startsWith('image/')) {
-                 previewHTML = `<iframe src="${file.objectUrl}" class="w-full h-full border border-gray-300 rounded-md"></iframe>`;
-            } else if (fileType === 'docx') {
-                 previewHTML = `<div class="p-4 bg-gray-50 border rounded-lg text-sm text-gray-500 flex flex-col items-center justify-center h-full">
-                    <i data-lucide="file-warning" class="h-10 w-10 text-yellow-500 mb-2"></i>
-                    <p class="font-semibold">Live preview not available for .docx files.</p>
-                    <p class="mt-1 text-xs text-center">Modern browsers cannot render DOCX files directly.</p>
-                 </div>`;
-            } else {
-                previewHTML = `<div class="p-4 bg-gray-50 border rounded-lg text-sm text-gray-500 flex flex-col items-center justify-center h-full">
-                    <i data-lucide="file-question" class="h-10 w-10 text-gray-400 mb-2"></i>
-                    <p class="font-semibold">Unsupported file type for preview.</p>
-                 </div>`;
-            }
 
             previewContent.innerHTML = `
-                <div class="flex flex-col h-full">
-                    <div class="flex-shrink-0">
-                        <div class="mb-4">
-                            <h3 class="text-sm font-bold text-gray-800 mb-2">AI Summary</h3>
-                            <p class="text-gray-600 text-sm">${file.summary || 'No summary available.'}</p>
-                        </div>
-                         <div class="mb-4">
-                            <h3 class="text-sm font-bold text-gray-800 mb-2">Keywords</h3>
-                            <div class="flex flex-wrap gap-2">${keywordsHTML}</div>
-                        </div>
-                    </div>
-                    <div class="border-t border-gray-200 pt-4 flex-grow min-h-0 flex flex-col">
-                        <h3 class="text-sm font-bold text-gray-800 mb-2 flex-shrink-0">Document Body Preview</h3>
-                        <div class="w-full h-full flex-grow min-h-0">
-                            ${previewHTML}
-                        </div>
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold text-gray-800 mb-2">AI Summary</h3>
+                    <p class="text-gray-600 text-sm">${file.summary || 'No summary available.'}</p>
+                </div>
+                 <div class="mb-8">
+                    <h3 class="text-sm font-bold text-gray-800 mb-2">Keywords</h3>
+                    <div class="flex flex-wrap">${keywordsHTML}</div>
+                </div>
+                <div class="border-t border-gray-200 pt-6">
+                    <h3 class="text-sm font-bold text-gray-800 mb-2">Document Body Preview</h3>
+                    <div id="actual-preview-container" class="bg-gray-50 border rounded-lg text-sm text-gray-500 overflow-auto">
+                        <!-- Real preview will be rendered here -->
                     </div>
                 </div>
             `;
-            lucide.createIcons();
+
+            const previewContainer = document.getElementById('actual-preview-container');
+            previewContainer.innerHTML = '<div class="p-4">Loading preview...</div>';
+
+            try {
+                const fileURL = URL.createObjectURL(file.fileObject);
+                const fileType = file.fileObject.type;
+
+                if (fileType === 'application/pdf') {
+                    const pdfViewer = document.createElement('div');
+                    pdfViewer.id = 'pdf-viewer';
+                    previewContainer.innerHTML = '';
+                    previewContainer.appendChild(pdfViewer);
+
+                    const loadingTask = pdfjsLib.getDocument(fileURL);
+                    const pdf = await loadingTask.promise;
+                    
+                    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                        const page = await pdf.getPage(pageNum);
+                        const viewport = page.getViewport({ scale: 1.5 });
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        pdfViewer.appendChild(canvas);
+
+                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    }
+
+                } else if (fileType.startsWith('image/')) {
+                    previewContainer.innerHTML = `<img src="${fileURL}" class="max-w-full h-auto rounded-lg">`;
+                } else {
+                    previewContainer.innerHTML = '<div class="p-4">Preview is not available for this file type.</div>';
+                }
+
+            } catch(e) {
+                console.error("Preview failed:", e);
+                previewContainer.innerHTML = `<div class="p-4 text-red-600">Failed to render preview. The file may be corrupted.</div>`;
+            }
         }
 
         function updateFilenamePreview() {
@@ -451,7 +469,6 @@
                          throw new Error(err.detail);
                     }
                     
-                    // The server now returns a complex JSON object.
                     const result = await response.json();
                     
                     const fileIndex = state.files.findIndex(f => f.id === file.id);
@@ -467,7 +484,11 @@
                     }
                 } finally {
                     renderFileQueue();
-                    // If this was the first file selected, render the editor
+                    if (state.files.length === 1) { // Auto-select the first file
+                        state.selectedFileId = file.id;
+                        renderEditorAndPreview();
+                        renderFileQueue(); // re-render to show selection
+                    }
                     if (state.selectedFileId === file.id) {
                         renderEditorAndPreview();
                     }
@@ -522,8 +543,35 @@
             }
         }
         
-        function handleDownload() {
-            showToast('Download functionality is not yet implemented.');
+        async function handleDownload() {
+            if (downloadBtn.disabled) return;
+
+            const approvedFiles = state.files.filter(f => f.status === 'approved');
+            if (approvedFiles.length === 0) {
+                showToast("No approved files to download.", true);
+                return;
+            }
+
+            showToast("Preparing your download...", false);
+            const zip = new JSZip();
+            
+            for (const file of approvedFiles) {
+                const newName = `${file.date} - ${file.docType} - ${file.description}.${file.extension}`;
+                zip.file(newName, file.fileObject);
+            }
+
+            try {
+                const content = await zip.generateAsync({ type: "blob" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(content);
+                link.download = "LexiFile_Export.zip";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (e) {
+                console.error("Failed to create zip file", e);
+                showToast("Error creating zip file.", true);
+            }
         }
 
         function showToast(message, isError = false) {
@@ -542,7 +590,6 @@
             fileQueue.addEventListener('click', handleFileSelect);
             fileQueue.addEventListener('click', handleApprove);
             
-            // Add event listeners for all editor fields
             const editorFields = [editorDate, editorDocType, editorDescription, metaPrivileged, metaAuthor, metaCreated, metaModified];
             editorFields.forEach(field => field.addEventListener('input', handleEditorChange));
 
