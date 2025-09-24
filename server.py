@@ -12,6 +12,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 import PyPDF2
 import docx
+import extract_msg # Added for .msg and .eml support
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -50,14 +51,17 @@ con.execute("PRAGMA mmap_size = 30000000000")
 
 app = FastAPI()
 
-# --- FIX: Add CORS Middleware ---
+# --- CORS Middleware ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict this to your domain e.g., "https://sopal.com.au"
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# A simple in-memory store for projects for demonstration purposes
+PROJECTS_DB = []
 
 # --- RBA Interest Rate Setup ---
 def setup_rba_table():
@@ -142,6 +146,7 @@ ensure_fts()
 MEILI_URL = os.getenv("MEILI_URL", "http://127.0.0.1:7700")
 MEILI_KEY = os.getenv("MEILI_MASTER_KEY", "")
 MEILI_INDEX = "decisions"
+
 
 # ---------------- helpers ----------------
 def normalize_query(q: str) -> str:
@@ -830,7 +835,7 @@ The check objects must cover the following points in detail:
 1.  **Identifies Payment Claim (section 69(a))**: Check if the schedule clearly and unambiguously identifies the payment claim it is responding to (e.g., by date, claim number, or project reference). A 'fail' here could render the entire schedule invalid.
 2.  **Scheduled Amount Stated (section 69(b))**: Check if it states the amount of the payment, if any, that the respondent proposes to make. This can be zero, but a figure must be stated. Failure to do so is a 'fail'.
 3.  **Reasons for Withholding (section 69(c))**: This is the most critical compliance point. The reasons for withholding payment must be articulated with sufficient particularity. A 'fail' is warranted for vague, generic reasons like 'defective works' or 'incomplete works' without further detail. The reasons must be comprehensive enough for the claimant to understand the case they have to meet at adjudication (*John Holland Pty Ltd v. TAC Pacific Pty Ltd*). Emphasise that the respondent is bound by the reasons in their schedule and cannot introduce new reasons later.
-4.  **Timeliness of Schedule (section 76)**: This cannot be verified from the document alone, so always assign a 'warning'. The feedback must explain the strict timeframe for service (15 business days after receiving the payment claim or a shorter period if specified in the contract) and state that failure to provide a compliant schedule on time makes the respondent liable for the full claimed amount.
+4.  **Timeliness of Schedule (section 76)**: This cannot be verified from the document alone, so always assign a 'warning'. The feedback must explain the strict timeframe for service: 15 business days after receiving the payment claim or a shorter period if specified in the contract) and state that failure to provide a compliant schedule on time makes the respondent liable for the full claimed amount.
 5.  **Correct Service**: This also cannot be verified from the document text, so always assign a 'warning'. The feedback must stress the importance of serving the schedule on the correct party at the address for notices stipulated in the contract, as improper service is equivalent to not serving one at all.
 """
     return ""
@@ -879,7 +884,7 @@ async def analyse_document(doc_type: str = Form(...), file: UploadFile = File(..
         return JSONResponse(content={"error": f"An unexpected error occurred: {str(e)}"}, status_code=500)
 
 # -------------------------------------------------------------------
-# --- START: LEXIFILE FUNCTIONALITY (MERGED) ---
+# --- START: LEXIFILE FUNCTIONALITY (MERGED & UPDATED) ---
 # -------------------------------------------------------------------
 
 def get_renaming_system_prompt() -> str:
@@ -907,6 +912,35 @@ The JSON object must have the following keys:
     - "lastModified": A string for the last modified date, if available.
 """
 
+def extract_lexifile_text(file: io.BytesIO, filename: str) -> str:
+    """Extracts text for LexiFile, now supporting more types."""
+    text = ""
+    lower_filename = filename.lower()
+    try:
+        if lower_filename.endswith('.pdf'):
+            reader = PyPDF2.PdfReader(file)
+            for page in reader.pages:
+                text += page.extract_text() or ""
+        elif lower_filename.endswith('.docx') or lower_filename.endswith('.doc'):
+            # python-docx can handle both in many cases
+            doc = docx.Document(file)
+            for para in doc.paragraphs:
+                text += para.text + "\n"
+        elif lower_filename.endswith('.msg') or lower_filename.endswith('.eml'):
+            msg = extract_msg.Message(file)
+            text += f"From: {msg.sender}\n"
+            text += f"To: {msg.to}\n"
+            text += f"Subject: {msg.subject}\n\n"
+            text += msg.body
+        else:
+            # For other types like images, we won't extract text here
+            return ""
+    except Exception as e:
+        print(f"Error extracting text from {filename}: {e}")
+        # Don't raise an exception, just return empty text so AI can handle it
+        return ""
+    return text
+
 @app.post("/rename-document")
 async def rename_document(file: UploadFile = File(...)):
     """Handles the document upload and renaming logic for LexiFile."""
@@ -915,23 +949,20 @@ async def rename_document(file: UploadFile = File(...)):
     try:
         file_content = await file.read()
         file_stream = io.BytesIO(file_content)
-        extracted_text = extract_text_from_file(file_stream, file.filename)
+        extracted_text = extract_lexifile_text(file_stream, file.filename)
         
         if not extracted_text.strip():
-            # For files with no text (like images), create a default response
-            return {
+             # For files with no text (like images), create a default response
+            file_extension = file.filename.split('.')[-1]
+            doc_type = "Image" if file_extension.lower() in ['jpg', 'jpeg', 'png', 'gif'] else "Unsupported File"
+            return JSONResponse(content={
                 "date": "00000000",
-                "docType": "Photograph",
-                "description": "Image file",
-                "summary": "This is an image file with no extractable text.",
-                "keywords": ["image", file.filename.split('.')[-1]],
-                "metadata": {
-                    "privileged": "No",
-                    "author": "",
-                    "createdDate": "",
-                    "lastModified": ""
-                }
-            }
+                "docType": doc_type,
+                "description": "Media file",
+                "summary": "This is a file with no extractable text.",
+                "keywords": ["media", file.filename.split('.')[-1]],
+                "metadata": { "privileged": "No", "author": "", "createdDate": "", "lastModified": "" }
+            })
 
         system_prompt = get_renaming_system_prompt()
         user_prompt = f"Please analyze the following document text and return the structured JSON for renaming:\n\n---DOCUMENT TEXT---\n{extracted_text[:12000]}\n---END TEXT---"
@@ -948,11 +979,47 @@ async def rename_document(file: UploadFile = File(...)):
         return json.loads(ai_response_content)
     except json.JSONDecodeError:
          raise HTTPException(status_code=500, detail="AI returned an invalid JSON response.")
-    except HTTPException as e:
-        raise e
     except Exception as e:
         print(f"ERROR in /rename-document: {e}")
         return JSONResponse(content={"error": f"An unexpected error occurred: {str(e)}"}, status_code=500)
+
+@app.post("/preview-email")
+async def preview_email(file: UploadFile = File(...)):
+    """Parses an email file and returns its components for preview."""
+    if not file or not (file.filename.lower().endswith('.msg') or file.filename.lower().endswith('.eml')):
+        raise HTTPException(status_code=400, detail="Invalid file type for email preview.")
+    try:
+        file_content = await file.read()
+        msg = extract_msg.Message(io.BytesIO(file_content))
+        return {
+            "from": msg.sender,
+            "to": msg.to,
+            "cc": msg.cc,
+            "subject": msg.subject,
+            "date": msg.date,
+            "body": msg.body # extract-msg prefers HTML body if available
+        }
+    except Exception as e:
+        print(f"Error parsing email file {file.filename}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse email file.")
+
+# --- Project Management Endpoints ---
+@app.get("/projects")
+async def get_projects():
+    return PROJECTS_DB
+
+@app.post("/create-project")
+async def create_project(projectName: str = Form(...), clientName: str = Form(...), matterNumber: str = Form(...)):
+    project_id = len(PROJECTS_DB) + 1
+    new_project = {
+        "id": project_id,
+        "name": projectName,
+        "client": clientName,
+        "matter": matterNumber,
+        "dateCreated": datetime.now().strftime("%Y-%m-%d")
+    }
+    PROJECTS_DB.append(new_project)
+    return new_project
 
 # -------------------------------------------------------------------
 # --- END: LEXIFILE FUNCTIONALITY ---
@@ -972,7 +1039,6 @@ async def serve_html_page(path_name: str):
     file_path = os.path.join(SITE_DIR, f"{path_name}.html")
     if os.path.exists(file_path):
         return FileResponse(file_path)
-    # if path doesn't exist, fall back to index.html (so SPA-style routing still works)
     return FileResponse(os.path.join(SITE_DIR, "index.html"))
 
 # keep the old mount for static assets like CSS/JS/images
