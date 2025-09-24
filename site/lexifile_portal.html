@@ -44,9 +44,12 @@
             background: #94a3b8;
         }
         #pdf-viewer canvas {
-            margin-bottom: 8px;
+            margin: 0 auto 8px auto; /* Center canvas horizontally */
+            display: block;
             border: 1px solid #e5e7eb;
             border-radius: 4px;
+            max-width: 100%;
+            height: auto;
         }
     </style>
 </head>
@@ -136,13 +139,17 @@
             <main class="flex-grow flex flex-col md:flex-row min-h-0">
                 <!-- Panel 1: File Queue -->
                 <div class="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col bg-white">
-                    <div class="p-4 border-b border-gray-200 flex-shrink-0">
+                    <div class="p-4 border-b border-gray-200 flex-shrink-0 space-y-3">
                         <label for="fileUpload" class="w-full cursor-pointer bg-blue-50 text-blue-700 border-2 border-dashed border-blue-200 rounded-lg flex flex-col items-center justify-center p-4 hover:bg-blue-100 transition">
                             <i data-lucide="upload" class="mb-2"></i>
                             <span class="font-semibold text-sm">Upload Documents</span>
                             <span class="text-xs">or drag and drop</span>
                         </label>
                         <input type="file" id="fileUpload" class="hidden" multiple>
+                        <button id="approveAllBtn" class="w-full bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-600 transition shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2">
+                            <i data-lucide="check-check"></i>
+                            <span>Approve All</span>
+                        </button>
                     </div>
                     <div id="fileQueue" class="flex-grow overflow-y-auto p-2 space-y-1">
                         <div id="fileQueuePlaceholder" class="text-center p-10 text-gray-500">
@@ -270,6 +277,7 @@
         const previewDescription = document.getElementById('previewDescription');
         const previewExtension = document.getElementById('previewExtension');
         const downloadBtn = document.getElementById('downloadBtn');
+        const approveAllBtn = document.getElementById('approveAllBtn');
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toastMessage');
         const profileButton = document.getElementById('profileButton');
@@ -284,11 +292,14 @@
             if (state.files.length === 0) {
                 fileQueuePlaceholder.classList.remove('hidden');
                 downloadBtn.disabled = true;
+                approveAllBtn.disabled = true;
                 return;
             }
             fileQueuePlaceholder.classList.add('hidden');
-            const allApproved = state.files.length > 0 && state.files.every(f => f.status === 'approved');
-            downloadBtn.disabled = !allApproved;
+            
+            const allApproved = state.files.every(f => f.status === 'approved' || f.status === 'error');
+            downloadBtn.disabled = !state.files.some(f => f.status === 'approved');
+            approveAllBtn.disabled = state.files.every(f => f.status !== 'review');
 
 
             fileQueue.innerHTML = state.files.map(file => {
@@ -382,7 +393,7 @@
             `;
 
             const previewContainer = document.getElementById('actual-preview-container');
-            previewContainer.innerHTML = '<div class="p-4">Loading preview...</div>';
+            previewContainer.innerHTML = '<div class="p-4 flex items-center justify-center"><div class="loader"></div><span class="ml-2">Loading preview...</span></div>';
 
             try {
                 const fileURL = URL.createObjectURL(file.fileObject);
@@ -396,10 +407,14 @@
 
                     const loadingTask = pdfjsLib.getDocument(fileURL);
                     const pdf = await loadingTask.promise;
+                    const containerWidth = previewContainer.clientWidth;
                     
                     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                         const page = await pdf.getPage(pageNum);
-                        const viewport = page.getViewport({ scale: 1.5 });
+                        const originalViewport = page.getViewport({ scale: 1.0 });
+                        const scale = containerWidth / originalViewport.width;
+                        const viewport = page.getViewport({ scale: scale });
+
                         const canvas = document.createElement('canvas');
                         const context = canvas.getContext('2d');
                         canvas.height = viewport.height;
@@ -542,6 +557,15 @@
                 renderFileQueue();
             }
         }
+
+        function handleApproveAll() {
+            state.files.forEach(file => {
+                if (file.status === 'review') {
+                    file.status = 'approved';
+                }
+            });
+            renderFileQueue();
+        }
         
         async function handleDownload() {
             if (downloadBtn.disabled) return;
@@ -589,6 +613,7 @@
             fileUpload.addEventListener('change', handleFileUpload);
             fileQueue.addEventListener('click', handleFileSelect);
             fileQueue.addEventListener('click', handleApprove);
+            approveAllBtn.addEventListener('click', handleApproveAll);
             
             const editorFields = [editorDate, editorDocType, editorDescription, metaPrivileged, metaAuthor, metaCreated, metaModified];
             editorFields.forEach(field => field.addEventListener('input', handleEditorChange));
