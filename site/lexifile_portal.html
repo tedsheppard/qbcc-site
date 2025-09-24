@@ -40,6 +40,10 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+        /* Ensure iframe in preview panel respects flex container */
+        #previewContent iframe {
+            min-height: 100%;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 overflow-hidden">
@@ -127,7 +131,7 @@
             <!-- Main Content Grid -->
             <main class="flex-grow flex min-h-0">
                 <!-- Panel 1: File Queue -->
-                <div class="w-1/3 border-r border-gray-200 flex flex-col bg-white">
+                <div class="w-1/4 border-r border-gray-200 flex flex-col bg-white">
                     <div class="p-4 border-b border-gray-200 flex-shrink-0">
                         <label for="fileUpload" class="w-full cursor-pointer bg-blue-50 text-blue-700 border-2 border-dashed border-blue-200 rounded-lg flex flex-col items-center justify-center p-4 hover:bg-blue-100 transition">
                             <i data-lucide="upload" class="mb-2"></i>
@@ -150,13 +154,13 @@
                      <div class="flex-shrink-0 p-4 border-b border-gray-200 bg-white flex items-center justify-between">
                         <h2 class="font-semibold text-lg">Document Preview</h2>
                     </div>
-                    <div class="flex-grow flex items-center justify-center p-4">
+                    <div class="flex-grow flex items-center justify-center p-4 min-h-0">
                         <div class="w-full h-full bg-white rounded-lg shadow-inner border border-gray-200 p-6 overflow-y-auto">
                             <div id="previewPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
                                 <i data-lucide="file-text" class="h-16 w-16"></i>
                                 <p class="mt-4 font-medium text-lg">Select a file to preview</p>
                             </div>
-                            <div id="previewContent" class="hidden prose max-w-none">
+                            <div id="previewContent" class="hidden prose max-w-none h-full">
                                 <!-- AI Content will be injected here -->
                             </div>
                         </div>
@@ -164,7 +168,7 @@
                 </div>
 
                 <!-- Panel 3: Smart Editor -->
-                <div class="w-1/3 border-l border-gray-200 flex flex-col bg-white">
+                <div class="w-1/4 border-l border-gray-200 flex flex-col bg-white">
                     <div class="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
                         <h2 class="font-semibold text-lg">Smart Editor</h2>
                     </div>
@@ -218,11 +222,11 @@
                                     </div>
                                     <div class="grid grid-cols-3 items-center">
                                         <label for="metaCreated" class="font-medium text-gray-600 col-span-1">Created</label>
-                                        <input type="text" id="metaCreated" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
+                                        <input type="text" id="metaCreated" placeholder="YYYY-MM-DD" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
                                     </div>
                                     <div class="grid grid-cols-3 items-center">
                                         <label for="metaModified" class="font-medium text-gray-600 col-span-1">Modified</label>
-                                        <input type="text" id="metaModified" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
+                                        <input type="text" id="metaModified" placeholder="YYYY-MM-DD" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
                                     </div>
                                 </div>
                             </div>
@@ -352,24 +356,52 @@
             
             // --- Populate Preview Panel ---
             const keywordsHTML = file.keywords.map(kw => `<span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${kw}</span>`).join('');
+            
+            let previewHTML = '';
+            const fileType = file.extension.toLowerCase();
+
+            // Revoke any previous URL for this file object to prevent memory leaks
+            if (file.objectUrl) {
+                URL.revokeObjectURL(file.objectUrl);
+            }
+            file.objectUrl = URL.createObjectURL(file.fileObject);
+            
+            if (['pdf', 'txt', 'html', 'svg'].includes(fileType) || file.fileObject.type.startsWith('image/')) {
+                 previewHTML = `<iframe src="${file.objectUrl}" class="w-full h-full border border-gray-300 rounded-md"></iframe>`;
+            } else if (fileType === 'docx') {
+                 previewHTML = `<div class="p-4 bg-gray-50 border rounded-lg text-sm text-gray-500 flex flex-col items-center justify-center h-full">
+                    <i data-lucide="file-warning" class="h-10 w-10 text-yellow-500 mb-2"></i>
+                    <p class="font-semibold">Live preview not available for .docx files.</p>
+                    <p class="mt-1 text-xs text-center">Modern browsers cannot render DOCX files directly.</p>
+                 </div>`;
+            } else {
+                previewHTML = `<div class="p-4 bg-gray-50 border rounded-lg text-sm text-gray-500 flex flex-col items-center justify-center h-full">
+                    <i data-lucide="file-question" class="h-10 w-10 text-gray-400 mb-2"></i>
+                    <p class="font-semibold">Unsupported file type for preview.</p>
+                 </div>`;
+            }
 
             previewContent.innerHTML = `
-                <div class="mb-6">
-                    <h3 class="text-sm font-bold text-gray-800 mb-2">AI Summary</h3>
-                    <p class="text-gray-600 text-sm">${file.summary || 'No summary available.'}</p>
-                </div>
-                 <div class="mb-8">
-                    <h3 class="text-sm font-bold text-gray-800 mb-2">Keywords</h3>
-                    <div class="flex flex-wrap">${keywordsHTML}</div>
-                </div>
-                <div class="border-t border-gray-200 pt-6">
-                    <h3 class="text-sm font-bold text-gray-800 mb-2">Document Body Preview</h3>
-                    <div class="p-4 bg-gray-50 border rounded-lg text-sm text-gray-500">
-                        <p>This is a simulated preview for <em>${file.originalName}</em>.</p>
-                        <p class="mt-2">In a real production app, a high-fidelity, scrollable preview of the actual PDF or DOCX would be rendered here.</p>
+                <div class="flex flex-col h-full">
+                    <div class="flex-shrink-0">
+                        <div class="mb-4">
+                            <h3 class="text-sm font-bold text-gray-800 mb-2">AI Summary</h3>
+                            <p class="text-gray-600 text-sm">${file.summary || 'No summary available.'}</p>
+                        </div>
+                         <div class="mb-4">
+                            <h3 class="text-sm font-bold text-gray-800 mb-2">Keywords</h3>
+                            <div class="flex flex-wrap gap-2">${keywordsHTML}</div>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-200 pt-4 flex-grow min-h-0 flex flex-col">
+                        <h3 class="text-sm font-bold text-gray-800 mb-2 flex-shrink-0">Document Body Preview</h3>
+                        <div class="w-full h-full flex-grow min-h-0">
+                            ${previewHTML}
+                        </div>
                     </div>
                 </div>
             `;
+            lucide.createIcons();
         }
 
         function updateFilenamePreview() {
