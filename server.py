@@ -1043,4 +1043,3 @@ async def serve_html_page(path_name: str):
 
 # keep the old mount for static assets like CSS/JS/images
 app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
-
