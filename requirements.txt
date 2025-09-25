@@ -2,7 +2,6 @@ requests==2.32.3
 SQLAlchemy==2.0.31
 psycopg2-binary==2.9.9
 alembic==1.13.2
-passlib[bcrypt]==2.7.4
 python-jose[cryptography]==3.3.0
 azure-identity==1.17.1
 zipstream-ng==1.5.2
