@@ -1063,7 +1063,7 @@ async def fulltext_search(project_id: str = Form(...), query: str = Form(...)):
         return []
 
     results = []
-    docs_to_search = [doc for doc in DOCUMENTS_DB.values() if project_id == 'all' or doc.get("projectID") == project_id]
+    docs_to_search = [doc for doc in DOCUMENTS_DB.values() if project_id == 'all' or str(doc.get("projectID")) == project_id]
     
     for doc in docs_to_search:
         file_path = os.path.join(LEXIFILE_STORAGE, f"{doc['artifactID']}_{doc['originalFilename']}")
@@ -1173,16 +1173,17 @@ async def serve_html_page(path_name: str):
 
     file_path = os.path.join(SITE_DIR, f"{path_name}.html")
     
-    if not os.path.abspath(file_path).startswith(os.path.abspath(SITE_DIR)):
-        raise HTTPException(status_code=404, detail="Not Found")
-
-    if os.path.exists(file_path):
+    if os.path.abspath(file_path).startswith(os.path.abspath(SITE_DIR)) and os.path.exists(file_path) and not os.path.isdir(file_path):
         return FileResponse(file_path)
     
     static_file_path = os.path.join(SITE_DIR, path_name)
-    if os.path.exists(static_file_path):
+    if os.path.abspath(static_file_path).startswith(os.path.abspath(SITE_DIR)) and os.path.exists(static_file_path) and not os.path.isdir(static_file_path):
         return FileResponse(static_file_path)
 
-    # Fallback for SPA-like behavior
-    return FileResponse(os.path.join(SITE_DIR, "index.html"))
+    # Fallback for SPA-like behavior / non-html pages
+    index_path = os.path.join(SITE_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+
+    raise HTTPException(status_code=404, detail="Not Found")
 

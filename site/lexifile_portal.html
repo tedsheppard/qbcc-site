@@ -183,13 +183,11 @@
 
             fileQueue.innerHTML = state.files.map(file => {
                 const isSelected = file.id === state.selectedFileId;
-                const datePart = (file.date || '0000-00-00').replace(/-/g, '');
-                const docTypePart = file.ai_full_response ? (file.ai_full_response.docType || 'N/A') : 'Analyzing...';
-                const newName = `${datePart} - ${docTypePart} - ${file.description}.${file.extension}`;
+                const newName = file.improvedFilename || `${(file.date || '0000-00-00').replace(/-/g, '')} - ${file.ai_full_response.docType} - ${file.description}.${file.extension}`;
                 let statusIcon;
                 switch(file.status) {
                     case 'processing': statusIcon = `<div class="loader"></div>`; break;
-                    case 'review': statusIcon = `<i data-lucide="alert-circle" class="text-yellow-500"></i>`; break;
+                    case 'review': statusIcon = `<div class="flex items-center space-x-2"><i data-lucide="alert-circle" class="text-yellow-500"></i><button class="delete-btn text-gray-400 hover:text-red-600" data-id="${file.id}" title="Delete"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div>`; break;
                     case 'approved': statusIcon = `<i data-lucide="check-circle-2" class="text-green-500"></i>`; break;
                     case 'error': statusIcon = `<i data-lucide="x-circle" class="text-red-500"></i>`; break;
                 }
@@ -201,7 +199,7 @@
                                 ${statusIcon}
                                 <span class="text-sm font-medium text-gray-800 truncate" title="${file.originalFilename}">${file.originalFilename}</span>
                             </div>
-                            <button class="approve-btn text-gray-400 hover:text-green-600 ${file.status === 'approved' || file.status === 'processing' ? 'hidden' : ''}" data-id="${file.id}" title="Approve">
+                            <button class="approve-btn text-gray-400 hover:text-green-600 ${file.status === 'approved' || file.status === 'processing' || file.status === 'error' ? 'hidden' : ''}" data-id="${file.id}" title="Approve">
                                 <i data-lucide="check" class="h-5 w-5"></i>
                             </button>
                         </div>
@@ -245,15 +243,15 @@
             editorForm.innerHTML = `
                 <div>
                     <label for="editorDate" class="block text-sm font-bold text-gray-800 mb-1">Date</label>
-                    <input type="text" id="editorDate" value="${file.date || ''}" placeholder="YYYY-MM-DD" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono">
+                    <input type="text" id="editorDate" value="${file.date}" placeholder="YYYY-MM-DD" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono">
                 </div>
                 <div>
                     <label for="editorDocType" class="block text-sm font-bold text-gray-800 mb-1">Document Type</label>
-                    <input type="text" id="editorDocType" value="${file.ai_full_response.docType || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <input type="text" id="editorDocType" value="${file.ai_full_response.docType}" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                 </div>
                 <div>
                     <label for="editorDescription" class="block text-sm font-bold text-gray-800 mb-1">Description</label>
-                    <textarea id="editorDescription" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg">${file.description || ''}</textarea>
+                    <textarea id="editorDescription" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg">${file.description}</textarea>
                 </div>
                 <div class="pt-4 border-t border-gray-200">
                      <h4 class="text-sm font-bold text-gray-800 mb-2">Live Filename Preview</h4>
@@ -292,10 +290,9 @@
             
             // --- Populate Preview Panel ---
             const keywordsHTML = (file.keywords || []).map(kw => `<span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${kw}</span>`).join('');
-            const summaryText = file.ai_full_response ? (file.ai_full_response.summary || 'N/A') : 'N/A';
 
             previewContent.innerHTML = `
-                <div class="mb-6"><h3 class="text-sm font-bold text-gray-800 mb-2">AI Summary</h3><p class="text-gray-600 text-sm">${summaryText}</p></div>
+                <div class="mb-6"><h3 class="text-sm font-bold text-gray-800 mb-2">AI Summary</h3><p class="text-gray-600 text-sm">${file.ai_full_response.summary || 'N/A'}</p></div>
                 <div class="mb-8"><h3 class="text-sm font-bold text-gray-800 mb-2">Keywords</h3><div class="flex flex-wrap">${keywordsHTML}</div></div>
                 <div class="border-t border-gray-200 pt-6"><h3 class="text-sm font-bold text-gray-800 mb-2">Document Body Preview</h3>
                     <div id="actual-preview-container" class="bg-gray-50 border rounded-lg text-sm text-gray-500 overflow-auto p-2"></div>
@@ -323,6 +320,7 @@
                         const originalViewport = page.getViewport({ scale: 1.0 });
                         const scale = containerWidth / originalViewport.width;
                         const viewport = page.getViewport({ scale: scale });
+
                         const canvas = document.createElement('canvas');
                         const context = canvas.getContext('2d');
                         canvas.height = viewport.height;
@@ -453,6 +451,11 @@
                 file.recipient = document.getElementById('metaRecipient').value;
                 file.author = document.getElementById('metaAuthor').value;
                 file.lastModifiedOn = document.getElementById('metaLastModified').value;
+                
+                const datePart = file.date.replace(/-/g, '');
+                const docTypePart = file.ai_full_response.docType;
+                file.improvedFilename = `${datePart} - ${docTypePart} - ${file.description}.${file.extension}`;
+
 
                 if (file.status === 'approved') {
                     file.status = 'review';
@@ -462,15 +465,32 @@
             }
         }
         
-        function handleApprove(e) {
-            const button = e.target.closest('.approve-btn');
-            if (!button) return;
-            e.stopPropagation();
-            const fileId = button.dataset.id;
-            const fileIndex = state.files.findIndex(f => f.id === fileId);
-            if (fileIndex > -1) {
-                state.files[fileIndex].status = 'approved';
-                renderFileQueue();
+        function handleQueueClick(e) {
+            const approveButton = e.target.closest('.approve-btn');
+            if (approveButton) {
+                e.stopPropagation();
+                const fileId = approveButton.dataset.id;
+                const fileIndex = state.files.findIndex(f => f.id === fileId);
+                if (fileIndex > -1) {
+                    state.files[fileIndex].status = 'approved';
+                    renderFileQueue();
+                }
+                return;
+            }
+
+            const deleteButton = e.target.closest('.delete-btn');
+            if(deleteButton) {
+                e.stopPropagation();
+                const fileId = deleteButton.dataset.id;
+                if (confirm('Are you sure you want to delete this document from the queue? This cannot be undone.')) {
+                    state.files = state.files.filter(f => f.id !== fileId);
+                    if(state.selectedFileId === fileId) {
+                        state.selectedFileId = null;
+                        renderEditorAndPreview();
+                    }
+                    renderFileQueue();
+                }
+                return;
             }
         }
 
@@ -493,10 +513,7 @@
             showToast("Preparing your download...", false);
             const zip = new JSZip();
             for (const file of approvedFiles) {
-                const datePart = (file.date || '0000-00-00').replace(/-/g, '');
-                const docTypePart = file.ai_full_response.docType;
-                const newName = `${datePart} - ${docTypePart} - ${file.description}.${file.extension}`;
-                zip.file(newName, file.fileObject);
+                zip.file(file.improvedFilename, file.fileObject);
             }
             try {
                 const content = await zip.generateAsync({ type: "blob" });
@@ -533,7 +550,6 @@
                 fileUpload.disabled = true;
                 goToSearchBtn.disabled = true;
             } else {
-                 // In a real app, you would fetch the project details
                  projectTitle.textContent = `Project: ${state.projectId}`;
                  goToSearchBtn.disabled = false;
             }
@@ -541,7 +557,7 @@
             lucide.createIcons();
             fileUpload.addEventListener('change', handleFileUpload);
             fileQueue.addEventListener('click', handleFileSelect);
-            fileQueue.addEventListener('click', handleApprove);
+            fileQueue.addEventListener('click', handleQueueClick);
             approveAllBtn.addEventListener('click', handleApproveAll);
             downloadBtn.addEventListener('click', handleDownload);
 

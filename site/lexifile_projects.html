@@ -7,12 +7,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style> body { font-family: 'Inter', sans-serif; } </style>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .group:hover .group-hover\:scale-100 { transform: scale(1); }
+    </style>
 </head>
 <body class="bg-gray-50">
     <div class="min-h-screen flex">
         <!-- Sidebar Navigation -->
-        <nav class="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-4">
+        <nav class="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-4 flex-shrink-0">
             <a href="/lexifile_index" class="mb-8">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
             </a>
@@ -20,11 +23,17 @@
                 <li class="group relative">
                     <a href="/lexifile_projects" class="flex justify-center items-center h-12 w-12 bg-indigo-100 text-indigo-600 rounded-lg">
                         <i data-lucide="folder-kanban"></i>
+                         <span class="absolute left-full ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
+                            Projects
+                        </span>
                     </a>
                 </li>
                  <li class="group relative">
                     <a href="/lexifile_search" class="flex justify-center items-center h-12 w-12 text-gray-500 hover:bg-gray-100 rounded-lg">
                         <i data-lucide="search"></i>
+                         <span class="absolute left-full ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
+                            Document Search
+                        </span>
                     </a>
                 </li>
             </ul>
@@ -43,7 +52,7 @@
                 <!-- Projects will be listed here -->
             </div>
 
-             <div id="projectsPlaceholder" class="text-center py-20 text-gray-500">
+             <div id="projectsPlaceholder" class="text-center py-20 text-gray-500 hidden">
                 <i data-lucide="folder-open" class="mx-auto h-16 w-16 text-gray-400"></i>
                 <p class="mt-4 font-medium text-lg">No projects found.</p>
                 <p class="text-sm">Click "New Project" to get started.</p>
@@ -79,10 +88,6 @@
             </div>
         </div>
     </div>
-    
-    <div id="toast" class="fixed top-5 right-5 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-2 transition-all duration-300">
-        <span id="toastMessage"></span>
-    </div>
 
     <script>
         const newProjectBtn = document.getElementById('newProjectBtn');
@@ -91,28 +96,15 @@
         const projectForm = document.getElementById('projectForm');
         const projectsGrid = document.getElementById('projectsGrid');
         const projectsPlaceholder = document.getElementById('projectsPlaceholder');
-        const toast = document.getElementById('toast');
-        const toastMessage = document.getElementById('toastMessage');
 
         function toggleModal(show) {
             projectModal.classList.toggle('hidden', !show);
-        }
-        
-        function showToast(message, isError = true) {
-            toastMessage.textContent = message;
-            toast.className = `fixed top-5 right-5 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${isError ? 'bg-red-500' : 'bg-green-500'}`;
-            toast.classList.remove('opacity-0', 'translate-y-2');
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-            }, 3000);
         }
 
         async function fetchAndRenderProjects() {
             try {
                 const response = await fetch('/projects');
-                if (!response.ok) {
-                   throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 const projects = await response.json();
 
                 if (projects.length === 0) {
@@ -153,17 +145,16 @@
                     body: formData
                 });
                 if (!response.ok) {
-                     const errorData = await response.json().catch(() => ({detail: 'An unknown error occurred.'}));
-                     throw new Error(errorData.detail || `Server responded with status ${response.status}`);
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to create project');
                 }
                 
                 projectForm.reset();
                 toggleModal(false);
-                fetchAndRenderProjects();
-                showToast("Project created successfully!", false);
+                await fetchAndRenderProjects();
             } catch (error) {
                 console.error('Error creating project:', error);
-                showToast(`Could not create project: ${error.message}`);
+                alert(`Could not create project: ${error.message}`);
             }
         }
 

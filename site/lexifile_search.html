@@ -21,9 +21,6 @@
         td.wrap { white-space: normal; min-width: 250px; }
         tr:hover { background-color: #f3f4f6; }
         .filter-input { width: 100%; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; }
-        .modal {
-            transition: opacity 0.25s ease;
-        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -74,7 +71,6 @@
                                 <th data-sort="artifactID">Artifact ID<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
                                 <th data-sort="objectType">Object Type<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
                                 <th data-sort="improvedFilename">Improved Filename<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                <th data-sort="originalFilename">Original Filename<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
                                 <th data-sort="date">Date<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
                                 <th data-sort="description">Description<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
                                 <th data-sort="author">Author<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
@@ -82,7 +78,6 @@
                                 <th data-sort="recipient">Recipient<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
                                 <th data-sort="keywords">Keywords<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
                                 <th>Content Snippet</th>
-                                <th data-sort="uploadedBy">Uploaded By<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
                                 <th>Actions</th>
                             </tr>
                             <tr>
@@ -90,7 +85,6 @@
                                 <th><input class="filter-input" data-filter="artifactID"></th>
                                 <th><input class="filter-input" data-filter="objectType"></th>
                                 <th><input class="filter-input" data-filter="improvedFilename"></th>
-                                <th><input class="filter-input" data-filter="originalFilename"></th>
                                 <th><input class="filter-input" data-filter="date"></th>
                                 <th><input class="filter-input" data-filter="description"></th>
                                 <th><input class="filter-input" data-filter="author"></th>
@@ -98,13 +92,10 @@
                                 <th><input class="filter-input" data-filter="recipient"></th>
                                 <th><input class="filter-input" data-filter="keywords"></th>
                                 <th></th>
-                                <th><input class="filter-input" data-filter="uploadedBy"></th>
                                 <th></th>
                             </tr>
                         </thead>
-                        <tbody id="documentTableBody" class="bg-white divide-y divide-gray-200">
-                            <!-- Rows will be injected by JavaScript -->
-                        </tbody>
+                        <tbody id="documentTableBody" class="bg-white divide-y divide-gray-200"></tbody>
                     </table>
                      <div id="searchPlaceholder" class="text-center py-20 text-gray-500">
                         <i data-lucide="file-search-2" class="mx-auto h-16 w-16 text-gray-400"></i>
@@ -120,18 +111,16 @@
     </div>
     
     <!-- Preview Modal -->
-    <div id="previewModal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden opacity-0">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
-            <header class="flex justify-between items-center p-4 border-b">
-                <h3 id="modalTitle" class="font-semibold text-lg">Document Preview</h3>
-                <button id="closeModalBtn" class="text-gray-400 hover:text-gray-800"><i data-lucide="x" class="h-6 w-6"></i></button>
-            </header>
-            <div id="modalBody" class="flex-grow p-4 overflow-auto">
-                <!-- Preview content will be loaded here -->
+    <div id="previewModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-5/6 flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 id="previewModalTitle" class="font-bold">Document Preview</h3>
+                <button id="closePreviewModal" class="text-gray-500 hover:text-gray-800">&times;</button>
             </div>
+            <div id="previewModalContent" class="p-4 flex-grow overflow-auto"></div>
         </div>
     </div>
-
+    
     <script>
         // --- State Management ---
         let allDocuments = [];
@@ -141,6 +130,7 @@
         let sortColumn = 'artifactID';
         let sortDirection = 'asc';
         let selectedArtifacts = new Set();
+        let fulltextSearchTimeout;
         
         // --- DOM Elements ---
         const documentTableBody = document.getElementById('documentTableBody');
@@ -150,15 +140,18 @@
         const selectAllCheckbox = document.getElementById('selectAllCheckbox');
         const bulkDownloadBtn = document.getElementById('bulkDownloadBtn');
         const filterInputs = document.querySelectorAll('.filter-input');
-        const fulltextSearchInput = document.getElementById('fulltextSearch');
+        const fulltextSearch = document.getElementById('fulltextSearch');
         const previewModal = document.getElementById('previewModal');
-        const closeModalBtn = document.getElementById('closeModalBtn');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalBody = document.getElementById('modalBody');
+        const previewModalTitle = document.getElementById('previewModalTitle');
+        const previewModalContent = document.getElementById('previewModalContent');
+        const closePreviewModal = document.getElementById('closePreviewModal');
 
         // --- Core Functions ---
         async function fetchDocuments(projectId = 'all') {
             try {
+                searchPlaceholder.innerHTML = '<p>Loading documents...</p>';
+                searchPlaceholder.classList.remove('hidden');
+                documentTableBody.innerHTML = '';
                 const response = await fetch(`/get-project-documents?project_id=${projectId}`);
                 if(!response.ok) throw new Error("Failed to fetch documents");
                 allDocuments = await response.json();
@@ -166,7 +159,6 @@
                 applyFiltersAndRender();
             } catch (error) {
                 console.error('Failed to fetch documents:', error);
-                searchPlaceholder.classList.remove('hidden');
                 searchPlaceholder.innerHTML = '<p class="text-red-500">Could not load documents.</p>';
             }
         }
@@ -214,23 +206,22 @@
                         <td><input type="checkbox" class="row-checkbox" data-id="${doc.artifactID}" ${selectedArtifacts.has(doc.artifactID) ? 'checked' : ''}></td>
                         <td class="font-mono text-blue-600">${doc.artifactID}</td>
                         <td>${doc.objectType}</td>
-                        <td class="wrap font-medium text-gray-900">${doc.improvedFilename || 'N/A'}</td>
-                        <td class="wrap">${doc.originalFilename}</td>
+                        <td class="wrap font-medium text-gray-900">${doc.improvedFilename}</td>
                         <td class="font-mono">${doc.date}</td>
                         <td class="wrap">${doc.description}</td>
                         <td>${doc.author}</td>
-                        <td>${doc.sender}</td>
-                        <td>${doc.recipient}</td>
+                        <td>${doc.sender || 'N/A'}</td>
+                        <td>${doc.recipient || 'N/A'}</td>
                         <td class="wrap">
                             <div class="flex flex-wrap gap-1" style="max-width: 200px;">
                                 ${(doc.keywords || []).map(kw => `<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">${kw}</span>`).join('')}
                             </div>
                         </td>
                         <td class="wrap">${doc.snippet || ''}</td>
-                        <td>${doc.uploadedBy}</td>
                         <td class="flex items-center space-x-2">
-                           <button title="Download" class="action-btn-download text-gray-400 hover:text-blue-600" data-id="${doc.artifactID}"><i data-lucide="download" class="h-4 w-4 pointer-events-none"></i></button>
-                           <button title="Preview" class="action-btn-preview text-gray-400 hover:text-blue-600" data-id="${doc.artifactID}"><i data-lucide="eye" class="h-4 w-4 pointer-events-none"></i></button>
+                           <button title="Download" class="download-btn text-gray-400 hover:text-blue-600" data-id="${doc.artifactID}"><i data-lucide="download" class="h-4 w-4"></i></button>
+                           <button title="Preview" class="preview-btn text-gray-400 hover:text-blue-600" data-id="${doc.artifactID}"><i data-lucide="eye" class="h-4 w-4"></i></button>
+                           <button title="Delete" class="delete-btn text-gray-400 hover:text-red-600" data-id="${doc.artifactID}"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
                         </td>
                     </tr>
                 `).join('');
@@ -245,7 +236,7 @@
             const start = (currentPage - 1) * rowsPerPage + 1;
             const end = Math.min(start + rowsPerPage - 1, filteredDocuments.length);
 
-            let controlsHTML = `<div class="font-medium">Showing ${filteredDocuments.length > 0 ? start : 0} - ${end} of ${filteredDocuments.length}</div>`;
+            let controlsHTML = `<div>Showing ${filteredDocuments.length > 0 ? start : 0} - ${end} of ${filteredDocuments.length}</div>`;
             if (totalPages > 1) {
                 controlsHTML += `<div class="flex items-center space-x-1">`;
                 controlsHTML += `<button class="pagination-btn p-1 rounded ${currentPage === 1 ? 'opacity-50' : ''}" data-page="1" ${currentPage === 1 ? 'disabled' : ''}><i data-lucide="chevrons-left" class="h-4 w-4"></i></button>`;
@@ -263,16 +254,6 @@
             bulkDownloadBtn.disabled = selectedArtifacts.size === 0;
         }
 
-        function toggleModal(show) {
-            if (show) {
-                previewModal.classList.remove('hidden');
-                setTimeout(() => previewModal.classList.remove('opacity-0'), 10);
-            } else {
-                previewModal.classList.add('opacity-0');
-                setTimeout(() => previewModal.classList.add('hidden'), 250);
-            }
-        }
-
         // --- Event Handlers ---
         document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
@@ -280,42 +261,41 @@
             const urlParams = new URLSearchParams(window.location.search);
             const projectId = urlParams.get('project') || 'all';
             
-            // Populate projects filter first
-            try {
-                const response = await fetch('/projects');
-                const projects = await response.json();
-                projects.forEach(p => {
-                    const option = document.createElement('option');
-                    option.value = p.id;
-                    option.textContent = p.name;
-                    projectFilter.appendChild(option);
-                });
-                projectFilter.value = projectId;
-            } catch(e) { console.error("Could not fetch projects for filter", e); }
+            const response = await fetch('/projects');
+            const projects = await response.json();
+            projects.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.name;
+                projectFilter.appendChild(option);
+            });
+            projectFilter.value = projectId;
 
-            fetchDocuments(projectId);
+            await fetchDocuments(projectId);
 
-            // --- Event Listeners ---
             projectFilter.addEventListener('change', () => fetchDocuments(projectFilter.value));
             filterInputs.forEach(input => input.addEventListener('keyup', applyFiltersAndRender));
-
-            fulltextSearchInput.addEventListener('keyup', async (e) => {
-                const query = e.target.value;
-                if (query.length < 3) {
-                    if (query.length === 0) { // reset if search is cleared
-                         filteredDocuments = [...allDocuments];
-                         applyFiltersAndRender();
+            
+            fulltextSearch.addEventListener('keyup', e => {
+                clearTimeout(fulltextSearchTimeout);
+                fulltextSearchTimeout = setTimeout(async () => {
+                    const query = e.target.value;
+                    if (query.length < 3) {
+                       if(filteredDocuments.length !== allDocuments.length) {
+                           applyFiltersAndRender();
+                       }
+                       return;
                     }
-                    return;
-                }
-                const formData = new FormData();
-                formData.append('project_id', projectFilter.value);
-                formData.append('query', query);
-
-                const response = await fetch('/fulltext-search', {method: 'POST', body: formData});
-                const searchResults = await response.json();
-                filteredDocuments = searchResults;
-                applyFiltersAndRender(); // Re-apply column filters on top of search results
+                    const formData = new FormData();
+                    formData.append('project_id', projectFilter.value);
+                    formData.append('query', query);
+                    const searchResponse = await fetch('/fulltext-search', {method: 'POST', body: formData});
+                    const searchResults = await searchResponse.json();
+                    filteredDocuments = searchResults;
+                    sortDocuments();
+                    currentPage = 1;
+                    renderTable();
+                }, 500);
             });
 
             document.querySelector('thead').addEventListener('click', e => {
@@ -332,7 +312,6 @@
                 
                 document.querySelectorAll('th[data-sort]').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
                 header.classList.add(sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
-
                 applyFiltersAndRender();
             });
 
@@ -361,29 +340,34 @@
                     updateBulkDownloadButton();
                 }
             });
+            
+            documentTableBody.addEventListener('click', async e => {
+                const deleteBtn = e.target.closest('.delete-btn');
+                if (deleteBtn) {
+                    const id = deleteBtn.dataset.id;
+                    if(confirm(`Are you sure you want to permanently delete document ${id}?`)) {
+                       await fetch(`/delete-document/${id}`, { method: 'DELETE' });
+                       fetchDocuments(projectFilter.value);
+                    }
+                }
+                
+                const downloadBtn = e.target.closest('.download-btn');
+                if (downloadBtn) {
+                     window.open(`/download-single-doc/${downloadBtn.dataset.id}`, '_blank');
+                }
+                
+                const previewBtn = e.target.closest('.preview-btn');
+                if (previewBtn) {
+                    // Show modal and load preview
+                    previewModalTitle.textContent = `Preview of ${previewBtn.dataset.id}`;
+                    previewModalContent.innerHTML = 'Loading...';
+                    previewModal.classList.remove('hidden');
+                    // In a real app, you would fetch the preview content.
+                    // For now, it's just a placeholder.
+                    previewModalContent.innerHTML = '<p>Document preview would be loaded here.</p>';
+                }
 
-             documentTableBody.addEventListener('click', async e => {
-                const target = e.target.closest('button');
-                if (!target) return;
-                
-                const artifactId = target.dataset.id;
-                
-                if (target.classList.contains('action-btn-download')) {
-                    window.location.href = `/download-single-doc/${artifactId}`;
-                }
-                
-                if (target.classList.contains('action-btn-preview')) {
-                    // Preview logic would go here, for now alert
-                     modalTitle.textContent = `Preview: ${artifactId}`;
-                     modalBody.innerHTML = '<div class="flex justify-center items-center h-full">Loading...</div>';
-                     toggleModal(true);
-                     // In a real app you'd fetch the doc content to preview here.
-                     // For now, we'll just show the metadata.
-                     const doc = allDocuments.find(d => d.artifactID === artifactId);
-                     modalBody.innerHTML = `<pre class="whitespace-pre-wrap text-xs">${JSON.stringify(doc, null, 2)}</pre>`
-                }
             });
-
 
             bulkDownloadBtn.addEventListener('click', async () => {
                 if(selectedArtifacts.size === 0) return;
@@ -402,17 +386,13 @@
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
-                    selectedArtifacts.clear();
-                    selectAllCheckbox.checked = false;
-                    renderTable();
                 } else {
                     alert('Bulk download failed.');
                 }
             });
-
-            closeModalBtn.addEventListener('click', () => toggleModal(false));
-            previewModal.addEventListener('click', (e) => {
-                if (e.target === previewModal) toggleModal(false);
+            
+            closePreviewModal.addEventListener('click', () => {
+                previewModal.classList.add('hidden');
             });
         });
     </script>
