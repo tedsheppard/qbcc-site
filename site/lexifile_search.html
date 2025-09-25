@@ -7,32 +7,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .table-container {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        table {
-            border-spacing: 0;
-        }
-        th, td {
-            white-space: nowrap;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        th {
-            background-color: #f9fafb;
-            font-weight: 600;
-            text-align: left;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        tr:hover {
-            background-color: #f3f4f6;
-        }
+        .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { border-spacing: 0; }
+        th, td { white-space: nowrap; padding: 0.5rem 0.75rem; border-bottom: 1px solid #e5e7eb; font-size: 0.8rem; }
+        th { background-color: #f9fafb; font-weight: 600; text-align: left; position: sticky; top: 0; z-index: 10; cursor: pointer; }
+        th .sort-icon { display: inline-block; width: 1rem; height: 1rem; margin-left: 0.25rem; opacity: 0.3; }
+        th:hover .sort-icon { opacity: 0.7; }
+        th.sorted-asc .sort-icon, th.sorted-desc .sort-icon { opacity: 1; }
+        td { vertical-align: top; }
+        td.wrap { white-space: normal; min-width: 250px; }
+        tr:hover { background-color: #f3f4f6; }
+        .filter-input { width: 100%; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -40,7 +28,7 @@
         <!-- Sidebar Navigation -->
         <nav class="w-20 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col items-center py-4">
             <a href="/lexifile_index" class="mb-8">
-                <svg xmlns="http://www.w.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
             </a>
             <ul class="flex flex-col space-y-2">
                 <li class="group relative">
@@ -56,14 +44,17 @@
             </ul>
         </nav>
 
-        <div class="flex-1 flex flex-col p-8 overflow-hidden">
-            <header class="flex justify-between items-center mb-6 flex-shrink-0">
-                <h1 class="text-3xl font-bold text-gray-800">Document Search</h1>
+        <div class="flex-1 flex flex-col p-6 overflow-hidden">
+            <header class="flex justify-between items-center mb-4 flex-shrink-0">
+                <h1 class="text-2xl font-bold text-gray-800">Document Search</h1>
                  <div class="flex items-center space-x-2">
-                    <select id="projectFilter" class="rounded-lg border-gray-300">
+                    <select id="projectFilter" class="rounded-lg border-gray-300 text-sm p-2">
                         <option value="all">All Projects</option>
                     </select>
-                    <input type="search" id="keywordSearch" placeholder="Search keywords..." class="rounded-lg border-gray-300">
+                    <button id="bulkDownloadBtn" disabled class="bg-blue-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2">
+                        <i data-lucide="download"></i>
+                        <span>Download Selected</span>
+                    </button>
                 </div>
             </header>
 
@@ -72,111 +63,269 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th>Artifact ID</th>
-                                <th>Object Type</th>
-                                <th>Improved Filename</th>
-                                <th>Original Filename</th>
-                                <th>Date</th>
-                                <th>Description</th>
-                                <th>Author</th>
-                                <th>Sender</th>
-                                <th>Recipient</th>
-                                <th>Keywords</th>
-                                <th>Uploaded By</th>
+                                <th class="w-12"><input type="checkbox" id="selectAllCheckbox"></th>
+                                <th data-sort="artifactID">Artifact ID<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="objectType">Object Type<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="improvedFilename">Improved Filename<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="originalFilename">Original Filename<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="date">Date<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="description">Description<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="author">Author<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="sender">Sender<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="recipient">Recipient<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="keywords">Keywords<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="uploadedBy">Uploaded By<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th>Actions</th>
+                            </tr>
+                            <tr>
+                                <th></th>
+                                <th><input class="filter-input" data-filter="artifactID"></th>
+                                <th><input class="filter-input" data-filter="objectType"></th>
+                                <th><input class="filter-input" data-filter="improvedFilename"></th>
+                                <th><input class="filter-input" data-filter="originalFilename"></th>
+                                <th><input class="filter-input" data-filter="date"></th>
+                                <th><input class="filter-input" data-filter="description"></th>
+                                <th><input class="filter-input" data-filter="author"></th>
+                                <th><input class="filter-input" data-filter="sender"></th>
+                                <th><input class="filter-input" data-filter="recipient"></th>
+                                <th><input class="filter-input" data-filter="keywords"></th>
+                                <th><input class="filter-input" data-filter="uploadedBy"></th>
+                                <th></th>
                             </tr>
                         </thead>
-                        <tbody id="documentTableBody" class="bg-white divide-y divide-gray-200 text-sm">
+                        <tbody id="documentTableBody" class="bg-white divide-y divide-gray-200">
                             <!-- Rows will be injected by JavaScript -->
                         </tbody>
                     </table>
-                     <div id="searchPlaceholder" class="text-center py-20 text-gray-500 hidden">
+                     <div id="searchPlaceholder" class="text-center py-20 text-gray-500">
                         <i data-lucide="file-search-2" class="mx-auto h-16 w-16 text-gray-400"></i>
                         <p class="mt-4 font-medium text-lg">No documents found.</p>
                         <p class="text-sm">Upload documents in a project to see them here.</p>
                     </div>
                 </div>
             </div>
+             <div id="paginationControls" class="flex-shrink-0 flex justify-between items-center p-2 text-sm text-gray-600">
+                <!-- Pagination controls will be injected here -->
+            </div>
         </div>
     </div>
     <script>
+        // --- State Management ---
+        let allDocuments = [];
+        let filteredDocuments = [];
+        let currentPage = 1;
+        const rowsPerPage = 50;
+        let sortColumn = 'artifactID';
+        let sortDirection = 'asc';
+        let selectedArtifacts = new Set();
+        
+        // --- DOM Elements ---
         const documentTableBody = document.getElementById('documentTableBody');
         const searchPlaceholder = document.getElementById('searchPlaceholder');
         const projectFilter = document.getElementById('projectFilter');
+        const paginationControls = document.getElementById('paginationControls');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const bulkDownloadBtn = document.getElementById('bulkDownloadBtn');
+        const filterInputs = document.querySelectorAll('.filter-input');
 
-        async function populateProjectsFilter() {
-             try {
-                const response = await fetch('/projects');
-                const projects = await response.json();
-                projects.forEach(p => {
-                    const option = document.createElement('option');
-                    option.value = p.id;
-                    option.textContent = p.name;
-                    projectFilter.appendChild(option);
-                });
-             } catch(e) {
-                console.error("Could not fetch projects for filter", e);
-             }
-        }
-
-        async function fetchAndRenderDocuments(projectId = 'all') {
+        // --- Core Functions ---
+        async function fetchDocuments(projectId = 'all') {
             try {
                 let url = `/get-project-documents?project_id=${projectId}`;
-                if(projectId === 'all') {
-                    // In a real app, you'd have an endpoint to get ALL documents.
-                    // For now, we'll just simulate by iterating over all projects if needed
-                    // or just show an empty state. Let's start with a specific project.
-                     url = `/get-project-documents?project_id=1`; // Default to first project if "all"
-                }
-
                 const response = await fetch(url);
-                const documents = await response.json();
-
-                if (documents.length === 0) {
-                    searchPlaceholder.classList.remove('hidden');
-                    documentTableBody.innerHTML = '';
-                } else {
-                    searchPlaceholder.classList.add('hidden');
-                    documentTableBody.innerHTML = documents.map(doc => `
-                        <tr>
-                            <td class="font-mono text-blue-600">${doc.artifactID}</td>
-                            <td>${doc.objectType}</td>
-                            <td class="font-medium text-gray-900">${doc.improvedFilename}</td>
-                            <td>${doc.originalFilename}</td>
-                            <td class="font-mono">${doc.date}</td>
-                            <td>${doc.description}</td>
-                            <td>${doc.author}</td>
-                            <td>${doc.sender}</td>
-                            <td>${doc.recipient}</td>
-                            <td>
-                                <div class="flex flex-wrap gap-1" style="max-width: 300px;">
-                                    ${(doc.keywords || []).map(kw => `<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">${kw}</span>`).join('')}
-                                </div>
-                            </td>
-                            <td>${doc.uploadedBy}</td>
-                        </tr>
-                    `).join('');
-                }
+                if(!response.ok) throw new Error("Failed to fetch documents");
+                allDocuments = await response.json();
+                filteredDocuments = [...allDocuments];
+                applyFiltersAndRender();
             } catch (error) {
                 console.error('Failed to fetch documents:', error);
                 searchPlaceholder.classList.remove('hidden');
                 searchPlaceholder.innerHTML = '<p class="text-red-500">Could not load documents.</p>';
             }
         }
-        
-        document.addEventListener('DOMContentLoaded', () => {
+
+        function applyFiltersAndRender() {
+            const filters = {};
+            filterInputs.forEach(input => {
+                if(input.value) filters[input.dataset.filter] = input.value.toLowerCase();
+            });
+
+            filteredDocuments = allDocuments.filter(doc => {
+                return Object.keys(filters).every(key => {
+                    const docValue = Array.isArray(doc[key]) ? doc[key].join(' ') : (doc[key] || '').toString();
+                    return docValue.toLowerCase().includes(filters[key]);
+                });
+            });
+
+            sortDocuments();
+            currentPage = 1;
+            renderTable();
+        }
+
+        function sortDocuments() {
+            filteredDocuments.sort((a, b) => {
+                const valA = a[sortColumn] || '';
+                const valB = b[sortColumn] || '';
+                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function renderTable() {
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const paginatedDocs = filteredDocuments.slice(start, end);
+
+            if (filteredDocuments.length === 0) {
+                searchPlaceholder.classList.remove('hidden');
+                documentTableBody.innerHTML = '';
+            } else {
+                searchPlaceholder.classList.add('hidden');
+                documentTableBody.innerHTML = paginatedDocs.map(doc => `
+                    <tr>
+                        <td><input type="checkbox" class="row-checkbox" data-id="${doc.artifactID}" ${selectedArtifacts.has(doc.artifactID) ? 'checked' : ''}></td>
+                        <td class="font-mono text-blue-600">${doc.artifactID}</td>
+                        <td>${doc.objectType}</td>
+                        <td class="wrap font-medium text-gray-900">${doc.improvedFilename || 'N/A'}</td>
+                        <td class="wrap">${doc.originalFilename}</td>
+                        <td class="font-mono">${doc.date}</td>
+                        <td class="wrap">${doc.description}</td>
+                        <td>${doc.author}</td>
+                        <td>${doc.sender}</td>
+                        <td>${doc.recipient}</td>
+                        <td class="wrap">
+                            <div class="flex flex-wrap gap-1" style="max-width: 200px;">
+                                ${(doc.keywords || []).map(kw => `<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">${kw}</span>`).join('')}
+                            </div>
+                        </td>
+                        <td>${doc.uploadedBy}</td>
+                        <td class="flex items-center space-x-2">
+                           <button title="Download" class="text-gray-400 hover:text-blue-600"><i data-lucide="download" class="h-4 w-4"></i></button>
+                           <button title="Preview" class="text-gray-400 hover:text-blue-600"><i data-lucide="eye" class="h-4 w-4"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
             lucide.createIcons();
-            populateProjectsFilter();
+            renderPagination();
+            updateBulkDownloadButton();
+        }
+        
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredDocuments.length / rowsPerPage);
+            const start = (currentPage - 1) * rowsPerPage + 1;
+            const end = Math.min(start + rowsPerPage - 1, filteredDocuments.length);
+
+            let controlsHTML = `<div>Showing ${filteredDocuments.length > 0 ? start : 0} - ${end} of ${filteredDocuments.length}</div>`;
+            if (totalPages > 1) {
+                controlsHTML += `<div class="flex items-center space-x-1">`;
+                controlsHTML += `<button class="pagination-btn p-1 rounded ${currentPage === 1 ? 'opacity-50' : ''}" data-page="1" ${currentPage === 1 ? 'disabled' : ''}><i data-lucide="chevrons-left" class="h-4 w-4"></i></button>`;
+                controlsHTML += `<button class="pagination-btn p-1 rounded ${currentPage === 1 ? 'opacity-50' : ''}" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}><i data-lucide="chevron-left" class="h-4 w-4"></i></button>`;
+                controlsHTML += `<span class="px-2">Page ${currentPage} of ${totalPages}</span>`
+                controlsHTML += `<button class="pagination-btn p-1 rounded ${currentPage === totalPages ? 'opacity-50' : ''}" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}><i data-lucide="chevron-right" class="h-4 w-4"></i></button>`;
+                controlsHTML += `<button class="pagination-btn p-1 rounded ${currentPage === totalPages ? 'opacity-50' : ''}" data-page="${totalPages}" ${currentPage === totalPages ? 'disabled' : ''}><i data-lucide="chevrons-right" class="h-4 w-4"></i></button>`;
+                controlsHTML += `</div>`;
+            }
+            paginationControls.innerHTML = controlsHTML;
+            lucide.createIcons();
+        }
+
+        function updateBulkDownloadButton() {
+            bulkDownloadBtn.disabled = selectedArtifacts.size === 0;
+        }
+
+        // --- Event Handlers ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
             
             const urlParams = new URLSearchParams(window.location.search);
             const projectId = urlParams.get('project') || 'all';
+            
+            // Populate projects filter first
+            const response = await fetch('/projects');
+            const projects = await response.json();
+            projects.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.name;
+                projectFilter.appendChild(option);
+            });
             projectFilter.value = projectId;
 
-            fetchAndRenderDocuments(projectId);
+            fetchDocuments(projectId);
 
-            projectFilter.addEventListener('change', () => {
-                fetchAndRenderDocuments(projectFilter.value);
+            // --- Event Listeners ---
+            projectFilter.addEventListener('change', () => fetchDocuments(projectFilter.value));
+            filterInputs.forEach(input => input.addEventListener('keyup', applyFiltersAndRender));
+
+            document.querySelector('thead').addEventListener('click', e => {
+                const header = e.target.closest('th[data-sort]');
+                if (!header) return;
+                
+                const newSortColumn = header.dataset.sort;
+                if (sortColumn === newSortColumn) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortColumn = newSortColumn;
+                    sortDirection = 'asc';
+                }
+                
+                document.querySelectorAll('th[data-sort]').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
+                header.classList.add(sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
+
+                applyFiltersAndRender();
+            });
+
+            paginationControls.addEventListener('click', e => {
+                const button = e.target.closest('.pagination-btn');
+                if (button) {
+                    currentPage = parseInt(button.dataset.page);
+                    renderTable();
+                }
+            });
+
+            selectAllCheckbox.addEventListener('change', e => {
+                const isChecked = e.target.checked;
+                document.querySelectorAll('.row-checkbox').forEach(checkbox => {
+                    checkbox.checked = isChecked;
+                    const id = checkbox.dataset.id;
+                    if(isChecked) selectedArtifacts.add(id); else selectedArtifacts.delete(id);
+                });
+                updateBulkDownloadButton();
+            });
+
+            documentTableBody.addEventListener('change', e => {
+                if (e.target.classList.contains('row-checkbox')) {
+                    const id = e.target.dataset.id;
+                    if(e.target.checked) selectedArtifacts.add(id); else selectedArtifacts.delete(id);
+                    updateBulkDownloadButton();
+                }
+            });
+
+            bulkDownloadBtn.addEventListener('click', async () => {
+                if(selectedArtifacts.size === 0) return;
+                const response = await fetch('/bulk-download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(Array.from(selectedArtifacts))
+                });
+                if(response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `LexiFile_Bulk_Export_${Date.now()}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Bulk download failed.');
+                }
             });
         });
     </script>
 </body>
 </html>
+
