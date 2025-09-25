@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Search - LexiFile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            border-spacing: 0;
+        }
+        th, td {
+            white-space: nowrap;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        tr:hover {
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="h-screen flex">
+        <!-- Sidebar Navigation -->
+        <nav class="w-20 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col items-center py-4">
+            <a href="/lexifile_index" class="mb-8">
+                <svg xmlns="http://www.w.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
+            </a>
+            <ul class="flex flex-col space-y-2">
+                <li class="group relative">
+                    <a href="/lexifile_projects" class="flex justify-center items-center h-12 w-12 text-gray-500 hover:bg-gray-100 rounded-lg">
+                        <i data-lucide="folder-kanban"></i>
+                    </a>
+                </li>
+                 <li class="group relative">
+                    <a href="/lexifile_search" class="flex justify-center items-center h-12 w-12 bg-indigo-100 text-indigo-600 rounded-lg">
+                        <i data-lucide="search"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="flex-1 flex flex-col p-8 overflow-hidden">
+            <header class="flex justify-between items-center mb-6 flex-shrink-0">
+                <h1 class="text-3xl font-bold text-gray-800">Document Search</h1>
+                 <div class="flex items-center space-x-2">
+                    <select id="projectFilter" class="rounded-lg border-gray-300">
+                        <option value="all">All Projects</option>
+                    </select>
+                    <input type="search" id="keywordSearch" placeholder="Search keywords..." class="rounded-lg border-gray-300">
+                </div>
+            </header>
+
+            <div class="flex-grow border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                <div class="table-container h-full">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th>Artifact ID</th>
+                                <th>Object Type</th>
+                                <th>Improved Filename</th>
+                                <th>Original Filename</th>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Author</th>
+                                <th>Sender</th>
+                                <th>Recipient</th>
+                                <th>Keywords</th>
+                                <th>Uploaded By</th>
+                            </tr>
+                        </thead>
+                        <tbody id="documentTableBody" class="bg-white divide-y divide-gray-200 text-sm">
+                            <!-- Rows will be injected by JavaScript -->
+                        </tbody>
+                    </table>
+                     <div id="searchPlaceholder" class="text-center py-20 text-gray-500 hidden">
+                        <i data-lucide="file-search-2" class="mx-auto h-16 w-16 text-gray-400"></i>
+                        <p class="mt-4 font-medium text-lg">No documents found.</p>
+                        <p class="text-sm">Upload documents in a project to see them here.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const documentTableBody = document.getElementById('documentTableBody');
+        const searchPlaceholder = document.getElementById('searchPlaceholder');
+        const projectFilter = document.getElementById('projectFilter');
+
+        async function populateProjectsFilter() {
+             try {
+                const response = await fetch('/projects');
+                const projects = await response.json();
+                projects.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name;
+                    projectFilter.appendChild(option);
+                });
+             } catch(e) {
+                console.error("Could not fetch projects for filter", e);
+             }
+        }
+
+        async function fetchAndRenderDocuments(projectId = 'all') {
+            try {
+                let url = `/get-project-documents?project_id=${projectId}`;
+                if(projectId === 'all') {
+                    // In a real app, you'd have an endpoint to get ALL documents.
+                    // For now, we'll just simulate by iterating over all projects if needed
+                    // or just show an empty state. Let's start with a specific project.
+                     url = `/get-project-documents?project_id=1`; // Default to first project if "all"
+                }
+
+                const response = await fetch(url);
+                const documents = await response.json();
+
+                if (documents.length === 0) {
+                    searchPlaceholder.classList.remove('hidden');
+                    documentTableBody.innerHTML = '';
+                } else {
+                    searchPlaceholder.classList.add('hidden');
+                    documentTableBody.innerHTML = documents.map(doc => `
+                        <tr>
+                            <td class="font-mono text-blue-600">${doc.artifactID}</td>
+                            <td>${doc.objectType}</td>
+                            <td class="font-medium text-gray-900">${doc.improvedFilename}</td>
+                            <td>${doc.originalFilename}</td>
+                            <td class="font-mono">${doc.date}</td>
+                            <td>${doc.description}</td>
+                            <td>${doc.author}</td>
+                            <td>${doc.sender}</td>
+                            <td>${doc.recipient}</td>
+                            <td>
+                                <div class="flex flex-wrap gap-1" style="max-width: 300px;">
+                                    ${(doc.keywords || []).map(kw => `<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">${kw}</span>`).join('')}
+                                </div>
+                            </td>
+                            <td>${doc.uploadedBy}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Failed to fetch documents:', error);
+                searchPlaceholder.classList.remove('hidden');
+                searchPlaceholder.innerHTML = '<p class="text-red-500">Could not load documents.</p>';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            populateProjectsFilter();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const projectId = urlParams.get('project') || 'all';
+            projectFilter.value = projectId;
+
+            fetchAndRenderDocuments(projectId);
+
+            projectFilter.addEventListener('change', () => {
+                fetchAndRenderDocuments(projectFilter.value);
+            });
+        });
+    </script>
+</body>
+</html>
