@@ -12,8 +12,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, date
 import PyPDF2
 import docx
-import extract_msg
-import pypandoc # For robust .doc conversion
+import extract_msg # Added for .msg and .eml support
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -61,11 +60,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- In-Memory Databases for LexiFile Demonstration ---
+# A simple in-memory store for projects for demonstration purposes
 PROJECTS_DB = []
-DOCUMENTS_DB = {} 
-ARTIFACT_ID_COUNTER = 1
-
 
 # --- RBA Interest Rate Setup ---
 def setup_rba_table():
@@ -377,10 +373,11 @@ def health():
 
 @app.get("/get_interest_rate")
 def get_interest_rate(start_date_str: str = Query(..., alias="startDate"), end_date_str: str = Query(..., alias="endDate")):
-    cursor = con.cursor()
     try:
         start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
         end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        
+        cursor = con.cursor()
         
         # Create a temporary table of all dates in the range
         cursor.execute("CREATE TEMP TABLE date_range (day DATE)")
@@ -456,20 +453,20 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
 
             if order_clause:
                 sql = f"""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  JOIN docs_fresh d ON fts.rowid = d.rowid
-                  LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-                  WHERE fts MATCH ?
-                  {order_clause}
-                  LIMIT ? OFFSET ?
+                    SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                    FROM fts
+                    JOIN docs_fresh d ON fts.rowid = d.rowid
+                    LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+                    WHERE fts MATCH ?
+                    {order_clause}
+                    LIMIT ? OFFSET ?
                 """
             else:
                 sql = """
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  WHERE fts MATCH ?
-                  LIMIT ? OFFSET ?
+                    SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                    FROM fts
+                    WHERE fts MATCH ?
+                    LIMIT ? OFFSET ?
                 """
             
             rows = con.execute(sql, (nq2, limit, offset)).fetchall()
@@ -483,10 +480,10 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                     try:
                         total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (repaired,)).fetchone()[0]
                         rows = con.execute("""
-                          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                          FROM fts
-                          WHERE fts MATCH ?
-                          LIMIT ? OFFSET ?
+                            SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                            FROM fts
+                            WHERE fts MATCH ?
+                            LIMIT ? OFFSET ?
                         """, (repaired, limit, offset)).fetchall()
                         nq2 = repaired
                     except sqlite3.OperationalError:
@@ -495,10 +492,10 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                         print("Degrading to:", degraded)
                         total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (degraded,)).fetchone()[0]
                         rows = con.execute("""
-                          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                          FROM fts
-                          WHERE fts MATCH ?
-                          LIMIT ? OFFSET ?
+                            SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                            FROM fts
+                            WHERE fts MATCH ?
+                            LIMIT ? OFFSET ?
                         """, (degraded, limit, offset)).fetchall()
                         nq2 = degraded
                 else:
@@ -517,10 +514,10 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                 fallback = re.sub(r'[!*]', '', nq)
                 total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (fallback,)).fetchone()[0]
                 rows = con.execute("""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  WHERE fts MATCH ?
-                  LIMIT ? OFFSET ?
+                    SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                    FROM fts
+                    WHERE fts MATCH ?
+                    LIMIT ? OFFSET ?
                 """, (fallback, limit, offset)).fetchall()
                 nq2 = fallback
 
@@ -541,11 +538,11 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
         
         for r in rows:
             meta = con.execute("""
-              SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
-                     m.act, d.reference, d.pdf_path, d.ejs_id
-              FROM docs_fresh d
-              LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-              WHERE d.rowid = ?
+                SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
+                       m.act, d.reference, d.pdf_path, d.ejs_id
+                FROM docs_fresh d
+                LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+                WHERE d.rowid = ?
             """, (r["rowid"],)).fetchone()
 
             d = dict(meta) if meta else {}
@@ -894,132 +891,100 @@ async def analyse_document(doc_type: str = Form(...), file: UploadFile = File(..
 # -------------------------------------------------------------------
 
 def get_renaming_system_prompt() -> str:
-    """Returns the updated system prompt for the AI."""
+    """Returns the expert system prompt for the AI to rename documents."""
     return """
-You are an expert legal discovery AI named LexiFile. Your task is to analyze text from a legal document and extract key information. Your entire response must be a single, valid JSON object.
+You are an expert legal assistant AI named LexiFile. Your task is to analyze text from a legal document and extract key information.
 
-The JSON object must have keys for:
-1.  "date": The primary date (YYYYMMDD). Use "00000000" if none is found.
-2.  "docType": The strict document type (e.g., "Email from [Sender] to [Recipient]", "Contract between [Party A] and [Party B]", "Affidavit of [Name]").
-3.  "description": A brief 2-5 word summary of the subject matter.
+Your entire response must be a single, valid JSON object. Do not include any text, notes, or apologies outside of this JSON object.
+
+The JSON object must have the following keys:
+1.  "date": A string representing the primary date found in the document, formatted as YYYYMMDD. Find the execution date, letter date, or filing date. If no date can be found, use "00000000".
+2.  "docType": A string for the "Strict Name". This must follow a strict, uniform format.
+    - For letters/emails: "Letter from [Sender] to [Recipient]" or "Email from [Sender] to [Recipient]". Identify parties by name.
+    - For contracts/agreements: "Contract between [Party 1] and [Party 2]".
+    - For court documents: "Affidavit of [Name]", "Statement of Claim", "Notice of Motion".
+    - For other common types: "Invoice", "Receipt", "Photograph", "Meeting Minutes".
+    - Be specific. "Letter of Offer" is not specific enough. It should be "Letter from [Company] to [Applicant]".
+3.  "description": A string for the "Looser Description". This should be a brief, 2-5 word summary of the document's subject matter.
 4.  "summary": A concise, one-sentence summary of the document's main purpose.
-5.  "keywords": An array of up to 10 relevant string keywords.
-6.  "metadata": An object with the following keys. If info is not present, use an empty string "" or a sensible default.
-    - "sender": The sender of the document, if an email or letter.
-    - "recipient": The recipient(s), if an email or letter.
-    - "author": The document author.
-    - "createdDate": The creation date (YYYY-MM-DD format).
-    - "lastModified": The last modified date (YYYY-MM-DD format).
+5.  "keywords": An array of up to 10 relevant string keywords extracted from the document.
+6.  "metadata": An object with the following keys. If the information is not present, use an empty string "" as the value.
+    - "privileged": A string, either "Yes" or "No". Infer this if the document contains phrases like "privileged and confidential". Default to "No".
+    - "author": A string for the document author, if identifiable.
+    - "createdDate": A string for the creation date, if different from the primary date, formatted as YYYY-MM-DD.
+    - "lastModified": A string for the last modified date, if available.
 """
 
-def extract_lexifile_text(file_path: str, filename: str) -> str:
-    """Robustly extracts text from various file types from a file path."""
+def extract_lexifile_text(file: io.BytesIO, filename: str) -> str:
+    """Extracts text for LexiFile, now supporting more types."""
     text = ""
     lower_filename = filename.lower()
     try:
-        with open(file_path, "rb") as f:
-            if lower_filename.endswith('.pdf'):
-                reader = PyPDF2.PdfReader(f)
-                for page in reader.pages:
-                    text += page.extract_text() or ""
-            elif lower_filename.endswith('.docx'):
-                doc = docx.Document(f)
-                for para in doc.paragraphs:
-                    text += para.text + "\n"
-            elif lower_filename.endswith('.doc'):
-                # pypandoc needs a file path, not a stream
-                docx_content = pypandoc.convert_file(file_path, 'docx', format='doc')
-                doc = docx.Document(io.BytesIO(docx_content))
-                for para in doc.paragraphs:
-                    text += para.text + "\n"
-            elif lower_filename.endswith('.msg') or lower_filename.endswith('.eml'):
-                msg = extract_msg.Message(f)
-                text += f"From: {msg.sender}\nTo: {msg.to}\nCC: {msg.cc}\nSubject: {msg.subject}\n\n{msg.body}"
-        return text
+        if lower_filename.endswith('.pdf'):
+            reader = PyPDF2.PdfReader(file)
+            for page in reader.pages:
+                text += page.extract_text() or ""
+        elif lower_filename.endswith('.docx') or lower_filename.endswith('.doc'):
+            # python-docx can handle both in many cases
+            doc = docx.Document(file)
+            for para in doc.paragraphs:
+                text += para.text + "\n"
+        elif lower_filename.endswith('.msg') or lower_filename.endswith('.eml'):
+            msg = extract_msg.Message(file)
+            text += f"From: {msg.sender}\n"
+            text += f"To: {msg.to}\n"
+            text += f"Subject: {msg.subject}\n\n"
+            text += msg.body
+        else:
+            # For other types like images, we won't extract text here
+            return ""
     except Exception as e:
         print(f"Error extracting text from {filename}: {e}")
-        return "" # Return empty string on failure
+        # Don't raise an exception, just return empty text so AI can handle it
+        return ""
+    return text
 
 @app.post("/rename-document")
-async def rename_document(file: UploadFile = File(...), project_id: str = Form(...)):
-    global ARTIFACT_ID_COUNTER
-    if not file or not project_id:
-        raise HTTPException(status_code=400, detail="Missing file or project ID.")
-    
-    temp_dir = "/tmp/lexifile"
-    os.makedirs(temp_dir, exist_ok=True)
-    temp_path = os.path.join(temp_dir, file.filename)
-    
+async def rename_document(file: UploadFile = File(...)):
+    """Handles the document upload and renaming logic for LexiFile."""
+    if not file:
+        raise HTTPException(status_code=400, detail="No file uploaded.")
     try:
-        with open(temp_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-
-        extracted_text = extract_lexifile_text(temp_path, file.filename)
+        file_content = await file.read()
+        file_stream = io.BytesIO(file_content)
+        extracted_text = extract_lexifile_text(file_stream, file.filename)
         
-        ai_response = {}
         if not extracted_text.strip():
-            file_extension = file.filename.split('.')[-1].lower()
-            doc_type = "Image" if file_extension in ['jpg', 'jpeg', 'png', 'gif'] else "Unsupported File"
-            ai_response = {
-                "date": datetime.now().strftime('%Y%m%d'),
-                "docType": doc_type, "description": "Media file",
+             # For files with no text (like images), create a default response
+            file_extension = file.filename.split('.')[-1]
+            doc_type = "Image" if file_extension.lower() in ['jpg', 'jpeg', 'png', 'gif'] else "Unsupported File"
+            return JSONResponse(content={
+                "date": "00000000",
+                "docType": doc_type,
+                "description": "Media file",
                 "summary": "This is a file with no extractable text.",
-                "keywords": ["media", file_extension],
-                "metadata": { "sender": "", "recipient": "", "author": "", "createdDate": "", "lastModified": "" }
-            }
-        else:
-            system_prompt = get_renaming_system_prompt()
-            user_prompt = f"Analyze: {extracted_text[:8000]}"
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
-                response_format={"type": "json_object"}
-            )
-            ai_response = json.loads(response.choices[0].message.content)
+                "keywords": ["media", file.filename.split('.')[-1]],
+                "metadata": { "privileged": "No", "author": "", "createdDate": "", "lastModified": "" }
+            })
 
-        # Assign a unique artifact ID and store the document record
-        artifact_id = f"LEX-{str(ARTIFACT_ID_COUNTER).zfill(8)}"
-        
-        doc_record = {
-            "artifactID": artifact_id, "projectID": project_id,
-            "objectType": file.content_type or "Unknown",
-            "originalFilename": file.filename,
-            "improvedFilename": f"{ai_response.get('date', '')} - {ai_response.get('docType', '')} - {ai_response.get('description', '')}.{file.filename.split('.')[-1]}",
-            "author": ai_response.get('metadata', {}).get('author', ''),
-            "lastModifiedOn": ai_response.get('metadata', {}).get('lastModified', ''),
-            "date": ai_response.get('date', ''),
-            "sender": ai_response.get('metadata', {}).get('sender', ''),
-            "recipient": ai_response.get('metadata', {}).get('recipient', ''),
-            "uploadedBy": "demo.user@example.com", # Hardcoded for now
-            "description": ai_response.get('description', ''),
-            "keywords": ai_response.get('keywords', []),
-            "ai_full_response": ai_response
-        }
-        
-        DOCUMENTS_DB[artifact_id] = doc_record
-        ARTIFACT_ID_COUNTER += 1
-        
-        return doc_record
+        system_prompt = get_renaming_system_prompt()
+        user_prompt = f"Please analyze the following document text and return the structured JSON for renaming:\n\n---DOCUMENT TEXT---\n{extracted_text[:12000]}\n---END TEXT---"
 
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+        ai_response_content = response.choices[0].message.content
+        return json.loads(ai_response_content)
+    except json.JSONDecodeError:
+       raise HTTPException(status_code=500, detail="AI returned an invalid JSON response.")
     except Exception as e:
-        print(f"Error in rename-document: {e}")
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
-    finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-
-
-@app.get("/get-project-documents")
-async def get_project_documents(project_id: str = Query(...)):
-    """Fetches all documents associated with a specific project."""
-    if not project_id:
-        raise HTTPException(status_code=400, detail="Project ID is required.")
-    
-    if project_id == 'all':
-        return list(DOCUMENTS_DB.values())
-        
-    project_docs = [doc for doc in DOCUMENTS_DB.values() if doc.get("projectID") == project_id]
-    return project_docs
+        print(f"ERROR in /rename-document: {e}")
+        return JSONResponse(content={"error": f"An unexpected error occurred: {str(e)}"}, status_code=500)
 
 @app.post("/preview-email")
 async def preview_email(file: UploadFile = File(...)):
@@ -1030,9 +995,12 @@ async def preview_email(file: UploadFile = File(...)):
         file_content = await file.read()
         msg = extract_msg.Message(io.BytesIO(file_content))
         return {
-            "from": msg.sender, "to": msg.to, "cc": msg.cc,
-            "subject": msg.subject, "date": msg.date,
-            "body": msg.body
+            "from": msg.sender,
+            "to": msg.to,
+            "cc": msg.cc,
+            "subject": msg.subject,
+            "date": msg.date,
+            "body": msg.body # extract-msg prefers HTML body if available
         }
     except Exception as e:
         print(f"Error parsing email file {file.filename}: {e}")
@@ -1047,8 +1015,11 @@ async def get_projects():
 async def create_project(projectName: str = Form(...), clientName: str = Form(...), matterNumber: str = Form(...)):
     project_id = len(PROJECTS_DB) + 1
     new_project = {
-        "id": project_id, "name": projectName, "client": clientName,
-        "matter": matterNumber, "dateCreated": datetime.now().strftime("%Y-%m-%d")
+        "id": project_id,
+        "name": projectName,
+        "client": clientName,
+        "matter": matterNumber,
+        "dateCreated": datetime.now().strftime("%Y-%m-%d")
     }
     PROJECTS_DB.append(new_project)
     return new_project
