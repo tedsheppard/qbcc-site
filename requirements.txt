@@ -13,3 +13,4 @@ PyPDF2
 python-docx
 meilisearch
 extract-msg
+pypandoc
