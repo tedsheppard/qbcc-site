@@ -922,14 +922,14 @@ You are an expert legal discovery AI named LexiFile. Your task is to analyze tex
 
 The JSON object must have keys for:
 1.  "date": The primary date (YYYY-MM-DD). Use today's date if none is found.
-2.  "docType": The strict document type (e.g., "Email from [Sender] to [Recipient]", "Contract between [Party A] and [Party B]", "Affidavit of [Name]").
+2.  "docType": The strict document type (e.g., "Email from [Sender's Email] to [Recipient's Email]", "Contract between [Party A] and [Party B]", "Affidavit of [Name]"). For emails, use the actual email addresses.
 3.  "description": A brief 2-5 word summary of the subject matter.
 4.  "keywords": An array of up to 10 relevant string keywords.
 5.  "metadata": An object with the following keys. If info is not present, use an empty string "" or a sensible default.
-    - "sender": The sender of the document, if an email or letter.
-    - "recipient": The recipient(s), if an email or letter.
-    - "author": The document author.
-    - "lastModified": The last modified date (YYYY-MM-DD format), if available in the text.
+    - "sender": The sender's email address ONLY if it's an email. Otherwise, this should be an empty string.
+    - "recipient": The recipient's email address(es) ONLY if it's an email. Otherwise, this should be an empty string.
+    - "author": The document author, extracted from document properties or text.
+    - "lastModified": The last modified date (YYYY-MM-DD format).
 """
 
 def extract_lexifile_text(file_path: str, filename: str) -> str:
@@ -943,13 +943,12 @@ def extract_lexifile_text(file_path: str, filename: str) -> str:
                 for page in reader.pages:
                     text += page.extract_text() or ""
             # OCR Fallback for scanned PDFs
-            if len(text.strip()) < 50: # Arbitrary threshold to detect scanned docs
+            if len(text.strip()) < 50: 
                 print(f"Performing OCR on {filename}...")
                 text = pytesseract.image_to_string(file_path)
         elif lower_filename.endswith('.docx'):
             with open(file_path, "rb") as f:
                 doc = docx.Document(f)
-                # Extract core properties metadata
                 core_props = doc.core_properties
                 author = core_props.author if core_props.author else ""
                 last_modified_by = core_props.last_modified_by if core_props.last_modified_by else ""
@@ -957,14 +956,12 @@ def extract_lexifile_text(file_path: str, filename: str) -> str:
                 for para in doc.paragraphs:
                     text += para.text + "\n"
         elif lower_filename.endswith('.doc'):
-            # pypandoc needs a file path. It will fail if pandoc is not installed on the system.
             try:
                 text = pypandoc.convert_file(file_path, 'plain', format='doc')
             except Exception as pandoc_error:
                 print(f"Pandoc failed for {filename}: {pandoc_error}. Falling back.")
-                text = "" # Fallback to no text if conversion fails
+                text = "" 
         elif lower_filename.endswith('.msg') or lower_filename.endswith('.eml'):
-            # extract_msg also works better with a file path
             msg = extract_msg.Message(file_path)
             text += f"From: {msg.sender}\nTo: {msg.to}\nCC: {msg.cc}\nSubject: {msg.subject}\n\n{msg.body}"
         return text
@@ -978,13 +975,11 @@ async def rename_document(file: UploadFile = File(...), project_id: str = Form(.
     if not file or not project_id:
         raise HTTPException(status_code=400, detail="Missing file or project ID.")
     
-    # Save the uploaded file temporarily to handle it with different libraries
     temp_path = os.path.join(LEXIFILE_STORAGE, file.filename)
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
     try:
-        # Extract metadata directly from the file system and file itself
         file_stat = os.stat(temp_path)
         last_modified_date = datetime.fromtimestamp(file_stat.st_mtime).strftime('%Y-%m-%d')
         
@@ -1001,7 +996,6 @@ async def rename_document(file: UploadFile = File(...), project_id: str = Form(.
             }
         else:
             system_prompt = get_renaming_system_prompt()
-            # Pass extracted metadata to AI for context
             user_prompt = f"Analyze the following text. Available metadata: Last Modified='{last_modified_date}'.\n\n---TEXT---\n{extracted_text[:8000]}\n---END---"
             response = client.chat.completions.create(
                 model="gpt-4o",
@@ -1009,15 +1003,12 @@ async def rename_document(file: UploadFile = File(...), project_id: str = Form(.
                 response_format={"type": "json_object"}
             )
             ai_response = json.loads(response.choices[0].message.content)
-            # Ensure AI response for lastModified is respected, but fallback to file system
             if not ai_response.get("metadata", {}).get("lastModified"):
                 if "metadata" not in ai_response: ai_response["metadata"] = {}
                 ai_response["metadata"]["lastModified"] = last_modified_date
 
-        # Assign a unique artifact ID
         artifact_id = f"LEX-{str(ARTIFACT_ID_COUNTER).zfill(8)}"
         
-        # Move the temp file to its permanent artifact location
         permanent_path = os.path.join(LEXIFILE_STORAGE, f"{artifact_id}_{file.filename}")
         os.rename(temp_path, permanent_path)
 
@@ -1027,7 +1018,6 @@ async def rename_document(file: UploadFile = File(...), project_id: str = Form(.
         ext = file.filename.split('.')[-1]
         improved_filename = f"{date_part} - {doc_type_part} - {description_part}.{ext}"
 
-        # Create the final document record
         doc_record = {
             "artifactID": artifact_id, "projectID": project_id,
             "objectType": get_human_readable_type(file.content_type, file.filename),
@@ -1039,9 +1029,9 @@ async def rename_document(file: UploadFile = File(...), project_id: str = Form(.
             "lastModifiedOn": ai_response.get('metadata', {}).get('lastModified', ''),
             "sender": ai_response.get('metadata', {}).get('sender', ''),
             "recipient": ai_response.get('metadata', {}).get('recipient', ''),
-            "uploadedBy": "demo.user@example.com", # Hardcoded
+            "uploadedBy": "demo.user@example.com",
             "keywords": ai_response.get('keywords', []),
-            "ai_full_response": ai_response # Store full AI response for editing
+            "ai_full_response": ai_response
         }
         
         DOCUMENTS_DB[artifact_id] = doc_record
@@ -1051,7 +1041,6 @@ async def rename_document(file: UploadFile = File(...), project_id: str = Form(.
 
     except Exception as e:
         print(f"Error in rename-document: {e}")
-        # Clean up the temp file on error
         if os.path.exists(temp_path):
             os.remove(temp_path)
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
@@ -1081,7 +1070,6 @@ async def fulltext_search(project_id: str = Form(...), query: str = Form(...)):
         if os.path.exists(file_path):
             content = extract_lexifile_text(file_path, doc['originalFilename'])
             if query.lower() in content.lower():
-                # Create a snippet
                 match_pos = content.lower().find(query.lower())
                 start = max(0, match_pos - 25)
                 end = min(len(content), match_pos + len(query) + 25)
