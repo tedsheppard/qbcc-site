@@ -899,12 +899,25 @@ async def analyse_document(doc_type: str = Form(...), file: UploadFile = File(..
 # --- START: LEXIFILE FUNCTIONALITY (MERGED & UPDATED) ---
 # -------------------------------------------------------------------
 
+def get_human_readable_type(content_type: str, filename: str) -> str:
+    """Converts MIME type and filename to a user-friendly object type."""
+    ext = filename.split('.')[-1].lower()
+    if ext in ['msg', 'eml']:
+        return "Email Message"
+    if ext == 'pdf':
+        return "PDF Document"
+    if ext == 'docx':
+        return "Word Document"
+    if ext == 'doc':
+        return "Legacy Word Document"
+    if ext in ['png', 'jpg', 'jpeg', 'gif']:
+        return "Image"
+    return content_type or "Unknown File"
+
 def get_renaming_system_prompt() -> str:
     """Returns the expert system prompt for the AI to rename documents."""
     return """
-You are an expert legal discovery AI named LexiFile. Your task is to analyze text from a legal document and extract key information.
-
-Your entire response must be a single, valid JSON object. Do not include any text, notes, or apologies outside of this JSON object.
+You are an expert legal discovery AI named LexiFile. Your task is to analyze text from a legal document and extract key information. Your entire response must be a single, valid JSON object.
 
 The JSON object must have keys for:
 1.  "date": The primary date (YYYY-MM-DD). Use today's date if none is found.
@@ -933,13 +946,14 @@ def extract_lexifile_text(file_path: str, filename: str) -> str:
                 for para in doc.paragraphs:
                     text += para.text + "\n"
             elif lower_filename.endswith('.doc'):
-                # pypandoc needs a file path. It will fail if pandoc is not installed.
+                # pypandoc needs a file path. It will fail if pandoc is not installed on the system.
                 try:
                     text = pypandoc.convert_file(file_path, 'plain', format='doc')
                 except Exception as pandoc_error:
                     print(f"Pandoc failed for {filename}: {pandoc_error}. Falling back.")
                     text = "" # Fallback to no text if conversion fails
             elif lower_filename.endswith('.msg') or lower_filename.endswith('.eml'):
+                # extract_msg also works better with a file path
                 msg = extract_msg.Message(file_path)
                 text += f"From: {msg.sender}\nTo: {msg.to}\nCC: {msg.cc}\nSubject: {msg.subject}\n\n{msg.body}"
         return text
@@ -1047,7 +1061,10 @@ async def bulk_download(artifact_ids: List[str] = Body(...)):
                 if os.path.exists(file_path):
                     # Construct the new filename
                     ext = doc_record['originalFilename'].split('.')[-1]
-                    new_filename = f"{doc_record['date']} - {doc_record.get('ai_full_response', {}).get('docType')} - {doc_record['description']}.{ext}"
+                    date_part = doc_record['date'].replace('-', '')
+                    doc_type_part = doc_record.get('ai_full_response', {}).get('docType')
+                    description_part = doc_record['description']
+                    new_filename = f"{date_part} - {doc_type_part} - {description_part}.{ext}"
                     z.write(file_path, arcname=new_filename)
         for chunk in z:
             yield chunk
@@ -1056,8 +1073,40 @@ async def bulk_download(artifact_ids: List[str] = Body(...)):
         'Content-Disposition': f'attachment; filename="LexiFile_Bulk_Export_{datetime.now().strftime("%Y%m%d")}.zip"'
     })
 
-# ... (rest of the file is the same as your provided version) ...
-# ... /preview-email, /projects, /create-project, DB download, static file serving etc. ...
+@app.post("/preview-email")
+async def preview_email(file: UploadFile = File(...)):
+    if not file or not (file.filename.lower().endswith('.msg') or file.filename.lower().endswith('.eml')):
+        raise HTTPException(status_code=400, detail="Invalid file type for email preview.")
+    try:
+        file_content = await file.read()
+        msg = extract_msg.Message(io.BytesIO(file_content))
+        return {
+            "from": msg.sender, "to": msg.to, "cc": msg.cc,
+            "subject": msg.subject, "date": msg.date,
+            "body": msg.body
+        }
+    except Exception as e:
+        print(f"Error parsing email file {file.filename}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse email file.")
+
+# --- Project Management Endpoints ---
+@app.get("/projects")
+async def get_projects():
+    return PROJECTS_DB
+
+@app.post("/create-project")
+async def create_project(projectName: str = Form(...), clientName: str = Form(...), matterNumber: str = Form(...)):
+    project_id = len(PROJECTS_DB) + 1
+    new_project = {
+        "id": project_id, "name": projectName, "client": clientName,
+        "matter": matterNumber, "dateCreated": datetime.now().strftime("%Y-%m-%d")
+    }
+    PROJECTS_DB.append(new_project)
+    return new_project
+
+# -------------------------------------------------------------------
+# --- END: LEXIFILE FUNCTIONALITY ---
+# -------------------------------------------------------------------
 
 
 # ---------- DB Download ----------
@@ -1065,16 +1114,30 @@ async def bulk_download(artifact_ids: List[str] = Body(...)):
 async def download_db():
     return FileResponse("/tmp/qbcc.db", filename="qbcc.db")
 
-from fastapi.responses import RedirectResponse
-
 # ---------- serve frontend with clean URLs ----------
-@app.get("/{path_name}")
+@app.get("/{path_name:path}")
 async def serve_html_page(path_name: str):
+    # This now serves as the main entry point for your frontend pages
+    # It will try to match a file like /lexifile_portal -> /site/lexifile_portal.html
+    
+    # If the path is empty (root request), serve index.html
+    if not path_name:
+        path_name = "index"
+
     file_path = os.path.join(SITE_DIR, f"{path_name}.html")
+    
+    # Check for directory traversal attempts for security
+    if not os.path.abspath(file_path).startswith(os.path.abspath(SITE_DIR)):
+        raise HTTPException(status_code=404, detail="Not Found")
+
     if os.path.exists(file_path):
         return FileResponse(file_path)
-    return FileResponse(os.path.join(SITE_DIR, "index.html"))
+    
+    # Fallback for assets if they are not found as pages
+    static_file_path = os.path.join(SITE_DIR, path_name)
+    if os.path.exists(static_file_path):
+        return FileResponse(static_file_path)
 
-# keep the old mount for static assets like CSS/JS/images
-app.mount("/", StaticFiles(directory=SITE_DIR, html=True), name="site")
+    # Final fallback to index for SPA-like behavior
+    return FileResponse(os.path.join(SITE_DIR, "index.html"))
 
