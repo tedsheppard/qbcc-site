@@ -17,3 +17,5 @@ pypandoc
 zipstream
 Pillow
 pytesseract
+passlib[bcrypt]
+python-jose
