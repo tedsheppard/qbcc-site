@@ -138,6 +138,13 @@
     </div>
 
     <script>
+
+        // Redirect to login if not logged in
+        const token = localStorage.getItem('lexifile_token');
+        if (!token) {
+         window.location.href = '/lexifile_login';
+        }
+
         // Set workerSrc for PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
 

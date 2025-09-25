@@ -10,6 +10,9 @@ from openai import OpenAI
 from google.cloud import storage
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, date
+from passlib.context import CryptContext
+from jose import JWTError, jwt
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import PyPDF2
 import docx
 import extract_msg
@@ -58,6 +61,47 @@ con.execute("PRAGMA temp_store = MEMORY")
 con.execute("PRAGMA mmap_size = 30000000000")
 
 app = FastAPI()
+
+# ---------------- LexiFile DB (separate from Sopal qbcc.db) ----------------
+LEXIFILE_DB_PATH = "/tmp/lexifile.db"
+lexi_con = sqlite3.connect(LEXIFILE_DB_PATH, check_same_thread=False)
+lexi_con.row_factory = sqlite3.Row
+
+# Create users table (LexiFile only)
+lexi_con.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    hashed_password TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+lexi_con.commit()
+
+# ---------------- Auth setup ----------------
+SECRET_KEY = os.getenv("LEXIFILE_SECRET_KEY", "dev-secret-key")  # change in prod
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def get_user_by_email(email: str):
+    cur = lexi_con.execute("SELECT * FROM users WHERE email = ?", (email,))
+    row = cur.fetchone()
+    return dict(row) if row else None
 
 # --- CORS Middleware ---
 app.add_middleware(
@@ -426,6 +470,45 @@ def get_interest_rate(start_date_str: str = Query(..., alias="startDate"), end_d
         # Ensure the temporary table is dropped
         cursor.execute("DROP TABLE IF EXISTS date_range")
 
+from fastapi import Depends
+
+@app.post("/register")
+def register(email: str = Form(...), password: str = Form(...)):
+    user = get_user_by_email(email)
+    if user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    hashed_pw = get_password_hash(password)
+    lexi_con.execute("INSERT INTO users (email, hashed_password) VALUES (?, ?)", (email, hashed_pw))
+    lexi_con.commit()
+    return {"msg": "User registered successfully"}
+
+@app.post("/token")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = get_user_by_email(form_data.username)
+    if not user or not verify_password(form_data.password, user["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    access_token = create_access_token(
+        data={"sub": user["email"]},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+@app.get("/me")
+def read_users_me(current_user: dict = Depends(get_current_user)):
+    return {"email": current_user["email"], "created_at": current_user["created_at"]}
 
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newest"):

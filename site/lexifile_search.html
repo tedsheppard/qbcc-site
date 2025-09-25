@@ -122,6 +122,13 @@
     </div>
     
     <script>
+
+        // Redirect to login if not logged in
+const token = localStorage.getItem('lexifile_token');
+if (!token) {
+    window.location.href = '/lexifile_login';
+}
+
         // --- State Management ---
         let allDocuments = [];
         let filteredDocuments = [];

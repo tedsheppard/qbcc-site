@@ -90,6 +90,13 @@
     </div>
 
     <script>
+
+        // Redirect to login if not logged in
+const token = localStorage.getItem('lexifile_token');
+if (!token) {
+    window.location.href = '/lexifile_login';
+}
+
         const newProjectBtn = document.getElementById('newProjectBtn');
         const projectModal = document.getElementById('projectModal');
         const cancelProjectBtn = document.getElementById('cancelProjectBtn');
