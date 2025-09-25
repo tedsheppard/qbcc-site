@@ -184,7 +184,7 @@
             fileQueue.innerHTML = state.files.map(file => {
                 const isSelected = file.id === state.selectedFileId;
                 const datePart = (file.date || '0000-00-00').replace(/-/g, '');
-                const docTypePart = file.ai_full_response ? file.ai_full_response.docType : file.docType;
+                const docTypePart = file.ai_full_response ? (file.ai_full_response.docType || 'N/A') : 'Analyzing...';
                 const newName = `${datePart} - ${docTypePart} - ${file.description}.${file.extension}`;
                 let statusIcon;
                 switch(file.status) {
@@ -241,19 +241,19 @@
             previewPlaceholder.classList.add('hidden');
             previewContent.classList.remove('hidden');
 
-            // --- Populate Editor Form with NEW EXTENDED fields ---
+            // --- Populate Editor Form with NEW EXTENDED scrollable fields ---
             editorForm.innerHTML = `
                 <div>
                     <label for="editorDate" class="block text-sm font-bold text-gray-800 mb-1">Date</label>
-                    <input type="text" id="editorDate" value="${file.date}" placeholder="YYYY-MM-DD" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono">
+                    <input type="text" id="editorDate" value="${file.date || ''}" placeholder="YYYY-MM-DD" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono">
                 </div>
                 <div>
                     <label for="editorDocType" class="block text-sm font-bold text-gray-800 mb-1">Document Type</label>
-                    <input type="text" id="editorDocType" value="${file.ai_full_response.docType}" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <input type="text" id="editorDocType" value="${file.ai_full_response.docType || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                 </div>
                 <div>
                     <label for="editorDescription" class="block text-sm font-bold text-gray-800 mb-1">Description</label>
-                    <textarea id="editorDescription" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg">${file.description}</textarea>
+                    <textarea id="editorDescription" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg">${file.description || ''}</textarea>
                 </div>
                 <div class="pt-4 border-t border-gray-200">
                      <h4 class="text-sm font-bold text-gray-800 mb-2">Live Filename Preview</h4>
@@ -265,7 +265,7 @@
                 </div>
                 <div id="metadataEditor" class="pt-4 border-t border-gray-200">
                     <h4 class="text-sm font-bold text-gray-800 mb-3">Editable Properties</h4>
-                    <div class="space-y-3 text-sm">
+                    <div class="space-y-3 text-sm max-h-64 overflow-y-auto pr-2">
                         <div class="grid grid-cols-3 items-center">
                             <label for="metaSender" class="font-medium text-gray-600">Sender</label>
                             <input type="text" id="metaSender" value="${file.sender || ''}" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md">
@@ -292,9 +292,10 @@
             
             // --- Populate Preview Panel ---
             const keywordsHTML = (file.keywords || []).map(kw => `<span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${kw}</span>`).join('');
+            const summaryText = file.ai_full_response ? (file.ai_full_response.summary || 'N/A') : 'N/A';
 
             previewContent.innerHTML = `
-                <div class="mb-6"><h3 class="text-sm font-bold text-gray-800 mb-2">AI Summary</h3><p class="text-gray-600 text-sm">${file.ai_full_response.summary || 'N/A'}</p></div>
+                <div class="mb-6"><h3 class="text-sm font-bold text-gray-800 mb-2">AI Summary</h3><p class="text-gray-600 text-sm">${summaryText}</p></div>
                 <div class="mb-8"><h3 class="text-sm font-bold text-gray-800 mb-2">Keywords</h3><div class="flex flex-wrap">${keywordsHTML}</div></div>
                 <div class="border-t border-gray-200 pt-6"><h3 class="text-sm font-bold text-gray-800 mb-2">Document Body Preview</h3>
                     <div id="actual-preview-container" class="bg-gray-50 border rounded-lg text-sm text-gray-500 overflow-auto p-2"></div>
@@ -315,14 +316,13 @@
                     previewContainer.appendChild(pdfViewer);
                     const loadingTask = pdfjsLib.getDocument(fileURL);
                     const pdf = await loadingTask.promise;
-                    const containerWidth = previewContainer.clientWidth - 20; // account for padding
+                    const containerWidth = previewContainer.clientWidth - 20;
                     
                     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                         const page = await pdf.getPage(pageNum);
                         const originalViewport = page.getViewport({ scale: 1.0 });
                         const scale = containerWidth / originalViewport.width;
                         const viewport = page.getViewport({ scale: scale });
-
                         const canvas = document.createElement('canvas');
                         const context = canvas.getContext('2d');
                         canvas.height = viewport.height;

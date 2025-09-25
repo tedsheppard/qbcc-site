@@ -15,3 +15,5 @@ meilisearch
 extract-msg
 pypandoc
 zipstream
+Pillow
+pytesseract

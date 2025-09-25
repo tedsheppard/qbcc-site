@@ -14,14 +14,15 @@ import PyPDF2
 import docx
 import extract_msg
 import pypandoc
-from typing import List
+from typing import List, Optional
 import zipstream
+import pytesseract
+from PIL import Image
 
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SITE_DIR = os.path.join(ROOT, "site")
 DB_PATH = "/tmp/qbcc.db"
-# NEW: Persistent storage location for uploaded files
 LEXIFILE_STORAGE = "/tmp/lexifile_storage"
 os.makedirs(LEXIFILE_STORAGE, exist_ok=True)
 
@@ -936,26 +937,36 @@ def extract_lexifile_text(file_path: str, filename: str) -> str:
     text = ""
     lower_filename = filename.lower()
     try:
-        with open(file_path, "rb") as f:
-            if lower_filename.endswith('.pdf'):
+        if lower_filename.endswith('.pdf'):
+            with open(file_path, "rb") as f:
                 reader = PyPDF2.PdfReader(f)
                 for page in reader.pages:
                     text += page.extract_text() or ""
-            elif lower_filename.endswith('.docx'):
+            # OCR Fallback for scanned PDFs
+            if len(text.strip()) < 50: # Arbitrary threshold to detect scanned docs
+                print(f"Performing OCR on {filename}...")
+                text = pytesseract.image_to_string(file_path)
+        elif lower_filename.endswith('.docx'):
+            with open(file_path, "rb") as f:
                 doc = docx.Document(f)
+                # Extract core properties metadata
+                core_props = doc.core_properties
+                author = core_props.author if core_props.author else ""
+                last_modified_by = core_props.last_modified_by if core_props.last_modified_by else ""
+                text += f"[Author: {author}]\n[Last Modified By: {last_modified_by}]\n\n"
                 for para in doc.paragraphs:
                     text += para.text + "\n"
-            elif lower_filename.endswith('.doc'):
-                # pypandoc needs a file path. It will fail if pandoc is not installed on the system.
-                try:
-                    text = pypandoc.convert_file(file_path, 'plain', format='doc')
-                except Exception as pandoc_error:
-                    print(f"Pandoc failed for {filename}: {pandoc_error}. Falling back.")
-                    text = "" # Fallback to no text if conversion fails
-            elif lower_filename.endswith('.msg') or lower_filename.endswith('.eml'):
-                # extract_msg also works better with a file path
-                msg = extract_msg.Message(file_path)
-                text += f"From: {msg.sender}\nTo: {msg.to}\nCC: {msg.cc}\nSubject: {msg.subject}\n\n{msg.body}"
+        elif lower_filename.endswith('.doc'):
+            # pypandoc needs a file path. It will fail if pandoc is not installed on the system.
+            try:
+                text = pypandoc.convert_file(file_path, 'plain', format='doc')
+            except Exception as pandoc_error:
+                print(f"Pandoc failed for {filename}: {pandoc_error}. Falling back.")
+                text = "" # Fallback to no text if conversion fails
+        elif lower_filename.endswith('.msg') or lower_filename.endswith('.eml'):
+            # extract_msg also works better with a file path
+            msg = extract_msg.Message(file_path)
+            text += f"From: {msg.sender}\nTo: {msg.to}\nCC: {msg.cc}\nSubject: {msg.subject}\n\n{msg.body}"
         return text
     except Exception as e:
         print(f"Error extracting text from {filename}: {e}")
@@ -1010,11 +1021,18 @@ async def rename_document(file: UploadFile = File(...), project_id: str = Form(.
         permanent_path = os.path.join(LEXIFILE_STORAGE, f"{artifact_id}_{file.filename}")
         os.rename(temp_path, permanent_path)
 
+        date_part = ai_response.get('date', '0000-00-00').replace('-', '')
+        doc_type_part = ai_response.get('docType', 'Untitled')
+        description_part = ai_response.get('description', 'No Description')
+        ext = file.filename.split('.')[-1]
+        improved_filename = f"{date_part} - {doc_type_part} - {description_part}.{ext}"
+
         # Create the final document record
         doc_record = {
             "artifactID": artifact_id, "projectID": project_id,
             "objectType": get_human_readable_type(file.content_type, file.filename),
             "originalFilename": file.filename,
+            "improvedFilename": improved_filename,
             "date": ai_response.get('date', ''),
             "description": ai_response.get('description', ''),
             "author": ai_response.get('metadata', {}).get('author', ''),
@@ -1050,6 +1068,41 @@ async def get_project_documents(project_id: str = Query(...)):
     project_docs = [doc for doc in DOCUMENTS_DB.values() if doc.get("projectID") == project_id]
     return project_docs
     
+@app.post("/fulltext-search")
+async def fulltext_search(project_id: str = Form(...), query: str = Form(...)):
+    if not query:
+        return []
+
+    results = []
+    docs_to_search = [doc for doc in DOCUMENTS_DB.values() if project_id == 'all' or doc.get("projectID") == project_id]
+    
+    for doc in docs_to_search:
+        file_path = os.path.join(LEXIFILE_STORAGE, f"{doc['artifactID']}_{doc['originalFilename']}")
+        if os.path.exists(file_path):
+            content = extract_lexifile_text(file_path, doc['originalFilename'])
+            if query.lower() in content.lower():
+                # Create a snippet
+                match_pos = content.lower().find(query.lower())
+                start = max(0, match_pos - 25)
+                end = min(len(content), match_pos + len(query) + 25)
+                snippet = "..." + content[start:end].strip().replace("\n", " ") + "..."
+                doc_with_snippet = doc.copy()
+                doc_with_snippet["snippet"] = snippet
+                results.append(doc_with_snippet)
+    return results
+
+@app.get("/download-single-doc/{artifact_id}")
+async def download_single_doc(artifact_id: str):
+    doc_record = DOCUMENTS_DB.get(artifact_id)
+    if not doc_record:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    file_path = os.path.join(LEXIFILE_STORAGE, f"{doc_record['artifactID']}_{doc_record['originalFilename']}")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found on server")
+
+    return FileResponse(file_path, filename=doc_record['improvedFilename'])
+
 @app.post("/bulk-download")
 async def bulk_download(artifact_ids: List[str] = Body(...)):
     def files_generator():
@@ -1059,13 +1112,7 @@ async def bulk_download(artifact_ids: List[str] = Body(...)):
             if doc_record:
                 file_path = os.path.join(LEXIFILE_STORAGE, f"{doc_record['artifactID']}_{doc_record['originalFilename']}")
                 if os.path.exists(file_path):
-                    # Construct the new filename
-                    ext = doc_record['originalFilename'].split('.')[-1]
-                    date_part = doc_record['date'].replace('-', '')
-                    doc_type_part = doc_record.get('ai_full_response', {}).get('docType')
-                    description_part = doc_record['description']
-                    new_filename = f"{date_part} - {doc_type_part} - {description_part}.{ext}"
-                    z.write(file_path, arcname=new_filename)
+                    z.write(file_path, arcname=doc_record['improvedFilename'])
         for chunk in z:
             yield chunk
 
@@ -1092,6 +1139,10 @@ async def preview_email(file: UploadFile = File(...)):
 # --- Project Management Endpoints ---
 @app.get("/projects")
 async def get_projects():
+    # Add document count to each project
+    for project in PROJECTS_DB:
+        count = sum(1 for doc in DOCUMENTS_DB.values() if str(doc.get("projectID")) == str(project["id"]))
+        project["documentCount"] = count
     return PROJECTS_DB
 
 @app.post("/create-project")
@@ -1117,27 +1168,21 @@ async def download_db():
 # ---------- serve frontend with clean URLs ----------
 @app.get("/{path_name:path}")
 async def serve_html_page(path_name: str):
-    # This now serves as the main entry point for your frontend pages
-    # It will try to match a file like /lexifile_portal -> /site/lexifile_portal.html
-    
-    # If the path is empty (root request), serve index.html
     if not path_name:
         path_name = "index"
 
     file_path = os.path.join(SITE_DIR, f"{path_name}.html")
     
-    # Check for directory traversal attempts for security
     if not os.path.abspath(file_path).startswith(os.path.abspath(SITE_DIR)):
         raise HTTPException(status_code=404, detail="Not Found")
 
     if os.path.exists(file_path):
         return FileResponse(file_path)
     
-    # Fallback for assets if they are not found as pages
     static_file_path = os.path.join(SITE_DIR, path_name)
     if os.path.exists(static_file_path):
         return FileResponse(static_file_path)
 
-    # Final fallback to index for SPA-like behavior
+    # Fallback for SPA-like behavior
     return FileResponse(os.path.join(SITE_DIR, "index.html"))
 

@@ -21,6 +21,9 @@
         td.wrap { white-space: normal; min-width: 250px; }
         tr:hover { background-color: #f3f4f6; }
         .filter-input { width: 100%; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; }
+        .modal {
+            transition: opacity 0.25s ease;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -48,6 +51,10 @@
             <header class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h1 class="text-2xl font-bold text-gray-800">Document Search</h1>
                  <div class="flex items-center space-x-2">
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"></i>
+                        <input type="search" id="fulltextSearch" placeholder="Search document content..." class="rounded-lg border-gray-300 pl-9 w-64">
+                    </div>
                     <select id="projectFilter" class="rounded-lg border-gray-300 text-sm p-2">
                         <option value="all">All Projects</option>
                     </select>
@@ -74,6 +81,7 @@
                                 <th data-sort="sender">Sender<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
                                 <th data-sort="recipient">Recipient<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
                                 <th data-sort="keywords">Keywords<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th>Content Snippet</th>
                                 <th data-sort="uploadedBy">Uploaded By<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
                                 <th>Actions</th>
                             </tr>
@@ -89,6 +97,7 @@
                                 <th><input class="filter-input" data-filter="sender"></th>
                                 <th><input class="filter-input" data-filter="recipient"></th>
                                 <th><input class="filter-input" data-filter="keywords"></th>
+                                <th></th>
                                 <th><input class="filter-input" data-filter="uploadedBy"></th>
                                 <th></th>
                             </tr>
@@ -109,6 +118,20 @@
             </div>
         </div>
     </div>
+    
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden opacity-0">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
+            <header class="flex justify-between items-center p-4 border-b">
+                <h3 id="modalTitle" class="font-semibold text-lg">Document Preview</h3>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-gray-800"><i data-lucide="x" class="h-6 w-6"></i></button>
+            </header>
+            <div id="modalBody" class="flex-grow p-4 overflow-auto">
+                <!-- Preview content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- State Management ---
         let allDocuments = [];
@@ -127,12 +150,16 @@
         const selectAllCheckbox = document.getElementById('selectAllCheckbox');
         const bulkDownloadBtn = document.getElementById('bulkDownloadBtn');
         const filterInputs = document.querySelectorAll('.filter-input');
+        const fulltextSearchInput = document.getElementById('fulltextSearch');
+        const previewModal = document.getElementById('previewModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
 
         // --- Core Functions ---
         async function fetchDocuments(projectId = 'all') {
             try {
-                let url = `/get-project-documents?project_id=${projectId}`;
-                const response = await fetch(url);
+                const response = await fetch(`/get-project-documents?project_id=${projectId}`);
                 if(!response.ok) throw new Error("Failed to fetch documents");
                 allDocuments = await response.json();
                 filteredDocuments = [...allDocuments];
@@ -199,10 +226,11 @@
                                 ${(doc.keywords || []).map(kw => `<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">${kw}</span>`).join('')}
                             </div>
                         </td>
+                        <td class="wrap">${doc.snippet || ''}</td>
                         <td>${doc.uploadedBy}</td>
                         <td class="flex items-center space-x-2">
-                           <button title="Download" class="text-gray-400 hover:text-blue-600"><i data-lucide="download" class="h-4 w-4"></i></button>
-                           <button title="Preview" class="text-gray-400 hover:text-blue-600"><i data-lucide="eye" class="h-4 w-4"></i></button>
+                           <button title="Download" class="action-btn-download text-gray-400 hover:text-blue-600" data-id="${doc.artifactID}"><i data-lucide="download" class="h-4 w-4 pointer-events-none"></i></button>
+                           <button title="Preview" class="action-btn-preview text-gray-400 hover:text-blue-600" data-id="${doc.artifactID}"><i data-lucide="eye" class="h-4 w-4 pointer-events-none"></i></button>
                         </td>
                     </tr>
                 `).join('');
@@ -217,7 +245,7 @@
             const start = (currentPage - 1) * rowsPerPage + 1;
             const end = Math.min(start + rowsPerPage - 1, filteredDocuments.length);
 
-            let controlsHTML = `<div>Showing ${filteredDocuments.length > 0 ? start : 0} - ${end} of ${filteredDocuments.length}</div>`;
+            let controlsHTML = `<div class="font-medium">Showing ${filteredDocuments.length > 0 ? start : 0} - ${end} of ${filteredDocuments.length}</div>`;
             if (totalPages > 1) {
                 controlsHTML += `<div class="flex items-center space-x-1">`;
                 controlsHTML += `<button class="pagination-btn p-1 rounded ${currentPage === 1 ? 'opacity-50' : ''}" data-page="1" ${currentPage === 1 ? 'disabled' : ''}><i data-lucide="chevrons-left" class="h-4 w-4"></i></button>`;
@@ -235,6 +263,16 @@
             bulkDownloadBtn.disabled = selectedArtifacts.size === 0;
         }
 
+        function toggleModal(show) {
+            if (show) {
+                previewModal.classList.remove('hidden');
+                setTimeout(() => previewModal.classList.remove('opacity-0'), 10);
+            } else {
+                previewModal.classList.add('opacity-0');
+                setTimeout(() => previewModal.classList.add('hidden'), 250);
+            }
+        }
+
         // --- Event Handlers ---
         document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
@@ -243,21 +281,42 @@
             const projectId = urlParams.get('project') || 'all';
             
             // Populate projects filter first
-            const response = await fetch('/projects');
-            const projects = await response.json();
-            projects.forEach(p => {
-                const option = document.createElement('option');
-                option.value = p.id;
-                option.textContent = p.name;
-                projectFilter.appendChild(option);
-            });
-            projectFilter.value = projectId;
+            try {
+                const response = await fetch('/projects');
+                const projects = await response.json();
+                projects.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name;
+                    projectFilter.appendChild(option);
+                });
+                projectFilter.value = projectId;
+            } catch(e) { console.error("Could not fetch projects for filter", e); }
 
             fetchDocuments(projectId);
 
             // --- Event Listeners ---
             projectFilter.addEventListener('change', () => fetchDocuments(projectFilter.value));
             filterInputs.forEach(input => input.addEventListener('keyup', applyFiltersAndRender));
+
+            fulltextSearchInput.addEventListener('keyup', async (e) => {
+                const query = e.target.value;
+                if (query.length < 3) {
+                    if (query.length === 0) { // reset if search is cleared
+                         filteredDocuments = [...allDocuments];
+                         applyFiltersAndRender();
+                    }
+                    return;
+                }
+                const formData = new FormData();
+                formData.append('project_id', projectFilter.value);
+                formData.append('query', query);
+
+                const response = await fetch('/fulltext-search', {method: 'POST', body: formData});
+                const searchResults = await response.json();
+                filteredDocuments = searchResults;
+                applyFiltersAndRender(); // Re-apply column filters on top of search results
+            });
 
             document.querySelector('thead').addEventListener('click', e => {
                 const header = e.target.closest('th[data-sort]');
@@ -303,6 +362,29 @@
                 }
             });
 
+             documentTableBody.addEventListener('click', async e => {
+                const target = e.target.closest('button');
+                if (!target) return;
+                
+                const artifactId = target.dataset.id;
+                
+                if (target.classList.contains('action-btn-download')) {
+                    window.location.href = `/download-single-doc/${artifactId}`;
+                }
+                
+                if (target.classList.contains('action-btn-preview')) {
+                    // Preview logic would go here, for now alert
+                     modalTitle.textContent = `Preview: ${artifactId}`;
+                     modalBody.innerHTML = '<div class="flex justify-center items-center h-full">Loading...</div>';
+                     toggleModal(true);
+                     // In a real app you'd fetch the doc content to preview here.
+                     // For now, we'll just show the metadata.
+                     const doc = allDocuments.find(d => d.artifactID === artifactId);
+                     modalBody.innerHTML = `<pre class="whitespace-pre-wrap text-xs">${JSON.stringify(doc, null, 2)}</pre>`
+                }
+            });
+
+
             bulkDownloadBtn.addEventListener('click', async () => {
                 if(selectedArtifacts.size === 0) return;
                 const response = await fetch('/bulk-download', {
@@ -320,9 +402,17 @@
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
+                    selectedArtifacts.clear();
+                    selectAllCheckbox.checked = false;
+                    renderTable();
                 } else {
                     alert('Bulk download failed.');
                 }
+            });
+
+            closeModalBtn.addEventListener('click', () => toggleModal(false));
+            previewModal.addEventListener('click', (e) => {
+                if (e.target === previewModal) toggleModal(false);
             });
         });
     </script>

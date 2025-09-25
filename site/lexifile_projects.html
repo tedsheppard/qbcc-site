@@ -7,9 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
+    <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
 <body class="bg-gray-50">
     <div class="min-h-screen flex">
@@ -22,6 +20,11 @@
                 <li class="group relative">
                     <a href="/lexifile_projects" class="flex justify-center items-center h-12 w-12 bg-indigo-100 text-indigo-600 rounded-lg">
                         <i data-lucide="folder-kanban"></i>
+                    </a>
+                </li>
+                 <li class="group relative">
+                    <a href="/lexifile_search" class="flex justify-center items-center h-12 w-12 text-gray-500 hover:bg-gray-100 rounded-lg">
+                        <i data-lucide="search"></i>
                     </a>
                 </li>
             </ul>
@@ -40,7 +43,7 @@
                 <!-- Projects will be listed here -->
             </div>
 
-             <div id="projectsPlaceholder" class="text-center py-20 text-gray-500 hidden">
+             <div id="projectsPlaceholder" class="text-center py-20 text-gray-500">
                 <i data-lucide="folder-open" class="mx-auto h-16 w-16 text-gray-400"></i>
                 <p class="mt-4 font-medium text-lg">No projects found.</p>
                 <p class="text-sm">Click "New Project" to get started.</p>
@@ -76,6 +79,10 @@
             </div>
         </div>
     </div>
+    
+    <div id="toast" class="fixed top-5 right-5 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-2 transition-all duration-300">
+        <span id="toastMessage"></span>
+    </div>
 
     <script>
         const newProjectBtn = document.getElementById('newProjectBtn');
@@ -84,14 +91,28 @@
         const projectForm = document.getElementById('projectForm');
         const projectsGrid = document.getElementById('projectsGrid');
         const projectsPlaceholder = document.getElementById('projectsPlaceholder');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
 
         function toggleModal(show) {
             projectModal.classList.toggle('hidden', !show);
+        }
+        
+        function showToast(message, isError = true) {
+            toastMessage.textContent = message;
+            toast.className = `fixed top-5 right-5 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 3000);
         }
 
         async function fetchAndRenderProjects() {
             try {
                 const response = await fetch('/projects');
+                if (!response.ok) {
+                   throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const projects = await response.json();
 
                 if (projects.length === 0) {
@@ -100,9 +121,17 @@
                 } else {
                     projectsPlaceholder.classList.add('hidden');
                     projectsGrid.innerHTML = projects.map(p => `
-                        <a href="/lexifile_portal?project=${p.id}" class="block bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md hover:border-blue-500 transition">
-                            <h3 class="font-bold text-lg text-gray-800 truncate">${p.name}</h3>
-                            <p class="text-sm text-gray-500 mt-1">${p.client}</p>
+                        <a href="/lexifile_portal?project=${p.id}" class="block bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md hover:border-blue-500 transition group">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-lg text-gray-800 group-hover:text-blue-600 truncate">${p.name}</h3>
+                                    <p class="text-sm text-gray-500 mt-1">${p.client}</p>
+                                </div>
+                                <div class="text-right">
+                                     <span class="text-2xl font-bold text-gray-700">${p.documentCount || 0}</span>
+                                     <p class="text-xs text-gray-400">Documents</p>
+                                </div>
+                            </div>
                             <p class="text-sm text-gray-500 font-mono bg-gray-100 inline-block px-2 py-1 rounded mt-3">${p.matter}</p>
                         </a>
                     `).join('');
@@ -116,34 +145,25 @@
 
         async function handleCreateProject(e) {
             e.preventDefault();
-            
-            // FIX: Use URLSearchParams instead of FormData for this simple case
-            const body = new URLSearchParams({
-                projectName: document.getElementById('projectName').value,
-                clientName: document.getElementById('clientName').value,
-                matterNumber: document.getElementById('matterNumber').value
-            });
+            const formData = new FormData(projectForm);
             
             try {
                 const response = await fetch('/create-project', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: body
+                    body: formData
                 });
-
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({detail: "Unknown server error"}));
-                    throw new Error(errorData.detail || 'Failed to create project');
+                     const errorData = await response.json().catch(() => ({detail: 'An unknown error occurred.'}));
+                     throw new Error(errorData.detail || `Server responded with status ${response.status}`);
                 }
                 
                 projectForm.reset();
                 toggleModal(false);
                 fetchAndRenderProjects();
+                showToast("Project created successfully!", false);
             } catch (error) {
                 console.error('Error creating project:', error);
-                alert(`Could not create project: ${error.message}`);
+                showToast(`Could not create project: ${error.message}`);
             }
         }
 
