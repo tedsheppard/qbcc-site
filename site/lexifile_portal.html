@@ -35,12 +35,14 @@
             </a>
             <ul class="flex flex-row md:flex-col space-x-2 md:space-x-0 md:space-y-2">
                  <li class="group relative">
-                    <a href="/lexifile_projects" class="flex justify-center items-center h-12 w-12 hover:bg-gray-100 text-gray-500 hover:text-gray-800 rounded-lg transition-colors">
+                    <a href="/lexifile_projects" class="flex justify-center items-center h-12 w-12 text-gray-500 hover:bg-gray-100 rounded-lg">
                         <i data-lucide="folder-kanban"></i>
                     </a>
-                     <span class="absolute top-full md:left-full mt-2 md:mt-0 md:ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
-                      Projects
-                    </span>
+                </li>
+                 <li class="group relative">
+                    <a href="/lexifile_search" class="flex justify-center items-center h-12 w-12 text-gray-500 hover:bg-gray-100 rounded-lg">
+                        <i data-lucide="search"></i>
+                    </a>
                 </li>
                 <li class="group relative">
                     <a href="#" class="flex justify-center items-center h-12 w-12 bg-indigo-100 text-indigo-600 rounded-lg">
@@ -396,6 +398,7 @@
             for (const file of newFiles) {
                 const formData = new FormData();
                 formData.append('file', file.fileObject);
+                formData.append('project_id', state.projectId);
 
                 try {
                     const response = await fetch(`/rename-document`, { method: 'POST', body: formData });
@@ -407,7 +410,18 @@
                     
                     const fileIndex = state.files.findIndex(f => f.id === file.id);
                     if (fileIndex > -1) {
-                        state.files[fileIndex] = { ...state.files[fileIndex], ...result, status: 'review' };
+                        const existingFile = state.files[fileIndex];
+                        // Merge AI result with existing file object
+                        state.files[fileIndex] = { 
+                            ...existingFile,
+                            ...result.ai_full_response, // Use the full AI response object
+                            status: 'review',
+                            // Keep the important frontend state
+                            id: existingFile.id,
+                            originalName: existingFile.originalName,
+                            fileObject: existingFile.fileObject,
+                            extension: existingFile.extension
+                        };
                     }
                 } catch (error) {
                     console.error('Error processing file:', error);
