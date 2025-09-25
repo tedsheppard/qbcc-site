@@ -1119,6 +1119,18 @@ async def bulk_download(artifact_ids: List[str] = Body(...)):
     return StreamingResponse(files_generator(), media_type="application/zip", headers={
         'Content-Disposition': f'attachment; filename="LexiFile_Bulk_Export_{datetime.now().strftime("%Y%m%d")}.zip"'
     })
+    
+@app.delete("/delete-document/{artifact_id}")
+async def delete_document(artifact_id: str):
+    if artifact_id in DOCUMENTS_DB:
+        doc_record = DOCUMENTS_DB[artifact_id]
+        file_path = os.path.join(LEXIFILE_STORAGE, f"{doc_record['artifactID']}_{doc_record['originalFilename']}")
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        del DOCUMENTS_DB[artifact_id]
+        return {"status": "success", "message": "Document deleted"}
+    raise HTTPException(status_code=404, detail="Document not found")
+
 
 @app.post("/preview-email")
 async def preview_email(file: UploadFile = File(...)):
