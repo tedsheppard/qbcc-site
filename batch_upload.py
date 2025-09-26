@@ -1,23 +1,26 @@
 import os, json, sqlite3
 from openai import OpenAI
 
-# init OpenAI client (make sure OPENAI_API_KEY is in Render env vars)
+# init OpenAI client (needs OPENAI_API_KEY in Render env vars)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 DB_PATH = "/tmp/qbcc.db"
 con = sqlite3.connect(DB_PATH)
 con.row_factory = sqlite3.Row
 
-# new safe table for results
+# create NEW clean table
 con.execute("""
-CREATE TABLE IF NOT EXISTS ai_adjudicator_extract (
+CREATE TABLE IF NOT EXISTS ai_adjudicator_extract_v2 (
     ejs_id TEXT PRIMARY KEY,
     adjudicator_name TEXT,
+    claimant_name TEXT,
+    respondent_name TEXT,
     claimed_amount REAL,
+    payment_schedule_amount REAL,
     adjudicated_amount REAL,
-    no_jurisdiction_findings INTEGER,
-    avg_fee_claimant_proportion TEXT,
-    avg_fee_respondent_proportion TEXT,
+    jurisdiction_upheld INTEGER,
+    fee_claimant_proportion REAL,
+    fee_respondent_proportion REAL,
     decision_date TEXT,
     raw_json TEXT
 )
@@ -26,47 +29,55 @@ CREATE TABLE IF NOT EXISTS ai_adjudicator_extract (
 prompt_template = """
 You are extracting structured data from Queensland adjudication decisions under the BIF Act.
 
-Decision text is below. Extract the following as JSON:
+Rules:
+- All monetary figures must be GST inclusive. 
+  - If only GST exclusive amounts are given, multiply by 1.1.
+  - If unclear, assume GST inclusive.
+  - If adjudicated amount is about 10% higher than the claimed amount, adjust for GST discrepancy.
+- Percentages must be numeric only (no "%" sign). Always return 0–100.
+- fee_respondent_proportion = 100 - fee_claimant_proportion.
+- Claimant and respondent names must be in proper Title Case (not ALL CAPS).
 
+Extract the following fields as JSON:
 - adjudicator_name (string, full name)
-- claimed_amount (AUD number, no $ sign)
-- adjudicated_amount (AUD number, no $ sign)
-- no_jurisdiction_findings (integer: 1 if a jurisdictional objection was upheld, else 0)
-- avg_fee_claimant_proportion (percentage if given, else blank)
-- avg_fee_respondent_proportion (percentage if given, else blank)
-- decision_date (as YYYY-MM-DD if possible)
-- ejs_id (must be the same ID we provide you)
-
-If uncertain, leave the field blank. Return ONLY valid JSON.
+- claimant_name (string, Title Case)
+- respondent_name (string, Title Case)
+- claimed_amount (AUD, GST inclusive)
+- payment_schedule_amount (AUD, GST inclusive if given)
+- adjudicated_amount (AUD, GST inclusive)
+- jurisdiction_upheld (1 if jurisdictional objection upheld, else 0)
+- fee_claimant_proportion (numeric, 0–100)
+- fee_respondent_proportion (numeric, 0–100)
+- decision_date (YYYY-MM-DD)
+- ejs_id (same ID we provide)
 """
 
-def main():
-    # Grab first 100 decisions by EJS ID (sorted so predictable)
-    rows = con.execute("""
+def main(offset=0, limit=100):
+    rows = con.execute(f"""
         SELECT m.ejs_id, f.full_text
         FROM docs_meta m
         JOIN docs_fresh f ON m.ejs_id = f.ejs_id
         ORDER BY m.ejs_id
-        LIMIT 100
+        LIMIT {limit} OFFSET {offset}
     """).fetchall()
 
     for row in rows:
         ejs_id = row["ejs_id"]
-        text = row["full_text"][:50000]  # trim if too long
+        text = row["full_text"][:50000]  # trim if huge
 
         print(f"➡️ Extracting {ejs_id}...")
 
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             temperature=0,
-            response_format={"type": "json_object"},   # <-- forces JSON
+            response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": "You are a careful legal data extraction assistant."},
                 {"role": "user", "content": prompt_template + f"\n\nEJS ID: {ejs_id}\n\n---\n\n" + text}
             ]
         )
 
-        content = resp.choices[0].message.content.strip()
+        content = resp.choices[0].message.content
 
         try:
             data = json.loads(content)
@@ -74,31 +85,34 @@ def main():
             print(f"❌ JSON error for {ejs_id}: {e}")
             data = {"ejs_id": ejs_id, "error": str(e)}
 
-        # fallback if missing ID
         if not data.get("ejs_id"):
             data["ejs_id"] = ejs_id
 
         con.execute("""
-            INSERT OR REPLACE INTO ai_adjudicator_extract
-            (ejs_id, adjudicator_name, claimed_amount, adjudicated_amount,
-             no_jurisdiction_findings, avg_fee_claimant_proportion, avg_fee_respondent_proportion,
+            INSERT OR REPLACE INTO ai_adjudicator_extract_v2
+            (ejs_id, adjudicator_name, claimant_name, respondent_name,
+             claimed_amount, payment_schedule_amount, adjudicated_amount,
+             jurisdiction_upheld, fee_claimant_proportion, fee_respondent_proportion,
              decision_date, raw_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             data.get("ejs_id"),
             data.get("adjudicator_name"),
+            data.get("claimant_name"),
+            data.get("respondent_name"),
             data.get("claimed_amount"),
+            data.get("payment_schedule_amount"),
             data.get("adjudicated_amount"),
-            data.get("no_jurisdiction_findings"),
-            data.get("avg_fee_claimant_proportion"),
-            data.get("avg_fee_respondent_proportion"),
+            data.get("jurisdiction_upheld"),
+            data.get("fee_claimant_proportion"),
+            data.get("fee_respondent_proportion"),
             data.get("decision_date"),
             json.dumps(data)
         ))
 
         con.commit()
 
-    print("✅ Finished extracting 100 decisions → ai_adjudicator_extract table")
+    print(f"✅ Finished extracting {len(rows)} decisions → ai_adjudicator_extract_v2")
 
 if __name__ == "__main__":
     main()
