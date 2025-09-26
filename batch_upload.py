@@ -1,16 +1,16 @@
-import os, json, sqlite3
+import os, json, sqlite3, argparse
 from openai import OpenAI
 
-# init OpenAI client (needs OPENAI_API_KEY in Render env vars)
+# Init OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 DB_PATH = "/tmp/qbcc.db"
 con = sqlite3.connect(DB_PATH)
 con.row_factory = sqlite3.Row
 
-# create NEW clean table
+# Create NEW v4 table
 con.execute("""
-CREATE TABLE IF NOT EXISTS ai_adjudicator_extract_v2 (
+CREATE TABLE IF NOT EXISTS ai_adjudicator_extract_v4 (
     ejs_id TEXT PRIMARY KEY,
     adjudicator_name TEXT,
     claimant_name TEXT,
@@ -22,34 +22,57 @@ CREATE TABLE IF NOT EXISTS ai_adjudicator_extract_v2 (
     fee_claimant_proportion REAL,
     fee_respondent_proportion REAL,
     decision_date TEXT,
+    keywords TEXT,
+    outcome TEXT,
+    sections_referenced TEXT,
+    project_type TEXT,
+    contract_type TEXT,
+    doc_length_pages INTEGER,
+    act_category TEXT,
     raw_json TEXT
 )
 """)
 
 prompt_template = """
-You are extracting structured data from Queensland adjudication decisions under the BIF Act.
+You are extracting structured data from Queensland adjudication decisions.
 
 Rules:
-- All monetary figures must be GST inclusive. 
-  - If only GST exclusive amounts are given, multiply by 1.1.
+- All monetary figures must be GST inclusive.
+  - If only GST exclusive is shown, multiply by 1.1.
   - If unclear, assume GST inclusive.
-  - If adjudicated amount is about 10% higher than the claimed amount, adjust for GST discrepancy.
-- Percentages must be numeric only (no "%" sign). Always return 0–100.
-- fee_respondent_proportion = 100 - fee_claimant_proportion.
-- Claimant and respondent names must be in proper Title Case (not ALL CAPS).
+  - If adjudicated > claimed by ~10%, adjust for GST discrepancy.
+- Percentages must be numeric only (0–100). No "%" signs.
+  - fee_respondent_proportion = 100 - fee_claimant_proportion.
+- Claimant/respondent names → Title Case, not ALL CAPS.
+- Outcome → classify as: "Claimant Fully Successful", "Partly Successful", or "Unsuccessful".
+- Sections Referenced → list BIF/BCIPA Act sections (e.g. "s 75, s 69"), or blank if none.
+- Keywords → 10 short legal/technical tags that help summarise the decision.
+- Project Type → classify if obvious (e.g. civil, residential, mining, commercial, industrial).
+- Contract Type → classify as "head contract (principal / main contractor)", 
+  "subcontract (main contractor / subcontractor)", "residential (owner / builder)", or "other".
+- Document length → estimate number of pages (assume ~500 words per page).
+- Act Category → classify as either "BCIPA 2004 (Qld)" or "BIF Act 2017 (Qld)" depending on which Act governs the decision.
+- jurisdiction_upheld → 1 if jurisdictional objection upheld, else 0.
 
-Extract the following fields as JSON:
-- adjudicator_name (string, full name)
-- claimant_name (string, Title Case)
-- respondent_name (string, Title Case)
-- claimed_amount (AUD, GST inclusive)
-- payment_schedule_amount (AUD, GST inclusive if given)
-- adjudicated_amount (AUD, GST inclusive)
-- jurisdiction_upheld (1 if jurisdictional objection upheld, else 0)
-- fee_claimant_proportion (numeric, 0–100)
-- fee_respondent_proportion (numeric, 0–100)
-- decision_date (YYYY-MM-DD)
-- ejs_id (same ID we provide)
+Extract as JSON with fields:
+- adjudicator_name
+- claimant_name
+- respondent_name
+- claimed_amount
+- payment_schedule_amount
+- adjudicated_amount
+- jurisdiction_upheld
+- fee_claimant_proportion
+- fee_respondent_proportion
+- decision_date
+- keywords (array of 10 strings)
+- outcome
+- sections_referenced
+- project_type
+- contract_type
+- doc_length_pages
+- act_category
+- ejs_id (same ID provided)
 """
 
 def main(offset=0, limit=100):
@@ -63,7 +86,7 @@ def main(offset=0, limit=100):
 
     for row in rows:
         ejs_id = row["ejs_id"]
-        text = row["full_text"][:50000]  # trim if huge
+        text = row["full_text"][:50000]
 
         print(f"➡️ Extracting {ejs_id}...")
 
@@ -89,12 +112,13 @@ def main(offset=0, limit=100):
             data["ejs_id"] = ejs_id
 
         con.execute("""
-            INSERT OR REPLACE INTO ai_adjudicator_extract_v2
+            INSERT OR REPLACE INTO ai_adjudicator_extract_v4
             (ejs_id, adjudicator_name, claimant_name, respondent_name,
              claimed_amount, payment_schedule_amount, adjudicated_amount,
              jurisdiction_upheld, fee_claimant_proportion, fee_respondent_proportion,
-             decision_date, raw_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             decision_date, keywords, outcome, sections_referenced,
+             project_type, contract_type, doc_length_pages, act_category, raw_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             data.get("ejs_id"),
             data.get("adjudicator_name"),
@@ -107,12 +131,23 @@ def main(offset=0, limit=100):
             data.get("fee_claimant_proportion"),
             data.get("fee_respondent_proportion"),
             data.get("decision_date"),
+            ", ".join(data.get("keywords", [])) if isinstance(data.get("keywords"), list) else data.get("keywords"),
+            data.get("outcome"),
+            data.get("sections_referenced"),
+            data.get("project_type"),
+            data.get("contract_type"),
+            data.get("doc_length_pages"),
+            data.get("act_category"),
             json.dumps(data)
         ))
 
         con.commit()
 
-    print(f"✅ Finished extracting {len(rows)} decisions → ai_adjudicator_extract_v2")
+    print(f"✅ Finished extracting {len(rows)} decisions → ai_adjudicator_extract_v4")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--offset", type=int, default=0, help="Row offset for batching")
+    parser.add_argument("--limit", type=int, default=100, help="Batch size")
+    args = parser.parse_args()
+    main(offset=args.offset, limit=args.limit)
