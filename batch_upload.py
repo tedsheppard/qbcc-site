@@ -59,6 +59,7 @@ def main():
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             temperature=0,
+            response_format={"type": "json_object"},   # <-- forces JSON
             messages=[
                 {"role": "system", "content": "You are a careful legal data extraction assistant."},
                 {"role": "user", "content": prompt_template + f"\n\nEJS ID: {ejs_id}\n\n---\n\n" + text}
