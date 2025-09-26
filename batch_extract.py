@@ -1,4 +1,4 @@
-import os, json, sqlite3, argparse
+import os, json, sqlite3, argparse, time
 from openai import OpenAI
 
 # Init OpenAI client
@@ -32,6 +32,9 @@ CREATE TABLE IF NOT EXISTS ai_adjudicator_extract_v4 (
     raw_json TEXT
 )
 """)
+
+LOG_FILE = "/tmp/extract.log"
+FAIL_FILE = "/tmp/failures.log"
 
 prompt_template = """
 You are extracting structured data from Queensland adjudication decisions.
@@ -75,8 +78,74 @@ Extract as JSON with fields:
 - ejs_id (same ID provided)
 """
 
-def main(offset=0, limit=100, start_id=None):
-    if start_id:
+def extract_and_save(ejs_id, text):
+    for attempt in range(3):
+        try:
+            resp = client.chat.completions.create(
+                model="gpt-4o-mini",
+                temperature=0,
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": "You are a careful legal data extraction assistant."},
+                    {"role": "user", "content": prompt_template + f"\n\nEJS ID: {ejs_id}\n\n---\n\n" + text}
+                ]
+            )
+            content = resp.choices[0].message.content
+            data = json.loads(content)
+            if not data.get("ejs_id"):
+                data["ejs_id"] = ejs_id
+
+            con.execute("""
+                INSERT OR REPLACE INTO ai_adjudicator_extract_v4
+                (ejs_id, adjudicator_name, claimant_name, respondent_name,
+                 claimed_amount, payment_schedule_amount, adjudicated_amount,
+                 jurisdiction_upheld, fee_claimant_proportion, fee_respondent_proportion,
+                 decision_date, keywords, outcome, sections_referenced,
+                 project_type, contract_type, doc_length_pages, act_category, raw_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                data.get("ejs_id"),
+                data.get("adjudicator_name"),
+                data.get("claimant_name"),
+                data.get("respondent_name"),
+                data.get("claimed_amount"),
+                data.get("payment_schedule_amount"),
+                data.get("adjudicated_amount"),
+                data.get("jurisdiction_upheld"),
+                data.get("fee_claimant_proportion"),
+                data.get("fee_respondent_proportion"),
+                data.get("decision_date"),
+                ", ".join(data.get("keywords", [])) if isinstance(data.get("keywords"), list) else data.get("keywords"),
+                data.get("outcome"),
+                data.get("sections_referenced"),
+                data.get("project_type"),
+                data.get("contract_type"),
+                data.get("doc_length_pages"),
+                data.get("act_category"),
+                json.dumps(data)
+            ))
+            con.commit()
+
+            with open(LOG_FILE, "a") as f:
+                f.write(f"✅ {ejs_id} extracted\n")
+            return True
+        except Exception as e:
+            time.sleep(2)
+            if attempt == 2:
+                with open(FAIL_FILE, "a") as f:
+                    f.write(f"❌ {ejs_id} failed: {e}\n")
+                return False
+
+def main(offset=0, limit=100, start_id=None, end_id=None):
+    if start_id and end_id:
+        rows = con.execute("""
+            SELECT m.ejs_id, f.full_text
+            FROM docs_meta m
+            JOIN docs_fresh f ON m.ejs_id = f.ejs_id
+            WHERE m.ejs_id >= ? AND m.ejs_id <= ?
+            ORDER BY m.ejs_id
+        """, (start_id, end_id)).fetchall()
+    elif start_id:
         rows = con.execute("""
             SELECT m.ejs_id, f.full_text
             FROM docs_meta m
@@ -97,61 +166,8 @@ def main(offset=0, limit=100, start_id=None):
     for row in rows:
         ejs_id = row["ejs_id"]
         text = row["full_text"][:50000]
-
         print(f"➡️ Extracting {ejs_id}...")
-
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            temperature=0,
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": "You are a careful legal data extraction assistant."},
-                {"role": "user", "content": prompt_template + f"\n\nEJS ID: {ejs_id}\n\n---\n\n" + text}
-            ]
-        )
-
-        content = resp.choices[0].message.content
-
-        try:
-            data = json.loads(content)
-        except Exception as e:
-            print(f"❌ JSON error for {ejs_id}: {e}")
-            data = {"ejs_id": ejs_id, "error": str(e)}
-
-        if not data.get("ejs_id"):
-            data["ejs_id"] = ejs_id
-
-        con.execute("""
-            INSERT OR REPLACE INTO ai_adjudicator_extract_v4
-            (ejs_id, adjudicator_name, claimant_name, respondent_name,
-             claimed_amount, payment_schedule_amount, adjudicated_amount,
-             jurisdiction_upheld, fee_claimant_proportion, fee_respondent_proportion,
-             decision_date, keywords, outcome, sections_referenced,
-             project_type, contract_type, doc_length_pages, act_category, raw_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            data.get("ejs_id"),
-            data.get("adjudicator_name"),
-            data.get("claimant_name"),
-            data.get("respondent_name"),
-            data.get("claimed_amount"),
-            data.get("payment_schedule_amount"),
-            data.get("adjudicated_amount"),
-            data.get("jurisdiction_upheld"),
-            data.get("fee_claimant_proportion"),
-            data.get("fee_respondent_proportion"),
-            data.get("decision_date"),
-            ", ".join(data.get("keywords", [])) if isinstance(data.get("keywords"), list) else data.get("keywords"),
-            data.get("outcome"),
-            data.get("sections_referenced"),
-            data.get("project_type"),
-            data.get("contract_type"),
-            data.get("doc_length_pages"),
-            data.get("act_category"),
-            json.dumps(data)
-        ))
-
-        con.commit()
+        extract_and_save(ejs_id, text)
 
     print(f"✅ Finished extracting {len(rows)} decisions → ai_adjudicator_extract_v4")
 
@@ -160,5 +176,6 @@ if __name__ == "__main__":
     parser.add_argument("--offset", type=int, default=0, help="Row offset for batching")
     parser.add_argument("--limit", type=int, default=100, help="Batch size")
     parser.add_argument("--start_id", type=str, help="Resume from specific EJS ID (e.g. EJS02669)")
+    parser.add_argument("--end_id", type=str, help="Stop at specific EJS ID (e.g. EJS07300)")
     args = parser.parse_args()
-    main(offset=args.offset, limit=args.limit, start_id=args.start_id)
+    main(offset=args.offset, limit=args.limit, start_id=args.start_id, end_id=args.end_id)
