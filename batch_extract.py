@@ -75,14 +75,24 @@ Extract as JSON with fields:
 - ejs_id (same ID provided)
 """
 
-def main(offset=0, limit=100):
-    rows = con.execute(f"""
-        SELECT m.ejs_id, f.full_text
-        FROM docs_meta m
-        JOIN docs_fresh f ON m.ejs_id = f.ejs_id
-        ORDER BY m.ejs_id
-        LIMIT {limit} OFFSET {offset}
-    """).fetchall()
+def main(offset=0, limit=100, start_id=None):
+    if start_id:
+        rows = con.execute("""
+            SELECT m.ejs_id, f.full_text
+            FROM docs_meta m
+            JOIN docs_fresh f ON m.ejs_id = f.ejs_id
+            WHERE m.ejs_id >= ?
+            ORDER BY m.ejs_id
+            LIMIT ?
+        """, (start_id, limit)).fetchall()
+    else:
+        rows = con.execute(f"""
+            SELECT m.ejs_id, f.full_text
+            FROM docs_meta m
+            JOIN docs_fresh f ON m.ejs_id = f.ejs_id
+            ORDER BY m.ejs_id
+            LIMIT {limit} OFFSET {offset}
+        """).fetchall()
 
     for row in rows:
         ejs_id = row["ejs_id"]
@@ -149,5 +159,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--offset", type=int, default=0, help="Row offset for batching")
     parser.add_argument("--limit", type=int, default=100, help="Batch size")
+    parser.add_argument("--start_id", type=str, help="Resume from specific EJS ID (e.g. EJS02669)")
     args = parser.parse_args()
-    main(offset=args.offset, limit=args.limit)
+    main(offset=args.offset, limit=args.limit, start_id=args.start_id)
