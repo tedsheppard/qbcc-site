@@ -1,5 +1,7 @@
 import os, json, sqlite3, argparse, time
 from openai import OpenAI
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # Init OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -35,6 +37,15 @@ CREATE TABLE IF NOT EXISTS ai_adjudicator_extract_v4 (
 
 LOG_FILE = "/tmp/extract.log"
 FAIL_FILE = "/tmp/failures.log"
+
+def log(msg):
+    """Log with AEST timestamp to console and file"""
+    now = datetime.now(ZoneInfo("Australia/Brisbane"))
+    timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{timestamp}] {msg}"
+    print(line)
+    with open(LOG_FILE, "a") as f:
+        f.write(line + "\n")
 
 prompt_template = """
 You are extracting structured data from Queensland adjudication decisions.
@@ -126,14 +137,14 @@ def extract_and_save(ejs_id, text):
             ))
             con.commit()
 
-            with open(LOG_FILE, "a") as f:
-                f.write(f"✅ {ejs_id} extracted\n")
+            log(f"✅ {ejs_id} extracted")
             return True
         except Exception as e:
             time.sleep(2)
             if attempt == 2:
+                log(f"❌ {ejs_id} failed: {e}")
                 with open(FAIL_FILE, "a") as f:
-                    f.write(f"❌ {ejs_id} failed: {e}\n")
+                    f.write(f"{ejs_id}\n")
                 return False
 
 def main(offset=0, limit=100, start_id=None, end_id=None):
@@ -166,10 +177,10 @@ def main(offset=0, limit=100, start_id=None, end_id=None):
     for row in rows:
         ejs_id = row["ejs_id"]
         text = row["full_text"][:50000]
-        print(f"➡️ Extracting {ejs_id}...")
+        log(f"➡️ Extracting {ejs_id}...")
         extract_and_save(ejs_id, text)
 
-    print(f"✅ Finished extracting {len(rows)} decisions → ai_adjudicator_extract_v4")
+    log(f"✅ Finished extracting {len(rows)} decisions → ai_adjudicator_extract_v4")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
