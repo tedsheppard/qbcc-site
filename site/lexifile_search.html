@@ -18,35 +18,98 @@
         th:hover .sort-icon { opacity: 0.7; }
         th.sorted-asc .sort-icon, th.sorted-desc .sort-icon { opacity: 1; }
         td { vertical-align: top; }
-        td.wrap { white-space: normal; min-width: 250px; }
+        td.wrap { white-space: normal; min-width: 150px; }
         tr:hover { background-color: #f3f4f6; }
         .filter-input { width: 100%; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; }
+        
+        /* Sidebar navigation enhancements */
+        .nav-item { 
+            transition: all 0.2s ease;
+        }
+        .nav-item:hover {
+            background-color: #f3f4f6;
+        }
+        .nav-item.active {
+            background-color: #eef2ff;
+            color: #4f46e5;
+            border-right: 3px solid #4f46e5;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
     <div class="h-screen flex">
-        <!-- Sidebar Navigation -->
-        <nav class="w-20 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col items-center py-4">
-            <a href="/lexifile_index" class="mb-8">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
-            </a>
-            <ul class="flex flex-col space-y-2">
-                <li class="group relative">
-                    <a href="/lexifile_projects" class="flex justify-center items-center h-12 w-12 text-gray-500 hover:bg-gray-100 rounded-lg">
-                        <i data-lucide="folder-kanban"></i>
-                    </a>
-                </li>
-                 <li class="group relative">
-                    <a href="/lexifile_search" class="flex justify-center items-center h-12 w-12 bg-indigo-100 text-indigo-600 rounded-lg">
-                        <i data-lucide="search"></i>
-                    </a>
-                </li>
-            </ul>
+        <!-- Enhanced Sidebar Navigation -->
+        <nav class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+            <!-- Logo and Brand -->
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <path d="m11.5 14-3 3 3 3"></path>
+                        <path d="m8.5 17h8"></path>
+                    </svg>
+                    <span class="font-bold text-lg text-gray-800">LexiFile</span>
+                </div>
+            </div>
+
+            <!-- Main Navigation -->
+            <div class="p-4 border-b border-gray-200">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Navigation</h3>
+                <ul class="space-y-1">
+                    <li>
+                        <a href="/lexifile_projects" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md">
+                            <i data-lucide="folder-kanban" class="mr-3 h-5 w-5"></i>
+                            All Projects
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/lexifile_search" class="nav-item active flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md">
+                            <i data-lucide="search" class="mr-3 h-5 w-5"></i>
+                            Global Search
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/lexifile_profile" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md">
+                            <i data-lucide="user" class="mr-3 h-5 w-5"></i>
+                            Profile
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/support" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md">
+                            <i data-lucide="life-buoy" class="mr-3 h-5 w-5"></i>
+                            Support
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- All Projects Section -->
+            <div class="flex-1 p-4 overflow-y-auto">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">All Projects</h3>
+                <div id="projectsList" class="space-y-1">
+                    <div class="text-sm text-gray-500">Loading projects...</div>
+                </div>
+            </div>
+
+            <!-- User Section -->
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <img src="https://placehold.co/32x32/E0E7FF/4F46E5?text=JA" class="rounded-full" alt="User Avatar">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-medium text-gray-900 truncate">Junior Associate</div>
+                        <div class="text-xs text-gray-500">junior.associate@example.com</div>
+                    </div>
+                    <button id="logoutButton" class="text-gray-400 hover:text-red-600" title="Logout">
+                        <i data-lucide="log-out" class="h-4 w-4"></i>
+                    </button>
+                </div>
+            </div>
         </nav>
 
         <div class="flex-1 flex flex-col p-6 overflow-hidden">
             <header class="flex justify-between items-center mb-4 flex-shrink-0">
-                <h1 class="text-2xl font-bold text-gray-800">Document Search</h1>
+                <h1 class="text-2xl font-bold text-gray-800">Global Document Search</h1>
                  <div class="flex items-center space-x-2">
                     <div class="relative">
                         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"></i>
@@ -68,17 +131,19 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="w-12"><input type="checkbox" id="selectAllCheckbox"></th>
-                                <th data-sort="artifactID">Artifact ID<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                <th data-sort="objectType">Object Type<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                <th data-sort="improvedFilename">Improved Filename<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                <th data-sort="date">Date<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                <th data-sort="description">Description<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                <th data-sort="author">Author<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                <th data-sort="sender">Sender<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                <th data-sort="recipient">Recipient<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                <th data-sort="keywords">Keywords<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                <th>Content Snippet</th>
-                                <th>Actions</th>
+                                <th data-sort="artifactID" class="min-w-[100px]">Artifact ID<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="objectType" class="min-w-[100px]">Object Type<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="improvedFilename" class="min-w-[200px]">Improved Filename<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="date" class="min-w-[100px]">Date<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="description" class="min-w-[150px]">Description<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="author" class="min-w-[120px]">Author<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="sender" class="min-w-[120px]">Sender<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="recipient" class="min-w-[120px]">Recipient<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="keywords" class="min-w-[150px]">Keywords<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="lastModified" class="min-w-[120px]">Date Last Modified<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th data-sort="lastModifiedBy" class="min-w-[120px]">Last Modified By<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                <th class="min-w-[100px]">Content Snippet</th>
+                                <th class="min-w-[80px]">Actions</th>
                             </tr>
                             <tr>
                                 <th></th>
@@ -91,6 +156,8 @@
                                 <th><input class="filter-input" data-filter="sender"></th>
                                 <th><input class="filter-input" data-filter="recipient"></th>
                                 <th><input class="filter-input" data-filter="keywords"></th>
+                                <th><input class="filter-input" data-filter="lastModified"></th>
+                                <th><input class="filter-input" data-filter="lastModifiedBy"></th>
                                 <th></th>
                                 <th></th>
                             </tr>
@@ -110,24 +177,12 @@
         </div>
     </div>
     
-    <!-- Preview Modal -->
-    <div id="previewModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden z-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-5/6 flex flex-col">
-            <div class="p-4 border-b flex justify-between items-center">
-                <h3 id="previewModalTitle" class="font-bold">Document Preview</h3>
-                <button id="closePreviewModal" class="text-gray-500 hover:text-gray-800">&times;</button>
-            </div>
-            <div id="previewModalContent" class="p-4 flex-grow overflow-auto"></div>
-        </div>
-    </div>
-    
     <script>
-
         // Redirect to login if not logged in
-const token = localStorage.getItem('lexifile_token');
-if (!token) {
-    window.location.href = '/lexifile_login';
-}
+        const token = localStorage.getItem('lexifile_token');
+        if (!token) {
+            window.location.href = '/lexifile_login';
+        }
 
         // --- State Management ---
         let allDocuments = [];
@@ -138,6 +193,7 @@ if (!token) {
         let sortDirection = 'asc';
         let selectedArtifacts = new Set();
         let fulltextSearchTimeout;
+        let allProjects = [];
         
         // --- DOM Elements ---
         const documentTableBody = document.getElementById('documentTableBody');
@@ -148,12 +204,46 @@ if (!token) {
         const bulkDownloadBtn = document.getElementById('bulkDownloadBtn');
         const filterInputs = document.querySelectorAll('.filter-input');
         const fulltextSearch = document.getElementById('fulltextSearch');
-        const previewModal = document.getElementById('previewModal');
-        const previewModalTitle = document.getElementById('previewModalTitle');
-        const previewModalContent = document.getElementById('previewModalContent');
-        const closePreviewModal = document.getElementById('closePreviewModal');
+        const projectsList = document.getElementById('projectsList');
+        const logoutButton = document.getElementById('logoutButton');
 
         // --- Core Functions ---
+        async function loadAllProjects() {
+            try {
+                const response = await fetch('/projects');
+                if (!response.ok) throw new Error('Failed to fetch projects');
+                allProjects = await response.json();
+                renderProjectsList();
+                populateProjectFilter();
+            } catch (error) {
+                console.error('Failed to load projects:', error);
+                projectsList.innerHTML = '<div class="text-sm text-red-500">Failed to load projects</div>';
+            }
+        }
+
+        function renderProjectsList() {
+            if (allProjects.length === 0) {
+                projectsList.innerHTML = '<div class="text-sm text-gray-500">No projects found</div>';
+                return;
+            }
+
+            projectsList.innerHTML = allProjects.map(project => `
+                <div class="project-list-item px-3 py-2 text-sm rounded-md cursor-pointer hover:bg-gray-100" onclick="window.location.href='/lexifile_hub?project=${project.id}'">
+                    <div class="font-medium truncate">${project.name}</div>
+                    <div class="text-xs text-gray-500 truncate">${project.client}</div>
+                </div>
+            `).join('');
+        }
+
+        function populateProjectFilter() {
+            allProjects.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.name;
+                projectFilter.appendChild(option);
+            });
+        }
+
         async function fetchDocuments(projectId = 'all') {
             try {
                 searchPlaceholder.innerHTML = '<p>Loading documents...</p>';
@@ -216,7 +306,7 @@ if (!token) {
                         <td class="wrap font-medium text-gray-900">${doc.improvedFilename}</td>
                         <td class="font-mono">${doc.date}</td>
                         <td class="wrap">${doc.description}</td>
-                        <td>${doc.author}</td>
+                        <td>${doc.author || 'N/A'}</td>
                         <td>${doc.sender || 'N/A'}</td>
                         <td>${doc.recipient || 'N/A'}</td>
                         <td class="wrap">
@@ -224,10 +314,11 @@ if (!token) {
                                 ${(doc.keywords || []).map(kw => `<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">${kw}</span>`).join('')}
                             </div>
                         </td>
+                        <td class="font-mono">${doc.lastModified || 'N/A'}</td>
+                        <td>${doc.lastModifiedBy || 'N/A'}</td>
                         <td class="wrap">${doc.snippet || ''}</td>
                         <td class="flex items-center space-x-2">
                            <button title="Download" class="download-btn text-gray-400 hover:text-blue-600" data-id="${doc.artifactID}"><i data-lucide="download" class="h-4 w-4"></i></button>
-                           <button title="Preview" class="preview-btn text-gray-400 hover:text-blue-600" data-id="${doc.artifactID}"><i data-lucide="eye" class="h-4 w-4"></i></button>
                            <button title="Delete" class="delete-btn text-gray-400 hover:text-red-600" data-id="${doc.artifactID}"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
                         </td>
                     </tr>
@@ -265,20 +356,8 @@ if (!token) {
         document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
             
-            const urlParams = new URLSearchParams(window.location.search);
-            const projectId = urlParams.get('project') || 'all';
-            
-            const response = await fetch('/projects');
-            const projects = await response.json();
-            projects.forEach(p => {
-                const option = document.createElement('option');
-                option.value = p.id;
-                option.textContent = p.name;
-                projectFilter.appendChild(option);
-            });
-            projectFilter.value = projectId;
-
-            await fetchDocuments(projectId);
+            await loadAllProjects();
+            await fetchDocuments('all');
 
             projectFilter.addEventListener('change', () => fetchDocuments(projectFilter.value));
             filterInputs.forEach(input => input.addEventListener('keyup', applyFiltersAndRender));
@@ -362,18 +441,6 @@ if (!token) {
                 if (downloadBtn) {
                      window.open(`/download-single-doc/${downloadBtn.dataset.id}`, '_blank');
                 }
-                
-                const previewBtn = e.target.closest('.preview-btn');
-                if (previewBtn) {
-                    // Show modal and load preview
-                    previewModalTitle.textContent = `Preview of ${previewBtn.dataset.id}`;
-                    previewModalContent.innerHTML = 'Loading...';
-                    previewModal.classList.remove('hidden');
-                    // In a real app, you would fetch the preview content.
-                    // For now, it's just a placeholder.
-                    previewModalContent.innerHTML = '<p>Document preview would be loaded here.</p>';
-                }
-
             });
 
             bulkDownloadBtn.addEventListener('click', async () => {
@@ -389,7 +456,7 @@ if (!token) {
                     const a = document.createElement('a');
                     a.style.display = 'none';
                     a.href = url;
-                    a.download = `LexiFile_Bulk_Export_${Date.now()}.zip`;
+                    a.download = `LexiFile_Global_Export_${Date.now()}.zip`;
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
@@ -397,12 +464,12 @@ if (!token) {
                     alert('Bulk download failed.');
                 }
             });
-            
-            closePreviewModal.addEventListener('click', () => {
-                previewModal.classList.add('hidden');
+
+            logoutButton.addEventListener('click', () => {
+                localStorage.removeItem('lexifile_token');
+                window.location.href = '/lexifile_login';
             });
         });
     </script>
 </body>
 </html>
-
