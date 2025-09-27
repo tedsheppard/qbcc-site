@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Settings - LexiFile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <div class="h-screen flex">
+        <!-- Sidebar Navigation -->
+        <nav class="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-4">
+            <a href="/lexifile_projects" class="mb-8">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
+            </a>
+            <ul class="space-y-2">
+                 <li>
+                    <a id="backToHubLink" href="#" class="flex justify-center items-center h-12 w-12 hover:bg-gray-100 text-gray-500 hover:text-gray-800 rounded-lg transition-colors" title="Back to Project Hub">
+                        <i data-lucide="arrow-left"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <header class="flex-shrink-0 bg-white border-b border-gray-200 p-3 flex justify-between items-center">
+                 <h1 id="headerTitle" class="font-bold text-lg text-gray-800">Project Settings</h1>
+                 <a id="backToHubLinkHeader" href="#" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm">Back to Project Hub</a>
+            </header>
+            
+            <main class="flex-grow p-8 overflow-y-auto">
+                <div class="max-w-2xl mx-auto">
+                    <div class="bg-white p-8 rounded-lg shadow border border-gray-200 mb-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-1">Manage Project Details</h2>
+                        <p class="text-gray-500 mb-6">Update the project's information below.</p>
+                        
+                        <form id="projectSettingsForm" class="space-y-4">
+                            <div>
+                                <label for="projectName" class="text-left block text-sm font-medium text-gray-700">Project Name</label>
+                                <input type="text" id="projectName" name="projectName" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Smith v Jones Discovery">
+                            </div>
+                            <div>
+                                <label for="clientName" class="text-left block text-sm font-medium text-gray-700">Client Name</label>
+                                <input type="text" id="clientName" name="clientName" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Acme Corporation">
+                            </div>
+                            <div>
+                                <label for="matterNumber" class="text-left block text-sm font-medium text-gray-700">Matter Number</label>
+                                <input type="text" id="matterNumber" name="matterNumber" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., ACME-2025-001">
+                            </div>
+                            <input type="hidden" id="projectId" name="projectId">
+                        </form>
+                    </div>
+                    
+                     <div class="bg-red-50 p-8 rounded-lg shadow border border-red-200">
+                        <h2 class="text-2xl font-bold text-red-900 mb-1">Danger Zone</h2>
+                        <p class="text-red-700 mb-6">This action cannot be undone. This will permanently delete the project and all associated documents.</p>
+                        <button id="deleteProjectBtn" class="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition shadow-sm">Delete this project</button>
+                    </div>
+
+                    <div class="mt-8 flex justify-end">
+                        <button id="saveChangesBtn" type="submit" form="projectSettingsForm" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-sm">Save Changes</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+     <div id="toast" class="fixed top-5 right-5 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-2 transition-all duration-300 z-50">
+        <span id="toastMessage"></span>
+    </div>
+    <script>
+        // Redirect if not logged in
+        if (!localStorage.getItem('lexifile_token')) {
+            window.location.href = '/lexifile_login';
+        }
+    
+        const projectIdInput = document.getElementById('projectId');
+        const projectNameInput = document.getElementById('projectName');
+        const clientNameInput = document.getElementById('clientName');
+        const matterNumberInput = document.getElementById('matterNumber');
+        const headerTitle = document.getElementById('headerTitle');
+        const projectSettingsForm = document.getElementById('projectSettingsForm');
+        const deleteProjectBtn = document.getElementById('deleteProjectBtn');
+        const backToHubLink = document.getElementById('backToHubLink');
+        const backToHubLinkHeader = document.getElementById('backToHubLinkHeader');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+
+        function showToast(message, isError = false) {
+            toastMessage.textContent = message;
+            toast.className = `fixed top-5 right-5 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300 z-50 ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const projectId = urlParams.get('project');
+
+            if (!projectId) {
+                document.querySelector('main').innerHTML = '<p class="text-center text-red-500">No project ID specified. Please return to the projects page.</p>';
+                return;
+            }
+
+            // Set back links
+            const hubUrl = `/lexifile_hub?project=${projectId}`;
+            backToHubLink.href = hubUrl;
+            backToHubLinkHeader.href = hubUrl;
+            
+            projectIdInput.value = projectId;
+
+            // Fetch current project data
+            try {
+                const response = await fetch(`/get-project-details?project_id=${projectId}`);
+                if (!response.ok) throw new Error('Could not fetch project details.');
+                
+                const project = await response.json();
+                projectNameInput.value = project.name;
+                clientNameInput.value = project.client;
+                matterNumberInput.value = project.matter;
+                headerTitle.textContent = `Settings for: ${project.name}`;
+
+            } catch (error) {
+                showToast(error.message, true);
+                console.error(error);
+            }
+        });
+
+        projectSettingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(projectSettingsForm);
+            
+            try {
+                const response = await fetch('/update-project', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to update project.');
+                }
+                
+                showToast('Project updated successfully!', false);
+                // Optionally refetch data to update title
+                headerTitle.textContent = `Settings for: ${formData.get('projectName')}`;
+
+            } catch (error) {
+                showToast(error.message, true);
+                console.error('Error updating project:', error);
+            }
+        });
+
+        deleteProjectBtn.addEventListener('click', async () => {
+            const projectName = projectNameInput.value;
+            if (prompt(`This action is irreversible. To confirm, please type the name of the project: "${projectName}"`) !== projectName) {
+                showToast('Deletion cancelled. Project name did not match.', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/delete-project/${projectIdInput.value}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to delete project.');
+                }
+                
+                alert('Project deleted successfully. You will now be returned to the projects list.');
+                window.location.href = '/lexifile_projects';
+
+            } catch (error) {
+                showToast(error.message, true);
+                console.error('Error deleting project:', error);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -16,24 +16,23 @@
     <div class="min-h-screen flex">
         <!-- Sidebar Navigation -->
         <nav class="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-4 flex-shrink-0">
-            <a href="/lexifile_index" class="mb-8">
+            <a href="/lexifile_projects" class="mb-8">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
             </a>
             <ul class="flex flex-col space-y-2">
                 <li class="group relative">
-                    <a href="/lexifile_projects" class="flex justify-center items-center h-12 w-12 bg-indigo-100 text-indigo-600 rounded-lg">
+                    <a href="/lexifile_projects" title="Projects" class="flex justify-center items-center h-12 w-12 bg-indigo-100 text-indigo-600 rounded-lg">
                         <i data-lucide="folder-kanban"></i>
-                         <span class="absolute left-full ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
-                            Projects
-                        </span>
                     </a>
                 </li>
                  <li class="group relative">
-                    <a href="/lexifile_search" class="flex justify-center items-center h-12 w-12 text-gray-500 hover:bg-gray-100 rounded-lg">
-                        <i data-lucide="search"></i>
-                         <span class="absolute left-full ml-4 w-auto p-2 min-w-max rounded-md shadow-md text-white bg-gray-900 text-xs font-bold transition-all duration-100 scale-0 origin-left group-hover:scale-100">
-                            Document Search
-                        </span>
+                    <a href="/lexifile_profile" title="Profile" class="flex justify-center items-center h-12 w-12 text-gray-500 hover:bg-gray-100 rounded-lg">
+                        <i data-lucide="user"></i>
+                    </a>
+                </li>
+                 <li class="group relative">
+                    <a href="/support" title="Support" class="flex justify-center items-center h-12 w-12 text-gray-500 hover:bg-gray-100 rounded-lg">
+                        <i data-lucide="life-buoy"></i>
                     </a>
                 </li>
             </ul>
@@ -90,12 +89,11 @@
     </div>
 
     <script>
-
         // Redirect to login if not logged in
-const token = localStorage.getItem('lexifile_token');
-if (!token) {
-    window.location.href = '/lexifile_login';
-}
+        const token = localStorage.getItem('lexifile_token');
+        if (!token) {
+            window.location.href = '/lexifile_login';
+        }
 
         const newProjectBtn = document.getElementById('newProjectBtn');
         const projectModal = document.getElementById('projectModal');
@@ -120,7 +118,7 @@ if (!token) {
                 } else {
                     projectsPlaceholder.classList.add('hidden');
                     projectsGrid.innerHTML = projects.map(p => `
-                        <a href="/lexifile_portal?project=${p.id}" class="block bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md hover:border-blue-500 transition group">
+                        <a href="/lexifile_hub?project=${p.id}" class="block bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md hover:border-blue-500 transition group">
                             <div class="flex justify-between items-start">
                                 <div>
                                     <h3 class="font-bold text-lg text-gray-800 group-hover:text-blue-600 truncate">${p.name}</h3>
@@ -175,4 +173,3 @@ if (!token) {
     </script>
 </body>
 </html>
-

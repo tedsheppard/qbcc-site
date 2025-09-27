@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support - LexiFile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <div class="h-screen flex">
+        <!-- Sidebar Navigation -->
+        <nav class="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-4">
+            <a href="/lexifile_projects" class="mb-8">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
+            </a>
+            <ul class="space-y-2">
+                 <li>
+                    <a href="/lexifile_projects" class="flex justify-center items-center h-12 w-12 hover:bg-gray-100 text-gray-500 hover:text-gray-800 rounded-lg transition-colors" title="Back to Projects">
+                        <i data-lucide="arrow-left"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <header class="flex-shrink-0 bg-white border-b border-gray-200 p-3 flex justify-between items-center">
+                 <h1 class="font-bold text-lg text-gray-800">Support Center</h1>
+                 <a href="/lexifile_projects" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm">Back to Projects</a>
+            </header>
+            
+            <main class="flex-grow p-8 overflow-y-auto">
+                <div class="max-w-4xl mx-auto">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold text-gray-900">How can we help you?</h2>
+                        <p class="text-gray-500 mt-2">Find answers to common questions or get in touch with our support team.</p>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                        <div class="bg-white p-6 rounded-lg shadow border border-gray-200 flex items-start space-x-4">
+                            <div class="bg-blue-100 p-3 rounded-full">
+                                <i data-lucide="mail" class="h-6 w-6 text-blue-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-lg">Email Support</h3>
+                                <p class="text-gray-600">Get in touch with us via email for any inquiries.</p>
+                                <a href="mailto:support@lexifile.example.com" class="text-blue-600 font-medium hover:underline mt-2 inline-block">support@lexifile.example.com</a>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow border border-gray-200 flex items-start space-x-4">
+                            <div class="bg-blue-100 p-3 rounded-full">
+                                <i data-lucide="phone" class="h-6 w-6 text-blue-600"></i>
+                            </div>
+                             <div>
+                                <h3 class="font-semibold text-lg">Phone Support</h3>
+                                <p class="text-gray-600">Our team is available during business hours.</p>
+                                <p class="text-blue-600 font-medium mt-2">+1 (555) 123-4567</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- FAQs -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Frequently Asked Questions</h2>
+                        <div class="space-y-4">
+                            <details class="bg-white p-4 rounded-lg shadow border border-gray-200 cursor-pointer">
+                                <summary class="font-semibold flex justify-between items-center">
+                                    What file types are supported for upload?
+                                    <i data-lucide="chevron-down" class="transition-transform duration-300"></i>
+                                </summary>
+                                <p class="text-gray-600 mt-4">
+                                    LexiFile currently supports PDF (.pdf), Microsoft Word (.doc, .docx), Email files (.eml, .msg), and common image formats (.png, .jpg, .jpeg).
+                                </p>
+                            </details>
+                            <details class="bg-white p-4 rounded-lg shadow border border-gray-200 cursor-pointer">
+                                <summary class="font-semibold flex justify-between items-center">
+                                    How does the "Create Index" feature work?
+                                     <i data-lucide="chevron-down" class="transition-transform duration-300"></i>
+                                </summary>
+                                <p class="text-gray-600 mt-4">
+                                    The "Create Index" button, found in the "View Documents" tab of a project, generates a CSV file of all the documents currently listed. This file includes key metadata like the Artifact ID, improved filename, date, author, and keywords, which is useful for creating a document register or for external reporting.
+                                </p>
+                            </details>
+                             <details class="bg-white p-4 rounded-lg shadow border border-gray-200 cursor-pointer">
+                                <summary class="font-semibold flex justify-between items-center">
+                                    Can I recover a deleted project?
+                                     <i data-lucide="chevron-down" class="transition-transform duration-300"></i>
+                                </summary>
+                                <p class="text-gray-600 mt-4">
+                                    No. Deleting a project is a permanent action and cannot be undone. All documents and data associated with the project will be permanently removed. Please be absolutely sure before deleting a project.
+                                </p>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script>
+        lucide.createIcons();
+        document.querySelectorAll('details').forEach((el) => {
+            el.addEventListener('toggle', () => {
+                const icon = el.querySelector('i[data-lucide="chevron-down"]');
+                if (el.open) {
+                    icon.style.transform = 'rotate(180deg)';
+                } else {
+                    icon.style.transform = 'rotate(0deg)';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
