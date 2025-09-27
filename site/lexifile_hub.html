@@ -50,58 +50,160 @@
         th:hover .sort-icon { opacity: 0.7; }
         th.sorted-asc .sort-icon, th.sorted-desc .sort-icon { opacity: 1; }
         td { vertical-align: top; }
-        td.wrap { white-space: normal; min-width: 250px; }
+        td.wrap { white-space: normal; min-width: 150px; }
         tr:hover { background-color: #f3f4f6; }
+        tr.selected { background-color: #eef2ff; }
         .filter-input { width: 100%; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; }
+
+        /* Sidebar navigation enhancements */
+        .nav-item { 
+            transition: all 0.2s ease;
+        }
+        .nav-item:hover {
+            background-color: #f3f4f6;
+        }
+        .nav-item.active {
+            background-color: #eef2ff;
+            color: #4f46e5;
+            border-right: 3px solid #4f46e5;
+        }
+        .project-list-item {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .project-list-item:hover {
+            background-color: #f9fafb;
+            padding-left: 1rem;
+        }
+        .project-list-item.current {
+            background-color: #eef2ff;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+
+        /* Preview pane styles */
+        .preview-pane {
+            border-left: 1px solid #e5e7eb;
+            background-color: #fafafa;
+        }
+        .document-preview-content {
+            max-height: 400px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 overflow-hidden">
-    <div class="h-screen flex flex-col md:flex-row">
-        <!-- Sidebar Navigation -->
-        <nav class="w-full md:w-20 bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-row md:flex-col items-center py-2 md:py-4 flex-shrink-0">
-            <a href="/lexifile_projects" class="mb-0 md:mb-8 mx-4 md:mx-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m11.5 14-3 3 3 3"></path><path d="m8.5 17h8"></path></svg>
-            </a>
-            <ul class="flex flex-row md:flex-col space-x-2 md:space-x-0 md:space-y-2">
-                 <li class="group relative">
-                    <a href="/lexifile_projects" title="Projects" class="flex justify-center items-center h-12 w-12 bg-indigo-100 text-indigo-600 rounded-lg">
-                        <i data-lucide="folder-kanban"></i>
-                    </a>
-                </li>
-            </ul>
+    <div class="h-screen flex">
+        <!-- Enhanced Sidebar Navigation -->
+        <nav class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+            <!-- Logo and Brand -->
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <path d="m11.5 14-3 3 3 3"></path>
+                        <path d="m8.5 17h8"></path>
+                    </svg>
+                    <span class="font-bold text-lg text-gray-800">LexiFile</span>
+                </div>
+            </div>
+
+            <!-- Main Navigation -->
+            <div class="p-4 border-b border-gray-200">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Navigation</h3>
+                <ul class="space-y-1">
+                    <li>
+                        <a href="/lexifile_projects" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md">
+                            <i data-lucide="folder-kanban" class="mr-3 h-5 w-5"></i>
+                            All Projects
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/lexifile_search" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md">
+                            <i data-lucide="search" class="mr-3 h-5 w-5"></i>
+                            Global Search
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/lexifile_profile" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md">
+                            <i data-lucide="user" class="mr-3 h-5 w-5"></i>
+                            Profile
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/support" class="nav-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md">
+                            <i data-lucide="life-buoy" class="mr-3 h-5 w-5"></i>
+                            Support
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Current Project Section -->
+            <div class="p-4 border-b border-gray-200" id="currentProjectSection">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Current Project</h3>
+                <div class="mb-3">
+                    <div class="text-sm font-medium text-gray-900" id="sidebarProjectName">Loading...</div>
+                    <div class="text-xs text-gray-500" id="sidebarProjectInfo">...</div>
+                </div>
+                <ul class="space-y-1">
+                    <li>
+                        <button class="nav-item project-nav-btn active w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md text-left" data-tab="renaming">
+                            <i data-lucide="upload" class="mr-3 h-4 w-4"></i>
+                            Upload & Rename
+                        </button>
+                    </li>
+                    <li>
+                        <button class="nav-item project-nav-btn w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md text-left" data-tab="register">
+                            <i data-lucide="file-text" class="mr-3 h-4 w-4"></i>
+                            View Documents
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- All Projects Section -->
+            <div class="flex-1 p-4 overflow-y-auto">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">All Projects</h3>
+                <div id="projectsList" class="space-y-1">
+                    <div class="text-sm text-gray-500">Loading projects...</div>
+                </div>
+            </div>
+
+            <!-- User Section -->
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <img src="https://placehold.co/32x32/E0E7FF/4F46E5?text=JA" class="rounded-full" alt="User Avatar">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-medium text-gray-900 truncate">Junior Associate</div>
+                        <div class="text-xs text-gray-500">junior.associate@example.com</div>
+                    </div>
+                    <button id="logoutButton" class="text-gray-400 hover:text-red-600" title="Logout">
+                        <i data-lucide="log-out" class="h-4 w-4"></i>
+                    </button>
+                </div>
+            </div>
         </nav>
 
         <div id="appPage" class="flex-1 flex flex-col min-h-0">
             <!-- App Header -->
-            <header class="flex-shrink-0 bg-white border-b border-gray-200 p-3 flex justify-between items-center">
+            <header class="flex-shrink-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
                 <div>
-                     <h1 class="font-bold text-lg text-gray-800" id="projectTitle">Project Hub</h1>
-                     <div id="projectInfo" class="text-xs text-gray-500"></div>
+                    <h1 class="font-bold text-xl text-gray-800" id="projectTitle">Project Hub</h1>
+                    <div id="projectInfo" class="text-sm text-gray-500"></div>
                 </div>
-                <div class="flex items-center space-x-4 relative">
-                    <a id="projectSettingsLink" href="#" title="Project Settings" class="text-gray-500 hover:text-gray-800">
-                        <i data-lucide="settings"></i>
+                <div class="flex items-center space-x-3">
+                    <button id="createIndexBtn" disabled class="bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-700 transition shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2">
+                        <i data-lucide="file-spreadsheet" class="h-4 w-4"></i>
+                        <span>Create Index</span>
+                    </button>
+                    <a id="projectSettingsLink" href="#" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-indigo-700 transition shadow-sm flex items-center space-x-2">
+                        <i data-lucide="settings" class="h-4 w-4"></i>
+                        <span>Project Settings</span>
                     </a>
-                    <img id="profileButton" src="https://placehold.co/32x32/E0E7FF/4F46E5?text=JA" class="rounded-full cursor-pointer" alt="User Avatar">
-                     <div id="profilePopup" class="hidden absolute top-full right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                        <div class="py-1">
-                            <a href="/lexifile_profile" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><i data-lucide="user" class="mr-2 h-4 w-4"></i> View Profile</a>
-                            <a href="/support" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><i data-lucide="life-buoy" class="mr-2 h-4 w-4"></i> Support</a>
-                            <div class="border-t border-gray-100 my-1"></div>
-                            <a href="/lexifile_login" id="logoutButton" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100"><i data-lucide="log-out" class="mr-2 h-4 w-4"></i> Log Out</a>
-                        </div>
-                    </div>
                 </div>
             </header>
-            
-            <!-- Tab Navigation -->
-            <div class="flex-shrink-0 border-b border-gray-200 bg-white">
-                <nav class="flex space-x-4 px-4" id="tabContainer">
-                    <button class="tab-button active" data-tab="renaming">Document Renaming & Upload</button>
-                    <button class="tab-button" data-tab="register">View Documents</button>
-                </nav>
-            </div>
-
 
             <!-- Main Content Area -->
             <main class="flex-grow min-h-0">
@@ -137,7 +239,9 @@
                     </div>
                     <!-- Panel 2: Document Preview -->
                     <div class="w-full md:w-1/2 flex flex-col bg-gray-100">
-                        <div class="flex-shrink-0 p-4 border-b border-gray-200 bg-white"><h2 class="font-semibold text-lg">Document Preview</h2></div>
+                        <div class="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
+                            <h2 class="font-semibold text-lg">Document Preview</h2>
+                        </div>
                         <div class="flex-grow flex items-center justify-center p-4 min-h-0">
                             <div class="w-full h-full bg-white rounded-lg shadow-inner border border-gray-200 p-6 overflow-y-auto">
                                 <div id="previewPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
@@ -150,7 +254,9 @@
                     </div>
                     <!-- Panel 3: Smart Editor -->
                     <div class="w-full md:w-1/3 border-t md:border-t-0 md:border-l border-gray-200 flex flex-col bg-white">
-                        <div class="flex-shrink-0 p-4 border-b border-gray-200 bg-white"><h2 class="font-semibold text-lg">Smart Editor</h2></div>
+                        <div class="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
+                            <h2 class="font-semibold text-lg">Smart Editor</h2>
+                        </div>
                         <div id="editorPanel" class="flex-grow p-6 overflow-y-auto">
                             <div id="editorPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
                                 <i data-lucide="edit-3" class="h-16 w-16"></i>
@@ -161,68 +267,77 @@
                     </div>
                 </div>
 
-                <!-- TAB 2: Register View -->
-                <div id="registerTab" class="hidden h-full flex flex-col p-6 overflow-hidden">
-                    <header class="flex justify-between items-center mb-4 flex-shrink-0">
-                        <h1 class="text-2xl font-bold text-gray-800">View Documents</h1>
-                         <div class="flex items-center space-x-2">
+                <!-- TAB 2: Register View with Two-Column Layout -->
+                <div id="registerTab" class="hidden h-full flex">
+                    <!-- Left Column: Document List (63%) -->
+                    <div class="w-[63%] flex flex-col p-6 pr-3">
+                        <!-- Search Bar -->
+                        <div class="mb-4">
                             <div class="relative">
                                 <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"></i>
-                                <input type="search" id="fulltextSearch" placeholder="Search document content..." class="rounded-lg border-gray-300 pl-9 w-64">
+                                <input type="search" id="fulltextSearch" placeholder="Search document content..." class="w-full rounded-lg border-gray-300 pl-9 pr-4 py-2">
                             </div>
-                            <button id="createIndexBtn" class="bg-gray-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-gray-700 transition shadow-sm flex items-center space-x-2">
-                                <i data-lucide="file-spreadsheet"></i>
-                                <span>Create Index (CSV)</span>
-                            </button>
-                            <button id="bulkDownloadBtn" disabled class="bg-blue-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2">
-                                <i data-lucide="download"></i>
+                        </div>
+
+                        <!-- Document Table -->
+                        <div class="flex-grow border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                            <div class="table-container h-full">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="w-8"><input type="checkbox" id="selectAllCheckbox"></th>
+                                            <th data-sort="artifactID" class="w-24">ID<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                            <th data-sort="improvedFilename">Filename<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                            <th data-sort="date" class="w-20">Date<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                            <th data-sort="objectType" class="w-20">Type<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
+                                            <th class="w-20">Actions</th>
+                                        </tr>
+                                        <tr>
+                                            <th></th>
+                                            <th><input class="filter-input" data-filter="artifactID"></th>
+                                            <th><input class="filter-input" data-filter="improvedFilename"></th>
+                                            <th><input class="filter-input" data-filter="date"></th>
+                                            <th><input class="filter-input" data-filter="objectType"></th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="documentTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                                </table>
+                                <div id="searchPlaceholder" class="text-center py-20 text-gray-500">
+                                    <i data-lucide="file-search-2" class="mx-auto h-16 w-16 text-gray-400"></i>
+                                    <p class="mt-4 font-medium text-lg">No documents found.</p>
+                                    <p class="text-sm">Upload documents in the 'Upload & Rename' tab to see them here.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Pagination and Bulk Actions -->
+                        <div class="flex justify-between items-center mt-4">
+                            <div id="paginationControls" class="flex items-center space-x-2 text-sm text-gray-600"></div>
+                            <button id="bulkDownloadBtn" disabled class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2">
+                                <i data-lucide="download" class="h-4 w-4"></i>
                                 <span>Download Selected</span>
                             </button>
                         </div>
-                    </header>
-                    <div class="flex-grow border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
-                        <div class="table-container h-full">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="w-12"><input type="checkbox" id="selectAllCheckbox"></th>
-                                        <th data-sort="artifactID">Artifact ID<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                        <th data-sort="objectType">Object Type<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                        <th data-sort="improvedFilename">Improved Filename<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                        <th data-sort="date">Date<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                        <th data-sort="description">Description<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                        <th data-sort="author">Author<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                        <th data-sort="sender">Sender<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                        <th data-sort="recipient">Recipient<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                        <th data-sort="keywords">Keywords<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                        <th>Content Snippet</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                    <tr>
-                                        <th></th>
-                                        <th><input class="filter-input" data-filter="artifactID"></th>
-                                        <th><input class="filter-input" data-filter="objectType"></th>
-                                        <th><input class="filter-input" data-filter="improvedFilename"></th>
-                                        <th><input class="filter-input" data-filter="date"></th>
-                                        <th><input class="filter-input" data-filter="description"></th>
-                                        <th><input class="filter-input" data-filter="author"></th>
-                                        <th><input class="filter-input" data-filter="sender"></th>
-                                        <th><input class="filter-input" data-filter="recipient"></th>
-                                        <th><input class="filter-input" data-filter="keywords"></th>
-                                        <th></th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="documentTableBody" class="bg-white divide-y divide-gray-200"></tbody>
-                            </table>
-                             <div id="searchPlaceholder" class="text-center py-20 text-gray-500">
-                                <i data-lucide="file-search-2" class="mx-auto h-16 w-16 text-gray-400"></i>
-                                <p class="mt-4 font-medium text-lg">No documents found.</p>
-                                <p class="text-sm">Upload documents in the 'Renaming' tab to see them here.</p>
+                    </div>
+
+                    <!-- Right Column: Permanent Preview Pane (37%) -->
+                    <div class="w-[37%] preview-pane flex flex-col">
+                        <div class="p-4 border-b border-gray-200 bg-white">
+                            <h2 class="font-semibold text-lg">Document Details</h2>
+                        </div>
+                        <div class="flex-grow p-4 overflow-y-auto">
+                            <div id="documentPreviewPane" class="h-full">
+                                <div id="documentPreviewPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
+                                    <i data-lucide="file-text" class="h-16 w-16"></i>
+                                    <p class="mt-4 font-medium text-lg text-center">Select a document to view details</p>
+                                </div>
+                                <div id="documentPreviewContent" class="hidden space-y-4">
+                                    <!-- Document metadata will be populated here -->
+                                </div>
                             </div>
                         </div>
                     </div>
-                     <div id="paginationControls" class="flex-shrink-0 flex justify-between items-center p-2 text-sm text-gray-600"></div>
                 </div>
             </main>
         </div>
@@ -230,16 +345,6 @@
     
     <div id="toast" class="fixed top-5 right-5 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-2 transition-all duration-300 z-50">
         <span id="toastMessage"></span>
-    </div>
-    <!-- Preview Modal for Document Register -->
-    <div id="previewModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden z-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-5/6 flex flex-col">
-            <div class="p-4 border-b flex justify-between items-center">
-                <h3 id="previewModalTitle" class="font-bold">Document Preview</h3>
-                <button id="closePreviewModal" class="text-gray-500 hover:text-gray-800"><i data-lucide="x"></i></button>
-            </div>
-            <div id="previewModalContent" class="p-4 flex-grow overflow-auto"></div>
-        </div>
     </div>
 
     <script>
@@ -255,6 +360,7 @@
             allDocuments: [], // For register tab
             filteredDocuments: [],
             selectedFileId: null,
+            selectedDocumentId: null, // For register tab preview
             projectId: null,
             currentPage: 1,
             rowsPerPage: 50,
@@ -262,11 +368,15 @@
             sortDirection: 'asc',
             selectedArtifacts: new Set(),
             fulltextSearchTimeout: null,
+            allProjects: [] // For sidebar project list
         };
 
         // --- DOM Elements ---
         const projectTitle = document.getElementById('projectTitle');
         const projectInfo = document.getElementById('projectInfo');
+        const sidebarProjectName = document.getElementById('sidebarProjectName');
+        const sidebarProjectInfo = document.getElementById('sidebarProjectInfo');
+        const projectsList = document.getElementById('projectsList');
         const fileUpload = document.getElementById('fileUpload');
         const fileQueue = document.getElementById('fileQueue');
         const fileQueuePlaceholder = document.getElementById('fileQueuePlaceholder');
@@ -278,13 +388,11 @@
         const approveAllBtn = document.getElementById('approveAllBtn');
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toastMessage');
-        const profileButton = document.getElementById('profileButton');
-        const profilePopup = document.getElementById('profilePopup');
         const logoutButton = document.getElementById('logoutButton');
         const projectSettingsLink = document.getElementById('projectSettingsLink');
-        const tabContainer = document.getElementById('tabContainer');
         const renamingTab = document.getElementById('renamingTab');
         const registerTab = document.getElementById('registerTab');
+        const createIndexBtn = document.getElementById('createIndexBtn');
         
         // Document Register DOM Elements
         const documentTableBody = document.getElementById('documentTableBody');
@@ -294,12 +402,9 @@
         const bulkDownloadBtn = document.getElementById('bulkDownloadBtn');
         const filterInputs = document.querySelectorAll('.filter-input');
         const fulltextSearch = document.getElementById('fulltextSearch');
-        const createIndexBtn = document.getElementById('createIndexBtn');
-        const previewModal = document.getElementById('previewModal');
-        const previewModalTitle = document.getElementById('previewModalTitle');
-        const previewModalContent = document.getElementById('previewModalContent');
-        const closePreviewModal = document.getElementById('closePreviewModal');
-
+        const documentPreviewPane = document.getElementById('documentPreviewPane');
+        const documentPreviewPlaceholder = document.getElementById('documentPreviewPlaceholder');
+        const documentPreviewContent = document.getElementById('documentPreviewContent');
 
         // --- Helper & Utility Functions ---
         function showToast(message, isError = false) {
@@ -314,12 +419,47 @@
         function switchTab(tabName) {
             renamingTab.classList.toggle('hidden', tabName !== 'renaming');
             registerTab.classList.toggle('hidden', tabName !== 'register');
-            tabContainer.querySelectorAll('.tab-button').forEach(btn => {
+            
+            // Update header buttons based on active tab
+            createIndexBtn.disabled = (tabName !== 'register');
+            
+            // Update sidebar navigation
+            document.querySelectorAll('.project-nav-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabName);
             });
+            
             if(tabName === 'register') {
                 fetchDocumentsForRegister(); // Refresh data when switching to register tab
             }
+        }
+
+        async function loadAllProjects() {
+            try {
+                const response = await fetch('/projects');
+                if (!response.ok) throw new Error('Failed to fetch projects');
+                state.allProjects = await response.json();
+                renderProjectsList();
+            } catch (error) {
+                console.error('Failed to load projects:', error);
+                projectsList.innerHTML = '<div class="text-sm text-red-500">Failed to load projects</div>';
+            }
+        }
+
+        function renderProjectsList() {
+            if (state.allProjects.length === 0) {
+                projectsList.innerHTML = '<div class="text-sm text-gray-500">No projects found</div>';
+                return;
+            }
+
+            projectsList.innerHTML = state.allProjects.map(project => {
+                const isCurrent = project.id === state.projectId;
+                return `
+                    <div class="project-list-item ${isCurrent ? 'current' : ''} px-3 py-2 text-sm rounded-md" data-project-id="${project.id}">
+                        <div class="font-medium truncate">${project.name}</div>
+                        <div class="text-xs text-gray-500 truncate">${project.client}</div>
+                    </div>
+                `;
+            }).join('');
         }
         
         // --- RENAMING TAB: Functions ---
@@ -361,6 +501,7 @@
             }).join('');
             lucide.createIcons();
         }
+
         async function renderEditorAndPreview() {
             if (!state.selectedFileId) {
                 editorPlaceholder.classList.remove('hidden'); editorForm.classList.add('hidden');
@@ -437,6 +578,7 @@
                 previewContainer.innerHTML = `<div class="p-4 text-red-600">Failed to render preview. The file may be corrupted or unsupported.</div>`;
             }
         }
+
         function updateFilenamePreview() {
             const file = state.files.find(f => f.id === state.selectedFileId);
             if (!file) return;
@@ -462,6 +604,7 @@
                 searchPlaceholder.innerHTML = '<p class="text-red-500">Could not load documents.</p>';
             }
         }
+
         function applyFiltersAndRenderRegister() {
             const filters = {};
             filterInputs.forEach(input => {
@@ -477,6 +620,7 @@
             state.currentPage = 1;
             renderTable();
         }
+
         function sortDocuments() {
             state.filteredDocuments.sort((a, b) => {
                 const valA = a[state.sortColumn] || '';
@@ -486,6 +630,7 @@
                 return 0;
             });
         }
+
         function renderTable() {
             const start = (state.currentPage - 1) * state.rowsPerPage;
             const end = start + state.rowsPerPage;
@@ -496,22 +641,15 @@
             } else {
                 searchPlaceholder.classList.add('hidden');
                 documentTableBody.innerHTML = paginatedDocs.map(doc => `
-                    <tr>
+                    <tr class="document-row cursor-pointer ${doc.artifactID === state.selectedDocumentId ? 'selected' : ''}" data-doc-id="${doc.artifactID}">
                         <td><input type="checkbox" class="row-checkbox" data-id="${doc.artifactID}" ${state.selectedArtifacts.has(doc.artifactID) ? 'checked' : ''}></td>
-                        <td class="font-mono text-blue-600">${doc.artifactID}</td>
-                        <td>${doc.objectType}</td>
+                        <td class="font-mono text-blue-600 text-xs">${doc.artifactID}</td>
                         <td class="wrap font-medium text-gray-900">${doc.improvedFilename}</td>
-                        <td class="font-mono">${doc.date}</td>
-                        <td class="wrap">${doc.description}</td>
-                        <td>${doc.author}</td>
-                        <td>${doc.sender || 'N/A'}</td>
-                        <td>${doc.recipient || 'N/A'}</td>
-                        <td class="wrap"><div class="flex flex-wrap gap-1" style="max-width: 200px;">${(doc.keywords || []).map(kw => `<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">${kw}</span>`).join('')}</div></td>
-                        <td class="wrap">${doc.snippet || ''}</td>
-                        <td class="flex items-center space-x-2">
-                           <button title="Download" class="download-btn text-gray-400 hover:text-blue-600" data-id="${doc.artifactID}"><i data-lucide="download" class="h-4 w-4"></i></button>
-                           <button title="Preview" class="preview-btn text-gray-400 hover:text-blue-600" data-id="${doc.artifactID}"><i data-lucide="eye" class="h-4 w-4"></i></button>
-                           <button title="Delete" class="delete-btn text-gray-400 hover:text-red-600" data-id="${doc.artifactID}"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                        <td class="font-mono text-xs">${doc.date}</td>
+                        <td class="text-xs">${doc.objectType}</td>
+                        <td class="flex items-center space-x-1">
+                           <button title="Download" class="download-btn text-gray-400 hover:text-blue-600" data-id="${doc.artifactID}"><i data-lucide="download" class="h-3 w-3"></i></button>
+                           <button title="Delete" class="delete-btn text-gray-400 hover:text-red-600" data-id="${doc.artifactID}"><i data-lucide="trash-2" class="h-3 w-3"></i></button>
                         </td>
                     </tr>`).join('');
             }
@@ -519,6 +657,7 @@
             renderPagination();
             updateBulkDownloadButton();
         }
+
         function renderPagination() {
             const totalPages = Math.ceil(state.filteredDocuments.length / state.rowsPerPage);
             const start = (state.currentPage - 1) * state.rowsPerPage + 1;
@@ -530,38 +669,127 @@
             paginationControls.innerHTML = controlsHTML;
             lucide.createIcons();
         }
+
         function updateBulkDownloadButton() {
             bulkDownloadBtn.disabled = state.selectedArtifacts.size === 0;
+        }
+
+        function renderDocumentPreview(doc) {
+            if (!doc) {
+                documentPreviewPlaceholder.classList.remove('hidden');
+                documentPreviewContent.classList.add('hidden');
+                return;
+            }
+
+            documentPreviewPlaceholder.classList.add('hidden');
+            documentPreviewContent.classList.remove('hidden');
+
+            const keywordsHTML = (doc.keywords || []).map(kw => 
+                `<span class="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full mr-1 mb-1">${kw}</span>`
+            ).join('');
+
+            documentPreviewContent.innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-800 mb-2">Document Information</h3>
+                        <div class="bg-white p-3 rounded-lg border border-gray-200 space-y-2 text-sm">
+                            <div><strong>Artifact ID:</strong> <span class="font-mono text-blue-600">${doc.artifactID}</span></div>
+                            <div><strong>Original Filename:</strong> <span class="text-gray-700">${doc.originalFilename || 'N/A'}</span></div>
+                            <div><strong>Improved Filename:</strong> <span class="text-gray-900 font-medium">${doc.improvedFilename}</span></div>
+                            <div><strong>Date:</strong> <span class="font-mono">${doc.date}</span></div>
+                            <div><strong>Type:</strong> <span class="text-gray-700">${doc.objectType}</span></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-800 mb-2">Description</h3>
+                        <div class="bg-white p-3 rounded-lg border border-gray-200 text-sm text-gray-700">
+                            ${doc.description || 'No description available'}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-800 mb-2">Metadata</h3>
+                        <div class="bg-white p-3 rounded-lg border border-gray-200 space-y-2 text-sm">
+                            ${doc.author ? `<div><strong>Author:</strong> ${doc.author}</div>` : ''}
+                            ${doc.sender ? `<div><strong>Sender:</strong> ${doc.sender}</div>` : ''}
+                            ${doc.recipient ? `<div><strong>Recipient:</strong> ${doc.recipient}</div>` : ''}
+                        </div>
+                    </div>
+
+                    ${doc.keywords && doc.keywords.length > 0 ? `
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-800 mb-2">Keywords</h3>
+                        <div class="bg-white p-3 rounded-lg border border-gray-200">
+                            ${keywordsHTML}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${doc.snippet ? `
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-800 mb-2">Content Preview</h3>
+                        <div class="bg-white p-3 rounded-lg border border-gray-200 text-sm text-gray-700 document-preview-content">
+                            ${doc.snippet}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="pt-4 border-t border-gray-200">
+                        <div class="flex space-x-2">
+                            <button class="download-single-btn bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700 transition flex items-center space-x-1" data-id="${doc.artifactID}">
+                                <i data-lucide="download" class="h-4 w-4"></i>
+                                <span>Download</span>
+                            </button>
+                            <button class="delete-single-btn bg-red-600 text-white px-3 py-2 rounded-md text-sm hover:bg-red-700 transition flex items-center space-x-1" data-id="${doc.artifactID}">
+                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                <span>Delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            lucide.createIcons();
         }
 
         // --- Event Handlers ---
         document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             state.projectId = urlParams.get('project');
+            
             if (!state.projectId) {
                 projectTitle.textContent = "No Project Selected";
+                sidebarProjectName.textContent = "No Project";
+                sidebarProjectInfo.textContent = "Select a project to continue";
                 document.querySelector('label[for="fileUpload"]').classList.add('cursor-not-allowed', 'opacity-50');
                 fileUpload.disabled = true;
                 projectSettingsLink.classList.add('hidden');
-                switchTab('renaming'); // default to renaming tab, but it will be disabled
+                document.getElementById('currentProjectSection').classList.add('hidden');
+                switchTab('renaming');
             } else {
-                 projectSettingsLink.href = `/project_settings?project=${state.projectId}`;
-                 // Fetch project details to display name
-                 try {
-                     const response = await fetch(`/get-project-details?project_id=${state.projectId}`);
-                     if(response.ok) {
-                         const projectDetails = await response.json();
-                         projectTitle.textContent = projectDetails.name;
-                         projectInfo.textContent = `${projectDetails.client} | ${projectDetails.matter}`;
-                     } else {
+                projectSettingsLink.href = `/lexifile_settings?project=${state.projectId}`;
+                // Fetch project details to display name
+                try {
+                    const response = await fetch(`/get-project-details?project_id=${state.projectId}`);
+                    if(response.ok) {
+                        const projectDetails = await response.json();
+                        projectTitle.textContent = projectDetails.name;
+                        projectInfo.textContent = `${projectDetails.client} | ${projectDetails.matter}`;
+                        sidebarProjectName.textContent = projectDetails.name;
+                        sidebarProjectInfo.textContent = `${projectDetails.client} | ${projectDetails.matter}`;
+                    } else {
                         projectTitle.textContent = `Project: ${state.projectId}`;
-                     }
-                 } catch(e) {
-                     projectTitle.textContent = `Project: ${state.projectId}`;
-                 }
+                        sidebarProjectName.textContent = `Project: ${state.projectId}`;
+                    }
+                } catch(e) {
+                    projectTitle.textContent = `Project: ${state.projectId}`;
+                    sidebarProjectName.textContent = `Project: ${state.projectId}`;
+                }
             }
 
             lucide.createIcons();
+            await loadAllProjects();
             
             // RENAMING event listeners
             fileUpload.addEventListener('change', handleFileUpload);
@@ -588,6 +816,7 @@
                     sortDocuments(); state.currentPage = 1; renderTable();
                 }, 500);
             });
+
             document.querySelector('#registerTab thead').addEventListener('click', e => {
                 const header = e.target.closest('th[data-sort]');
                 if (!header) return;
@@ -602,10 +831,12 @@
                 header.classList.add(state.sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
                 applyFiltersAndRenderRegister();
             });
+
             paginationControls.addEventListener('click', e => {
                 const button = e.target.closest('.pagination-btn');
                 if (button) { state.currentPage = parseInt(button.dataset.page); renderTable(); }
             });
+
             selectAllCheckbox.addEventListener('change', e => {
                 const isChecked = e.target.checked;
                 document.querySelectorAll('.row-checkbox').forEach(checkbox => {
@@ -615,6 +846,7 @@
                 });
                 updateBulkDownloadButton();
             });
+
             documentTableBody.addEventListener('change', e => {
                 if (e.target.classList.contains('row-checkbox')) {
                     const id = e.target.dataset.id;
@@ -622,26 +854,60 @@
                     updateBulkDownloadButton();
                 }
             });
+
             documentTableBody.addEventListener('click', async e => {
+                // Handle row selection for preview
+                const row = e.target.closest('.document-row');
+                if (row && !e.target.closest('button') && !e.target.closest('input')) {
+                    const docId = row.dataset.docId;
+                    state.selectedDocumentId = docId;
+                    
+                    // Update row selection styling
+                    document.querySelectorAll('.document-row').forEach(r => r.classList.remove('selected'));
+                    row.classList.add('selected');
+                    
+                    // Find and render the document preview
+                    const doc = state.filteredDocuments.find(d => d.artifactID === docId);
+                    renderDocumentPreview(doc);
+                    return;
+                }
+
                 const deleteBtn = e.target.closest('.delete-btn');
                 if (deleteBtn) {
                     const id = deleteBtn.dataset.id;
                     if(confirm(`Are you sure you want to permanently delete document ${id}?`)) {
                        await fetch(`/delete-document/${id}`, { method: 'DELETE' });
                        fetchDocumentsForRegister();
+                       if (state.selectedDocumentId === id) {
+                           state.selectedDocumentId = null;
+                           renderDocumentPreview(null);
+                       }
                     }
                 }
+
                 const downloadBtn = e.target.closest('.download-btn');
                 if (downloadBtn) { window.open(`/download-single-doc/${downloadBtn.dataset.id}`, '_blank'); }
-                const previewBtn = e.target.closest('.preview-btn');
-                if (previewBtn) {
-                    previewModalTitle.textContent = `Preview of ${previewBtn.dataset.id}`;
-                    previewModalContent.innerHTML = 'Loading...';
-                    previewModal.classList.remove('hidden');
-                    lucide.createIcons(); // for the close icon
-                    previewModalContent.innerHTML = '<p>Document preview for register items would be loaded here.</p>'; // Placeholder for real implementation
+            });
+
+            // Handle preview pane download and delete buttons
+            documentPreviewContent.addEventListener('click', async e => {
+                const downloadBtn = e.target.closest('.download-single-btn');
+                if (downloadBtn) {
+                    window.open(`/download-single-doc/${downloadBtn.dataset.id}`, '_blank');
+                }
+
+                const deleteBtn = e.target.closest('.delete-single-btn');
+                if (deleteBtn) {
+                    const id = deleteBtn.dataset.id;
+                    if(confirm(`Are you sure you want to permanently delete document ${id}?`)) {
+                       await fetch(`/delete-document/${id}`, { method: 'DELETE' });
+                       fetchDocumentsForRegister();
+                       state.selectedDocumentId = null;
+                       renderDocumentPreview(null);
+                    }
                 }
             });
+
             bulkDownloadBtn.addEventListener('click', async () => {
                 if(state.selectedArtifacts.size === 0) return;
                 const response = await fetch('/bulk-download', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Array.from(state.selectedArtifacts))});
@@ -653,6 +919,7 @@
                     document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
                 } else { showToast('Bulk download failed.', true); }
             });
+
             createIndexBtn.addEventListener('click', () => {
                 if(state.filteredDocuments.length === 0) {
                     showToast("No documents to include in the index.", true);
@@ -668,16 +935,29 @@
                 link.setAttribute("download", `LexiFile_Index_${state.projectId}_${new Date().toISOString().split('T')[0]}.csv`);
                 document.body.appendChild(link); link.click(); document.body.removeChild(link);
             });
-            closePreviewModal.addEventListener('click', () => previewModal.classList.add('hidden'));
 
             // General event listeners
-            profileButton.addEventListener('click', (e) => { e.stopPropagation(); profilePopup.classList.toggle('hidden'); });
-            logoutButton.addEventListener('click', () => localStorage.removeItem('lexifile_token'));
-            document.addEventListener('click', (e) => {
-                if (!profilePopup.contains(e.target) && e.target !== profileButton) profilePopup.classList.add('hidden');
+            logoutButton.addEventListener('click', () => {
+                localStorage.removeItem('lexifile_token');
+                window.location.href = '/lexifile_login';
             });
-            tabContainer.addEventListener('click', (e) => {
-                if(e.target.classList.contains('tab-button')) switchTab(e.target.dataset.tab);
+
+            // Project navigation in sidebar
+            projectsList.addEventListener('click', (e) => {
+                const projectItem = e.target.closest('.project-list-item');
+                if (projectItem) {
+                    const projectId = projectItem.dataset.projectId;
+                    if (projectId !== state.projectId) {
+                        window.location.href = `/lexifile_hub?project=${projectId}`;
+                    }
+                }
+            });
+
+            // Tab switching via sidebar
+            document.querySelectorAll('.project-nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    switchTab(btn.dataset.tab);
+                });
             });
             
             renderFileQueue();
@@ -717,12 +997,14 @@
                 }
             }
         }
+
         function handleFileSelect(e) {
             const target = e.target.closest('.file-item'); if (!target) return;
             const fileId = target.dataset.id;
             const file = state.files.find(f => f.id === fileId);
             if (file && file.status !== 'processing') { state.selectedFileId = fileId; renderFileQueue(); renderEditorAndPreview(); }
         }
+
         function handleEditorChange(e) {
             if (!state.selectedFileId) return;
             const fileIndex = state.files.findIndex(f => f.id === state.selectedFileId);
@@ -741,6 +1023,7 @@
                 renderFileQueue(); updateFilenamePreview();
             }
         }
+
         function handleQueueClick(e) {
             const approveButton = e.target.closest('.approve-btn');
             if (approveButton) {
@@ -762,10 +1045,12 @@
                 return;
             }
         }
+
         function handleApproveAll() {
             state.files.forEach(file => { if (file.status === 'review') file.status = 'approved'; });
             renderFileQueue();
         }
+
         async function handleDownload() {
             if (downloadBtn.disabled) return;
             const approvedFiles = state.files.filter(f => f.status === 'approved');
