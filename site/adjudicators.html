@@ -1,0 +1,1148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Sopal — Adjudicators</title>
+  <meta name="description" content="Explore adjudicator profiles, decision statistics, and AI-powered insights to understand decision-making patterns under Queensland's BIF Act.">
+  <meta name="keywords" content="adjudicators, BIF Act, Queensland, construction adjudication, decision analysis, legal insights">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+  /* Base styles matching main site */
+  body {
+    font-family: Inter, sans-serif;
+    margin: 0;
+    background: rgba(33,33,33,255);
+    color: #e4e4e4;
+    font-size: 80%;
+  }
+
+  /* Light theme overrides */
+  .light {
+    background: #ffffff !important;
+    color: #222 !important;
+  }
+  .light body {
+    background: #ffffff !important;
+    color: #222 !important;
+  }
+
+  /* Header */
+  .header {
+    background: #fdfdfd;
+    padding: 20px 25px;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-content {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .logo {
+    height: 31px;
+    margin-right: 20px;
+  }
+  .nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+  }
+  .nav-links a {
+    color: black;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover {
+    color: #00c97c;
+  }
+  .nav-links a.active {
+    color: #008a5c;
+    font-weight: 600;
+  }
+
+  /* Main content */
+  main {
+    max-width: 1400px;
+    margin: 35px auto 0;
+    padding: 0 25px;
+  }
+
+  h1 {
+    font-size: 28px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 10px;
+  }
+
+  /* Disclaimer */
+  .disclaimer {
+    background: #fffbeb;
+    border-left: 4px solid #fbbf24;
+    padding: 15px 20px;
+    margin-bottom: 30px;
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+    color: #92400e;
+  }
+
+  .disclaimer strong {
+    color: #b45309;
+  }
+
+  /* Split pane layout */
+  .content-container {
+    display: flex;
+    gap: 30px;
+    min-height: 70vh;
+  }
+
+  .left-pane {
+    flex: 0 0 400px;
+    max-width: 400px;
+  }
+
+  .right-pane {
+    flex: 1;
+    background: #fdfdfd;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .right-pane.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    font-style: italic;
+  }
+
+  /* Search section */
+  .search-section {
+    background: #fdfdfd;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .search-bar input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+  }
+
+  .search-bar button {
+    background: #00c97c;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .search-bar button:hover {
+    background: #00a568;
+  }
+
+  .sort-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .sort-controls select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+
+  /* Adjudicator list */
+  .adjudicator-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .adjudicator-item {
+    background: #fdfdfd;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .adjudicator-item:hover {
+    border-color: #00c97c;
+    box-shadow: 0 2px 8px rgba(0,201,124,0.1);
+  }
+
+  .adjudicator-item.selected {
+    border-color: #00c97c;
+    background: #f0f9f4;
+    box-shadow: 0 2px 8px rgba(0,201,124,0.2);
+  }
+
+  .adjudicator-name {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: #333;
+  }
+
+  .adjudicator-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #666;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-weight: bold;
+    color: #00c97c;
+    display: block;
+  }
+
+  /* Right pane content */
+  .adjudicator-detail {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .detail-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    background: #f8f9fa;
+  }
+
+  .detail-name {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #333;
+  }
+
+  .detail-subtitle {
+    color: #666;
+    font-size: 14px;
+  }
+
+  .detail-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  .detail-tabs {
+    display: flex;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+  }
+
+  .tab-btn {
+    padding: 10px 15px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    color: #666;
+  }
+
+  .tab-btn.active {
+    color: #00c97c;
+    border-bottom-color: #00c97c;
+    font-weight: 600;
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  /* Statistics tab */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+
+  .stat-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+  }
+
+  .stat-number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #00c97c;
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+  }
+
+  /* Chart placeholder */
+  .chart-container {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+  }
+
+  /* Decisions list */
+  .decisions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .decision-item {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 15px;
+    border-left: 3px solid #00c97c;
+  }
+
+  .decision-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+  }
+
+  .decision-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 10px;
+  }
+
+  .decision-actions {
+    margin-top: 10px;
+  }
+
+  .decision-link {
+    color: #0066cc;
+    text-decoration: none;
+    font-size: 13px;
+  }
+
+  .decision-link:hover {
+    text-decoration: underline;
+  }
+
+  /* AI Analysis section */
+  .ai-section {
+    margin-top: 20px;
+  }
+
+  .ai-summary-btn {
+    background: #00c97c;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .ai-summary-btn:hover {
+    background: #00a568;
+  }
+
+  .ai-summary-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+
+  .ai-summary {
+    background: #f8f8f8;
+    border-left: 3px solid #00c97c;
+    padding: 20px;
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    margin-bottom: 20px;
+  }
+
+  .chat-section {
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+  }
+
+  .chat-input-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .chat-input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+  }
+
+  .chat-button {
+    background: #00c97c;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .chat-button:hover {
+    background: #00a568;
+  }
+
+  .chat-response {
+    background: #f0f9f4;
+    border-left: 3px solid #10b981;
+    padding: 15px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 15px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+  }
+
+  /* Loading states */
+  .loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #00c97c;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Dark mode overrides */
+  .dark body {
+    background: #0d0d0d !important;
+    color: #e0e0e0 !important;
+  }
+
+  .dark .header,
+  .dark .search-section,
+  .dark .adjudicator-item,
+  .dark .right-pane,
+  .dark .detail-header,
+  .dark .stat-card,
+  .dark .decision-item,
+  .dark .chart-container {
+    background: #141414 !important;
+    color: #f0f0f0 !important;
+    border-color: #333 !important;
+  }
+
+  .dark .nav-links a,
+  .dark .adjudicator-name,
+  .dark .detail-name,
+  .dark .decision-title {
+    color: #f0f0f0 !important;
+  }
+
+  .dark .search-bar input,
+  .dark .sort-controls select,
+  .dark .chat-input {
+    background: #1c1c1c;
+    color: #fff;
+    border-color: #333;
+  }
+
+  .dark .ai-summary,
+  .dark .chat-response {
+    background: #1a1a1a;
+    border-left: 3px solid #21db87;
+    color: #eee;
+  }
+
+  .dark .disclaimer {
+    background: #2d1b0a;
+    border-left-color: #f59e0b;
+    color: #fbbf24;
+  }
+
+  .dark .adjudicator-item.selected {
+    background: #1a2f1a;
+    border-color: #21db87;
+  }
+
+  /* Footer */
+  .footer {
+    background: #fcfcfc;
+    color: #333;
+    padding: 40px 25px 20px;
+    margin-top: 60px;
+    border-top: 1px solid #ddd;
+  }
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: auto;
+  }
+  .footer-left {
+    max-width: 400px;
+    text-align: left;
+  }
+  .footer-logo { height: 24px; margin-bottom: 10px; }
+
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 40px;
+    text-align: left;
+  }
+  .footer-links a {
+    font-size: 13px;
+    color: black;
+    text-decoration: none;
+  }
+  .footer-links a:hover {
+    color: #00c97c;
+  }
+
+  .footer-bottom {
+    text-align: center;
+    border-top: 1px solid #eee;
+    margin-top: 30px;
+    padding-top: 20px;
+    width: 100%;
+    font-size: 0.85em;
+    color: #666;
+  }
+
+  .dark .footer {
+    background: #141414 !important;
+    border-color: #333 !important;
+  }
+  .dark .footer-links a {
+    color: #f0f0f0;
+  }
+  .dark .footer-bottom {
+    border-top: 1px solid #333 !important;
+    color: #aaa !important;
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    .header-content {
+      flex-direction: column;
+      gap: 16px;
+    }
+    .nav-links {
+      margin: 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    main {
+      padding: 0 15px;
+    }
+    .content-container {
+      flex-direction: column;
+    }
+    .left-pane {
+      flex: none;
+      max-width: none;
+    }
+    .right-pane {
+      min-height: 500px;
+    }
+  }
+</style>
+</head>
+
+<body class="light">
+<!-- Header -->
+<div class="header">
+  <div class="header-content">
+    <a href="/">
+      <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Search</a>
+      <a href="adjudicators.html" class="active">Adjudicators</a>
+      <a href="interest-calculator">Interest Calculator</a>
+      <a href="due-date-calculator">Due Date Calculator</a>
+      <a href="how-to">How-To Guide</a>
+      <a href="feedback">Feedback</a>
+    </div>
+  </div>
+</div>
+
+<main>
+  <h1>Adjudicator Profiles & Analytics</h1>
+
+  <div class="disclaimer">
+    <strong>Disclaimer:</strong> The information provided on this page is for general informational purposes only. Sopal does not warrant the accuracy, completeness, or reliability of any adjudicator statistics, decision summaries, or AI-generated analyses. Users should independently verify all information and seek professional legal advice before making any decisions based on the content provided herein.
+  </div>
+
+  <div class="content-container">
+    <!-- Left Pane: Search & Results -->
+    <div class="left-pane">
+      <div class="search-section">
+        <div class="search-bar">
+          <input type="text" id="adjudicatorSearch" placeholder="Search adjudicators...">
+          <button onclick="searchAdjudicators()">Search</button>
+        </div>
+        <div class="sort-controls">
+          <select id="sortBy">
+            <option value="decisions">Most Decisions</option>
+            <option value="name">Name (A-Z)</option>
+            <option value="award_rate">Highest Award Rate</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="adjudicatorsList" class="adjudicator-list">
+        <!-- Results will be populated here -->
+      </div>
+    </div>
+
+    <!-- Right Pane: Detail View -->
+    <div id="rightPane" class="right-pane empty">
+      <p>Select an adjudicator to view detailed statistics and analysis</p>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-left">
+      <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+      <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+    </div>
+    <div class="footer-links">
+      <a href="index.html">Search</a>
+      <a href="adjudicators.html">Adjudicators</a>
+      <a href="interest-calculator">Interest Calculator</a>
+      <a href="due-date-calculator">Due Date Calculator</a>
+      <a href="feedback">Feedback</a>
+      <a href="how-to">How-To Guide</a>
+      <a href="privacy">Privacy</a>
+      <a href="terms">Terms</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 Sopal Australia. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+// Sample data for demonstration
+const sampleAdjudicators = [
+  {
+    id: 'adj_001',
+    name: 'John Smith',
+    totalDecisions: 45,
+    avgAwardRate: 67.3,
+    totalClaimAmount: 12500000,
+    totalAwardedAmount: 8412500,
+    jurisdictionDismissalRate: 8.9,
+    decisions: [
+      {
+        id: 'dec_001',
+        title: 'ABC Construction Pty Ltd v XYZ Developers Pty Ltd',
+        date: '2024-11-15',
+        claimAmount: 450000,
+        awardedAmount: 320000,
+        jurisdictionIssue: false,
+        pdfPath: 'sample-decision-1.pdf'
+      },
+      {
+        id: 'dec_002',
+        title: 'BuildCorp Ltd v Metro Projects Pty Ltd',
+        date: '2024-10-28',
+        claimAmount: 275000,
+        awardedAmount: 180000,
+        jurisdictionIssue: true,
+        pdfPath: 'sample-decision-2.pdf'
+      },
+      {
+        id: 'dec_003',
+        title: 'Quality Builders v Residential Developments Inc',
+        date: '2024-10-12',
+        claimAmount: 890000,
+        awardedAmount: 625000,
+        jurisdictionIssue: false,
+        pdfPath: 'sample-decision-3.pdf'
+      }
+    ]
+  },
+  {
+    id: 'adj_002',
+    name: 'Sarah Johnson',
+    totalDecisions: 32,
+    avgAwardRate: 73.8,
+    totalClaimAmount: 8900000,
+    totalAwardedAmount: 6568200,
+    jurisdictionDismissalRate: 6.3,
+    decisions: [
+      {
+        id: 'dec_004',
+        title: 'Elite Construction v Harbour View Developments',
+        date: '2024-11-20',
+        claimAmount: 320000,
+        awardedAmount: 280000,
+        jurisdictionIssue: false,
+        pdfPath: 'sample-decision-4.pdf'
+      },
+      {
+        id: 'dec_005',
+        title: 'Premier Builders Pty Ltd v Coastal Properties',
+        date: '2024-11-05',
+        claimAmount: 156000,
+        awardedAmount: 95000,
+        jurisdictionIssue: false,
+        pdfPath: 'sample-decision-5.pdf'
+      }
+    ]
+  },
+  {
+    id: 'adj_003',
+    name: 'Michael Brown',
+    totalDecisions: 28,
+    avgAwardRate: 54.2,
+    totalClaimAmount: 7200000,
+    totalAwardedAmount: 3902400,
+    jurisdictionDismissalRate: 14.3,
+    decisions: [
+      {
+        id: 'dec_006',
+        title: 'Superior Construction v Valley Estates',
+        date: '2024-11-18',
+        claimAmount: 675000,
+        awardedAmount: 0,
+        jurisdictionIssue: true,
+        pdfPath: 'sample-decision-6.pdf'
+      }
+    ]
+  }
+];
+
+let filteredAdjudicators = [...sampleAdjudicators];
+let selectedAdjudicator = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+  renderAdjudicatorsList();
+  setupEventListeners();
+
+  // Apply saved theme
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    document.body.classList.remove('light');
+    document.body.classList.add('dark');
+  }
+});
+
+function setupEventListeners() {
+  document.getElementById('adjudicatorSearch').addEventListener('input', filterAdjudicators);
+  document.getElementById('sortBy').addEventListener('change', filterAdjudicators);
+}
+
+function filterAdjudicators() {
+  const searchTerm = document.getElementById('adjudicatorSearch').value.toLowerCase();
+  const sortBy = document.getElementById('sortBy').value;
+
+  filteredAdjudicators = sampleAdjudicators.filter(adj =>
+    adj.name.toLowerCase().includes(searchTerm)
+  );
+
+  // Sort
+  filteredAdjudicators.sort((a, b) => {
+    switch (sortBy) {
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'award_rate':
+        return b.avgAwardRate - a.avgAwardRate;
+      case 'decisions':
+      default:
+        return b.totalDecisions - a.totalDecisions;
+    }
+  });
+
+  renderAdjudicatorsList();
+}
+
+function renderAdjudicatorsList() {
+  const container = document.getElementById('adjudicatorsList');
+
+  if (filteredAdjudicators.length === 0) {
+    container.innerHTML = '<div class="loading">No adjudicators found.</div>';
+    return;
+  }
+
+  container.innerHTML = filteredAdjudicators.map(adj => `
+    <div class="adjudicator-item ${selectedAdjudicator?.id === adj.id ? 'selected' : ''}"
+         onclick="selectAdjudicator('${adj.id}')">
+      <div class="adjudicator-name">${sanitizeHtml(adj.name)}</div>
+      <div class="adjudicator-stats">
+        <div class="stat-item">
+          <span class="stat-value">${adj.totalDecisions}</span>
+          <span>Decisions</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">${adj.avgAwardRate.toFixed(1)}%</span>
+          <span>Avg Award</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectAdjudicator(adjudicatorId) {
+  selectedAdjudicator = sampleAdjudicators.find(adj => adj.id === adjudicatorId);
+  if (!selectedAdjudicator) return;
+
+  // Update selected state in list
+  renderAdjudicatorsList();
+
+  // Show detail view
+  showAdjudicatorDetail();
+}
+
+function showAdjudicatorDetail() {
+  const rightPane = document.getElementById('rightPane');
+  rightPane.className = 'right-pane';
+
+  rightPane.innerHTML = `
+    <div class="adjudicator-detail">
+      <div class="detail-header">
+        <div class="detail-name">${sanitizeHtml(selectedAdjudicator.name)}</div>
+        <div class="detail-subtitle">${selectedAdjudicator.totalDecisions} decisions analysed</div>
+      </div>
+
+      <div class="detail-content">
+        <div class="detail-tabs">
+          <button class="tab-btn active" onclick="showTab('stats')">Statistics</button>
+          <button class="tab-btn" onclick="showTab('decisions')">Decisions</button>
+          <button class="tab-btn" onclick="showTab('analysis')">AI Analysis</button>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div id="stats-tab" class="tab-content active">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-number">${formatCurrency(selectedAdjudicator.totalClaimAmount)}</span>
+              <div class="stat-label">Total Claimed Amount</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${formatCurrency(selectedAdjudicator.totalAwardedAmount)}</span>
+              <div class="stat-label">Total Adjudicated Amount</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.avgAwardRate.toFixed(1)}%</span>
+              <div class="stat-label">Percentage of Claimed Amount Awarded</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.jurisdictionDismissalRate.toFixed(1)}%</span>
+              <div class="stat-label">Dismissed for Jurisdiction</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${formatCurrency(selectedAdjudicator.totalClaimAmount / selectedAdjudicator.totalDecisions)}</span>
+              <div class="stat-label">Avg Claimed Amount</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${formatCurrency(selectedAdjudicator.totalAwardedAmount / selectedAdjudicator.totalDecisions)}</span>
+              <div class="stat-label">Avg Adjudicated Amount</div>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <div>
+              <strong>Award Rate Trend Chart</strong><br>
+              <span style="color: #999;">Chart visualisation would appear here showing award rates over time, claim size distributions, and other statistical visualisations</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Decisions Tab -->
+        <div id="decisions-tab" class="tab-content">
+          <div class="decisions-list">
+            ${selectedAdjudicator.decisions.map(decision => `
+              <div class="decision-item">
+                <div class="decision-title">${sanitizeHtml(decision.title)}</div>
+                <div class="decision-meta">
+                  <div><strong>Date:</strong> ${formatDate(decision.date)}</div>
+                  <div><strong>Claim:</strong> $${decision.claimAmount.toLocaleString()}</div>
+                  <div><strong>Awarded:</strong> ${decision.awardedAmount.toLocaleString()}</div>
+                  <div><strong>Jurisdiction Issue:</strong> ${decision.jurisdictionIssue ? 'Yes' : 'No'}</div>
+                </div>
+                <div class="decision-actions">
+                  <a href="#" class="decision-link" onclick="openDecision('${decision.pdfPath}')">Open Decision (PDF)</a>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- AI Analysis Tab -->
+        <div id="analysis-tab" class="tab-content">
+          <div class="ai-section">
+            <button class="ai-summary-btn" onclick="generateAISummary()" id="summaryBtn">
+              Generate AI Analysis of Decision Patterns
+            </button>
+            <div id="aiSummaryContent" style="display: none;"></div>
+
+            <div class="chat-section" style="display: none;" id="chatSection">
+              <h4>Ask Questions About This Adjudicator</h4>
+              <div class="chat-input-container">
+                <input type="text" id="chatInput" class="chat-input" placeholder="Ask about decision patterns, preferences, or approach...">
+                <button class="chat-button" onclick="askQuestion()">Ask</button>
+              </div>
+              <div id="chatResponses"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function showTab(tabName) {
+  // Remove active class from all tabs and content
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+  // Add active class to clicked tab and corresponding content
+  event.target.classList.add('active');
+  document.getElementById(`${tabName}-tab`).classList.add('active');
+}
+
+function generateAISummary() {
+  const summaryBtn = document.getElementById('summaryBtn');
+  const summaryContent = document.getElementById('aiSummaryContent');
+  const chatSection = document.getElementById('chatSection');
+
+  summaryBtn.disabled = true;
+  summaryBtn.textContent = 'Generating Analysis...';
+
+  summaryContent.style.display = 'block';
+  summaryContent.innerHTML = `
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      Analysing ${selectedAdjudicator.totalDecisions} decisions to identify patterns and tendencies...
+    </div>
+  `;
+
+  // Simulate AI analysis generation
+  setTimeout(() => {
+    const sampleAnalysis = `
+      <div class="ai-summary">
+        <h4>Decision Pattern Analysis for ${selectedAdjudicator.name}</h4>
+
+        <p><strong>Award Patterns:</strong> Across ${selectedAdjudicator.totalDecisions} decisions, ${selectedAdjudicator.name} has awarded an average of ${selectedAdjudicator.avgAwardRate.toFixed(1)}% of claimed amounts. Awards typically range from nil (in jurisdictional dismissals) to full amounts where claims are substantiated with proper documentation.</p>
+
+        <p><strong>Jurisdictional Decisions:</strong> Has dismissed ${selectedAdjudicator.jurisdictionDismissalRate.toFixed(1)}% of cases for jurisdictional reasons. Common grounds include invalid reference dates, improper service, and non-compliance with payment claim requirements under the Act.</p>
+
+        <p><strong>Commonly Decided Issues:</strong></p>
+        <ul>
+          <li>Variation claims: Requires written authorisation or clear evidence of scope changes</li>
+          <li>Progress payment calculations: Emphasises contract terms and milestone completion</li>
+          <li>Set-off claims: Applies strict tests for valid cross-claims and contractual entitlements</li>
+          <li>Extension of time claims: Considers notice requirements and causation evidence</li>
+        </ul>
+
+        <p><strong>Evidence Requirements:</strong> Previous decisions show preference for contemporaneous records, detailed breakdowns of claimed amounts, and supporting invoices. Expert evidence on technical matters is commonly relied upon for complex claims.</p>
+
+        <p><strong>Procedural Approach:</strong> ${selectedAdjudicator.jurisdictionDismissalRate < 10 ? 'Generally focuses on substantive compliance rather than minor procedural defects.' : 'Takes strict approach to procedural compliance and statutory requirements.'} Decisions typically address all raised issues with specific reference to applicable legislation and contract terms.</p>
+      </div>
+    `;
+
+    summaryContent.innerHTML = sampleAnalysis;
+    chatSection.style.display = 'block';
+    summaryBtn.style.display = 'none';
+  }, 3000);
+}
+
+function askQuestion() {
+  const chatInput = document.getElementById('chatInput');
+  const chatResponses = document.getElementById('chatResponses');
+  const question = chatInput.value.trim();
+
+  if (!question) return;
+
+  // Add user question
+  chatResponses.innerHTML += `
+    <div style="margin-bottom: 15px; padding: 10px; background: #f0f0f0; border-radius: 6px;">
+      <strong>You:</strong> ${sanitizeHtml(question)}
+    </div>
+  `;
+
+  // Add loading response
+  const loadingId = Date.now();
+  chatResponses.innerHTML += `
+    <div id="loading-${loadingId}" class="chat-response">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        Analysing ${selectedAdjudicator.name}'s decision patterns to answer your question...
+      </div>
+    </div>
+  `;
+
+  chatInput.value = '';
+
+  // Simulate AI response
+  setTimeout(() => {
+    let sampleResponse = '';
+
+    if (question.toLowerCase().includes('jurisdiction')) {
+      sampleResponse = `Based on analysis of ${selectedAdjudicator.name}'s decisions, they have a ${selectedAdjudicator.jurisdictionDismissalRate.toFixed(1)}% jurisdictional dismissal rate. This suggests ${selectedAdjudicator.jurisdictionDismissalRate < 10 ? 'a pragmatic approach that focuses on substantive compliance over technical formalities' : 'strict adherence to jurisdictional requirements'}. Key factors this adjudicator considers include proper service, valid reference dates, and payment claim compliance with statutory requirements.`;
+    } else if (question.toLowerCase().includes('quantum') || question.toLowerCase().includes('amount')) {
+      sampleResponse = `${selectedAdjudicator.name} has awarded an average of ${selectedAdjudicator.avgAwardRate.toFixed(1)}% of claimed amounts. This suggests ${selectedAdjudicator.avgAwardRate > 70 ? 'a generous approach when claims are well-substantiated' : 'careful scrutiny of quantum claims'}. The adjudicator typically requires detailed breakdowns, supporting invoices, and clear evidence of work performed or variations authorized.`;
+    } else if (question.toLowerCase().includes('evidence')) {
+      sampleResponse = `Analysis shows ${selectedAdjudicator.name} places high value on contemporaneous documentation, expert reports, and clear audit trails. They tend to prefer structured submissions with chronological presentation of facts and supporting evidence clearly referenced to specific claim items.`;
+    } else {
+      sampleResponse = `Based on ${selectedAdjudicator.name}'s decision patterns across ${selectedAdjudicator.totalDecisions} cases, they demonstrate consistent application of legal principles with attention to both procedural compliance and substantive merit. Their approach suggests thorough analysis of evidence with ${selectedAdjudicator.avgAwardRate > 65 ? 'reasonable' : 'conservative'} outcomes for claimants.`;
+    }
+
+    document.getElementById(`loading-${loadingId}`).innerHTML = `
+      <strong>SopalAI:</strong><br>${sampleResponse}
+    `;
+  }, 2500);
+
+  // Scroll to bottom
+  chatResponses.scrollTop = chatResponses.scrollHeight;
+}
+
+function openDecision(pdfPath) {
+  // Simulate opening PDF - in real implementation, this would open the actual PDF
+  alert(`Opening decision: ${pdfPath}\n\nIn the live system, this would open the PDF document in a new tab.`);
+}
+
+function searchAdjudicators() {
+  filterAdjudicators();
+}
+
+// Utility functions
+function sanitizeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatCurrency(amount) {
+  if (!amount) return '0';
+  if (amount >= 1000000) {
+    return (amount / 1000000).toFixed(1) + 'M';
+  }
+  if (amount >= 1000) {
+    return (amount / 1000).toFixed(0) + 'K';
+  }
+  return amount.toFixed(0);
+}
+
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+}
+
+// Theme toggle (if needed)
+function toggleTheme() {
+  const body = document.body;
+  const isDark = body.classList.contains('dark');
+
+  if (isDark) {
+    body.classList.remove('dark');
+    body.classList.add('light');
+    localStorage.setItem('theme', 'light');
+  } else {
+    body.classList.remove('light');
+    body.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+  }
+
+  // Update logos if they exist
+  const logo = document.getElementById('logo');
+  const footerLogo = document.getElementById('footerLogo');
+  if (logo && footerLogo) {
+    const logoSrc = body.classList.contains('dark')
+      ? "assets/sopal_logo_white_v1.png"
+      : "assets/sopal_logo_v1.png";
+    logo.src = logoSrc;
+    footerLogo.src = logoSrc;
+  }
+}
+</script>
+
+</body>
+</html>
