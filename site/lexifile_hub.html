@@ -141,7 +141,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 overflow-hidden">
+<body class="bg-gray-50 text-gray-800 overflow-hidden select-none">
     <div class="h-screen flex">
         <!-- Enhanced Sidebar Navigation -->
         <nav class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
@@ -320,7 +320,7 @@
                 <!-- TAB 2: Register View with Two-Column Layout -->
                 <div id="registerTab" class="hidden h-full flex">
                     <!-- Left Column: Document List with horizontal scroll -->
-                    <div class="flex-1 flex flex-col p-6 pr-3 min-w-0">
+                    <div id="registerLeftColumn" class="flex-1 flex flex-col p-6 pr-3 min-w-0">
                         <!-- Search Bar -->
                         <div class="mb-4">
                             <div class="relative">
@@ -387,8 +387,11 @@
                         </div>
                     </div>
 
+                    <!-- Resizer -->
+                    <div id="resizer" class="w-1.5 cursor-col-resize bg-gray-200 hover:bg-indigo-600 transition-colors duration-200 ease-in-out flex-shrink-0"></div>
+
                     <!-- Right Column: Permanent Preview Pane with Document Preview -->
-                    <div class="w-96 preview-pane flex flex-col">
+                    <div id="registerRightColumn" class="w-96 preview-pane flex flex-col flex-shrink-0">
                         <div class="p-4 border-b border-gray-200 bg-white">
                             <h2 class="font-semibold text-lg">Document Details</h2>
                         </div>
@@ -472,6 +475,9 @@
         const documentPreviewPane = document.getElementById('documentPreviewPane');
         const documentPreviewPlaceholder = document.getElementById('documentPreviewPlaceholder');
         const documentPreviewContent = document.getElementById('documentPreviewContent');
+        const resizer = document.getElementById('resizer');
+        const leftColumn = document.getElementById('registerLeftColumn');
+        const rightColumn = document.getElementById('registerRightColumn');
 
         // --- Helper & Utility Functions ---
         function showToast(message, isError = false) {
@@ -1210,6 +1216,31 @@
                 btn.addEventListener('click', () => {
                     switchTab(btn.dataset.tab);
                 });
+            });
+
+            // Pane Resizer Logic
+            let isResizing = false;
+            resizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                const totalWidth = document.getElementById('registerTab').offsetWidth;
+                const newRightWidth = totalWidth - e.clientX;
+
+                if (newRightWidth > 320 && newRightWidth < (totalWidth * 0.75)) { // Min 320px, Max 75%
+                    rightColumn.style.width = `${newRightWidth}px`;
+                    leftColumn.style.width = `${totalWidth - newRightWidth - resizer.offsetWidth}px`;
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                isResizing = false;
+                document.body.style.cursor = 'default';
+                document.body.style.removeProperty('user-select');
             });
             
             renderFileQueue();
