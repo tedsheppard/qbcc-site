@@ -703,99 +703,35 @@
 </footer>
 
 <script>
-// Sample data for demonstration
-const sampleAdjudicators = [
-  {
-    id: 'adj_001',
-    name: 'John Smith',
-    totalDecisions: 45,
-    avgAwardRate: 67.3,
-    totalClaimAmount: 12500000,
-    totalAwardedAmount: 8412500,
-    jurisdictionDismissalRate: 8.9,
-    decisions: [
-      {
-        id: 'dec_001',
-        title: 'ABC Construction Pty Ltd v XYZ Developers Pty Ltd',
-        date: '2024-11-15',
-        claimAmount: 450000,
-        awardedAmount: 320000,
-        jurisdictionIssue: false,
-        pdfPath: 'sample-decision-1.pdf'
-      },
-      {
-        id: 'dec_002',
-        title: 'BuildCorp Ltd v Metro Projects Pty Ltd',
-        date: '2024-10-28',
-        claimAmount: 275000,
-        awardedAmount: 180000,
-        jurisdictionIssue: true,
-        pdfPath: 'sample-decision-2.pdf'
-      },
-      {
-        id: 'dec_003',
-        title: 'Quality Builders v Residential Developments Inc',
-        date: '2024-10-12',
-        claimAmount: 890000,
-        awardedAmount: 625000,
-        jurisdictionIssue: false,
-        pdfPath: 'sample-decision-3.pdf'
-      }
-    ]
-  },
-  {
-    id: 'adj_002',
-    name: 'Sarah Johnson',
-    totalDecisions: 32,
-    avgAwardRate: 73.8,
-    totalClaimAmount: 8900000,
-    totalAwardedAmount: 6568200,
-    jurisdictionDismissalRate: 6.3,
-    decisions: [
-      {
-        id: 'dec_004',
-        title: 'Elite Construction v Harbour View Developments',
-        date: '2024-11-20',
-        claimAmount: 320000,
-        awardedAmount: 280000,
-        jurisdictionIssue: false,
-        pdfPath: 'sample-decision-4.pdf'
-      },
-      {
-        id: 'dec_005',
-        title: 'Premier Builders Pty Ltd v Coastal Properties',
-        date: '2024-11-05',
-        claimAmount: 156000,
-        awardedAmount: 95000,
-        jurisdictionIssue: false,
-        pdfPath: 'sample-decision-5.pdf'
-      }
-    ]
-  },
-  {
-    id: 'adj_003',
-    name: 'Michael Brown',
-    totalDecisions: 28,
-    avgAwardRate: 54.2,
-    totalClaimAmount: 7200000,
-    totalAwardedAmount: 3902400,
-    jurisdictionDismissalRate: 14.3,
-    decisions: [
-      {
-        id: 'dec_006',
-        title: 'Superior Construction v Valley Estates',
-        date: '2024-11-18',
-        claimAmount: 675000,
-        awardedAmount: 0,
-        jurisdictionIssue: true,
-        pdfPath: 'sample-decision-6.pdf'
-      }
-    ]
-  }
-];
 
-let filteredAdjudicators = [...sampleAdjudicators];
+let adjudicators = [];
+let filteredAdjudicators = [];
 let selectedAdjudicator = null;
+
+document.addEventListener('DOMContentLoaded', async function() {
+  // Fetch list from backend
+  const res = await fetch('/adjudicators');
+  adjudicators = await res.json();
+  filteredAdjudicators = [...adjudicators];
+
+  renderAdjudicatorsList();
+  setupEventListeners();
+});
+
+// When a name is clicked, fetch their detail
+async function selectAdjudicator(name) {
+  const res = await fetch(`/adjudicator/${encodeURIComponent(name)}`);
+  const decisions = await res.json();
+
+  selectedAdjudicator = adjudicators.find(a => a.name === name);
+  if (selectedAdjudicator) {
+    selectedAdjudicator.decisions = decisions;
+  }
+
+  renderAdjudicatorsList();
+  showAdjudicatorDetail();
+}
+
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
@@ -910,10 +846,6 @@ function showAdjudicatorDetail() {
               <div class="stat-label">Percentage of Claimed Amount Awarded</div>
             </div>
             <div class="stat-card">
-              <span class="stat-number">${selectedAdjudicator.jurisdictionDismissalRate.toFixed(1)}%</span>
-              <div class="stat-label">Dismissed for Jurisdiction</div>
-            </div>
-            <div class="stat-card">
               <span class="stat-number">${formatCurrency(selectedAdjudicator.totalClaimAmount / selectedAdjudicator.totalDecisions)}</span>
               <div class="stat-label">Avg Claimed Amount</div>
             </div>
@@ -941,7 +873,6 @@ function showAdjudicatorDetail() {
                   <div><strong>Date:</strong> ${formatDate(decision.date)}</div>
                   <div><strong>Claim:</strong> $${decision.claimAmount.toLocaleString()}</div>
                   <div><strong>Awarded:</strong> ${decision.awardedAmount.toLocaleString()}</div>
-                  <div><strong>Jurisdiction Issue:</strong> ${decision.jurisdictionIssue ? 'Yes' : 'No'}</div>
                 </div>
                 <div class="decision-actions">
                   <a href="#" class="decision-link" onclick="openDecision('${decision.pdfPath}')">Open Decision (PDF)</a>
@@ -1008,8 +939,6 @@ function generateAISummary() {
 
         <p><strong>Award Patterns:</strong> Across ${selectedAdjudicator.totalDecisions} decisions, ${selectedAdjudicator.name} has awarded an average of ${selectedAdjudicator.avgAwardRate.toFixed(1)}% of claimed amounts. Awards typically range from nil (in jurisdictional dismissals) to full amounts where claims are substantiated with proper documentation.</p>
 
-        <p><strong>Jurisdictional Decisions:</strong> Has dismissed ${selectedAdjudicator.jurisdictionDismissalRate.toFixed(1)}% of cases for jurisdictional reasons. Common grounds include invalid reference dates, improper service, and non-compliance with payment claim requirements under the Act.</p>
-
         <p><strong>Commonly Decided Issues:</strong></p>
         <ul>
           <li>Variation claims: Requires written authorisation or clear evidence of scope changes</li>
@@ -1020,7 +949,6 @@ function generateAISummary() {
 
         <p><strong>Evidence Requirements:</strong> Previous decisions show preference for contemporaneous records, detailed breakdowns of claimed amounts, and supporting invoices. Expert evidence on technical matters is commonly relied upon for complex claims.</p>
 
-        <p><strong>Procedural Approach:</strong> ${selectedAdjudicator.jurisdictionDismissalRate < 10 ? 'Generally focuses on substantive compliance rather than minor procedural defects.' : 'Takes strict approach to procedural compliance and statutory requirements.'} Decisions typically address all raised issues with specific reference to applicable legislation and contract terms.</p>
       </div>
     `;
 
