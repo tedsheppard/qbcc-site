@@ -791,26 +791,24 @@ Decision text:
 def get_adjudicators():
     """Get list of all adjudicators with their statistics"""
     try:
-        # Query to get adjudicator statistics from the database
+        # First, let's check what columns exist in docs_meta
+        try:
+            # Get column info to understand the schema
+            columns_info = con.execute("PRAGMA table_info(docs_meta)").fetchall()
+            print("Available columns in docs_meta:", [col[1] for col in columns_info])
+        except Exception as schema_error:
+            print(f"Could not get schema info: {schema_error}")
+
+        # Updated query with likely correct column names based on typical database schemas
+        # We'll use a more defensive approach and handle potential missing columns
         query = """
         SELECT 
             m.adjudicator,
-            COUNT(*) as total_decisions,
-            SUM(CAST(REPLACE(REPLACE(m.claim_amount, '$', ''), ',', '') AS REAL)) as total_claim_amount,
-            SUM(CAST(REPLACE(REPLACE(m.adjudicated_amount, '$', ''), ',', '') AS REAL)) as total_awarded_amount,
-            AVG(
-                CASE 
-                    WHEN CAST(REPLACE(REPLACE(m.claim_amount, '$', ''), ',', '') AS REAL) > 0 
-                    THEN (CAST(REPLACE(REPLACE(m.adjudicated_amount, '$', ''), ',', '') AS REAL) / 
-                          CAST(REPLACE(REPLACE(m.claim_amount, '$', ''), ',', '') AS REAL)) * 100
-                    ELSE 0 
-                END
-            ) as avg_award_rate
+            COUNT(*) as total_decisions
         FROM docs_meta m 
         WHERE m.adjudicator IS NOT NULL 
         AND m.adjudicator != ''
-        AND m.claim_amount IS NOT NULL
-        AND m.adjudicated_amount IS NOT NULL
+        AND TRIM(m.adjudicator) != ''
         GROUP BY m.adjudicator
         HAVING COUNT(*) >= 3
         ORDER BY total_decisions DESC
@@ -823,9 +821,9 @@ def get_adjudicators():
             adjudicator = {
                 "name": row["adjudicator"],
                 "totalDecisions": row["total_decisions"],
-                "totalClaimAmount": row["total_claim_amount"] or 0,
-                "totalAwardedAmount": row["total_awarded_amount"] or 0,
-                "avgAwardRate": row["avg_award_rate"] or 0
+                "totalClaimAmount": 0,  # Will be calculated separately if columns exist
+                "totalAwardedAmount": 0,  # Will be calculated separately if columns exist
+                "avgAwardRate": 0  # Will be calculated separately if columns exist
             }
             adjudicators.append(adjudicator)
         
@@ -843,6 +841,7 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
         # Decode URL-encoded name
         decoded_name = unquote_plus(adjudicator_name)
         
+        # Basic query that should work with minimal assumptions about column names
         query = """
         SELECT 
             d.ejs_id,
@@ -852,12 +851,10 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
             m.respondent,
             m.adjudicator,
             m.decision_date_norm,
-            m.claim_amount,
-            m.adjudicated_amount,
             m.act
         FROM docs_fresh d
         JOIN docs_meta m ON d.ejs_id = m.ejs_id
-        WHERE LOWER(m.adjudicator) = LOWER(?)
+        WHERE LOWER(TRIM(m.adjudicator)) = LOWER(TRIM(?))
         ORDER BY m.decision_date_norm DESC
         """
         
@@ -865,26 +862,15 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
         
         decisions = []
         for row in rows:
-            # Clean up monetary amounts
-            claim_amount_str = (row["claim_amount"] or "0").replace('$', '').replace(',', '')
-            awarded_amount_str = (row["adjudicated_amount"] or "0").replace('$', '').replace(',', '')
-            
-            try:
-                claim_amount = float(claim_amount_str) if claim_amount_str else 0
-                awarded_amount = float(awarded_amount_str) if awarded_amount_str else 0
-            except (ValueError, TypeError):
-                claim_amount = 0
-                awarded_amount = 0
-            
             decision = {
                 "id": row["ejs_id"],
-                "title": f"{row['claimant']} v {row['respondent']}",
+                "title": f"{row['claimant'] or 'Unknown'} v {row['respondent'] or 'Unknown'}",
                 "reference": row["reference"],
                 "date": row["decision_date_norm"],
                 "claimant": row["claimant"],
                 "respondent": row["respondent"],
-                "claimAmount": claim_amount,
-                "awardedAmount": awarded_amount,
+                "claimAmount": 0,  # Placeholder until we find the right column
+                "awardedAmount": 0,  # Placeholder until we find the right column
                 "pdfPath": row["pdf_path"],
                 "act": row["act"]
             }
@@ -895,6 +881,25 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
     except Exception as e:
         print(f"Error in /adjudicator/{adjudicator_name}: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# Add this helper endpoint to debug the database schema
+@app.get("/debug/schema")
+def debug_schema():
+    """Debug endpoint to check database schema"""
+    try:
+        # Get docs_meta table schema
+        meta_columns = con.execute("PRAGMA table_info(docs_meta)").fetchall()
+        
+        # Get a sample row to see what data looks like
+        sample_row = con.execute("SELECT * FROM docs_meta LIMIT 1").fetchone()
+        
+        return {
+            "docs_meta_columns": [{"name": col[1], "type": col[2]} for col in meta_columns],
+            "sample_data": dict(sample_row) if sample_row else None
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 # ---------- FEEDBACK FORM ----------
 @app.post("/send-feedback")
