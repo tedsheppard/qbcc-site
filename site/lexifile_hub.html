@@ -140,28 +140,26 @@
             opacity: 1;
         }
 
-                /* Fix: allow horizontal scrolling inside search box */
+        /* Fix: allow horizontal scrolling inside search box */
         #fulltextSearch {
-        overflow-x: auto;
-        white-space: nowrap;
+            overflow-x: auto;
+            white-space: nowrap;
         }
-
 
         /* Fix: draggable preview pane */
         .preview-pane {
-        border-left: 1px solid #e5e7eb;
-        background-color: #fafafa;
-        resize: horizontal;
-        overflow: auto;
-        min-width: 300px;
-        max-width: 80%;
+            border-left: 1px solid #e5e7eb;
+            background-color: #fafafa;
+            resize: horizontal;
+            overflow: auto;
+            min-width: 300px;
+            max-width: 80%;
         }
-
 
         /* Fix: prevent header overlap */
         #registerTab {
-        padding-top: 4rem;
-
+            padding-top: 4rem;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 overflow-hidden">
@@ -428,7 +426,10 @@
     <div>
         <h3 class="text-sm font-bold text-gray-800 mb-2">Document Preview</h3>
         <div id="liveDocumentPreview" class="border border-gray-200 rounded-lg bg-white p-2 h-64 overflow-auto">
-            <p class="text-gray-500 text-sm">Actual document preview goes here.</p>
+            <div class="text-center py-4">
+                <div class="loader mx-auto mb-2"></div>
+                <p class="text-sm text-gray-500">Loading document preview...</p>
+            </div>
         </div>
     </div>
 </div>
@@ -917,16 +918,15 @@
                         </div>
                     </div>
 
-                    ${doc.snippet ? `
                     <div>
-                        <h3 class="text-sm font-bold text-gray-800 mb-2">Content Preview</h3>
-                        <div class="bg-white p-3 rounded-lg border border-gray-200">
-                            <div id="document-content-preview" class="text-sm text-gray-700 document-preview-content">
-                                Loading document preview...
+                        <h3 class="text-sm font-bold text-gray-800 mb-2">Document Preview</h3>
+                        <div id="liveDocumentPreview" class="border border-gray-200 rounded-lg bg-white p-2 h-64 overflow-auto">
+                            <div class="text-center py-4">
+                                <div class="loader mx-auto mb-2"></div>
+                                <p class="text-sm text-gray-500">Loading document preview...</p>
                             </div>
                         </div>
                     </div>
-                    ` : ''}
 
                     <div class="pt-4 border-t border-gray-200">
                         <div class="flex space-x-2">
@@ -945,93 +945,53 @@
             
             lucide.createIcons();
             
-            // Load actual document preview if available
-            if (doc.snippet) {
-                loadDocumentPreview(doc.artifactID);
-            }
+            // Load actual document preview
+            loadActualDocumentPreview(doc.artifactID);
         }
 
-        async function loadDocumentPreview(docId) {
+        // Add loadActualDocumentPreview function
+        async function loadActualDocumentPreview(docId) {
+            const liveDocumentPreview = document.getElementById('liveDocumentPreview');
+            if (!liveDocumentPreview) return;
+            
             try {
+                // First try to get document preview from server
                 const response = await fetch(`/preview-document/${docId}`);
                 if (response.ok) {
                     const previewData = await response.json();
-                    const previewContainer = document.getElementById('document-content-preview');
-                    if (previewContainer) {
-                        if (previewData.type === 'pdf') {
-                            previewContainer.innerHTML = '<div class="text-center p-4"><i data-lucide="file-text" class="h-8 w-8 mx-auto text-gray-400"></i><p class="text-sm text-gray-500 mt-2">PDF preview available in download</p></div>';
-                        } else if (previewData.content) {
-                            previewContainer.innerHTML = previewData.content;
-                        } else {
-                            previewContainer.innerHTML = '<div class="text-center p-4 text-gray-500">Preview not available</div>';
-                        }
-                        lucide.createIcons();
+                    
+                    if (previewData.type === 'pdf') {
+                        // For PDFs, create a PDF viewer with the first page
+                        liveDocumentPreview.innerHTML = `
+                            <div class="pdf-preview-container" style="width: 100%; height: 100%;">
+                                <iframe src="/view-document/${docId}" style="width: 100%; height: 100%; border: none;"></iframe>
+                            </div>
+                        `;
+                    } else if (previewData.content) {
+                        // For text content
+                        liveDocumentPreview.innerHTML = `
+                            <div class="document-content p-2">
+                                ${previewData.content}
+                            </div>
+                        `;
+                    } else if (previewData.imageUrl) {
+                        // For images
+                        liveDocumentPreview.innerHTML = `
+                            <div class="image-preview-container flex items-center justify-center h-full">
+                                <img src="${previewData.imageUrl}" class="max-w-full max-h-full object-contain" alt="Document preview">
+                            </div>
+                        `;
+                    } else {
+                        liveDocumentPreview.innerHTML = '<div class="text-center p-4 text-gray-500">Preview not available for this document type</div>';
                     }
+                } else {
+                    throw new Error('Failed to fetch preview');
                 }
             } catch (error) {
-                console.error('Failed to load document preview:', error);
-                const previewContainer = document.getElementById('document-content-preview');
-                if (previewContainer) {
-                    previewContainer.innerHTML = '<div class="text-center p-4 text-red-500">Failed to load preview</div>';
-                }
+                console.error('Error loading document preview:', error);
+                liveDocumentPreview.innerHTML = '<div class="text-center p-4 text-red-500">Failed to load document preview</div>';
             }
         }
-
-        // Keyword management functions
-        function focusKeywordInput(docId) {
-            const container = event.currentTarget;
-            const input = container.querySelector('.keyword-input');
-            if (input) {
-                input.style.display = 'inline-block';
-                input.focus();
-            }
-        }
-
-        function handleKeywordInput(event, docId) {
-            if (event.key === 'Enter' && event.target.value.trim()) {
-                addKeyword(docId, event.target.value.trim());
-                event.target.value = '';
-                event.target.style.display = 'none';
-            } else if (event.key === 'Escape') {
-                event.target.value = '';
-                event.target.style.display = 'none';
-            }
-        }
-
-        async function addKeyword(docId, keyword) {
-            const doc = state.filteredDocuments.find(d => d.artifactID === docId);
-            if (!doc) return;
-            
-            const currentKeywords = doc.keywords || [];
-            if (currentKeywords.includes(keyword)) {
-                showToast('Keyword already exists', true);
-                return;
-            }
-            
-            const newKeywords = [...currentKeywords, keyword];
-            const success = await saveDocumentKeywords(docId, newKeywords);
-            if (success) {
-                renderDocumentPreview(doc);
-            }
-        }
-
-        async function removeKeyword(docId, keyword) {
-            const doc = state.filteredDocuments.find(d => d.artifactID === docId);
-            if (!doc) return;
-            
-            const currentKeywords = doc.keywords || [];
-            const newKeywords = currentKeywords.filter(k => k !== keyword);
-            const success = await saveDocumentKeywords(docId, newKeywords);
-            if (success) {
-                renderDocumentPreview(doc);
-            }
-        }
-
-        // Make functions globally available
-        window.saveDocumentField = saveDocumentField;
-        window.removeKeyword = removeKeyword;
-        window.focusKeywordInput = focusKeywordInput;
-        window.handleKeywordInput = handleKeywordInput;
 
         // --- Event Handlers ---
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1154,7 +1114,7 @@
                     renderDocumentPreview(doc);
                     return;
                 }
-
+                
                 const deleteBtn = e.target.closest('.delete-btn');
                 if (deleteBtn) {
                     const id = deleteBtn.dataset.id;
