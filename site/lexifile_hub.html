@@ -85,8 +85,8 @@
         .preview-pane {
             border-left: 1px solid #e5e7eb;
             background-color: #fafafa;
-            position: sticky;
-            right: 0;
+            /* position: sticky; */ /* This was causing the overlap issue */
+            /* right: 0; */
         }
         .document-preview-content {
             max-height: 400px;
@@ -391,7 +391,7 @@
                     <div id="resizer" class="w-1.5 cursor-col-resize bg-gray-200 hover:bg-indigo-600 transition-colors duration-200 ease-in-out flex-shrink-0"></div>
 
                     <!-- Right Column: Permanent Preview Pane with Document Preview -->
-                    <div id="registerRightColumn" class="w-96 preview-pane flex flex-col flex-shrink-0">
+                    <div id="registerRightColumn" class="w-[450px] preview-pane flex flex-col flex-shrink-0">
                         <div class="p-4 border-b border-gray-200 bg-white">
                             <h2 class="font-semibold text-lg">Document Details</h2>
                         </div>
@@ -1228,16 +1228,24 @@
 
             document.addEventListener('mousemove', (e) => {
                 if (!isResizing) return;
-                const totalWidth = document.getElementById('registerTab').offsetWidth;
-                const newRightWidth = totalWidth - e.clientX;
+                const container = document.getElementById('registerTab');
+                const containerRect = container.getBoundingClientRect();
+                const newLeftWidth = e.clientX - containerRect.left;
+                const totalWidth = container.offsetWidth;
+                const resizerWidth = resizer.offsetWidth;
 
-                if (newRightWidth > 320 && newRightWidth < (totalWidth * 0.75)) { // Min 320px, Max 75%
-                    rightColumn.style.width = `${newRightWidth}px`;
-                    leftColumn.style.width = `${totalWidth - newRightWidth - resizer.offsetWidth}px`;
+                // Set min/max widths for left and right panes
+                const minRightWidth = 320;
+                const minLeftWidth = 400;
+
+                if (newLeftWidth > minLeftWidth && newLeftWidth < (totalWidth - minRightWidth - resizerWidth)) {
+                    leftColumn.style.flex = `0 0 ${newLeftWidth}px`;
+                    rightColumn.style.flex = `1 1 0%`; // Allow right to fill remaining space
                 }
             });
 
             document.addEventListener('mouseup', () => {
+                if (!isResizing) return;
                 isResizing = false;
                 document.body.style.cursor = 'default';
                 document.body.style.removeProperty('user-select');
