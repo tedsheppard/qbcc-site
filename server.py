@@ -789,61 +789,112 @@ Decision text:
 
 @app.get("/adjudicators")
 def get_adjudicators():
-    cur = con.execute("""
-        SELECT adjudicator_name,
-               COUNT(*) as totalDecisions,
-               SUM(claimed_amount) as totalClaimAmount,
-               SUM(adjudicated_amount) as totalAwardedAmount,
-               AVG(
-                   CASE 
-                       WHEN claimed_amount > 0 
-                       THEN (adjudicated_amount * 100.0 / claimed_amount) 
-                       ELSE NULL 
-                   END
-               ) as avgAwardRate
-        FROM ai_adjudicator_extract_v4
-        WHERE adjudicator_name IS NOT NULL AND adjudicator_name != ''
-        GROUP BY adjudicator_name
-        ORDER BY totalDecisions DESC
-    """)
-    rows = cur.fetchall()
+    """Get list of all adjudicators with their statistics"""
+    try:
+        # Query to get adjudicator statistics from the database
+        query = """
+        SELECT 
+            m.adjudicator,
+            COUNT(*) as total_decisions,
+            SUM(CAST(REPLACE(REPLACE(m.claim_amount, '$', ''), ',', '') AS REAL)) as total_claim_amount,
+            SUM(CAST(REPLACE(REPLACE(m.adjudicated_amount, '$', ''), ',', '') AS REAL)) as total_awarded_amount,
+            AVG(
+                CASE 
+                    WHEN CAST(REPLACE(REPLACE(m.claim_amount, '$', ''), ',', '') AS REAL) > 0 
+                    THEN (CAST(REPLACE(REPLACE(m.adjudicated_amount, '$', ''), ',', '') AS REAL) / 
+                          CAST(REPLACE(REPLACE(m.claim_amount, '$', ''), ',', '') AS REAL)) * 100
+                    ELSE 0 
+                END
+            ) as avg_award_rate
+        FROM docs_meta m 
+        WHERE m.adjudicator IS NOT NULL 
+        AND m.adjudicator != ''
+        AND m.claim_amount IS NOT NULL
+        AND m.adjudicated_amount IS NOT NULL
+        GROUP BY m.adjudicator
+        HAVING COUNT(*) >= 3
+        ORDER BY total_decisions DESC
+        """
+        
+        rows = con.execute(query).fetchall()
+        
+        adjudicators = []
+        for row in rows:
+            adjudicator = {
+                "name": row["adjudicator"],
+                "totalDecisions": row["total_decisions"],
+                "totalClaimAmount": row["total_claim_amount"] or 0,
+                "totalAwardedAmount": row["total_awarded_amount"] or 0,
+                "avgAwardRate": row["avg_award_rate"] or 0
+            }
+            adjudicators.append(adjudicator)
+        
+        return adjudicators
+        
+    except Exception as e:
+        print(f"Error in /adjudicators: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
 
-    adjudicators = []
-    for r in rows:
-        adjudicators.append({
-            "name": r["adjudicator_name"],
-            "totalDecisions": r["totalDecisions"],
-            "totalClaimAmount": r["totalClaimAmount"] or 0,
-            "totalAwardedAmount": r["totalAwardedAmount"] or 0,
-            "avgAwardRate": r["avgAwardRate"] or 0,
-        })
-    return adjudicators
 
-
-@app.get("/adjudicator/{name}")
-def get_adjudicator_detail(name: str):
-    cur = con.execute("""
-        SELECT ejs_id, claimant_name, respondent_name, decision_date,
-               claimed_amount, adjudicated_amount, fee_claimant_proportion, fee_respondent_proportion
-        FROM ai_adjudicator_extract_v4
-        WHERE adjudicator_name = ?
-        ORDER BY decision_date DESC
-        LIMIT 50
-    """, (name,))
-    rows = cur.fetchall()
-
-    decisions = []
-    for r in rows:
-        decisions.append({
-            "id": r["ejs_id"],
-            "title": f"{r['claimant_name']} v {r['respondent_name']}",
-            "date": r["decision_date"],
-            "claimAmount": r["claimed_amount"] or 0,
-            "awardedAmount": r["adjudicated_amount"] or 0,
-            "feeClaimant": r["fee_claimant_proportion"] or 0,
-            "feeRespondent": r["fee_respondent_proportion"] or 0
-        })
-    return decisions
+@app.get("/adjudicator/{adjudicator_name}")
+def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
+    """Get all decisions for a specific adjudicator"""
+    try:
+        # Decode URL-encoded name
+        decoded_name = unquote_plus(adjudicator_name)
+        
+        query = """
+        SELECT 
+            d.ejs_id,
+            d.reference,
+            d.pdf_path,
+            m.claimant,
+            m.respondent,
+            m.adjudicator,
+            m.decision_date_norm,
+            m.claim_amount,
+            m.adjudicated_amount,
+            m.act
+        FROM docs_fresh d
+        JOIN docs_meta m ON d.ejs_id = m.ejs_id
+        WHERE LOWER(m.adjudicator) = LOWER(?)
+        ORDER BY m.decision_date_norm DESC
+        """
+        
+        rows = con.execute(query, (decoded_name,)).fetchall()
+        
+        decisions = []
+        for row in rows:
+            # Clean up monetary amounts
+            claim_amount_str = (row["claim_amount"] or "0").replace('$', '').replace(',', '')
+            awarded_amount_str = (row["adjudicated_amount"] or "0").replace('$', '').replace(',', '')
+            
+            try:
+                claim_amount = float(claim_amount_str) if claim_amount_str else 0
+                awarded_amount = float(awarded_amount_str) if awarded_amount_str else 0
+            except (ValueError, TypeError):
+                claim_amount = 0
+                awarded_amount = 0
+            
+            decision = {
+                "id": row["ejs_id"],
+                "title": f"{row['claimant']} v {row['respondent']}",
+                "reference": row["reference"],
+                "date": row["decision_date_norm"],
+                "claimant": row["claimant"],
+                "respondent": row["respondent"],
+                "claimAmount": claim_amount,
+                "awardedAmount": awarded_amount,
+                "pdfPath": row["pdf_path"],
+                "act": row["act"]
+            }
+            decisions.append(decision)
+        
+        return decisions
+        
+    except Exception as e:
+        print(f"Error in /adjudicator/{adjudicator_name}: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 # ---------- FEEDBACK FORM ----------
 @app.post("/send-feedback")
