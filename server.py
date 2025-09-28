@@ -787,6 +787,64 @@ Decision text:
         print("ERROR in /summarise:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
 
+@app.get("/adjudicators")
+def get_adjudicators():
+    cur = con.execute("""
+        SELECT adjudicator_name,
+               COUNT(*) as totalDecisions,
+               SUM(claimed_amount) as totalClaimAmount,
+               SUM(adjudicated_amount) as totalAwardedAmount,
+               AVG(
+                   CASE 
+                       WHEN claimed_amount > 0 
+                       THEN (adjudicated_amount * 100.0 / claimed_amount) 
+                       ELSE NULL 
+                   END
+               ) as avgAwardRate
+        FROM ai_adjudicator_extract_v4
+        WHERE adjudicator_name IS NOT NULL AND adjudicator_name != ''
+        GROUP BY adjudicator_name
+        ORDER BY totalDecisions DESC
+    """)
+    rows = cur.fetchall()
+
+    adjudicators = []
+    for r in rows:
+        adjudicators.append({
+            "name": r["adjudicator_name"],
+            "totalDecisions": r["totalDecisions"],
+            "totalClaimAmount": r["totalClaimAmount"] or 0,
+            "totalAwardedAmount": r["totalAwardedAmount"] or 0,
+            "avgAwardRate": r["avgAwardRate"] or 0,
+        })
+    return adjudicators
+
+
+@app.get("/adjudicator/{name}")
+def get_adjudicator_detail(name: str):
+    cur = con.execute("""
+        SELECT ejs_id, claimant_name, respondent_name, decision_date,
+               claimed_amount, adjudicated_amount, fee_claimant_proportion, fee_respondent_proportion
+        FROM ai_adjudicator_extract_v4
+        WHERE adjudicator_name = ?
+        ORDER BY decision_date DESC
+        LIMIT 50
+    """, (name,))
+    rows = cur.fetchall()
+
+    decisions = []
+    for r in rows:
+        decisions.append({
+            "id": r["ejs_id"],
+            "title": f"{r['claimant_name']} v {r['respondent_name']}",
+            "date": r["decision_date"],
+            "claimAmount": r["claimed_amount"] or 0,
+            "awardedAmount": r["adjudicated_amount"] or 0,
+            "feeClaimant": r["fee_claimant_proportion"] or 0,
+            "feeRespondent": r["fee_respondent_proportion"] or 0
+        })
+    return decisions
+
 # ---------- FEEDBACK FORM ----------
 @app.post("/send-feedback")
 async def send_feedback(
