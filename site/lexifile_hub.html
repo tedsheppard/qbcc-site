@@ -955,6 +955,8 @@
             if (!liveDocumentPreview) return;
             
             try {
+                liveDocumentPreview.innerHTML = '<div class="text-center py-4"><div class="loader mx-auto mb-2"></div><p class="text-sm text-gray-500">Loading document preview...</p></div>';
+                
                 // First try to get document preview from server
                 const response = await fetch(`/preview-document/${docId}`);
                 if (response.ok) {
@@ -1112,6 +1114,9 @@
                     // Find and render the document preview
                     const doc = state.filteredDocuments.find(d => d.artifactID === docId);
                     renderDocumentPreview(doc);
+                    
+                    // Explicitly call the document preview loader
+                    loadActualDocumentPreview(docId);
                     return;
                 }
                 
