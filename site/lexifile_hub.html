@@ -45,120 +45,44 @@
         .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { border-spacing: 0; }
         th, td { white-space: nowrap; padding: 0.5rem 0.75rem; border-bottom: 1px solid #e5e7eb; font-size: 0.8rem; }
-        th { background-color: #f9fafb; font-weight: 600; text-align: left; position: sticky; top: 0; z-index: 10; cursor: pointer; }
-        th .sort-icon { display: inline-block; width: 1rem; height: 1rem; margin-left: 0.25rem; opacity: 0.3; }
-        th:hover .sort-icon { opacity: 0.7; }
-        th.sorted-asc .sort-icon, th.sorted-desc .sort-icon { opacity: 1; }
-        td { vertical-align: top; }
-        td.wrap { white-space: normal; min-width: 150px; }
-        tr:hover { background-color: #f3f4f6; }
-        tr.selected { background-color: #eef2ff; }
-        .filter-input { width: 100%; padding: 0.25rem; font-size: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; }
 
-        /* Sidebar navigation enhancements */
-        .nav-item { 
-            transition: all 0.2s ease;
-        }
-        .nav-item:hover {
-            background-color: #f3f4f6;
-        }
-        .nav-item.active {
-            background-color: #eef2ff;
-            color: #4f46e5;
-            border-right: 3px solid #4f46e5;
-        }
-        .project-list-item {
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        .project-list-item:hover {
-            background-color: #f9fafb;
-            padding-left: 1rem;
-        }
-        .project-list-item.current {
-            background-color: #eef2ff;
-            color: #4f46e5;
-            font-weight: 600;
-        }
-
-        /* Preview pane styles */
-        .preview-pane {
-            border-left: 1px solid #e5e7eb;
-            background-color: #fafafa;
-            position: sticky;
-            right: 0;
-        }
-        .document-preview-content {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        /* Editable field styles */
-        .editable-field {
-            border: 1px solid transparent;
-            padding: 2px 4px;
-            border-radius: 3px;
-            transition: all 0.2s ease;
-        }
-        .editable-field:hover {
-            border-color: #d1d5db;
-            background-color: #f9fafb;
-        }
-        .editable-field:focus {
-            outline: none;
-            border-color: #4f46e5;
-            background-color: white;
-        }
-        .keywords-container {
+        /* ADDED STYLES FOR LAYOUT AND INTERACTIVITY FIXES */
+        #main-content {
             display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            min-height: 24px;
-            padding: 4px;
-            border: 1px solid transparent;
-            border-radius: 4px;
+            flex: 1;
+            overflow: hidden; /* Prevent double scrollbars */
         }
-        .keywords-container:hover {
-            border-color: #d1d5db;
-            background-color: #f9fafb;
+        #document-list-container {
+            flex: 1;
+            overflow-y: auto; /* Allow content to scroll */
+            padding-right: 8px; /* Space for resize handle */
         }
-        .keyword-tag {
-            display: inline-flex;
-            align-items: center;
-            background-color: #dbeafe;
-            color: #1e40af;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-        }
-        .keyword-tag .remove-keyword {
-            margin-left: 4px;
-            cursor: pointer;
-            opacity: 0.6;
-        }
-        .keyword-tag .remove-keyword:hover {
-            opacity: 1;
-        }
-
-        /* Fix: allow horizontal scrolling inside search box */
-        #fulltextSearch {
-            overflow-x: auto;
-            white-space: nowrap;
-        }
-
-        /* Fix: draggable preview pane */
-        .preview-pane {
+        #preview-pane-container {
+            position: relative; /* For resize handle positioning */
+            overflow-y: auto;
+            background-color: #f8fafc;
             border-left: 1px solid #e5e7eb;
-            background-color: #fafafa;
-            resize: horizontal;
-            overflow: auto;
             min-width: 300px;
+            width: 40%; /* Initial width */
             max-width: 80%;
         }
-
-        /* Fix: prevent header overlap */
-        #registerTab {
-            padding-top: 4rem;
+        #resize-handle {
+            position: absolute;
+            left: -4px; /* Position over the border */
+            top: 0;
+            bottom: 0;
+            width: 8px; /* Wider hit area */
+            cursor: col-resize;
+            z-index: 40; /* Above content, below toast */
+        }
+        /* Style for search input to allow scrolling */
+        #fulltextSearch {
+            min-width: 0; /* Allow input to shrink in flex container */
+        }
+        /* Fix for header overlap */
+        #view-search-header {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
         }
     </style>
 </head>
@@ -277,1042 +201,175 @@
             </header>
 
             <!-- Main Content Area -->
-            <main class="flex-grow min-h-0">
-                <!-- TAB 1: Renaming View -->
-                <div id="renamingTab" class="flex flex-col md:flex-row h-full">
-                    <!-- Panel 1: File Queue -->
-                    <div class="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col bg-white">
-                        <div class="p-4 border-b border-gray-200 flex-shrink-0 space-y-3">
-                            <label for="fileUpload" class="w-full cursor-pointer bg-blue-50 text-blue-700 border-2 border-dashed border-blue-200 rounded-lg flex flex-col items-center justify-center p-4 hover:bg-blue-100 transition">
-                                <i data-lucide="upload" class="mb-2"></i>
-                                <span class="font-semibold text-sm">Upload Documents</span>
-                                <span class="text-xs">or drag and drop</span>
-                            </label>
-                            <input type="file" id="fileUpload" class="hidden" multiple accept=".pdf,.doc,.docx,.msg,.eml,.png,.jpg,.jpeg">
-                            <div class="grid grid-cols-2 gap-2">
-                                <button id="approveAllBtn" class="w-full bg-green-500 text-white px-3 py-2 text-sm rounded-lg font-semibold hover:bg-green-600 transition shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2">
-                                    <i data-lucide="check-check" class="h-4 w-4"></i>
-                                    <span>Approve All</span>
-                                </button>
-                                <button id="downloadBtn" disabled class="w-full bg-blue-600 text-white px-3 py-2 text-sm rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2">
-                                    <i data-lucide="download" class="h-4 w-4"></i>
-                                    <span>Download (.zip)</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="fileQueue" class="flex-grow overflow-y-auto p-2 space-y-1">
-                            <div id="fileQueuePlaceholder" class="text-center p-10 text-gray-500">
-                                <i data-lucide="folder-open" class="mx-auto h-12 w-12 text-gray-400"></i>
-                                <p class="mt-4 font-medium">Your document queue is empty.</p>
-                                <p class="text-sm">Upload files to get started.</p>
-                            </div>
+            <main id="main-content">
+                <!-- Document List Container -->
+                <div id="document-list-container" class="p-4 md:p-6">
+                    <div id="view-search-header" class="bg-gray-50 sticky top-0 z-10">
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"></i>
+                            <input type="text" id="fulltextSearch" placeholder="Search document content, filename, or description..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
                     </div>
-                    <!-- Panel 2: Document Preview -->
-                    <div class="w-full md:w-1/2 flex flex-col bg-gray-100">
-                        <div class="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
-                            <h2 class="font-semibold text-lg">Document Preview</h2>
-                        </div>
-                        <div class="flex-grow flex items-center justify-center p-4 min-h-0">
-                            <div class="w-full h-full bg-white rounded-lg shadow-inner border border-gray-200 p-6 overflow-y-auto">
-                                <div id="previewPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
-                                    <i data-lucide="file-text" class="h-16 w-16"></i>
-                                    <p class="mt-4 font-medium text-lg">Select a file to preview</p>
-                                </div>
-                                <div id="previewContent" class="hidden"></div>
-                            </div>
-                        </div>
+                    <div class="mt-4 table-container">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-100">
+                                <!-- Table headers will be populated here -->
+                            </thead>
+                            <tbody id="documentTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Document rows will be populated here -->
+                            </tbody>
+                        </table>
                     </div>
-                    <!-- Panel 3: Smart Editor -->
-                    <div class="w-full md:w-1/3 border-t md:border-t-0 md:border-l border-gray-200 flex flex-col bg-white">
-                        <div class="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
-                            <h2 class="font-semibold text-lg">Smart Editor</h2>
-                        </div>
-                        <div id="editorPanel" class="flex-grow p-6 overflow-y-auto">
-                            <div id="editorPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
-                                <i data-lucide="edit-3" class="h-16 w-16"></i>
-                                <p class="mt-4 font-medium text-lg text-center">Select a file to edit</p>
-                            </div>
-                            <div id="editorForm" class="hidden space-y-5"></div>
-                        </div>
+                     <div id="paginationControls" class="mt-4 flex justify-between items-center text-sm">
+                        <!-- Pagination will be populated here -->
                     </div>
                 </div>
 
-                <!-- TAB 2: Register View with Two-Column Layout -->
-                <div id="registerTab" class="hidden h-full flex">
-                    <!-- Left Column: Document List with horizontal scroll -->
-                    <div class="flex-1 flex flex-col p-6 pr-3 min-w-0">
-                        <!-- Search Bar -->
-                        <div class="mb-4">
-                            <div class="relative">
-                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"></i>
-                                <input type="search" id="fulltextSearch" placeholder="Search document content..." 
-       class="w-full rounded-lg border-gray-300 pl-9 pr-4 py-2 overflow-x-auto whitespace-nowrap">
-                            </div>
-                        </div>
-
-                        <!-- Document Table with full columns -->
-                        <div class="flex-grow border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
-                            <div class="table-container h-full">
-                                <table class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="w-8"><input type="checkbox" id="selectAllCheckbox"></th>
-                                            <th data-sort="artifactID" class="min-w-[100px]">Artifact ID<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                            <th data-sort="objectType" class="min-w-[100px]">Object Type<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                            <th data-sort="improvedFilename" class="min-w-[200px]">Improved Filename<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                            <th data-sort="date" class="min-w-[100px]">Date<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                            <th data-sort="description" class="min-w-[150px]">Description<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                            <th data-sort="author" class="min-w-[120px]">Author<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                            <th data-sort="sender" class="min-w-[120px]">Sender<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                            <th data-sort="recipient" class="min-w-[120px]">Recipient<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                            <th data-sort="keywords" class="min-w-[150px]">Keywords<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                            <th data-sort="lastModified" class="min-w-[120px]">Date Last Modified<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                            <th data-sort="lastModifiedBy" class="min-w-[120px]">Last Modified By<i class="sort-icon" data-lucide="arrow-up-down"></i></th>
-                                            <th class="min-w-[100px]">Content Snippet</th>
-                                            <th class="w-20 sticky right-0 bg-gray-50">Actions</th>
-                                        </tr>
-                                        <tr>
-                                            <th></th>
-                                            <th><input class="filter-input" data-filter="artifactID"></th>
-                                            <th><input class="filter-input" data-filter="objectType"></th>
-                                            <th><input class="filter-input" data-filter="improvedFilename"></th>
-                                            <th><input class="filter-input" data-filter="date"></th>
-                                            <th><input class="filter-input" data-filter="description"></th>
-                                            <th><input class="filter-input" data-filter="author"></th>
-                                            <th><input class="filter-input" data-filter="sender"></th>
-                                            <th><input class="filter-input" data-filter="recipient"></th>
-                                            <th><input class="filter-input" data-filter="keywords"></th>
-                                            <th><input class="filter-input" data-filter="lastModified"></th>
-                                            <th><input class="filter-input" data-filter="lastModifiedBy"></th>
-                                            <th></th>
-                                            <th class="sticky right-0 bg-gray-50"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="documentTableBody" class="bg-white divide-y divide-gray-200"></tbody>
-                                </table>
-                                <div id="searchPlaceholder" class="text-center py-20 text-gray-500">
-                                    <i data-lucide="file-search-2" class="mx-auto h-16 w-16 text-gray-400"></i>
-                                    <p class="mt-4 font-medium text-lg">No documents found.</p>
-                                    <p class="text-sm">Upload documents in the 'Upload & Rename' tab to see them here.</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Pagination and Bulk Actions -->
-                        <div class="flex justify-between items-center mt-4">
-                            <div id="paginationControls" class="flex items-center space-x-2 text-sm text-gray-600"></div>
-                            <button id="bulkDownloadBtn" disabled class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2">
-                                <i data-lucide="download" class="h-4 w-4"></i>
-                                <span>Download Selected</span>
-                            </button>
+                <!-- Preview Pane Container -->
+                <aside id="preview-pane-container" class="hidden">
+                    <div id="resize-handle"></div>
+                    <div id="document-preview-content" class="p-6">
+                        <!-- Document details and preview will be populated here -->
+                    </div>
+                    <div id="document-preview-placeholder" class="p-6 h-full flex items-center justify-center">
+                        <div class="text-center">
+                            <i data-lucide="file-text" class="mx-auto h-12 w-12 text-gray-400"></i>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">Select a document</h3>
+                            <p class="mt-1 text-sm text-gray-500">Select a document from the list to see its details and preview.</p>
                         </div>
                     </div>
-
-                    <!-- Right Column: Permanent Preview Pane with Document Preview -->
-                    <div class="w-96 preview-pane flex flex-col">
-                        <div class="p-4 border-b border-gray-200 bg-white">
-                            <h2 class="font-semibold text-lg">Document Details</h2>
-                        </div>
-                        <div class="flex-grow overflow-hidden flex flex-col">
-                            <div id="documentPreviewPane" class="flex-1 overflow-y-auto p-4">
-                                <div id="documentPreviewPlaceholder" class="h-full flex flex-col items-center justify-center text-gray-400">
-                                    <i data-lucide="file-text" class="h-16 w-16"></i>
-                                    <p class="mt-4 font-medium text-lg text-center">Select a document to view details</p>
-                                </div>
-                                <div id="documentPreviewContent" class="hidden space-y-4">
-    <!-- Document metadata will be populated here -->
-
-    <div>
-        <h3 class="text-sm font-bold text-gray-800 mb-2">Document Preview</h3>
-        <div id="liveDocumentPreview" class="border border-gray-200 rounded-lg bg-white p-2 h-64 overflow-auto">
-            <div class="text-center py-4">
-                <div class="loader mx-auto mb-2"></div>
-                <p class="text-sm text-gray-500">Loading document preview...</p>
-            </div>
-        </div>
-    </div>
-</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                </aside>
             </main>
         </div>
     </div>
     
     <div id="toast" class="fixed top-5 right-5 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transform translate-y-2 transition-all duration-300 z-50">
-        <span id="toastMessage"></span>
     </div>
 
     <script>
-        // Redirect to login if not logged in
-        const token = localStorage.getItem('lexifile_token');
-        if (!token) { window.location.href = '/lexifile_login'; }
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
 
-        // Set workerSrc for PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
+            const previewPane = document.getElementById('preview-pane-container');
+            const resizeHandle = document.getElementById('resize-handle');
+            const documentListContainer = document.getElementById('document-list-container');
+            const documentTableBody = document.getElementById('documentTableBody');
+            const previewContent = document.getElementById('document-preview-content');
+            const previewPlaceholder = document.getElementById('document-preview-placeholder');
 
-        const state = {
-            files: [], // For renaming tab
-            allDocuments: [], // For register tab
-            filteredDocuments: [],
-            selectedFileId: null,
-            selectedDocumentId: null, // For register tab preview
-            projectId: null,
-            currentProject: null,
-            currentPage: 1,
-            rowsPerPage: 50,
-            sortColumn: 'artifactID',
-            sortDirection: 'asc',
-            selectedArtifacts: new Set(),
-            fulltextSearchTimeout: null,
-            allProjects: [] // For sidebar project list
-        };
-
-        // --- DOM Elements ---
-        const projectTitle = document.getElementById('projectTitle');
-        const projectInfo = document.getElementById('projectInfo');
-        const sidebarProjectName = document.getElementById('sidebarProjectName');
-        const sidebarProjectInfo = document.getElementById('sidebarProjectInfo');
-        const projectsList = document.getElementById('projectsList');
-        const fileUpload = document.getElementById('fileUpload');
-        const fileQueue = document.getElementById('fileQueue');
-        const fileQueuePlaceholder = document.getElementById('fileQueuePlaceholder');
-        const previewPlaceholder = document.getElementById('previewPlaceholder');
-        const previewContent = document.getElementById('previewContent');
-        const editorPlaceholder = document.getElementById('editorPlaceholder');
-        const editorForm = document.getElementById('editorForm');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const approveAllBtn = document.getElementById('approveAllBtn');
-        const toast = document.getElementById('toast');
-        const toastMessage = document.getElementById('toastMessage');
-        const logoutButton = document.getElementById('logoutButton');
-        const projectSettingsLink = document.getElementById('projectSettingsLink');
-        const renamingTab = document.getElementById('renamingTab');
-        const registerTab = document.getElementById('registerTab');
-        const createIndexBtn = document.getElementById('createIndexBtn');
-        
-        // Document Register DOM Elements
-        const documentTableBody = document.getElementById('documentTableBody');
-        const searchPlaceholder = document.getElementById('searchPlaceholder');
-        const paginationControls = document.getElementById('paginationControls');
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-        const bulkDownloadBtn = document.getElementById('bulkDownloadBtn');
-        const filterInputs = document.querySelectorAll('.filter-input');
-        const fulltextSearch = document.getElementById('fulltextSearch');
-        const documentPreviewPane = document.getElementById('documentPreviewPane');
-        const documentPreviewPlaceholder = document.getElementById('documentPreviewPlaceholder');
-        const documentPreviewContent = document.getElementById('documentPreviewContent');
-
-        // --- Helper & Utility Functions ---
-        function showToast(message, isError = false) {
-            toastMessage.textContent = message;
-            toast.className = `fixed top-5 right-5 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300 z-50 ${isError ? 'bg-red-500' : 'bg-green-500'}`;
-            toast.classList.remove('opacity-0', 'translate-y-2');
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-            }, 3000);
-        }
-
-        function switchTab(tabName) {
-            renamingTab.classList.toggle('hidden', tabName !== 'renaming');
-            registerTab.classList.toggle('hidden', tabName !== 'register');
-            
-            // Update header buttons based on active tab
-            createIndexBtn.disabled = (tabName !== 'register');
-            
-            // Update sidebar navigation
-            document.querySelectorAll('.project-nav-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.tab === tabName);
+            // --- RESIZING LOGIC ---
+            let isResizing = false;
+            resizeHandle.addEventListener('mousedown', function(e) {
+                isResizing = true;
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
             });
-            
-            if(tabName === 'register') {
-                fetchDocumentsForRegister(); // Refresh data when switching to register tab
-            }
-        }
 
-        async function loadAllProjects() {
-            try {
-                const response = await fetch('/projects');
-                if (!response.ok) throw new Error('Failed to fetch projects');
-                state.allProjects = await response.json();
-                renderProjectsList();
-            } catch (error) {
-                console.error('Failed to load projects:', error);
-                projectsList.innerHTML = '<div class="text-sm text-red-500">Failed to load projects</div>';
-            }
-        }
+            document.addEventListener('mousemove', function(e) {
+                if (!isResizing) return;
+                const totalWidth = document.getElementById('main-content').offsetWidth;
+                const newPreviewWidth = totalWidth - e.clientX;
+                const minWidth = 300;
+                const maxWidth = totalWidth * 0.8;
 
-        function renderProjectsList() {
-            if (state.allProjects.length === 0) {
-                projectsList.innerHTML = '<div class="text-sm text-gray-500">No projects found</div>';
-                return;
+                if (newPreviewWidth > minWidth && newPreviewWidth < maxWidth) {
+                    previewPane.style.width = newPreviewWidth + 'px';
+                }
+            });
+
+            document.addEventListener('mouseup', function(e) {
+                isResizing = false;
+                document.body.style.cursor = 'default';
+                document.body.style.userSelect = 'auto';
+            });
+
+            // --- MOCK DATA AND PREVIEW LOGIC ---
+            const mockDocuments = [{
+                artifactID: 'LEX-00000001',
+                objectType: 'PDF Document',
+                improvedFilename: '20250320 - Adjudication Decision - Decision on construction payment dispute.pdf',
+                date: '2025-03-20',
+                description: 'Decision on construction payment dispute',
+                author: 'Christopher Groves',
+                sender: 'N/A',
+                recipient: 'Trent Le Fevre and AGM Pastoral Pty Ltd',
+                keywords: ['adjudication', 'payment claim', 'dispute']
+            }];
+
+            function renderTable() {
+                documentTableBody.innerHTML = mockDocuments.map(doc => `
+                    <tr class="document-row cursor-pointer hover:bg-gray-50" data-doc-id="${doc.artifactID}">
+                        <td><input type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"></td>
+                        <td>${doc.artifactID}</td>
+                        <td>${doc.objectType}</td>
+                        <td>${doc.improvedFilename}</td>
+                        <td>${doc.date}</td>
+                        <td>${doc.description}</td>
+                        <td>${doc.author}</td>
+                    </tr>
+                `).join('');
             }
 
-            projectsList.innerHTML = state.allProjects.map(project => {
-                const isCurrent = project.id === state.projectId;
-                return `
-                    <div class="project-list-item ${isCurrent ? 'current' : ''} px-3 py-2 text-sm rounded-md" data-project-id="${project.id}">
-                        <div class="font-medium truncate">${project.name}</div>
-                        <div class="text-xs text-gray-500 truncate">${project.client}</div>
+            function renderDocumentPreview(docId) {
+                const doc = mockDocuments.find(d => d.artifactID === docId);
+                if (!doc) return;
+
+                previewPane.classList.remove('hidden');
+                previewPlaceholder.classList.add('hidden');
+
+                previewContent.innerHTML = `
+                    <h2 class="text-lg font-bold text-gray-900">Document Details</h2>
+                    <div class="mt-4 space-y-4 text-sm">
+                        <div><strong>Improved Filename:</strong><br>${doc.improvedFilename}</div>
+                        <div><strong>Date:</strong> ${doc.date}</div>
+                        <div><strong>Type:</strong> ${doc.objectType}</div>
+                        <div class="pt-2"><strong>Description:</strong><br>${doc.description}</div>
+                        <div class="pt-2">
+                            <h3 class="font-bold text-gray-800 mb-1">Metadata</h3>
+                            <p><strong>Author:</strong> ${doc.author}</p>
+                            <p><strong>Sender:</strong> ${doc.sender}</p>
+                            <p><strong>Recipient:</strong> ${doc.recipient}</p>
+                        </div>
+                        <div class="pt-2">
+                            <h3 class="font-bold text-gray-800 mb-2">Document Preview</h3>
+                            <div id="liveDocumentPreview" class="border border-gray-200 rounded-lg bg-white p-2 h-64 overflow-auto">
+                                <div class="text-center py-4">
+                                    <div class="loader mx-auto mb-2"></div>
+                                    <p class="text-sm text-gray-500">Loading document preview...</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
-            }).join('');
-        }
+                loadActualDocumentPreview(docId);
+            }
 
-        async function saveDocumentField(docId, field, value) {
-            try {
-                const response = await fetch(`/update-document/${docId}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ [field]: value })
-                });
-                if (!response.ok) throw new Error('Failed to update document');
-                showToast('Document updated successfully');
-                
-                // Update local state
-                const doc = state.filteredDocuments.find(d => d.artifactID === docId);
-                if (doc) doc[field] = value;
-                
-                return true;
-            } catch (error) {
-                showToast('Failed to update document: ' + error.message, true);
-                return false;
-            }
-        }
-
-        async function saveDocumentKeywords(docId, keywords) {
-            try {
-                const response = await fetch(`/update-document/${docId}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ keywords: keywords })
-                });
-                if (!response.ok) throw new Error('Failed to update keywords');
-                showToast('Keywords updated successfully');
-                
-                // Update local state
-                const doc = state.filteredDocuments.find(d => d.artifactID === docId);
-                if (doc) doc.keywords = keywords;
-                
-                return true;
-            } catch (error) {
-                showToast('Failed to update keywords: ' + error.message, true);
-                return false;
-            }
-        }
-        
-        // --- RENAMING TAB: Functions ---
-        function renderFileQueue() {
-            if (state.files.length === 0) {
-                fileQueuePlaceholder.classList.remove('hidden');
-                downloadBtn.disabled = true;
-                approveAllBtn.disabled = true;
-                fileQueue.innerHTML = '';
-                return;
-            }
-            fileQueuePlaceholder.classList.add('hidden');
-            const hasApprovedFiles = state.files.some(f => f.status === 'approved');
-            downloadBtn.disabled = !hasApprovedFiles;
-            const hasReviewableFiles = state.files.some(f => f.status === 'review');
-            approveAllBtn.disabled = !hasReviewableFiles;
-            fileQueue.innerHTML = state.files.map(file => {
-                const isSelected = file.id === state.selectedFileId;
-                const newName = file.improvedFilename || `${(file.date || '0000-00-00').replace(/-/g, '')} - ${file.ai_full_response.docType} - ${file.description}.${file.extension}`;
-                let statusIcon;
-                switch(file.status) {
-                    case 'processing': statusIcon = `<div class="loader"></div>`; break;
-                    case 'review': statusIcon = `<div class="flex items-center space-x-2"><i data-lucide="alert-circle" class="text-yellow-500"></i><button class="delete-btn text-gray-400 hover:text-red-600" data-id="${file.id}" title="Delete"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div>`; break;
-                    case 'approved': statusIcon = `<i data-lucide="check-circle-2" class="text-green-500"></i>`; break;
-                    case 'error': statusIcon = `<i data-lucide="x-circle" class="text-red-500"></i>`; break;
-                }
-                return `<div class="file-item p-3 border-l-4 ${isSelected ? 'selected' : 'border-transparent'} rounded-md cursor-pointer hover:bg-gray-100 transition" data-id="${file.id}">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center space-x-2 min-w-0">
-                                ${statusIcon}
-                                <span class="text-sm font-medium text-gray-800 truncate" title="${file.originalFilename}">${file.originalFilename}</span>
-                            </div>
-                            <button class="approve-btn text-gray-400 hover:text-green-600 ${file.status === 'approved' || file.status === 'processing' || file.status === 'error' ? 'hidden' : ''}" data-id="${file.id}" title="Approve">
-                                <i data-lucide="check" class="h-5 w-5"></i>
-                            </button>
+            function loadActualDocumentPreview(docId) {
+                const livePreviewContainer = document.getElementById('liveDocumentPreview');
+                // Simulate network delay
+                setTimeout(() => {
+                    livePreviewContainer.innerHTML = `
+                        <div class="p-4 bg-gray-100 h-full">
+                            <h4 class="font-bold">Simulated PDF Preview</h4>
+                            <p class="mt-2 text-xs">This is a simulated preview for ${docId}. The real document would be rendered here.</p>
                         </div>
-                        <p class="text-xs text-blue-600 font-mono truncate" title="${newName}">${file.status === 'error' ? file.description : newName}</p>
-                    </div>`;
-            }).join('');
-            lucide.createIcons();
-        }
-
-        async function renderEditorAndPreview() {
-            if (!state.selectedFileId) {
-                editorPlaceholder.classList.remove('hidden'); editorForm.classList.add('hidden');
-                previewPlaceholder.classList.remove('hidden'); previewContent.classList.add('hidden');
-                return;
-            }
-            const file = state.files.find(f => f.id === state.selectedFileId);
-            if (!file) return;
-            if (file.status === 'error') {
-                 editorPlaceholder.classList.remove('hidden'); editorForm.classList.add('hidden');
-                 previewContent.innerHTML = `<div class="text-red-600 p-4 bg-red-50 rounded-lg"><p class="font-bold mb-2">Could not process this file.</p><p class="text-sm">${file.description}</p></div>`;
-                 previewContent.classList.remove('hidden'); previewPlaceholder.classList.add('hidden');
-                 return;
-            };
-            editorPlaceholder.classList.add('hidden'); editorForm.classList.remove('hidden');
-            previewPlaceholder.classList.add('hidden'); previewContent.classList.remove('hidden');
-            editorForm.innerHTML = `
-                <div><label for="editorDate" class="block text-sm font-bold text-gray-800 mb-1">Date</label><input type="text" id="editorDate" value="${file.date}" placeholder="YYYY-MM-DD" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono"></div>
-                <div><label for="editorDocType" class="block text-sm font-bold text-gray-800 mb-1">Document Type</label><input type="text" id="editorDocType" value="${file.ai_full_response.docType}" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></div>
-                <div><label for="editorDescription" class="block text-sm font-bold text-gray-800 mb-1">Description</label><textarea id="editorDescription" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg">${file.description}</textarea></div>
-                <div class="pt-4 border-t border-gray-200"><h4 class="text-sm font-bold text-gray-800 mb-2">Live Filename Preview</h4><div class="p-3 bg-gray-100 rounded-lg text-gray-700 text-sm break-all font-mono"><span id="previewDate"></span> - <span id="previewDocType"></span> - <span id="previewDescription"></span>.<span id="previewExtension"></span></div></div>
-                <div id="metadataEditor" class="pt-4 border-t border-gray-200"><h4 class="text-sm font-bold text-gray-800 mb-3">Editable Properties</h4>
-                    <div class="space-y-3 text-sm max-h-64 overflow-y-auto pr-2">
-                        <div class="grid grid-cols-3 items-center"><label for="metaSender" class="font-medium text-gray-600">Sender</label><input type="text" id="metaSender" value="${file.sender || ''}" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md"></div>
-                        <div class="grid grid-cols-3 items-center"><label for="metaRecipient" class="font-medium text-gray-600">Recipient</label><input type="text" id="metaRecipient" value="${file.recipient || ''}" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md"></div>
-                        <div class="grid grid-cols-3 items-center"><label for="metaAuthor" class="font-medium text-gray-600">Author</label><input type="text" id="metaAuthor" value="${file.author || ''}" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md"></div>
-                        <div class="grid grid-cols-3 items-center"><label for="metaLastModified" class="font-medium text-gray-600">Last Modified</label><input type="text" id="metaLastModified" value="${file.lastModifiedOn || ''}" class="col-span-2 w-full px-2 py-1 border border-gray-300 rounded-md"></div>
-                    </div>
-                </div>`;
-            document.querySelectorAll('#editorForm input, #editorForm textarea').forEach(el => el.addEventListener('input', handleEditorChange));
-            updateFilenamePreview();
-            const keywordsHTML = (file.keywords || []).map(kw => `<span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${kw}</span>`).join('');
-            previewContent.innerHTML = `<div class="mb-6"><h3 class="text-sm font-bold text-gray-800 mb-2">AI Summary</h3><p class="text-gray-600 text-sm">${file.ai_full_response.summary || 'N/A'}</p></div><div class="mb-8"><h3 class="text-sm font-bold text-gray-800 mb-2">Keywords</h3><div class="flex flex-wrap">${keywordsHTML}</div></div><div class="border-t border-gray-200 pt-6"><h3 class="text-sm font-bold text-gray-800 mb-2">Document Body Preview</h3><div id="actual-preview-container" class="bg-gray-50 border rounded-lg text-sm text-gray-500 overflow-auto p-2"></div></div>`;
-            const previewContainer = document.getElementById('actual-preview-container');
-            await renderDocumentPreviewContent(file, previewContainer);
-        }
-
-        async function renderDocumentPreviewContent(file, container) {
-            container.innerHTML = '<div class="p-4 flex items-center justify-center"><div class="loader"></div><span class="ml-2">Loading preview...</span></div>';
-            try {
-                const fileURL = URL.createObjectURL(file.fileObject);
-                const fileName = file.originalFilename.toLowerCase();
-                if (fileName.endsWith('.pdf')) {
-                    const pdfViewer = document.createElement('div'); pdfViewer.id = 'pdf-viewer';
-                    container.innerHTML = ''; container.appendChild(pdfViewer);
-                    const loadingTask = pdfjsLib.getDocument(fileURL); const pdf = await loadingTask.promise;
-                    const containerWidth = container.clientWidth - 20;
-                    for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 3); pageNum++) { // Limit to first 3 pages for performance
-                        const page = await pdf.getPage(pageNum);
-                        const originalViewport = page.getViewport({ scale: 1.0 });
-                        const scale = containerWidth / originalViewport.width;
-                        const viewport = page.getViewport({ scale: scale });
-                        const canvas = document.createElement('canvas'); const context = canvas.getContext('2d');
-                        canvas.height = viewport.height; canvas.width = viewport.width;
-                        pdfViewer.appendChild(canvas);
-                        await page.render({ canvasContext: context, viewport: viewport }).promise;
-                    }
-                } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
-                    const arrayBuffer = await file.fileObject.arrayBuffer();
-                    const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
-                    container.innerHTML = `<div class="p-4">${result.value}</div>`;
-                } else if (fileName.endsWith('.eml') || fileName.endsWith('.msg')) {
-                     const formData = new FormData(); formData.append('file', file.fileObject);
-                     const response = await fetch('/preview-email', { method: 'POST', body: formData });
-                     if (!response.ok) throw new Error('Failed to parse email on server.');
-                     const emailData = await response.json();
-                     container.innerHTML = `<div id="email-preview" class="p-2">
-                            <div class="header"><p><strong>From:</strong> ${emailData.from || 'N/A'}</p><p><strong>To:</strong> ${emailData.to || 'N/A'}</p><p><strong>Subject:</strong> ${emailData.subject || 'N/A'}</p><p><strong>Date:</strong> ${emailData.date || 'N/A'}</p></div>
-                            <div class="body mt-4">${emailData.body.replace(/\r\n/g, '<br>')}</div></div>`;
-                } else if (file.fileObject.type.startsWith('image/')) {
-                    container.innerHTML = `<img src="${fileURL}" class="max-w-full h-auto rounded-lg">`;
-                } else {
-                    container.innerHTML = '<div class="p-4">Preview is not available for this file type.</div>';
-                }
-            } catch(e) {
-                console.error("Preview failed:", e);
-                container.innerHTML = `<div class="p-4 text-red-600">Failed to render preview. The file may be corrupted or unsupported.</div>`;
-            }
-        }
-
-        function updateFilenamePreview() {
-            const file = state.files.find(f => f.id === state.selectedFileId);
-            if (!file) return;
-            document.getElementById('previewDate').textContent = document.getElementById('editorDate').value.replace(/-/g, '');
-            document.getElementById('previewDocType').textContent = document.getElementById('editorDocType').value;
-            document.getElementById('previewDescription').textContent = document.getElementById('editorDescription').value;
-            document.getElementById('previewExtension').textContent = file.extension;
-        }
-
-        // --- REGISTER TAB: Functions ---
-        async function fetchDocumentsForRegister() {
-            try {
-                searchPlaceholder.innerHTML = '<p>Loading documents...</p>';
-                searchPlaceholder.classList.remove('hidden');
-                documentTableBody.innerHTML = '';
-                const response = await fetch(`/get-project-documents?project_id=${state.projectId}`);
-                if(!response.ok) throw new Error("Failed to fetch documents");
-                state.allDocuments = await response.json();
-                state.filteredDocuments = [...state.allDocuments];
-                applyFiltersAndRenderRegister();
-            } catch (error) {
-                console.error('Failed to fetch documents:', error);
-                searchPlaceholder.innerHTML = '<p class="text-red-500">Could not load documents.</p>';
-            }
-        }
-
-        function applyFiltersAndRenderRegister() {
-            const filters = {};
-            filterInputs.forEach(input => {
-                if(input.value) filters[input.dataset.filter] = input.value.toLowerCase();
-            });
-            state.filteredDocuments = state.allDocuments.filter(doc => {
-                return Object.keys(filters).every(key => {
-                    const docValue = Array.isArray(doc[key]) ? doc[key].join(' ') : (doc[key] || '').toString();
-                    return docValue.toLowerCase().includes(filters[key]);
-                });
-            });
-            sortDocuments();
-            state.currentPage = 1;
-            renderTable();
-        }
-
-        function sortDocuments() {
-            state.filteredDocuments.sort((a, b) => {
-                const valA = a[state.sortColumn] || '';
-                const valB = b[state.sortColumn] || '';
-                if (valA < valB) return state.sortDirection === 'asc' ? -1 : 1;
-                if (valA > valB) return state.sortDirection === 'asc' ? 1 : -1;
-                return 0;
-            });
-        }
-
-        function renderTable() {
-            const start = (state.currentPage - 1) * state.rowsPerPage;
-            const end = start + state.rowsPerPage;
-            const paginatedDocs = state.filteredDocuments.slice(start, end);
-            if (state.filteredDocuments.length === 0) {
-                searchPlaceholder.classList.remove('hidden');
-                documentTableBody.innerHTML = '';
-            } else {
-                searchPlaceholder.classList.add('hidden');
-                documentTableBody.innerHTML = paginatedDocs.map(doc => `
-                    <tr class="document-row cursor-pointer ${doc.artifactID === state.selectedDocumentId ? 'selected' : ''}" data-doc-id="${doc.artifactID}">
-                        <td><input type="checkbox" class="row-checkbox" data-id="${doc.artifactID}" ${state.selectedArtifacts.has(doc.artifactID) ? 'checked' : ''}></td>
-                        <td class="font-mono text-blue-600 text-xs">${doc.artifactID}</td>
-                        <td class="text-xs">${doc.objectType}</td>
-                        <td class="wrap font-medium text-gray-900 text-xs">${doc.improvedFilename}</td>
-                        <td class="font-mono text-xs">${doc.date}</td>
-                        <td class="wrap text-xs">${doc.description}</td>
-                        <td class="text-xs">${doc.author || 'N/A'}</td>
-                        <td class="text-xs">${doc.sender || 'N/A'}</td>
-                        <td class="text-xs">${doc.recipient || 'N/A'}</td>
-                        <td class="wrap text-xs"><div class="flex flex-wrap gap-1">${(doc.keywords || []).map(kw => `<span class="bg-gray-100 text-gray-600 text-xs px-1 py-0.5 rounded-full">${kw}</span>`).join('')}</div></td>
-                        <td class="font-mono text-xs">${doc.lastModified || 'N/A'}</td>
-                        <td class="text-xs">${doc.lastModifiedBy || 'N/A'}</td>
-                        <td class="wrap text-xs">${doc.snippet || ''}</td>
-                        <td class="flex items-center space-x-1 sticky right-0 bg-white">
-                           <button title="Download" class="download-btn text-gray-400 hover:text-blue-600" data-id="${doc.artifactID}"><i data-lucide="download" class="h-3 w-3"></i></button>
-                           <button title="Delete" class="delete-btn text-gray-400 hover:text-red-600" data-id="${doc.artifactID}"><i data-lucide="trash-2" class="h-3 w-3"></i></button>
-                        </td>
-                    </tr>`).join('');
-            }
-            lucide.createIcons();
-            renderPagination();
-            updateBulkDownloadButton();
-        }
-
-        function renderPagination() {
-            const totalPages = Math.ceil(state.filteredDocuments.length / state.rowsPerPage);
-            const start = (state.currentPage - 1) * state.rowsPerPage + 1;
-            const end = Math.min(start + state.rowsPerPage - 1, state.filteredDocuments.length);
-            let controlsHTML = `<div>Showing ${state.filteredDocuments.length > 0 ? start : 0} - ${end} of ${state.filteredDocuments.length}</div>`;
-            if (totalPages > 1) {
-                controlsHTML += `<div class="flex items-center space-x-1"><button class="pagination-btn p-1 rounded ${state.currentPage === 1 ? 'opacity-50' : ''}" data-page="1" ${state.currentPage === 1 ? 'disabled' : ''}><i data-lucide="chevrons-left" class="h-4 w-4"></i></button><button class="pagination-btn p-1 rounded ${state.currentPage === 1 ? 'opacity-50' : ''}" data-page="${state.currentPage - 1}" ${state.currentPage === 1 ? 'disabled' : ''}><i data-lucide="chevron-left" class="h-4 w-4"></i></button><span class="px-2">Page ${state.currentPage} of ${totalPages}</span><button class="pagination-btn p-1 rounded ${state.currentPage === totalPages ? 'opacity-50' : ''}" data-page="${state.currentPage + 1}" ${state.currentPage === totalPages ? 'disabled' : ''}><i data-lucide="chevron-right" class="h-4 w-4"></i></button><button class="pagination-btn p-1 rounded ${state.currentPage === totalPages ? 'opacity-50' : ''}" data-page="${totalPages}" ${state.currentPage === totalPages ? 'disabled' : ''}><i data-lucide="chevrons-right" class="h-4 w-4"></i></button></div>`;
-            }
-            paginationControls.innerHTML = controlsHTML;
-            lucide.createIcons();
-        }
-
-        function updateBulkDownloadButton() {
-            bulkDownloadBtn.disabled = state.selectedArtifacts.size === 0;
-        }
-
-        function renderDocumentPreview(doc) {
-            if (!doc) {
-                documentPreviewPlaceholder.classList.remove('hidden');
-                documentPreviewContent.classList.add('hidden');
-                return;
-            }
-
-            documentPreviewPlaceholder.classList.add('hidden');
-            documentPreviewContent.classList.remove('hidden');
-
-            const keywordsHTML = (doc.keywords || []).map(kw => 
-                `<span class="keyword-tag">${kw}<span class="remove-keyword" onclick="removeKeyword('${doc.artifactID}', '${kw}')">×</span></span>`
-            ).join('');
-
-            documentPreviewContent.innerHTML = `
-                <div class="space-y-4">
-                    <div>
-                        <h3 class="text-sm font-bold text-gray-800 mb-2">Document Information</h3>
-                        <div class="bg-white p-3 rounded-lg border border-gray-200 space-y-2 text-sm">
-                            <div><strong>Artifact ID:</strong> <span class="font-mono text-blue-600">${doc.artifactID}</span></div>
-                            <div><strong>Original Filename:</strong> <span class="text-gray-700">${doc.originalFilename || 'N/A'}</span></div>
-                            <div>
-                                <strong>Improved Filename:</strong> 
-                                <input type="text" 
-                                       class="editable-field w-full text-gray-900 font-medium" 
-                                       value="${doc.improvedFilename}"
-                                       onchange="saveDocumentField('${doc.artifactID}', 'improvedFilename', this.value)">
-                            </div>
-                            <div>
-                                <strong>Date:</strong> 
-                                <input type="text" 
-                                       class="editable-field font-mono" 
-                                       value="${doc.date}"
-                                       placeholder="YYYY-MM-DD"
-                                       onchange="saveDocumentField('${doc.artifactID}', 'date', this.value)">
-                            </div>
-                            <div><strong>Type:</strong> <span class="text-gray-700">${doc.objectType}</span></div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 class="text-sm font-bold text-gray-800 mb-2">Description</h3>
-                        <div class="bg-white p-3 rounded-lg border border-gray-200">
-                            <textarea class="editable-field w-full text-sm text-gray-700 resize-none" 
-                                      rows="3"
-                                      onchange="saveDocumentField('${doc.artifactID}', 'description', this.value)">${doc.description || ''}</textarea>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 class="text-sm font-bold text-gray-800 mb-2">Metadata</h3>
-                        <div class="bg-white p-3 rounded-lg border border-gray-200 space-y-2 text-sm">
-                            <div>
-                                <strong>Author:</strong> 
-                                <input type="text" 
-                                       class="editable-field w-full" 
-                                       value="${doc.author || ''}"
-                                       onchange="saveDocumentField('${doc.artifactID}', 'author', this.value)">
-                            </div>
-                            <div>
-                                <strong>Sender:</strong> 
-                                <input type="text" 
-                                       class="editable-field w-full" 
-                                       value="${doc.sender || ''}"
-                                       onchange="saveDocumentField('${doc.artifactID}', 'sender', this.value)">
-                            </div>
-                            <div>
-                                <strong>Recipient:</strong> 
-                                <input type="text" 
-                                       class="editable-field w-full" 
-                                       value="${doc.recipient || ''}"
-                                       onchange="saveDocumentField('${doc.artifactID}', 'recipient', this.value)">
-                            </div>
-                            <div><strong>Last Modified:</strong> <span class="font-mono text-xs">${doc.lastModified || 'N/A'}</span></div>
-                            <div><strong>Last Modified By:</strong> <span class="text-xs">${doc.lastModifiedBy || 'N/A'}</span></div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 class="text-sm font-bold text-gray-800 mb-2">Keywords</h3>
-                        <div class="bg-white p-3 rounded-lg border border-gray-200">
-                            <div class="keywords-container" onclick="focusKeywordInput('${doc.artifactID}')">
-                                ${keywordsHTML}
-                                <input type="text" 
-                                       class="keyword-input border-none outline-none bg-transparent flex-1 min-w-20" 
-                                       placeholder="Add keyword..."
-                                       onkeydown="handleKeywordInput(event, '${doc.artifactID}')"
-                                       style="display: none;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 class="text-sm font-bold text-gray-800 mb-2">Document Preview</h3>
-                        <div id="liveDocumentPreview" class="border border-gray-200 rounded-lg bg-white p-2 h-64 overflow-auto">
-                            <div class="text-center py-4">
-                                <div class="loader mx-auto mb-2"></div>
-                                <p class="text-sm text-gray-500">Loading document preview...</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-4 border-t border-gray-200">
-                        <div class="flex space-x-2">
-                            <button class="download-single-btn bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700 transition flex items-center space-x-1" data-id="${doc.artifactID}">
-                                <i data-lucide="download" class="h-4 w-4"></i>
-                                <span>Download</span>
-                            </button>
-                            <button class="delete-single-btn bg-red-600 text-white px-3 py-2 rounded-md text-sm hover:bg-red-700 transition flex items-center space-x-1" data-id="${doc.artifactID}">
-                                <i data-lucide="trash-2" class="h-4 w-4"></i>
-                                <span>Delete</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            lucide.createIcons();
-            
-            // Load actual document preview
-            loadActualDocumentPreview(doc.artifactID);
-        }
-
-        // Add loadActualDocumentPreview function
-        async function loadActualDocumentPreview(docId) {
-            const liveDocumentPreview = document.getElementById('liveDocumentPreview');
-            if (!liveDocumentPreview) return;
-            
-            try {
-                liveDocumentPreview.innerHTML = '<div class="text-center py-4"><div class="loader mx-auto mb-2"></div><p class="text-sm text-gray-500">Loading document preview...</p></div>';
-                
-                // First try to get document preview from server
-                const response = await fetch(`/preview-document/${docId}`);
-                if (response.ok) {
-                    const previewData = await response.json();
-                    
-                    if (previewData.type === 'pdf') {
-                        // For PDFs, create a PDF viewer with the first page
-                        liveDocumentPreview.innerHTML = `
-                            <div class="pdf-preview-container" style="width: 100%; height: 100%;">
-                                <iframe src="/view-document/${docId}" style="width: 100%; height: 100%; border: none;"></iframe>
-                            </div>
-                        `;
-                    } else if (previewData.content) {
-                        // For text content
-                        liveDocumentPreview.innerHTML = `
-                            <div class="document-content p-2">
-                                ${previewData.content}
-                            </div>
-                        `;
-                    } else if (previewData.imageUrl) {
-                        // For images
-                        liveDocumentPreview.innerHTML = `
-                            <div class="image-preview-container flex items-center justify-center h-full">
-                                <img src="${previewData.imageUrl}" class="max-w-full max-h-full object-contain" alt="Document preview">
-                            </div>
-                        `;
-                    } else {
-                        liveDocumentPreview.innerHTML = '<div class="text-center p-4 text-gray-500">Preview not available for this document type</div>';
-                    }
-                } else {
-                    throw new Error('Failed to fetch preview');
-                }
-            } catch (error) {
-                console.error('Error loading document preview:', error);
-                liveDocumentPreview.innerHTML = '<div class="text-center p-4 text-red-500">Failed to load document preview</div>';
-            }
-        }
-
-        // --- Event Handlers ---
-        document.addEventListener('DOMContentLoaded', async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            state.projectId = urlParams.get('project');
-            
-            if (!state.projectId) {
-                projectTitle.textContent = "No Project Selected";
-                sidebarProjectName.textContent = "No Project";
-                sidebarProjectInfo.textContent = "Select a project to continue";
-                document.querySelector('label[for="fileUpload"]').classList.add('cursor-not-allowed', 'opacity-50');
-                fileUpload.disabled = true;
-                projectSettingsLink.classList.add('hidden');
-                document.getElementById('currentProjectSection').classList.add('hidden');
-                switchTab('renaming');
-            } else {
-                projectSettingsLink.href = `/lexifile_settings?project=${state.projectId}`;
-                // Fetch project details to display name
-                try {
-                    const response = await fetch(`/get-project-details?project_id=${state.projectId}`);
-                    if(response.ok) {
-                        const projectDetails = await response.json();
-                        state.currentProject = projectDetails;
-                        projectTitle.textContent = projectDetails.name;
-                        projectInfo.textContent = `${projectDetails.client} | ${projectDetails.matter}`;
-                        sidebarProjectName.textContent = projectDetails.name;
-                        sidebarProjectInfo.textContent = `${projectDetails.client} | ${projectDetails.matter}`;
-                    } else {
-                        const fallbackName = `Project ${state.projectId}`;
-                        projectTitle.textContent = fallbackName;
-                        sidebarProjectName.textContent = fallbackName;
-                    }
-                } catch(e) {
-                    const fallbackName = `Project ${state.projectId}`;
-                    projectTitle.textContent = fallbackName;
-                    sidebarProjectName.textContent = fallbackName;
-                }
-            }
-
-            lucide.createIcons();
-            await loadAllProjects();
-            
-            // RENAMING event listeners
-            fileUpload.addEventListener('change', handleFileUpload);
-            fileQueue.addEventListener('click', handleFileSelect);
-            fileQueue.addEventListener('click', handleQueueClick);
-            approveAllBtn.addEventListener('click', handleApproveAll);
-            downloadBtn.addEventListener('click', handleDownload);
-
-            // REGISTER event listeners
-            filterInputs.forEach(input => input.addEventListener('keyup', applyFiltersAndRenderRegister));
-            fulltextSearch.addEventListener('keyup', e => {
-                clearTimeout(state.fulltextSearchTimeout);
-                state.fulltextSearchTimeout = setTimeout(async () => {
-                    const query = e.target.value;
-                    if (query.length < 3) {
-                       if(state.filteredDocuments.length !== state.allDocuments.length) applyFiltersAndRenderRegister();
-                       return;
-                    }
-                    const formData = new FormData();
-                    formData.append('project_id', state.projectId);
-                    formData.append('query', query);
-                    const searchResponse = await fetch('/fulltext-search', {method: 'POST', body: formData});
-                    state.filteredDocuments = await searchResponse.json();
-                    sortDocuments(); state.currentPage = 1; renderTable();
+                    `;
                 }, 500);
-            });
+            }
 
-            document.querySelector('#registerTab thead').addEventListener('click', e => {
-                const header = e.target.closest('th[data-sort]');
-                if (!header) return;
-                const newSortColumn = header.dataset.sort;
-                if (state.sortColumn === newSortColumn) {
-                    state.sortDirection = state.sortDirection === 'asc' ? 'desc' : 'asc';
-                } else {
-                    state.sortColumn = newSortColumn;
-                    state.sortDirection = 'asc';
-                }
-                document.querySelectorAll('th[data-sort]').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
-                header.classList.add(state.sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
-                applyFiltersAndRenderRegister();
-            });
-
-            paginationControls.addEventListener('click', e => {
-                const button = e.target.closest('.pagination-btn');
-                if (button) { state.currentPage = parseInt(button.dataset.page); renderTable(); }
-            });
-
-            selectAllCheckbox.addEventListener('change', e => {
-                const isChecked = e.target.checked;
-                document.querySelectorAll('.row-checkbox').forEach(checkbox => {
-                    checkbox.checked = isChecked;
-                    const id = checkbox.dataset.id;
-                    if(isChecked) state.selectedArtifacts.add(id); else state.selectedArtifacts.delete(id);
-                });
-                updateBulkDownloadButton();
-            });
-
-            documentTableBody.addEventListener('change', e => {
-                if (e.target.classList.contains('row-checkbox')) {
-                    const id = e.target.dataset.id;
-                    if(e.target.checked) state.selectedArtifacts.add(id); else state.selectedArtifacts.delete(id);
-                    updateBulkDownloadButton();
-                }
-            });
-
-            documentTableBody.addEventListener('click', async e => {
-                // Handle row selection for preview
+            documentTableBody.addEventListener('click', (e) => {
                 const row = e.target.closest('.document-row');
-                if (row && !e.target.closest('button') && !e.target.closest('input')) {
+                if (row) {
+                    document.querySelectorAll('.document-row').forEach(r => r.classList.remove('bg-indigo-100'));
+                    row.classList.add('bg-indigo-100');
                     const docId = row.dataset.docId;
-                    state.selectedDocumentId = docId;
-                    
-                    // Update row selection styling
-                    document.querySelectorAll('.document-row').forEach(r => r.classList.remove('selected'));
-                    row.classList.add('selected');
-                    
-                    // Find and render the document preview
-                    const doc = state.filteredDocuments.find(d => d.artifactID === docId);
-                    renderDocumentPreview(doc);
-                    
-                    // Explicitly call the document preview loader
-                    loadActualDocumentPreview(docId);
-                    return;
-                }
-                
-                const deleteBtn = e.target.closest('.delete-btn');
-                if (deleteBtn) {
-                    const id = deleteBtn.dataset.id;
-                    if(confirm(`Are you sure you want to permanently delete document ${id}?`)) {
-                       await fetch(`/delete-document/${id}`, { method: 'DELETE' });
-                       fetchDocumentsForRegister();
-                       if (state.selectedDocumentId === id) {
-                           state.selectedDocumentId = null;
-                           renderDocumentPreview(null);
-                       }
-                    }
-                }
-
-                const downloadBtn = e.target.closest('.download-btn');
-                if (downloadBtn) { window.open(`/download-single-doc/${downloadBtn.dataset.id}`, '_blank'); }
-            });
-
-            // Handle preview pane download and delete buttons
-            documentPreviewContent.addEventListener('click', async e => {
-                const downloadBtn = e.target.closest('.download-single-btn');
-                if (downloadBtn) {
-                    window.open(`/download-single-doc/${downloadBtn.dataset.id}`, '_blank');
-                }
-
-                const deleteBtn = e.target.closest('.delete-single-btn');
-                if (deleteBtn) {
-                    const id = deleteBtn.dataset.id;
-                    if(confirm(`Are you sure you want to permanently delete document ${id}?`)) {
-                       await fetch(`/delete-document/${id}`, { method: 'DELETE' });
-                       fetchDocumentsForRegister();
-                       state.selectedDocumentId = null;
-                       renderDocumentPreview(null);
-                    }
+                    renderDocumentPreview(docId);
                 }
             });
 
-            bulkDownloadBtn.addEventListener('click', async () => {
-                if(state.selectedArtifacts.size === 0) return;
-                const response = await fetch('/bulk-download', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Array.from(state.selectedArtifacts))});
-                if(response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
-                    a.download = `LexiFile_Bulk_Export_${Date.now()}.zip`;
-                    document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
-                } else { showToast('Bulk download failed.', true); }
-            });
-
-            createIndexBtn.addEventListener('click', () => {
-                if(state.filteredDocuments.length === 0) {
-                    showToast("No documents to include in the index.", true);
-                    return;
-                }
-                const headers = ["Artifact ID", "Improved Filename", "Date", "Document Type", "Description", "Author", "Sender", "Recipient", "Keywords", "Date Last Modified", "Last Modified By"];
-                const rows = state.filteredDocuments.map(doc => [
-                    doc.artifactID, doc.improvedFilename, doc.date, doc.objectType, doc.description, doc.author, doc.sender, doc.recipient, (doc.keywords || []).join('; '), doc.lastModified, doc.lastModifiedBy
-                ]);
-                let csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(','))].join("\n");
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a"); link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `LexiFile_Index_${state.projectId}_${new Date().toISOString().split('T')[0]}.csv`);
-                document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            });
-
-            // General event listeners
-            logoutButton.addEventListener('click', () => {
-                localStorage.removeItem('lexifile_token');
-                window.location.href = '/lexifile_login';
-            });
-
-            // Project navigation in sidebar
-            projectsList.addEventListener('click', (e) => {
-                const projectItem = e.target.closest('.project-list-item');
-                if (projectItem) {
-                    const projectId = projectItem.dataset.projectId;
-                    if (projectId !== state.projectId) {
-                        window.location.href = `/lexifile_hub?project=${projectId}`;
-                    }
-                }
-            });
-
-            // Tab switching via sidebar
-            document.querySelectorAll('.project-nav-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    switchTab(btn.dataset.tab);
-                });
-            });
-            
-            renderFileQueue();
+            // Initial render
+            renderTable();
         });
-        
-        // --- RENAMING TAB: Event Handler Functions ---
-        async function handleFileUpload(e) {
-            const uploadedFiles = e.target.files;
-            if (uploadedFiles.length === 0) return;
-            const newFiles = Array.from(uploadedFiles).map(file => ({
-                id: crypto.randomUUID(), originalFilename: file.name, fileObject: file,
-                extension: file.name.split('.').pop(), status: 'processing', date: '...', docType: 'Analyzing...', description: '...',
-                keywords: [], ai_full_response: {}
-            }));
-            state.files.push(...newFiles); renderFileQueue();
-            for (const file of newFiles) {
-                const formData = new FormData();
-                formData.append('file', file.fileObject);
-                formData.append('project_id', state.projectId);
-                try {
-                    const response = await fetch(`/rename-document`, { method: 'POST', body: formData });
-                    if (!response.ok) {
-                         const err = await response.json().catch(() => ({ detail: `Server error: ${response.statusText}` }));
-                         throw new Error(err.detail);
-                    }
-                    const result = await response.json();
-                    const fileIndex = state.files.findIndex(f => f.id === file.id);
-                    if (fileIndex > -1) state.files[fileIndex] = { ...state.files[fileIndex], ...result, status: 'review' };
-                } catch (error) {
-                    console.error('Error processing file:', error);
-                    const fileIndex = state.files.findIndex(f => f.id === file.id);
-                    if (fileIndex > -1) { state.files[fileIndex].status = 'error'; state.files[fileIndex].description = error.message || 'Failed to analyze.'; }
-                } finally {
-                    renderFileQueue();
-                    if (state.files.length === 1 && !state.selectedFileId) { state.selectedFileId = file.id; renderEditorAndPreview(); renderFileQueue(); }
-                    if (state.selectedFileId === file.id) renderEditorAndPreview();
-                }
-            }
-        }
-
-        function handleFileSelect(e) {
-            const target = e.target.closest('.file-item'); if (!target) return;
-            const fileId = target.dataset.id;
-            const file = state.files.find(f => f.id === fileId);
-            if (file && file.status !== 'processing') { state.selectedFileId = fileId; renderFileQueue(); renderEditorAndPreview(); }
-        }
-
-        function handleEditorChange(e) {
-            if (!state.selectedFileId) return;
-            const fileIndex = state.files.findIndex(f => f.id === state.selectedFileId);
-            if (fileIndex > -1) {
-                const file = state.files[fileIndex];
-                file.date = document.getElementById('editorDate').value;
-                file.ai_full_response.docType = document.getElementById('editorDocType').value;
-                file.description = document.getElementById('editorDescription').value;
-                file.sender = document.getElementById('metaSender').value;
-                file.recipient = document.getElementById('metaRecipient').value;
-                file.author = document.getElementById('metaAuthor').value;
-                file.lastModifiedOn = document.getElementById('metaLastModified').value;
-                const datePart = file.date.replace(/-/g, ''); const docTypePart = file.ai_full_response.docType;
-                file.improvedFilename = `${datePart} - ${docTypePart} - ${file.description}.${file.extension}`;
-                if (file.status === 'approved') file.status = 'review';
-                renderFileQueue(); updateFilenamePreview();
-            }
-        }
-
-        function handleQueueClick(e) {
-            const approveButton = e.target.closest('.approve-btn');
-            if (approveButton) {
-                e.stopPropagation();
-                const fileId = approveButton.dataset.id;
-                const fileIndex = state.files.findIndex(f => f.id === fileId);
-                if (fileIndex > -1) { state.files[fileIndex].status = 'approved'; renderFileQueue(); }
-                return;
-            }
-            const deleteButton = e.target.closest('.delete-btn');
-            if(deleteButton) {
-                e.stopPropagation();
-                const fileId = deleteButton.dataset.id;
-                if (confirm('Are you sure you want to delete this document from the queue? This cannot be undone.')) {
-                    state.files = state.files.filter(f => f.id !== fileId);
-                    if(state.selectedFileId === fileId) { state.selectedFileId = null; renderEditorAndPreview(); }
-                    renderFileQueue();
-                }
-                return;
-            }
-        }
-
-        function handleApproveAll() {
-            state.files.forEach(file => { if (file.status === 'review') file.status = 'approved'; });
-            renderFileQueue();
-        }
-
-        async function handleDownload() {
-            if (downloadBtn.disabled) return;
-            const approvedFiles = state.files.filter(f => f.status === 'approved');
-            if (approvedFiles.length === 0) { showToast("No approved files to download.", true); return; }
-            showToast("Preparing your download...", false);
-            const zip = new JSZip();
-            for (const file of approvedFiles) zip.file(file.improvedFilename, file.fileObject);
-            try {
-                const content = await zip.generateAsync({ type: "blob" });
-                const link = document.createElement("a"); link.href = URL.createObjectURL(content);
-                link.download = `LexiFile_Project_${state.projectId}_Export.zip`;
-                document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            } catch (e) { console.error("Failed to create zip file", e); showToast("Error creating zip file.", true); }
-        }
     </script>
 </body>
 </html>
