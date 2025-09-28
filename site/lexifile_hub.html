@@ -318,7 +318,7 @@
                 </div>
 
                 <!-- TAB 2: Register View with Two-Column Layout -->
-                <div id="registerTab" class="hidden h-full flex">
+                <div id="registerTab" class="hidden h-full flex overflow-x-hidden">
                     <!-- Left Column: Document List with horizontal scroll -->
                     <div id="registerLeftColumn" class="flex-1 flex flex-col p-6 pr-3 min-w-0">
                         <!-- Search Bar -->
@@ -1239,8 +1239,8 @@
                 const minLeftWidth = 400;
 
                 if (newLeftWidth > minLeftWidth && newLeftWidth < (totalWidth - minRightWidth - resizerWidth)) {
-                    leftColumn.style.flex = `0 0 ${newLeftWidth}px`;
-                    rightColumn.style.flex = `1 1 0%`; // Allow right to fill remaining space
+                    leftColumn.style.flexBasis = `${newLeftWidth}px`;
+                    rightColumn.style.flexBasis = `${totalWidth - newLeftWidth - resizerWidth}px`;
                 }
             });
 
@@ -1308,7 +1308,7 @@
                 file.recipient = document.getElementById('metaRecipient').value;
                 file.author = document.getElementById('metaAuthor').value;
                 file.lastModifiedOn = document.getElementById('metaLastModified').value;
-                const datePart = file.date.replace(/-/g, ''); const docTypePart = file.ai_full_response.docType;
+                               const datePart = file.date.replace(/-/g, ''); const docTypePart = file.ai_full_response.docType;
                 file.improvedFilename = `${datePart} - ${docTypePart} - ${file.description}.${file.extension}`;
                 if (file.status === 'approved') file.status = 'review';
                 renderFileQueue(); updateFilenamePreview();
