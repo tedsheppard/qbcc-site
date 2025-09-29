@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
   <script>
@@ -867,41 +868,42 @@ function showAdjudicatorDetail() {
             </div>
           </div>
 
-          <div class="chart-container">
-            <div>
-              <strong>Award Rate Trend Chart</strong><br>
-              <span style="color: #999;">Chart visualisation would appear here showing award rates over time, claim size distributions, and other statistical visualisations</span>
-            </div>
-          </div>
+          <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+  <h4 style="margin-top: 0; margin-bottom: 15px;">Claimed vs Adjudicated Amounts</h4>
+  <canvas id="amountsChart" height="80"></canvas>
+</div>
+
+<div style="background: #f8f9fa; border-radius: 8px; padding: 20px;">
+  <h4 style="margin-top: 0; margin-bottom: 15px;">Decisions Per Year</h4>
+  <canvas id="decisionsPerYearChart" height="100"></canvas>
+</div>
         </div>
 
-        <!-- Decisions Tab -->
-        <div id="decisions-tab" class="tab-content">
-          <div class="decisions-list">
-            ${selectedAdjudicator.decisions && selectedAdjudicator.decisions.length > 0 ? 
-              selectedAdjudicator.decisions.map(decision => `
-                <div class="decision-item">
-                  <div class="decision-title">${sanitizeHtml(decision.title)}</div>
-                  <div class="decision-meta">
-                    <div><strong>Date:</strong> ${decision.date || 'Unknown'}</div>
-                    <div><strong>Claim:</strong> $${Math.round(decision.claimAmount).toLocaleString()}</div>
-                    <div><strong>Awarded:</strong> $${Math.round(decision.awardedAmount).toLocaleString()}</div>
-                    <div><strong>Outcome:</strong> ${decision.outcome || 'N/A'}</div>
-                    ${decision.projectType ? `<div><strong>Project Type:</strong> ${decision.projectType}</div>` : ''}
-                    ${decision.contractType ? `<div><strong>Contract Type:</strong> ${decision.contractType}</div>` : ''}
-                  </div>
-                  <div class="decision-actions">
-                    ${decision.pdfPath ? 
-                      `<a href="#" class="decision-link" onclick="event.preventDefault(); openDecision('${decision.id}', '${decision.pdfPath}')">Open Decision (PDF)</a>` : 
-                      `<span style="color: #999;">PDF not available</span>`
-                    }
-                  </div>
-                </div>
-              `).join('') : 
-              '<div class="loading">No decisions found</div>'
+<!-- Decisions Tab -->
+<div id="decisions-tab" class="tab-content">
+  <div class="decisions-list">
+    ${selectedAdjudicator.decisions && selectedAdjudicator.decisions.length > 0 ? 
+      selectedAdjudicator.decisions.map(decision => `
+        <div class="decision-item">
+          <div class="decision-title">${sanitizeHtml(decision.title)}</div>
+          <div class="decision-meta">
+            <div><strong>Date:</strong> ${decision.date || 'Unknown'}</div>
+            <div><strong>Claim:</strong> $${Math.round(decision.claimAmount).toLocaleString()}</div>
+            <div><strong>Awarded:</strong> $${Math.round(decision.awardedAmount).toLocaleString()}</div>
+            ${decision.contractType ? `<div><strong>Contract Type:</strong> ${toTitleCase(decision.contractType)}</div>` : ''}
+          </div>
+          <div class="decision-actions">
+            ${decision.pdfPath ? 
+              `<a href="#" class="decision-link" onclick="event.preventDefault(); openDecision('${decision.id}', '${decision.pdfPath}')">Open Decision (PDF)</a>` : 
+              `<span style="color: #999;">PDF not available</span>`
             }
           </div>
         </div>
+      `).join('') : 
+      '<div class="loading">No decisions found</div>'
+    }
+  </div>
+</div>
 
         <!-- AI Analysis Tab -->
         <div id="analysis-tab" class="tab-content">
@@ -1048,6 +1050,13 @@ function formatCurrency(amount) {
     return '$' + (amount / 1000).toFixed(0) + 'K';
   }
   return '$' + Math.round(amount).toLocaleString();
+}
+
+function toTitleCase(str) {
+  if (!str) return '';
+  return str.toLowerCase().split(' ').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
 }
 </script>
 
