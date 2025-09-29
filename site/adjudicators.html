@@ -730,7 +730,7 @@ async function loadAdjudicators() {
   container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading adjudicators...</div>';
   
   try {
-    const response = await fetch('/adjudicators');
+    const response = await fetch('/api/adjudicators');
     if (!response.ok) throw new Error('Failed to fetch adjudicators');
     
     allAdjudicators = await response.json();
@@ -741,6 +741,7 @@ async function loadAdjudicators() {
     container.innerHTML = '<div class="loading">Error loading adjudicators. Please try again later.</div>';
   }
 }
+
 
 function filterAdjudicators() {
   const searchTerm = document.getElementById('adjudicatorSearch').value.toLowerCase();
@@ -796,17 +797,14 @@ async function selectAdjudicator(adjudicatorId) {
   selectedAdjudicator = allAdjudicators.find(adj => adj.id === adjudicatorId);
   if (!selectedAdjudicator) return;
 
-  // Update selected state in list
   renderAdjudicatorsList();
 
-  // Show loading state in right pane
   const rightPane = document.getElementById('rightPane');
   rightPane.className = 'right-pane';
   rightPane.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading decisions...</div>';
 
   try {
-    // Fetch decisions for this adjudicator
-    const response = await fetch(`/adjudicator/${encodeURIComponent(selectedAdjudicator.name)}`);
+    const response = await fetch(`/api/adjudicator/${encodeURIComponent(selectedAdjudicator.name)}`);
     if (!response.ok) throw new Error('Failed to fetch decisions');
     
     const decisions = await response.json();
