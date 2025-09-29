@@ -789,27 +789,24 @@ Decision text:
 
 @app.get("/adjudicators")
 def get_adjudicators():
-    """Get list of all adjudicators with their statistics"""
+    """Get list of all adjudicators with their statistics from ai_adjudicator_extract_v4"""
     try:
-        # First, let's check what columns exist in docs_meta
-        try:
-            # Get column info to understand the schema
-            columns_info = con.execute("PRAGMA table_info(docs_meta)").fetchall()
-            print("Available columns in docs_meta:", [col[1] for col in columns_info])
-        except Exception as schema_error:
-            print(f"Could not get schema info: {schema_error}")
-
-        # Updated query with likely correct column names based on typical database schemas
-        # We'll use a more defensive approach and handle potential missing columns
         query = """
         SELECT 
-            m.adjudicator,
-            COUNT(*) as total_decisions
-        FROM docs_meta m 
-        WHERE m.adjudicator IS NOT NULL 
-        AND m.adjudicator != ''
-        AND TRIM(m.adjudicator) != ''
-        GROUP BY m.adjudicator
+            adjudicator_name,
+            COUNT(*) as total_decisions,
+            SUM(CAST(claimed_amount AS REAL)) as total_claimed,
+            SUM(CAST(adjudicated_amount AS REAL)) as total_adjudicated,
+            AVG(CASE 
+                WHEN CAST(claimed_amount AS REAL) > 0 
+                THEN (CAST(adjudicated_amount AS REAL) * 100.0 / CAST(claimed_amount AS REAL))
+                ELSE 0 
+            END) as avg_award_rate
+        FROM ai_adjudicator_extract_v4
+        WHERE adjudicator_name IS NOT NULL 
+        AND adjudicator_name != ''
+        AND TRIM(adjudicator_name) != ''
+        GROUP BY adjudicator_name
         HAVING COUNT(*) >= 3
         ORDER BY total_decisions DESC
         """
@@ -819,11 +816,12 @@ def get_adjudicators():
         adjudicators = []
         for row in rows:
             adjudicator = {
-                "name": row["adjudicator"],
+                "id": row["adjudicator_name"].replace(" ", "_").lower(),
+                "name": row["adjudicator_name"],
                 "totalDecisions": row["total_decisions"],
-                "totalClaimAmount": 0,  # Will be calculated separately if columns exist
-                "totalAwardedAmount": 0,  # Will be calculated separately if columns exist
-                "avgAwardRate": 0  # Will be calculated separately if columns exist
+                "totalClaimAmount": float(row["total_claimed"]) if row["total_claimed"] else 0,
+                "totalAwardedAmount": float(row["total_adjudicated"]) if row["total_adjudicated"] else 0,
+                "avgAwardRate": float(row["avg_award_rate"]) if row["avg_award_rate"] else 0
             }
             adjudicators.append(adjudicator)
         
@@ -836,43 +834,62 @@ def get_adjudicators():
 
 @app.get("/adjudicator/{adjudicator_name}")
 def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
-    """Get all decisions for a specific adjudicator"""
+    """Get all decisions for a specific adjudicator from ai_adjudicator_extract_v4"""
     try:
         # Decode URL-encoded name
         decoded_name = unquote_plus(adjudicator_name)
         
-        # Basic query that should work with minimal assumptions about column names
         query = """
         SELECT 
-            d.ejs_id,
+            a.ejs_id,
+            a.adjudicator_name,
+            a.claimant_name,
+            a.respondent_name,
+            a.claimed_amount,
+            a.payment_schedule_amount,
+            a.adjudicated_amount,
+            a.decision_date,
+            a.outcome,
+            a.project_type,
+            a.contract_type,
             d.reference,
-            d.pdf_path,
-            m.claimant,
-            m.respondent,
-            m.adjudicator,
-            m.decision_date_norm,
-            m.act
-        FROM docs_fresh d
-        JOIN docs_meta m ON d.ejs_id = m.ejs_id
-        WHERE LOWER(TRIM(m.adjudicator)) = LOWER(TRIM(?))
-        ORDER BY m.decision_date_norm DESC
+            d.pdf_path
+        FROM ai_adjudicator_extract_v4 a
+        LEFT JOIN docs_fresh d ON a.ejs_id = d.ejs_id
+        WHERE LOWER(TRIM(a.adjudicator_name)) = LOWER(TRIM(?))
+        ORDER BY a.decision_date DESC
         """
         
         rows = con.execute(query, (decoded_name,)).fetchall()
         
         decisions = []
         for row in rows:
+            # Parse amounts safely
+            claimed = 0
+            try:
+                claimed = float(row["claimed_amount"]) if row["claimed_amount"] else 0
+            except (ValueError, TypeError):
+                claimed = 0
+                
+            adjudicated = 0
+            try:
+                adjudicated = float(row["adjudicated_amount"]) if row["adjudicated_amount"] else 0
+            except (ValueError, TypeError):
+                adjudicated = 0
+            
             decision = {
                 "id": row["ejs_id"],
-                "title": f"{row['claimant'] or 'Unknown'} v {row['respondent'] or 'Unknown'}",
+                "title": f"{row['claimant_name'] or 'Unknown'} v {row['respondent_name'] or 'Unknown'}",
                 "reference": row["reference"],
-                "date": row["decision_date_norm"],
-                "claimant": row["claimant"],
-                "respondent": row["respondent"],
-                "claimAmount": 0,  # Placeholder until we find the right column
-                "awardedAmount": 0,  # Placeholder until we find the right column
-                "pdfPath": row["pdf_path"],
-                "act": row["act"]
+                "date": row["decision_date"],
+                "claimant": row["claimant_name"],
+                "respondent": row["respondent_name"],
+                "claimAmount": claimed,
+                "awardedAmount": adjudicated,
+                "outcome": row["outcome"],
+                "projectType": row["project_type"],
+                "contractType": row["contract_type"],
+                "pdfPath": row["pdf_path"]
             }
             decisions.append(decision)
         
