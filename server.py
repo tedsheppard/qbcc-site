@@ -787,7 +787,7 @@ Decision text:
         print("ERROR in /summarise:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
 
-@app.get("/adjudicators")
+@app.get("/api/adjudicators")
 def get_adjudicators():
     """Get list of all adjudicators with their statistics from ai_adjudicator_extract_v4"""
     try:
@@ -828,15 +828,14 @@ def get_adjudicators():
         return adjudicators
         
     except Exception as e:
-        print(f"Error in /adjudicators: {e}")
+        print(f"Error in /api/adjudicators: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
-@app.get("/adjudicator/{adjudicator_name}")
+@app.get("/api/adjudicator/{adjudicator_name}")
 def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
     """Get all decisions for a specific adjudicator from ai_adjudicator_extract_v4"""
     try:
-        # Decode URL-encoded name
         decoded_name = unquote_plus(adjudicator_name)
         
         query = """
@@ -864,7 +863,6 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
         
         decisions = []
         for row in rows:
-            # Parse amounts safely
             claimed = 0
             try:
                 claimed = float(row["claimed_amount"]) if row["claimed_amount"] else 0
@@ -896,7 +894,7 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
         return decisions
         
     except Exception as e:
-        print(f"Error in /adjudicator/{adjudicator_name}: {e}")
+        print(f"Error in /api/adjudicator/{adjudicator_name}: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
