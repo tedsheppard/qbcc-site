@@ -881,7 +881,20 @@ function showAdjudicatorDetail() {
 
 <!-- Decisions Tab -->
 <div id="decisions-tab" class="tab-content">
-  <div class="decisions-list">
+  <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+    <h4 style="margin: 0;">All Decisions</h4>
+    <select id="decisionSort" onchange="sortDecisions()" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
+      <option value="date_newest">Date (Newest First)</option>
+      <option value="date_oldest">Date (Oldest First)</option>
+      <option value="az">Claimant (A-Z)</option>
+      <option value="za">Claimant (Z-A)</option>
+      <option value="claim_high">Claim Amount (Highest First)</option>
+      <option value="claim_low">Claim Amount (Lowest First)</option>
+      <option value="award_high">Adjudicated Amount (Highest First)</option>
+      <option value="award_low">Adjudicated Amount (Lowest First)</option>
+    </select>
+  </div>
+  <div id="decisionsListContainer" class="decisions-list">
     ${selectedAdjudicator.decisions && selectedAdjudicator.decisions.length > 0 ? 
       selectedAdjudicator.decisions.map(decision => `
         <div class="decision-item">
@@ -1057,6 +1070,53 @@ function toTitleCase(str) {
   return str.toLowerCase().split(' ').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ');
+}
+
+function sortDecisions() {
+  const sortBy = document.getElementById('decisionSort').value;
+  
+  selectedAdjudicator.decisions.sort((a, b) => {
+    switch (sortBy) {
+      case 'date_newest':
+        return (b.date || '').localeCompare(a.date || '');
+      case 'date_oldest':
+        return (a.date || '').localeCompare(b.date || '');
+      case 'az':
+        return (a.claimant || '').localeCompare(b.claimant || '');
+      case 'za':
+        return (b.claimant || '').localeCompare(a.claimant || '');
+      case 'claim_high':
+        return b.claimAmount - a.claimAmount;
+      case 'claim_low':
+        return a.claimAmount - b.claimAmount;
+      case 'award_high':
+        return b.awardedAmount - a.awardedAmount;
+      case 'award_low':
+        return a.awardedAmount - b.awardedAmount;
+      default:
+        return 0;
+    }
+  });
+  
+  // Re-render the decisions list
+  const container = document.getElementById('decisionsListContainer');
+  container.innerHTML = selectedAdjudicator.decisions.map(decision => `
+    <div class="decision-item">
+      <div class="decision-title">${sanitizeHtml(decision.title)}</div>
+      <div class="decision-meta">
+        <div><strong>Date:</strong> ${decision.date || 'Unknown'}</div>
+        <div><strong>Claim:</strong> $${Math.round(decision.claimAmount).toLocaleString()}</div>
+        <div><strong>Awarded:</strong> $${Math.round(decision.awardedAmount).toLocaleString()}</div>
+        ${decision.contractType ? `<div><strong>Contract Type:</strong> ${toTitleCase(decision.contractType)}</div>` : ''}
+      </div>
+      <div class="decision-actions">
+        ${decision.pdfPath ? 
+          `<a href="#" class="decision-link" onclick="event.preventDefault(); openDecision('${decision.id}', '${decision.pdfPath}')">Open Decision (PDF)</a>` : 
+          `<span style="color: #999;">PDF not available</span>`
+        }
+      </div>
+    </div>
+  `).join('');
 }
 </script>
 
