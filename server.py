@@ -796,12 +796,7 @@ def get_adjudicators():
             adjudicator_name,
             COUNT(*) as total_decisions,
             SUM(CAST(claimed_amount AS REAL)) as total_claimed,
-            SUM(CAST(adjudicated_amount AS REAL)) as total_adjudicated,
-            AVG(CASE 
-                WHEN CAST(claimed_amount AS REAL) > 0 
-                THEN (CAST(adjudicated_amount AS REAL) * 100.0 / CAST(claimed_amount AS REAL))
-                ELSE 0 
-            END) as avg_award_rate
+            SUM(CAST(adjudicated_amount AS REAL)) as total_adjudicated
         FROM ai_adjudicator_extract_v4
         WHERE adjudicator_name IS NOT NULL 
         AND adjudicator_name != ''
@@ -815,13 +810,24 @@ def get_adjudicators():
         
         adjudicators = []
         for row in rows:
+            total_claimed = float(row["total_claimed"]) if row["total_claimed"] else 0
+            total_adjudicated = float(row["total_adjudicated"]) if row["total_adjudicated"] else 0
+            
+            # Calculate award rate as: (total adjudicated / total claimed) * 100
+            # This is more accurate than averaging individual percentages
+            avg_award_rate = 0
+            if total_claimed > 0:
+                avg_award_rate = (total_adjudicated / total_claimed) * 100
+                # Cap at 100% to handle any data anomalies
+                avg_award_rate = min(avg_award_rate, 100.0)
+            
             adjudicator = {
                 "id": row["adjudicator_name"].replace(" ", "_").lower(),
                 "name": row["adjudicator_name"],
                 "totalDecisions": row["total_decisions"],
-                "totalClaimAmount": float(row["total_claimed"]) if row["total_claimed"] else 0,
-                "totalAwardedAmount": float(row["total_adjudicated"]) if row["total_adjudicated"] else 0,
-                "avgAwardRate": float(row["avg_award_rate"]) if row["avg_award_rate"] else 0
+                "totalClaimAmount": total_claimed,
+                "totalAwardedAmount": total_adjudicated,
+                "avgAwardRate": avg_award_rate
             }
             adjudicators.append(adjudicator)
         
@@ -830,7 +836,6 @@ def get_adjudicators():
     except Exception as e:
         print(f"Error in /api/adjudicators: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
-
 
 @app.get("/api/adjudicator/{adjudicator_name}")
 def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
