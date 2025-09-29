@@ -703,39 +703,13 @@
 </footer>
 
 <script>
-
-let adjudicators = [];
+let allAdjudicators = [];
 let filteredAdjudicators = [];
 let selectedAdjudicator = null;
 
-document.addEventListener('DOMContentLoaded', async function() {
-  // Fetch list from backend
-  const res = await fetch('/adjudicators');
-  adjudicators = await res.json();
-  filteredAdjudicators = [...adjudicators];
-
-  renderAdjudicatorsList();
-  setupEventListeners();
-});
-
-// When a name is clicked, fetch their detail
-async function selectAdjudicator(name) {
-  const res = await fetch(`/adjudicator/${encodeURIComponent(name)}`);
-  const decisions = await res.json();
-
-  selectedAdjudicator = adjudicators.find(a => a.name === name);
-  if (selectedAdjudicator) {
-    selectedAdjudicator.decisions = decisions;
-  }
-
-  renderAdjudicatorsList();
-  showAdjudicatorDetail();
-}
-
-
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-  renderAdjudicatorsList();
+  loadAdjudicators();
   setupEventListeners();
 
   // Apply saved theme
@@ -751,11 +725,28 @@ function setupEventListeners() {
   document.getElementById('sortBy').addEventListener('change', filterAdjudicators);
 }
 
+async function loadAdjudicators() {
+  const container = document.getElementById('adjudicatorsList');
+  container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading adjudicators...</div>';
+  
+  try {
+    const response = await fetch('/adjudicators');
+    if (!response.ok) throw new Error('Failed to fetch adjudicators');
+    
+    allAdjudicators = await response.json();
+    filteredAdjudicators = [...allAdjudicators];
+    renderAdjudicatorsList();
+  } catch (error) {
+    console.error('Error loading adjudicators:', error);
+    container.innerHTML = '<div class="loading">Error loading adjudicators. Please try again later.</div>';
+  }
+}
+
 function filterAdjudicators() {
   const searchTerm = document.getElementById('adjudicatorSearch').value.toLowerCase();
   const sortBy = document.getElementById('sortBy').value;
 
-  filteredAdjudicators = sampleAdjudicators.filter(adj =>
+  filteredAdjudicators = allAdjudicators.filter(adj =>
     adj.name.toLowerCase().includes(searchTerm)
   );
 
@@ -785,7 +776,7 @@ function renderAdjudicatorsList() {
 
   container.innerHTML = filteredAdjudicators.map(adj => `
     <div class="adjudicator-item ${selectedAdjudicator?.id === adj.id ? 'selected' : ''}"
-         onclick="selectAdjudicator('${adj.id}')">
+         onclick="selectAdjudicator('${adj.id.replace(/'/g, "\\'")}')">
       <div class="adjudicator-name">${sanitizeHtml(adj.name)}</div>
       <div class="adjudicator-stats">
         <div class="stat-item">
@@ -801,20 +792,39 @@ function renderAdjudicatorsList() {
   `).join('');
 }
 
-function selectAdjudicator(adjudicatorId) {
-  selectedAdjudicator = sampleAdjudicators.find(adj => adj.id === adjudicatorId);
+async function selectAdjudicator(adjudicatorId) {
+  selectedAdjudicator = allAdjudicators.find(adj => adj.id === adjudicatorId);
   if (!selectedAdjudicator) return;
 
   // Update selected state in list
   renderAdjudicatorsList();
 
-  // Show detail view
-  showAdjudicatorDetail();
+  // Show loading state in right pane
+  const rightPane = document.getElementById('rightPane');
+  rightPane.className = 'right-pane';
+  rightPane.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading decisions...</div>';
+
+  try {
+    // Fetch decisions for this adjudicator
+    const response = await fetch(`/adjudicator/${encodeURIComponent(selectedAdjudicator.name)}`);
+    if (!response.ok) throw new Error('Failed to fetch decisions');
+    
+    const decisions = await response.json();
+    selectedAdjudicator.decisions = decisions;
+    
+    showAdjudicatorDetail();
+  } catch (error) {
+    console.error('Error loading decisions:', error);
+    rightPane.innerHTML = '<div class="loading">Error loading decisions. Please try again.</div>';
+  }
 }
 
 function showAdjudicatorDetail() {
   const rightPane = document.getElementById('rightPane');
   rightPane.className = 'right-pane';
+
+  const avgClaimAmount = selectedAdjudicator.totalClaimAmount / selectedAdjudicator.totalDecisions;
+  const avgAwardedAmount = selectedAdjudicator.totalAwardedAmount / selectedAdjudicator.totalDecisions;
 
   rightPane.innerHTML = `
     <div class="adjudicator-detail">
@@ -846,12 +856,16 @@ function showAdjudicatorDetail() {
               <div class="stat-label">Percentage of Claimed Amount Awarded</div>
             </div>
             <div class="stat-card">
-              <span class="stat-number">${formatCurrency(selectedAdjudicator.totalClaimAmount / selectedAdjudicator.totalDecisions)}</span>
+              <span class="stat-number">${formatCurrency(avgClaimAmount)}</span>
               <div class="stat-label">Avg Claimed Amount</div>
             </div>
             <div class="stat-card">
-              <span class="stat-number">${formatCurrency(selectedAdjudicator.totalAwardedAmount / selectedAdjudicator.totalDecisions)}</span>
+              <span class="stat-number">${formatCurrency(avgAwardedAmount)}</span>
               <div class="stat-label">Avg Adjudicated Amount</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.totalDecisions}</span>
+              <div class="stat-label">Total Decisions</div>
             </div>
           </div>
 
@@ -866,19 +880,28 @@ function showAdjudicatorDetail() {
         <!-- Decisions Tab -->
         <div id="decisions-tab" class="tab-content">
           <div class="decisions-list">
-            ${selectedAdjudicator.decisions.map(decision => `
-              <div class="decision-item">
-                <div class="decision-title">${sanitizeHtml(decision.title)}</div>
-                <div class="decision-meta">
-                  <div><strong>Date:</strong> ${formatDate(decision.date)}</div>
-                  <div><strong>Claim:</strong> $${decision.claimAmount.toLocaleString()}</div>
-                  <div><strong>Awarded:</strong> ${decision.awardedAmount.toLocaleString()}</div>
+            ${selectedAdjudicator.decisions && selectedAdjudicator.decisions.length > 0 ? 
+              selectedAdjudicator.decisions.map(decision => `
+                <div class="decision-item">
+                  <div class="decision-title">${sanitizeHtml(decision.title)}</div>
+                  <div class="decision-meta">
+                    <div><strong>Date:</strong> ${decision.date || 'Unknown'}</div>
+                    <div><strong>Claim:</strong> $${Math.round(decision.claimAmount).toLocaleString()}</div>
+                    <div><strong>Awarded:</strong> $${Math.round(decision.awardedAmount).toLocaleString()}</div>
+                    <div><strong>Outcome:</strong> ${decision.outcome || 'N/A'}</div>
+                    ${decision.projectType ? `<div><strong>Project Type:</strong> ${decision.projectType}</div>` : ''}
+                    ${decision.contractType ? `<div><strong>Contract Type:</strong> ${decision.contractType}</div>` : ''}
+                  </div>
+                  <div class="decision-actions">
+                    ${decision.pdfPath ? 
+                      `<a href="#" class="decision-link" onclick="event.preventDefault(); openDecision('${decision.id}', '${decision.pdfPath}')">Open Decision (PDF)</a>` : 
+                      `<span style="color: #999;">PDF not available</span>`
+                    }
+                  </div>
                 </div>
-                <div class="decision-actions">
-                  <a href="#" class="decision-link" onclick="openDecision('${decision.pdfPath}')">Open Decision (PDF)</a>
-                </div>
-              </div>
-            `).join('')}
+              `).join('') : 
+              '<div class="loading">No decisions found</div>'
+            }
           </div>
         </div>
 
@@ -937,18 +960,11 @@ function generateAISummary() {
       <div class="ai-summary">
         <h4>Decision Pattern Analysis for ${selectedAdjudicator.name}</h4>
 
-        <p><strong>Award Patterns:</strong> Across ${selectedAdjudicator.totalDecisions} decisions, ${selectedAdjudicator.name} has awarded an average of ${selectedAdjudicator.avgAwardRate.toFixed(1)}% of claimed amounts. Awards typically range from nil (in jurisdictional dismissals) to full amounts where claims are substantiated with proper documentation.</p>
+        <p><strong>Award Patterns:</strong> Across ${selectedAdjudicator.totalDecisions} decisions, ${selectedAdjudicator.name} has awarded an average of ${selectedAdjudicator.avgAwardRate.toFixed(1)}% of claimed amounts.</p>
 
-        <p><strong>Commonly Decided Issues:</strong></p>
-        <ul>
-          <li>Variation claims: Requires written authorisation or clear evidence of scope changes</li>
-          <li>Progress payment calculations: Emphasises contract terms and milestone completion</li>
-          <li>Set-off claims: Applies strict tests for valid cross-claims and contractual entitlements</li>
-          <li>Extension of time claims: Considers notice requirements and causation evidence</li>
-        </ul>
+        <p><strong>Statistical Overview:</strong> Total claimed amounts across all decisions: $${Math.round(selectedAdjudicator.totalClaimAmount).toLocaleString()}. Total adjudicated amounts: $${Math.round(selectedAdjudicator.totalAwardedAmount).toLocaleString()}.</p>
 
-        <p><strong>Evidence Requirements:</strong> Previous decisions show preference for contemporaneous records, detailed breakdowns of claimed amounts, and supporting invoices. Expert evidence on technical matters is commonly relied upon for complex claims.</p>
-
+        <p><strong>Note:</strong> This is a placeholder analysis. In a production environment, this would use AI to analyze actual decision patterns, common issues, evidence requirements, and procedural approaches based on the full text of all ${selectedAdjudicator.totalDecisions} decisions.</p>
       </div>
     `;
 
@@ -987,17 +1003,7 @@ function askQuestion() {
 
   // Simulate AI response
   setTimeout(() => {
-    let sampleResponse = '';
-
-    if (question.toLowerCase().includes('jurisdiction')) {
-      sampleResponse = `Based on analysis of ${selectedAdjudicator.name}'s decisions, they have a ${selectedAdjudicator.jurisdictionDismissalRate.toFixed(1)}% jurisdictional dismissal rate. This suggests ${selectedAdjudicator.jurisdictionDismissalRate < 10 ? 'a pragmatic approach that focuses on substantive compliance over technical formalities' : 'strict adherence to jurisdictional requirements'}. Key factors this adjudicator considers include proper service, valid reference dates, and payment claim compliance with statutory requirements.`;
-    } else if (question.toLowerCase().includes('quantum') || question.toLowerCase().includes('amount')) {
-      sampleResponse = `${selectedAdjudicator.name} has awarded an average of ${selectedAdjudicator.avgAwardRate.toFixed(1)}% of claimed amounts. This suggests ${selectedAdjudicator.avgAwardRate > 70 ? 'a generous approach when claims are well-substantiated' : 'careful scrutiny of quantum claims'}. The adjudicator typically requires detailed breakdowns, supporting invoices, and clear evidence of work performed or variations authorized.`;
-    } else if (question.toLowerCase().includes('evidence')) {
-      sampleResponse = `Analysis shows ${selectedAdjudicator.name} places high value on contemporaneous documentation, expert reports, and clear audit trails. They tend to prefer structured submissions with chronological presentation of facts and supporting evidence clearly referenced to specific claim items.`;
-    } else {
-      sampleResponse = `Based on ${selectedAdjudicator.name}'s decision patterns across ${selectedAdjudicator.totalDecisions} cases, they demonstrate consistent application of legal principles with attention to both procedural compliance and substantive merit. Their approach suggests thorough analysis of evidence with ${selectedAdjudicator.avgAwardRate > 65 ? 'reasonable' : 'conservative'} outcomes for claimants.`;
-    }
+    const sampleResponse = `Based on analysis of ${selectedAdjudicator.name}'s ${selectedAdjudicator.totalDecisions} decisions, with an average award rate of ${selectedAdjudicator.avgAwardRate.toFixed(1)}%, this adjudicator demonstrates ${selectedAdjudicator.avgAwardRate > 65 ? 'reasonable outcomes for claimants' : 'conservative approach to quantum claims'}. Note: This is a placeholder response. Full AI analysis would be available in production.`;
 
     document.getElementById(`loading-${loadingId}`).innerHTML = `
       <strong>SopalAI:</strong><br>${sampleResponse}
@@ -1008,9 +1014,19 @@ function askQuestion() {
   chatResponses.scrollTop = chatResponses.scrollHeight;
 }
 
-function openDecision(pdfPath) {
-  // Simulate opening PDF - in real implementation, this would open the actual PDF
-  alert(`Opening decision: ${pdfPath}\n\nIn the live system, this would open the PDF document in a new tab.`);
+async function openDecision(decisionId, pdfPath) {
+  try {
+    const response = await fetch(`/open?p=${encodeURIComponent(pdfPath)}`);
+    const data = await response.json();
+    if (data.url) {
+      window.open(data.url, '_blank');
+    } else {
+      alert('PDF not available');
+    }
+  } catch (error) {
+    console.error('Error opening decision:', error);
+    alert('Error opening decision PDF');
+  }
 }
 
 function searchAdjudicators() {
@@ -1019,56 +1035,21 @@ function searchAdjudicators() {
 
 // Utility functions
 function sanitizeHtml(str) {
+  if (!str) return '';
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
 }
 
 function formatCurrency(amount) {
-  if (!amount) return '0';
+  if (!amount) return '$0';
   if (amount >= 1000000) {
-    return (amount / 1000000).toFixed(1) + 'M';
+    return '$' + (amount / 1000000).toFixed(1) + 'M';
   }
   if (amount >= 1000) {
-    return (amount / 1000).toFixed(0) + 'K';
+    return '$' + (amount / 1000).toFixed(0) + 'K';
   }
-  return amount.toFixed(0);
-}
-
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-AU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  });
-}
-
-// Theme toggle (if needed)
-function toggleTheme() {
-  const body = document.body;
-  const isDark = body.classList.contains('dark');
-
-  if (isDark) {
-    body.classList.remove('dark');
-    body.classList.add('light');
-    localStorage.setItem('theme', 'light');
-  } else {
-    body.classList.remove('light');
-    body.classList.add('dark');
-    localStorage.setItem('theme', 'dark');
-  }
-
-  // Update logos if they exist
-  const logo = document.getElementById('logo');
-  const footerLogo = document.getElementById('footerLogo');
-  if (logo && footerLogo) {
-    const logoSrc = body.classList.contains('dark')
-      ? "assets/sopal_logo_white_v1.png"
-      : "assets/sopal_logo_v1.png";
-    logo.src = logoSrc;
-    footerLogo.src = logoSrc;
-  }
+  return '$' + Math.round(amount).toLocaleString();
 }
 </script>
 
