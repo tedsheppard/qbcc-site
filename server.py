@@ -515,6 +515,30 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
     q_norm = normalize_query(q)
     nq = q_norm
 
+    # Check if query is an EJS ID (format: numbers followed by letters, e.g. "12345ABC")
+    if re.match(r'^\d+[A-Z]+$', nq.upper().replace(' ', '')):
+        ejs_id = nq.upper().replace(' ', '')
+        try:
+            # Direct lookup by EJS ID
+            meta = con.execute("""
+              SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
+                     m.act, d.reference, d.pdf_path, d.ejs_id, d.full_text
+              FROM docs_fresh d
+              LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+              WHERE d.ejs_id = ?
+            """, (ejs_id,)).fetchone()
+            
+            if meta:
+                result = dict(meta)
+                result["id"] = result.get("ejs_id")
+                result["snippet"] = (result.get("full_text", "") or "")[:500] + "..."
+                return {"total": 1, "items": [result]}
+            else:
+                return {"total": 0, "items": []}
+        except Exception as e:
+            print(f"Error searching by EJS ID: {e}")
+            # Fall through to normal search if error
+
     nq_expanded = expand_wildcards(nq)
     
     is_complex_query = (
