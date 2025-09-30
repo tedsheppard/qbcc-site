@@ -845,12 +845,17 @@ def get_adjudicators():
             except (ValueError, TypeError):
                 continue
             
-            # Include ALL decisions where we have valid numbers, including $0 awards
-            if claimed is not None and adjudicated is not None and claimed > 0:
-                rate = min((adjudicated / claimed) * 100, 100.0)
-                if name not in adjudicator_rates:
-                    adjudicator_rates[name] = []
-                adjudicator_rates[name].append(rate)
+                # Include ALL decisions where we have valid numbers, including $0 awards
+                if claimed is not None and adjudicated is not None and claimed > 0:
+                    rate = min((adjudicated / claimed) * 100, 100.0)
+                    if name not in adjudicator_rates:
+                        adjudicator_rates[name] = []
+                    adjudicator_rates[name].append(rate)
+                elif claimed is not None and adjudicated is not None and claimed == 0 and adjudicated == 0:
+                    # If both are 0, treat as 100% (no claim, no award)
+                    if name not in adjudicator_rates:
+                        adjudicator_rates[name] = []
+                    adjudicator_rates[name].append(100.0)
             
             # Handle fee proportions
             try:
