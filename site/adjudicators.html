@@ -852,7 +852,7 @@ function showAdjudicatorDetail() {
             </div>
             <div class="stat-card">
               <span class="stat-number">${selectedAdjudicator.avgAwardRate.toFixed(1)}%</span>
-              <div class="stat-label">Percentage of Claimed Amount Awarded</div>
+              <div class="stat-label">Median Award Rate Per Decision</div>
             </div>
             <div class="stat-card">
               <span class="stat-number">${formatCurrency(avgClaimAmount)}</span>
@@ -1118,6 +1118,8 @@ function sortDecisions() {
     </div>
   `).join('');
 }
+
+
 </script>
 
 </body>

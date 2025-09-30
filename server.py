@@ -815,6 +815,37 @@ Decision text:
 def get_adjudicators():
     """Get list of all adjudicators with their statistics from ai_adjudicator_extract_v4"""
     try:
+        # First get all decisions per adjudicator to calculate median
+        query_all = """
+        SELECT 
+            adjudicator_name,
+            claimed_amount,
+            adjudicated_amount
+        FROM ai_adjudicator_extract_v4
+        WHERE adjudicator_name IS NOT NULL 
+        AND adjudicator_name != ''
+        AND TRIM(adjudicator_name) != ''
+        AND claimed_amount IS NOT NULL
+        AND adjudicated_amount IS NOT NULL
+        AND CAST(claimed_amount AS REAL) > 0
+        """
+        
+        all_rows = con.execute(query_all).fetchall()
+        
+        # Group by adjudicator and calculate individual award rates
+        adjudicator_rates = {}
+        for row in all_rows:
+            name = row["adjudicator_name"]
+            claimed = float(row["claimed_amount"])
+            adjudicated = float(row["adjudicated_amount"])
+            
+            if claimed > 0:
+                rate = min((adjudicated / claimed) * 100, 100.0)
+                if name not in adjudicator_rates:
+                    adjudicator_rates[name] = []
+                adjudicator_rates[name].append(rate)
+        
+        # Now get aggregated stats
         query = """
         SELECT 
             adjudicator_name,
@@ -826,7 +857,7 @@ def get_adjudicators():
         AND adjudicator_name != ''
         AND TRIM(adjudicator_name) != ''
         GROUP BY adjudicator_name
-        HAVING COUNT(*) >= 0
+        HAVING COUNT(*) >= 3
         ORDER BY total_decisions DESC
         """
         
@@ -834,24 +865,27 @@ def get_adjudicators():
         
         adjudicators = []
         for row in rows:
+            name = row["adjudicator_name"]
             total_claimed = float(row["total_claimed"]) if row["total_claimed"] else 0
             total_adjudicated = float(row["total_adjudicated"]) if row["total_adjudicated"] else 0
             
-            # Calculate award rate as: (total adjudicated / total claimed) * 100
-            # This is more accurate than averaging individual percentages
-            avg_award_rate = 0
-            if total_claimed > 0:
-                avg_award_rate = (total_adjudicated / total_claimed) * 100
-                # Cap at 100% to handle any data anomalies
-                avg_award_rate = min(avg_award_rate, 100.0)
+            # Calculate median award rate from individual decisions
+            median_award_rate = 0
+            if name in adjudicator_rates and adjudicator_rates[name]:
+                rates = sorted(adjudicator_rates[name])
+                n = len(rates)
+                if n % 2 == 0:
+                    median_award_rate = (rates[n//2 - 1] + rates[n//2]) / 2
+                else:
+                    median_award_rate = rates[n//2]
             
             adjudicator = {
-                "id": row["adjudicator_name"].replace(" ", "_").lower(),
-                "name": row["adjudicator_name"],
+                "id": name.replace(" ", "_").lower(),
+                "name": name,
                 "totalDecisions": row["total_decisions"],
                 "totalClaimAmount": total_claimed,
                 "totalAwardedAmount": total_adjudicated,
-                "avgAwardRate": avg_award_rate
+                "avgAwardRate": median_award_rate  # Now using median
             }
             adjudicators.append(adjudicator)
         
