@@ -827,31 +827,30 @@ def get_adjudicators():
         WHERE adjudicator_name IS NOT NULL 
         AND adjudicator_name != ''
         AND TRIM(adjudicator_name) != ''
-        AND claimed_amount IS NOT NULL
-        AND adjudicated_amount IS NOT NULL
         """
         
         all_rows = con.execute(query_all).fetchall()
         
         # Group by adjudicator and calculate individual award rates and fee proportions
-        adjudicator_rates = {}
-        adjudicator_fees = {}
-        
-        for row in all_rows:
-            name = row["adjudicator_name"]
-            
-            # Safely convert to float, skipping 'N/A' and other invalid values
-            try:
-                claimed = float(row["claimed_amount"])
-                adjudicated = float(row["adjudicated_amount"])
-            except (ValueError, TypeError):
-                continue
-            
-            if claimed > 0:
-                rate = min((adjudicated / claimed) * 100, 100.0)
-                if name not in adjudicator_rates:
-                    adjudicator_rates[name] = []
-                adjudicator_rates[name].append(rate)
+adjudicator_rates = {}
+adjudicator_fees = {}
+
+for row in all_rows:
+    name = row["adjudicator_name"]
+    
+    # Safely convert to float, skipping 'N/A' and other invalid values
+    try:
+        claimed = float(row["claimed_amount"]) if row["claimed_amount"] not in ('N/A', '', None) else None
+        adjudicated = float(row["adjudicated_amount"]) if row["adjudicated_amount"] not in ('N/A', '', None) else None
+    except (ValueError, TypeError):
+        continue
+    
+    # Include ALL decisions where we have valid numbers, including $0 awards
+    if claimed is not None and adjudicated is not None and claimed > 0:
+        rate = min((adjudicated / claimed) * 100, 100.0)
+        if name not in adjudicator_rates:
+            adjudicator_rates[name] = []
+        adjudicator_rates[name].append(rate)
             
             # Handle fee proportions
             try:
@@ -945,58 +944,71 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
     try:
         decoded_name = unquote_plus(adjudicator_name)
         
-        query = """
-        SELECT 
-            a.ejs_id,
-            a.adjudicator_name,
-            a.claimant_name,
-            a.respondent_name,
-            a.claimed_amount,
-            a.payment_schedule_amount,
-            a.adjudicated_amount,
-            a.decision_date,
-            a.outcome,
-            a.project_type,
-            a.contract_type,
-            d.reference,
-            d.pdf_path
-        FROM ai_adjudicator_extract_v4 a
-        LEFT JOIN docs_fresh d ON a.ejs_id = d.ejs_id
-        WHERE LOWER(TRIM(a.adjudicator_name)) = LOWER(TRIM(?))
-        ORDER BY a.decision_date DESC
-        """
+query = """
+SELECT 
+    a.ejs_id,
+    a.adjudicator_name,
+    a.claimant_name,
+    a.respondent_name,
+    a.claimed_amount,
+    a.payment_schedule_amount,
+    a.adjudicated_amount,
+    a.decision_date,
+    a.outcome,
+    a.project_type,
+    a.contract_type,
+    a.fee_claimant_proportion,
+    a.fee_respondent_proportion,
+    d.reference,
+    d.pdf_path
+FROM ai_adjudicator_extract_v4 a
+LEFT JOIN docs_fresh d ON a.ejs_id = d.ejs_id
+WHERE LOWER(TRIM(a.adjudicator_name)) = LOWER(TRIM(?))
+ORDER BY a.decision_date DESC
+"""
+
+rows = con.execute(query, (decoded_name,)).fetchall()
+
+decisions = []
+for row in rows:
+    claimed = 0
+    try:
+        claimed = float(row["claimed_amount"]) if row["claimed_amount"] not in ('N/A', '', None) else 0
+    except (ValueError, TypeError):
+        claimed = 0
         
-        rows = con.execute(query, (decoded_name,)).fetchall()
-        
-        decisions = []
-        for row in rows:
-            claimed = 0
-            try:
-                claimed = float(row["claimed_amount"]) if row["claimed_amount"] else 0
-            except (ValueError, TypeError):
-                claimed = 0
-                
-            adjudicated = 0
-            try:
-                adjudicated = float(row["adjudicated_amount"]) if row["adjudicated_amount"] else 0
-            except (ValueError, TypeError):
-                adjudicated = 0
-            
-            decision = {
-                "id": row["ejs_id"],
-                "title": f"{row['claimant_name'] or 'Unknown'} v {row['respondent_name'] or 'Unknown'}",
-                "reference": row["reference"],
-                "date": row["decision_date"],
-                "claimant": row["claimant_name"],
-                "respondent": row["respondent_name"],
-                "claimAmount": claimed,
-                "awardedAmount": adjudicated,
-                "outcome": row["outcome"],
-                "projectType": row["project_type"],
-                "contractType": row["contract_type"],
-                "pdfPath": row["pdf_path"]
-            }
-            decisions.append(decision)
+    adjudicated = 0
+    try:
+        adjudicated = float(row["adjudicated_amount"]) if row["adjudicated_amount"] not in ('N/A', '', None) else 0
+    except (ValueError, TypeError):
+        adjudicated = 0
+    
+    # Parse fee proportions
+    claimant_fee = 0
+    respondent_fee = 0
+    try:
+        claimant_fee = float(row["fee_claimant_proportion"]) if row["fee_claimant_proportion"] not in ('N/A', '', None) else 0
+        respondent_fee = float(row["fee_respondent_proportion"]) if row["fee_respondent_proportion"] not in ('N/A', '', None) else 0
+    except (ValueError, TypeError):
+        pass
+    
+    decision = {
+        "id": row["ejs_id"],
+        "title": f"{row['claimant_name'] or 'Unknown'} v {row['respondent_name'] or 'Unknown'}",
+        "reference": row["reference"],
+        "date": row["decision_date"],
+        "claimant": row["claimant_name"],
+        "respondent": row["respondent_name"],
+        "claimAmount": claimed,
+        "awardedAmount": adjudicated,
+        "claimantFeeProportion": claimant_fee,
+        "respondentFeeProportion": respondent_fee,
+        "outcome": row["outcome"],
+        "projectType": row["project_type"],
+        "contractType": row["contract_type"],
+        "pdfPath": row["pdf_path"]
+    }
+    decisions.append(decision)
         
         return decisions
         

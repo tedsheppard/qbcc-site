@@ -1003,6 +1003,8 @@ function showAdjudicatorDetail() {
             <div><strong>Claim:</strong> $${Math.round(decision.claimAmount).toLocaleString()}</div>
             <div><strong>Awarded:</strong> $${Math.round(decision.awardedAmount).toLocaleString()}</div>
             ${decision.contractType ? `<div><strong>Contract Type:</strong> ${toTitleCase(decision.contractType)}</div>` : ''}
+            ${decision.claimantFeeProportion > 0 ? `<div><strong>Claimant Fee:</strong> ${decision.claimantFeeProportion.toFixed(1)}%</div>` : ''}
+            ${decision.respondentFeeProportion > 0 ? `<div><strong>Respondent Fee:</strong> ${decision.respondentFeeProportion.toFixed(1)}%</div>` : ''}
           </div>
           <div class="decision-actions">
             ${decision.pdfPath ? 
