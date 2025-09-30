@@ -820,7 +820,9 @@ def get_adjudicators():
         SELECT 
             adjudicator_name,
             claimed_amount,
-            adjudicated_amount
+            adjudicated_amount,
+            fee_claimant_proportion,
+            fee_respondent_proportion
         FROM ai_adjudicator_extract_v4
         WHERE adjudicator_name IS NOT NULL 
         AND adjudicator_name != ''
@@ -831,8 +833,10 @@ def get_adjudicators():
         
         all_rows = con.execute(query_all).fetchall()
         
-        # Group by adjudicator and calculate individual award rates
+        # Group by adjudicator and calculate individual award rates and fee proportions
         adjudicator_rates = {}
+        adjudicator_fees = {}
+        
         for row in all_rows:
             name = row["adjudicator_name"]
             
@@ -841,13 +845,30 @@ def get_adjudicators():
                 claimed = float(row["claimed_amount"])
                 adjudicated = float(row["adjudicated_amount"])
             except (ValueError, TypeError):
-                continue  # Skip this row if conversion fails
+                continue
             
             if claimed > 0:
                 rate = min((adjudicated / claimed) * 100, 100.0)
                 if name not in adjudicator_rates:
                     adjudicator_rates[name] = []
                 adjudicator_rates[name].append(rate)
+            
+            # Handle fee proportions
+            try:
+                claimant_fee = float(row["fee_claimant_proportion"]) if row["fee_claimant_proportion"] not in ('N/A', '', None) else None
+                respondent_fee = float(row["fee_respondent_proportion"]) if row["fee_respondent_proportion"] not in ('N/A', '', None) else None
+                
+                # If claimant fee exists, use it and calculate respondent as 100 - claimant
+                if claimant_fee is not None:
+                    if name not in adjudicator_fees:
+                        adjudicator_fees[name] = {'claimant': [], 'respondent': []}
+                    adjudicator_fees[name]['claimant'].append(claimant_fee)
+                    # If respondent fee doesn't add up to 100, default to 100 - claimant
+                    if respondent_fee is None or abs((claimant_fee + respondent_fee) - 100) > 0.1:
+                        respondent_fee = 100 - claimant_fee
+                    adjudicator_fees[name]['respondent'].append(respondent_fee)
+            except (ValueError, TypeError):
+                continue
         
         # Now get aggregated stats
         query = """
@@ -891,13 +912,24 @@ def get_adjudicators():
                 else:
                     median_award_rate = rates[n//2]
             
+            # Calculate average fee proportions
+            avg_claimant_fee = 0
+            avg_respondent_fee = 0
+            if name in adjudicator_fees:
+                if adjudicator_fees[name]['claimant']:
+                    avg_claimant_fee = sum(adjudicator_fees[name]['claimant']) / len(adjudicator_fees[name]['claimant'])
+                if adjudicator_fees[name]['respondent']:
+                    avg_respondent_fee = sum(adjudicator_fees[name]['respondent']) / len(adjudicator_fees[name]['respondent'])
+            
             adjudicator = {
                 "id": name.replace(" ", "_").lower(),
                 "name": name,
                 "totalDecisions": row["total_decisions"],
                 "totalClaimAmount": total_claimed,
                 "totalAwardedAmount": total_adjudicated,
-                "avgAwardRate": median_award_rate
+                "avgAwardRate": median_award_rate,
+                "avgClaimantFeeProportion": avg_claimant_fee,
+                "avgRespondentFeeProportion": avg_respondent_fee
             }
             adjudicators.append(adjudicator)
         

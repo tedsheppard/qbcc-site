@@ -587,6 +587,18 @@
     color: #666;
   }
 
+  .info-icon {
+  display: inline-block;
+  margin-left: 5px;
+  color: #666;
+  cursor: help;
+  font-size: 14px;
+}
+
+.dark .info-icon {
+  color: #aaa;
+}
+
   .dark .footer {
     background: #141414 !important;
     border-color: #333 !important;
@@ -787,7 +799,7 @@ function renderAdjudicatorsList() {
         </div>
         <div class="stat-item">
           <span class="stat-value">${adj.avgAwardRate.toFixed(1)}%</span>
-          <span>Avg Award</span>
+          <span>Median % Awarded</span>
         </div>
       </div>
     </div>
@@ -840,33 +852,66 @@ function showAdjudicatorDetail() {
         </div>
 
         <!-- Statistics Tab -->
-        <div id="stats-tab" class="tab-content active">
-          <div class="stats-grid">
-            <div class="stat-card">
-              <span class="stat-number">${formatCurrency(selectedAdjudicator.totalClaimAmount)}</span>
-              <div class="stat-label">Total Claimed Amount</div>
-            </div>
-            <div class="stat-card">
-              <span class="stat-number">${formatCurrency(selectedAdjudicator.totalAwardedAmount)}</span>
-              <div class="stat-label">Total Adjudicated Amount</div>
-            </div>
-            <div class="stat-card">
-              <span class="stat-number">${selectedAdjudicator.avgAwardRate.toFixed(1)}%</span>
-              <div class="stat-label">Median Award Rate Per Decision</div>
-            </div>
-            <div class="stat-card">
-              <span class="stat-number">${formatCurrency(avgClaimAmount)}</span>
-              <div class="stat-label">Avg Claimed Amount</div>
-            </div>
-            <div class="stat-card">
-              <span class="stat-number">${formatCurrency(avgAwardedAmount)}</span>
-              <div class="stat-label">Avg Adjudicated Amount</div>
-            </div>
-            <div class="stat-card">
-              <span class="stat-number">${selectedAdjudicator.totalDecisions}</span>
-              <div class="stat-label">Total Decisions</div>
-            </div>
-          </div>
+<div id="stats-tab" class="tab-content active">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-number">${selectedAdjudicator.totalDecisions}</span>
+      <div class="stat-label">
+        Total Decisions
+        <span class="info-icon" title="The total number of adjudication decisions made by this adjudicator in the database">ⓘ</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-number">${selectedAdjudicator.avgAwardRate.toFixed(1)}%</span>
+      <div class="stat-label">
+        Median Award Rate Per Decision
+        <span class="info-icon" title="The median percentage awarded across all decisions. This shows the typical award rate without being skewed by outlier cases.">ⓘ</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-number">${formatCurrency(selectedAdjudicator.totalClaimAmount)}</span>
+      <div class="stat-label">
+        Total Claimed Amount
+        <span class="info-icon" title="The sum of all payment claim amounts across all decisions by this adjudicator">ⓘ</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-number">${formatCurrency(selectedAdjudicator.totalAwardedAmount)}</span>
+      <div class="stat-label">
+        Total Adjudicated Amount
+        <span class="info-icon" title="The sum of all amounts adjudicated (awarded) across all decisions by this adjudicator">ⓘ</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-number">${formatCurrency(avgClaimAmount)}</span>
+      <div class="stat-label">
+        Avg Claimed Amount
+        <span class="info-icon" title="The average payment claim amount per decision">ⓘ</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-number">${formatCurrency(avgAwardedAmount)}</span>
+      <div class="stat-label">
+        Avg Adjudicated Amount
+        <span class="info-icon" title="The average adjudicated amount per decision">ⓘ</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-number">${selectedAdjudicator.avgClaimantFeeProportion.toFixed(1)}%</span>
+      <div class="stat-label">
+        Avg Claimant Fee Proportion
+        <span class="info-icon" title="The average percentage of adjudicator fees paid by the claimant across all decisions">ⓘ</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-number">${selectedAdjudicator.avgRespondentFeeProportion.toFixed(1)}%</span>
+      <div class="stat-label">
+        Avg Respondent Fee Proportion
+        <span class="info-icon" title="The average percentage of adjudicator fees paid by the respondent across all decisions">ⓘ</span>
+      </div>
+    </div>
+  </div>
+</div>
 
           <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
   <h4 style="margin-top: 0; margin-bottom: 15px;">Claimed vs Adjudicated Amounts</h4>
