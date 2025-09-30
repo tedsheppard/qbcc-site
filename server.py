@@ -928,7 +928,7 @@ adjudicator = {
     "avgClaimantFeeProportion": avg_claimant_fee,
     "avgRespondentFeeProportion": avg_respondent_fee
 }
-            }
+            
             adjudicators.append(adjudicator)
         
         return adjudicators
