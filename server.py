@@ -890,7 +890,7 @@ def get_adjudicators():
         AND adjudicator_name != ''
         AND TRIM(adjudicator_name) != ''
         GROUP BY adjudicator_name
-        HAVING COUNT(*) >= 3
+        HAVING COUNT(*) >= 0
         ORDER BY total_decisions DESC
         """
         
