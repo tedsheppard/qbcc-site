@@ -594,7 +594,7 @@
   right: 8px;
   width: 16px;
   height: 16px;
-  background: #00c97c;
+  background: #092c1f;
   color: white;
   border-radius: 50%;
   font-size: 11px;
@@ -874,6 +874,7 @@ async function selectAdjudicator(adjudicatorId) {
     const decisions = await response.json();
     selectedAdjudicator.decisions = decisions;
     
+    // NOW render the detail view with the loaded decisions
     showAdjudicatorDetail();
   } catch (error) {
     console.error('Error loading decisions:', error);
