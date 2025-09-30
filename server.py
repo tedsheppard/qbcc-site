@@ -942,78 +942,77 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
     try:
         decoded_name = unquote_plus(adjudicator_name)
         
-query = """
-SELECT 
-    a.ejs_id,
-    a.adjudicator_name,
-    a.claimant_name,
-    a.respondent_name,
-    a.claimed_amount,
-    a.payment_schedule_amount,
-    a.adjudicated_amount,
-    a.decision_date,
-    a.outcome,
-    a.project_type,
-    a.contract_type,
-    a.fee_claimant_proportion,
-    a.fee_respondent_proportion,
-    d.reference,
-    d.pdf_path
-FROM ai_adjudicator_extract_v4 a
-LEFT JOIN docs_fresh d ON a.ejs_id = d.ejs_id
-WHERE LOWER(TRIM(a.adjudicator_name)) = LOWER(TRIM(?))
-ORDER BY a.decision_date DESC
-"""
-
-rows = con.execute(query, (decoded_name,)).fetchall()
-
-decisions = []
-for row in rows:
-    claimed = 0
-    try:
-        claimed = float(row["claimed_amount"]) if row["claimed_amount"] not in ('N/A', '', None) else 0
-    except (ValueError, TypeError):
-        claimed = 0
+        query = """
+        SELECT 
+            a.ejs_id,
+            a.adjudicator_name,
+            a.claimant_name,
+            a.respondent_name,
+            a.claimed_amount,
+            a.payment_schedule_amount,
+            a.adjudicated_amount,
+            a.decision_date,
+            a.outcome,
+            a.project_type,
+            a.contract_type,
+            a.fee_claimant_proportion,
+            a.fee_respondent_proportion,
+            d.reference,
+            d.pdf_path
+        FROM ai_adjudicator_extract_v4 a
+        LEFT JOIN docs_fresh d ON a.ejs_id = d.ejs_id
+        WHERE LOWER(TRIM(a.adjudicator_name)) = LOWER(TRIM(?))
+        ORDER BY a.decision_date DESC
+        """
         
-    adjudicated = 0
-    try:
-        adjudicated = float(row["adjudicated_amount"]) if row["adjudicated_amount"] not in ('N/A', '', None) else 0
-    except (ValueError, TypeError):
-        adjudicated = 0
-    
-    # Parse fee proportions
-    claimant_fee = 0
-    respondent_fee = 0
-    try:
-        claimant_fee = float(row["fee_claimant_proportion"]) if row["fee_claimant_proportion"] not in ('N/A', '', None) else 0
-        respondent_fee = float(row["fee_respondent_proportion"]) if row["fee_respondent_proportion"] not in ('N/A', '', None) else 0
-    except (ValueError, TypeError):
-        pass
-    
-    decision = {
-        "id": row["ejs_id"],
-        "title": f"{row['claimant_name'] or 'Unknown'} v {row['respondent_name'] or 'Unknown'}",
-        "reference": row["reference"],
-        "date": row["decision_date"],
-        "claimant": row["claimant_name"],
-        "respondent": row["respondent_name"],
-        "claimAmount": claimed,
-        "awardedAmount": adjudicated,
-        "claimantFeeProportion": claimant_fee,
-        "respondentFeeProportion": respondent_fee,
-        "outcome": row["outcome"],
-        "projectType": row["project_type"],
-        "contractType": row["contract_type"],
-        "pdfPath": row["pdf_path"]
-    }
-    decisions.append(decision)
+        rows = con.execute(query, (decoded_name,)).fetchall()
+        
+        decisions = []
+        for row in rows:
+            claimed = 0
+            try:
+                claimed = float(row["claimed_amount"]) if row["claimed_amount"] not in ('N/A', '', None) else 0
+            except (ValueError, TypeError):
+                claimed = 0
+                
+            adjudicated = 0
+            try:
+                adjudicated = float(row["adjudicated_amount"]) if row["adjudicated_amount"] not in ('N/A', '', None) else 0
+            except (ValueError, TypeError):
+                adjudicated = 0
+            
+            # Parse fee proportions
+            claimant_fee = 0
+            respondent_fee = 0
+            try:
+                claimant_fee = float(row["fee_claimant_proportion"]) if row["fee_claimant_proportion"] not in ('N/A', '', None) else 0
+                respondent_fee = float(row["fee_respondent_proportion"]) if row["fee_respondent_proportion"] not in ('N/A', '', None) else 0
+            except (ValueError, TypeError):
+                pass
+            
+            decision = {
+                "id": row["ejs_id"],
+                "title": f"{row['claimant_name'] or 'Unknown'} v {row['respondent_name'] or 'Unknown'}",
+                "reference": row["reference"],
+                "date": row["decision_date"],
+                "claimant": row["claimant_name"],
+                "respondent": row["respondent_name"],
+                "claimAmount": claimed,
+                "awardedAmount": adjudicated,
+                "claimantFeeProportion": claimant_fee,
+                "respondentFeeProportion": respondent_fee,
+                "outcome": row["outcome"],
+                "projectType": row["project_type"],
+                "contractType": row["contract_type"],
+                "pdfPath": row["pdf_path"]
+            }
+            decisions.append(decision)
         
         return decisions
         
     except Exception as e:
         print(f"Error in /api/adjudicator/{adjudicator_name}: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
-
 
 # Add this helper endpoint to debug the database schema
 @app.get("/debug/schema")
