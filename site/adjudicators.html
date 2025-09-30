@@ -928,9 +928,9 @@ function showAdjudicatorDetail() {
   </div>
   <div class="stat-card">
     <span class="stat-number">${selectedAdjudicator.avgAwardRate.toFixed(1)}%</span>
-    <div class="stat-label">Average Award Rate Per Decision</div>
+    <div class="stat-label">Average Portion of Claim Awarded Per Decision</div>
     <div class="info-icon">i
-      <div class="tooltip">The average percentage awarded across all decisions. This shows the typical award rate without being skewed by outlier cases.</div>
+      <div class="tooltip">The average percentage of the claimed amount that was awarded per decision. This is calculated from each individual decision's award rate to prevent a few unusually large claims from skewing the average.</div>
     </div>
   </div>
   <div class="stat-card">
@@ -1022,24 +1022,7 @@ function showAdjudicatorDetail() {
 </div>
 
 
-        <!-- AI Analysis Tab -->
-        <div id="analysis-tab" class="tab-content">
-          <div class="ai-section">
-            <button class="ai-summary-btn" onclick="generateAISummary()" id="summaryBtn">
-              Generate AI Analysis of Decision Patterns
-            </button>
-            <div id="aiSummaryContent" style="display: none;"></div>
-
-            <div class="chat-section" style="display: none;" id="chatSection">
-              <h4>Ask Questions About This Adjudicator</h4>
-              <div class="chat-input-container">
-                <input type="text" id="chatInput" class="chat-input" placeholder="Ask about decision patterns, preferences, or approach...">
-                <button class="chat-button" onclick="askQuestion()">Ask</button>
-              </div>
-              <div id="chatResponses"></div>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </div>
   `;
