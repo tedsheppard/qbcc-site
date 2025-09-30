@@ -701,17 +701,17 @@
     }
   }
 
-  .tooltip {
+.tooltip {
   position: absolute;
-  bottom: 25px;
-  right: 0;
+  top: 25px; /* Changed from bottom */
+  left: 0;   /* Changed from right */
   background: #333;
   color: white;
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 12px;
   width: 200px;
-  max-width: calc(100vw - 40px); /* Prevent extending beyond viewport */
+  max-width: calc(100vw - 40px);
   text-align: left;
   opacity: 0;
   visibility: hidden;
@@ -719,7 +719,22 @@
   z-index: 10;
   line-height: 1.4;
   font-weight: normal;
-  transform: translateX(0); /* Add this */
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: -5px;  /* Changed from bottom */
+  left: 10px; /* Changed from right */
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid #333; /* Changed from border-top */
+}
+
+.dark .tooltip::after {
+  border-bottom-color: #1a1a1a; /* Changed from border-top-color */
 }
 
 /* For stat cards on the right side, flip tooltip to left */
@@ -727,18 +742,6 @@
 .stat-card:nth-child(4n+4) .tooltip {
   right: auto;
   left: 0;
-}
-
-.tooltip::after {
-  content: '';
-  position: absolute;
-  bottom: -5px;
-  right: 10px;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid #333;
 }
 
 /* Adjust arrow for left-aligned tooltips */
