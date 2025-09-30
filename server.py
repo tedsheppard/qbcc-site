@@ -832,37 +832,35 @@ def get_adjudicators():
         all_rows = con.execute(query_all).fetchall()
         
         # Group by adjudicator and calculate individual award rates and fee proportions
-adjudicator_rates = {}
-adjudicator_fees = {}
-
-for row in all_rows:
-    name = row["adjudicator_name"]
-    
-    # Safely convert to float, skipping 'N/A' and other invalid values
-    try:
-        claimed = float(row["claimed_amount"]) if row["claimed_amount"] not in ('N/A', '', None) else None
-        adjudicated = float(row["adjudicated_amount"]) if row["adjudicated_amount"] not in ('N/A', '', None) else None
-    except (ValueError, TypeError):
-        continue
-    
-    # Include ALL decisions where we have valid numbers, including $0 awards
-    if claimed is not None and adjudicated is not None and claimed > 0:
-        rate = min((adjudicated / claimed) * 100, 100.0)
-        if name not in adjudicator_rates:
-            adjudicator_rates[name] = []
-        adjudicator_rates[name].append(rate)
+        adjudicator_rates = {}
+        adjudicator_fees = {}
+        
+        for row in all_rows:
+            name = row["adjudicator_name"]
+            
+            # Safely convert to float, skipping 'N/A' and other invalid values
+            try:
+                claimed = float(row["claimed_amount"]) if row["claimed_amount"] not in ('N/A', '', None) else None
+                adjudicated = float(row["adjudicated_amount"]) if row["adjudicated_amount"] not in ('N/A', '', None) else None
+            except (ValueError, TypeError):
+                continue
+            
+            # Include ALL decisions where we have valid numbers, including $0 awards
+            if claimed is not None and adjudicated is not None and claimed > 0:
+                rate = min((adjudicated / claimed) * 100, 100.0)
+                if name not in adjudicator_rates:
+                    adjudicator_rates[name] = []
+                adjudicator_rates[name].append(rate)
             
             # Handle fee proportions
             try:
                 claimant_fee = float(row["fee_claimant_proportion"]) if row["fee_claimant_proportion"] not in ('N/A', '', None) else None
                 respondent_fee = float(row["fee_respondent_proportion"]) if row["fee_respondent_proportion"] not in ('N/A', '', None) else None
                 
-                # If claimant fee exists, use it and calculate respondent as 100 - claimant
                 if claimant_fee is not None:
                     if name not in adjudicator_fees:
                         adjudicator_fees[name] = {'claimant': [], 'respondent': []}
                     adjudicator_fees[name]['claimant'].append(claimant_fee)
-                    # If respondent fee doesn't add up to 100, default to 100 - claimant
                     if respondent_fee is None or abs((claimant_fee + respondent_fee) - 100) > 0.1:
                         respondent_fee = 100 - claimant_fee
                     adjudicator_fees[name]['respondent'].append(respondent_fee)
@@ -889,7 +887,7 @@ for row in all_rows:
         AND adjudicator_name != ''
         AND TRIM(adjudicator_name) != ''
         GROUP BY adjudicator_name
-        HAVING COUNT(*) >= 0
+        HAVING COUNT(*) >= 3
         ORDER BY total_decisions DESC
         """
         
