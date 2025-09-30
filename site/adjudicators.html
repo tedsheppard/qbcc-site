@@ -112,20 +112,32 @@
     min-height: 70vh;
   }
 
-  .left-pane {
-    flex: 0 0 400px;
-    max-width: 400px;
-  }
+.left-pane {
+  flex: 0 0 400px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 200px); /* Adjust 200px based on your header/margins */
+}
 
-  .right-pane {
-    flex: 1;
-    background: #fdfdfd;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
+.adjudicator-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.right-pane {
+  flex: 1;
+  background: #fdfdfd;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 200px); /* Match left pane */
+}
 
   .right-pane.empty {
     display: flex;
@@ -263,11 +275,11 @@
     font-size: 14px;
   }
 
-  .detail-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-  }
+.detail-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
 
   .detail-tabs {
     display: flex;
@@ -343,11 +355,12 @@
   }
 
   /* Decisions list */
-  .decisions-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+.decisions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: none; /* Remove any max-height constraint */
+}
 
   .decision-item {
     background: #f8f9fa;
