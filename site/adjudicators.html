@@ -927,7 +927,7 @@ function showAdjudicatorDetail() {
   </div>
   <div class="stat-card">
     <span class="stat-number">${selectedAdjudicator.avgAwardRate.toFixed(1)}%</span>
-    <div class="stat-label">Average Portion of Claim Awarded Per Decision</div>
+    <div class="stat-label">Avg Portion of Claim Awarded Per Decision</div>
     <div class="info-icon">i
       <div class="tooltip">The average percentage of the claimed amount that was awarded per decision. This is calculated from each individual decision's award rate to prevent a few unusually large claims from skewing the average.</div>
     </div>
@@ -1001,7 +1001,6 @@ function showAdjudicatorDetail() {
             <div><strong>Date:</strong> ${decision.date || 'Unknown'}</div>
             <div><strong>Claim:</strong> $${Math.round(decision.claimAmount).toLocaleString()}</div>
             <div><strong>Awarded:</strong> $${Math.round(decision.awardedAmount).toLocaleString()}</div>
-            ${decision.contractType ? `<div><strong>Contract Type:</strong> ${toTitleCase(decision.contractType)}</div>` : ''}
             ${(decision.claimantFeeProportion > 0 || decision.respondentFeeProportion > 0) ? `
               <div><strong>Claimant Fee:</strong> ${decision.claimantFeeProportion > 0 ? decision.claimantFeeProportion.toFixed(1) : (100 - decision.respondentFeeProportion).toFixed(1)}%</div>
               <div><strong>Respondent Fee:</strong> ${decision.respondentFeeProportion > 0 ? decision.respondentFeeProportion.toFixed(1) : (100 - decision.claimantFeeProportion).toFixed(1)}%</div>
@@ -1193,7 +1192,6 @@ function sortDecisions() {
         <div><strong>Date:</strong> ${decision.date || 'Unknown'}</div>
         <div><strong>Claim:</strong> $${Math.round(decision.claimAmount).toLocaleString()}</div>
         <div><strong>Awarded:</strong> $${Math.round(decision.awardedAmount).toLocaleString()}</div>
-        ${decision.contractType ? `<div><strong>Contract Type:</strong> ${toTitleCase(decision.contractType)}</div>` : ''}
       </div>
       <div class="decision-actions">
         ${decision.pdfPath ? 
