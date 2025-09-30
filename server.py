@@ -842,10 +842,8 @@ def get_adjudicators():
             try:
                 claimed = float(row["claimed_amount"]) if row["claimed_amount"] not in ('N/A', '', None) else None
                 adjudicated = float(row["adjudicated_amount"]) if row["adjudicated_amount"] not in ('N/A', '', None) else None
-            except (ValueError, TypeError):
-                continue
-            
-                # Include ALL decisions where we have valid numbers, including $0 awards
+
+                # CORRECTED PART: This logic is now INSIDE the 'try' block
                 if claimed is not None and adjudicated is not None and claimed > 0:
                     rate = min((adjudicated / claimed) * 100, 100.0)
                     if name not in adjudicator_rates:
@@ -856,6 +854,9 @@ def get_adjudicators():
                     if name not in adjudicator_rates:
                         adjudicator_rates[name] = []
                     adjudicator_rates[name].append(100.0)
+
+            except (ValueError, TypeError):
+                continue
             
             # Handle fee proportions
             try:
@@ -904,10 +905,10 @@ def get_adjudicators():
             total_claimed = float(row["total_claimed"]) if row["total_claimed"] else 0
             total_adjudicated = float(row["total_adjudicated"]) if row["total_adjudicated"] else 0
             
-# Calculate average (mean) award rate from individual decisions
-avg_award_rate = 0
-if name in adjudicator_rates and adjudicator_rates[name]:
-    avg_award_rate = sum(adjudicator_rates[name]) / len(adjudicator_rates[name])
+            # Calculate average (mean) award rate from individual decisions
+            avg_award_rate = 0
+            if name in adjudicator_rates and adjudicator_rates[name]:
+                avg_award_rate = sum(adjudicator_rates[name]) / len(adjudicator_rates[name])
             
             # Calculate average fee proportions
             avg_claimant_fee = 0
@@ -918,16 +919,16 @@ if name in adjudicator_rates and adjudicator_rates[name]:
                 if adjudicator_fees[name]['respondent']:
                     avg_respondent_fee = sum(adjudicator_fees[name]['respondent']) / len(adjudicator_fees[name]['respondent'])
             
-adjudicator = {
-    "id": name.replace(" ", "_").lower(),
-    "name": name,
-    "totalDecisions": row["total_decisions"],
-    "totalClaimAmount": total_claimed,
-    "totalAwardedAmount": total_adjudicated,
-    "avgAwardRate": avg_award_rate,  # Changed from median_award_rate
-    "avgClaimantFeeProportion": avg_claimant_fee,
-    "avgRespondentFeeProportion": avg_respondent_fee
-}
+            adjudicator = {
+                "id": name.replace(" ", "_").lower(),
+                "name": name,
+                "totalDecisions": row["total_decisions"],
+                "totalClaimAmount": total_claimed,
+                "totalAwardedAmount": total_adjudicated,
+                "avgAwardRate": avg_award_rate,
+                "avgClaimantFeeProportion": avg_claimant_fee,
+                "avgRespondentFeeProportion": avg_respondent_fee
+            }
             
             adjudicators.append(adjudicator)
         
