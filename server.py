@@ -827,7 +827,6 @@ def get_adjudicators():
         AND TRIM(adjudicator_name) != ''
         AND claimed_amount IS NOT NULL
         AND adjudicated_amount IS NOT NULL
-        AND CAST(claimed_amount AS REAL) > 0
         """
         
         all_rows = con.execute(query_all).fetchall()
@@ -836,8 +835,13 @@ def get_adjudicators():
         adjudicator_rates = {}
         for row in all_rows:
             name = row["adjudicator_name"]
-            claimed = float(row["claimed_amount"])
-            adjudicated = float(row["adjudicated_amount"])
+            
+            # Safely convert to float, skipping 'N/A' and other invalid values
+            try:
+                claimed = float(row["claimed_amount"])
+                adjudicated = float(row["adjudicated_amount"])
+            except (ValueError, TypeError):
+                continue  # Skip this row if conversion fails
             
             if claimed > 0:
                 rate = min((adjudicated / claimed) * 100, 100.0)
@@ -850,8 +854,16 @@ def get_adjudicators():
         SELECT 
             adjudicator_name,
             COUNT(*) as total_decisions,
-            SUM(CAST(claimed_amount AS REAL)) as total_claimed,
-            SUM(CAST(adjudicated_amount AS REAL)) as total_adjudicated
+            SUM(CASE 
+                WHEN claimed_amount NOT IN ('N/A', '') AND claimed_amount IS NOT NULL 
+                THEN CAST(claimed_amount AS REAL) 
+                ELSE 0 
+            END) as total_claimed,
+            SUM(CASE 
+                WHEN adjudicated_amount NOT IN ('N/A', '') AND adjudicated_amount IS NOT NULL 
+                THEN CAST(adjudicated_amount AS REAL) 
+                ELSE 0 
+            END) as total_adjudicated
         FROM ai_adjudicator_extract_v4
         WHERE adjudicator_name IS NOT NULL 
         AND adjudicator_name != ''
@@ -885,7 +897,7 @@ def get_adjudicators():
                 "totalDecisions": row["total_decisions"],
                 "totalClaimAmount": total_claimed,
                 "totalAwardedAmount": total_adjudicated,
-                "avgAwardRate": median_award_rate  # Now using median
+                "avgAwardRate": median_award_rate
             }
             adjudicators.append(adjudicator)
         
