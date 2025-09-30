@@ -700,6 +700,53 @@
       min-height: 500px;
     }
   }
+
+  .tooltip {
+  position: absolute;
+  bottom: 25px;
+  right: 0;
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  width: 200px;
+  max-width: calc(100vw - 40px); /* Prevent extending beyond viewport */
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+  line-height: 1.4;
+  font-weight: normal;
+  transform: translateX(0); /* Add this */
+}
+
+/* For stat cards on the right side, flip tooltip to left */
+.stat-card:nth-child(4n) .tooltip,
+.stat-card:nth-child(4n+4) .tooltip {
+  right: auto;
+  left: 0;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  right: 10px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #333;
+}
+
+/* Adjust arrow for left-aligned tooltips */
+.stat-card:nth-child(4n) .tooltip::after,
+.stat-card:nth-child(4n+4) .tooltip::after {
+  right: auto;
+  left: 10px;
+}
 </style>
 </head>
 
