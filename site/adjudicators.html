@@ -704,30 +704,6 @@
   overflow-x: visible; /* Add this - allows horizontal overflow for tooltips */
 }
 
-.tooltip {
-  position: absolute;
-  top: 25px;
-  left: -75px;
-  background: #333;
-  color: white;
-  padding: 12px 15px; /* Increased padding */
-  border-radius: 6px;
-  font-size: 11px;
-  width: 180px;
-  min-height: 60px; /* Increased minimum height */
-  height: auto;
-  text-align: left;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.15s ease;
-  z-index: 1000;
-  line-height: 1.4; /* Increased line height for better spacing */
-  font-weight: normal;
-  white-space: normal;
-  word-wrap: break-word;
-  overflow: visible;
-  box-sizing: border-box; /* Include padding in height calculation */
-}
 
 .info-icon:hover .tooltip {
   opacity: 1;
@@ -745,6 +721,52 @@
 
 .stat-card {
   overflow: visible !important;
+}
+
+.tooltip {
+  position: absolute;
+  top: 25px;
+  left: -75px;
+  background: #333;
+  color: white;
+  padding: 12px 15px;
+  border-radius: 6px;
+  font-size: 11px;
+  width: 180px;
+  min-height: 60px;
+  height: auto;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  z-index: 1000;
+  line-height: 1.4;
+  font-weight: normal;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 85px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid #333;
+}
+
+.dark .tooltip {
+  background: #1a1a1a;
+  border: 1px solid #333;
+}
+
+.dark .tooltip::after {
+  border-bottom-color: #1a1a1a;
 }
 </style>
 </head>
