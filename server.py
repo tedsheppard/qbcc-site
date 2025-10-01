@@ -846,8 +846,9 @@ def get_adjudicators():
             except (ValueError, TypeError):
                 continue
             
-            # Count $0 awards
-            if adjudicated is not None and adjudicated == 0 and claimed is not None and claimed > 0:
+      
+            # Count $0 awards - include ALL decisions where awarded = $0
+            if adjudicated is not None and adjudicated == 0:
                 if name not in adjudicator_zero_awards:
                     adjudicator_zero_awards[name] = 0
                 adjudicator_zero_awards[name] += 1
