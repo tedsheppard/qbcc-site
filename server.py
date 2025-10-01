@@ -721,7 +721,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
     elif sort == "ztoa":
         payload["sort"] = ["claimant:desc"]
         
-headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
+    headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
     res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
     data = res.json()
     items = []
