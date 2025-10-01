@@ -623,45 +623,6 @@
   visibility: visible;
 }
 
-.tooltip {
-  position: absolute;
-  bottom: 25px;
-  right: 0;
-  background: #333;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  width: 200px;
-  text-align: left;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.15s ease;
-  z-index: 10;
-  line-height: 1.4;
-  font-weight: normal;
-}
-
-.tooltip::after {
-  content: '';
-  position: absolute;
-  bottom: -5px;
-  right: 10px;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid #333;
-}
-
-.dark .tooltip {
-  background: #1a1a1a;
-  border: 1px solid #333;
-}
-
-.dark .tooltip::after {
-  border-top-color: #1a1a1a;
-}
 
   .dark .footer {
     background: #141414 !important;
@@ -700,38 +661,6 @@
       min-height: 500px;
     }
   }
-
-.tooltip {
-  position: absolute;
-  top: 25px;
-  left: -90px; /* Offset to the right so it doesn't cover the card */
-  background: #333;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  width: 200px;
-  max-width: calc(100vw - 40px);
-  text-align: left;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.15s ease;
-  z-index: 10;
-  line-height: 1.4;
-  font-weight: normal;
-}
-
-.tooltip::after {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: 100px; /* Position arrow to point at the icon */
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 5px solid #333;
-}
 
 .dark .tooltip::after {
   border-bottom-color: #1a1a1a;
