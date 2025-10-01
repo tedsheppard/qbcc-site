@@ -936,25 +936,6 @@ function renderItem(it, query) {
       </div>
     </div>`;
 }
-      ${query ? (it.snippet ? `<p class="snippet">${it.snippet}</p>` : '') : ''}
-      ${pdf ? `
-        <a class="open-btn" href="${pdf.open}" target="_blank">Open Decision (PDF)</a>
-        <span style="color:black; margin:0 6px;">|</span>
-        <a href="javascript:void(0)" class="open-btn" onclick="summariseDecision('${it.id}')">
-          Ask SopalAI
-        </a>
-      ` : ''}
-      <div id="ai-container-${it.id}" class="ai-container" style="display:none;">
-          <div class="chat-messages" id="chat-messages-${it.id}"></div>
-          <div class="chat-input-area" id="chat-input-area-${it.id}" style="display:none;">
-              <input type="text" id="chat-input-${it.id}" placeholder="Ask a follow-up question..." onkeydown="if(event.key==='Enter') sendChatMessage('${it.id}')">
-              <button onclick="sendChatMessage('${it.id}')" aria-label="Send message">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-              </button>
-          </div>
-      </div>
-    </div>`;
-}
 
 
     function renderPagination(currentPage) {
