@@ -886,22 +886,22 @@ mark {
     }
 
 
-function renderItem(it, query) {
+  function renderItem(it, query) {
   const pdf = buildPdfLinks(it.pdf_path);
   const caseName = `${sanitize(it.claimant)} v ${sanitize(it.respondent)}`;
   
-  // Format currency values - return "N/A" if missing
+  // Format currency values - return $0.00 if missing
   const formatCurrency = (val) => {
-    if (!val || val === 'N/A' || val === '') return 'N/A';
+    if (!val || val === 'N/A' || val === '') return '$0.00';
     const num = parseFloat(val);
-    return isNaN(num) ? 'N/A' : `$${num.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    return isNaN(num) ? '$0.00' : `$${num.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
   };
   
-  // Format percentages - return "N/A" if missing
+  // Format percentages - return 0.0% if missing
   const formatPercent = (val) => {
-    if (!val || val === 'N/A' || val === '') return 'N/A';
+    if (!val || val === 'N/A' || val === '') return '0.0%';
     const num = parseFloat(val);
-    return isNaN(num) ? 'N/A' : `${num.toFixed(1)}%`;
+    return isNaN(num) ? '0.0%' : `${num.toFixed(1)}%`;
   };
 
   return `
@@ -936,6 +936,8 @@ function renderItem(it, query) {
       </div>
     </div>`;
 }
+
+
 
 function toggleTheme() {
   const body = document.body;
