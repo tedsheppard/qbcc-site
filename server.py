@@ -906,15 +906,10 @@ def get_adjudicators():
             total_claimed = float(row["total_claimed"]) if row["total_claimed"] else 0
             total_adjudicated = float(row["total_adjudicated"]) if row["total_adjudicated"] else 0
             
-            # Calculate median award rate from individual decisions
-            median_award_rate = 0
+            # Calculate average (mean) award rate from individual decisions
+            avg_award_rate = 0
             if name in adjudicator_rates and adjudicator_rates[name]:
-                rates = sorted(adjudicator_rates[name])
-                n = len(rates)
-                if n % 2 == 0:
-                    median_award_rate = (rates[n//2 - 1] + rates[n//2]) / 2
-                else:
-                    median_award_rate = rates[n//2]
+                avg_award_rate = sum(adjudicator_rates[name]) / len(adjudicator_rates[name])
             
             # Calculate average fee proportions
             avg_claimant_fee = 0
@@ -931,7 +926,7 @@ def get_adjudicators():
                 "totalDecisions": row["total_decisions"],
                 "totalClaimAmount": total_claimed,
                 "totalAwardedAmount": total_adjudicated,
-                "avgAwardRate": median_award_rate,
+                "avgAwardRate": avg_award_rate,
                 "avgClaimantFeeProportion": avg_claimant_fee,
                 "avgRespondentFeeProportion": avg_respondent_fee,
                 "zeroAwardCount": adjudicator_zero_awards.get(name, 0)
