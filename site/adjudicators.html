@@ -1042,6 +1042,13 @@ function showAdjudicatorDetail() {
       <div class="tooltip">The average percentage of adjudicator fees paid by the respondent across all decisions</div>
     </div>
   </div>
+  <div class="stat-card">
+   <span class="stat-number">${selectedAdjudicator.zeroAwardCount || 0}</span>
+    <div class="stat-label">$Nil Decisions</div>
+    <div class="info-icon">i
+     <div class="tooltip">The number of decisions where the adjudicator awarded $0.00, meaning the claimant received nothing despite making a claim</div>
+   </div>
+  </div>
 </div>
 </div>
 
