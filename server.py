@@ -656,9 +656,12 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
         for r in rows:
             meta = con.execute("""
               SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
-                     m.act, d.reference, d.pdf_path, d.ejs_id
+                     m.act, d.reference, d.pdf_path, d.ejs_id,
+                     a.claimed_amount, a.adjudicated_amount, 
+                     a.fee_claimant_proportion, a.fee_respondent_proportion
               FROM docs_fresh d
               LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+              LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
               WHERE d.rowid = ?
             """, (r["rowid"],)).fetchone()
 
@@ -718,13 +721,21 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
     elif sort == "ztoa":
         payload["sort"] = ["claimant:desc"]
         
-    headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
+headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
     res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
     data = res.json()
     items = []
     for hit in data.get("hits", []):
+        # Fetch additional data from ai_adjudicator_extract_v4
+        extra_data = con.execute("""
+            SELECT claimed_amount, adjudicated_amount, 
+                   fee_claimant_proportion, fee_respondent_proportion
+            FROM ai_adjudicator_extract_v4
+            WHERE ejs_id = ?
+        """, (hit.get("id"),)).fetchone()
+        
         snippet = hit.get("_formatted", {}).get("content", "")
-        items.append({
+        item = {
             "id": hit.get("id"),
             "reference": hit.get("reference"),
             "pdf_path": hit.get("pdf_path"),
@@ -734,7 +745,18 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             "decision_date_norm": hit.get("date"),
             "act": hit.get("act"),
             "snippet": snippet
-        })
+        }
+        
+        # Add extra fields if available
+        if extra_data:
+            item.update({
+                "claimed_amount": extra_data["claimed_amount"],
+                "adjudicated_amount": extra_data["adjudicated_amount"],
+                "fee_claimant_proportion": extra_data["fee_claimant_proportion"],
+                "fee_respondent_proportion": extra_data["fee_respondent_proportion"]
+            })
+        
+        items.append(item)
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
 
 # ---------- PDF links ----------

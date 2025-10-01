@@ -859,7 +859,20 @@ mark {
 function renderItem(it, query) {
   const pdf = buildPdfLinks(it.pdf_path);
   const caseName = `${sanitize(it.claimant)} v ${sanitize(it.respondent)}`;
-  const caseNo = sanitize(it.case_no || it.adj_no || it.id || '');
+  
+  // Format currency values
+  const formatCurrency = (val) => {
+    if (!val || val === 'N/A') return null;
+    const num = parseFloat(val);
+    return isNaN(num) ? null : `$${num.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+  };
+  
+  // Format percentages
+  const formatPercent = (val) => {
+    if (!val || val === 'N/A') return null;
+    const num = parseFloat(val);
+    return isNaN(num) ? null : `${num.toFixed(1)}%`;
+  };
 
   return `
     <div class="result">
@@ -869,7 +882,30 @@ function renderItem(it, query) {
         ${it.adjudicator ? `<strong>Adjudicator:</strong> ${sanitize(it.adjudicator)}<br>` : ''}
         ${it.claimant ? `<strong>Claimant:</strong> ${sanitize(it.claimant)}<br>` : ''}
         ${it.respondent ? `<strong>Respondent:</strong> ${sanitize(it.respondent)}<br>` : ''}
+        ${formatCurrency(it.claimed_amount) ? `<strong>Claimed Amount:</strong> ${formatCurrency(it.claimed_amount)}<br>` : ''}
+        ${formatCurrency(it.adjudicated_amount) ? `<strong>Adjudicated Amount:</strong> ${formatCurrency(it.adjudicated_amount)}<br>` : ''}
+        ${formatPercent(it.fee_claimant_proportion) ? `<strong>Claimant Fee:</strong> ${formatPercent(it.fee_claimant_proportion)}<br>` : ''}
+        ${formatPercent(it.fee_respondent_proportion) ? `<strong>Respondent Fee:</strong> ${formatPercent(it.fee_respondent_proportion)}<br>` : ''}
       </div>
+      ${query ? (it.snippet ? `<p class="snippet">${it.snippet}</p>` : '') : ''}
+      ${pdf ? `
+        <a class="open-btn" href="${pdf.open}" target="_blank">Open Decision (PDF)</a>
+        <span style="color:black; margin:0 6px;">|</span>
+        <a href="javascript:void(0)" class="open-btn" onclick="summariseDecision('${it.id}')">
+          Ask SopalAI
+        </a>
+      ` : ''}
+      <div id="ai-container-${it.id}" class="ai-container" style="display:none;">
+          <div class="chat-messages" id="chat-messages-${it.id}"></div>
+          <div class="chat-input-area" id="chat-input-area-${it.id}" style="display:none;">
+              <input type="text" id="chat-input-${it.id}" placeholder="Ask a follow-up question..." onkeydown="if(event.key==='Enter') sendChatMessage('${it.id}')">
+              <button onclick="sendChatMessage('${it.id}')" aria-label="Send message">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              </button>
+          </div>
+      </div>
+    </div>`;
+}
       ${query ? (it.snippet ? `<p class="snippet">${it.snippet}</p>` : '') : ''}
       ${pdf ? `
         <a class="open-btn" href="${pdf.open}" target="_blank">Open Decision (PDF)</a>
