@@ -63,7 +63,7 @@ con.execute("PRAGMA mmap_size = 30000000000")
 app = FastAPI()
 
 # ---------------- LexiFile DB (separate from Sopal qbcc.db) ----------------
-LEXIFILE_DB_PATH = "/tmp/lexifile.db"
+LEXIFILE_DB_PATH = "/var/data/lexifile.db"
 lexi_con = sqlite3.connect(LEXIFILE_DB_PATH, check_same_thread=False)
 lexi_con.row_factory = sqlite3.Row
 
