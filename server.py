@@ -558,6 +558,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             
             total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (nq2,)).fetchone()[0]
 
+            # In the complex query section, update the sorting logic
             order_clause = ""
             if sort == "newest":
                 order_clause = "ORDER BY m.decision_date_norm DESC"
@@ -567,23 +568,32 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                 order_clause = "ORDER BY m.claimant ASC"
             elif sort == "ztoa":
                 order_clause = "ORDER BY m.claimant DESC"
+            elif sort == "claim_high":
+                order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN 0 ELSE CAST(a.claimed_amount AS REAL) END DESC"
+            elif sort == "claim_low":
+                order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN 0 ELSE CAST(a.claimed_amount AS REAL) END ASC"
+            elif sort == "adj_high":
+                order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 0 ELSE CAST(a.adjudicated_amount AS REAL) END DESC"
+            elif sort == "adj_low":
+                order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 0 ELSE CAST(a.adjudicated_amount AS REAL) END ASC"
 
             if order_clause:
                 sql = f"""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  JOIN docs_fresh d ON fts.rowid = d.rowid
-                  LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-                  WHERE fts MATCH ?
-                  {order_clause}
-                  LIMIT ? OFFSET ?
+                SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                FROM fts
+                JOIN docs_fresh d ON fts.rowid = d.rowid
+                LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+                LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
+                WHERE fts MATCH ?
+                {order_clause}
+                LIMIT ? OFFSET ?
                 """
             else:
                 sql = """
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  WHERE fts MATCH ?
-                  LIMIT ? OFFSET ?
+                SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                FROM fts
+                WHERE fts MATCH ?
+                LIMIT ? OFFSET ?
                 """
             
             rows = con.execute(sql, (nq2, limit, offset)).fetchall()
