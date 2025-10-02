@@ -587,7 +587,7 @@ body {
   border: 1px solid #ccc;
   border-radius: 8px;
   margin-top: 15px;
-  max-width: 800px;
+  max-width: 100%; /* Change from 800px to 100% */
 }
 .dark .ai-container {
   border-color: #444;
@@ -749,6 +749,40 @@ body {
   -webkit-background-clip: text;
   color: transparent;
 }
+
+.meta {
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 12px;
+  line-height: 1.8;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 20px;
+}
+
+.meta strong {
+  color: #ddd;
+  font-weight: 600;
+  min-width: 120px; /* Reduced from 160px */
+  display: inline-block;
+}
+
+.light .meta {
+  color: #666;
+}
+
+.light .meta strong {
+  color: #333;
+}
+
+/* Mobile: single column */
+@media (max-width: 768px) {
+  .meta {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
 </style>
 
 </head>
