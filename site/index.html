@@ -885,6 +885,75 @@ mark {
       }
     }
 
+    function renderPagination(currentPage) {
+      const totalPages = Math.ceil(state.total / state.limit);
+      const container = $('#pagination');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      if (totalPages <= 1) return;
+
+      const maxVisible = 10;
+      let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+      let end = start + maxVisible - 1;
+      if (end > totalPages) {
+        end = totalPages;
+        start = Math.max(1, end - maxVisible + 1);
+      }
+
+      if (currentPage > 1) {
+        const prev = document.createElement('button');
+        prev.textContent = '‹ Previous';
+        prev.onclick = () => runSearch(currentPage - 1);
+        container.appendChild(prev);
+      }
+
+      if (start > 1) {
+        const first = document.createElement('button');
+        first.textContent = '1';
+        first.onclick = () => runSearch(1);
+        container.appendChild(first);
+        const dots = document.createElement('span');
+        dots.textContent = '...';
+        dots.style.color = '#aaa';
+        container.appendChild(dots);
+      }
+
+      for (let i = start; i <= end; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        if (i === currentPage) btn.classList.add('active');
+        btn.onclick = () => runSearch(i);
+        container.appendChild(btn);
+      }
+
+      if (end < totalPages) {
+        const dots = document.createElement('span');
+        dots.textContent = '...';
+        dots.style.color = '#aaa';
+        container.appendChild(dots);
+        const last = document.createElement('button');
+        last.textContent = totalPages;
+        last.onclick = () => runSearch(totalPages);
+        container.appendChild(last);
+      }
+
+      if (currentPage < totalPages) {
+        const next = document.createElement('button');
+        next.textContent = 'Next ›';
+        next.onclick = () => runSearch(currentPage + 1);
+        container.appendChild(next);
+      }
+
+  const info = document.createElement('div');
+  info.textContent = `Page ${currentPage} of ${totalPages}`;
+  info.style.fontSize = '13px';
+  info.style.color = '#aaa';
+  info.style.marginTop = '6px';
+  info.style.textAlign = 'center';
+  info.style.width = '100%';
+  container.appendChild(info);
+}
 
   function renderItem(it, query) {
   const pdf = buildPdfLinks(it.pdf_path);
