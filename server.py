@@ -1727,13 +1727,16 @@ async def ai_research(payload: dict = Body(...)):
                 model="text-embedding-3-large"
             ).data[0].embedding
 
-                        # Ensure no legacy EF snuck through (defensive in case of future changes)
+            # CRITICAL: Patch the collection RIGHT BEFORE querying
             coll = RAG_SYSTEM['collection']
             ef = getattr(coll, "_embedding_function", None)
             if isinstance(ef, dict) or (ef is not None and not hasattr(ef, "dimensionality")):
                 setattr(coll, "_embedding_function", None)
+                if hasattr(coll, "_embedding_model"):
+                    setattr(coll, "_embedding_model", None)
+                print("Applied embedding function patch before query")
                 
-            results = RAG_SYSTEM['collection'].query(
+            results = coll.query(
                 query_embeddings=[query_embedding],
                 n_results=10,
                 include=['documents', 'metadatas', 'distances']
@@ -1835,7 +1838,3 @@ async def ai_research(payload: dict = Body(...)):
             yield f"data: {json.dumps(error_event)}\n\n"
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
-
-# -------------------------------------------------------------------
-# --- END: AI RESEARCH (RAG) FUNCTIONALITY ---
-# -------------------------------------------------------------------
