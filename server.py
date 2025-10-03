@@ -1720,6 +1720,7 @@ async def ai_research(payload: dict = Body(...)):
             results = RAG_SYSTEM['collection'].query(
                 query_embeddings=[query_embedding],
                 n_results=10
+                include=['documents', 'metadatas', 'distances']
             )
         except Exception as e:
             print(f"Error querying ChromaDB: {e}")
