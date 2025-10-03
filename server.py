@@ -649,6 +649,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                 """, (fallback, limit, offset)).fetchall()
                 nq2 = fallback
 
+
         is_simple_near_query = "NEAR/" in nq2 and " AND " not in nq2 and " OR " not in nq2
 
         if is_simple_near_query:
@@ -661,20 +662,22 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                     rows = _filter_rows_for_true_phrase_near(rows, nq2)
                     print(f"Phrase-proximity filtered page results: {before} → {len(rows)}")
 
-            items = []
-            phrase_terms, word_terms = get_highlight_terms(nq2)
+        # --- START FIX ---
+        # This block now runs for ALL complex queries, not just NEAR queries.
+        items = []
+        phrase_terms, word_terms = get_highlight_terms(nq2)
 
-            for r in rows:
-                meta = con.execute("""
-                SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
-                        m.act, d.reference, d.pdf_path, d.ejs_id,
-                        a.claimed_amount, a.adjudicated_amount, 
-                        a.fee_claimant_proportion, a.fee_respondent_proportion
-                FROM docs_fresh d
-                LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-                LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
-                WHERE d.rowid = ?
-                """, (r["rowid"],)).fetchone()
+        for r in rows:
+            meta = con.execute("""
+            SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
+                    m.act, d.reference, d.pdf_path, d.ejs_id,
+                    a.claimed_amount, a.adjudicated_amount, 
+                    a.fee_claimant_proportion, a.fee_respondent_proportion
+            FROM docs_fresh d
+            LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+            LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
+            WHERE d.rowid = ?
+            """, (r["rowid"],)).fetchone()
 
             d = dict(meta) if meta else {}
             d["id"] = d.get("ejs_id", r["rowid"])
@@ -689,7 +692,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             for term in sorted(set(word_terms), key=len, reverse=True):
                 if any(term.lower() in phrase.lower() for phrase in phrase_terms):
                     continue
-                
+
                 if term.endswith('*'):
                     stem = term[:-1]
                     pattern = f'\\b({re.escape(stem)}\\w*)'
@@ -700,8 +703,11 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
 
             d["snippet"] = snippet_clean
             items.append(d)
+        # --- END FIX ---
 
         return {"total": total, "items": items}
+        
+       
 
     # --- Natural language via Meili ---
     payload = {
