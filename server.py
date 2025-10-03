@@ -1588,26 +1588,63 @@ async def serve_html_page(path_name: str):
 # -------------------------------------------------------------------
 # --- START: AI RESEARCH (RAG) FUNCTIONALITY (RENDER-COMPATIBLE) ---
 # -------------------------------------------------------------------
+import os
+import sys
 import asyncio
 import json
 import zipfile
+import shutil
+import sqlite3
+from fastapi import Body, HTTPException
+from fastapi.responses import StreamingResponse
 
 # --- RENDER-FRIENDLY PATH SETUP ---
 SOPAL_DB_PATH = "/tmp/sopal.db"
-CHROMA_DB_PATH = "/tmp/chroma_db"
-CHROMA_ZIP_PATH = "/tmp/chroma_db.zip"
+CHROMA_DB_PATH = "/tmp/chroma_db"      # folder after unzip
+CHROMA_ZIP_PATH = "/tmp/chroma_db.zip" # zip saved here before unzip
 RAG_COLLECTION_NAME = "legal_documents"
+
+# Allow overriding the object key in GCS (so you can ship v2/v3 without code edits)
+CHROMA_GCS_OBJECT = os.getenv("CHROMA_DB_OBJECT", "chroma_db.zip")
+SOPAL_GCS_OBJECT  = os.getenv("SOPAL_DB_OBJECT",  "sopal.db")
 
 # Store RAG components in a dict to avoid global variable issues
 RAG_SYSTEM = {
-    'sopal_con': None,
-    'collection': None,
-    'initialized': False
+    "sopal_con": None,
+    "collection": None,
+    "initialized": False,
 }
 
-def initialize_rag_system():
+def _safe_clear_embedding_function(coll) -> bool:
+    """
+    Aggressively neutralise any persisted embedding function/model metadata
+    so Chroma 0.5.x won't try to access `.dimensionality`.
+    Returns True if anything was changed.
+    """
+    changed = False
+    for attr in ("_embedding_function", "embedding_function", "_embedding_model", "embedding_model"):
+        if hasattr(coll, attr):
+            try:
+                ef = getattr(coll, attr, None)
+                if (
+                    isinstance(ef, dict)                # legacy dict
+                    or (ef is not None and not hasattr(ef, "dimensionality"))  # object but not EF
+                ):
+                    setattr(coll, attr, None)
+                    changed = True
+            except Exception:
+                # Never fail the app just because of an attribute set issue
+                pass
+    if changed:
+        print("Patched Chroma collection: embedding function metadata cleared (set to None).")
+    return changed
+
+def initialize_rag_system() -> bool:
     """Download RAG databases from GCS on startup if they don't exist in /tmp"""
-    if os.path.exists(SOPAL_DB_PATH) and os.path.exists(CHROMA_DB_PATH):
+    have_db = os.path.exists(SOPAL_DB_PATH)
+    have_chroma = os.path.exists(CHROMA_DB_PATH)
+
+    if have_db and have_chroma:
         print("RAG system files already exist in /tmp. Skipping download.")
         return True
 
@@ -1615,26 +1652,38 @@ def initialize_rag_system():
         gcs_bucket_name = os.getenv("GCS_BUCKET_NAME", "sopal-bucket")
         print(f"RAG system files not found. Downloading from GCS bucket '{gcs_bucket_name}'...")
         storage_client = get_gcs_client()
-        
         if not storage_client:
             print("ERROR: Could not create GCS client. RAG system will not be available.")
             return False
-            
+
         bucket = storage_client.bucket(gcs_bucket_name)
 
-        print("Downloading sopal.db...")
-        sopal_blob = bucket.blob("sopal.db")
-        sopal_blob.download_to_filename(SOPAL_DB_PATH)
+        # --- sopal.db ---
+        if not have_db:
+            print(f"Downloading {SOPAL_GCS_OBJECT} -> {SOPAL_DB_PATH} ...")
+            sopal_blob = bucket.blob(SOPAL_GCS_OBJECT)
+            sopal_blob.download_to_filename(SOPAL_DB_PATH)
 
-        print("Downloading chroma_db.zip...")
-        chroma_blob = bucket.blob("chroma_db.zip")
+        # --- chroma_db.zip -> unzip to /tmp/chroma_db ---
+        print(f"Downloading {CHROMA_GCS_OBJECT} -> {CHROMA_ZIP_PATH} ...")
+        chroma_blob = bucket.blob(CHROMA_GCS_OBJECT)
         chroma_blob.download_to_filename(CHROMA_ZIP_PATH)
-        
-        print("Unzipping chroma_db...")
-        with zipfile.ZipFile(CHROMA_ZIP_PATH, 'r') as zip_ref:
-            zip_ref.extractall("/tmp")
-        
-        os.remove(CHROMA_ZIP_PATH)
+
+        # ensure clean target dir (avoid leftover legacy files)
+        if os.path.isdir(CHROMA_DB_PATH):
+            shutil.rmtree(CHROMA_DB_PATH)
+        os.makedirs(CHROMA_DB_PATH, exist_ok=True)
+
+        print("Unzipping chroma DB...")
+        with zipfile.ZipFile(CHROMA_ZIP_PATH, "r") as zf:
+            zf.extractall(CHROMA_DB_PATH)
+
+        # cleanup
+        try:
+            os.remove(CHROMA_ZIP_PATH)
+        except Exception:
+            pass
+
         print("RAG system files downloaded and prepared successfully.")
         return True
 
@@ -1642,59 +1691,44 @@ def initialize_rag_system():
         print(f"ERROR: Failed to download RAG system files from GCS. Error: {e}")
         return False
 
-def connect_rag_system():
+def connect_rag_system() -> bool:
     """Connect to RAG databases after files are downloaded"""
     if not os.path.exists(SOPAL_DB_PATH) or not os.path.exists(CHROMA_DB_PATH):
         print("ERROR: RAG system files not found. Cannot connect.")
         return False
-    
+
     try:
         import chromadb
-        
+
         print("Initializing RAG system connections...")
-        RAG_SYSTEM['sopal_con'] = sqlite3.connect(SOPAL_DB_PATH, check_same_thread=False)
-        RAG_SYSTEM['sopal_con'].row_factory = sqlite3.Row
+        RAG_SYSTEM["sopal_con"] = sqlite3.connect(SOPAL_DB_PATH, check_same_thread=False)
+        RAG_SYSTEM["sopal_con"].row_factory = sqlite3.Row
         print(f"RAG SQLite DB connected at: {SOPAL_DB_PATH}")
 
         rag_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
-        RAG_SYSTEM['collection'] = rag_client.get_collection(name=RAG_COLLECTION_NAME)
+
+        # Force any persisted EF to be ignored by passing embedding_function=None,
+        # then aggressively clear any attributes Chroma might still consult.
+        coll = rag_client.get_collection(name=RAG_COLLECTION_NAME, embedding_function=None)
+        _safe_clear_embedding_function(coll)
+
+        RAG_SYSTEM["collection"] = coll
         print(f"ChromaDB client connected at: {CHROMA_DB_PATH} and collection '{RAG_COLLECTION_NAME}' loaded.")
 
-                # --- LEGACY EMBEDDING_FUNCTION HOTFIX ---
-        # Old Chroma persisted a dict at _embedding_function. 0.5.x expects an object with .dimensionality
-        try:
-            coll = RAG_SYSTEM['collection']
-            ef = getattr(coll, "_embedding_function", None)
-            # Treat as legacy if it's a dict OR it lacks a dimensionality attribute
-            if isinstance(ef, dict) or (ef is not None and not hasattr(ef, "dimensionality")):
-                setattr(coll, "_embedding_function", None)
-                # Some stores also kept a plain string/model name under _embedding_model
-                if hasattr(coll, "_embedding_model"):
-                    setattr(coll, "_embedding_model", None)
-                print("Patched legacy Chroma collection: _embedding_function -> None")
-        except Exception as patch_err:
-            print(f"Warning while patching collection embedding_function: {patch_err}")
-        # --- END HOTFIX ---
+        # DO NOT call .count() here; some versions may touch EF metadata on access.
 
-        
-        # REMOVE THIS LINE - it causes the error:
-        # doc_count = RAG_SYSTEM['collection'].count()
-        # print(f"Total documents in vector store: {doc_count}")
-        
-        RAG_SYSTEM['initialized'] = True
+        RAG_SYSTEM["initialized"] = True
         print(f"DEBUG: RAG_SYSTEM initialized: {RAG_SYSTEM['initialized']}")
         return True
-        
+
     except Exception as e:
         print(f"ERROR: Could not initialize the RAG system. Error: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc()
-        RAG_SYSTEM['sopal_con'] = None
-        RAG_SYSTEM['collection'] = None
-        RAG_SYSTEM['initialized'] = False
+        RAG_SYSTEM["sopal_con"] = None
+        RAG_SYSTEM["collection"] = None
+        RAG_SYSTEM["initialized"] = False
         return False
-        
-
 
 # Initialize RAG system on startup
 print("=== Starting RAG System Initialization ===")
@@ -1712,109 +1746,119 @@ async def ai_research(payload: dict = Body(...)):
 
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
-    
+
     print(f"DEBUG: Checking RAG system - initialized: {RAG_SYSTEM['initialized']}")
     print(f"DEBUG: sopal_con is None: {RAG_SYSTEM['sopal_con'] is None}")
     print(f"DEBUG: collection is None: {RAG_SYSTEM['collection'] is None}")
-    
-    if not RAG_SYSTEM['initialized'] or not RAG_SYSTEM['sopal_con'] or not RAG_SYSTEM['collection']:
+
+    if not RAG_SYSTEM["initialized"] or not RAG_SYSTEM["sopal_con"] or not RAG_SYSTEM["collection"]:
         raise HTTPException(status_code=503, detail="RAG system is not available. Please contact support.")
 
     async def stream_response():
         try:
+            # --- Embed the query with OpenAI ---
             query_embedding = client.embeddings.create(
                 input=[query],
-                model="text-embedding-3-large"
+                model="text-embedding-3-large",
             ).data[0].embedding
 
-            # CRITICAL: Patch the collection RIGHT BEFORE querying
-            coll = RAG_SYSTEM['collection']
-            ef = getattr(coll, "_embedding_function", None)
-            if isinstance(ef, dict) or (ef is not None and not hasattr(ef, "dimensionality")):
-                setattr(coll, "_embedding_function", None)
-                if hasattr(coll, "_embedding_model"):
-                    setattr(coll, "_embedding_model", None)
-                print("Applied embedding function patch before query")
-                
+            # --- Belt & braces: neutralise EF again right before query ---
+            coll = RAG_SYSTEM["collection"]
+            _safe_clear_embedding_function(coll)
+
+            # --- Vector search using supplied embeddings (NOT query_texts) ---
             results = coll.query(
                 query_embeddings=[query_embedding],
                 n_results=10,
-                include=['documents', 'metadatas', 'distances']
+                include=["documents", "metadatas", "distances"],
             )
+
         except Exception as e:
             print(f"Error querying ChromaDB: {e}")
             error_event = {"type": "content", "data": f"Error during document retrieval: {e}"}
             yield f"data: {json.dumps(error_event)}\n\n"
             return
-        
-        doc_ids = results['ids'][0]
+
+        # --- Map returned IDs to full texts from sopal.db ---
+        doc_ids = results.get("ids", [[]])[0] if results else []
         context_docs = []
-        
+
         if doc_ids:
-            cursor = RAG_SYSTEM['sopal_con'].cursor()
-            case_ids = [int(id.split('_')[1]) for id in doc_ids if id.startswith('case_')]
-            act_ids = [int(id.split('_')[1]) for id in doc_ids if id.startswith('act_')]
+            cursor = RAG_SYSTEM["sopal_con"].cursor()
+            case_ids = [int(x.split("_")[1]) for x in doc_ids if x.startswith("case_")]
+            act_ids = [int(x.split("_")[1]) for x in doc_ids if x.startswith("act_")]
 
             if case_ids:
-                case_placeholders = ','.join('?' for _ in case_ids)
-                cursor.execute(f"SELECT id, case_citation, para_number, para_text FROM case_paragraphs WHERE id IN ({case_placeholders})", case_ids)
+                placeholders = ",".join("?" for _ in case_ids)
+                cursor.execute(
+                    f"SELECT id, case_citation, para_number, para_text "
+                    f"FROM case_paragraphs WHERE id IN ({placeholders})",
+                    case_ids,
+                )
                 for row in cursor.fetchall():
-                    doc = {
+                    context_docs.append({
                         "type": "case",
                         "id": row["id"],
                         "case_citation": row["case_citation"],
                         "para_number": row["para_number"],
-                        "text": row["para_text"]
-                    }
-                    context_docs.append(doc)
-            
+                        "text": row["para_text"],
+                    })
+
             if act_ids:
-                act_placeholders = ','.join('?' for _ in act_ids)
-                cursor.execute(f"SELECT id, section_number, section_heading, full_text FROM act_sections WHERE id IN ({act_placeholders})", act_ids)
+                placeholders = ",".join("?" for _ in act_ids)
+                cursor.execute(
+                    f"SELECT id, section_number, section_heading, full_text "
+                    f"FROM act_sections WHERE id IN ({placeholders})",
+                    act_ids,
+                )
                 for row in cursor.fetchall():
-                    doc = {
+                    context_docs.append({
                         "type": "act",
                         "id": row["id"],
                         "section_number": row["section_number"],
                         "section_heading": row["section_heading"],
-                        "text": row["full_text"]
-                    }
-                    context_docs.append(doc)
-        
+                        "text": row["full_text"],
+                    })
+
+        # --- Build context string + stream sources to UI ---
         context_str = ""
         for i, doc in enumerate(context_docs, 1):
-            source_info = {"id": i, "type": doc['type']}
-            
-            if doc['type'] == 'case':
-                context_str += f"Source [{i}]: From case {doc['case_citation']}, paragraph {doc['para_number']}:\n{doc['text']}\n\n"
+            source_info = {"id": i, "type": doc["type"]}
+            if doc["type"] == "case":
+                context_str += (
+                    f"Source [{i}]: From case {doc['case_citation']}, "
+                    f"paragraph {doc['para_number']}:\n{doc['text']}\n\n"
+                )
                 source_info.update({
-                    "case_citation": doc['case_citation'],
-                    "para_number": doc['para_number'],
-                    "text": doc['text'][:200] + '...'
+                    "case_citation": doc["case_citation"],
+                    "para_number": doc["para_number"],
+                    "text": (doc["text"][:200] + "...") if doc["text"] else "",
                 })
             else:
-                context_str += f"Source [{i}]: From section {doc['section_number']} ({doc['section_heading']}):\n{doc['text']}\n\n"
+                context_str += (
+                    f"Source [{i}]: From section {doc['section_number']} "
+                    f"({doc['section_heading']}):\n{doc['text']}\n\n"
+                )
                 source_info.update({
-                    "section_number": doc['section_number'],
-                    "section_heading": doc['section_heading'],
-                    "text": doc['text'][:200] + '...'
+                    "section_number": doc["section_number"],
+                    "section_heading": doc["section_heading"],
+                    "text": (doc["text"][:200] + "...") if doc["text"] else "",
                 })
-            
-            source_event = {"type": "source", "data": source_info}
-            yield f"data: {json.dumps(source_event)}\n\n"
+            yield f"data: {json.dumps({'type': 'source', 'data': source_info})}\n\n"
 
         system_prompt = (
             "You are a specialist Queensland construction lawyer AI. Answer the user's question based *only* on the provided sources. "
             "Your answer must be accurate, neutral, and directly supported by the text. "
-            "**Crucially, you must cite the sources you use in your answer by adding the source number in square brackets, like `[1]`, `[2]`, etc., at the end of each sentence or claim that relies on that source.** "
-            "If the provided sources do not contain the answer, state that you cannot answer based on the information available. Do not use outside knowledge. "
-            "Format your response for clarity using paragraphs and bullet points. Use markdown for bolding (**text**)."
+            "**Crucially, you must cite the sources you use in your answer by adding the source number in square brackets, "
+            "like `[1]`, `[2]`, etc., at the end of each sentence or claim that relies on that source.** "
+            "If the provided sources do not contain the answer, state that you cannot answer based on the information available. "
+            "Do not use outside knowledge. Format your response for clarity using paragraphs and bullet points. Use markdown for bolding (**text**)."
         )
-        
+
         full_prompt = f"CONTEXT:\n{context_str}\n\nCONVERSATION HISTORY:\n{history}\n\nUSER QUESTION:\n{query}"
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": full_prompt}
+            {"role": "user", "content": full_prompt},
         ]
 
         try:
@@ -1824,17 +1868,16 @@ async def ai_research(payload: dict = Body(...)):
                 stream=True,
                 temperature=0.1,
             )
-            
             for chunk in stream:
                 content = chunk.choices[0].delta.content
                 if content:
-                    event = {"type": "content", "data": content}
-                    yield f"data: {json.dumps(event)}\n\n"
+                    yield f"data: {json.dumps({'type': 'content', 'data': content})}\n\n"
                     await asyncio.sleep(0.01)
-                    
         except Exception as e:
             print(f"Error during OpenAI stream: {e}")
-            error_event = {"type": "content", "data": f"Error generating AI response: {e}"}
-            yield f"data: {json.dumps(error_event)}\n\n"
+            yield f"data: {json.dumps({'type': 'content', 'data': f'Error generating AI response: {e}'})}\n\n"
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
+# -------------------------------------------------------------------
+# --- END: AI RESEARCH (RAG) FUNCTIONALITY (RENDER-COMPATIBLE) ---
+# -------------------------------------------------------------------
