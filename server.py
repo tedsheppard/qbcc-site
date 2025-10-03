@@ -22,13 +22,6 @@ import zipstream
 import pytesseract
 from PIL import Image
 
-import os
-import sys
-
-print("--- DUMPING ALL ENVIRONMENT VARIABLES ---", file=sys.stderr)
-for key, value in os.environ.items():
-    print(f'{key}={value}', file=sys.stderr)
-print("--- END OF ENVIRONMENT VARIABLES ---", file=sys.stderr)
 
 def get_gcs_client():
     """
@@ -1667,17 +1660,22 @@ def connect_rag_system():
         RAG_SYSTEM['collection'] = rag_client.get_collection(name=RAG_COLLECTION_NAME)
         print(f"ChromaDB client connected at: {CHROMA_DB_PATH} and collection '{RAG_COLLECTION_NAME}' loaded.")
 
-                # --- LEGACY EF HOTFIX ---
-        # Older Chroma persisted a dict for embedding_function. 0.5.x expects an object.
-        # If we detect a dict, disable it so we can pass our own embeddings.
+                # --- LEGACY EMBEDDING_FUNCTION HOTFIX ---
+        # Old Chroma persisted a dict at _embedding_function. 0.5.x expects an object with .dimensionality
         try:
+            coll = RAG_SYSTEM['collection']
             ef = getattr(coll, "_embedding_function", None)
-            if isinstance(ef, dict):
-                print("Detected legacy embedding_function (dict). Disabling for queries with precomputed embeddings.")
+            # Treat as legacy if it's a dict OR it lacks a dimensionality attribute
+            if isinstance(ef, dict) or (ef is not None and not hasattr(ef, "dimensionality")):
                 setattr(coll, "_embedding_function", None)
-        except Exception as e:
-            print(f"Warning while patching collection embedding_function: {e}")
+                # Some stores also kept a plain string/model name under _embedding_model
+                if hasattr(coll, "_embedding_model"):
+                    setattr(coll, "_embedding_model", None)
+                print("Patched legacy Chroma collection: _embedding_function -> None")
+        except Exception as patch_err:
+            print(f"Warning while patching collection embedding_function: {patch_err}")
         # --- END HOTFIX ---
+
         
         # REMOVE THIS LINE - it causes the error:
         # doc_count = RAG_SYSTEM['collection'].count()
@@ -1729,6 +1727,12 @@ async def ai_research(payload: dict = Body(...)):
                 model="text-embedding-3-large"
             ).data[0].embedding
 
+                        # Ensure no legacy EF snuck through (defensive in case of future changes)
+            coll = RAG_SYSTEM['collection']
+            ef = getattr(coll, "_embedding_function", None)
+            if isinstance(ef, dict) or (ef is not None and not hasattr(ef, "dimensionality")):
+                setattr(coll, "_embedding_function", None)
+                
             results = RAG_SYSTEM['collection'].query(
                 query_embeddings=[query_embedding],
                 n_results=10,
