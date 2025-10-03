@@ -1592,14 +1592,13 @@ async def serve_html_page(path_name: str):
 
     raise HTTPException(status_code=404, detail="Not Found")
 
-
 # -------------------------------------------------------------------
 # --- START: AI RESEARCH (RAG) FUNCTIONALITY (RENDER-COMPATIBLE) ---
 # -------------------------------------------------------------------
 import chromadb
 import asyncio
 import json
-import zipfile # <-- Add this import
+import zipfile
 
 # --- RENDER-FRIENDLY PATH SETUP ---
 # Use the /tmp directory, which is writable on Render
@@ -1608,17 +1607,26 @@ CHROMA_DB_PATH = "/tmp/chroma_db"
 CHROMA_ZIP_PATH = "/tmp/chroma_db.zip"
 RAG_COLLECTION_NAME = "legal_documents"
 
+# Declare these at module level but don't initialize yet
+sopal_con = None
+collection = None
+
 # --- RENDER STARTUP LOGIC ---
-# Download RAG databases from GCS on startup if they don't exist in /tmp
 def initialize_rag_system():
+    """Download RAG databases from GCS on startup if they don't exist in /tmp"""
     if os.path.exists(SOPAL_DB_PATH) and os.path.exists(CHROMA_DB_PATH):
         print("RAG system files already exist in /tmp. Skipping download.")
-        return
+        return True
 
     try:
         gcs_bucket_name = os.getenv("GCS_BUCKET_NAME", "sopal-bucket")
         print(f"RAG system files not found. Downloading from GCS bucket '{gcs_bucket_name}'...")
         storage_client = get_gcs_client()
+        
+        if not storage_client:
+            print("ERROR: Could not create GCS client. RAG system will not be available.")
+            return False
+            
         bucket = storage_client.bucket(gcs_bucket_name)
 
         # Download sopal.db
@@ -1633,35 +1641,53 @@ def initialize_rag_system():
         
         print("Unzipping chroma_db...")
         with zipfile.ZipFile(CHROMA_ZIP_PATH, 'r') as zip_ref:
-            zip_ref.extractall("/tmp") # Extract to /tmp, creating the chroma_db folder
+            zip_ref.extractall("/tmp")  # Extract to /tmp, creating the chroma_db folder
         
-        os.remove(CHROMA_ZIP_PATH) # Clean up the zip file
+        os.remove(CHROMA_ZIP_PATH)  # Clean up the zip file
         print("RAG system files downloaded and prepared successfully.")
+        return True
 
     except Exception as e:
-        print(f"FATAL: Failed to download RAG system files from GCS. Error: {e}")
+        print(f"ERROR: Failed to download RAG system files from GCS. Error: {e}")
+        return False
 
-# Call the initialization function on startup
-initialize_rag_system()
+def connect_rag_system():
+    """Connect to RAG databases after files are downloaded"""
+    global sopal_con, collection
+    
+    if not os.path.exists(SOPAL_DB_PATH) or not os.path.exists(CHROMA_DB_PATH):
+        print("ERROR: RAG system files not found. Cannot connect.")
+        return False
+    
+    try:
+        print("Initializing RAG system connections...")
+        sopal_con = sqlite3.connect(SOPAL_DB_PATH, check_same_thread=False)
+        sopal_con.row_factory = sqlite3.Row
+        print(f"RAG SQLite DB connected at: {SOPAL_DB_PATH}")
 
-# --- INITIALIZE RAG CONNECTIONS ---
-try:
-    print("Initializing RAG system connections...")
-    sopal_con = sqlite3.connect(SOPAL_DB_PATH, check_same_thread=False)
-    sopal_con.row_factory = sqlite3.Row
-    print(f"RAG SQLite DB connected at: {SOPAL_DB_PATH}")
+        rag_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+        collection = rag_client.get_collection(name=RAG_COLLECTION_NAME)
+        print(f"ChromaDB client connected at: {CHROMA_DB_PATH} and collection '{RAG_COLLECTION_NAME}' loaded.")
+        
+        doc_count = collection.count()
+        print(f"Total documents in vector store: {doc_count}")
+        return True
+        
+    except Exception as e:
+        print(f"ERROR: Could not initialize the RAG system. Error: {e}", file=sys.stderr)
+        sopal_con = None
+        collection = None
+        return False
 
-    rag_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
-    collection = rag_client.get_collection(name=RAG_COLLECTION_NAME)
-    print(f"ChromaDB client connected at: {CHROMA_DB_PATH} and collection '{RAG_COLLECTION_NAME}' loaded.")
-    print(f"Total documents in vector store: {collection.count()}") # <-- CORRECTED LINE
+# Initialize RAG system on startup
+print("=== Starting RAG System Initialization ===")
+if initialize_rag_system():
+    connect_rag_system()
+else:
+    print("WARNING: RAG system initialization failed. /api/airesearch endpoint will not be available.")
+print("=== RAG System Initialization Complete ===")
 
-except Exception as e:
-    print(f"FATAL ERROR: Could not initialize the RAG system. Check paths and files. Error: {e}", file=sys.stderr)
-    sopal_con = None
-    collection = None
-
-# Main RAG endpoint
+# --- RAG ENDPOINT ---
 @app.post("/api/airesearch")
 async def ai_research(payload: dict = Body(...)):
     query = payload.get("query")
@@ -1669,8 +1695,9 @@ async def ai_research(payload: dict = Body(...)):
 
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    
     if not sopal_con or not collection:
-        raise HTTPException(status_code=500, detail="RAG system is not initialized.")
+        raise HTTPException(status_code=503, detail="RAG system is not available. Please contact support.")
 
     async def stream_response():
         # 1. Retrieve relevant documents from ChromaDB
@@ -1682,7 +1709,7 @@ async def ai_research(payload: dict = Body(...)):
 
             results = collection.query(
                 query_embeddings=[query_embedding],
-                n_results=10 # Retrieve top 10 most relevant chunks
+                n_results=10  # Retrieve top 10 most relevant chunks
             )
         except Exception as e:
             print(f"Error querying ChromaDB: {e}")
@@ -1705,26 +1732,47 @@ async def ai_research(payload: dict = Body(...)):
                 case_placeholders = ','.join('?' for _ in case_ids)
                 cursor.execute(f"SELECT id, case_citation, para_number, para_text FROM case_paragraphs WHERE id IN ({case_placeholders})", case_ids)
                 for row in cursor.fetchall():
-                    doc = { "type": "case", "id": row["id"], "case_citation": row["case_citation"], "para_number": row["para_number"], "text": row["para_text"] }
+                    doc = {
+                        "type": "case",
+                        "id": row["id"],
+                        "case_citation": row["case_citation"],
+                        "para_number": row["para_number"],
+                        "text": row["para_text"]
+                    }
                     context_docs.append(doc)
             
             if act_ids:
                 act_placeholders = ','.join('?' for _ in act_ids)
                 cursor.execute(f"SELECT id, section_number, section_heading, full_text FROM act_sections WHERE id IN ({act_placeholders})", act_ids)
                 for row in cursor.fetchall():
-                    doc = { "type": "act", "id": row["id"], "section_number": row["section_number"], "section_heading": row["section_heading"], "text": row["full_text"] }
+                    doc = {
+                        "type": "act",
+                        "id": row["id"],
+                        "section_number": row["section_number"],
+                        "section_heading": row["section_heading"],
+                        "text": row["full_text"]
+                    }
                     context_docs.append(doc)
         
         # Format context for the LLM and send sources to the frontend
         context_str = ""
         for i, doc in enumerate(context_docs, 1):
-            source_info = { "id": i, "type": doc['type'] }
+            source_info = {"id": i, "type": doc['type']}
+            
             if doc['type'] == 'case':
                 context_str += f"Source [{i}]: From case {doc['case_citation']}, paragraph {doc['para_number']}:\n{doc['text']}\n\n"
-                source_info.update({ "case_citation": doc['case_citation'], "para_number": doc['para_number'], "text": doc['text'][:200] + '...' })
-            else: # act
+                source_info.update({
+                    "case_citation": doc['case_citation'],
+                    "para_number": doc['para_number'],
+                    "text": doc['text'][:200] + '...'
+                })
+            else:  # act
                 context_str += f"Source [{i}]: From section {doc['section_number']} ({doc['section_heading']}):\n{doc['text']}\n\n"
-                source_info.update({ "section_number": doc['section_number'], "section_heading": doc['section_heading'], "text": doc['text'][:200] + '...' })
+                source_info.update({
+                    "section_number": doc['section_number'],
+                    "section_heading": doc['section_heading'],
+                    "text": doc['text'][:200] + '...'
+                })
             
             sources_for_frontend.append(source_info)
             source_event = {"type": "source", "data": source_info}
@@ -1738,17 +1786,28 @@ async def ai_research(payload: dict = Body(...)):
             "If the provided sources do not contain the answer, state that you cannot answer based on the information available. Do not use outside knowledge. "
             "Format your response for clarity using paragraphs and bullet points. Use markdown for bolding (**text**)."
         )
+        
         full_prompt = f"CONTEXT:\n{context_str}\n\nCONVERSATION HISTORY:\n{history}\n\nUSER QUESTION:\n{query}"
-        messages = [ {"role": "system", "content": system_prompt}, {"role": "user", "content": full_prompt} ]
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": full_prompt}
+        ]
 
         try:
-            stream = client.chat.completions.create( model="gpt-4o", messages=messages, stream=True, temperature=0.1, )
+            stream = client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                stream=True,
+                temperature=0.1,
+            )
+            
             for chunk in stream:
                 content = chunk.choices[0].delta.content
                 if content:
                     event = {"type": "content", "data": content}
                     yield f"data: {json.dumps(event)}\n\n"
                     await asyncio.sleep(0.01)
+                    
         except Exception as e:
             print(f"Error during OpenAI stream: {e}")
             error_event = {"type": "content", "data": f"Error generating AI response: {e}"}
@@ -1756,4 +1815,6 @@ async def ai_research(payload: dict = Body(...)):
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
 
+# -------------------------------------------------------------------
 # --- END: AI RESEARCH (RAG) FUNCTIONALITY ---
+# -------------------------------------------------------------------
