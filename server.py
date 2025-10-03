@@ -1652,14 +1652,14 @@ def initialize_rag_system():
 
 def connect_rag_system():
     """Connect to RAG databases after files are downloaded"""
-    global sopal_con, collection
+    global sopal_con, collection  # This line should already be there
     
     if not os.path.exists(SOPAL_DB_PATH) or not os.path.exists(CHROMA_DB_PATH):
         print("ERROR: RAG system files not found. Cannot connect.")
         return False
     
     try:
-        import chromadb  # Import here instead of at module level
+        import chromadb  # Import here
         
         print("Initializing RAG system connections...")
         sopal_con = sqlite3.connect(SOPAL_DB_PATH, check_same_thread=False)
@@ -1672,6 +1672,11 @@ def connect_rag_system():
         
         doc_count = collection.count()
         print(f"Total documents in vector store: {doc_count}")
+        
+        # Add debug logging to verify globals are set
+        print(f"DEBUG: sopal_con is None: {sopal_con is None}")
+        print(f"DEBUG: collection is None: {collection is None}")
+        
         return True
         
     except Exception as e:
@@ -1679,6 +1684,7 @@ def connect_rag_system():
         sopal_con = None
         collection = None
         return False
+
 
 # Initialize RAG system on startup
 print("=== Starting RAG System Initialization ===")
