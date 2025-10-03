@@ -31,19 +31,34 @@ for key, value in os.environ.items():
 print("--- END OF ENVIRONMENT VARIABLES ---", file=sys.stderr)
 
 def get_gcs_client():
-    """Creates a GCS client, explicitly using the credentials file from Render's environment."""
-    credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-    if not credentials_path:
-        print("FATAL: GOOGLE_APPLICATION_CREDENTIALS env var not found.")
-        return None
+    """
+    Creates a GCS client by reading JSON credentials from an environment variable,
+    writing them to a temporary file, and authenticating with that file.
+    """
+    # Step 1: Read the JSON content from our new environment variable.
+    gcs_credentials_json = os.getenv("GCS_CREDENTIALS_JSON")
     
-    print(f"Attempting to create GCS client from: {credentials_path}")
+    if not gcs_credentials_json:
+        print("FATAL: GCS_CREDENTIALS_JSON environment variable not found.", file=sys.stderr)
+        return None
+
+    # Step 2: Define a path for our temporary credentials file inside the Render container.
+    temp_credentials_path = "/tmp/gcs_credentials.json"
+
     try:
-        client = storage.Client.from_service_account_json(credentials_path)
-        print("GCS client created successfully.")
+        # Step 3: Write the JSON content to the temporary file.
+        with open(temp_credentials_path, "w") as f:
+            f.write(gcs_credentials_json)
+        
+        print(f"Successfully wrote GCS credentials to {temp_credentials_path}")
+
+        # Step 4: Authenticate using the temporary file we just created.
+        client = storage.Client.from_service_account_json(temp_credentials_path)
+        print("GCS client created successfully from temporary file.")
         return client
+        
     except Exception as e:
-        print(f"FATAL: Failed to create GCS client from credentials file. Error: {e}")
+        print(f"FATAL: Failed to create GCS client from credentials file. Error: {e}", file=sys.stderr)
         return None
         
 # ---------------- setup ----------------
