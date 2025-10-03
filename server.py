@@ -1654,13 +1654,14 @@ try:
     rag_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
     collection = rag_client.get_collection(name=RAG_COLLECTION_NAME)
     print(f"ChromaDB client connected at: {CHROMA_DB_PATH} and collection '{RAG_COLLECTION_NAME}' loaded.")
-    print(f"Total documents in vector store: {collection.count()}")
+    print(f"Total documents in vector store: {collection.count()}") # <-- CORRECTED LINE
+
 except Exception as e:
-    print(f"FATAL ERROR: Could not initialize the RAG system. Check paths and files. Error: {e}")
+    print(f"FATAL ERROR: Could not initialize the RAG system. Check paths and files. Error: {e}", file=sys.stderr)
     sopal_con = None
     collection = None
 
-# Main RAG endpoint (this part remains the same as before)
+# Main RAG endpoint
 @app.post("/api/airesearch")
 async def ai_research(payload: dict = Body(...)):
     query = payload.get("query")
