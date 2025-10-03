@@ -1595,7 +1595,6 @@ async def serve_html_page(path_name: str):
 # -------------------------------------------------------------------
 # --- START: AI RESEARCH (RAG) FUNCTIONALITY (RENDER-COMPATIBLE) ---
 # -------------------------------------------------------------------
-import chromadb
 import asyncio
 import json
 import zipfile
@@ -1660,6 +1659,8 @@ def connect_rag_system():
         return False
     
     try:
+        import chromadb  # Import here instead of at module level
+        
         print("Initializing RAG system connections...")
         sopal_con = sqlite3.connect(SOPAL_DB_PATH, check_same_thread=False)
         sopal_con.row_factory = sqlite3.Row
