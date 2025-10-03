@@ -1600,17 +1600,18 @@ import json
 import zipfile
 
 # --- RENDER-FRIENDLY PATH SETUP ---
-# Use the /tmp directory, which is writable on Render
 SOPAL_DB_PATH = "/tmp/sopal.db"
 CHROMA_DB_PATH = "/tmp/chroma_db"
 CHROMA_ZIP_PATH = "/tmp/chroma_db.zip"
 RAG_COLLECTION_NAME = "legal_documents"
 
-# Declare these at module level but don't initialize yet
-sopal_con = None
-collection = None
+# Store RAG components in a dict to avoid global variable issues
+RAG_SYSTEM = {
+    'sopal_con': None,
+    'collection': None,
+    'initialized': False
+}
 
-# --- RENDER STARTUP LOGIC ---
 def initialize_rag_system():
     """Download RAG databases from GCS on startup if they don't exist in /tmp"""
     if os.path.exists(SOPAL_DB_PATH) and os.path.exists(CHROMA_DB_PATH):
@@ -1628,21 +1629,19 @@ def initialize_rag_system():
             
         bucket = storage_client.bucket(gcs_bucket_name)
 
-        # Download sopal.db
         print("Downloading sopal.db...")
         sopal_blob = bucket.blob("sopal.db")
         sopal_blob.download_to_filename(SOPAL_DB_PATH)
 
-        # Download and unzip chroma_db
         print("Downloading chroma_db.zip...")
         chroma_blob = bucket.blob("chroma_db.zip")
         chroma_blob.download_to_filename(CHROMA_ZIP_PATH)
         
         print("Unzipping chroma_db...")
         with zipfile.ZipFile(CHROMA_ZIP_PATH, 'r') as zip_ref:
-            zip_ref.extractall("/tmp")  # Extract to /tmp, creating the chroma_db folder
+            zip_ref.extractall("/tmp")
         
-        os.remove(CHROMA_ZIP_PATH)  # Clean up the zip file
+        os.remove(CHROMA_ZIP_PATH)
         print("RAG system files downloaded and prepared successfully.")
         return True
 
@@ -1652,39 +1651,37 @@ def initialize_rag_system():
 
 def connect_rag_system():
     """Connect to RAG databases after files are downloaded"""
-    global sopal_con, collection  # This line should already be there
-    
     if not os.path.exists(SOPAL_DB_PATH) or not os.path.exists(CHROMA_DB_PATH):
         print("ERROR: RAG system files not found. Cannot connect.")
         return False
     
     try:
-        import chromadb  # Import here
+        import chromadb
         
         print("Initializing RAG system connections...")
-        sopal_con = sqlite3.connect(SOPAL_DB_PATH, check_same_thread=False)
-        sopal_con.row_factory = sqlite3.Row
+        RAG_SYSTEM['sopal_con'] = sqlite3.connect(SOPAL_DB_PATH, check_same_thread=False)
+        RAG_SYSTEM['sopal_con'].row_factory = sqlite3.Row
         print(f"RAG SQLite DB connected at: {SOPAL_DB_PATH}")
 
         rag_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
-        collection = rag_client.get_collection(name=RAG_COLLECTION_NAME)
+        RAG_SYSTEM['collection'] = rag_client.get_collection(name=RAG_COLLECTION_NAME)
         print(f"ChromaDB client connected at: {CHROMA_DB_PATH} and collection '{RAG_COLLECTION_NAME}' loaded.")
         
-        doc_count = collection.count()
+        doc_count = RAG_SYSTEM['collection'].count()
         print(f"Total documents in vector store: {doc_count}")
         
-        # Add debug logging to verify globals are set
-        print(f"DEBUG: sopal_con is None: {sopal_con is None}")
-        print(f"DEBUG: collection is None: {collection is None}")
-        
+        RAG_SYSTEM['initialized'] = True
+        print(f"DEBUG: RAG_SYSTEM initialized: {RAG_SYSTEM['initialized']}")
         return True
         
     except Exception as e:
         print(f"ERROR: Could not initialize the RAG system. Error: {e}", file=sys.stderr)
-        sopal_con = None
-        collection = None
+        import traceback
+        traceback.print_exc()
+        RAG_SYSTEM['sopal_con'] = None
+        RAG_SYSTEM['collection'] = None
+        RAG_SYSTEM['initialized'] = False
         return False
-
 
 # Initialize RAG system on startup
 print("=== Starting RAG System Initialization ===")
@@ -1703,20 +1700,23 @@ async def ai_research(payload: dict = Body(...)):
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
     
-    if not sopal_con or not collection:
+    print(f"DEBUG: Checking RAG system - initialized: {RAG_SYSTEM['initialized']}")
+    print(f"DEBUG: sopal_con is None: {RAG_SYSTEM['sopal_con'] is None}")
+    print(f"DEBUG: collection is None: {RAG_SYSTEM['collection'] is None}")
+    
+    if not RAG_SYSTEM['initialized'] or not RAG_SYSTEM['sopal_con'] or not RAG_SYSTEM['collection']:
         raise HTTPException(status_code=503, detail="RAG system is not available. Please contact support.")
 
     async def stream_response():
-        # 1. Retrieve relevant documents from ChromaDB
         try:
             query_embedding = client.embeddings.create(
                 input=[query],
                 model="text-embedding-3-large"
             ).data[0].embedding
 
-            results = collection.query(
+            results = RAG_SYSTEM['collection'].query(
                 query_embeddings=[query_embedding],
-                n_results=10  # Retrieve top 10 most relevant chunks
+                n_results=10
             )
         except Exception as e:
             print(f"Error querying ChromaDB: {e}")
@@ -1724,14 +1724,11 @@ async def ai_research(payload: dict = Body(...)):
             yield f"data: {json.dumps(error_event)}\n\n"
             return
         
-        # 2. Augment - Get full text and metadata from SQLite
         doc_ids = results['ids'][0]
         context_docs = []
-        sources_for_frontend = []
         
         if doc_ids:
-            cursor = sopal_con.cursor()
-            # The format is 'case_{id}' or 'act_{id}'
+            cursor = RAG_SYSTEM['sopal_con'].cursor()
             case_ids = [int(id.split('_')[1]) for id in doc_ids if id.startswith('case_')]
             act_ids = [int(id.split('_')[1]) for id in doc_ids if id.startswith('act_')]
 
@@ -1761,7 +1758,6 @@ async def ai_research(payload: dict = Body(...)):
                     }
                     context_docs.append(doc)
         
-        # Format context for the LLM and send sources to the frontend
         context_str = ""
         for i, doc in enumerate(context_docs, 1):
             source_info = {"id": i, "type": doc['type']}
@@ -1773,7 +1769,7 @@ async def ai_research(payload: dict = Body(...)):
                     "para_number": doc['para_number'],
                     "text": doc['text'][:200] + '...'
                 })
-            else:  # act
+            else:
                 context_str += f"Source [{i}]: From section {doc['section_number']} ({doc['section_heading']}):\n{doc['text']}\n\n"
                 source_info.update({
                     "section_number": doc['section_number'],
@@ -1781,11 +1777,9 @@ async def ai_research(payload: dict = Body(...)):
                     "text": doc['text'][:200] + '...'
                 })
             
-            sources_for_frontend.append(source_info)
             source_event = {"type": "source", "data": source_info}
             yield f"data: {json.dumps(source_event)}\n\n"
 
-        # 3. Generate response using GPT-4
         system_prompt = (
             "You are a specialist Queensland construction lawyer AI. Answer the user's question based *only* on the provided sources. "
             "Your answer must be accurate, neutral, and directly supported by the text. "
