@@ -1667,8 +1667,9 @@ def connect_rag_system():
         RAG_SYSTEM['collection'] = rag_client.get_collection(name=RAG_COLLECTION_NAME)
         print(f"ChromaDB client connected at: {CHROMA_DB_PATH} and collection '{RAG_COLLECTION_NAME}' loaded.")
         
-        doc_count = RAG_SYSTEM['collection'].count()
-        print(f"Total documents in vector store: {doc_count}")
+        # REMOVE THIS LINE - it causes the error:
+        # doc_count = RAG_SYSTEM['collection'].count()
+        # print(f"Total documents in vector store: {doc_count}")
         
         RAG_SYSTEM['initialized'] = True
         print(f"DEBUG: RAG_SYSTEM initialized: {RAG_SYSTEM['initialized']}")
@@ -1682,6 +1683,8 @@ def connect_rag_system():
         RAG_SYSTEM['collection'] = None
         RAG_SYSTEM['initialized'] = False
         return False
+        
+
 
 # Initialize RAG system on startup
 print("=== Starting RAG System Initialization ===")
