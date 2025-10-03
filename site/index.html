@@ -946,10 +946,11 @@ function renderItem(it, query) {
           ${it.decision_date_norm ? `<div><strong>Date:</strong> ${formatAusDate(it.decision_date_norm)}</div>` : '<div><strong>Date:</strong> Unknown</div>'}
           ${it.adjudicator ? `<div><strong>Adjudicator:</strong> ${sanitize(it.adjudicator)}</div>` : ''}
           ${it.claimant ? `<div><strong>Claimant:</strong> ${sanitize(it.claimant)}</div>` : ''}
-          <div><strong>Claimed Amount:</strong> ${formatCurrency(it.claimed_amount)}</div>
+          ${it.respondent ? `<div><strong>Respondent:</strong> ${sanitize(it.respondent)}</div>` : ''}
+          
         </div>
         <div class="meta-column">
-          ${it.respondent ? `<div><strong>Respondent:</strong> ${sanitize(it.respondent)}</div>` : ''}
+          <div><strong>Claimed Amount:</strong> ${formatCurrency(it.claimed_amount)}</div>
           <div><strong>Adjudicated Amount:</strong> ${formatCurrency(it.adjudicated_amount)}</div>
           <div><strong>Claimant Fee:</strong> ${formatPercent(it.fee_claimant_proportion)}</div>
           <div><strong>Respondent Fee:</strong> ${formatPercent(it.fee_respondent_proportion)}</div>
