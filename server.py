@@ -1590,30 +1590,42 @@ async def serve_html_page(path_name: str):
 # -------------------------------------------------------------------
 import os
 import sys
-import asyncio
 import json
 import zipfile
 import shutil
 import sqlite3
+import asyncio
+import threading
 from fastapi import Body, HTTPException
 from fastapi.responses import StreamingResponse
 
+# If you don't already have an OpenAI client above, this will create one.
+try:
+    from openai import OpenAI
+    _OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    client = globals().get("client") or OpenAI(api_key=_OPENAI_API_KEY)
+except Exception as _e:
+    print(f"Warning: OpenAI client not initialised here ({_e}). Assuming it's created elsewhere.")
+
 # --- RENDER-FRIENDLY PATH SETUP ---
-SOPAL_DB_PATH = "/tmp/sopal.db"
-CHROMA_DB_PATH = "/tmp/chroma_db"      # folder after unzip
-CHROMA_ZIP_PATH = "/tmp/chroma_db.zip" # zip saved here before unzip
+SOPAL_DB_PATH   = "/tmp/sopal.db"
+CHROMA_DB_PATH  = "/tmp/chroma_db"       # folder after unzip
+CHROMA_ZIP_PATH = "/tmp/chroma_db.zip"   # zip saved here before unzip
 RAG_COLLECTION_NAME = "legal_documents"
 
-# Allow overriding the object key in GCS (so you can ship v2/v3 without code edits)
+# Allow overriding object names in GCS via env (helpful for versioned artifacts)
 CHROMA_GCS_OBJECT = os.getenv("CHROMA_DB_OBJECT", "chroma_db.zip")
 SOPAL_GCS_OBJECT  = os.getenv("SOPAL_DB_OBJECT",  "sopal.db")
 
-# Store RAG components in a dict to avoid global variable issues
+# Store RAG components in a dict to avoid global variable churn across workers
 RAG_SYSTEM = {
     "sopal_con": None,
     "collection": None,
     "initialized": False,
 }
+
+# Serialise (re)initialisation across concurrent requests
+_rag_lock = threading.Lock()
 
 def _safe_clear_embedding_function(coll) -> bool:
     """
@@ -1622,18 +1634,15 @@ def _safe_clear_embedding_function(coll) -> bool:
     Returns True if anything was changed.
     """
     changed = False
-    for attr in ("_embedding_function", "embedding_function", "_embedding_model", "embedding_model"):
+    for attr in ("_embedding_function", "embedding_function",
+                 "_embedding_model", "embedding_model"):
         if hasattr(coll, attr):
             try:
                 ef = getattr(coll, attr, None)
-                if (
-                    isinstance(ef, dict)                # legacy dict
-                    or (ef is not None and not hasattr(ef, "dimensionality"))  # object but not EF
-                ):
+                if isinstance(ef, dict) or (ef is not None and not hasattr(ef, "dimensionality")):
                     setattr(coll, attr, None)
                     changed = True
             except Exception:
-                # Never fail the app just because of an attribute set issue
                 pass
     if changed:
         print("Patched Chroma collection: embedding function metadata cleared (set to None).")
@@ -1661,13 +1670,13 @@ def initialize_rag_system() -> bool:
         # --- sopal.db ---
         if not have_db:
             print(f"Downloading {SOPAL_GCS_OBJECT} -> {SOPAL_DB_PATH} ...")
-            sopal_blob = bucket.blob(SOPAL_GCS_OBJECT)
-            sopal_blob.download_to_filename(SOPAL_DB_PATH)
+            blob = bucket.blob(SOPAL_GCS_OBJECT)
+            blob.download_to_filename(SOPAL_DB_PATH)
 
         # --- chroma_db.zip -> unzip to /tmp/chroma_db ---
         print(f"Downloading {CHROMA_GCS_OBJECT} -> {CHROMA_ZIP_PATH} ...")
-        chroma_blob = bucket.blob(CHROMA_GCS_OBJECT)
-        chroma_blob.download_to_filename(CHROMA_ZIP_PATH)
+        blob = bucket.blob(CHROMA_GCS_OBJECT)
+        blob.download_to_filename(CHROMA_ZIP_PATH)
 
         # ensure clean target dir (avoid leftover legacy files)
         if os.path.isdir(CHROMA_DB_PATH):
@@ -1678,7 +1687,6 @@ def initialize_rag_system() -> bool:
         with zipfile.ZipFile(CHROMA_ZIP_PATH, "r") as zf:
             zf.extractall(CHROMA_DB_PATH)
 
-        # cleanup
         try:
             os.remove(CHROMA_ZIP_PATH)
         except Exception:
@@ -1730,13 +1738,46 @@ def connect_rag_system() -> bool:
         RAG_SYSTEM["initialized"] = False
         return False
 
-# Initialize RAG system on startup
+def ensure_rag_ready() -> bool:
+    """
+    Idempotent lazy guard: if the RAG system isn't ready, initialise and connect now.
+    Protected by a lock so concurrent requests don't race.
+    """
+    if RAG_SYSTEM.get("initialized") and RAG_SYSTEM.get("sopal_con") and RAG_SYSTEM.get("collection"):
+        return True
+
+    with _rag_lock:
+        if RAG_SYSTEM.get("initialized") and RAG_SYSTEM.get("sopal_con") and RAG_SYSTEM.get("collection"):
+            return True
+
+        print("RAG ensure: initializing now (lazy path)...")
+        if not initialize_rag_system():
+            print("RAG ensure: initialize_rag_system() failed.")
+            return False
+        if not connect_rag_system():
+            print("RAG ensure: connect_rag_system() failed.")
+            return False
+        print("RAG ensure: ready.")
+        return True
+
+# Initialise at import time (best-effort). Lazy guard will heal if this fails.
 print("=== Starting RAG System Initialization ===")
 if initialize_rag_system():
     connect_rag_system()
 else:
-    print("WARNING: RAG system initialization failed. /api/airesearch endpoint will not be available.")
+    print("WARNING: RAG system initialization failed. /api/airesearch endpoint may lazy-init on first call.")
 print("=== RAG System Initialization Complete ===")
+
+# Small health endpoint to verify live state quickly
+@app.get("/rag/health")
+def rag_health():
+    c = RAG_SYSTEM
+    def t(x): return None if x is None else str(type(x))
+    return {
+        "initialized": bool(c.get("initialized")),
+        "sopal_con": t(c.get("sopal_con")),
+        "collection": t(c.get("collection")),
+    }
 
 # --- RAG ENDPOINT ---
 @app.post("/api/airesearch")
@@ -1747,12 +1788,9 @@ async def ai_research(payload: dict = Body(...)):
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
-    print(f"DEBUG: Checking RAG system - initialized: {RAG_SYSTEM['initialized']}")
-    print(f"DEBUG: sopal_con is None: {RAG_SYSTEM['sopal_con'] is None}")
-    print(f"DEBUG: collection is None: {RAG_SYSTEM['collection'] is None}")
-
-    if not RAG_SYSTEM["initialized"] or not RAG_SYSTEM["sopal_con"] or not RAG_SYSTEM["collection"]:
-        raise HTTPException(status_code=503, detail="RAG system is not available. Please contact support.")
+    # Try lazy init if not ready
+    if not ensure_rag_ready():
+        raise HTTPException(status_code=503, detail="RAG system is not available (init/connect failed).")
 
     async def stream_response():
         try:
@@ -1786,7 +1824,7 @@ async def ai_research(payload: dict = Body(...)):
         if doc_ids:
             cursor = RAG_SYSTEM["sopal_con"].cursor()
             case_ids = [int(x.split("_")[1]) for x in doc_ids if x.startswith("case_")]
-            act_ids = [int(x.split("_")[1]) for x in doc_ids if x.startswith("act_")]
+            act_ids  = [int(x.split("_")[1]) for x in doc_ids if x.startswith("act_")]
 
             if case_ids:
                 placeholders = ",".join("?" for _ in case_ids)
@@ -1881,3 +1919,4 @@ async def ai_research(payload: dict = Body(...)):
 # -------------------------------------------------------------------
 # --- END: AI RESEARCH (RAG) FUNCTIONALITY (RENDER-COMPATIBLE) ---
 # -------------------------------------------------------------------
+
