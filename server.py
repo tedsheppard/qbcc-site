@@ -22,6 +22,22 @@ import zipstream
 import pytesseract
 from PIL import Image
 
+def get_gcs_client():
+    """Creates a GCS client, explicitly using the credentials file from Render's environment."""
+    credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    if not credentials_path:
+        print("FATAL: GOOGLE_APPLICATION_CREDENTIALS env var not found.")
+        return None
+    
+    print(f"Attempting to create GCS client from: {credentials_path}")
+    try:
+        client = storage.Client.from_service_account_json(credentials_path)
+        print("GCS client created successfully.")
+        return client
+    except Exception as e:
+        print(f"FATAL: Failed to create GCS client from credentials file. Error: {e}")
+        return None
+        
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SITE_DIR = os.path.join(ROOT, "site")
@@ -38,7 +54,7 @@ if not os.path.exists(DB_PATH):
         
         if gcs_bucket_name:
             print(f"Database not found at {DB_PATH}. Downloading from GCS bucket '{gcs_bucket_name}'...")
-            storage_client = storage.Client()
+            storage_client = get_gcs_client()
             bucket = storage_client.bucket(gcs_bucket_name)
             blob = bucket.blob(gcs_db_object_name)
             blob.download_to_filename(DB_PATH)
@@ -1579,7 +1595,7 @@ def initialize_rag_system():
     try:
         gcs_bucket_name = os.getenv("GCS_BUCKET_NAME", "sopal-bucket")
         print(f"RAG system files not found. Downloading from GCS bucket '{gcs_bucket_name}'...")
-        storage_client = storage.Client()
+        storage_client = get_gcs_client()
         bucket = storage_client.bucket(gcs_bucket_name)
 
         # Download sopal.db
