@@ -8,7 +8,6 @@ google-cloud-storage
 pandas
 openpyxl
 APScheduler
-aiosmtplib
 PyPDF2
 python-docx
 meilisearch
@@ -18,4 +17,4 @@ zipstream
 Pillow
 pytesseract
 passlib[bcrypt]
-python-jose
+python-jose[cryptography]
