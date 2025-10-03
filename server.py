@@ -1666,6 +1666,18 @@ def connect_rag_system():
         rag_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
         RAG_SYSTEM['collection'] = rag_client.get_collection(name=RAG_COLLECTION_NAME)
         print(f"ChromaDB client connected at: {CHROMA_DB_PATH} and collection '{RAG_COLLECTION_NAME}' loaded.")
+
+                # --- LEGACY EF HOTFIX ---
+        # Older Chroma persisted a dict for embedding_function. 0.5.x expects an object.
+        # If we detect a dict, disable it so we can pass our own embeddings.
+        try:
+            ef = getattr(coll, "_embedding_function", None)
+            if isinstance(ef, dict):
+                print("Detected legacy embedding_function (dict). Disabling for queries with precomputed embeddings.")
+                setattr(coll, "_embedding_function", None)
+        except Exception as e:
+            print(f"Warning while patching collection embedding_function: {e}")
+        # --- END HOTFIX ---
         
         # REMOVE THIS LINE - it causes the error:
         # doc_count = RAG_SYSTEM['collection'].count()
