@@ -1654,7 +1654,7 @@ try:
     rag_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
     collection = rag_client.get_collection(name=RAG_COLLECTION_NAME)
     print(f"ChromaDB client connected at: {CHROMA_DB_PATH} and collection '{RAG_COLLECTION_NAME}' loaded.")
-    print(f"Total documents in vector store: {len(collection.count())}")
+    print(f"Total documents in vector store: {collection.count()}")
 except Exception as e:
     print(f"FATAL ERROR: Could not initialize the RAG system. Check paths and files. Error: {e}")
     sopal_con = None
