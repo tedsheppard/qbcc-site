@@ -22,6 +22,14 @@ import zipstream
 import pytesseract
 from PIL import Image
 
+import os
+import sys
+
+print("--- DUMPING ALL ENVIRONMENT VARIABLES ---", file=sys.stderr)
+for key, value in os.environ.items():
+    print(f'{key}={value}', file=sys.stderr)
+print("--- END OF ENVIRONMENT VARIABLES ---", file=sys.stderr)
+
 def get_gcs_client():
     """Creates a GCS client, explicitly using the credentials file from Render's environment."""
     credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
