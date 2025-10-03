@@ -19,4 +19,4 @@ pytesseract
 passlib[bcrypt]
 python-jose[cryptography]
 numpy<2.0
-chromadb==0.5.0
+chromadb==0.4.24
