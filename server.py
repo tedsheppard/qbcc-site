@@ -757,9 +757,9 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
         sort = "newest"
 
     if sort == "newest":
-        payload["sort"] = ["id:desc"]
+        payload["sort"] = ["date:desc"]
     elif sort == "oldest":
-        payload["sort"] = ["id:asc"]
+        payload["sort"] = ["date:asc"]
     elif sort == "atoz":
         payload["sort"] = ["claimant:asc"]
     elif sort == "ztoa":
