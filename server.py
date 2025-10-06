@@ -589,9 +589,9 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             # In the complex query section, update the sorting logic
             order_clause = ""
             if sort == "newest":
-                order_clause = "ORDER BY m.decision_date_norm DESC"
+                order_clause = "ORDER BY a.decision_date DESC"
             elif sort == "oldest":
-                order_clause = "ORDER BY m.decision_date_norm ASC"
+                order_clause = "ORDER BY a.decision_date ASC"
             elif sort == "atoz":
                 order_clause = "ORDER BY m.claimant ASC"
             elif sort == "ztoa":
