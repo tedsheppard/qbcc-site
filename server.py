@@ -1152,7 +1152,7 @@ def ask_ai(decision_id: str = Path(...), question: str = Form(...), history: str
         if not row or not row["full_text"]:
             raise HTTPException(status_code=404, detail="Decision not found")
 
-        text = row["full_text"][:30000] # Increased context for chat
+        text = row["full_text"][:300000] # Increased context for chat
 
         try:
             chat_history = json.loads(history)
