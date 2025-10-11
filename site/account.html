@@ -12,7 +12,7 @@
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
   <meta charset="utf-8">
-  <title>Sopal — My Account</title>
+  <title>Sopal – My Account</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -127,7 +127,7 @@
 
   /* Main content */
   main {
-    max-width: 900px;
+    max-width: 1200px;
     margin: 40px auto;
     padding: 0 25px;
   }
@@ -265,8 +265,8 @@
       background-color: #f8f9fa;
       border-color: #e9ecef;
       color: #333;
-      -webkit-text-fill-color: #333; /* For Safari */
-      opacity: 1; /* For Firefox */
+      -webkit-text-fill-color: #333;
+      opacity: 1;
       cursor: not-allowed;
   }
 
@@ -288,6 +288,10 @@
   }
   .btn:hover {
       background: #00a568;
+  }
+  .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
   }
   .feedback-message {
       margin-top: 15px;
@@ -391,26 +395,24 @@
       <a href="how-to">How-To Guide</a>
       <a href="feedback">Feedback</a>
     </div>
-    <div id="user-profile-nav">
-        <!-- This will be populated by JavaScript -->
-    </div>
+    <div id="user-profile-nav"></div>
   </div>
 </div>
 
 <main>
     <h1>My Account</h1>
-<!-- Email Verification Banner -->
-<div id="emailVerificationBanner" style="display: none; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
-  <div style="display: flex; justify-content: space-between; align-items: center;">
-    <div>
-      <strong>⚠️ Email Not Verified</strong>
-      <p style="margin: 5px 0 0 0; color: #856404;">Please verify your email address to access all features.</p>
-    </div>
-    <button onclick="resendVerificationEmail()" class="btn btn-secondary" id="resendBtn">Resend Email</button>
-  </div>
-</div>
 
-<div class="account-container">
+    <!-- Email Verification Banner -->
+    <div id="emailVerificationBanner" style="display: none; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <strong>⚠️ Email Not Verified</strong>
+          <p style="margin: 5px 0 0 0; color: #856404;">Please verify your email address to access all features.</p>
+        </div>
+        <button onclick="resendVerificationEmail()" class="btn btn-secondary" id="resendBtn">Resend Email</button>
+      </div>
+    </div>
+
     <div class="account-container">
         <!-- Navigation Tabs -->
         <aside class="account-nav">
@@ -539,7 +541,6 @@
                     <h2>Payment Settings</h2>
                     <div class="payment-placeholder">
                         <p>Securely manage your saved payment methods with Stripe.</p>
-                        <!-- Stripe Elements for managing cards would be mounted here -->
                         <button class="btn">Manage Payment Methods</button>
                     </div>
                 </div>
@@ -554,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.querySelector('.account-container')) { 
         const token = localStorage.getItem('purchase_token');
         if (!token) {
-            console.warn("[Account] No token found — showing logged-out message.");
+            console.warn("[Account] No token found – showing logged-out message.");
             showLoggedOutMessage();
             return;
         }
@@ -635,7 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const res = await fetch('/purchase-me', { headers });
                 if (res.status === 401) {
-                    console.warn("[Account] 401 Unauthorized — token invalid or expired.");
+                    console.warn("[Account] 401 Unauthorized – token invalid or expired.");
                     localStorage.removeItem('purchase_token');
                     showLoggedOutMessage();
                     return;
@@ -682,30 +683,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- Form Submission ---
-        form.addEventListener('submit', (e) => {
+        saveBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
             const feedbackDiv = document.getElementById('feedback-message');
             feedbackDiv.className = 'feedback-message';
-            fetch('/update-profile', { method: 'PUT', headers, body: formData })
-                .then(async res => {
-                    if (res.ok) return res.json();
-                    const errorData = await res.json();
-                    throw new Error(errorData.detail || 'Failed to update profile.');
-                })
-                .then(data => {
-                    feedbackDiv.textContent = data.msg || 'Profile updated successfully!';
-                    feedbackDiv.className = 'feedback-message success';
-                    setTimeout(() => { feedbackDiv.style.display = 'none'; }, 3000);
-                    toggleEditMode(false);
-                    loadProfileData();
-                    if (window.updateNavUI) window.updateNavUI();
-                })
-                .catch(error => {
-                    feedbackDiv.textContent = error.message;
-                    feedbackDiv.className = 'feedback-message error';
-                    console.error('[Account] Update profile error:', error);
+            feedbackDiv.textContent = '';
+            
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            
+            try {
+                const response = await fetch('/update-profile', { 
+                    method: 'PUT', 
+                    headers, 
+                    body: formData 
                 });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to update profile.');
+                }
+                
+                const data = await response.json();
+                feedbackDiv.textContent = data.msg || 'Profile updated successfully!';
+                feedbackDiv.className = 'feedback-message success';
+                setTimeout(() => { feedbackDiv.style.display = 'none'; }, 3000);
+                toggleEditMode(false);
+                await loadProfileData();
+                if (window.updateNavUI) window.updateNavUI();
+            } catch (error) {
+                feedbackDiv.textContent = error.message;
+                feedbackDiv.className = 'feedback-message error';
+                console.error('[Account] Update profile error:', error);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Changes';
+            }
         });
 
         // --- Profile Picture Upload ---
@@ -726,7 +740,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function showLoggedOutMessage() {
             document.querySelector('main').innerHTML = `
                 <div style="text-align:center;padding:60px;">
-                    <h2>You’re not signed in.</h2>
+                    <h2>You're not signed in.</h2>
                     <p>Please <a href="/login" style="color:#008a5c;font-weight:600;">login</a> to access your account.</p>
                 </div>`;
         }
@@ -746,6 +760,16 @@ document.addEventListener('DOMContentLoaded', () => {
         async function initializePage() {
             await loadProfileData();
             loadPurchaseHistory();
+            
+            // Check email verification status
+            const res = await fetch('/purchase-me', { headers });
+            if (res.ok) {
+                const user = await res.json();
+                if (!user.email_verified) {
+                    document.getElementById('emailVerificationBanner').style.display = 'block';
+                }
+            }
+            
             const urlParams = new URLSearchParams(window.location.search);
             const tab = urlParams.get('tab') || 'profile';
             const targetButton = document.querySelector(`.nav-btn[data-target="${tab}-section"]`);
@@ -756,7 +780,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Add this function in the account.html script section
 async function resendVerificationEmail() {
   const btn = document.getElementById('resendBtn');
   const token = localStorage.getItem('purchase_token');
@@ -784,32 +807,8 @@ async function resendVerificationEmail() {
     btn.textContent = 'Resend Email';
   }
 }
-
-// Add this to the initializePage function to show banner if not verified
-async function initializePage() {
-    await loadProfileData();
-    loadPurchaseHistory();
-    
-    // Check email verification status
-    const token = localStorage.getItem('purchase_token');
-    if (token) {
-        const res = await fetch('/purchase-me', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (res.ok) {
-            const user = await res.json();
-            if (!user.email_verified) {
-                document.getElementById('emailVerificationBanner').style.display = 'block';
-            }
-        }
-    }
-    
-    const urlParams = new URLSearchParams(window.location.search);
-    const tab = urlParams.get('tab') || 'profile';
-    const targetButton = document.querySelector(`.nav-btn[data-target="${tab}-section"]`);
-    if (targetButton) setTimeout(() => targetButton.click(), 0);
-}
 </script>
 
 <script src="/assets/js/main.js"></script>
 </body>
 </html>
-
