@@ -117,6 +117,9 @@ function handleLogout(e, userEmail, showAlert = true) {
 /* --- Styling for avatar circle --- */
 const style = document.createElement('style');
 style.innerHTML = `
+#user-profile-nav {
+    margin-left: 25px;
+}
 .profile-avatar {
     position: relative;
     display: inline-block;
