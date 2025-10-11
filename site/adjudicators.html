@@ -1410,15 +1410,37 @@ let isSidebarLocked = true;
 
 let purchasedAdjudicators = new Set(); // Track purchased adjudicators
 
+// Load purchased adjudicators on page load
+async function loadPurchasedAdjudicators() {
+  const token = localStorage.getItem('purchase_token');
+  if (!token) return;
+  
+  try {
+    const response = await fetch('/my-purchases', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (response.ok) {
+      const purchases = await response.json();
+      purchases.forEach(p => {
+        purchasedAdjudicators.add(p.adjudicator_name);
+      });
+      console.log('[DEBUG] Loaded purchased adjudicators:', Array.from(purchasedAdjudicators));
+    }
+  } catch (e) {
+    console.error('[DEBUG] Failed to load purchases:', e);
+  }
+}
+
 // Stripe will be initialized after DOM loads
 let stripe = null;
 let elements = null;
 let cardElement = null;
 
-// Initialize page
-document.addEventListener('DOMContentLoaded', function() {
+
+document.addEventListener('DOMContentLoaded', async function() {
   // Initialize Stripe
-  stripe = Stripe('pk_live_51SGxeHAIOAykxV504w220IB6SNF8PWmMovA3Vcj7BU34qr4lxSftuuc6vhGtb0CURpjiR2e2OMMNdyMuzVXbH286002Y11rMPE'); // Replace with your actual key
+  stripe = Stripe('pk_live_51SGxeHAIOAykxV504w220IB6SNF8PWmMovA3Vcj7BU34qr4lxSftuuc6vhGtb0CURpjiR2e2OMMNdyMuzVXbH286002Y11rMPE');
   elements = stripe.elements();
   cardElement = elements.create('card', {
     style: {
@@ -1447,7 +1469,10 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('loginForm').addEventListener('submit', handleLogin);
   document.getElementById('registerForm').addEventListener('submit', handleRegister);
   
-  // Load adjudicators
+  // Load purchased adjudicators FIRST
+  await loadPurchasedAdjudicators();
+  
+  // Then load adjudicators list
   loadAdjudicators();
   setupEventListeners();
 
