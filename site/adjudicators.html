@@ -400,6 +400,12 @@
   .decision-link:hover {
     text-decoration: underline;
   }
+  
+  .decision-link.disabled {
+    color: #999;
+    cursor: not-allowed;
+    text-decoration: none;
+  }
 
   /* AI Analysis section */
   .ai-section {
@@ -764,78 +770,6 @@
   border-bottom-color: #1a1a1a;
 }
 
-
-  /* Paywall styles */
-.locked-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  border-radius: 8px;
-}
-
-.dark .locked-overlay {
-  background: rgba(20, 20, 20, 0.95);
-}
-
-.locked-content {
-  text-align: center;
-  padding: 40px;
-  max-width: 400px;
-}
-
-.locked-content h3 {
-  font-size: 20px;
-  margin-bottom: 15px;
-  color: #333;
-}
-
-.dark .locked-content h3 {
-  color: #f0f0f0;
-}
-
-.locked-content p {
-  color: #666;
-  margin-bottom: 20px;
-  line-height: 1.6;
-}
-
-.dark .locked-content p {
-  color: #aaa;
-}
-
-.price-tag {
-  font-size: 32px;
-  font-weight: bold;
-  color: #00c97c;
-  margin: 20px 0;
-}
-
-.unlock-btn {
-  background: #00c97c;
-  color: white;
-  border: none;
-  padding: 15px 30px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.unlock-btn:hover {
-  background: #00a568;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 201, 124, 0.3);
-}
-
 /* Auth Modal */
 .auth-modal {
   position: fixed;
@@ -1082,26 +1016,29 @@
 
   /* Paywall styles */
 .locked-overlay {
-  position: absolute; /* Changed from fixed */
+  position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   background: white;
-  padding: 40px;
   border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-  max-width: 450px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  max-width: 420px;
   width: 90%;
+  box-sizing: border-box;
 }
 
 .dark .locked-overlay {
   background: #1a1a1a;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
 }
 
 .locked-content {
   text-align: center;
+  padding: 30px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .locked-content h3 {
@@ -1152,14 +1089,12 @@
 }
 
 /* Blur only the data values, not labels */
-.blur-stats .stat-number {
-  filter: blur(8px);
-  user-select: none;
-}
-
+.blur-stats .stat-number,
+.blur-stats .blur-value,
 .blur-stats .decision-meta span {
-    filter: blur(6px);
-    user-select: none;
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
 }
   
 </style>
@@ -1493,6 +1428,10 @@ function showAdjudicatorDetail(hasAccess = false) {
   const avgClaimAmount = selectedAdjudicator.totalClaimAmount / selectedAdjudicator.totalDecisions;
   const avgAwardedAmount = selectedAdjudicator.totalAwardedAmount / selectedAdjudicator.totalDecisions;
 
+  const subtitleHtml = !hasAccess ?
+    `<span class="blur-value">${selectedAdjudicator.totalDecisions}</span> decisions analysed` :
+    `${selectedAdjudicator.totalDecisions} decisions analysed`;
+
   const lockedOverlay = !hasAccess ? `
     <div class="locked-overlay">
       <div class="locked-content">
@@ -1511,14 +1450,14 @@ function showAdjudicatorDetail(hasAccess = false) {
     <div class="adjudicator-detail">
       <div class="detail-header">
         <div class="detail-name">${sanitizeHtml(selectedAdjudicator.name)}</div>
-        <div class="detail-subtitle">${selectedAdjudicator.totalDecisions} decisions analysed</div>
+        <div class="detail-subtitle">${subtitleHtml}</div>
       </div>
 
       <div class="detail-content ${!hasAccess ? 'blur-stats' : ''}">
         
         <div class="detail-tabs">
-          <button class="tab-btn active" onclick="showTab('stats')">Statistics</button>
-          <button class="tab-btn" onclick="showTab('decisions')">Decisions</button>
+          <button class="tab-btn active" onclick="showTab('stats', ${!hasAccess})">Statistics</button>
+          <button class="tab-btn" onclick="showTab('decisions', ${!hasAccess})">Decisions</button>
         </div>
 
         <!-- Statistics Tab -->
@@ -1607,29 +1546,7 @@ function showAdjudicatorDetail(hasAccess = false) {
             </select>
           </div>
           <div id="decisionsListContainer" class="decisions-list">
-            ${selectedAdjudicator.decisions && selectedAdjudicator.decisions.length > 0 ? 
-              selectedAdjudicator.decisions.map(decision => `
-                <div class="decision-item">
-                  <div class="decision-title">${sanitizeHtml(decision.title)}</div>
-                  <div class="decision-meta">
-                    <div><strong>Date:</strong> <span>${decision.date || 'Unknown'}</span></div>
-                    <div><strong>Claim:</strong> <span>$${Math.round(decision.claimAmount).toLocaleString()}</span></div>
-                    <div><strong>Awarded:</strong> <span>$${Math.round(decision.awardedAmount).toLocaleString()}</span></div>
-                    ${(decision.claimantFeeProportion > 0 || decision.respondentFeeProportion > 0) ? `
-                      <div><strong>Claimant Fee:</strong> <span>${decision.claimantFeeProportion > 0 ? decision.claimantFeeProportion.toFixed(1) : (100 - decision.respondentFeeProportion).toFixed(1)}%</span></div>
-                      <div><strong>Respondent Fee:</strong> <span>${decision.respondentFeeProportion > 0 ? decision.respondentFeeProportion.toFixed(1) : (100 - decision.claimantFeeProportion).toFixed(1)}%</span></div>
-                    ` : ''}
-                  </div>
-                  <div class="decision-actions">
-                    ${decision.pdfPath ? 
-                      `<a href="#" class="decision-link" onclick="event.preventDefault(); openDecision('${decision.id}', '${decision.pdfPath}')">Open Decision (PDF)</a>` : 
-                      `<span style="color: #999;">PDF not available</span>`
-                    }
-                  </div>
-                </div>
-              `).join('') : 
-              '<div class="loading">No decisions found</div>'
-            }
+            ${renderDecisionItems(selectedAdjudicator.decisions, hasAccess)}
           </div>
         </div>
       </div>
@@ -1637,12 +1554,60 @@ function showAdjudicatorDetail(hasAccess = false) {
   `;
 }
 
-function showTab(tabName) {
+function renderDecisionItems(decisions, hasAccess) {
+    if (!decisions || decisions.length === 0) {
+        return '<div class="loading">No decisions found</div>';
+    }
+
+    return decisions.map(decision => {
+        const decisionTitleHtml = !hasAccess ?
+            (decision.title || '').split(' v ').map(name => `<span class="blur-value">${sanitizeHtml(name)}</span>`).join(' v ') :
+            sanitizeHtml(decision.title);
+
+        const decisionLinkHtml = decision.pdfPath ?
+            (!hasAccess ?
+                `<span class="decision-link disabled">Open Decision (PDF)</span>` :
+                `<a href="#" class="decision-link" onclick="event.preventDefault(); openDecision('${decision.id}', '${decision.pdfPath}')">Open Decision (PDF)</a>`
+            ) :
+            `<span style="color: #999;">PDF not available</span>`;
+
+        return `
+            <div class="decision-item">
+              <div class="decision-title">${decisionTitleHtml}</div>
+              <div class="decision-meta">
+                <div><strong>Date:</strong> <span>${decision.date || 'Unknown'}</span></div>
+                <div><strong>Claim:</strong> <span>$${Math.round(decision.claimAmount).toLocaleString()}</span></div>
+                <div><strong>Awarded:</strong> <span>$${Math.round(decision.awardedAmount).toLocaleString()}</span></div>
+                ${(decision.claimantFeeProportion > 0 || decision.respondentFeeProportion > 0) ? `
+                  <div><strong>Claimant Fee:</strong> <span>${decision.claimantFeeProportion > 0 ? decision.claimantFeeProportion.toFixed(1) : (100 - decision.respondentFeeProportion).toFixed(1)}%</span></div>
+                  <div><strong>Respondent Fee:</strong> <span>${decision.respondentFeeProportion > 0 ? decision.respondentFeeProportion.toFixed(1) : (100 - decision.claimantFeeProportion).toFixed(1)}%</span></div>
+                ` : ''}
+              </div>
+              <div class="decision-actions">
+                ${decisionLinkHtml}
+              </div>
+            </div>
+        `;
+    }).join('');
+}
+
+
+function showTab(tabName, isLocked) {
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
   event.target.classList.add('active');
   document.getElementById(`${tabName}-tab`).classList.add('active');
+
+  // Show/hide the lock overlay based on the tab
+  const overlay = document.querySelector('.locked-overlay');
+  if (overlay) {
+    if (tabName === 'stats' && isLocked) {
+        overlay.style.display = 'flex';
+    } else {
+        overlay.style.display = 'none';
+    }
+  }
 }
 
 function sortDecisions() {
@@ -1671,23 +1636,9 @@ function sortDecisions() {
     }
   });
   
+  const hasAccess = !document.querySelector('.detail-content.blur-stats');
   const container = document.getElementById('decisionsListContainer');
-  container.innerHTML = selectedAdjudicator.decisions.map(decision => `
-    <div class="decision-item">
-      <div class="decision-title">${sanitizeHtml(decision.title)}</div>
-      <div class="decision-meta">
-        <div><strong>Date:</strong> ${decision.date || 'Unknown'}</div>
-        <div><strong>Claim:</strong> $${Math.round(decision.claimAmount).toLocaleString()}</div>
-        <div><strong>Awarded:</strong> $${Math.round(decision.awardedAmount).toLocaleString()}</div>
-      </div>
-      <div class="decision-actions">
-        ${decision.pdfPath ? 
-          `<a href="#" class="decision-link" onclick="event.preventDefault(); openDecision('${decision.id}', '${decision.pdfPath}')">Open Decision (PDF)</a>` : 
-          `<span style="color: #999;">PDF not available</span>`
-        }
-      </div>
-    </div>
-  `).join('');
+  container.innerHTML = renderDecisionItems(selectedAdjudicator.decisions, hasAccess);
 }
 
 async function openDecision(decisionId, pdfPath) {
