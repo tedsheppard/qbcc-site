@@ -307,6 +307,7 @@
 
   .tab-content {
     display: none;
+    position: relative;
   }
 
   .tab-content.active {
@@ -835,13 +836,6 @@
   box-shadow: 0 4px 12px rgba(0, 201, 124, 0.3);
 }
 
-.blur-stats .stats-grid,
-.blur-stats .decisions-list {
-  filter: blur(8px);
-  pointer-events: none;
-  user-select: none;
-}
-
 /* Auth Modal */
 .auth-modal {
   position: fixed;
@@ -1106,17 +1100,6 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
 }
 
-.locked-backdrop {
-  position: absolute; /* Changed from fixed */
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-  border-radius: 8px; /* Added to match container */
-}
-
 .locked-content {
   text-align: center;
 }
@@ -1174,10 +1157,9 @@
   user-select: none;
 }
 
-.blur-stats .decision-title,
-.blur-stats .decision-meta div:not(:has(strong)) {
-  filter: blur(6px);
-  user-select: none;
+.blur-stats .decision-meta span {
+    filter: blur(6px);
+    user-select: none;
 }
   
 </style>
@@ -1512,7 +1494,6 @@ function showAdjudicatorDetail(hasAccess = false) {
   const avgAwardedAmount = selectedAdjudicator.totalAwardedAmount / selectedAdjudicator.totalDecisions;
 
   const lockedOverlay = !hasAccess ? `
-    <div class="locked-backdrop" onclick="event.stopPropagation()"></div>
     <div class="locked-overlay">
       <div class="locked-content">
         <h3>🔒 Unlock Full Adjudicator Insights</h3>
@@ -1534,7 +1515,6 @@ function showAdjudicatorDetail(hasAccess = false) {
       </div>
 
       <div class="detail-content ${!hasAccess ? 'blur-stats' : ''}">
-        ${lockedOverlay}
         
         <div class="detail-tabs">
           <button class="tab-btn active" onclick="showTab('stats')">Statistics</button>
@@ -1543,6 +1523,7 @@ function showAdjudicatorDetail(hasAccess = false) {
 
         <!-- Statistics Tab -->
         <div id="stats-tab" class="tab-content active">
+          ${lockedOverlay}
           <div class="stats-grid">
             <div class="stat-card">
               <span class="stat-number">${selectedAdjudicator.totalDecisions}</span>
@@ -1947,3 +1928,4 @@ function formatCurrency(amount) {
   
 </body>
 </html>
+
