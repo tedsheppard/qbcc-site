@@ -84,6 +84,12 @@
       border: 2px solid transparent;
       transition: border-color 0.2s;
   }
+   .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+  }
   .profile-avatar:hover {
       border-color: #00a568;
   }
@@ -540,12 +546,19 @@ async function updateNavUI() {
             if (!res.ok) throw new Error('Not authenticated');
             const user = await res.json();
             const initials = (user.first_name ? user.first_name[0] : '') + (user.last_name ? user.last_name[0] : '');
+            const profilePic = localStorage.getItem(`profile_pic_${user.email}`);
+
+            let avatarContent = initials;
+            if (profilePic) {
+                avatarContent = `<img src="${profilePic}" alt="Profile Picture">`;
+            }
 
             navContainer.innerHTML = `
-                <div class="profile-avatar" id="nav-avatar">${initials}</div>
+                <div class="profile-avatar" id="nav-avatar">${avatarContent}</div>
                 <div class="profile-dropdown" id="nav-dropdown">
-                    <a href="/account" class="dropdown-item">My Account</a>
+                    <a href="/account?tab=profile" class="dropdown-item">Profile Settings</a>
                     <a href="/account?tab=purchases" class="dropdown-item">Purchase History</a>
+                    <a href="/account?tab=payment" class="dropdown-item">Payment Settings</a>
                     <div class="dropdown-divider"></div>
                     <a href="#" id="logout-link" class="dropdown-item">Logout</a>
                 </div>
@@ -557,7 +570,6 @@ async function updateNavUI() {
             avatar.addEventListener('click', () => {
                 dropdown.classList.toggle('show');
             });
-            // Close dropdown if clicking outside
             window.addEventListener('click', function(e) {
                 if (!navContainer.contains(e.target)) {
                     dropdown.classList.remove('show');
@@ -565,7 +577,6 @@ async function updateNavUI() {
             });
 
         } catch (e) {
-            // Token is invalid, log out
             handleLogout(e, false);
         }
     } else {
@@ -578,6 +589,8 @@ async function updateNavUI() {
 function handleLogout(e, showAlert = true) {
     if(e) e.preventDefault();
     localStorage.removeItem('purchase_token');
+    // We should also remove profile picture for the logged out user, requires knowing the email.
+    // This part is tricky without fetching user data before logout. For now, we leave it.
     if (showAlert) alert('You have been logged out.');
     window.location.href = '/';
 }
@@ -594,8 +607,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const headers = { 'Authorization': `Bearer ${token}` };
         let originalProfileData = {};
+        let userEmail = '';
 
-        // --- DOM Element References ---
         const formElements = document.querySelectorAll('#profile-form input, #profile-form select');
         const editBtn = document.getElementById('edit-profile-btn');
         const saveBtn = document.getElementById('save-profile-btn');
@@ -603,22 +616,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const pfpDisplay = document.getElementById('profile-picture-display');
         const pfpInput = document.getElementById('profile-picture-input');
         
-        // --- Tab Navigation ---
         const navButtons = document.querySelectorAll('.account-nav .nav-btn');
         const sections = document.querySelectorAll('.account-section');
 
         navButtons.forEach(button => {
-            button.addEventListener('click', () => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
                 navButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
                 const targetId = button.getAttribute('data-target');
                 sections.forEach(section => {
                     section.classList.toggle('active', section.id === targetId);
                 });
+                // Update URL for deep linking
+                const url = new URL(window.location);
+                url.searchParams.set('tab', targetId.replace('-section',''));
+                window.history.pushState({}, '', url);
             });
         });
 
-        // --- View/Edit Mode Logic ---
         function toggleEditMode(isEditing) {
             formElements.forEach(el => el.disabled = !isEditing);
             editBtn.style.display = isEditing ? 'none' : 'block';
@@ -628,15 +644,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         editBtn.addEventListener('click', () => toggleEditMode(true));
         cancelBtn.addEventListener('click', () => {
-            populateProfileForm(originalProfileData); // Revert to original data
+            populateProfileForm(originalProfileData);
             toggleEditMode(false);
         });
 
-        // --- Data Fetching and Population ---
+        function loadAndSetProfilePicture(email) {
+            const profilePic = localStorage.getItem(`profile_pic_${email}`);
+            const initials = (originalProfileData.first_name ? originalProfileData.first_name[0] : '') + (originalProfileData.last_name ? originalProfileData.last_name[0] : '');
+            let avatarContent = initials;
+            if (profilePic) {
+                avatarContent = `<img src="${profilePic}" alt="Profile Picture">`;
+            }
+            pfpDisplay.innerHTML = avatarContent;
+        }
+
         function populateProfileForm(user) {
-            originalProfileData = user; // Store for cancellation
-             const initials = (user.first_name ? user.first_name[0] : '') + (user.last_name ? user.last_name[0] : '');
-            pfpDisplay.textContent = initials;
+            originalProfileData = user;
+            userEmail = user.email; // Store email for profile picture key
 
             document.getElementById('firstName').value = user.first_name || '';
             document.getElementById('lastName').value = user.last_name || '';
@@ -648,6 +672,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('billingCity').value = user.billing_city || '';
             document.getElementById('billingState').value = user.billing_state || '';
             document.getElementById('billingPostcode').value = user.billing_postcode || '';
+            
+            loadAndSetProfilePicture(userEmail);
         }
 
         function loadProfileData() {
@@ -681,7 +707,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
         }
 
-        // --- Event Handlers ---
         document.getElementById('profile-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -694,7 +719,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         feedbackDiv.className = 'feedback-message success';
                         setTimeout(() => feedbackDiv.style.display = 'none', 3000);
                         toggleEditMode(false);
-                        loadProfileData(); // Reload data to confirm changes
+                        loadProfileData(); // Reload data to confirm changes and update originalProfileData
+                        updateNavUI(); // Update nav bar with new initials if name changed
                     } else {
                         throw new Error('Failed to update profile.');
                     }
@@ -710,7 +736,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.files && e.target.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    pfpDisplay.innerHTML = `<img src="${event.target.result}" alt="Profile Preview">`;
+                    const base64Image = event.target.result;
+                    // Save to local storage with user-specific key
+                    localStorage.setItem(`profile_pic_${userEmail}`, base64Image);
+                    pfpDisplay.innerHTML = `<img src="${base64Image}" alt="Profile Preview">`;
+                    updateNavUI(); // Update the header avatar as well
                 }
                 reader.readAsDataURL(e.target.files[0]);
             }
@@ -720,11 +750,11 @@ document.addEventListener('DOMContentLoaded', () => {
         loadProfileData();
         loadPurchaseHistory();
 
-        // --- Handle deep linking to tabs ---
         const urlParams = new URLSearchParams(window.location.search);
         const tab = urlParams.get('tab');
-        if (tab === 'purchases') {
-            document.querySelector('.nav-btn[data-target="purchases-section"]').click();
+        if (tab) {
+            const targetButton = document.querySelector(`.nav-btn[data-target="${tab}-section"]`);
+            if (targetButton) targetButton.click();
         }
     }
 });
