@@ -1617,9 +1617,9 @@ except Exception as _e:
     print(f"Warning: OpenAI client not initialised here ({_e}). Assuming it's created elsewhere.")
 
 # --- RENDER-FRIENDLY PATH SETUP ---
-SOPAL_DB_PATH   = "/tmp/sopal.db"
-CHROMA_DB_PATH  = "/tmp/chroma_db"       # folder after unzip
-CHROMA_ZIP_PATH = "/tmp/chroma_db.zip"   # zip saved here before unzip
+SOPAL_DB_PATH   = "/var/data/sopal.db"
+CHROMA_DB_PATH  = "/var/data/chroma_db"       # folder after unzip
+CHROMA_ZIP_PATH = "/var/datachroma_db.zip"   # zip saved here before unzip
 RAG_COLLECTION_NAME = "legal_documents"
 
 # Allow overriding object names in GCS via env (helpful for versioned artifacts)
