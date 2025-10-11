@@ -95,6 +95,47 @@ con.execute("PRAGMA mmap_size = 30000000000")
 
 app = FastAPI()
 
+# --- UNIFIED USERS DATABASE CONNECTION ---
+PURCHASES_DB_PATH = "/var/data/adjudicator_purchases.db"
+purchases_con = sqlite3.connect(PURCHASES_DB_PATH, check_same_thread=False)
+purchases_con.row_factory = sqlite3.Row
+purchases_cur = purchases_con.cursor()
+
+# Create enhanced users table with all required columns
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS purchase_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    hashed_password TEXT NOT NULL,
+    first_name TEXT,
+    last_name TEXT,
+    firm_name TEXT,
+    abn TEXT,
+    billing_address TEXT,
+    billing_city TEXT,
+    billing_state TEXT,
+    billing_postcode TEXT,
+    employee_size TEXT,
+    phone TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP
+)
+""")
+
+# Create purchases table
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS adjudicator_purchases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT NOT NULL,
+    adjudicator_name TEXT NOT NULL,
+    purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    stripe_payment_intent_id TEXT,
+    amount_paid REAL DEFAULT 54.95,
+    UNIQUE(user_email, adjudicator_name)
+)
+""")
+purchases_con.commit()
+
 # ---------------- LexiFile DB (separate from Sopal qbcc.db) ----------------
 LEXIFILE_DB_PATH = "/var/data/lexifile.db"
 lexi_con = sqlite3.connect(LEXIFILE_DB_PATH, check_same_thread=False)
@@ -114,9 +155,10 @@ lexi_con.commit()
 # ---------------- Auth setup ----------------
 SECRET_KEY = os.getenv("LEXIFILE_SECRET_KEY", "dev-secret-key")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 43200 # 30 days
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# This is the critical fix: pointing to the correct login URL
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/purchase-login")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password using bcrypt directly"""
@@ -124,7 +166,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     """Hash password using bcrypt directly"""
-    # Truncate to 72 bytes if needed (bcrypt limitation)
     password_bytes = password.encode('utf-8')[:72]
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password_bytes, salt)
@@ -132,14 +173,12 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-def get_user_by_email(email: str):
-    cur = lexi_con.execute("SELECT * FROM users WHERE email = ?", (email,))
-    row = cur.fetchone()
-    return dict(row) if row else None
 
 # --- CORS Middleware ---
 app.add_middleware(
@@ -510,38 +549,7 @@ def get_interest_rate(start_date_str: str = Query(..., alias="startDate"), end_d
 
 from fastapi import Depends
 
-@app.post("/register")
-def register(email: str = Form(...), password: str = Form(...)):
-    # Bypassed to prevent security library errors.
-    print(f"Bypassing registration for {email}")
-    return {"msg": "Registration is currently disabled."}
 
-@app.post("/token")
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    # Bypassed to allow any login.
-    print(f"Bypassing login validation for user: {form_data.username}")
-    access_token = create_access_token(
-        data={"sub": form_data.username}, # Create a token for the user who is logging in
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    user = get_user_by_email(email)
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
-
-@app.get("/me")
-def read_users_me(current_user: dict = Depends(get_current_user)):
-    return {"email": current_user["email"], "created_at": current_user["created_at"]}
 
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newest"):
@@ -1603,45 +1611,6 @@ async def serve_html_page(path_name: str):
     raise HTTPException(status_code=404, detail="Not Found")
 
 
-# ---------------- ENHANCED ADJUDICATOR PURCHASES DB ----------------
-PURCHASES_DB_PATH = "/var/data/adjudicator_purchases.db"  # Changed to /var/data for persistence
-purchases_con = sqlite3.connect(PURCHASES_DB_PATH, check_same_thread=False)
-purchases_con.row_factory = sqlite3.Row
-
-# Create enhanced users table with company details
-purchases_con.execute("""
-CREATE TABLE IF NOT EXISTS purchase_users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    hashed_password TEXT NOT NULL,
-    first_name TEXT NOT NULL,
-    last_name TEXT NOT NULL,
-    firm_name TEXT NOT NULL,
-    abn TEXT NOT NULL,
-    billing_address TEXT NOT NULL,
-    billing_city TEXT NOT NULL,
-    billing_state TEXT NOT NULL,
-    billing_postcode TEXT NOT NULL,
-    employee_size TEXT NOT NULL,
-    phone TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP
-)
-""")
-
-# Keep existing purchases table
-purchases_con.execute("""
-CREATE TABLE IF NOT EXISTS adjudicator_purchases (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_email TEXT NOT NULL,
-    adjudicator_name TEXT NOT NULL,
-    purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    stripe_payment_intent_id TEXT,
-    amount_paid REAL DEFAULT 54.95,
-    UNIQUE(user_email, adjudicator_name)
-)
-""")
-purchases_con.commit()
 
 # ---------------- ENHANCED AUTH ENDPOINTS ----------------
 
@@ -1722,10 +1691,7 @@ async def create_payment_intent(
         raise HTTPException(status_code=400, detail=str(e))
 
 #
-# --- The /purchase-register function starts below this line ---
-# @app.post("/purchase-register")
-# ...
-
+# ... surrounding code ...
 @app.post("/purchase-register")
 def purchase_register(
     email: str = Form(...),
@@ -1743,15 +1709,6 @@ def purchase_register(
 ):
     """Enhanced registration with company details"""
     try:
-        # Validate ABN format (basic check - 11 digits)
-        abn_cleaned = ''.join(filter(str.isdigit, abn))
-        if len(abn_cleaned) != 11:
-            raise HTTPException(status_code=400, detail="ABN must be 11 digits")
-        
-        # Validate Australian postcode (4 digits)
-        if not billing_postcode.isdigit() or len(billing_postcode) != 4:
-            raise HTTPException(status_code=400, detail="Invalid Australian postcode")
-        
         hashed_password = get_password_hash(password)
         
         purchases_con.execute("""
@@ -1795,6 +1752,7 @@ def purchase_login(form_data: OAuth2PasswordRequestForm = Depends()):
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     return {"access_token": access_token, "token_type": "bearer"}
+# ... surrounding code ...
 
 
 @app.get("/purchase-me")
