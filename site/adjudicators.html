@@ -283,6 +283,10 @@
   overflow-x: visible; /* Add this - allows horizontal overflow for tooltips */
 }
 
+.detail-content.blur-stats {
+    overflow-y: hidden;
+}
+
   .detail-tabs {
     display: flex;
     border-bottom: 1px solid #eee;
@@ -1090,7 +1094,7 @@
 
 /* Blur only the data values, not labels */
 .blur-stats .stat-number,
-.blur-stats .blur-value,
+.blur-value,
 .blur-stats .decision-meta span {
   filter: blur(6px);
   user-select: none;
@@ -1252,6 +1256,7 @@ let filteredAdjudicators = [];
 let selectedAdjudicator = null;
 let currentAdjudicatorForPurchase = null;
 let userToken = null;
+let isSidebarLocked = false;
 
 // Stripe will be initialized after DOM loads
 let stripe = null;
@@ -1360,29 +1365,34 @@ function renderAdjudicatorsList() {
     return;
   }
 
-  container.innerHTML = filteredAdjudicators.map(adj => `
+  container.innerHTML = filteredAdjudicators.map(adj => {
+    const decisionCount = adj.totalDecisions;
+    const awardRate = adj.avgAwardRate.toFixed(1) + '%';
+
+    const decisionHtml = isSidebarLocked ? `<span class="blur-value">${decisionCount}</span>` : decisionCount;
+    const awardHtml = isSidebarLocked ? `<span class="blur-value">${awardRate}</span>` : awardRate;
+
+    return `
     <div class="adjudicator-item ${selectedAdjudicator?.id === adj.id ? 'selected' : ''}"
          onclick="selectAdjudicator('${adj.id.replace(/'/g, "\\'")}')">
       <div class="adjudicator-name">${sanitizeHtml(adj.name)}</div>
       <div class="adjudicator-stats">
         <div class="stat-item">
-          <span class="stat-value">${adj.totalDecisions}</span>
+          <span class="stat-value">${decisionHtml}</span>
           <span>Decisions</span>
         </div>
         <div class="stat-item">
-          <span class="stat-value">${adj.avgAwardRate.toFixed(1)}%</span>
+          <span class="stat-value">${awardHtml}</span>
           <span> Avg Portion Awarded</span>
         </div>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 async function selectAdjudicator(adjudicatorId) {
   selectedAdjudicator = allAdjudicators.find(adj => adj.id === adjudicatorId);
   if (!selectedAdjudicator) return;
-
-  renderAdjudicatorsList();
 
   const rightPane = document.getElementById('rightPane');
   rightPane.className = 'right-pane';
@@ -1405,6 +1415,9 @@ async function selectAdjudicator(adjudicatorId) {
         hasAccess = accessData.hasAccess;
       }
     }
+
+    isSidebarLocked = !hasAccess;
+    renderAdjudicatorsList();
     
     // Load decisions
     const response = await fetch(`/api/adjudicator/${encodeURIComponent(selectedAdjudicator.name)}`);
