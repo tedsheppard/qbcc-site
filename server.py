@@ -11,7 +11,6 @@ from google.cloud import storage
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, date
 from jose import JWTError, jwt
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import PyPDF2
 import docx
 import extract_msg
@@ -23,6 +22,8 @@ import pytesseract
 from PIL import Image
 import stripe
 import secrets
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import Depends  
 
 
 def get_gcs_client():
