@@ -563,7 +563,7 @@ async function updateNavUI() {
                     <a href="#" id="logout-link" class="dropdown-item">Logout</a>
                 </div>
             `;
-            document.getElementById('logout-link').addEventListener('click', handleLogout);
+            document.getElementById('logout-link').addEventListener('click', (e) => handleLogout(e, user.email));
             
             const avatar = document.getElementById('nav-avatar');
             const dropdown = document.getElementById('nav-dropdown');
@@ -577,7 +577,7 @@ async function updateNavUI() {
             });
 
         } catch (e) {
-            handleLogout(e, false);
+            handleLogout(e, null, false);
         }
     } else {
         navContainer.innerHTML = `
@@ -586,11 +586,15 @@ async function updateNavUI() {
     }
 }
 
-function handleLogout(e, showAlert = true) {
-    if(e) e.preventDefault();
+function handleLogout(e, userEmail, showAlert = true) {
+    // FIX: Check if 'e' is a real event object before calling preventDefault
+    if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault();
+    }
     localStorage.removeItem('purchase_token');
-    // We should also remove profile picture for the logged out user, requires knowing the email.
-    // This part is tricky without fetching user data before logout. For now, we leave it.
+    if (userEmail) {
+        localStorage.removeItem(`profile_pic_${userEmail}`);
+    }
     if (showAlert) alert('You have been logged out.');
     window.location.href = '/';
 }
@@ -598,10 +602,11 @@ function handleLogout(e, showAlert = true) {
 
 // --- ACCOUNT PAGE SPECIFIC SCRIPT ---
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.querySelector('.account-container')) {
+    // This script only runs on the account page
+    if (document.querySelector('.account-container')) { 
         const token = localStorage.getItem('purchase_token');
         if (!token) {
-            window.location.href = '/';
+            window.location.href = '/'; // Redirect if not logged in
             return;
         }
 
@@ -609,6 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let originalProfileData = {};
         let userEmail = '';
 
+        // --- DOM Element References ---
         const formElements = document.querySelectorAll('#profile-form input, #profile-form select');
         const editBtn = document.getElementById('edit-profile-btn');
         const saveBtn = document.getElementById('save-profile-btn');
@@ -619,22 +625,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const navButtons = document.querySelectorAll('.account-nav .nav-btn');
         const sections = document.querySelectorAll('.account-section');
 
+        // --- Tab Navigation Logic ---
         navButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 e.preventDefault();
+                const targetId = button.getAttribute('data-target');
+                
                 navButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
-                const targetId = button.getAttribute('data-target');
+                
                 sections.forEach(section => {
                     section.classList.toggle('active', section.id === targetId);
                 });
-                // Update URL for deep linking
+                
+                // Update URL for deep linking without reloading
                 const url = new URL(window.location);
                 url.searchParams.set('tab', targetId.replace('-section',''));
                 window.history.pushState({}, '', url);
             });
         });
 
+        // --- View/Edit Mode Logic ---
         function toggleEditMode(isEditing) {
             formElements.forEach(el => el.disabled = !isEditing);
             editBtn.style.display = isEditing ? 'none' : 'block';
@@ -644,24 +655,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         editBtn.addEventListener('click', () => toggleEditMode(true));
         cancelBtn.addEventListener('click', () => {
-            populateProfileForm(originalProfileData);
+            populateProfileForm(originalProfileData); // Revert to original data
             toggleEditMode(false);
         });
 
-        function loadAndSetProfilePicture(email) {
+        // --- Profile Picture Logic ---
+        function loadAndSetProfilePicture(email, user) {
             const profilePic = localStorage.getItem(`profile_pic_${email}`);
-            const initials = (originalProfileData.first_name ? originalProfileData.first_name[0] : '') + (originalProfileData.last_name ? originalProfileData.last_name[0] : '');
-            let avatarContent = initials;
+            const initials = (user.first_name ? user.first_name[0] : '') + (user.last_name ? user.last_name[0] : '');
+            let avatarContent = initials || '?';
             if (profilePic) {
                 avatarContent = `<img src="${profilePic}" alt="Profile Picture">`;
             }
             pfpDisplay.innerHTML = avatarContent;
         }
-
+        
+        // --- Data Fetching and Population ---
         function populateProfileForm(user) {
-            originalProfileData = user;
-            userEmail = user.email; // Store email for profile picture key
+            originalProfileData = user; // Store for cancellation
+            userEmail = user.email;
 
+            // Populate all form fields
             document.getElementById('firstName').value = user.first_name || '';
             document.getElementById('lastName').value = user.last_name || '';
             document.getElementById('firmName').value = user.firm_name || '';
@@ -673,14 +687,19 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('billingState').value = user.billing_state || '';
             document.getElementById('billingPostcode').value = user.billing_postcode || '';
             
-            loadAndSetProfilePicture(userEmail);
+            loadAndSetProfilePicture(user.email, user);
         }
 
-        function loadProfileData() {
-            fetch('/purchase-me', { headers })
-                .then(res => res.ok ? res.json() : Promise.reject('Could not fetch user data.'))
-                .then(populateProfileForm)
-                .catch(error => console.error("Error populating profile:", error));
+        async function loadProfileData() {
+            try {
+                const res = await fetch('/purchase-me', { headers });
+                if (!res.ok) throw new Error('Could not fetch user data.');
+                const user = await res.json();
+                populateProfileForm(user);
+            } catch (error) {
+                console.error("Error loading profile:", error);
+                // Maybe show an error message to the user
+            }
         }
 
         function loadPurchaseHistory() {
@@ -707,6 +726,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
         }
 
+        // --- Event Handlers ---
         document.getElementById('profile-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -719,7 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         feedbackDiv.className = 'feedback-message success';
                         setTimeout(() => feedbackDiv.style.display = 'none', 3000);
                         toggleEditMode(false);
-                        loadProfileData(); // Reload data to confirm changes and update originalProfileData
+                        loadProfileData(); // Reload data to update originalProfileData
                         updateNavUI(); // Update nav bar with new initials if name changed
                     } else {
                         throw new Error('Failed to update profile.');
@@ -737,25 +757,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     const base64Image = event.target.result;
-                    // Save to local storage with user-specific key
                     localStorage.setItem(`profile_pic_${userEmail}`, base64Image);
                     pfpDisplay.innerHTML = `<img src="${base64Image}" alt="Profile Preview">`;
-                    updateNavUI(); // Update the header avatar as well
+                    updateNavUI();
                 }
                 reader.readAsDataURL(e.target.files[0]);
             }
         });
 
         // --- Initial Load ---
-        loadProfileData();
-        loadPurchaseHistory();
+        async function initializePage() {
+            await loadProfileData();
+            loadPurchaseHistory();
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const tab = urlParams.get('tab');
-        if (tab) {
+            // Handle deep linking to tabs from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = urlParams.get('tab') || 'profile'; // Default to profile
             const targetButton = document.querySelector(`.nav-btn[data-target="${tab}-section"]`);
-            if (targetButton) targetButton.click();
+            if (targetButton) {
+                 // Defer click to ensure all elements are ready
+                setTimeout(() => targetButton.click(), 0);
+            }
         }
+
+        initializePage();
     }
 });
 </script>
