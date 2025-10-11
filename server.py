@@ -444,7 +444,7 @@ async def verify_email(token: str = Query(...)):
         print(f"Email verification error: {e}")
         raise HTTPException(status_code=500, detail="Failed to verify email")
 
-        
+
 # --- CORS Middleware ---
 app.add_middleware(
     CORSMiddleware,
@@ -2153,13 +2153,7 @@ async def delete_payment_method(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.get("/login")
-def get_login_page():
-    return FileResponse('login.html')
 
-@app.get("/register")
-def get_register_page():
-    return FileResponse('register.html')
 
     # ---------- serve frontend with clean URLs ----------
 @app.get("/{path_name:path}")
