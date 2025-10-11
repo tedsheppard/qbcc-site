@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <script src="[https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js](https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js)"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <!-- Google tag (gtag.js) -->
-  <script async src="[https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR](https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR)"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
@@ -1021,7 +1021,7 @@
   /* Paywall styles */
 .locked-overlay {
   position: absolute;
-  top: 140px;
+  top: 160px;
   left: 50%;
   transform: translateX(-50%);
   background: white;
@@ -1186,7 +1186,7 @@
 </footer>
 
   <!-- Add Stripe -->
-<script src="[https://js.stripe.com/v3/](https://js.stripe.com/v3/)"></script>
+<script src="https://js.stripe.com/v3/"></script>
 
 <!-- Auth Modal -->
 <div id="authModal" class="auth-modal">
@@ -1375,8 +1375,8 @@ function renderAdjudicatorsList() {
     const awardRate = adj.avgAwardRate.toFixed(1) + '%';
 
     // Logic to decide if an item's stats should be blurred
-    const isPurchased = false; // Replace with actual purchase check later
-    const shouldBlur = !isPurchased; 
+    const isPurchased = false; // This will be dynamic later
+    const shouldBlur = isSidebarLocked && !isPurchased; 
 
     const decisionHtml = shouldBlur ? `<span class="blur-value">${decisionCount}</span>` : decisionCount;
     const awardHtml = shouldBlur ? `<span class="blur-value">${awardRate}</span>` : awardRate;
@@ -1426,7 +1426,7 @@ async function selectAdjudicator(adjudicatorId) {
       }
     }
 
-    isSidebarLocked = !hasAccess; // We might remove this global var later
+    isSidebarLocked = !hasAccess; 
     renderAdjudicatorsList(); // Re-render to update selection
     
     // Load decisions
