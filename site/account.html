@@ -539,11 +539,11 @@
 <script>
 // --- ACCOUNT PAGE SPECIFIC SCRIPT ---
 document.addEventListener('DOMContentLoaded', () => {
-    // This script only runs on the account page
     if (document.querySelector('.account-container')) { 
         const token = localStorage.getItem('purchase_token');
         if (!token) {
-            window.location.href = '/login'; // Redirect if not logged in
+            console.warn("[Account] No token found — showing logged-out message.");
+            showLoggedOutMessage();
             return;
         }
 
@@ -551,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let originalProfileData = {};
         let userEmail = '';
 
-        // --- DOM Element References ---
+        // --- DOM References ---
         const form = document.getElementById('profile-form');
         const formElements = form.querySelectorAll('input, select');
         const editBtn = document.getElementById('edit-profile-btn');
@@ -559,31 +559,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const cancelBtn = document.getElementById('cancel-edit-btn');
         const pfpDisplay = document.getElementById('profile-picture-display');
         const pfpInput = document.getElementById('profile-picture-input');
-        
         const navButtons = document.querySelectorAll('.account-nav .nav-btn');
         const sections = document.querySelectorAll('.account-section');
 
-        // --- Tab Navigation Logic ---
+        // --- Tab Navigation ---
         navButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 e.preventDefault();
                 const targetId = button.getAttribute('data-target');
-                
                 navButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
-                
                 sections.forEach(section => {
                     section.classList.toggle('active', section.id === targetId);
                 });
-                
-                // Update URL for deep linking without reloading
                 const url = new URL(window.location);
                 url.searchParams.set('tab', targetId.replace('-section',''));
                 window.history.pushState({}, '', url);
             });
         });
 
-        // --- View/Edit Mode Logic ---
+        // --- Edit Mode Toggle ---
         function toggleEditMode(isEditing) {
             formElements.forEach(el => el.disabled = !isEditing);
             editBtn.style.display = isEditing ? 'none' : 'block';
@@ -593,27 +588,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         editBtn.addEventListener('click', () => toggleEditMode(true));
         cancelBtn.addEventListener('click', () => {
-            populateProfileForm(originalProfileData); // Revert to original data
+            populateProfileForm(originalProfileData);
             toggleEditMode(false);
         });
 
-        // --- Profile Picture Logic ---
+        // --- Profile Picture ---
         function loadAndSetProfilePicture(email, user) {
             const profilePic = localStorage.getItem(`profile_pic_${email}`);
             const initials = (user.first_name ? user.first_name[0] : '') + (user.last_name ? user.last_name[0] : '');
             let avatarContent = initials || '?';
-            if (profilePic) {
-                avatarContent = `<img src="${profilePic}" alt="Profile Picture">`;
-            }
+            if (profilePic) avatarContent = `<img src="${profilePic}" alt="Profile Picture">`;
             pfpDisplay.innerHTML = avatarContent;
         }
-        
-        // --- Data Fetching and Population ---
-        function populateProfileForm(user) {
-            originalProfileData = user; // Store for cancellation
-            userEmail = user.email;
 
-            // **FIX**: Manually map server data keys to form input IDs
+        // --- Form Population ---
+        function populateProfileForm(user) {
+            originalProfileData = user;
+            userEmail = user.email;
             document.getElementById('firstName').value = user.first_name || '';
             document.getElementById('lastName').value = user.last_name || '';
             document.getElementById('firmName').value = user.firm_name || '';
@@ -624,27 +615,33 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('billingCity').value = user.billing_city || '';
             document.getElementById('billingState').value = user.billing_state || '';
             document.getElementById('billingPostcode').value = user.billing_postcode || '';
-            
             loadAndSetProfilePicture(user.email, user);
         }
 
+        // --- Load Profile Data ---
         async function loadProfileData() {
             try {
                 const res = await fetch('/purchase-me', { headers });
+                if (res.status === 401) {
+                    console.warn("[Account] 401 Unauthorized — token invalid or expired.");
+                    localStorage.removeItem('purchase_token');
+                    showLoggedOutMessage();
+                    return;
+                }
                 if (!res.ok) {
-                   // This is the critical point. If the server rejects the token, log out.
-                   console.error("Auth token was rejected by server. Status:", res.status);
-                   throw new Error('Could not fetch user data.');
+                    console.error("[Account] Unexpected response:", res.status);
+                    showErrorBanner("Could not load your account information. Please try again later.");
+                    return;
                 }
                 const user = await res.json();
                 populateProfileForm(user);
             } catch (error) {
-                console.error("Error loading profile, redirecting to login:", error);
-                localStorage.removeItem('purchase_token');
-                window.location.href = '/login';
+                console.error("[Account] Network or parse error:", error);
+                showErrorBanner("Temporary network issue. Try reloading the page.");
             }
         }
 
+        // --- Load Purchase History ---
         function loadPurchaseHistory() {
             fetch('/my-purchases', { headers })
                 .then(res => res.ok ? res.json() : Promise.reject('Could not fetch purchase history.'))
@@ -666,42 +663,40 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 })
                 .catch(error => {
-                    document.getElementById('purchase-history-body').innerHTML = '<tr><td colspan="3">Could not load purchase history.</td></tr>';
-                    console.error("Error populating purchases:", error);
+                    document.getElementById('purchase-history-body').innerHTML =
+                        '<tr><td colspan="3">Could not load purchase history.</td></tr>';
+                    console.error("[Account] Error populating purchases:", error);
                 });
         }
 
-        // --- Event Handlers ---
+        // --- Form Submission ---
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             const formData = new FormData(form);
             const feedbackDiv = document.getElementById('feedback-message');
-            feedbackDiv.className = 'feedback-message'; // Reset classes
-            
-            // **FIX**: Use method 'PUT' to match server endpoint
+            feedbackDiv.className = 'feedback-message';
             fetch('/update-profile', { method: 'PUT', headers, body: formData })
                 .then(async res => {
-                    if (res.ok) {
-                        return res.json();
-                    }
+                    if (res.ok) return res.json();
                     const errorData = await res.json();
                     throw new Error(errorData.detail || 'Failed to update profile.');
                 })
                 .then(data => {
                     feedbackDiv.textContent = data.msg || 'Profile updated successfully!';
                     feedbackDiv.className = 'feedback-message success';
-                    setTimeout(() => { feedbackDiv.style.display = 'none'; feedbackDiv.textContent = ''; }, 3000);
+                    setTimeout(() => { feedbackDiv.style.display = 'none'; }, 3000);
                     toggleEditMode(false);
-                    loadProfileData(); // Reload data to update originalProfileData
-                    if (window.updateNavUI) window.updateNavUI(); // Update nav bar if main.js is loaded
+                    loadProfileData();
+                    if (window.updateNavUI) window.updateNavUI();
                 })
                 .catch(error => {
                     feedbackDiv.textContent = error.message;
                     feedbackDiv.className = 'feedback-message error';
-                    console.error('Update profile error:', error);
+                    console.error('[Account] Update profile error:', error);
                 });
         });
 
+        // --- Profile Picture Upload ---
         pfpInput.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) {
                 const reader = new FileReader();
@@ -710,29 +705,46 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem(`profile_pic_${userEmail}`, base64Image);
                     pfpDisplay.innerHTML = `<img src="${base64Image}" alt="Profile Preview">`;
                     if (window.updateNavUI) window.updateNavUI();
-                }
+                };
                 reader.readAsDataURL(e.target.files[0]);
             }
         });
+
+        // --- Helpers for logged-out / error UI ---
+        function showLoggedOutMessage() {
+            document.querySelector('main').innerHTML = `
+                <div style="text-align:center;padding:60px;">
+                    <h2>You’re not signed in.</h2>
+                    <p>Please <a href="/login" style="color:#008a5c;font-weight:600;">login</a> to access your account.</p>
+                </div>`;
+        }
+
+        function showErrorBanner(msg) {
+            const el = document.createElement('div');
+            el.style.background = '#f8d7da';
+            el.style.color = '#721c24';
+            el.style.padding = '15px';
+            el.style.borderRadius = '6px';
+            el.style.marginBottom = '20px';
+            el.textContent = msg;
+            document.querySelector('main').prepend(el);
+        }
 
         // --- Initial Load ---
         async function initializePage() {
             await loadProfileData();
             loadPurchaseHistory();
-
-            // Handle deep linking to tabs from URL
             const urlParams = new URLSearchParams(window.location.search);
             const tab = urlParams.get('tab') || 'profile';
             const targetButton = document.querySelector(`.nav-btn[data-target="${tab}-section"]`);
-            if (targetButton) {
-                setTimeout(() => targetButton.click(), 0);
-            }
+            if (targetButton) setTimeout(() => targetButton.click(), 0);
         }
 
         initializePage();
     }
 });
 </script>
+
 <script src="/assets/js/main.js"></script>
 </body>
 </html>
