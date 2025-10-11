@@ -10,12 +10,12 @@ from openai import OpenAI
 from google.cloud import storage
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, date
-from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import PyPDF2
 import docx
 import extract_msg
+import bcrypt
 import pypandoc
 from typing import List, Optional
 import zipstream
@@ -112,18 +112,23 @@ CREATE TABLE IF NOT EXISTS users (
 lexi_con.commit()
 
 # ---------------- Auth setup ----------------
-SECRET_KEY = os.getenv("LEXIFILE_SECRET_KEY", "dev-secret-key")  # change in prod
+SECRET_KEY = os.getenv("LEXIFILE_SECRET_KEY", "dev-secret-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify password using bcrypt directly"""
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str) -> str:
+    """Hash password using bcrypt directly"""
+    # Truncate to 72 bytes if needed (bcrypt limitation)
+    password_bytes = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
