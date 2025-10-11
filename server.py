@@ -1867,3 +1867,13 @@ def get_my_purchases(current_user: dict = Depends(get_current_purchase_user)):
     except Exception as e:
         print(f"Error fetching purchases for {current_user['email']}: {e}")
         raise HTTPException(status_code=500, detail="Could not retrieve purchase history.")
+
+# --- Add these two new routes ---
+
+@app.get("/login")
+def get_login_page():
+    return FileResponse('login.html')
+
+@app.get("/register")
+def get_register_page():
+    return FileResponse('register.html')
