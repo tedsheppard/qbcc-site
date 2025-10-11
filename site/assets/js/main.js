@@ -95,8 +95,7 @@ async function updateNavUI() {
 
 function renderLoggedOutNav(navContainer) {
     navContainer.innerHTML = `
-        <a href="/login" id="login-link" style="text-decoration:none;color:#008a5c;font-weight:600;">Login</a>
-        <a href="/register" id="register-link" style="text-decoration:none;color:#008a5c;font-weight:600;">Register</a>
+        <a href="/login" id="login-link" style="text-decoration:none;color:#008a5c;font-weight:600;">Sign In</a>
     `;
 }
 
