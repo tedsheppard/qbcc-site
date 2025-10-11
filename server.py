@@ -1575,8 +1575,16 @@ async def download_db():
 # ---------- serve frontend with clean URLs ----------
 @app.get("/{path_name:path}")
 async def serve_html_page(path_name: str):
+    # --- START OF NEW FIX ---
+    # Ignore paths that are clearly intended for API endpoints
+    api_prefixes = ["api/", "check-adjudicator-access/", "create-payment-intent"]
+    if any(path_name.startswith(prefix) for prefix in api_prefixes):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
+    # --- END OF NEW FIX ---
+
     if not path_name:
         path_name = "index"
+
 
     file_path = os.path.join(SITE_DIR, f"{path_name}.html")
     
