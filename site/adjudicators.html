@@ -1950,13 +1950,15 @@ function showPaymentModal() {
 
 async function unlockAdjudicator(adjudicatorName) {
   currentAdjudicatorForPurchase = adjudicatorName;
-  
-  const isAuthenticated = await checkAuthStatus();
-  if (!isAuthenticated) {
-    document.getElementById('authModal').classList.add('active');
+
+  const token = localStorage.getItem('purchase_token');
+  if (!token) {
+    // If not logged in, go to the new login page
+    window.location.href = '/login';
     return;
   }
-  
+
+  // If logged in, proceed to payment
   showPaymentModal();
 }
 

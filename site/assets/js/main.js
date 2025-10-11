@@ -60,7 +60,8 @@ async function updateNavUI() {
     } else {
         console.log("updateNavUI: No token found. Displaying Login/Register link.");
         navContainer.innerHTML = `
-            <a href="/adjudicators" id="login-link" style="text-decoration: none; color: #008a5c; font-weight: 600;">Login / Register</a>
+            <a href="/login" id="login-link" style="text-decoration: none; color: #008a5c; font-weight: 600;">Login</a>
+            <a href="/register" id="register-link" style="text-decoration: none; color: #008a5c; font-weight: 600;">Register</a>
         `;
     }
 }
