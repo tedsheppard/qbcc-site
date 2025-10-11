@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="[https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js](https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js)"></script>
   <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script async src="[https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR](https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR)"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
@@ -1021,9 +1021,9 @@
   /* Paywall styles */
 .locked-overlay {
   position: absolute;
-  top: 50%;
+  top: 140px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   background: white;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
@@ -1031,6 +1031,11 @@
   max-width: 420px;
   width: 90%;
   box-sizing: border-box;
+  display: none; /* Hidden by default */
+}
+
+.blur-stats .locked-overlay {
+    display: flex; /* Shown when parent has blur-stats */
 }
 
 .dark .locked-overlay {
@@ -1181,7 +1186,7 @@
 </footer>
 
   <!-- Add Stripe -->
-<script src="https://js.stripe.com/v3/"></script>
+<script src="[https://js.stripe.com/v3/](https://js.stripe.com/v3/)"></script>
 
 <!-- Auth Modal -->
 <div id="authModal" class="auth-modal">
@@ -1256,7 +1261,7 @@ let filteredAdjudicators = [];
 let selectedAdjudicator = null;
 let currentAdjudicatorForPurchase = null;
 let userToken = null;
-let isSidebarLocked = false;
+let isSidebarLocked = true;
 
 // Stripe will be initialized after DOM loads
 let stripe = null;
@@ -1369,8 +1374,12 @@ function renderAdjudicatorsList() {
     const decisionCount = adj.totalDecisions;
     const awardRate = adj.avgAwardRate.toFixed(1) + '%';
 
-    const decisionHtml = isSidebarLocked ? `<span class="blur-value">${decisionCount}</span>` : decisionCount;
-    const awardHtml = isSidebarLocked ? `<span class="blur-value">${awardRate}</span>` : awardRate;
+    // Logic to decide if an item's stats should be blurred
+    const isPurchased = false; // Replace with actual purchase check later
+    const shouldBlur = !isPurchased; 
+
+    const decisionHtml = shouldBlur ? `<span class="blur-value">${decisionCount}</span>` : decisionCount;
+    const awardHtml = shouldBlur ? `<span class="blur-value">${awardRate}</span>` : awardRate;
 
     return `
     <div class="adjudicator-item ${selectedAdjudicator?.id === adj.id ? 'selected' : ''}"
@@ -1389,6 +1398,7 @@ function renderAdjudicatorsList() {
     </div>
   `}).join('');
 }
+
 
 async function selectAdjudicator(adjudicatorId) {
   selectedAdjudicator = allAdjudicators.find(adj => adj.id === adjudicatorId);
@@ -1416,8 +1426,8 @@ async function selectAdjudicator(adjudicatorId) {
       }
     }
 
-    isSidebarLocked = !hasAccess;
-    renderAdjudicatorsList();
+    isSidebarLocked = !hasAccess; // We might remove this global var later
+    renderAdjudicatorsList(); // Re-render to update selection
     
     // Load decisions
     const response = await fetch(`/api/adjudicator/${encodeURIComponent(selectedAdjudicator.name)}`);
@@ -1467,15 +1477,15 @@ function showAdjudicatorDetail(hasAccess = false) {
       </div>
 
       <div class="detail-content ${!hasAccess ? 'blur-stats' : ''}">
-        
+        ${lockedOverlay}
         <div class="detail-tabs">
-          <button class="tab-btn active" onclick="showTab('stats', ${!hasAccess})">Statistics</button>
-          <button class="tab-btn" onclick="showTab('decisions', ${!hasAccess})">Decisions</button>
+          <button class="tab-btn active" onclick="showTab('stats')">Statistics</button>
+          <button class="tab-btn" onclick="showTab('decisions')">Decisions</button>
         </div>
 
         <!-- Statistics Tab -->
         <div id="stats-tab" class="tab-content active">
-          ${lockedOverlay}
+          
           <div class="stats-grid">
             <div class="stat-card">
               <span class="stat-number">${selectedAdjudicator.totalDecisions}</span>
@@ -1605,22 +1615,12 @@ function renderDecisionItems(decisions, hasAccess) {
 }
 
 
-function showTab(tabName, isLocked) {
+function showTab(tabName) {
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
   event.target.classList.add('active');
   document.getElementById(`${tabName}-tab`).classList.add('active');
-
-  // Show/hide the lock overlay based on the tab
-  const overlay = document.querySelector('.locked-overlay');
-  if (overlay) {
-    if (tabName === 'stats' && isLocked) {
-        overlay.style.display = 'flex';
-    } else {
-        overlay.style.display = 'none';
-    }
-  }
 }
 
 function sortDecisions() {
