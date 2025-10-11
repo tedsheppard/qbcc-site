@@ -1849,3 +1849,21 @@ def update_profile(
     except Exception as e:
         print(f"Profile update error: {e}")
         raise HTTPException(status_code=500, detail="Failed to update profile")
+
+@app.get("/my-purchases")
+def get_my_purchases(current_user: dict = Depends(get_current_purchase_user)):
+    """Fetches all purchase records for the currently authenticated user."""
+    try:
+        purchases = purchases_con.execute("""
+            SELECT adjudicator_name, purchase_date, amount_paid
+            FROM adjudicator_purchases
+            WHERE user_email = ?
+            ORDER BY purchase_date DESC
+        """, (current_user["email"],)).fetchall()
+        
+        # Convert the database rows to a list of dictionaries
+        return [dict(row) for row in purchases]
+        
+    except Exception as e:
+        print(f"Error fetching purchases for {current_user['email']}: {e}")
+        raise HTTPException(status_code=500, detail="Could not retrieve purchase history.")
