@@ -1408,6 +1408,8 @@ let currentAdjudicatorForPurchase = null;
 let userToken = null;
 let isSidebarLocked = true;
 
+let purchasedAdjudicators = new Set(); // Track purchased adjudicators
+
 // Stripe will be initialized after DOM loads
 let stripe = null;
 let elements = null;
@@ -1519,9 +1521,9 @@ function renderAdjudicatorsList() {
     const decisionCount = adj.totalDecisions;
     const awardRate = adj.avgAwardRate.toFixed(1) + '%';
 
-    // Logic to decide if an item's stats should be blurred
-    const isPurchased = false; // This will be dynamic later
-    const shouldBlur = isSidebarLocked && !isPurchased; 
+    // Check if THIS specific adjudicator is purchased
+    const isPurchased = purchasedAdjudicators.has(adj.name);
+    const shouldBlur = !isPurchased;
 
     const decisionHtml = shouldBlur ? `<span class="blur-value">${decisionCount}</span>` : decisionCount;
     const awardHtml = shouldBlur ? `<span class="blur-value">${awardRate}</span>` : awardRate;
@@ -1554,7 +1556,6 @@ async function selectAdjudicator(adjudicatorId) {
     console.log(`[DEBUG] Starting process for: ${selectedAdjudicator.name}`);
 
     try {
-        // --- Access Check Logic ---
         let hasAccess = false;
         const token = localStorage.getItem('purchase_token');
 
@@ -1564,54 +1565,42 @@ async function selectAdjudicator(adjudicatorId) {
             
             if (!isValid) {
                 console.log('[DEBUG] Token invalid or expired');
-                isSidebarLocked = true;
-                renderAdjudicatorsList();
-                showAdjudicatorDetail(false);
-                return;
-            }
-            
-            console.log('[DEBUG] Token valid. Fetching from /check-adjudicator-access...');
-            try {
-                const accessResponse = await fetch(`/check-adjudicator-access/${encodeURIComponent(selectedAdjudicator.name)}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+            } else {
+                console.log('[DEBUG] Token valid. Fetching from /check-adjudicator-access...');
+                try {
+                    const accessResponse = await fetch(`/check-adjudicator-access/${encodeURIComponent(selectedAdjudicator.name)}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
 
-                const accessResponseText = await accessResponse.text();
-                console.log('[DEBUG] /check-adjudicator-access STATUS:', accessResponse.status);
-                console.log('[DEBUG] /check-adjudicator-access BODY:', accessResponseText);
-
-                if (accessResponse.ok) {
-                    const accessData = JSON.parse(accessResponseText);
-                    hasAccess = accessData.hasAccess;
-                    console.log('[DEBUG] Access check successful. Has Access:', hasAccess);
-                } else {
-                    console.warn('[DEBUG] Access check response was not "ok".');
+                    if (accessResponse.ok) {
+                        const accessData = await accessResponse.json();
+                        hasAccess = accessData.hasAccess;
+                        
+                        // ADD THIS: If purchased, add to the Set
+                        if (hasAccess) {
+                            purchasedAdjudicators.add(selectedAdjudicator.name);
+                        }
+                        
+                        console.log('[DEBUG] Access check successful. Has Access:', hasAccess);
+                    }
+                } catch (e) {
+                    console.error('[DEBUG] Access check error:', e);
                 }
-            } catch (e) {
-                console.error('[DEBUG] Access check error:', e);
             }
-        } else {
-            console.log('[DEBUG] No token found. User is not logged in.');
         }
 
-        isSidebarLocked = !hasAccess;
-        renderAdjudicatorsList(); // Re-render to update selection
+        // Re-render sidebar to update blur states
+        renderAdjudicatorsList();
 
-        // --- Decisions Loading Logic ---
         console.log('[DEBUG] Fetching from /api/adjudicator...');
         const decisionsResponse = await fetch(`/api/adjudicator/${encodeURIComponent(selectedAdjudicator.name)}`);
         
-        const decisionsResponseText = await decisionsResponse.text();
-        console.log('[DEBUG] /api/adjudicator STATUS:', decisionsResponse.status);
-        console.log('[DEBUG] /api/adjudicator BODY:', decisionsResponseText);
-
         if (!decisionsResponse.ok) {
             throw new Error('Failed to fetch decisions');
         }
         
-        const decisions = JSON.parse(decisionsResponseText);
+        const decisions = await decisionsResponse.json();
         selectedAdjudicator.decisions = decisions;
-        console.log('[DEBUG] Successfully loaded and parsed decisions.');
 
         showAdjudicatorDetail(hasAccess);
 
@@ -2069,6 +2058,7 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
     }
     
     alert('Purchase successful! Access granted.');
+    purchasedAdjudicators.add(currentAdjudicatorForPurchase); // ADD THIS LINE
     closePaymentModal();
     selectAdjudicator(selectedAdjudicator.id);
     
