@@ -1995,6 +1995,64 @@ def get_current_purchase_user(token: str = Depends(oauth2_scheme)):
     return user
 # END OF CODE BLOCK TO ADD
 
+# ---------------- STRIPE & PURCHASE LOGIC ----------------
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+@app.get("/check-adjudicator-access/{adjudicator_name}")
+def check_adjudicator_access(
+    adjudicator_name: str,
+    current_user: dict = Depends(get_current_purchase_user)
+):
+    """Checks if the current user has purchased access to a specific adjudicator."""
+    try:
+        decoded_name = unquote_plus(adjudicator_name)
+        
+        # Check for purchase record in the database
+        purchase = purchases_con.execute("""
+            SELECT 1 FROM adjudicator_purchases 
+            WHERE user_email = ? AND adjudicator_name = ?
+        """, (current_user["email"], decoded_name)).fetchone()
+        
+        has_access = purchase is not None
+        return {"hasAccess": has_access}
+        
+    except Exception as e:
+        # In case of error, default to no access to be safe
+        print(f"Error checking access for {current_user['email']} to {adjudicator_name}: {e}")
+        return {"hasAccess": False}
+
+
+@app.post("/create-payment-intent")
+async def create_payment_intent(
+    adjudicator_name: str = Form(...),
+    current_user: dict = Depends(get_current_purchase_user)
+):
+    """Creates a Stripe PaymentIntent for purchasing access."""
+    try:
+        if not stripe.api_key:
+            raise HTTPException(status_code=500, detail="Stripe API key is not configured.")
+            
+        intent = stripe.PaymentIntent.create(
+            amount=5495,  # Amount in cents ($54.95)
+            currency='aud',
+            description=f"Access to Adjudicator: {adjudicator_name}",
+            metadata={
+                'user_email': current_user['email'],
+                'adjudicator_name': adjudicator_name
+            }
+        )
+        return {
+            'clientSecret': intent.client_secret,
+            'paymentIntentId': intent.id
+        }
+    except Exception as e:
+        print(f"Stripe PaymentIntent creation failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+#
+# --- The /purchase-register function starts below this line ---
+# @app.post("/purchase-register")
+# ...
 
 @app.post("/purchase-register")
 def purchase_register(
