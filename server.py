@@ -1888,7 +1888,7 @@ async def create_payment_intent(
             raise HTTPException(status_code=500, detail="Stripe API key is not configured.")
             
         intent = stripe.PaymentIntent.create(
-            amount=20,  # Amount in cents ($54.95)
+            amount=60,  # Amount in cents ($54.95)
             currency='aud',
             description=f"Access to Adjudicator: {adjudicator_name}",
             metadata={
