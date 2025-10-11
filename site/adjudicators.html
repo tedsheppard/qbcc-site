@@ -768,6 +768,330 @@
 .dark .tooltip::after {
   border-bottom-color: #1a1a1a;
 }
+
+
+  /* Paywall styles */
+.locked-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 8px;
+}
+
+.dark .locked-overlay {
+  background: rgba(20, 20, 20, 0.95);
+}
+
+.locked-content {
+  text-align: center;
+  padding: 40px;
+  max-width: 400px;
+}
+
+.locked-content h3 {
+  font-size: 20px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.dark .locked-content h3 {
+  color: #f0f0f0;
+}
+
+.locked-content p {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.dark .locked-content p {
+  color: #aaa;
+}
+
+.price-tag {
+  font-size: 32px;
+  font-weight: bold;
+  color: #00c97c;
+  margin: 20px 0;
+}
+
+.unlock-btn {
+  background: #00c97c;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.unlock-btn:hover {
+  background: #00a568;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 201, 124, 0.3);
+}
+
+.blur-stats .stats-grid,
+.blur-stats .decisions-list {
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Auth Modal */
+.auth-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.auth-modal.active {
+  display: flex;
+}
+
+.auth-modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.dark .auth-modal-content {
+  background: #1a1a1a;
+}
+
+.auth-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.dark .auth-modal-close {
+  color: #aaa;
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #eee;
+}
+
+.dark .auth-tabs {
+  border-bottom-color: #333;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+}
+
+.dark .auth-tab {
+  color: #aaa;
+}
+
+.auth-tab.active {
+  color: #00c97c;
+  border-bottom-color: #00c97c;
+  font-weight: 600;
+}
+
+.auth-form {
+  display: none;
+}
+
+.auth-form.active {
+  display: block;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #333;
+}
+
+.dark .form-group label {
+  color: #f0f0f0;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.dark .form-group input {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #fff;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 12px;
+  background: #00c97c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-submit-btn:hover {
+  background: #00a568;
+}
+
+.auth-submit-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.auth-error {
+  color: #dc3545;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* Payment Modal */
+.payment-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.payment-modal.active {
+  display: flex;
+}
+
+.payment-modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.dark .payment-modal-content {
+  background: #1a1a1a;
+}
+
+.payment-modal-header {
+  margin-bottom: 30px;
+}
+
+.payment-modal-header h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.dark .payment-modal-header h2 {
+  color: #f0f0f0;
+}
+
+.payment-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.dark .payment-modal-close {
+  color: #aaa;
+}
+
+#card-element {
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  background: white;
+}
+
+.dark #card-element {
+  border-color: #444;
+  background: #2a2a2a;
+}
+
+#card-errors {
+  color: #dc3545;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.pay-button {
+  width: 100%;
+  background: #00c97c;
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pay-button:hover {
+  background: #00a568;
+}
+
+.pay-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+  
 </style>
 </head>
 
@@ -946,29 +1270,61 @@ async function selectAdjudicator(adjudicatorId) {
 
   const rightPane = document.getElementById('rightPane');
   rightPane.className = 'right-pane';
-  rightPane.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading decisions...</div>';
+  rightPane.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading...</div>';
 
   try {
+    // Check if user has access
+    let hasAccess = false;
+    const token = localStorage.getItem('purchase_token');
+    
+    if (token) {
+      const accessResponse = await fetch(`/check-adjudicator-access/${encodeURIComponent(selectedAdjudicator.name)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (accessResponse.ok) {
+        const accessData = await accessResponse.json();
+        hasAccess = accessData.hasAccess;
+      }
+    }
+    
+    // Load decisions
     const response = await fetch(`/api/adjudicator/${encodeURIComponent(selectedAdjudicator.name)}`);
     if (!response.ok) throw new Error('Failed to fetch decisions');
     
     const decisions = await response.json();
     selectedAdjudicator.decisions = decisions;
     
-    // NOW render the detail view with the loaded decisions
-    showAdjudicatorDetail();
+    // Show detail with access control
+    showAdjudicatorDetail(hasAccess);
   } catch (error) {
     console.error('Error loading decisions:', error);
     rightPane.innerHTML = '<div class="loading">Error loading decisions. Please try again.</div>';
   }
 }
 
-function showAdjudicatorDetail() {
+function showAdjudicatorDetail(hasAccess = false) {
   const rightPane = document.getElementById('rightPane');
   rightPane.className = 'right-pane';
 
   const avgClaimAmount = selectedAdjudicator.totalClaimAmount / selectedAdjudicator.totalDecisions;
   const avgAwardedAmount = selectedAdjudicator.totalAwardedAmount / selectedAdjudicator.totalDecisions;
+
+  const lockedOverlay = !hasAccess ? `
+    <div class="locked-overlay">
+      <div class="locked-content">
+        <h3>🔒 Unlock Full Adjudicator Insights</h3>
+        <p>Get access to detailed statistics, decision patterns, and the complete history of decisions for ${sanitizeHtml(selectedAdjudicator.name)}</p>
+        <div class="price-tag">$54.95</div>
+        <p style="font-size: 14px; color: #666;">One-time payment • Lifetime access</p>
+        <button class="unlock-btn" onclick="unlockAdjudicator('${selectedAdjudicator.name.replace(/'/g, "\\'")}')">
+          Unlock Access
+        </button>
+      </div>
+    </div>
+  ` : '';
 
   rightPane.innerHTML = `
     <div class="adjudicator-detail">
@@ -977,123 +1333,128 @@ function showAdjudicatorDetail() {
         <div class="detail-subtitle">${selectedAdjudicator.totalDecisions} decisions analysed</div>
       </div>
 
-      <div class="detail-content">
+      <div class="detail-content ${!hasAccess ? 'blur-stats' : ''}" style="position: relative;">
+        ${lockedOverlay}
+        
         <div class="detail-tabs">
           <button class="tab-btn active" onclick="showTab('stats')">Statistics</button>
           <button class="tab-btn" onclick="showTab('decisions')">Decisions</button>
         </div>
 
         <!-- Statistics Tab -->
-<div id="stats-tab" class="tab-content active">
-<div class="stats-grid">
-  <div class="stat-card">
-    <span class="stat-number">${selectedAdjudicator.totalDecisions}</span>
-    <div class="stat-label">Total Decisions</div>
-    <div class="info-icon">i
-      <div class="tooltip">The total number of adjudication decisions made by this adjudicator in the database</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <span class="stat-number">${selectedAdjudicator.avgAwardRate.toFixed(1)}%</span>
-    <div class="stat-label">Avg Portion of Claim Awarded Per Decision</div>
-    <div class="info-icon">i
-      <div class="tooltip">The average percentage of the claimed amount that was awarded per decision. Calculated from each individual decision's award rate to prevent unusually large claims from skewing the average.</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <span class="stat-number">${formatCurrency(selectedAdjudicator.totalClaimAmount)}</span>
-    <div class="stat-label">Total Claimed Amount</div>
-    <div class="info-icon">i
-      <div class="tooltip">The sum of all payment claim amounts across all decisions by this adjudicator</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <span class="stat-number">${formatCurrency(selectedAdjudicator.totalAwardedAmount)}</span>
-    <div class="stat-label">Total Adjudicated Amount</div>
-    <div class="info-icon">i
-      <div class="tooltip">The sum of all amounts adjudicated (awarded) across all decisions by this adjudicator</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <span class="stat-number">${formatCurrency(avgClaimAmount)}</span>
-    <div class="stat-label">Avg Claimed Amount</div>
-    <div class="info-icon">i
-      <div class="tooltip">The average payment claim amount per decision</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <span class="stat-number">${formatCurrency(avgAwardedAmount)}</span>
-    <div class="stat-label">Avg Adjudicated Amount</div>
-    <div class="info-icon">i
-      <div class="tooltip">The average adjudicated amount per decision</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <span class="stat-number">${selectedAdjudicator.avgClaimantFeeProportion.toFixed(1)}%</span>
-    <div class="stat-label">Avg Claimant Fee Proportion</div>
-    <div class="info-icon">i
-      <div class="tooltip">The average percentage of adjudicator fees paid by the claimant across all decisions</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <span class="stat-number">${selectedAdjudicator.avgRespondentFeeProportion.toFixed(1)}%</span>
-    <div class="stat-label">Avg Respondent Fee Proportion</div>
-    <div class="info-icon">i
-      <div class="tooltip">The average percentage of adjudicator fees paid by the respondent across all decisions</div>
-    </div>
-  </div>
-  <div class="stat-card">
-   <span class="stat-number">${selectedAdjudicator.zeroAwardCount || 0}</span>
-    <div class="stat-label">$Nil Decisions</div>
-    <div class="info-icon">i
-     <div class="tooltip">The number of decisions where the adjudicator awarded $0.00 or otherwise found he or she did not have jurisdiction.</div>
-   </div>
-  </div>
-</div>
-</div>
-
-<!-- Decisions Tab -->
-<div id="decisions-tab" class="tab-content">
-  <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-    <h4 style="margin: 0;">All Decisions</h4>
-    <select id="decisionSort" onchange="sortDecisions()" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
-      <option value="date_newest">Date (Newest First)</option>
-      <option value="date_oldest">Date (Oldest First)</option>
-      <option value="az">Claimant (A-Z)</option>
-      <option value="za">Claimant (Z-A)</option>
-      <option value="claim_high">Claim Amount (Highest First)</option>
-      <option value="claim_low">Claim Amount (Lowest First)</option>
-      <option value="award_high">Adjudicated Amount (Highest First)</option>
-      <option value="award_low">Adjudicated Amount (Lowest First)</option>
-    </select>
-  </div>
-  <div id="decisionsListContainer" class="decisions-list">
-    ${selectedAdjudicator.decisions && selectedAdjudicator.decisions.length > 0 ? 
-      selectedAdjudicator.decisions.map(decision => `
-        <div class="decision-item">
-          <div class="decision-title">${sanitizeHtml(decision.title)}</div>
-          <div class="decision-meta">
-            <div><strong>Date:</strong> ${decision.date || 'Unknown'}</div>
-            <div><strong>Claim:</strong> $${Math.round(decision.claimAmount).toLocaleString()}</div>
-            <div><strong>Awarded:</strong> $${Math.round(decision.awardedAmount).toLocaleString()}</div>
-            ${(decision.claimantFeeProportion > 0 || decision.respondentFeeProportion > 0) ? `
-              <div><strong>Claimant Fee:</strong> ${decision.claimantFeeProportion > 0 ? decision.claimantFeeProportion.toFixed(1) : (100 - decision.respondentFeeProportion).toFixed(1)}%</div>
-              <div><strong>Respondent Fee:</strong> ${decision.respondentFeeProportion > 0 ? decision.respondentFeeProportion.toFixed(1) : (100 - decision.claimantFeeProportion).toFixed(1)}%</div>
-            ` : ''}
+        <div id="stats-tab" class="tab-content active">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.totalDecisions}</span>
+              <div class="stat-label">Total Decisions</div>
+              <div class="info-icon">i
+                <div class="tooltip">The total number of adjudication decisions made by this adjudicator in the database</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.avgAwardRate.toFixed(1)}%</span>
+              <div class="stat-label">Avg Portion of Claim Awarded Per Decision</div>
+              <div class="info-icon">i
+                <div class="tooltip">The average percentage of the claimed amount that was awarded per decision. Calculated from each individual decision's award rate to prevent unusually large claims from skewing the average.</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${formatCurrency(selectedAdjudicator.totalClaimAmount)}</span>
+              <div class="stat-label">Total Claimed Amount</div>
+              <div class="info-icon">i
+                <div class="tooltip">The sum of all payment claim amounts across all decisions by this adjudicator</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${formatCurrency(selectedAdjudicator.totalAwardedAmount)}</span>
+              <div class="stat-label">Total Adjudicated Amount</div>
+              <div class="info-icon">i
+                <div class="tooltip">The sum of all amounts adjudicated (awarded) across all decisions by this adjudicator</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${formatCurrency(avgClaimAmount)}</span>
+              <div class="stat-label">Avg Claimed Amount</div>
+              <div class="info-icon">i
+                <div class="tooltip">The average payment claim amount per decision</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${formatCurrency(avgAwardedAmount)}</span>
+              <div class="stat-label">Avg Adjudicated Amount</div>
+              <div class="info-icon">i
+                <div class="tooltip">The average adjudicated amount per decision</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.avgClaimantFeeProportion.toFixed(1)}%</span>
+              <div class="stat-label">Avg Claimant Fee Proportion</div>
+              <div class="info-icon">i
+                <div class="tooltip">The average percentage of adjudicator fees paid by the claimant across all decisions</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.avgRespondentFeeProportion.toFixed(1)}%</span>
+              <div class="stat-label">Avg Respondent Fee Proportion</div>
+              <div class="info-icon">i
+                <div class="tooltip">The average percentage of adjudicator fees paid by the respondent across all decisions</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.zeroAwardCount || 0}</span>
+              <div class="stat-label">$Nil Decisions</div>
+              <div class="info-icon">i
+                <div class="tooltip">The number of decisions where the adjudicator awarded $0.00 or otherwise found he or she did not have jurisdiction.</div>
+              </div>
+            </div>
           </div>
-          <div class="decision-actions">
-            ${decision.pdfPath ? 
-              `<a href="#" class="decision-link" onclick="event.preventDefault(); openDecision('${decision.id}', '${decision.pdfPath}')">Open Decision (PDF)</a>` : 
-              `<span style="color: #999;">PDF not available</span>`
+        </div>
+
+        <!-- Decisions Tab -->
+        <div id="decisions-tab" class="tab-content">
+          <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0;">All Decisions</h4>
+            <select id="decisionSort" onchange="sortDecisions()" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
+              <option value="date_newest">Date (Newest First)</option>
+              <option value="date_oldest">Date (Oldest First)</option>
+              <option value="az">Claimant (A-Z)</option>
+              <option value="za">Claimant (Z-A)</option>
+              <option value="claim_high">Claim Amount (Highest First)</option>
+              <option value="claim_low">Claim Amount (Lowest First)</option>
+              <option value="award_high">Adjudicated Amount (Highest First)</option>
+              <option value="award_low">Adjudicated Amount (Lowest First)</option>
+            </select>
+          </div>
+          <div id="decisionsListContainer" class="decisions-list">
+            ${selectedAdjudicator.decisions && selectedAdjudicator.decisions.length > 0 ? 
+              selectedAdjudicator.decisions.map(decision => `
+                <div class="decision-item">
+                  <div class="decision-title">${sanitizeHtml(decision.title)}</div>
+                  <div class="decision-meta">
+                    <div><strong>Date:</strong> ${decision.date || 'Unknown'}</div>
+                    <div><strong>Claim:</strong> $${Math.round(decision.claimAmount).toLocaleString()}</div>
+                    <div><strong>Awarded:</strong> $${Math.round(decision.awardedAmount).toLocaleString()}</div>
+                    ${(decision.claimantFeeProportion > 0 || decision.respondentFeeProportion > 0) ? `
+                      <div><strong>Claimant Fee:</strong> ${decision.claimantFeeProportion > 0 ? decision.claimantFeeProportion.toFixed(1) : (100 - decision.respondentFeeProportion).toFixed(1)}%</div>
+                      <div><strong>Respondent Fee:</strong> ${decision.respondentFeeProportion > 0 ? decision.respondentFeeProportion.toFixed(1) : (100 - decision.claimantFeeProportion).toFixed(1)}%</div>
+                    ` : ''}
+                  </div>
+                  <div class="decision-actions">
+                    ${decision.pdfPath ? 
+                      `<a href="#" class="decision-link" onclick="event.preventDefault(); openDecision('${decision.id}', '${decision.pdfPath}')">Open Decision (PDF)</a>` : 
+                      `<span style="color: #999;">PDF not available</span>`
+                    }
+                  </div>
+                </div>
+              `).join('') : 
+              '<div class="loading">No decisions found</div>'
             }
           </div>
         </div>
-      `).join('') : 
-      '<div class="loading">No decisions found</div>'
-    }
-  </div>
-</div>
-
+      </div>
+    </div>
+  `;
+}
 
         
       </div>
@@ -1281,5 +1642,332 @@ function sortDecisions() {
 
 </script>
 
+  <!-- Add Stripe -->
+<script src="https://js.stripe.com/v3/"></script>
+
+<!-- Auth Modal -->
+<div id="authModal" class="auth-modal">
+  <div class="auth-modal-content">
+    <button class="auth-modal-close" onclick="closeAuthModal()">×</button>
+    <h2 style="margin-bottom: 10px; text-align: center;">Access Required</h2>
+    <p style="text-align: center; color: #666; margin-bottom: 20px;">Create an account or login to purchase access</p>
+    
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="showAuthTab('login')">Login</button>
+      <button class="auth-tab" onclick="showAuthTab('register')">Register</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="loginForm" class="auth-form active">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" required>
+      </div>
+      <button type="submit" class="auth-submit-btn">Login</button>
+      <div id="loginError" class="auth-error"></div>
+    </form>
+
+    <!-- Register Form -->
+    <form id="registerForm" class="auth-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="registerEmail" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="registerPassword" required>
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="registerPasswordConfirm" required>
+      </div>
+      <button type="submit" class="auth-submit-btn">Create Account</button>
+      <div id="registerError" class="auth-error"></div>
+    </form>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="payment-modal">
+  <div class="payment-modal-content">
+    <button class="payment-modal-close" onclick="closePaymentModal()">×</button>
+    <div class="payment-modal-header">
+      <h2>Unlock Adjudicator Access</h2>
+      <p id="modalAdjudicatorName" style="color: #666; font-size: 16px;"></p>
+      <div class="price-tag">$54.95</div>
+      <p style="color: #666; font-size: 14px;">One-time payment • Lifetime access</p>
+    </div>
+    
+    <form id="payment-form">
+      <div id="card-element"></div>
+      <div id="card-errors" role="alert"></div>
+      <button type="submit" id="submit-payment" class="pay-button">
+        <span id="button-text">Complete Purchase</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+// Initialize Stripe
+const stripe = Stripe('YOUR_STRIPE_PUBLISHABLE_KEY'); // Replace with your actual key
+const elements = stripe.elements();
+const cardElement = elements.create('card', {
+  style: {
+    base: {
+      fontSize: '16px',
+      color: '#333',
+      '::placeholder': {
+        color: '#aaa',
+      },
+    },
+  },
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  cardElement.mount('#card-element');
+  
+  cardElement.on('change', function(event) {
+    const displayError = document.getElementById('card-errors');
+    if (event.error) {
+      displayError.textContent = event.error.message;
+    } else {
+      displayError.textContent = '';
+    }
+  });
+
+  // Setup auth forms
+  document.getElementById('loginForm').addEventListener('submit', handleLogin);
+  document.getElementById('registerForm').addEventListener('submit', handleRegister);
+});
+
+let currentAdjudicatorForPurchase = null;
+let userToken = null;
+
+// Auth Modal Functions
+function showAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+  
+  event.target.classList.add('active');
+  document.getElementById(tab + 'Form').classList.add('active');
+  
+  // Clear errors
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('registerError').textContent = '';
+}
+
+function closeAuthModal() {
+  document.getElementById('authModal').classList.remove('active');
+}
+
+function closePaymentModal() {
+  document.getElementById('paymentModal').classList.remove('active');
+  currentAdjudicatorForPurchase = null;
+}
+
+// Handle Login
+async function handleLogin(e) {
+  e.preventDefault();
+  
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const errorDiv = document.getElementById('loginError');
+  
+  try {
+    const formData = new FormData();
+    formData.append('username', email);
+    formData.append('password', password);
+    
+    const response = await fetch('/purchase-login', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Login failed');
+    }
+    
+    const data = await response.json();
+    localStorage.setItem('purchase_token', data.access_token);
+    userToken = data.access_token;
+    
+    closeAuthModal();
+    
+    // Proceed to payment
+    showPaymentModal();
+    
+  } catch (error) {
+    errorDiv.textContent = error.message;
+  }
+}
+
+// Handle Register
+async function handleRegister(e) {
+  e.preventDefault();
+  
+  const email = document.getElementById('registerEmail').value;
+  const password = document.getElementById('registerPassword').value;
+  const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+  const errorDiv = document.getElementById('registerError');
+  
+  if (password !== passwordConfirm) {
+    errorDiv.textContent = 'Passwords do not match';
+    return;
+  }
+  
+  try {
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('password', password);
+    
+    const response = await fetch('/purchase-register', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Registration failed');
+    }
+    
+    // Auto-login after registration
+    const loginFormData = new FormData();
+    loginFormData.append('username', email);
+    loginFormData.append('password', password);
+    
+    const loginResponse = await fetch('/purchase-login', {
+      method: 'POST',
+      body: loginFormData
+    });
+    
+    const loginData = await loginResponse.json();
+    localStorage.setItem('purchase_token', loginData.access_token);
+    userToken = loginData.access_token;
+    
+    closeAuthModal();
+    
+    // Proceed to payment
+    showPaymentModal();
+    
+  } catch (error) {
+    errorDiv.textContent = error.message;
+  }
+}
+
+// Check if user is authenticated
+async function checkAuthStatus() {
+  const token = localStorage.getItem('purchase_token');
+  if (token) {
+    userToken = token;
+    try {
+      const response = await fetch('/purchase-me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        return true;
+      }
+    } catch (e) {
+      console.error('Auth check failed:', e);
+    }
+  }
+  return false;
+}
+
+// Show payment modal
+function showPaymentModal() {
+  document.getElementById('modalAdjudicatorName').textContent = currentAdjudicatorForPurchase;
+  document.getElementById('paymentModal').classList.add('active');
+}
+
+// Unlock adjudicator flow
+async function unlockAdjudicator(adjudicatorName) {
+  currentAdjudicatorForPurchase = adjudicatorName;
+  
+  // Check if user is logged in
+  const isAuthenticated = await checkAuthStatus();
+  if (!isAuthenticated) {
+    document.getElementById('authModal').classList.add('active');
+    return;
+  }
+  
+  // Show payment modal
+  showPaymentModal();
+}
+
+// Handle payment form submission
+document.getElementById('payment-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const submitButton = document.getElementById('submit-payment');
+  submitButton.disabled = true;
+  submitButton.querySelector('#button-text').textContent = 'Processing...';
+  
+  try {
+    // Create payment intent
+    const intentResponse = await fetch('/create-payment-intent', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${userToken}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
+    });
+    
+    if (!intentResponse.ok) {
+      const error = await intentResponse.json();
+      throw new Error(error.error || 'Failed to create payment intent');
+    }
+    
+    const { clientSecret, paymentIntentId } = await intentResponse.json();
+    
+    // Confirm payment with Stripe
+    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: {
+        card: cardElement,
+      }
+    });
+    
+    if (error) {
+      throw new Error(error.message);
+    }
+    
+    // Confirm purchase on backend
+    const confirmResponse = await fetch('/confirm-purchase', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${userToken}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `payment_intent_id=${paymentIntentId}&adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
+    });
+    
+    if (!confirmResponse.ok) {
+      throw new Error('Failed to confirm purchase');
+    }
+    
+    // Success!
+    alert('Purchase successful! Access granted.');
+    closePaymentModal();
+    
+    // Reload the adjudicator view
+    selectAdjudicator(selectedAdjudicator.id);
+    
+  } catch (error) {
+    document.getElementById('card-errors').textContent = error.message;
+  } finally {
+    submitButton.disabled = false;
+    submitButton.querySelector('#button-text').textContent = 'Complete Purchase';
+  }
+});
+</script>
+  
 </body>
 </html>
