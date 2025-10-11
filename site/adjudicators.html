@@ -2024,10 +2024,15 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
   submitButton.querySelector('#button-text').textContent = 'Processing...';
   
   try {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) {
+      throw new Error('Not authenticated. Please log in again.');
+    }
+
     const intentResponse = await fetch('/create-payment-intent', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${userToken}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: `adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
@@ -2053,7 +2058,7 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
     const confirmResponse = await fetch('/confirm-purchase', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${userToken}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: `payment_intent_id=${paymentIntentId}&adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
