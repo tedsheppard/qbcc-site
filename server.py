@@ -151,6 +151,75 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 """)
 purchases_con.commit()
 
+
+
+
+# ---------------- LexiFile DB (separate from Sopal qbcc.db) ----------------
+LEXIFILE_DB_PATH = "/var/data/lexifile.db"
+lexi_con = sqlite3.connect(LEXIFILE_DB_PATH, check_same_thread=False)
+lexi_con.row_factory = sqlite3.Row
+
+# Create users table (LexiFile only)
+lexi_con.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    hashed_password TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+lexi_con.commit()
+
+# ---------------- Auth setup ----------------
+SECRET_KEY = os.getenv("LEXIFILE_SECRET_KEY", "dev-secret-key")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 43200 # 30 days
+
+# This is the critical fix: pointing to the correct login URL
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/purchase-login")
+
+def get_purchase_user_by_email(email: str):
+    """Fetches a user from the adjudicator purchases database by email."""
+    cur = purchases_con.execute("SELECT * FROM purchase_users WHERE email = ?", (email,))
+    row = cur.fetchone()
+    return dict(row) if row else None
+
+def get_current_purchase_user(token: str = Depends(oauth2_scheme)):
+    """Dependency to get the currently authenticated user for purchase endpoints."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token: no subject")
+    except JWTError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
+    
+    user = get_purchase_user_by_email(email)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify password using bcrypt directly"""
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+def get_password_hash(password: str) -> str:
+    """Hash password using bcrypt directly"""
+    password_bytes = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
 # Password reset request endpoint
 @app.post("/request-password-reset")
 async def request_password_reset(email: str = Form(...)):
@@ -375,72 +444,7 @@ async def verify_email(token: str = Query(...)):
         print(f"Email verification error: {e}")
         raise HTTPException(status_code=500, detail="Failed to verify email")
 
-
-# ---------------- LexiFile DB (separate from Sopal qbcc.db) ----------------
-LEXIFILE_DB_PATH = "/var/data/lexifile.db"
-lexi_con = sqlite3.connect(LEXIFILE_DB_PATH, check_same_thread=False)
-lexi_con.row_factory = sqlite3.Row
-
-# Create users table (LexiFile only)
-lexi_con.execute("""
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    hashed_password TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
-""")
-lexi_con.commit()
-
-# ---------------- Auth setup ----------------
-SECRET_KEY = os.getenv("LEXIFILE_SECRET_KEY", "dev-secret-key")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 43200 # 30 days
-
-# This is the critical fix: pointing to the correct login URL
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/purchase-login")
-
-def get_purchase_user_by_email(email: str):
-    """Fetches a user from the adjudicator purchases database by email."""
-    cur = purchases_con.execute("SELECT * FROM purchase_users WHERE email = ?", (email,))
-    row = cur.fetchone()
-    return dict(row) if row else None
-
-def get_current_purchase_user(token: str = Depends(oauth2_scheme)):
-    """Dependency to get the currently authenticated user for purchase endpoints."""
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=401, detail="Invalid token: no subject")
-    except JWTError as e:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
-    
-    user = get_purchase_user_by_email(email)
-    if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password using bcrypt directly"""
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
-
-def get_password_hash(password: str) -> str:
-    """Hash password using bcrypt directly"""
-    password_bytes = password.encode('utf-8')[:72]
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password_bytes, salt)
-    return hashed.decode('utf-8')
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
+        
 # --- CORS Middleware ---
 app.add_middleware(
     CORSMiddleware,
