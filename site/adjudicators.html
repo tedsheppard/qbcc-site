@@ -1022,7 +1022,7 @@
   /* Paywall styles */
 .locked-overlay {
   position: absolute;
-  top: 130px;
+  top: 110px;
   left: 50%;
   transform: translateX(-50%);
   background: white;
@@ -2128,6 +2128,46 @@ async function handleRegister(e) {
 // Update the event listener setup
 document.getElementById('registerForm').addEventListener('submit', handleRegister);
 </script>
+
+<script>
+// replicate account page profile-nav rendering
+document.addEventListener('DOMContentLoaded', async () => {
+  const nav = document.getElementById('user-profile-nav');
+  if (!nav) return;
+
+  const token = localStorage.getItem('purchase_token');
+  if (!token) {
+    nav.innerHTML = `<a href="/login" style="color:#00c97c;text-decoration:none;">Login Register</a>`;
+    return;
+  }
+
+  try {
+    const res = await fetch('/purchase-me', { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error('Not logged in');
+    const user = await res.json();
+    const initials = (user.first_name?.[0] || '') + (user.last_name?.[0] || '');
+    nav.innerHTML = `
+      <div class="profile-container" onclick="this.classList.toggle('active')">
+        <div class="profile-pic"><div class="initials">${initials.toUpperCase()}</div></div>
+        <div class="dropdown-menu">
+          <a href="/account.html?tab=profile">Profile Settings</a>
+          <a href="/account.html?tab=purchases">Purchase History</a>
+          <a href="/account.html?tab=payment">Payment Settings</a>
+          <button onclick="logout()">Logout</button>
+        </div>
+      </div>
+    `;
+  } catch {
+    nav.innerHTML = `<a href="/login" style="color:#00c97c;text-decoration:none;">Login Register</a>`;
+  }
+});
+
+function logout() {
+  localStorage.removeItem('purchase_token');
+  window.location.reload();
+}
+</script>
+
 <script src="/assets/js/main.js"></script>
 </body>
 </html>
