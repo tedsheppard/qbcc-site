@@ -1091,6 +1091,99 @@
   background: #ccc;
   cursor: not-allowed;
 }
+
+  /* Paywall styles */
+.locked-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  max-width: 450px;
+  width: 90%;
+}
+
+.dark .locked-overlay {
+  background: #1a1a1a;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+.locked-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.locked-content {
+  text-align: center;
+}
+
+.locked-content h3 {
+  font-size: 24px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.dark .locked-content h3 {
+  color: #f0f0f0;
+}
+
+.locked-content p {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.dark .locked-content p {
+  color: #aaa;
+}
+
+.price-tag {
+  font-size: 42px;
+  font-weight: bold;
+  color: #00c97c;
+  margin: 25px 0;
+}
+
+.unlock-btn {
+  background: #00c97c;
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.unlock-btn:hover {
+  background: #00a568;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 201, 124, 0.3);
+}
+
+/* Blur only the data values, not labels */
+.blur-stats .stat-number {
+  filter: blur(8px);
+  user-select: none;
+}
+
+.blur-stats .decision-title,
+.blur-stats .decision-meta div:not(:has(strong)) {
+  filter: blur(6px);
+  user-select: none;
+}
   
 </style>
 </head>
@@ -1895,12 +1988,13 @@ function showAdjudicatorDetail(hasAccess = false) {
   const avgAwardedAmount = selectedAdjudicator.totalAwardedAmount / selectedAdjudicator.totalDecisions;
 
   const lockedOverlay = !hasAccess ? `
+    <div class="locked-backdrop" onclick="event.stopPropagation()"></div>
     <div class="locked-overlay">
       <div class="locked-content">
         <h3>🔒 Unlock Full Adjudicator Insights</h3>
-        <p>Get access to detailed statistics, decision patterns, and the complete history of decisions for ${sanitizeHtml(selectedAdjudicator.name)}</p>
+        <p>Get access to detailed statistics, decision patterns, and the complete history of decisions for <strong>${sanitizeHtml(selectedAdjudicator.name)}</strong></p>
         <div class="price-tag">$54.95</div>
-        <p style="font-size: 14px; color: #666;">One-time payment • Lifetime access</p>
+        <p style="font-size: 14px; margin-bottom: 25px;">One-time payment • Lifetime access</p>
         <button class="unlock-btn" onclick="unlockAdjudicator('${selectedAdjudicator.name.replace(/'/g, "\\'")}')">
           Unlock Access
         </button>
@@ -1915,7 +2009,7 @@ function showAdjudicatorDetail(hasAccess = false) {
         <div class="detail-subtitle">${selectedAdjudicator.totalDecisions} decisions analysed</div>
       </div>
 
-      <div class="detail-content ${!hasAccess ? 'blur-stats' : ''}" style="position: relative;">
+      <div class="detail-content ${!hasAccess ? 'blur-stats' : ''}">
         ${lockedOverlay}
         
         <div class="detail-tabs">
@@ -2013,12 +2107,12 @@ function showAdjudicatorDetail(hasAccess = false) {
                 <div class="decision-item">
                   <div class="decision-title">${sanitizeHtml(decision.title)}</div>
                   <div class="decision-meta">
-                    <div><strong>Date:</strong> ${decision.date || 'Unknown'}</div>
-                    <div><strong>Claim:</strong> $${Math.round(decision.claimAmount).toLocaleString()}</div>
-                    <div><strong>Awarded:</strong> $${Math.round(decision.awardedAmount).toLocaleString()}</div>
+                    <div><strong>Date:</strong> <span>${decision.date || 'Unknown'}</span></div>
+                    <div><strong>Claim:</strong> <span>$${Math.round(decision.claimAmount).toLocaleString()}</span></div>
+                    <div><strong>Awarded:</strong> <span>$${Math.round(decision.awardedAmount).toLocaleString()}</span></div>
                     ${(decision.claimantFeeProportion > 0 || decision.respondentFeeProportion > 0) ? `
-                      <div><strong>Claimant Fee:</strong> ${decision.claimantFeeProportion > 0 ? decision.claimantFeeProportion.toFixed(1) : (100 - decision.respondentFeeProportion).toFixed(1)}%</div>
-                      <div><strong>Respondent Fee:</strong> ${decision.respondentFeeProportion > 0 ? decision.respondentFeeProportion.toFixed(1) : (100 - decision.claimantFeeProportion).toFixed(1)}%</div>
+                      <div><strong>Claimant Fee:</strong> <span>${decision.claimantFeeProportion > 0 ? decision.claimantFeeProportion.toFixed(1) : (100 - decision.respondentFeeProportion).toFixed(1)}%</span></div>
+                      <div><strong>Respondent Fee:</strong> <span>${decision.respondentFeeProportion > 0 ? decision.respondentFeeProportion.toFixed(1) : (100 - decision.claimantFeeProportion).toFixed(1)}%</span></div>
                     ` : ''}
                   </div>
                   <div class="decision-actions">
