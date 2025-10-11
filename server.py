@@ -22,6 +22,7 @@ import zipstream
 import pytesseract
 from PIL import Image
 import stripe
+import secrets
 
 
 def get_gcs_client():
@@ -135,6 +136,244 @@ CREATE TABLE IF NOT EXISTS adjudicator_purchases (
 )
 """)
 purchases_con.commit()
+
+# Create password reset tokens table
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+purchases_con.commit()
+
+# Password reset request endpoint
+@app.post("/request-password-reset")
+async def request_password_reset(email: str = Form(...)):
+    """Generates a password reset token and sends email"""
+    try:
+        # Check if user exists
+        user = purchases_con.execute(
+            "SELECT email FROM purchase_users WHERE email = ?", (email,)
+        ).fetchone()
+        
+        if not user:
+            # Don't reveal if email exists for security
+            return {"msg": "If that email exists, a reset link has been sent"}
+        
+        # Generate secure token
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.utcnow() + timedelta(hours=1)
+        
+        # Store token
+        purchases_con.execute("""
+            INSERT INTO password_reset_tokens (email, token, expires_at)
+            VALUES (?, ?, ?)
+        """, (email, token, expires_at))
+        purchases_con.commit()
+        
+        # Send email with reset link
+        reset_link = f"https://yourdomain.com/reset-password?token={token}"
+        
+        msg = EmailMessage()
+        msg["From"] = "sopal.aus@gmail.com"
+        msg["To"] = email
+        msg["Subject"] = "Password Reset - Sopal"
+        msg.set_content(f"""
+Hello,
+
+You requested a password reset for your Sopal account.
+
+Click the link below to reset your password (valid for 1 hour):
+{reset_link}
+
+If you didn't request this, please ignore this email.
+
+Best regards,
+The Sopal Team
+        """)
+        
+        await aiosmtplib.send(
+            msg,
+            hostname="smtp.gmail.com",
+            port=587,
+            start_tls=True,
+            username="sopal.aus@gmail.com",
+            password=os.getenv("SMTP_PASSWORD"),
+        )
+        
+        return {"msg": "If that email exists, a reset link has been sent"}
+        
+    except Exception as e:
+        print(f"Password reset request error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process request")
+
+
+@app.post("/reset-password")
+async def reset_password(
+    token: str = Form(...),
+    new_password: str = Form(...)
+):
+    """Resets password using valid token"""
+    try:
+        # Verify token
+        token_record = purchases_con.execute("""
+            SELECT email, expires_at, used 
+            FROM password_reset_tokens 
+            WHERE token = ?
+        """, (token,)).fetchone()
+        
+        if not token_record:
+            raise HTTPException(status_code=400, detail="Invalid token")
+        
+        if token_record['used']:
+            raise HTTPException(status_code=400, detail="Token already used")
+        
+        expires_at = datetime.fromisoformat(token_record['expires_at'])
+        if datetime.utcnow() > expires_at:
+            raise HTTPException(status_code=400, detail="Token expired")
+        
+        # Update password
+        hashed_password = get_password_hash(new_password)
+        purchases_con.execute("""
+            UPDATE purchase_users 
+            SET hashed_password = ? 
+            WHERE email = ?
+        """, (hashed_password, token_record['email']))
+        
+        # Mark token as used
+        purchases_con.execute("""
+            UPDATE password_reset_tokens 
+            SET used = 1 
+            WHERE token = ?
+        """, (token,))
+        
+        purchases_con.commit()
+        
+        return {"msg": "Password reset successful"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Password reset error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to reset password")
+
+
+# Create email verification tokens table
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+# Add email_verified column to users table if it doesn't exist
+# This handles existing databases that might already have the column
+try:
+    purchases_cur.execute("""
+    ALTER TABLE purchase_users ADD COLUMN email_verified BOOLEAN DEFAULT 0
+    """)
+    purchases_con.commit()
+    print("Added email_verified column to purchase_users table")
+except sqlite3.OperationalError as e:
+    # Column already exists, ignore the error
+    if "duplicate column name" in str(e).lower():
+        print("email_verified column already exists - skipping")
+    else:
+        print(f"Note: Could not add email_verified column: {e}")
+
+
+@app.post("/send-verification-email")
+async def send_verification_email(current_user: dict = Depends(get_current_purchase_user)):
+    """Sends email verification link"""
+    try:
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.utcnow() + timedelta(hours=24)
+        
+        purchases_con.execute("""
+            INSERT INTO email_verification_tokens (email, token, expires_at)
+            VALUES (?, ?, ?)
+        """, (current_user['email'], token, expires_at))
+        purchases_con.commit()
+        
+        verify_link = f"https://yourdomain.com/verify-email?token={token}"
+        
+        msg = EmailMessage()
+        msg["From"] = "sopal.aus@gmail.com"
+        msg["To"] = current_user['email']
+        msg["Subject"] = "Verify Your Email - Sopal"
+        msg.set_content(f"""
+Hello {current_user['first_name']},
+
+Please verify your email address by clicking the link below:
+{verify_link}
+
+This link will expire in 24 hours.
+
+Best regards,
+The Sopal Team
+        """)
+        
+        await aiosmtplib.send(
+            msg,
+            hostname="smtp.gmail.com",
+            port=587,
+            start_tls=True,
+            username="sopal.aus@gmail.com",
+            password=os.getenv("SMTP_PASSWORD"),
+        )
+        
+        return {"msg": "Verification email sent"}
+        
+    except Exception as e:
+        print(f"Send verification error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send verification email")
+
+
+@app.get("/verify-email")
+async def verify_email(token: str = Query(...)):
+    """Verifies email using token"""
+    try:
+        token_record = purchases_con.execute("""
+            SELECT email, expires_at 
+            FROM email_verification_tokens 
+            WHERE token = ?
+        """, (token,)).fetchone()
+        
+        if not token_record:
+            raise HTTPException(status_code=400, detail="Invalid token")
+        
+        expires_at = datetime.fromisoformat(token_record['expires_at'])
+        if datetime.utcnow() > expires_at:
+            raise HTTPException(status_code=400, detail="Token expired")
+        
+        purchases_con.execute("""
+            UPDATE purchase_users 
+            SET email_verified = 1 
+            WHERE email = ?
+        """, (token_record['email'],))
+        
+        purchases_con.execute("""
+            DELETE FROM email_verification_tokens 
+            WHERE token = ?
+        """, (token,))
+        
+        purchases_con.commit()
+        
+        return {"msg": "Email verified successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Email verification error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to verify email")
+
 
 # ---------------- LexiFile DB (separate from Sopal qbcc.db) ----------------
 LEXIFILE_DB_PATH = "/var/data/lexifile.db"
@@ -1661,7 +1900,38 @@ async def create_payment_intent(
         print(f"Stripe PaymentIntent creation failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-#
+
+@app.post("/confirm-purchase")
+async def confirm_purchase(
+    payment_intent_id: str = Form(...),
+    adjudicator_name: str = Form(...),
+    current_user: dict = Depends(get_current_purchase_user)
+):
+    """Confirms and records a purchase after successful Stripe payment"""
+    try:
+        # Verify the payment intent with Stripe
+        intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        
+        if intent.status != 'succeeded':
+            raise HTTPException(status_code=400, detail="Payment not completed")
+        
+        # Record the purchase in the database
+        purchases_con.execute("""
+            INSERT OR IGNORE INTO adjudicator_purchases 
+            (user_email, adjudicator_name, stripe_payment_intent_id, amount_paid)
+            VALUES (?, ?, ?, ?)
+        """, (current_user['email'], adjudicator_name, payment_intent_id, 54.95))
+        purchases_con.commit()
+        
+        return {"msg": "Purchase confirmed", "adjudicator_name": adjudicator_name}
+        
+    except stripe.error.StripeError as e:
+        print(f"Stripe error: {e}")
+        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
+    except Exception as e:
+        print(f"Purchase confirmation error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to confirm purchase")
+        
 # ... surrounding code ...
 @app.post("/purchase-register")
 def purchase_register(
@@ -1726,6 +1996,7 @@ def purchase_login(form_data: OAuth2PasswordRequestForm = Depends()):
 # ... surrounding code ...
 
 
+# Replace the existing /purchase-me endpoint with this:
 @app.get("/purchase-me")
 def read_purchase_user_me(current_user: dict = Depends(get_current_purchase_user)):
     """Get current purchase user info including company details"""
@@ -1742,7 +2013,8 @@ def read_purchase_user_me(current_user: dict = Depends(get_current_purchase_user
         "employee_size": current_user["employee_size"],
         "phone": current_user["phone"],
         "created_at": current_user["created_at"],
-        "last_login": current_user.get("last_login")
+        "last_login": current_user.get("last_login"),
+        "email_verified": current_user.get("email_verified", 0)
     }
 
 
@@ -1797,7 +2069,85 @@ def get_my_purchases(current_user: dict = Depends(get_current_purchase_user)):
         print(f"Error fetching purchases for {current_user['email']}: {e}")
         raise HTTPException(status_code=500, detail="Could not retrieve purchase history.")
 
-# --- Add these two new routes ---
+@app.get("/payment-methods")
+async def get_payment_methods(current_user: dict = Depends(get_current_purchase_user)):
+    """Get user's saved payment methods from Stripe"""
+    try:
+        # Get or create Stripe customer
+        customers = stripe.Customer.list(email=current_user['email'], limit=1)
+        
+        if customers.data:
+            customer = customers.data[0]
+        else:
+            # Create new customer if doesn't exist
+            customer = stripe.Customer.create(
+                email=current_user['email'],
+                name=f"{current_user['first_name']} {current_user['last_name']}"
+            )
+        
+        # Get payment methods
+        payment_methods = stripe.PaymentMethod.list(
+            customer=customer.id,
+            type='card'
+        )
+        
+        return {
+            "customer_id": customer.id,
+            "payment_methods": [
+                {
+                    "id": pm.id,
+                    "brand": pm.card.brand,
+                    "last4": pm.card.last4,
+                    "exp_month": pm.card.exp_month,
+                    "exp_year": pm.card.exp_year
+                } for pm in payment_methods.data
+            ]
+        }
+        
+    except Exception as e:
+        print(f"Error fetching payment methods: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch payment methods")
+
+
+@app.post("/setup-intent")
+async def create_setup_intent(current_user: dict = Depends(get_current_purchase_user)):
+    """Creates a Stripe SetupIntent for adding payment methods"""
+    try:
+        customers = stripe.Customer.list(email=current_user['email'], limit=1)
+        
+        if customers.data:
+            customer = customers.data[0]
+        else:
+            customer = stripe.Customer.create(
+                email=current_user['email'],
+                name=f"{current_user['first_name']} {current_user['last_name']}"
+            )
+        
+        intent = stripe.SetupIntent.create(
+            customer=customer.id,
+            payment_method_types=['card']
+        )
+        
+        return {"client_secret": intent.client_secret}
+        
+    except Exception as e:
+        print(f"Error creating setup intent: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.delete("/payment-method/{payment_method_id}")
+async def delete_payment_method(
+    payment_method_id: str,
+    current_user: dict = Depends(get_current_purchase_user)
+):
+    """Deletes a saved payment method"""
+    try:
+        stripe.PaymentMethod.detach(payment_method_id)
+        return {"msg": "Payment method removed"}
+    except Exception as e:
+        print(f"Error deleting payment method: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 @app.get("/login")
 def get_login_page():

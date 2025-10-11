@@ -1544,7 +1544,6 @@ function renderAdjudicatorsList() {
   `}).join('');
 }
 
-
 async function selectAdjudicator(adjudicatorId) {
     selectedAdjudicator = allAdjudicators.find(adj => adj.id === adjudicatorId);
     if (!selectedAdjudicator) return;
@@ -1560,21 +1559,36 @@ async function selectAdjudicator(adjudicatorId) {
         const token = localStorage.getItem('purchase_token');
 
         if (token) {
-            console.log('[DEBUG] Token found. Fetching from /check-adjudicator-access...');
-            const accessResponse = await fetch(`/check-adjudicator-access/${encodeURIComponent(selectedAdjudicator.name)}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            console.log('[DEBUG] Token found. Checking if valid...');
+            const isValid = await refreshTokenIfNeeded();
+            
+            if (!isValid) {
+                console.log('[DEBUG] Token invalid or expired');
+                isSidebarLocked = true;
+                renderAdjudicatorsList();
+                showAdjudicatorDetail(false);
+                return;
+            }
+            
+            console.log('[DEBUG] Token valid. Fetching from /check-adjudicator-access...');
+            try {
+                const accessResponse = await fetch(`/check-adjudicator-access/${encodeURIComponent(selectedAdjudicator.name)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
 
-            const accessResponseText = await accessResponse.text(); // Get response as raw text first
-            console.log('[DEBUG] /check-adjudicator-access STATUS:', accessResponse.status);
-            console.log('[DEBUG] /check-adjudicator-access BODY:', accessResponseText);
+                const accessResponseText = await accessResponse.text();
+                console.log('[DEBUG] /check-adjudicator-access STATUS:', accessResponse.status);
+                console.log('[DEBUG] /check-adjudicator-access BODY:', accessResponseText);
 
-            if (accessResponse.ok) {
-                const accessData = JSON.parse(accessResponseText); // Now parse the text
-                hasAccess = accessData.hasAccess;
-                console.log('[DEBUG] Access check successful. Has Access:', hasAccess);
-            } else {
-                console.warn('[DEBUG] Access check response was not "ok".');
+                if (accessResponse.ok) {
+                    const accessData = JSON.parse(accessResponseText);
+                    hasAccess = accessData.hasAccess;
+                    console.log('[DEBUG] Access check successful. Has Access:', hasAccess);
+                } else {
+                    console.warn('[DEBUG] Access check response was not "ok".');
+                }
+            } catch (e) {
+                console.error('[DEBUG] Access check error:', e);
             }
         } else {
             console.log('[DEBUG] No token found. User is not logged in.');
@@ -1587,7 +1601,7 @@ async function selectAdjudicator(adjudicatorId) {
         console.log('[DEBUG] Fetching from /api/adjudicator...');
         const decisionsResponse = await fetch(`/api/adjudicator/${encodeURIComponent(selectedAdjudicator.name)}`);
         
-        const decisionsResponseText = await decisionsResponse.text(); // Get response as raw text
+        const decisionsResponseText = await decisionsResponse.text();
         console.log('[DEBUG] /api/adjudicator STATUS:', decisionsResponse.status);
         console.log('[DEBUG] /api/adjudicator BODY:', decisionsResponseText);
 
@@ -1595,7 +1609,7 @@ async function selectAdjudicator(adjudicatorId) {
             throw new Error('Failed to fetch decisions');
         }
         
-        const decisions = JSON.parse(decisionsResponseText); // Now parse the text
+        const decisions = JSON.parse(decisionsResponseText);
         selectedAdjudicator.decisions = decisions;
         console.log('[DEBUG] Successfully loaded and parsed decisions.');
 
@@ -1957,6 +1971,29 @@ async function checkAuthStatus() {
     }
   }
   return false;
+}
+
+// Add this after the checkAuthStatus function
+async function refreshTokenIfNeeded() {
+  const token = localStorage.getItem('purchase_token');
+  if (!token) return false;
+
+  try {
+    const response = await fetch('/purchase-me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (response.status === 401) {
+      // Token expired, remove it
+      localStorage.removeItem('purchase_token');
+      userToken = null;
+      return false;
+    }
+    
+    return response.ok;
+  } catch (e) {
+    return false;
+  }
 }
 
 function showPaymentModal() {

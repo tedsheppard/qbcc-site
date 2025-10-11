@@ -399,6 +399,18 @@
 
 <main>
     <h1>My Account</h1>
+<!-- Email Verification Banner -->
+<div id="emailVerificationBanner" style="display: none; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <strong>⚠️ Email Not Verified</strong>
+      <p style="margin: 5px 0 0 0; color: #856404;">Please verify your email address to access all features.</p>
+    </div>
+    <button onclick="resendVerificationEmail()" class="btn btn-secondary" id="resendBtn">Resend Email</button>
+  </div>
+</div>
+
+<div class="account-container">
     <div class="account-container">
         <!-- Navigation Tabs -->
         <aside class="account-nav">
@@ -743,6 +755,58 @@ document.addEventListener('DOMContentLoaded', () => {
         initializePage();
     }
 });
+
+// Add this function in the account.html script section
+async function resendVerificationEmail() {
+  const btn = document.getElementById('resendBtn');
+  const token = localStorage.getItem('purchase_token');
+  
+  if (!token) return;
+  
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  
+  try {
+    const response = await fetch('/send-verification-email', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (response.ok) {
+      alert('Verification email sent! Please check your inbox.');
+    } else {
+      alert('Failed to send verification email. Please try again later.');
+    }
+  } catch (e) {
+    alert('Network error. Please try again later.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Resend Email';
+  }
+}
+
+// Add this to the initializePage function to show banner if not verified
+async function initializePage() {
+    await loadProfileData();
+    loadPurchaseHistory();
+    
+    // Check email verification status
+    const token = localStorage.getItem('purchase_token');
+    if (token) {
+        const res = await fetch('/purchase-me', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (res.ok) {
+            const user = await res.json();
+            if (!user.email_verified) {
+                document.getElementById('emailVerificationBanner').style.display = 'block';
+            }
+        }
+    }
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab') || 'profile';
+    const targetButton = document.querySelector(`.nav-btn[data-target="${tab}-section"]`);
+    if (targetButton) setTimeout(() => targetButton.click(), 0);
+}
 </script>
 
 <script src="/assets/js/main.js"></script>
