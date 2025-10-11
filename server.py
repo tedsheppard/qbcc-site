@@ -23,8 +23,30 @@ from PIL import Image
 import stripe
 import secrets
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from fastapi import Depends  
+from fastapi import Depends  # Add this if not already imported
 
+# ---------------- ENHANCED AUTH ENDPOINTS ----------------
+def get_purchase_user_by_email(email: str):
+    """Fetches a user from the adjudicator purchases database by email."""
+    cur = purchases_con.execute("SELECT * FROM purchase_users WHERE email = ?", (email,))
+    row = cur.fetchone()
+    return dict(row) if row else None
+
+def get_current_purchase_user(token: str = Depends(oauth2_scheme)):
+    """Dependency to get the currently authenticated user for purchase endpoints."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token: no subject")
+    except JWTError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
+    
+    user = get_purchase_user_by_email(email)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+# END OF CODE BLOCK TO ADD
 
 def get_gcs_client():
     """
@@ -1823,29 +1845,7 @@ async def download_db():
 
 
 
-# ---------------- ENHANCED AUTH ENDPOINTS ----------------
 
-def get_purchase_user_by_email(email: str):
-    """Fetches a user from the adjudicator purchases database by email."""
-    cur = purchases_con.execute("SELECT * FROM purchase_users WHERE email = ?", (email,))
-    row = cur.fetchone()
-    return dict(row) if row else None
-
-def get_current_purchase_user(token: str = Depends(oauth2_scheme)):
-    """Dependency to get the currently authenticated user for purchase endpoints."""
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=401, detail="Invalid token: no subject")
-    except JWTError as e:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
-    
-    user = get_purchase_user_by_email(email)
-    if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
-# END OF CODE BLOCK TO ADD
 
 # ---------------- STRIPE & PURCHASE LOGIC ----------------
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
