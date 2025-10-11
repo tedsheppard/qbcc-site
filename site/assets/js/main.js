@@ -3,15 +3,17 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function updateNavUI() {
+    console.log("updateNavUI: Running UI update check...");
     const navContainer = document.getElementById('user-profile-nav');
     if (!navContainer) {
-        console.error("Navigation container with id 'user-profile-nav' not found.");
+        console.error("updateNavUI: Navigation container 'user-profile-nav' not found.");
         return; 
     }
 
     const token = localStorage.getItem('purchase_token');
 
     if (token) {
+        console.log("updateNavUI: Token found. Fetching user data.");
         try {
             const res = await fetch('/purchase-me', { headers: { 'Authorization': `Bearer ${token}` } });
             if (!res.ok) throw new Error('Not authenticated');
@@ -41,11 +43,10 @@ async function updateNavUI() {
             const dropdown = document.getElementById('nav-dropdown');
 
             avatar.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevents the window click event from firing immediately
+                e.stopPropagation();
                 dropdown.classList.toggle('show');
             });
             
-            // Close dropdown if clicking outside of it
             window.addEventListener('click', function(e) {
                 if (dropdown.classList.contains('show') && !navContainer.contains(e.target)) {
                     dropdown.classList.remove('show');
@@ -53,11 +54,11 @@ async function updateNavUI() {
             });
 
         } catch (e) {
-            console.error("Auth error in nav:", e);
-            handleLogout(e, null, false); // Log out silently if token is bad
+            console.error("updateNavUI: Auth error:", e);
+            handleLogout(e, null, false);
         }
     } else {
-        // Logged out state
+        console.log("updateNavUI: No token found. Displaying Login/Register link.");
         navContainer.innerHTML = `
             <a href="/adjudicators" id="login-link" style="text-decoration: none; color: #008a5c; font-weight: 600;">Login / Register</a>
         `;
@@ -65,7 +66,6 @@ async function updateNavUI() {
 }
 
 function handleLogout(e, userEmail, showAlert = true) {
-    // FIX: Check if 'e' is a real event object before calling preventDefault
     if (e && typeof e.preventDefault === 'function') {
         e.preventDefault();
     }
