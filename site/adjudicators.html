@@ -1516,48 +1516,67 @@ function renderAdjudicatorsList() {
 
 
 async function selectAdjudicator(adjudicatorId) {
-  selectedAdjudicator = allAdjudicators.find(adj => adj.id === adjudicatorId);
-  if (!selectedAdjudicator) return;
+    selectedAdjudicator = allAdjudicators.find(adj => adj.id === adjudicatorId);
+    if (!selectedAdjudicator) return;
 
-  const rightPane = document.getElementById('rightPane');
-  rightPane.className = 'right-pane';
-  rightPane.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading...</div>';
-
-  try {
-    // Check if user has access
-    let hasAccess = false;
-    const token = localStorage.getItem('purchase_token');
+    const rightPane = document.getElementById('rightPane');
+    rightPane.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading...</div>';
     
-    if (token) {
-      const accessResponse = await fetch(`/check-adjudicator-access/${encodeURIComponent(selectedAdjudicator.name)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+    console.log(`[DEBUG] Starting process for: ${selectedAdjudicator.name}`);
+
+    try {
+        // --- Access Check Logic ---
+        let hasAccess = false;
+        const token = localStorage.getItem('purchase_token');
+
+        if (token) {
+            console.log('[DEBUG] Token found. Fetching from /check-adjudicator-access...');
+            const accessResponse = await fetch(`/check-adjudicator-access/${encodeURIComponent(selectedAdjudicator.name)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const accessResponseText = await accessResponse.text(); // Get response as raw text first
+            console.log('[DEBUG] /check-adjudicator-access STATUS:', accessResponse.status);
+            console.log('[DEBUG] /check-adjudicator-access BODY:', accessResponseText);
+
+            if (accessResponse.ok) {
+                const accessData = JSON.parse(accessResponseText); // Now parse the text
+                hasAccess = accessData.hasAccess;
+                console.log('[DEBUG] Access check successful. Has Access:', hasAccess);
+            } else {
+                console.warn('[DEBUG] Access check response was not "ok".');
+            }
+        } else {
+            console.log('[DEBUG] No token found. User is not logged in.');
         }
-      });
-      
-      if (accessResponse.ok) {
-        const accessData = await accessResponse.json();
-        hasAccess = accessData.hasAccess;
-      }
-    }
 
-    isSidebarLocked = !hasAccess; 
-    renderAdjudicatorsList(); // Re-render to update selection
-    
-    // Load decisions
-    const response = await fetch(`/api/adjudicator/${encodeURIComponent(selectedAdjudicator.name)}`);
-    if (!response.ok) throw new Error('Failed to fetch decisions');
-    
-    const decisions = await response.json();
-    selectedAdjudicator.decisions = decisions;
-    
-    // Show detail with access control
-    showAdjudicatorDetail(hasAccess);
-  } catch (error) {
-    console.error('Error loading decisions:', error);
-    rightPane.innerHTML = '<div class="loading">Error loading decisions. Please try again.</div>';
-  }
+        isSidebarLocked = !hasAccess;
+        renderAdjudicatorsList(); // Re-render to update selection
+
+        // --- Decisions Loading Logic ---
+        console.log('[DEBUG] Fetching from /api/adjudicator...');
+        const decisionsResponse = await fetch(`/api/adjudicator/${encodeURIComponent(selectedAdjudicator.name)}`);
+        
+        const decisionsResponseText = await decisionsResponse.text(); // Get response as raw text
+        console.log('[DEBUG] /api/adjudicator STATUS:', decisionsResponse.status);
+        console.log('[DEBUG] /api/adjudicator BODY:', decisionsResponseText);
+
+        if (!decisionsResponse.ok) {
+            throw new Error('Failed to fetch decisions');
+        }
+        
+        const decisions = JSON.parse(decisionsResponseText); // Now parse the text
+        selectedAdjudicator.decisions = decisions;
+        console.log('[DEBUG] Successfully loaded and parsed decisions.');
+
+        showAdjudicatorDetail(hasAccess);
+
+    } catch (error) {
+        console.error('CRITICAL ERROR in selectAdjudicator:', error);
+        rightPane.innerHTML = '<div class="loading">Error loading decisions. Please try again.</div>';
+    }
 }
+
 
 function showAdjudicatorDetail(hasAccess = false) {
   const rightPane = document.getElementById('rightPane');
