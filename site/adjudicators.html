@@ -1105,6 +1105,45 @@
   user-select: none;
   pointer-events: none;
 }
+
+  .form-group small {
+  display: block;
+  margin-top: 4px;
+}
+
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+  background-color: white;
+}
+
+.dark .form-group select {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #fff;
+}
+
+.auth-form::-webkit-scrollbar {
+  width: 8px;
+}
+
+.auth-form::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.auth-form::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.auth-form::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
   
 </style>
 </head>
@@ -1188,9 +1227,9 @@
   <!-- Add Stripe -->
 <script src="https://js.stripe.com/v3/"></script>
 
-<!-- Auth Modal -->
+<!-- Enhanced Auth Modal -->
 <div id="authModal" class="auth-modal">
-  <div class="auth-modal-content">
+  <div class="auth-modal-content" style="max-width: 600px;">
     <button class="auth-modal-close" onclick="closeAuthModal()">×</button>
     <h2 style="margin-bottom: 10px; text-align: center;">Access Required</h2>
     <p style="text-align: center; color: #666; margin-bottom: 20px;">Create an account or login to purchase access</p>
@@ -1214,20 +1253,96 @@
       <div id="loginError" class="auth-error"></div>
     </form>
 
-    <!-- Register Form -->
-    <form id="registerForm" class="auth-form">
+    <!-- Enhanced Register Form -->
+    <form id="registerForm" class="auth-form" style="max-height: 500px; overflow-y: auto; padding-right: 10px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label>First Name *</label>
+          <input type="text" id="registerFirstName" required>
+        </div>
+        <div class="form-group">
+          <label>Last Name *</label>
+          <input type="text" id="registerLastName" required>
+        </div>
+      </div>
+      
       <div class="form-group">
-        <label>Email</label>
+        <label>Email *</label>
         <input type="email" id="registerEmail" required>
       </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="registerPassword" required>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label>Password *</label>
+          <input type="password" id="registerPassword" required minlength="8">
+        </div>
+        <div class="form-group">
+          <label>Confirm Password *</label>
+          <input type="password" id="registerPasswordConfirm" required>
+        </div>
       </div>
+
       <div class="form-group">
-        <label>Confirm Password</label>
-        <input type="password" id="registerPasswordConfirm" required>
+        <label>Firm/Company Name *</label>
+        <input type="text" id="registerFirmName" required>
       </div>
+
+      <div class="form-group">
+        <label>ABN *</label>
+        <input type="text" id="registerABN" required pattern="[0-9\s]{11,14}" placeholder="11 digit ABN">
+        <small style="color: #666; font-size: 12px;">Enter 11 digits (spaces optional)</small>
+      </div>
+
+      <div class="form-group">
+        <label>Billing Address *</label>
+        <input type="text" id="registerBillingAddress" required placeholder="Street address">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label>City *</label>
+          <input type="text" id="registerBillingCity" required>
+        </div>
+        <div class="form-group">
+          <label>State *</label>
+          <select id="registerBillingState" required>
+            <option value="">Select</option>
+            <option value="QLD">QLD</option>
+            <option value="NSW">NSW</option>
+            <option value="VIC">VIC</option>
+            <option value="SA">SA</option>
+            <option value="WA">WA</option>
+            <option value="TAS">TAS</option>
+            <option value="NT">NT</option>
+            <option value="ACT">ACT</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Postcode *</label>
+          <input type="text" id="registerBillingPostcode" required pattern="[0-9]{4}" placeholder="4000">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="tel" id="registerPhone" placeholder="Optional">
+      </div>
+
+      <div class="form-group">
+        <label>Company Size *</label>
+        <select id="registerEmployeeSize" required>
+          <option value="">Select company size</option>
+          <option value="1-5">1-5 employees</option>
+          <option value="6-10">6-10 employees</option>
+          <option value="11-25">11-25 employees</option>
+          <option value="26-50">26-50 employees</option>
+          <option value="51-100">51-100 employees</option>
+          <option value="101-250">101-250 employees</option>
+          <option value="251-500">251-500 employees</option>
+          <option value="500+">500+ employees</option>
+        </select>
+      </div>
+
       <button type="submit" class="auth-submit-btn">Create Account</button>
       <div id="registerError" class="auth-error"></div>
     </form>
@@ -1242,7 +1357,7 @@
       <h2>Unlock Adjudicator Access</h2>
       <p id="modalAdjudicatorName" style="color: #666; font-size: 16px;"></p>
       <div class="price-tag">$54.95</div>
-      <p style="color: #666; font-size: 14px;">One-time payment • Lifetime access</p>
+      <p style="color: #666; font-size: 14px;">One-time payment • Permanent access</p>
     </div>
     
     <form id="payment-form">
@@ -1888,6 +2003,93 @@ function formatCurrency(amount) {
   }
   return '$' + Math.round(amount).toLocaleString();
 }
+
+  // Enhanced registration handler
+async function handleRegister(e) {
+  e.preventDefault();
+  
+  const email = document.getElementById('registerEmail').value;
+  const password = document.getElementById('registerPassword').value;
+  const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+  const firstName = document.getElementById('registerFirstName').value;
+  const lastName = document.getElementById('registerLastName').value;
+  const firmName = document.getElementById('registerFirmName').value;
+  const abn = document.getElementById('registerABN').value;
+  const billingAddress = document.getElementById('registerBillingAddress').value;
+  const billingCity = document.getElementById('registerBillingCity').value;
+  const billingState = document.getElementById('registerBillingState').value;
+  const billingPostcode = document.getElementById('registerBillingPostcode').value;
+  const employeeSize = document.getElementById('registerEmployeeSize').value;
+  const phone = document.getElementById('registerPhone').value;
+  const errorDiv = document.getElementById('registerError');
+  
+  // Validation
+  if (password !== passwordConfirm) {
+    errorDiv.textContent = 'Passwords do not match';
+    return;
+  }
+  
+  if (password.length < 8) {
+    errorDiv.textContent = 'Password must be at least 8 characters';
+    return;
+  }
+  
+  // Clean ABN
+  const abnCleaned = abn.replace(/\s/g, '');
+  if (abnCleaned.length !== 11 || !/^\d+$/.test(abnCleaned)) {
+    errorDiv.textContent = 'ABN must be exactly 11 digits';
+    return;
+  }
+  
+  try {
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('password', password);
+    formData.append('first_name', firstName);
+    formData.append('last_name', lastName);
+    formData.append('firm_name', firmName);
+    formData.append('abn', abnCleaned);
+    formData.append('billing_address', billingAddress);
+    formData.append('billing_city', billingCity);
+    formData.append('billing_state', billingState);
+    formData.append('billing_postcode', billingPostcode);
+    formData.append('employee_size', employeeSize);
+    formData.append('phone', phone);
+    
+    const response = await fetch('/purchase-register', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Registration failed');
+    }
+    
+    // Auto-login after successful registration
+    const loginFormData = new FormData();
+    loginFormData.append('username', email);
+    loginFormData.append('password', password);
+    
+    const loginResponse = await fetch('/purchase-login', {
+      method: 'POST',
+      body: loginFormData
+    });
+    
+    const loginData = await loginResponse.json();
+    localStorage.setItem('purchase_token', loginData.access_token);
+    userToken = loginData.access_token;
+    
+    closeAuthModal();
+    showPaymentModal();
+    
+  } catch (error) {
+    errorDiv.textContent = error.message;
+  }
+}
+
+// Update the event listener setup
+document.getElementById('registerForm').addEventListener('submit', handleRegister);
 </script>
   
 </body>
