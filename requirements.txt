@@ -20,3 +20,4 @@ passlib[bcrypt]
 python-jose[cryptography]
 numpy<2.0
 chromadb==0.5.3
+stripe==7.0.0
