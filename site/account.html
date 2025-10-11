@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Sopal — My Account</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+  /* Base styles matching main site */
+  body {
+    font-family: Inter, sans-serif;
+    margin: 0;
+    background: #f8f9fa;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Header */
+  .header {
+    background: #fdfdfd;
+    padding: 20px 25px;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-content {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .logo {
+    height: 31px;
+    margin-right: 20px;
+  }
+  .nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+  }
+  .nav-links a {
+    color: black;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover {
+    color: #00c97c;
+  }
+  .nav-links a.active {
+    color: #008a5c;
+    font-weight: 600;
+  }
+  #user-profile-nav {
+      margin-left: 20px;
+      white-space: nowrap;
+      font-size: 14px;
+  }
+  #user-profile-nav a {
+      text-decoration: none;
+      color: #333;
+      margin-right: 15px;
+      transition: color 0.2s;
+  }
+   #user-profile-nav a:hover {
+      color: #00c97c;
+  }
+  #user-profile-nav a#logout-link,
+  #user-profile-nav a#login-link {
+      color: #008a5c;
+      font-weight: 600;
+  }
+
+
+  /* Main content */
+  main {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 25px;
+  }
+
+  h1 {
+    font-size: 28px;
+    margin-bottom: 30px;
+  }
+  h2 {
+      font-size: 22px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 25px;
+  }
+
+  /* Account page specific styles */
+  .account-container {
+      display: flex;
+      gap: 30px;
+  }
+  .account-nav {
+      flex: 0 0 200px;
+  }
+  .account-nav .nav-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 12px 15px;
+      border: none;
+      background: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      margin-bottom: 5px;
+      transition: all 0.2s;
+  }
+   .account-nav .nav-btn:hover {
+      background-color: #f0f0f0;
+  }
+  .account-nav .nav-btn.active {
+      background-color: #e8f8f1;
+      color: #008a5c;
+      font-weight: 600;
+  }
+  .account-content {
+      flex: 1;
+  }
+  .account-section {
+    display: none; /* Hidden by default */
+  }
+  .account-section.active {
+    display: block; /* Shown when active */
+  }
+  .card {
+    background: #fdfdfd;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 30px;
+  }
+
+  /* Form Styles */
+  .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+  }
+  .form-group {
+      margin-bottom: 15px;
+  }
+  .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #555;
+  }
+  .form-group input, .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: #00c97c;
+  }
+  .btn {
+      background: #00c97c;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: background-color 0.2s;
+      margin-top: 10px;
+  }
+  .btn:hover {
+      background: #00a568;
+  }
+  .feedback-message {
+      margin-top: 15px;
+      padding: 10px 15px;
+      border-radius: 6px;
+      display: none;
+  }
+  .feedback-message.success {
+      background-color: #e8f8f1;
+      color: #008a5c;
+      display: block;
+  }
+
+  /* Purchase History Table */
+  .purchase-history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+  }
+  .purchase-history-table th,
+  .purchase-history-table td {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+  }
+  .purchase-history-table th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      color: #666;
+  }
+  .purchase-history-table td {
+      font-size: 14px;
+  }
+  .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #777;
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    .account-container {
+        flex-direction: column;
+    }
+    .account-nav {
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    .account-nav .nav-btn {
+        flex-grow: 1;
+    }
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    .header-content {
+      flex-direction: column;
+      gap: 16px;
+    }
+    .nav-links {
+      margin: 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  }
+</style>
+</head>
+
+<body>
+<!-- Header -->
+<div class="header">
+  <div class="header-content">
+    <a href="/">
+      <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Search</a>
+      <a href="adjudicators">Adjudicators</a>
+      <a href="interest-calculator">Interest Calculator</a>
+      <a href="due-date-calculator">Due Date Calculator</a>
+      <a href="how-to">How-To Guide</a>
+      <a href="feedback">Feedback</a>
+    </div>
+    <div id="user-profile-nav">
+        <!-- This will be populated by JavaScript -->
+    </div>
+  </div>
+</div>
+
+<main>
+    <h1>My Account</h1>
+    <div class="account-container">
+        <!-- Navigation Tabs -->
+        <aside class="account-nav">
+            <button class="nav-btn active" data-target="profile-section">Profile Settings</button>
+            <button class="nav-btn" data-target="purchases-section">Purchase History</button>
+        </aside>
+
+        <!-- Content Sections -->
+        <div class="account-content">
+            <!-- Profile Settings Section -->
+            <section id="profile-section" class="account-section active">
+                <div class="card">
+                    <h2>Profile Information</h2>
+                    <form id="profile-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="firstName">First Name</label>
+                                <input type="text" id="firstName" name="first_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lastName">Last Name</label>
+                                <input type="text" id="lastName" name="last_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="firmName">Firm/Company Name</label>
+                                <input type="text" id="firmName" name="firm_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="abn">ABN</label>
+                                <input type="text" id="abn" name="abn" required>
+                            </div>
+                             <div class="form-group">
+                                <label for="phone">Phone</label>
+                                <input type="tel" id="phone" name="phone">
+                            </div>
+                             <div class="form-group">
+                                <label for="employeeSize">Company Size</label>
+                                <select id="employeeSize" name="employee_size" required>
+                                  <option value="">Select company size</option>
+                                  <option value="1-5">1-5 employees</option>
+                                  <option value="6-10">6-10 employees</option>
+                                  <option value="11-25">11-25 employees</option>
+                                  <option value="26-50">26-50 employees</option>
+                                  <option value="51-100">51-100 employees</option>
+                                  <option value="101-250">101-250 employees</option>
+                                  <option value="251-500">251-500 employees</option>
+                                  <option value="500+">500+ employees</option>
+                                </select>
+                            </div>
+                        </div>
+                        <h3 style="margin-top: 30px; font-size: 18px;">Billing Address</h3>
+                         <div class="form-group">
+                            <label for="billingAddress">Street Address</label>
+                            <input type="text" id="billingAddress" name="billing_address" required>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="billingCity">City</label>
+                                <input type="text" id="billingCity" name="billing_city" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="billingState">State</label>
+                                <select id="billingState" name="billing_state" required>
+                                    <option value="">Select</option>
+                                    <option value="QLD">QLD</option>
+                                    <option value="NSW">NSW</option>
+                                    <option value="VIC">VIC</option>
+                                    <option value="SA">SA</option>
+                                    <option value="WA">WA</option>
+                                    <option value="TAS">TAS</option>
+                                    <option value="NT">NT</option>
+                                    <option value="ACT">ACT</option>
+                                </select>
+                            </div>
+                             <div class="form-group">
+                                <label for="billingPostcode">Postcode</label>
+                                <input type="text" id="billingPostcode" name="billing_postcode" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn">Save Changes</button>
+                        <div id="feedback-message" class="feedback-message"></div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Purchase History Section -->
+            <section id="purchases-section" class="account-section">
+                <div class="card">
+                    <h2>Purchase History</h2>
+                    <table class="purchase-history-table">
+                        <thead>
+                            <tr>
+                                <th>Adjudicator Name</th>
+                                <th>Date of Purchase</th>
+                                <th>Amount Paid</th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchase-history-body">
+                            <!-- Rows will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<script>
+// --- GLOBAL NAVIGATION SCRIPT ---
+document.addEventListener('DOMContentLoaded', function() {
+    updateNavUI();
+});
+
+function updateNavUI() {
+    const navContainer = document.getElementById('user-profile-nav');
+    const token = localStorage.getItem('purchase_token');
+
+    if (token) {
+        navContainer.innerHTML = `
+            <a href="/account">My Account</a>
+            <a href="#" id="logout-link">Logout</a>
+        `;
+        document.getElementById('logout-link').addEventListener('click', handleLogout);
+    } else {
+        navContainer.innerHTML = `
+            <a href="/adjudicators" id="login-link">Login / Register</a>
+        `;
+    }
+}
+
+function handleLogout(e) {
+    e.preventDefault();
+    localStorage.removeItem('purchase_token');
+    alert('You have been logged out.');
+    window.location.href = '/';
+}
+
+
+// --- ACCOUNT PAGE SPECIFIC SCRIPT ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Only run this logic on the account page
+    if (document.querySelector('.account-container')) {
+        const token = localStorage.getItem('purchase_token');
+        if (!token) {
+            window.location.href = '/'; // Redirect if not logged in
+            return;
+        }
+
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        // --- Tab Navigation ---
+        const navButtons = document.querySelectorAll('.account-nav .nav-btn');
+        const sections = document.querySelectorAll('.account-section');
+
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Update button styles
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // Show the correct section
+                const targetId = button.getAttribute('data-target');
+                sections.forEach(section => {
+                    if (section.id === targetId) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+            });
+        });
+
+        // --- Fetch and Populate Data ---
+        function populateProfileForm() {
+            fetch('/purchase-me', { headers })
+                .then(res => {
+                    if (!res.ok) throw new Error('Could not fetch user data.');
+                    return res.json();
+                })
+                .then(user => {
+                    document.getElementById('firstName').value = user.first_name || '';
+                    document.getElementById('lastName').value = user.last_name || '';
+                    document.getElementById('firmName').value = user.firm_name || '';
+                    document.getElementById('abn').value = user.abn || '';
+                    document.getElementById('phone').value = user.phone || '';
+                    document.getElementById('employeeSize').value = user.employee_size || '';
+                    document.getElementById('billingAddress').value = user.billing_address || '';
+                    document.getElementById('billingCity').value = user.billing_city || '';
+                    document.getElementById('billingState').value = user.billing_state || '';
+                    document.getElementById('billingPostcode').value = user.billing_postcode || '';
+                })
+                .catch(error => console.error("Error populating profile:", error));
+        }
+
+        function populatePurchaseHistory() {
+            fetch('/my-purchases', { headers })
+                .then(res => {
+                    if (!res.ok) throw new Error('Could not fetch purchase history.');
+                    return res.json();
+                })
+                .then(purchases => {
+                    const historyBody = document.getElementById('purchase-history-body');
+                    const containerCard = historyBody.closest('.card');
+
+                    if (purchases.length === 0) {
+                        containerCard.innerHTML = '<h2>Purchase History</h2><div class="empty-state">You have not made any purchases yet.</div>';
+                        return;
+                    }
+                    historyBody.innerHTML = purchases.map(p => `
+                        <tr>
+                            <td>${p.adjudicator_name}</td>
+                            <td>${new Date(p.purchase_date).toLocaleDateString('en-AU')}</td>
+                            <td>$${p.amount_paid.toFixed(2)}</td>
+                        </tr>
+                    `).join('');
+                })
+                .catch(error => {
+                    const historyBody = document.getElementById('purchase-history-body');
+                    historyBody.innerHTML = '<tr><td colspan="3">Could not load purchase history.</td></tr>';
+                    console.error("Error populating purchases:", error);
+                });
+        }
+
+        // --- Handle Profile Form Submission ---
+        document.getElementById('profile-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const feedbackDiv = document.getElementById('feedback-message');
+            
+            fetch('/update-profile', { method: 'PUT', headers, body: formData })
+                .then(res => {
+                    if (res.ok) {
+                        feedbackDiv.textContent = 'Profile updated successfully!';
+                        feedbackDiv.className = 'feedback-message success';
+                        setTimeout(() => feedbackDiv.style.display = 'none', 3000);
+                    } else {
+                        throw new Error('Failed to update profile.');
+                    }
+                })
+                .catch(error => {
+                    feedbackDiv.textContent = 'An error occurred. Please try again.';
+                    feedbackDiv.className = 'feedback-message error'; // You can add an .error style for red background
+                    console.error('Update profile error:', error);
+                });
+        });
+        
+        // Initial data load
+        populateProfileForm();
+        populatePurchaseHistory();
+    }
+});
+</script>
+</body>
+</html>
