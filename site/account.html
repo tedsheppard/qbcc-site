@@ -300,6 +300,11 @@
       color: #008a5c;
       display: block;
   }
+   .feedback-message.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      display: block;
+  }
 
   /* Purchase History Table */
   .purchase-history-table {
@@ -512,6 +517,7 @@
                             <!-- Rows will be populated here -->
                         </tbody>
                     </table>
+                     <div id="no-purchases" class="empty-state" style="display: none;">You have not made any purchases yet.</div>
                 </div>
             </section>
 
@@ -531,15 +537,13 @@
 </main>
 
 <script>
-
-
 // --- ACCOUNT PAGE SPECIFIC SCRIPT ---
 document.addEventListener('DOMContentLoaded', () => {
     // This script only runs on the account page
     if (document.querySelector('.account-container')) { 
         const token = localStorage.getItem('purchase_token');
         if (!token) {
-            window.location.href = '/'; // Redirect if not logged in
+            window.location.href = '/login'; // Redirect if not logged in
             return;
         }
 
@@ -548,7 +552,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let userEmail = '';
 
         // --- DOM Element References ---
-        const formElements = document.querySelectorAll('#profile-form input, #profile-form select');
+        const form = document.getElementById('profile-form');
+        const formElements = form.querySelectorAll('input, select');
         const editBtn = document.getElementById('edit-profile-btn');
         const saveBtn = document.getElementById('save-profile-btn');
         const cancelBtn = document.getElementById('cancel-edit-btn');
@@ -608,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
             originalProfileData = user; // Store for cancellation
             userEmail = user.email;
 
-            // Populate all form fields
+            // **FIX**: Manually map server data keys to form input IDs
             document.getElementById('firstName').value = user.first_name || '';
             document.getElementById('lastName').value = user.last_name || '';
             document.getElementById('firmName').value = user.firm_name || '';
@@ -626,12 +631,17 @@ document.addEventListener('DOMContentLoaded', () => {
         async function loadProfileData() {
             try {
                 const res = await fetch('/purchase-me', { headers });
-                if (!res.ok) throw new Error('Could not fetch user data.');
+                if (!res.ok) {
+                   // This is the critical point. If the server rejects the token, log out.
+                   console.error("Auth token was rejected by server. Status:", res.status);
+                   throw new Error('Could not fetch user data.');
+                }
                 const user = await res.json();
                 populateProfileForm(user);
             } catch (error) {
-                console.error("Error loading profile:", error);
-                // Maybe show an error message to the user
+                console.error("Error loading profile, redirecting to login:", error);
+                localStorage.removeItem('purchase_token');
+                window.location.href = '/login';
             }
         }
 
@@ -640,15 +650,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(res => res.ok ? res.json() : Promise.reject('Could not fetch purchase history.'))
                 .then(purchases => {
                     const historyBody = document.getElementById('purchase-history-body');
-                    const containerCard = historyBody.closest('.card');
+                    const noPurchasesEl = document.getElementById('no-purchases');
                     if (purchases.length === 0) {
-                        containerCard.innerHTML = '<h2>Purchase History</h2><div class="empty-state">You have not made any purchases yet.</div>';
+                        historyBody.innerHTML = '';
+                        noPurchasesEl.style.display = 'block';
                     } else {
+                        noPurchasesEl.style.display = 'none';
                         historyBody.innerHTML = purchases.map(p => `
                             <tr>
                                 <td>${p.adjudicator_name}</td>
                                 <td>${new Date(p.purchase_date).toLocaleDateString('en-AU')}</td>
-                                <td>$${p.amount_paid.toFixed(2)}</td>
+                                <td>$${parseFloat(p.amount_paid).toFixed(2)}</td>
                             </tr>
                         `).join('');
                     }
@@ -660,26 +672,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- Event Handlers ---
-        document.getElementById('profile-form').addEventListener('submit', (e) => {
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const formData = new FormData(e.target);
+            const formData = new FormData(form);
             const feedbackDiv = document.getElementById('feedback-message');
+            feedbackDiv.className = 'feedback-message'; // Reset classes
             
+            // **FIX**: Use method 'PUT' to match server endpoint
             fetch('/update-profile', { method: 'PUT', headers, body: formData })
-                .then(res => {
+                .then(async res => {
                     if (res.ok) {
-                        feedbackDiv.textContent = 'Profile updated successfully!';
-                        feedbackDiv.className = 'feedback-message success';
-                        setTimeout(() => feedbackDiv.style.display = 'none', 3000);
-                        toggleEditMode(false);
-                        loadProfileData(); // Reload data to update originalProfileData
-                        updateNavUI(); // Update nav bar with new initials if name changed
-                    } else {
-                        throw new Error('Failed to update profile.');
+                        return res.json();
                     }
+                    const errorData = await res.json();
+                    throw new Error(errorData.detail || 'Failed to update profile.');
+                })
+                .then(data => {
+                    feedbackDiv.textContent = data.msg || 'Profile updated successfully!';
+                    feedbackDiv.className = 'feedback-message success';
+                    setTimeout(() => { feedbackDiv.style.display = 'none'; feedbackDiv.textContent = ''; }, 3000);
+                    toggleEditMode(false);
+                    loadProfileData(); // Reload data to update originalProfileData
+                    if (window.updateNavUI) window.updateNavUI(); // Update nav bar if main.js is loaded
                 })
                 .catch(error => {
-                    feedbackDiv.textContent = 'An error occurred. Please try again.';
+                    feedbackDiv.textContent = error.message;
                     feedbackDiv.className = 'feedback-message error';
                     console.error('Update profile error:', error);
                 });
@@ -692,7 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const base64Image = event.target.result;
                     localStorage.setItem(`profile_pic_${userEmail}`, base64Image);
                     pfpDisplay.innerHTML = `<img src="${base64Image}" alt="Profile Preview">`;
-                    updateNavUI();
+                    if (window.updateNavUI) window.updateNavUI();
                 }
                 reader.readAsDataURL(e.target.files[0]);
             }
@@ -705,10 +722,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Handle deep linking to tabs from URL
             const urlParams = new URLSearchParams(window.location.search);
-            const tab = urlParams.get('tab') || 'profile'; // Default to profile
+            const tab = urlParams.get('tab') || 'profile';
             const targetButton = document.querySelector(`.nav-btn[data-target="${tab}-section"]`);
             if (targetButton) {
-                 // Defer click to ensure all elements are ready
                 setTimeout(() => targetButton.click(), 0);
             }
         }
