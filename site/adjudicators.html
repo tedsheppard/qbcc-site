@@ -1855,6 +1855,8 @@ async function handleLogin(e) {
     userToken = data.access_token;
     
     closeAuthModal();
+        // MANUALLY UPDATE THE NAV BAR
+    updateNavUI();
     showPaymentModal();
     
   } catch (error) {
