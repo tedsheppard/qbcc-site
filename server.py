@@ -1564,203 +1564,6 @@ async def create_project(projectName: str = Form(...), clientName: str = Form(..
 async def download_db():
     return FileResponse("/tmp/qbcc.db", filename="qbcc.db")
 
-# ---------------- ADJUDICATOR PURCHASES DB (separate from everything else) ----------------
-PURCHASES_DB_PATH = "/tmp/adjudicator_purchases.db"
-purchases_con = sqlite3.connect(PURCHASES_DB_PATH, check_same_thread=False)
-purchases_con.row_factory = sqlite3.Row
-
-# Create users table for adjudicator purchases only
-purchases_con.execute("""
-CREATE TABLE IF NOT EXISTS purchase_users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    hashed_password TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
-""")
-
-# Create purchases tracking table
-purchases_con.execute("""
-CREATE TABLE IF NOT EXISTS adjudicator_purchases (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_email TEXT NOT NULL,
-    adjudicator_name TEXT NOT NULL,
-    purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    stripe_payment_intent_id TEXT,
-    amount_paid REAL DEFAULT 54.95,
-    UNIQUE(user_email, adjudicator_name)
-)
-""")
-purchases_con.commit()
-
-# Stripe setup
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-
-# Auth functions for purchases system (separate from LexiFile)
-def get_purchase_user_by_email(email: str):
-    cur = purchases_con.execute("SELECT * FROM purchase_users WHERE email = ?", (email,))
-    row = cur.fetchone()
-    return dict(row) if row else None
-
-def get_current_purchase_user(token: str = Depends(oauth2_scheme)):
-    """Get current user for purchase system (not LexiFile)"""
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
-    user = get_purchase_user_by_email(email)
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
-
-# ---------------- ADJUDICATOR PURCHASE AUTH ENDPOINTS ----------------
-
-@app.post("/purchase-register")
-def purchase_register(email: str = Form(...), password: str = Form(...)):
-    """Register for adjudicator purchases (separate from LexiFile)"""
-    try:
-        hashed_password = get_password_hash(password)
-        purchases_con.execute(
-            "INSERT INTO purchase_users (email, hashed_password) VALUES (?, ?)",
-            (email, hashed_password)
-        )
-        purchases_con.commit()
-        return {"msg": "Registration successful"}
-    except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    except Exception as e:
-        print(f"Registration error: {e}")
-        raise HTTPException(status_code=500, detail="Registration failed")
-
-
-@app.post("/purchase-login")
-def purchase_login(form_data: OAuth2PasswordRequestForm = Depends()):
-    """Login for adjudicator purchases (separate from LexiFile)"""
-    user = get_purchase_user_by_email(form_data.username)
-    if not user or not verify_password(form_data.password, user["hashed_password"]):
-        raise HTTPException(status_code=401, detail="Incorrect email or password")
-    
-    access_token = create_access_token(
-        data={"sub": user["email"]},
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-
-@app.get("/purchase-me")
-def read_purchase_user_me(current_user: dict = Depends(get_current_purchase_user)):
-    """Get current purchase user info"""
-    return {"email": current_user["email"], "created_at": current_user["created_at"]}
-
-# ---------------- ADJUDICATOR PURCHASE PAYMENT ENDPOINTS ----------------
-
-@app.post("/create-payment-intent")
-async def create_payment_intent(
-    adjudicator_name: str = Form(...),
-    current_user: dict = Depends(get_current_purchase_user)
-):
-    """Create a Stripe payment intent for purchasing adjudicator access"""
-    try:
-        # Check if user already has access
-        existing = purchases_con.execute(
-            "SELECT * FROM adjudicator_purchases WHERE user_email = ? AND adjudicator_name = ?",
-            (current_user["email"], adjudicator_name)
-        ).fetchone()
-        
-        if existing:
-            return JSONResponse(
-                {"error": "You already have access to this adjudicator"},
-                status_code=400
-            )
-        
-        # Create payment intent
-        intent = stripe.PaymentIntent.create(
-            amount=5495,  # $54.95 in cents
-            currency="aud",
-            metadata={
-                "user_email": current_user["email"],
-                "adjudicator_name": adjudicator_name
-            }
-        )
-        
-        return {
-            "clientSecret": intent.client_secret,
-            "paymentIntentId": intent.id
-        }
-        
-    except Exception as e:
-        print(f"Error creating payment intent: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/confirm-purchase")
-async def confirm_purchase(
-    payment_intent_id: str = Form(...),
-    adjudicator_name: str = Form(...),
-    current_user: dict = Depends(get_current_purchase_user)
-):
-    """Confirm purchase and grant access after successful payment"""
-    try:
-        # Verify payment with Stripe
-        intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-        
-        if intent.status != "succeeded":
-            raise HTTPException(status_code=400, detail="Payment not successful")
-        
-        # Record purchase
-        purchases_con.execute("""
-            INSERT OR IGNORE INTO adjudicator_purchases 
-            (user_email, adjudicator_name, stripe_payment_intent_id, amount_paid)
-            VALUES (?, ?, ?, ?)
-        """, (current_user["email"], adjudicator_name, payment_intent_id, 54.95))
-        purchases_con.commit()
-        
-        return {"success": True, "message": "Access granted!"}
-        
-    except Exception as e:
-        print(f"Error confirming purchase: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/check-adjudicator-access/{adjudicator_name}")
-async def check_adjudicator_access(
-    adjudicator_name: str,
-    current_user: dict = Depends(get_current_purchase_user)
-):
-    """Check if user has purchased access to a specific adjudicator"""
-    try:
-        purchase = purchases_con.execute(
-            "SELECT * FROM adjudicator_purchases WHERE user_email = ? AND adjudicator_name = ?",
-            (current_user["email"], adjudicator_name)
-        ).fetchone()
-        
-        return {"hasAccess": purchase is not None}
-        
-    except Exception as e:
-        print(f"Error checking access: {e}")
-        return {"hasAccess": False}
-
-
-@app.get("/my-adjudicator-purchases")
-async def get_my_adjudicator_purchases(current_user: dict = Depends(get_current_purchase_user)):
-    """Get list of adjudicators the user has purchased"""
-    try:
-        purchases = purchases_con.execute(
-            "SELECT adjudicator_name, purchase_date, amount_paid FROM adjudicator_purchases WHERE user_email = ?",
-            (current_user["email"],)
-        ).fetchall()
-        
-        return [dict(p) for p in purchases]
-        
-    except Exception as e:
-        print(f"Error fetching purchases: {e}")
-        return []
-
 
 
 
@@ -2121,3 +1924,170 @@ async def ai_research(payload: dict = Body(...)):
 # --- END: AI RESEARCH (RAG) FUNCTIONALITY (RENDER-COMPATIBLE) ---
 # -------------------------------------------------------------------
 
+# Add these updates to your server.py
+
+# ---------------- ENHANCED ADJUDICATOR PURCHASES DB ----------------
+PURCHASES_DB_PATH = "/var/data/adjudicator_purchases.db"  # Changed to /var/data for persistence
+purchases_con = sqlite3.connect(PURCHASES_DB_PATH, check_same_thread=False)
+purchases_con.row_factory = sqlite3.Row
+
+# Create enhanced users table with company details
+purchases_con.execute("""
+CREATE TABLE IF NOT EXISTS purchase_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    hashed_password TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    firm_name TEXT NOT NULL,
+    abn TEXT NOT NULL,
+    billing_address TEXT NOT NULL,
+    billing_city TEXT NOT NULL,
+    billing_state TEXT NOT NULL,
+    billing_postcode TEXT NOT NULL,
+    employee_size TEXT NOT NULL,
+    phone TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP
+)
+""")
+
+# Keep existing purchases table
+purchases_con.execute("""
+CREATE TABLE IF NOT EXISTS adjudicator_purchases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT NOT NULL,
+    adjudicator_name TEXT NOT NULL,
+    purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    stripe_payment_intent_id TEXT,
+    amount_paid REAL DEFAULT 54.95,
+    UNIQUE(user_email, adjudicator_name)
+)
+""")
+purchases_con.commit()
+
+# ---------------- ENHANCED AUTH ENDPOINTS ----------------
+
+@app.post("/purchase-register")
+def purchase_register(
+    email: str = Form(...),
+    password: str = Form(...),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    firm_name: str = Form(...),
+    abn: str = Form(...),
+    billing_address: str = Form(...),
+    billing_city: str = Form(...),
+    billing_state: str = Form(...),
+    billing_postcode: str = Form(...),
+    employee_size: str = Form(...),
+    phone: str = Form("")
+):
+    """Enhanced registration with company details"""
+    try:
+        # Validate ABN format (basic check - 11 digits)
+        abn_cleaned = ''.join(filter(str.isdigit, abn))
+        if len(abn_cleaned) != 11:
+            raise HTTPException(status_code=400, detail="ABN must be 11 digits")
+        
+        # Validate Australian postcode (4 digits)
+        if not billing_postcode.isdigit() or len(billing_postcode) != 4:
+            raise HTTPException(status_code=400, detail="Invalid Australian postcode")
+        
+        hashed_password = get_password_hash(password)
+        
+        purchases_con.execute("""
+            INSERT INTO purchase_users (
+                email, hashed_password, first_name, last_name, 
+                firm_name, abn, billing_address, billing_city, 
+                billing_state, billing_postcode, employee_size, phone
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            email, hashed_password, first_name, last_name,
+            firm_name, abn, billing_address, billing_city,
+            billing_state, billing_postcode, employee_size, phone
+        ))
+        purchases_con.commit()
+        
+        return {"msg": "Registration successful"}
+        
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    except Exception as e:
+        print(f"Registration error: {e}")
+        raise HTTPException(status_code=500, detail="Registration failed")
+
+
+@app.post("/purchase-login")
+def purchase_login(form_data: OAuth2PasswordRequestForm = Depends()):
+    """Enhanced login with last_login tracking"""
+    user = get_purchase_user_by_email(form_data.username)
+    if not user or not verify_password(form_data.password, user["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    
+    # Update last login time
+    purchases_con.execute(
+        "UPDATE purchase_users SET last_login = CURRENT_TIMESTAMP WHERE email = ?",
+        (user["email"],)
+    )
+    purchases_con.commit()
+    
+    access_token = create_access_token(
+        data={"sub": user["email"]},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@app.get("/purchase-me")
+def read_purchase_user_me(current_user: dict = Depends(get_current_purchase_user)):
+    """Get current purchase user info including company details"""
+    return {
+        "email": current_user["email"],
+        "first_name": current_user["first_name"],
+        "last_name": current_user["last_name"],
+        "firm_name": current_user["firm_name"],
+        "abn": current_user["abn"],
+        "billing_address": current_user["billing_address"],
+        "billing_city": current_user["billing_city"],
+        "billing_state": current_user["billing_state"],
+        "billing_postcode": current_user["billing_postcode"],
+        "employee_size": current_user["employee_size"],
+        "phone": current_user["phone"],
+        "created_at": current_user["created_at"],
+        "last_login": current_user.get("last_login")
+    }
+
+
+@app.put("/update-profile")
+def update_profile(
+    current_user: dict = Depends(get_current_purchase_user),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    firm_name: str = Form(...),
+    abn: str = Form(...),
+    billing_address: str = Form(...),
+    billing_city: str = Form(...),
+    billing_state: str = Form(...),
+    billing_postcode: str = Form(...),
+    employee_size: str = Form(...),
+    phone: str = Form("")
+):
+    """Update user profile information"""
+    try:
+        purchases_con.execute("""
+            UPDATE purchase_users SET
+                first_name = ?, last_name = ?, firm_name = ?,
+                abn = ?, billing_address = ?, billing_city = ?,
+                billing_state = ?, billing_postcode = ?, employee_size = ?, phone = ?
+            WHERE email = ?
+        """, (
+            first_name, last_name, firm_name, abn, billing_address,
+            billing_city, billing_state, billing_postcode, employee_size,
+            phone, current_user["email"]
+        ))
+        purchases_con.commit()
+        return {"msg": "Profile updated successfully"}
+    except Exception as e:
+        print(f"Profile update error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update profile")
