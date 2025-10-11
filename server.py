@@ -1968,6 +1968,29 @@ purchases_con.commit()
 
 # ---------------- ENHANCED AUTH ENDPOINTS ----------------
 
+def get_purchase_user_by_email(email: str):
+    """Fetches a user from the adjudicator purchases database by email."""
+    cur = purchases_con.execute("SELECT * FROM purchase_users WHERE email = ?", (email,))
+    row = cur.fetchone()
+    return dict(row) if row else None
+
+def get_current_purchase_user(token: str = Depends(oauth2_scheme)):
+    """Dependency to get the currently authenticated user for purchase endpoints."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token: no subject")
+    except JWTError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
+    
+    user = get_purchase_user_by_email(email)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+# END OF CODE BLOCK TO ADD
+
+
 @app.post("/purchase-register")
 def purchase_register(
     email: str = Form(...),
