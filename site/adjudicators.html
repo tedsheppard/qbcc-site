@@ -13,7 +13,7 @@
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
   <meta charset="utf-8">
-  <title>Sopal – Adjudicators</title>
+  <title>Sopal — Adjudicators</title>
   <meta name="description" content="Explore adjudicator insights, decision statistics, and AI-powered insights to understand decision-making patterns under Queensland's BIF Act.">
   <meta name="keywords" content="adjudicators, BIF Act, Queensland, construction adjudication, decision analysis, legal insights">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -112,33 +112,32 @@
     min-height: 70vh;
   }
 
-  .left-pane {
-    flex: 0 0 400px;
-    max-width: 400px;
-    display: flex;
-    flex-direction: column;
-    max-height: calc(100vh - 200px);
-  }
+.left-pane {
+  flex: 0 0 400px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 200px); /* Adjust 200px based on your header/margins */
+}
 
-  .adjudicator-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
-    flex: 1;
-  }
+.adjudicator-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+}
 
-  .right-pane {
-    flex: 1;
-    background: #fdfdfd;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    max-height: calc(100vh - 200px);
-    position: relative; /* CHANGED: Added for absolute positioning of overlay */
-  }
+.right-pane {
+  flex: 1;
+  background: #fdfdfd;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 200px); /* Match left pane */
+}
 
   .right-pane.empty {
     display: flex;
@@ -201,6 +200,12 @@
   }
 
   /* Adjudicator list */
+  .adjudicator-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   .adjudicator-item {
     background: #fdfdfd;
     border: 1px solid #ddd;
@@ -270,12 +275,13 @@
     font-size: 14px;
   }
 
-  .detail-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    overflow-x: visible;
-  }
+.detail-content {
+  position: relative; /* Added for overlay positioning */
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  overflow-x: visible; /* Add this - allows horizontal overflow for tooltips */
+}
 
   .detail-tabs {
     display: flex;
@@ -313,17 +319,15 @@
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 15px;
     margin-bottom: 25px;
-    overflow: visible;
   }
 
-  .stat-card {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 15px;
-    text-align: center;
-    position: relative;
-    overflow: visible;
-  }
+ .stat-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  position: relative;
+}
 
   .stat-number {
     font-size: 24px;
@@ -353,12 +357,12 @@
   }
 
   /* Decisions list */
-  .decisions-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-height: none;
-  }
+.decisions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: none; /* Remove any max-height constraint */
+}
 
   .decision-item {
     background: #f8f9fa;
@@ -500,338 +504,6 @@
     100% { transform: rotate(360deg); }
   }
 
-  /* Info icon and tooltip */
-  .info-icon {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 16px;
-    height: 16px;
-    background: #2f4c42;
-    color: white;
-    border-radius: 50%;
-    font-size: 11px;
-    font-weight: bold;
-    line-height: 16px;
-    text-align: center;
-    cursor: pointer;
-    font-family: Arial, sans-serif;
-  }
-
-  .info-icon:hover .tooltip {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .tooltip {
-    position: absolute;
-    top: 25px;
-    left: -75px;
-    background: #333;
-    color: white;
-    padding: 12px 15px;
-    border-radius: 6px;
-    font-size: 11px;
-    width: 180px;
-    min-height: 60px;
-    height: auto;
-    text-align: left;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.15s ease;
-    z-index: 1000;
-    line-height: 1.4;
-    font-weight: normal;
-    white-space: normal;
-    word-wrap: break-word;
-    overflow: visible;
-    box-sizing: border-box;
-  }
-
-  .tooltip::after {
-    content: '';
-    position: absolute;
-    top: -5px;
-    left: 85px;
-    width: 0;
-    height: 0;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-bottom: 5px solid #333;
-  }
-
-  /* UPDATED: Paywall styles - contained within card */
-  .locked-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.97);
-    backdrop-filter: blur(5px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 50;
-    border-radius: 8px;
-  }
-
-  .locked-content {
-    text-align: center;
-    padding: 40px;
-    max-width: 400px;
-  }
-
-  .locked-content h3 {
-    font-size: 20px;
-    margin-bottom: 15px;
-    color: #333;
-  }
-
-  .locked-content p {
-    color: #666;
-    margin-bottom: 20px;
-    line-height: 1.6;
-  }
-
-  .price-tag {
-    font-size: 32px;
-    font-weight: bold;
-    color: #00c97c;
-    margin: 20px 0;
-  }
-
-  .unlock-btn {
-    background: #00c97c;
-    color: white;
-    border: none;
-    padding: 15px 30px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .unlock-btn:hover {
-    background: #00a568;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 201, 124, 0.3);
-  }
-
-  /* UPDATED: Blur only the stat numbers, not the labels */
-  .blur-stats .stat-number {
-    filter: blur(8px);
-    user-select: none;
-  }
-
-  .blur-stats .decision-title,
-  .blur-stats .decision-meta div span {
-    filter: blur(6px);
-    user-select: none;
-  }
-
-  /* Auth Modal */
-  .auth-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  .auth-modal.active {
-    display: flex;
-  }
-
-  .auth-modal-content {
-    background: white;
-    padding: 40px;
-    border-radius: 12px;
-    max-width: 400px;
-    width: 90%;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    position: relative;
-  }
-
-  .auth-modal-close {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #666;
-  }
-
-  .auth-tabs {
-    display: flex;
-    margin-bottom: 30px;
-    border-bottom: 1px solid #eee;
-  }
-
-  .auth-tab {
-    flex: 1;
-    padding: 10px;
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    font-size: 16px;
-    color: #666;
-  }
-
-  .auth-tab.active {
-    color: #00c97c;
-    border-bottom-color: #00c97c;
-    font-weight: 600;
-  }
-
-  .auth-form {
-    display: none;
-  }
-
-  .auth-form.active {
-    display: block;
-  }
-
-  .form-group {
-    margin-bottom: 20px;
-  }
-
-  .form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-size: 14px;
-    color: #333;
-  }
-
-  .form-group input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 14px;
-    box-sizing: border-box;
-  }
-
-  .auth-submit-btn {
-    width: 100%;
-    padding: 12px;
-    background: #00c97c;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .auth-submit-btn:hover {
-    background: #00a568;
-  }
-
-  .auth-submit-btn:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-  }
-
-  .auth-error {
-    color: #dc3545;
-    font-size: 14px;
-    margin-top: 10px;
-  }
-
-  /* Payment Modal */
-  .payment-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  .payment-modal.active {
-    display: flex;
-  }
-
-  .payment-modal-content {
-    background: white;
-    padding: 40px;
-    border-radius: 12px;
-    max-width: 500px;
-    width: 90%;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    position: relative;
-  }
-
-  .payment-modal-header {
-    margin-bottom: 30px;
-  }
-
-  .payment-modal-header h2 {
-    font-size: 24px;
-    margin-bottom: 10px;
-    color: #333;
-  }
-
-  .payment-modal-close {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #666;
-  }
-
-  #card-element {
-    padding: 15px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    margin-bottom: 20px;
-    background: white;
-  }
-
-  #card-errors {
-    color: #dc3545;
-    margin-top: 10px;
-    font-size: 14px;
-  }
-
-  .pay-button {
-    width: 100%;
-    background: #00c97c;
-    color: white;
-    border: none;
-    padding: 15px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .pay-button:hover {
-    background: #00a568;
-  }
-
-  .pay-button:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-  }
-
   /* Dark mode overrides */
   .dark body {
     background: #0d0d0d !important;
@@ -884,60 +556,6 @@
     border-color: #21db87;
   }
 
-  .dark .locked-overlay {
-    background: rgba(20, 20, 20, 0.97);
-  }
-
-  .dark .locked-content h3 {
-    color: #f0f0f0;
-  }
-
-  .dark .locked-content p {
-    color: #aaa;
-  }
-
-  .dark .auth-modal-content,
-  .dark .payment-modal-content {
-    background: #1a1a1a;
-  }
-
-  .dark .auth-modal-close,
-  .dark .payment-modal-close {
-    color: #aaa;
-  }
-
-  .dark .auth-tabs {
-    border-bottom-color: #333;
-  }
-
-  .dark .auth-tab {
-    color: #aaa;
-  }
-
-  .dark .form-group label {
-    color: #f0f0f0;
-  }
-
-  .dark .form-group input {
-    background: #2a2a2a;
-    border-color: #444;
-    color: #fff;
-  }
-
-  .dark #card-element {
-    border-color: #444;
-    background: #2a2a2a;
-  }
-
-  .dark .tooltip {
-    background: #1a1a1a;
-    border: 1px solid #333;
-  }
-
-  .dark .tooltip::after {
-    border-bottom-color: #1a1a1a;
-  }
-
   /* Footer */
   .footer {
     background: #fcfcfc;
@@ -985,6 +603,29 @@
     color: #666;
   }
 
+.info-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  background: #2f4c42;
+  color: white;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 16px;
+  text-align: center;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+}
+
+.info-icon:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+
   .dark .footer {
     background: #141414 !important;
     border-color: #333 !important;
@@ -1022,6 +663,523 @@
       min-height: 500px;
     }
   }
+
+.dark .tooltip::after {
+  border-bottom-color: #1a1a1a;
+}
+
+/* For stat cards on the right side, flip tooltip to left */
+.stat-card:nth-child(4n) .tooltip,
+.stat-card:nth-child(4n+4) .tooltip {
+  right: auto;
+  left: 0;
+}
+
+/* Adjust arrow for left-aligned tooltips */
+.stat-card:nth-child(4n) .tooltip::after,
+.stat-card:nth-child(4n+4) .tooltip::after {
+  right: auto;
+  left: 10px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+  overflow: visible; /* Add this */
+}
+
+.stat-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  position: relative;
+  overflow: visible; /* Add this */
+}
+
+.info-icon:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+  display: block; /* Ensure it displays as block */
+}
+
+#stats-tab {
+  overflow: visible !important;
+}
+
+.stats-grid {
+  overflow: visible !important;
+}
+
+.stat-card {
+  overflow: visible !important;
+}
+
+.tooltip {
+  position: absolute;
+  top: 25px;
+  left: -75px;
+  background: #333;
+  color: white;
+  padding: 12px 15px;
+  border-radius: 6px;
+  font-size: 11px;
+  width: 180px;
+  min-height: 60px;
+  height: auto;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  z-index: 1000;
+  line-height: 1.4;
+  font-weight: normal;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 85px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid #333;
+}
+
+.dark .tooltip {
+  background: #1a1a1a;
+  border: 1px solid #333;
+}
+
+.dark .tooltip::after {
+  border-bottom-color: #1a1a1a;
+}
+
+
+  /* Paywall styles */
+.locked-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 8px;
+}
+
+.dark .locked-overlay {
+  background: rgba(20, 20, 20, 0.95);
+}
+
+.locked-content {
+  text-align: center;
+  padding: 40px;
+  max-width: 400px;
+}
+
+.locked-content h3 {
+  font-size: 20px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.dark .locked-content h3 {
+  color: #f0f0f0;
+}
+
+.locked-content p {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.dark .locked-content p {
+  color: #aaa;
+}
+
+.price-tag {
+  font-size: 32px;
+  font-weight: bold;
+  color: #00c97c;
+  margin: 20px 0;
+}
+
+.unlock-btn {
+  background: #00c97c;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.unlock-btn:hover {
+  background: #00a568;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 201, 124, 0.3);
+}
+
+.blur-stats .stats-grid,
+.blur-stats .decisions-list {
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Auth Modal */
+.auth-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.auth-modal.active {
+  display: flex;
+}
+
+.auth-modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.dark .auth-modal-content {
+  background: #1a1a1a;
+}
+
+.auth-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.dark .auth-modal-close {
+  color: #aaa;
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #eee;
+}
+
+.dark .auth-tabs {
+  border-bottom-color: #333;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+}
+
+.dark .auth-tab {
+  color: #aaa;
+}
+
+.auth-tab.active {
+  color: #00c97c;
+  border-bottom-color: #00c97c;
+  font-weight: 600;
+}
+
+.auth-form {
+  display: none;
+}
+
+.auth-form.active {
+  display: block;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #333;
+}
+
+.dark .form-group label {
+  color: #f0f0f0;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.dark .form-group input {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #fff;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 12px;
+  background: #00c97c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-submit-btn:hover {
+  background: #00a568;
+}
+
+.auth-submit-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.auth-error {
+  color: #dc3545;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* Payment Modal */
+.payment-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.payment-modal.active {
+  display: flex;
+}
+
+.payment-modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.dark .payment-modal-content {
+  background: #1a1a1a;
+}
+
+.payment-modal-header {
+  margin-bottom: 30px;
+}
+
+.payment-modal-header h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.dark .payment-modal-header h2 {
+  color: #f0f0f0;
+}
+
+.payment-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.dark .payment-modal-close {
+  color: #aaa;
+}
+
+#card-element {
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  background: white;
+}
+
+.dark #card-element {
+  border-color: #444;
+  background: #2a2a2a;
+}
+
+#card-errors {
+  color: #dc3545;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.pay-button {
+  width: 100%;
+  background: #00c97c;
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pay-button:hover {
+  background: #00a568;
+}
+
+.pay-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+  /* Paywall styles */
+.locked-overlay {
+  position: absolute; /* Changed from fixed */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  max-width: 450px;
+  width: 90%;
+}
+
+.dark .locked-overlay {
+  background: #1a1a1a;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+.locked-backdrop {
+  position: absolute; /* Changed from fixed */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  border-radius: 8px; /* Added to match container */
+}
+
+.locked-content {
+  text-align: center;
+}
+
+.locked-content h3 {
+  font-size: 24px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.dark .locked-content h3 {
+  color: #f0f0f0;
+}
+
+.locked-content p {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.dark .locked-content p {
+  color: #aaa;
+}
+
+.price-tag {
+  font-size: 42px;
+  font-weight: bold;
+  color: #00c97c;
+  margin: 25px 0;
+}
+
+.unlock-btn {
+  background: #00c97c;
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.unlock-btn:hover {
+  background: #00a568;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 201, 124, 0.3);
+}
+
+/* Blur only the data values, not labels */
+.blur-stats .stat-number {
+  filter: blur(8px);
+  user-select: none;
+}
+
+.blur-stats .decision-title,
+.blur-stats .decision-meta div:not(:has(strong)) {
+  filter: blur(6px);
+  user-select: none;
+}
+  
 </style>
 </head>
 
@@ -1101,6 +1259,9 @@
   </div>
 </footer>
 
+  <!-- Add Stripe -->
+<script src="https://js.stripe.com/v3/"></script>
+
 <!-- Auth Modal -->
 <div id="authModal" class="auth-modal">
   <div class="auth-modal-content">
@@ -1167,8 +1328,6 @@
     </form>
   </div>
 </div>
-
-<script src="https://js.stripe.com/v3/"></script>
 
 <script>
 let allAdjudicators = [];
@@ -1353,6 +1512,7 @@ function showAdjudicatorDetail(hasAccess = false) {
   const avgAwardedAmount = selectedAdjudicator.totalAwardedAmount / selectedAdjudicator.totalDecisions;
 
   const lockedOverlay = !hasAccess ? `
+    <div class="locked-backdrop" onclick="event.stopPropagation()"></div>
     <div class="locked-overlay">
       <div class="locked-content">
         <h3>🔒 Unlock Full Adjudicator Insights</h3>
@@ -1373,7 +1533,7 @@ function showAdjudicatorDetail(hasAccess = false) {
         <div class="detail-subtitle">${selectedAdjudicator.totalDecisions} decisions analysed</div>
       </div>
 
-      <div class="detail-content ${!hasAccess ? 'blur-stats' : ''}" style="position: relative;">
+      <div class="detail-content ${!hasAccess ? 'blur-stats' : ''}">
         ${lockedOverlay}
         
         <div class="detail-tabs">
@@ -1472,8 +1632,8 @@ function showAdjudicatorDetail(hasAccess = false) {
                   <div class="decision-title">${sanitizeHtml(decision.title)}</div>
                   <div class="decision-meta">
                     <div><strong>Date:</strong> <span>${decision.date || 'Unknown'}</span></div>
-                    <div><strong>Claim:</strong> <span>${Math.round(decision.claimAmount).toLocaleString()}</span></div>
-                    <div><strong>Awarded:</strong> <span>${Math.round(decision.awardedAmount).toLocaleString()}</span></div>
+                    <div><strong>Claim:</strong> <span>$${Math.round(decision.claimAmount).toLocaleString()}</span></div>
+                    <div><strong>Awarded:</strong> <span>$${Math.round(decision.awardedAmount).toLocaleString()}</span></div>
                     ${(decision.claimantFeeProportion > 0 || decision.respondentFeeProportion > 0) ? `
                       <div><strong>Claimant Fee:</strong> <span>${decision.claimantFeeProportion > 0 ? decision.claimantFeeProportion.toFixed(1) : (100 - decision.respondentFeeProportion).toFixed(1)}%</span></div>
                       <div><strong>Respondent Fee:</strong> <span>${decision.respondentFeeProportion > 0 ? decision.respondentFeeProportion.toFixed(1) : (100 - decision.claimantFeeProportion).toFixed(1)}%</span></div>
@@ -1536,8 +1696,8 @@ function sortDecisions() {
       <div class="decision-title">${sanitizeHtml(decision.title)}</div>
       <div class="decision-meta">
         <div><strong>Date:</strong> ${decision.date || 'Unknown'}</div>
-        <div><strong>Claim:</strong> ${Math.round(decision.claimAmount).toLocaleString()}</div>
-        <div><strong>Awarded:</strong> ${Math.round(decision.awardedAmount).toLocaleString()}</div>
+        <div><strong>Claim:</strong> $${Math.round(decision.claimAmount).toLocaleString()}</div>
+        <div><strong>Awarded:</strong> $${Math.round(decision.awardedAmount).toLocaleString()}</div>
       </div>
       <div class="decision-actions">
         ${decision.pdfPath ? 
@@ -1776,12 +1936,12 @@ function sanitizeHtml(str) {
 function formatCurrency(amount) {
   if (!amount) return '$0';
   if (amount >= 1000000) {
-    return ' + (amount / 1000000).toFixed(1) + 'M';
+    return '$' + (amount / 1000000).toFixed(1) + 'M';
   }
   if (amount >= 1000) {
-    return ' + (amount / 1000).toFixed(0) + 'K';
+    return '$' + (amount / 1000).toFixed(0) + 'K';
   }
-  return ' + Math.round(amount).toLocaleString();
+  return '$' + Math.round(amount).toLocaleString();
 }
 </script>
   
