@@ -1920,14 +1920,12 @@ def check_adjudicator_access(
 
 # In server (43).py
 
-
-# --- FIXED create_payment_intent ---
 @app.post("/create-payment-intent")
 async def create_payment_intent(
     adjudicator_name: str = Form(...),
     current_user: dict = Depends(get_current_purchase_user)
 ):
-    """Creates a Stripe Customer, Invoice, and a PaymentIntent to pay for it."""
+    """Creates a simple Stripe PaymentIntent. Invoice created after successful payment."""
     try:
         if not stripe.api_key:
             raise HTTPException(status_code=500, detail="Stripe API key is not configured.")
@@ -1942,58 +1940,9 @@ async def create_payment_intent(
                 name=f"{current_user.get('first_name', '')} {current_user.get('last_name', '')}"
             )
 
-        # Step 2: Create an Invoice Item for the purchase
-        stripe.InvoiceItem.create(
-            customer=customer.id,
-            amount=5495,  # Amount in cents ($54.95)
-            currency='aud',
-            description=f"Permanent access to Adjudicator Insights: {adjudicator_name}",
-        )
-
-        # Step 3: Create an Invoice that is charged automatically
-        invoice = stripe.Invoice.create(
-            customer=customer.id,
-            collection_method='charge_automatically', # This is the key change
-            auto_advance=True  # Automatically finalizes the invoice
-        )
-
-        # Step 4: Retrieve the Payment Intent that Stripe automatically created for the invoice
-        # The 'payment_intent' field on the invoice object contains the ID of the Payment Intent
-        intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
-
-        return {
-            'clientSecret': intent.client_secret,
-            'paymentIntentId': intent.id,
-            'invoiceId': invoice.id
-        }
-    except Exception as e:
-        print(f"Stripe PaymentIntent/Invoice creation failed: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-# --- SIMPLIFIED create_payment_intent ---
-@app.post("/create-payment-intent")
-async def create_payment_intent(
-    adjudicator_name: str = Form(...),
-    current_user: dict = Depends(get_current_purchase_user)
-):
-    """Creates a simple Stripe PaymentIntent and a Customer."""
-    try:
-        if not stripe.api_key:
-            raise HTTPException(status_code=500, detail="Stripe API key is not configured.")
-
-        # Step 1: Find or Create a Stripe Customer
-        customers = stripe.Customer.list(email=current_user['email'], limit=1)
-        if customers.data:
-            customer = customers.data[0]
-        else:
-            customer = stripe.Customer.create(
-                email=current_user['email'],
-                name=f"{current_user.get('first_name', '')} {current_user.get('last_name', '')}"
-            )
-
-        # Step 2: Just create the Payment Intent. The invoice comes *after* payment.
+        # Step 2: Create a simple PaymentIntent (no invoice yet)
         intent = stripe.PaymentIntent.create(
-            amount=5495,  # Amount in cents
+            amount=5495,
             currency='aud',
             customer=customer.id,
             description=f"Access to Adjudicator Insights: {adjudicator_name}",
@@ -2002,81 +1951,49 @@ async def create_payment_intent(
                 'adjudicator_name': adjudicator_name
             }
         )
-        # Only return what the frontend needs to confirm the payment
+
         return {
             'clientSecret': intent.client_secret,
             'paymentIntentId': intent.id
         }
+    except stripe.error.StripeError as e:
+        print(f"Stripe error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         print(f"Stripe PaymentIntent creation failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
-
-
-
-
+    
 @app.post("/confirm-purchase")
 async def confirm_purchase(
     payment_intent_id: str = Form(...),
     adjudicator_name: str = Form(...),
     current_user: dict = Depends(get_current_purchase_user)
 ):
-    """Confirms and records a purchase after successful Stripe payment"""
+    """Confirms purchase and creates a receipt invoice after successful payment."""
     try:
-        # Verify the payment intent with Stripe
-        intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-        
-        if intent.status != 'succeeded':
-            raise HTTPException(status_code=400, detail="Payment not completed")
-        
-        # Record the purchase in the database
-        purchases_con.execute("""
-            INSERT OR IGNORE INTO adjudicator_purchases 
-            (user_email, adjudicator_name, stripe_payment_intent_id, amount_paid)
-            VALUES (?, ?, ?, ?)
-        """, (current_user['email'], adjudicator_name, payment_intent_id, 54.95))
-        purchases_con.commit()
-        
-        return {"msg": "Purchase confirmed", "adjudicator_name": adjudicator_name}
-        
-    except stripe.error.StripeError as e:
-        print(f"Stripe error: {e}")
-        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
-    except Exception as e:
-        print(f"Purchase confirmation error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to confirm purchase")
-
-# --- UPDATED confirm_purchase ---
-@app.post("/confirm-purchase")
-async def confirm_purchase(
-    payment_intent_id: str = Form(...),
-    adjudicator_name: str = Form(...),
-    current_user: dict = Depends(get_current_purchase_user)
-):
-    """Confirms purchase, records it, and generates a Stripe Invoice as a receipt."""
-    try:
-        # Verify the payment intent with Stripe
+        # Verify the payment succeeded
         intent = stripe.PaymentIntent.retrieve(payment_intent_id)
         if intent.status != 'succeeded':
             raise HTTPException(status_code=400, detail="Payment not completed")
 
-        # POST-PAYMENT LOGIC: Create an invoice for the completed transaction to act as a receipt
-        # 1. Create the line item for the invoice
+        # Create a receipt invoice AFTER successful payment
         stripe.InvoiceItem.create(
             customer=intent.customer,
             amount=intent.amount,
             currency=intent.currency,
             description=intent.description,
         )
-        # 2. Create the invoice itself, which will grab any pending invoice items
+        
         invoice = stripe.Invoice.create(
             customer=intent.customer,
-            auto_advance=True, # Automatically finalizes
-            collection_method='send_invoice', # OK to use now, as we will immediately mark it as paid
+            auto_advance=False,  # Don't auto-finalize yet
         )
-        # 3. Finalize and "send" the invoice, which generates the PDF and marks it as paid
-        stripe.Invoice.send_invoice(invoice.id)
         
-        # Record the purchase in our database, now including the invoice ID
+        # Finalize and mark as paid
+        invoice = stripe.Invoice.finalize_invoice(invoice.id)
+        stripe.Invoice.pay(invoice.id, paid_out_of_band=True)  # Mark as paid outside Stripe
+        
+        # Record the purchase in database
         purchases_con.execute("""
             INSERT OR IGNORE INTO adjudicator_purchases
             (user_email, adjudicator_name, stripe_payment_intent_id, stripe_invoice_id, amount_paid)
@@ -2084,12 +2001,20 @@ async def confirm_purchase(
         """, (current_user['email'], adjudicator_name, payment_intent_id, invoice.id, 54.95))
         purchases_con.commit()
         
-        # Return the new invoice ID to the frontend
-        return {"msg": "Purchase confirmed", "invoiceId": invoice.id}
+        return {
+            "msg": "Purchase confirmed",
+            "invoiceId": invoice.id,
+            "adjudicator_name": adjudicator_name
+        }
 
+    except stripe.error.StripeError as e:
+        print(f"Stripe error: {e}")
+        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
     except Exception as e:
         print(f"Purchase confirmation error: {e}")
         raise HTTPException(status_code=500, detail="Failed to confirm purchase")
+    
+
         
 # ... surrounding code ...
 @app.post("/purchase-register")
