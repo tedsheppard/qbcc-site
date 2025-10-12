@@ -1772,6 +1772,7 @@ function showAdjudicatorDetail(hasAccess = false) {
         <div class="detail-tabs">
           <button class="tab-btn active" onclick="showTab('stats')">Statistics</button>
           <button class="tab-btn" onclick="showTab('decisions')">Decisions</button>
+          <button class="tab-btn" onclick="downloadSummary()">Summary (PDF)</button>
         </div>
 
         <!-- Statistics Tab -->
@@ -2014,6 +2015,22 @@ async function handleLogin(e) {
   } catch (error) {
     errorDiv.textContent = error.message;
   }
+}
+
+async function downloadSummary() {
+  const token = localStorage.getItem('purchase_token');
+  const name = selectedAdjudicator.name;
+  const res = await fetch(`/generate-summary-pdf?adjudicator_name=${encodeURIComponent(name)}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    method: 'POST'
+  });
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name}_SopalInsights.pdf`;
+  a.click();
+  window.URL.revokeObjectURL(url);
 }
 
 async function handleRegister(e) {
