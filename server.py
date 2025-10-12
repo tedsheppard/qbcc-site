@@ -1975,7 +1975,7 @@ async def create_payment_intent(
 
         # Step 2: Create a simple PaymentIntent (no invoice yet)
         intent = stripe.PaymentIntent.create(
-            amount=50,
+            amount=5495,
             currency='aud',
             customer=customer.id,
             description=f"Access to Adjudicator Insights: {adjudicator_name}",
