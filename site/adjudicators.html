@@ -2271,10 +2271,49 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
     const confirmData = await confirmResponse.json();
     const invoiceId = confirmData.invoiceId; // Get the invoice ID from the confirmation step
 
-    // Show the success modal, now with the correct invoice ID
+
+    // Show a styled success message with download button (replaces modal content)
     purchasedAdjudicators.add(currentAdjudicatorForPurchase);
+    const paymentModal = document.getElementById('paymentModal');
+    const adjudicatorName = currentAdjudicatorForPurchase;
     closePaymentModal();
-    showSuccessModal(currentAdjudicatorForPurchase, invoiceId);
+    if (invoiceId) {
+      paymentModal.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <div style="font-size: 48px; color: #00c97c; margin-bottom: 20px;">✓</div>
+            <h2 style="color: #00c97c; margin-bottom: 15px;">Payment Successful!</h2>
+            <p style="margin-bottom: 30px;">You now have access to ${adjudicatorName}'s insights.</p>
+            <button onclick="downloadInvoice('${invoiceId}')" 
+                    style="background: #00c97c; color: white; border: none; padding: 12px 24px; 
+                           border-radius: 6px; cursor: pointer; font-size: 16px; margin-right: 10px;">
+                Download Invoice
+            </button>
+            <button onclick="location.reload()" 
+                    style="background: #6c757d; color: white; border: none; padding: 12px 24px; 
+                           border-radius: 6px; cursor: pointer; font-size: 16px;">
+                Close
+            </button>
+        </div>
+      `;
+    } else {
+      paymentModal.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <div style="font-size: 48px; color: #00c97c; margin-bottom: 20px;">✓</div>
+            <h2 style="color: #00c97c; margin-bottom: 15px;">Payment Successful!</h2>
+            <p style="margin-bottom: 30px;">You now have access to ${adjudicatorName}'s insights.</p>
+            <button onclick="location.reload()" 
+                    style="background: #00c97c; color: white; border: none; padding: 12px 24px; 
+                           border-radius: 6px; cursor: pointer; font-size: 16px;">
+                Close
+            </button>
+        </div>
+      `;
+    }
+// Add this function for downloading invoices
+function downloadInvoice(invoiceId) {
+  const token = localStorage.getItem('purchase_token');
+  window.open(`/download-invoice/${invoiceId}?token=${token}`, '_blank');
+}
 
   } catch (error) {
     document.getElementById('card-errors').textContent = error.message;
