@@ -2733,39 +2733,63 @@ async function filterDecisionsLocally(decisions, query) {
 
 function simpleMatchQuery(text, query) {
   const lowerText = text.toLowerCase();
-  const lowerQuery = query.toLowerCase();
+  let lowerQuery = query.toLowerCase();
   
-  // Handle quoted phrases
+  console.log('[DEBUG] Matching query:', lowerQuery, 'against text length:', text.length);
+  
+  // Remove outer quotes if they exist (user typed "word" in search box)
+  lowerQuery = lowerQuery.replace(/^["']|["']$/g, '');
+  
+  // Handle quoted phrases (but not the outer quotes we just removed)
   const phrases = lowerQuery.match(/"([^"]+)"/g);
   if (phrases) {
+    console.log('[DEBUG] Found phrases:', phrases);
     for (const phrase of phrases) {
       const clean = phrase.replace(/"/g, '');
-      if (!lowerText.includes(clean)) return false;
+      if (!lowerText.includes(clean)) {
+        console.log('[DEBUG] Phrase not found:', clean);
+        return false;
+      }
+      console.log('[DEBUG] Phrase found:', clean);
     }
+    return true; // All phrases found
   }
   
   // Handle AND operator
   if (lowerQuery.includes(' and ')) {
     const terms = lowerQuery.split(' and ').map(t => t.trim().replace(/"/g, ''));
-    return terms.every(term => lowerText.includes(term));
+    console.log('[DEBUG] AND terms:', terms);
+    const result = terms.every(term => lowerText.includes(term));
+    console.log('[DEBUG] AND result:', result);
+    return result;
   }
   
   // Handle OR operator
   if (lowerQuery.includes(' or ')) {
     const terms = lowerQuery.split(' or ').map(t => t.trim().replace(/"/g, ''));
-    return terms.some(term => lowerText.includes(term));
+    console.log('[DEBUG] OR terms:', terms);
+    const result = terms.some(term => lowerText.includes(term));
+    console.log('[DEBUG] OR result:', result);
+    return result;
   }
   
   // Handle proximity (w/N)
   const proximityMatch = lowerQuery.match(/(\w+)\s+w\/(\d+)\s+(\w+)/i);
   if (proximityMatch) {
     const [, term1, distance, term2] = proximityMatch;
-    return checkProximity(lowerText, term1, term2, parseInt(distance));
+    console.log('[DEBUG] Proximity search:', term1, 'w/', distance, term2);
+    const result = checkProximity(lowerText, term1, term2, parseInt(distance));
+    console.log('[DEBUG] Proximity result:', result);
+    return result;
   }
   
-  // Simple keyword match
-  return lowerText.includes(lowerQuery);
+  // Simple keyword match (no quotes, no operators)
+  const result = lowerText.includes(lowerQuery);
+  console.log('[DEBUG] Simple match for "' + lowerQuery + '":', result);
+  return result;
 }
+
+
 
 function checkProximity(text, term1, term2, maxDistance) {
   const words = text.toLowerCase().split(/\s+/);
