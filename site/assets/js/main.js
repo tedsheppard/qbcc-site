@@ -94,12 +94,17 @@ async function updateNavUI() {
 }
 
 function renderLoggedOutNav(navContainer) {
+    // Create a redirect URL, but avoid redirecting to login/register pages themselves.
+    const redirectUrl = (window.location.pathname.includes('/login') || window.location.pathname.includes('/register'))
+        ? ''
+        : `?redirect=${encodeURIComponent(window.location.href)}`;
+
     navContainer.innerHTML = `
-        <a href="/login" id="login-link" style="text-decoration:none;color:#008a5c;font-weight:600;">Sign In</a>
+        <a href="/login${redirectUrl}" id="login-link" style="text-decoration:none;color:#008a5c;font-weight:600;">Sign In</a>
     `;
 }
 
-function handleLogout(e, userEmail, showAlert = true) {
+function handleLogout(e, userEmail) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
 
     try {
@@ -109,7 +114,7 @@ function handleLogout(e, userEmail, showAlert = true) {
         console.warn("handleLogout: failed to clear localStorage", err);
     }
 
-    if (showAlert) alert('You have been logged out.');
+    // Removed the alert popup for a silent logout experience.
     location.reload();
 }
 

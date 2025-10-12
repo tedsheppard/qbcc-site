@@ -1392,7 +1392,7 @@
   <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 6px; text-align: left;">
     <label style="display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; line-height: 1.5;">
       <input type="checkbox" id="terms-checkbox" required style="margin-right: 10px; margin-top: 3px; cursor: pointer;">
-      <span>By purchasing Adjudicator Insights for <span id="terms-adjudicator-name"></span>, I agree to the <a href="/adjudicator-insights-terms" target="_blank" style="color: #00c97c; text-decoration: underline;">Adjudicator Insights Terms & Conditions</a>.</span>
+      <span>By purchasing Adjudicator Insights for <span id="terms-adjudicator-name"></span>, you agree to the <a href="/adjudicator-insights-terms" target="_blank" style="color: #00c97c; text-decoration: underline;">Adjudicator Insights Terms & Conditions</a>.</span>
     </label>
   </div>
 </div>
@@ -1444,7 +1444,6 @@ let stripe = null;
 let elements = null;
 let cardElement = null;
 
-
 document.addEventListener('DOMContentLoaded', async function() {
   // Initialize Stripe
   stripe = Stripe('pk_live_51SGxeHAIOAykxV504w220IB6SNF8PWmMovA3Vcj7BU34qr4lxSftuuc6vhGtb0CURpjiR2e2OMMNdyMuzVXbH286002Y11rMPE');
@@ -1489,7 +1488,38 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.body.classList.remove('light');
     document.body.classList.add('dark');
   }
+
+  // Check if we need to resume an adjudicator unlock process after login
+  const adjudicatorToUnlock = sessionStorage.getItem('unlock_adjudicator_after_login');
+  if (adjudicatorToUnlock && localStorage.getItem('purchase_token')) {
+    console.log(`[Redirect] Resuming purchase for: ${adjudicatorToUnlock}`);
+    sessionStorage.removeItem('unlock_adjudicator_after_login');
+
+    // This function waits for the adjudicator list to be loaded and rendered
+    const findAndUnlock = () => {
+        // We need to wait for allAdjudicators to be fetched
+        if (typeof allAdjudicators !== 'undefined' && allAdjudicators && allAdjudicators.length > 0) {
+            const adjudicator = allAdjudicators.find(adj => adj.name === adjudicatorToUnlock);
+            if (adjudicator) {
+                selectAdjudicator(adjudicator.id); // This opens the details pane
+                // A short delay ensures the details pane is rendered before we open the modal
+                setTimeout(() => {
+                    unlockAdjudicator(adjudicatorToUnlock);
+                }, 300);
+            } else {
+                console.warn(`[Redirect] Could not find adjudicator "${adjudicatorToUnlock}" in the list.`);
+            }
+        } else {
+            // If the list isn't ready, check again shortly
+            setTimeout(findAndUnlock, 200);
+        }
+    };
+    
+    findAndUnlock();
+  }
 });
+
+
 
 function setupEventListeners() {
   document.getElementById('adjudicatorSearch').addEventListener('input', filterAdjudicators);
@@ -2028,14 +2058,16 @@ async function unlockAdjudicator(adjudicatorName) {
 
   const token = localStorage.getItem('purchase_token');
   if (!token) {
-    // If not logged in, go to the new login page
-    window.location.href = '/login';
+    // If user is not logged in, save the target adjudicator and redirect to login
+    sessionStorage.setItem('unlock_adjudicator_after_login', adjudicatorName);
+    window.location.href = `/login?redirect=${encodeURIComponent(window.location.href)}`;
     return;
   }
 
-  // If logged in, proceed to payment
+  // If user is already logged in, proceed directly to the payment modal
   showPaymentModal();
 }
+
 
 // Handle payment form submission
 document.getElementById('payment-form').addEventListener('submit', async (e) => {

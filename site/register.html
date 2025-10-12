@@ -260,6 +260,14 @@
 document.addEventListener('DOMContentLoaded', () => {
     const registerForm = document.getElementById('registerForm');
     const feedbackDiv = document.getElementById('feedbackDiv');
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get('redirect');
+
+    // If a redirect URL is present, update the "Login here" link to carry it over.
+    const loginLink = document.querySelector('.extra-links a[href="/login"]');
+    if (redirectUrl) {
+        loginLink.href = `/login?redirect=${encodeURIComponent(redirectUrl)}`;
+    }
 
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -299,15 +307,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!loginResponse.ok) {
-                // This case is unlikely if registration succeeds, but good to handle
                 throw new Error('Registration successful, but auto-login failed. Please try logging in manually.');
             }
 
             const loginData = await loginResponse.json();
             localStorage.setItem('purchase_token', loginData.access_token);
             
-            // Redirect to the account page
-            window.location.href = '/account.html';
+            // Redirect to the saved URL, or the account page as a fallback.
+            window.location.href = redirectUrl || '/account.html';
 
         } catch (error) {
             console.error('Registration error:', error);

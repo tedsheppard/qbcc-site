@@ -187,10 +187,18 @@
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const feedbackDiv = document.getElementById('feedbackDiv');
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get('redirect');
 
-    // Redirect if already logged in
+    // If a redirect URL is present, update the "Register now" link to carry it over.
+    const registerLink = document.querySelector('.extra-links a[href="/register"]');
+    if (redirectUrl) {
+        registerLink.href = `/register?redirect=${encodeURIComponent(redirectUrl)}`;
+    }
+
+    // Redirect if already logged in, respecting the redirect URL
     if (localStorage.getItem('purchase_token')) {
-        window.location.href = '/account.html';
+        window.location.href = redirectUrl || '/account.html';
         return;
     }
 
@@ -215,8 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             localStorage.setItem('purchase_token', data.access_token);
             
-            // Redirect to the account page on successful login
-            window.location.href = '/account.html';
+            // Redirect to the saved URL, or the account page as a fallback.
+            window.location.href = redirectUrl || '/account.html';
 
         } catch (error) {
             console.error('Login error:', error);
