@@ -1942,7 +1942,7 @@ async def create_payment_intent(
 
         # Step 2: Create a simple PaymentIntent (no invoice yet)
         intent = stripe.PaymentIntent.create(
-            amount=5495,
+            amount=50,
             currency='aud',
             customer=customer.id,
             description=f"Access to Adjudicator Insights: {adjudicator_name}",
@@ -1969,52 +1969,48 @@ async def confirm_purchase(
     adjudicator_name: str = Form(...),
     current_user: dict = Depends(get_current_purchase_user)
 ):
-    """Confirms purchase and creates a receipt invoice after successful payment."""
+    """Confirms purchase after successful payment."""
     try:
         # Verify the payment succeeded
         intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        
         if intent.status != 'succeeded':
             raise HTTPException(status_code=400, detail="Payment not completed")
 
-        # Create a receipt invoice AFTER successful payment
-        stripe.InvoiceItem.create(
-            customer=intent.customer,
-            amount=intent.amount,
-            currency=intent.currency,
-            description=intent.description,
-        )
+        # Check if purchase already exists (prevents duplicate records)
+        existing = purchases_con.execute("""
+            SELECT 1 FROM adjudicator_purchases 
+            WHERE stripe_payment_intent_id = ?
+        """, (payment_intent_id,)).fetchone()
         
-        invoice = stripe.Invoice.create(
-            customer=intent.customer,
-            auto_advance=False,  # Don't auto-finalize yet
-        )
-        
-        # Finalize and mark as paid
-        invoice = stripe.Invoice.finalize_invoice(invoice.id)
-        stripe.Invoice.pay(invoice.id, paid_out_of_band=True)  # Mark as paid outside Stripe
+        if existing:
+            return {
+                "msg": "Purchase already recorded",
+                "adjudicator_name": adjudicator_name
+            }
         
         # Record the purchase in database
         purchases_con.execute("""
-            INSERT OR IGNORE INTO adjudicator_purchases
-            (user_email, adjudicator_name, stripe_payment_intent_id, stripe_invoice_id, amount_paid)
-            VALUES (?, ?, ?, ?, ?)
-        """, (current_user['email'], adjudicator_name, payment_intent_id, invoice.id, 54.95))
+            INSERT INTO adjudicator_purchases
+            (user_email, adjudicator_name, stripe_payment_intent_id, amount_paid)
+            VALUES (?, ?, ?, ?)
+        """, (current_user['email'], adjudicator_name, payment_intent_id, 54.95))
         purchases_con.commit()
         
         return {
             "msg": "Purchase confirmed",
-            "invoiceId": invoice.id,
             "adjudicator_name": adjudicator_name
         }
 
     except stripe.error.StripeError as e:
-        print(f"Stripe error: {e}")
+        print(f"Stripe error in confirm-purchase: {e}")
         raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
     except Exception as e:
         print(f"Purchase confirmation error: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to confirm purchase")
     
-
         
 # ... surrounding code ...
 @app.post("/purchase-register")
