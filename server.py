@@ -1964,7 +1964,6 @@ async def create_payment_intent(
         raise HTTPException(status_code=400, detail=str(e))
     
 
-
 @app.post("/confirm-purchase")
 async def confirm_purchase(
     payment_intent_id: str = Form(...),
@@ -2022,7 +2021,7 @@ async def confirm_purchase(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to confirm purchase")
-
+    
 
 
         
