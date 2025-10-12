@@ -1964,13 +1964,14 @@ async def create_payment_intent(
         raise HTTPException(status_code=400, detail=str(e))
     
 
+
 @app.post("/confirm-purchase")
 async def confirm_purchase(
     payment_intent_id: str = Form(...),
     adjudicator_name: str = Form(...),
     current_user: dict = Depends(get_current_purchase_user)
 ):
-    """Confirms purchase after successful payment and creates receipt invoice."""
+    """Confirms purchase after successful payment."""
     try:
         # Verify the payment succeeded
         intent = stripe.PaymentIntent.retrieve(payment_intent_id)
@@ -1980,7 +1981,7 @@ async def confirm_purchase(
 
         # Check if purchase already exists
         existing = purchases_con.execute("""
-            SELECT stripe_invoice_id FROM adjudicator_purchases 
+            SELECT 1 FROM adjudicator_purchases 
             WHERE stripe_payment_intent_id = ?
         """, (payment_intent_id,)).fetchone()
         
@@ -1988,57 +1989,29 @@ async def confirm_purchase(
             return {
                 "msg": "Purchase already recorded",
                 "adjudicator_name": adjudicator_name,
-                "invoiceId": existing['stripe_invoice_id'] if existing['stripe_invoice_id'] else None
+                "invoiceId": None
             }
         
-        # Create a receipt invoice (after payment)
-        invoice = None
-        try:
-            # Create invoice item for the receipt
-            stripe.InvoiceItem.create(
-                customer=intent.customer,
-                amount=intent.amount,
-                currency=intent.currency,
-                description=intent.description,
-            )
-            
-            # Create the invoice
-            invoice = stripe.Invoice.create(
-                customer=intent.customer,
-                collection_method='send_invoice',
-                days_until_due=30,
-                metadata={
-                    'payment_intent_id': payment_intent_id,
-                    'type': 'receipt'
-                }
-            )
-            
-            # Finalize the invoice
-            invoice = stripe.Invoice.finalize_invoice(invoice.id)
-            
-            # Mark as paid since payment already happened
-            invoice = stripe.Invoice.pay(
-                invoice.id,
-                paid_out_of_band=True  # Mark as paid outside of Stripe
-            )
-            
-        except stripe.error.StripeError as e:
-            print(f"Warning: Could not create receipt invoice: {e}")
-            # Don't fail the whole purchase if invoice creation fails
-        
-        # Record the purchase in database
+        # Record the purchase - no invoice creation for now
         purchases_con.execute("""
             INSERT INTO adjudicator_purchases
-            (user_email, adjudicator_name, stripe_payment_intent_id, stripe_invoice_id, amount_paid)
-            VALUES (?, ?, ?, ?, ?)
-        """, (current_user['email'], adjudicator_name, payment_intent_id, 
-              invoice.id if invoice else None, 54.95))
+            (user_email, adjudicator_name, stripe_payment_intent_id, amount_paid)
+            VALUES (?, ?, ?, ?)
+        """, (current_user['email'], adjudicator_name, payment_intent_id, 54.95))
         purchases_con.commit()
+        
+        # Get the Stripe receipt URL instead
+        charge_id = intent.charges.data[0].id if intent.charges.data else None
+        receipt_url = None
+        if charge_id:
+            charge = stripe.Charge.retrieve(charge_id)
+            receipt_url = charge.receipt_url
         
         return {
             "msg": "Purchase confirmed",
             "adjudicator_name": adjudicator_name,
-            "invoiceId": invoice.id if invoice else None
+            "invoiceId": None,  # No invoice for now
+            "receiptUrl": receipt_url  # Stripe's built-in receipt
         }
 
     except stripe.error.StripeError as e:
