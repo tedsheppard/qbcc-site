@@ -1384,11 +1384,18 @@
   <div class="payment-modal-content">
     <button class="payment-modal-close" onclick="closePaymentModal()">×</button>
     <div class="payment-modal-header">
-      <h2>Unlock Adjudicator Access</h2>
-      <p id="modalAdjudicatorName" style="color: #666; font-size: 16px;"></p>
-      <div class="price-tag">$54.95</div>
-      <p style="color: #666; font-size: 14px;">One-time payment • Permanent access</p>
-    </div>
+  <h2>Unlock Adjudicator Access</h2>
+  <p id="modalAdjudicatorName" style="color: #666; font-size: 16px;"></p>
+  <div class="price-tag">$54.95</div>
+  <p style="color: #666; font-size: 14px;">One-time payment • Permanent access</p>
+  
+  <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 6px; text-align: left;">
+    <label style="display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; line-height: 1.5;">
+      <input type="checkbox" id="terms-checkbox" required style="margin-right: 10px; margin-top: 3px; cursor: pointer;">
+      <span>By purchasing Adjudicator Insights for <span id="terms-adjudicator-name"></span>, I agree to the <a href="/adjudicator-insights-terms" target="_blank" style="color: #00c97c; text-decoration: underline;">Adjudicator Insights Terms & Conditions</a>.</span>
+    </label>
+  </div>
+</div>
     
     <form id="payment-form">
       <div id="card-element"></div>
@@ -2017,6 +2024,7 @@ function showPaymentModal() {
 
 async function unlockAdjudicator(adjudicatorName) {
   currentAdjudicatorForPurchase = adjudicatorName;
+  document.getElementById('terms-adjudicator-name').textContent = adjudicatorName;
 
   const token = localStorage.getItem('purchase_token');
   if (!token) {
