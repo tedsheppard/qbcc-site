@@ -1018,7 +1018,7 @@
   cursor: not-allowed;
 }
 
-  /* Paywall styles */
+/* Replace your existing .locked-overlay rule with this */
 .locked-overlay {
   position: absolute;
   top: 70px;
@@ -1028,12 +1028,12 @@
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   z-index: 10;
-  max-width: 420px;
+  max-width: 380px; /* Reduced from 420px */
   width: 90%;
   box-sizing: border-box;
-  display: none; /* Hidden by default */
+  display: none;
 }
-
+ 
 .blur-stats .locked-overlay {
     display: flex; /* Shown when parent has blur-stats */
 }
@@ -1429,8 +1429,8 @@
     <div class="payment-modal-header">
       <h2>Unlock Adjudicator Access</h2>
       <p id="modalAdjudicatorName" style="color: #666; font-size: 16px;"></p>
-      <div class="price-tag">$54.95</div>
-      <p style="color: #666; font-size: 14px;">One-time payment • Permanent access</p>
+<div class="price-tag">$54.95 <sup style="font-size: 16px;">incl GST</sup></div>
+<p style="font-size: 14px; margin-bottom: 25px;">One-time payment • 12 month access • Chargeable disbursement</p>
       
       <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 6px; text-align: left;">
         <label style="display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; line-height: 1.5;">
@@ -1438,12 +1438,14 @@
           <span>By purchasing Adjudicator Insights for <span id="terms-adjudicator-name"></span>, you agree to the <a href="/adjudicator-insights-terms" target="_blank" style="color: #00c97c; text-decoration: underline;">Adjudicator Insights Terms & Conditions</a>.</span>
         </label>
       </div>
+      </div> <p style="font-size: 12px; color: #666; text-align: center; margin: -10px 0 20px 0;">Receipt/invoice issued immediately upon payment.</p>
+
     </div>
     
     <form id="payment-form">
       <div id="card-element"></div>
       <div id="card-errors" role="alert"></div>
-      <button type="submit" id="submit-payment" class="pay-button">
+     <button type="submit" id="submit-payment" class="pay-button" disabled>
         <span id="button-text">Complete Purchase</span>
       </button>
     </form>
@@ -1513,6 +1515,15 @@ document.addEventListener('DOMContentLoaded', async function() {
       },
     },
   });
+
+   // ADD THIS SNIPPET
+  const termsCheckbox = document.getElementById('terms-checkbox');
+  const paymentButton = document.getElementById('submit-payment');
+  if (termsCheckbox && paymentButton) {
+    termsCheckbox.addEventListener('change', () => {
+      paymentButton.disabled = !termsCheckbox.checked;
+    });
+  }
   
   cardElement.mount('#card-element');
   
@@ -1744,8 +1755,8 @@ function showAdjudicatorDetail(hasAccess = false) {
       <div class="locked-content">
         <h3>🔒 Unlock Full Adjudicator Insights</h3>
         <p>Get access to detailed statistics, decision patterns, and the complete history of decisions for <strong>${sanitizeHtml(selectedAdjudicator.name)}</strong></p>
-        <div class="price-tag">$54.95</div>
-        <p style="font-size: 14px; margin-bottom: 25px;">One-time payment • Lifetime access</p>
+       <div class="price-tag">$54.95 <sup style="font-size: 16px;">incl GST</sup></div>
+<p style="color: #666; font-size: 14px;">One-time payment • 12 month access • Chargeable disbursement</p>
         <button class="unlock-btn" onclick="unlockAdjudicator('${selectedAdjudicator.name.replace(/'/g, "\\'")}')">
           Unlock Access
         </button>
