@@ -636,27 +636,50 @@ async function downloadReceipt(paymentIntentId) {
     }
 }
 
-// Download generated invoice PDF
-async function downloadInvoice(button, adjudicatorName) {
+// Download Stripe invoice PDF
+async function downloadInvoice(button, adjudicatorName, paymentIntentId, existingInvoiceId) {
     const token = localStorage.getItem('purchase_token');
     if (!token) {
         alert('Please log in to download invoice');
         return;
     }
+    
     const originalText = button.textContent;
     button.textContent = 'Loading...';
     button.disabled = true;
+    
     try {
-        const formData = new FormData();
-        formData.append('adjudicator_name', adjudicatorName);
-        const response = await fetch('/generate-summary-pdf', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
-        });
-        if (!response.ok) {
-            throw new Error('Failed to generate invoice');
+        let invoiceId = existingInvoiceId;
+        
+        // If no invoice exists, create one
+        if (!invoiceId || invoiceId === 'null' || invoiceId === 'undefined') {
+            const formData = new FormData();
+            formData.append('adjudicator_name', adjudicatorName);
+            formData.append('payment_intent_id', paymentIntentId);
+            
+            const createResponse = await fetch('/create-invoice-for-purchase', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            
+            if (!createResponse.ok) {
+                throw new Error('Failed to create invoice');
+            }
+            
+            const createData = await createResponse.json();
+            invoiceId = createData.invoiceId;
         }
+        
+        // Download the invoice
+        const response = await fetch(`/download-invoice/${invoiceId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to download invoice');
+        }
+        
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -669,7 +692,7 @@ async function downloadInvoice(button, adjudicatorName) {
         a.remove();
     } catch (error) {
         console.error('Invoice download error:', error);
-        alert('Failed to generate invoice. Please try again later.');
+        alert('Failed to download invoice. Please try again later.');
     } finally {
         button.textContent = originalText;
         button.disabled = false;
@@ -804,11 +827,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         noPurchasesEl.style.display = 'block';
                     } else {
                         noPurchasesEl.style.display = 'none';
-                        historyBody.innerHTML = purchases.map(p => `
+                        historyBody.innerHTML = purchases.map(p => {
+                            const hasInvoice = p.stripe_invoice_id && p.stripe_invoice_id !== 'null';
+                            return `
                             <tr>
                                 <td>${p.adjudicator_name}</td>
                                 <td>${new Date(p.purchase_date).toLocaleDateString('en-AU')}</td>
-                                <td>$${parseFloat(p.amount_paid).toFixed(2)}</td>
+                                <td>${parseFloat(p.amount_paid).toFixed(2)}</td>
                                 <td>
                                     <div class="action-buttons">
                                         <button class="btn-small btn-receipt" 
@@ -817,14 +842,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                             Receipt
                                         </button>
                                         <button class="btn-small btn-invoice" 
-                                                onclick="downloadInvoice(this, '${p.adjudicator_name}')"
-                                                title="Download PDF Invoice">
+                                                onclick="downloadInvoice('${p.stripe_invoice_id || ''}')"
+                                                title="Download Stripe Invoice"
+                                                ${!hasInvoice ? 'disabled' : ''}>
                                             Invoice
                                         </button>
                                     </div>
                                 </td>
                             </tr>
-                        `).join('');
+                        `}).join('');
                     }
                 })
                 .catch(error => {
