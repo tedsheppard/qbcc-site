@@ -377,6 +377,19 @@
       justify-content: center;
     }
   }
+  .form-group input[disabled]#email {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+    color: #495057;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+}
 </style>
 </head>
 
@@ -449,43 +462,50 @@
                         </div>
                     </div>
                     
-                    <form id="profile-form">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="firstName">First Name</label>
-                                <input type="text" id="firstName" name="first_name" required disabled>
-                            </div>
-                            <div class="form-group">
-                                <label for="lastName">Last Name</label>
-                                <input type="text" id="lastName" name="last_name" required disabled>
-                            </div>
-                            <div class="form-group">
-                                <label for="firmName">Firm/Company Name</label>
-                                <input type="text" id="firmName" name="firm_name" required disabled>
-                            </div>
-                            <div class="form-group">
-                                <label for="abn">ABN</label>
-                                <input type="text" id="abn" name="abn" required disabled>
-                            </div>
-                             <div class="form-group">
-                                <label for="phone">Phone</label>
-                                <input type="tel" id="phone" name="phone" disabled>
-                            </div>
-                             <div class="form-group">
-                                <label for="employeeSize">Company Size</label>
-                                <select id="employeeSize" name="employee_size" required disabled>
-                                  <option value="">Select company size</option>
-                                  <option value="1-5">1-5 employees</option>
-                                  <option value="6-10">6-10 employees</option>
-                                  <option value="11-25">11-25 employees</option>
-                                  <option value="26-50">26-50 employees</option>
-                                  <option value="51-100">51-100 employees</option>
-                                  <option value="101-250">101-250 employees</option>
-                                  <option value="251-500">251-500 employees</option>
-                                  <option value="500+">500+ employees</option>
-                                </select>
-                            </div>
-                        </div>
+<form id="profile-form">
+    <div class="form-grid">
+        <!-- ADD EMAIL FIELD (permanently locked) -->
+        <div class="form-group full-width">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" disabled style="cursor: not-allowed;">
+            <small style="color: #666;">Email address cannot be changed</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="firstName">First Name</label>
+            <input type="text" id="firstName" name="first_name" required disabled>
+        </div>
+        <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <input type="text" id="lastName" name="last_name" required disabled>
+        </div>
+        <div class="form-group">
+            <label for="firmName">Firm/Company Name</label>
+            <input type="text" id="firmName" name="firm_name" required disabled>
+        </div>
+        <div class="form-group">
+            <label for="abn">ABN</label>
+            <input type="text" id="abn" name="abn" required disabled>
+        </div>
+        <div class="form-group">
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" name="phone" disabled>
+        </div>
+        <div class="form-group">
+            <label for="employeeSize">Firm/Company Size</label>
+            <select id="employeeSize" name="employee_size" required disabled>
+              <option value="">Select company size</option>
+              <option value="1-5">1-5 employees</option>
+              <option value="6-10">6-10 employees</option>
+              <option value="11-25">11-25 employees</option>
+              <option value="26-50">26-50 employees</option>
+              <option value="51-100">51-100 employees</option>
+              <option value="101-250">101-250 employees</option>
+              <option value="251-500">251-500 employees</option>
+              <option value="500+">500+ employees</option>
+            </select>
+        </div>
+    </div>
                         <h3 style="margin-top: 30px; font-size: 18px;">Billing Address</h3>
                          <div class="form-group">
                             <label for="billingAddress">Street Address</label>
@@ -596,19 +616,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // --- Edit Mode Toggle ---
         function toggleEditMode(isEditing) {
-            formElements.forEach(el => el.disabled = !isEditing);
-            editBtn.style.display = isEditing ? 'none' : 'block';
-            saveBtn.style.display = isEditing ? 'block' : 'none';
-            cancelBtn.style.display = isEditing ? 'block' : 'none';
+    formElements.forEach(el => {
+        // Keep email field always disabled
+        if (el.id === 'email') {
+            el.disabled = true;
+        } else {
+            el.disabled = !isEditing;
         }
-
-        editBtn.addEventListener('click', () => toggleEditMode(true));
-        cancelBtn.addEventListener('click', () => {
-            populateProfileForm(originalProfileData);
-            toggleEditMode(false);
-        });
+    });
+    editBtn.style.display = isEditing ? 'none' : 'block';
+    saveBtn.style.display = isEditing ? 'block' : 'none';
+    cancelBtn.style.display = isEditing ? 'block' : 'none';
+}
+  
 
         // --- Profile Picture ---
         function loadAndSetProfilePicture(email, user) {
@@ -621,20 +642,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- Form Population ---
         function populateProfileForm(user) {
-            originalProfileData = user;
-            userEmail = user.email;
-            document.getElementById('firstName').value = user.first_name || '';
-            document.getElementById('lastName').value = user.last_name || '';
-            document.getElementById('firmName').value = user.firm_name || '';
-            document.getElementById('abn').value = user.abn || '';
-            document.getElementById('phone').value = user.phone || '';
-            document.getElementById('employeeSize').value = user.employee_size || '';
-            document.getElementById('billingAddress').value = user.billing_address || '';
-            document.getElementById('billingCity').value = user.billing_city || '';
-            document.getElementById('billingState').value = user.billing_state || '';
-            document.getElementById('billingPostcode').value = user.billing_postcode || '';
-            loadAndSetProfilePicture(user.email, user);
-        }
+    originalProfileData = user;
+    userEmail = user.email;
+    
+    // Populate email (always disabled)
+    document.getElementById('email').value = user.email || '';
+    
+    // Populate other fields
+    document.getElementById('firstName').value = user.first_name || '';
+    document.getElementById('lastName').value = user.last_name || '';
+    document.getElementById('firmName').value = user.firm_name || '';
+    document.getElementById('abn').value = user.abn || '';
+    document.getElementById('phone').value = user.phone || '';
+    document.getElementById('employeeSize').value = user.employee_size || '';
+    document.getElementById('billingAddress').value = user.billing_address || '';
+    document.getElementById('billingCity').value = user.billing_city || '';
+    document.getElementById('billingState').value = user.billing_state || '';
+    document.getElementById('billingPostcode').value = user.billing_postcode || '';
+    loadAndSetProfilePicture(user.email, user);
+}
+        
 
         // --- Load Profile Data ---
         async function loadProfileData() {
