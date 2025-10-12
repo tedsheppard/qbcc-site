@@ -113,20 +113,12 @@
     min-height: 70vh;
   }
 
-.left-pane {
+  .left-pane {
   flex: 0 0 400px;
   max-width: 400px;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 200px); /* Adjust 200px based on your header/margins */
-}
-
-.adjudicator-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  overflow-y: auto;
-  flex: 1;
+  max-height: calc(100vh - 160px); /* Changed from 200px to make it taller */
 }
 
 .right-pane {
@@ -137,8 +129,18 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 200px); /* Match left pane */
+  max-height: calc(100vh - 160px); /* Changed from 200px to make it taller */
 }
+
+
+.adjudicator-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+
 .right-pane.empty {
   display: flex;
   align-items: center;
