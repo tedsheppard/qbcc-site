@@ -1172,6 +1172,59 @@
   vertical-align: middle;
 }
 
+/* --- NEW: Payment Success Modal --- */
+.success-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.success-modal.active {
+  display: flex;
+}
+.success-modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  text-align: center;
+  position: relative;
+}
+.dark .success-modal-content {
+  background: #1a1a1a;
+}
+.success-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+}
+.success-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.success-modal-content h2 {
+  font-size: 24px;
+  margin-bottom: 15px;
+  color: #333;
+}
+.dark .success-modal-content h2 {
+  color: #f0f0f0;
+}
+.success-modal-content p {
+  color: #666;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+.dark .success-modal-content p {
+  color: #aaa;
+}
+
 </style>
 </head>
 
@@ -1384,18 +1437,18 @@
   <div class="payment-modal-content">
     <button class="payment-modal-close" onclick="closePaymentModal()">×</button>
     <div class="payment-modal-header">
-  <h2>Unlock Adjudicator Access</h2>
-  <p id="modalAdjudicatorName" style="color: #666; font-size: 16px;"></p>
-  <div class="price-tag">$54.95</div>
-  <p style="color: #666; font-size: 14px;">One-time payment • Permanent access</p>
-  
-  <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 6px; text-align: left;">
-    <label style="display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; line-height: 1.5;">
-      <input type="checkbox" id="terms-checkbox" required style="margin-right: 10px; margin-top: 3px; cursor: pointer;">
-      <span>By purchasing Adjudicator Insights for <span id="terms-adjudicator-name"></span>, you agree to the <a href="/adjudicator-insights-terms" target="_blank" style="color: #00c97c; text-decoration: underline;">Adjudicator Insights Terms & Conditions</a>.</span>
-    </label>
-  </div>
-</div>
+      <h2>Unlock Adjudicator Access</h2>
+      <p id="modalAdjudicatorName" style="color: #666; font-size: 16px;"></p>
+      <div class="price-tag">$54.95</div>
+      <p style="color: #666; font-size: 14px;">One-time payment • Permanent access</p>
+      
+      <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 6px; text-align: left;">
+        <label style="display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; line-height: 1.5;">
+          <input type="checkbox" id="terms-checkbox" required style="margin-right: 10px; margin-top: 3px; cursor: pointer;">
+          <span>By purchasing Adjudicator Insights for <span id="terms-adjudicator-name"></span>, you agree to the <a href="/adjudicator-insights-terms" target="_blank" style="color: #00c97c; text-decoration: underline;">Adjudicator Insights Terms & Conditions</a>.</span>
+        </label>
+      </div>
+    </div>
     
     <form id="payment-form">
       <div id="card-element"></div>
@@ -1406,6 +1459,22 @@
     </form>
   </div>
 </div>
+
+<!-- NEW: Payment Success Modal -->
+<div id="paymentSuccessModal" class="success-modal">
+  <div class="success-modal-content">
+    <div class="success-icon">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="11" fill="#D1FAE5"/>
+        <path d="M7 13l3 3 7-7" stroke="#065F46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2>Payment Successful!</h2>
+    <p>You now have permanent access to the insights for <strong id="successModalAdjudicatorName"></strong>.</p>
+    <button id="view-insights-btn" class="unlock-btn">View Insights</button>
+  </div>
+</div>
+
 
 <script>
 let allAdjudicators = [];
@@ -1443,6 +1512,7 @@ async function loadPurchasedAdjudicators() {
 let stripe = null;
 let elements = null;
 let cardElement = null;
+
 
 document.addEventListener('DOMContentLoaded', async function() {
   // Initialize Stripe
@@ -1520,10 +1590,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 
-
 function setupEventListeners() {
   document.getElementById('adjudicatorSearch').addEventListener('input', filterAdjudicators);
   document.getElementById('sortBy').addEventListener('change', filterAdjudicators);
+  document.getElementById('view-insights-btn').addEventListener('click', closeSuccessModal);
+
 }
 
 function searchAdjudicators() {
@@ -1946,7 +2017,6 @@ async function handleLogin(e) {
     userToken = data.access_token;
     
     closeAuthModal();
-        // MANUALLY UPDATE THE NAV BAR
     updateNavUI();
     showPaymentModal();
     
@@ -2053,21 +2123,20 @@ function showPaymentModal() {
 }
 
 async function unlockAdjudicator(adjudicatorName) {
-  currentAdjudicatorForPurchase = adjudicatorName;
-  document.getElementById('terms-adjudicator-name').textContent = adjudicatorName;
+    currentAdjudicatorForPurchase = adjudicatorName;
+    document.getElementById('terms-adjudicator-name').textContent = adjudicatorName;
 
-  const token = localStorage.getItem('purchase_token');
-  if (!token) {
-    // If user is not logged in, save the target adjudicator and redirect to login
-    sessionStorage.setItem('unlock_adjudicator_after_login', adjudicatorName);
-    window.location.href = `/login?redirect=${encodeURIComponent(window.location.href)}`;
-    return;
-  }
+    const token = localStorage.getItem('purchase_token');
+    if (!token) {
+        // If user is not logged in, save the target adjudicator and redirect to login
+        sessionStorage.setItem('unlock_adjudicator_after_login', adjudicatorName);
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.href)}`;
+        return;
+    }
 
-  // If user is already logged in, proceed directly to the payment modal
-  showPaymentModal();
+    // If user is already logged in, proceed directly to the payment modal
+    showPaymentModal();
 }
-
 
 // Handle payment form submission
 document.getElementById('payment-form').addEventListener('submit', async (e) => {
@@ -2122,10 +2191,10 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
       throw new Error('Failed to confirm purchase');
     }
     
-    alert('Purchase successful! Access granted.');
-    purchasedAdjudicators.add(currentAdjudicatorForPurchase); // ADD THIS LINE
+    // Payment successful!
+    purchasedAdjudicators.add(currentAdjudicatorForPurchase); // Add to local cache
     closePaymentModal();
-    selectAdjudicator(selectedAdjudicator.id);
+    showSuccessModal(currentAdjudicatorForPurchase); // Show the new success modal
     
   } catch (error) {
     document.getElementById('card-errors').textContent = error.message;
@@ -2134,6 +2203,21 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
     submitButton.querySelector('#button-text').textContent = 'Complete Purchase';
   }
 });
+
+// --- NEW: Success Modal Functions ---
+function showSuccessModal(adjudicatorName) {
+  document.getElementById('successModalAdjudicatorName').textContent = adjudicatorName;
+  document.getElementById('paymentSuccessModal').classList.add('active');
+}
+
+function closeSuccessModal() {
+  document.getElementById('paymentSuccessModal').classList.remove('active');
+  // Refresh the adjudicator details to show the unlocked state
+  if (selectedAdjudicator) {
+    selectAdjudicator(selectedAdjudicator.id);
+  }
+}
+
 
 // Utility functions
 function sanitizeHtml(str) {
@@ -2284,4 +2368,3 @@ function logout() {
 <script src="/assets/js/main.js"></script>
 </body>
 </html>
-
