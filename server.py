@@ -220,36 +220,40 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
+
+# --- SMTP config (update around line 95) ---
+SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", "info@sopal.com.au")
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "info@sopal.com.au")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+
 # Password reset request endpoint
 @app.post("/request-password-reset")
 async def request_password_reset(email: str = Form(...)):
     """Generates a password reset token and sends email"""
     try:
-        # Check if user exists
         user = purchases_con.execute(
             "SELECT email FROM purchase_users WHERE email = ?", (email,)
         ).fetchone()
         
         if not user:
-            # Don't reveal if email exists for security
             return {"msg": "If that email exists, a reset link has been sent"}
         
-        # Generate secure token
         token = secrets.token_urlsafe(32)
         expires_at = datetime.utcnow() + timedelta(hours=1)
         
-        # Store token
         purchases_con.execute("""
             INSERT INTO password_reset_tokens (email, token, expires_at)
             VALUES (?, ?, ?)
         """, (email, token, expires_at))
         purchases_con.commit()
         
-        # Send email with reset link
-        reset_link = f"https://yourdomain.com/reset-password?token={token}"
+        # CHANGED: Use sopal.com.au domain
+        reset_link = f"https://sopal.com.au/reset-password?token={token}"
         
         msg = EmailMessage()
-        msg["From"] = "sopal.aus@gmail.com"
+        msg["From"] = SMTP_FROM_EMAIL
         msg["To"] = email
         msg["Subject"] = "Password Reset - Sopal"
         msg.set_content(f"""
@@ -268,11 +272,11 @@ The Sopal Team
         
         await aiosmtplib.send(
             msg,
-            hostname="smtp.gmail.com",
-            port=587,
+            hostname=SMTP_HOST,
+            port=SMTP_PORT,
             start_tls=True,
-            username="sopal.aus@gmail.com",
-            password=os.getenv("SMTP_PASSWORD"),
+            username=SMTP_USERNAME,
+            password=SMTP_PASSWORD,
         )
         
         return {"msg": "If that email exists, a reset link has been sent"}
@@ -282,6 +286,7 @@ The Sopal Team
         raise HTTPException(status_code=500, detail="Failed to process request")
 
 
+
 @app.post("/reset-password")
 async def reset_password(
     token: str = Form(...),
@@ -289,7 +294,6 @@ async def reset_password(
 ):
     """Resets password using valid token"""
     try:
-        # Verify token
         token_record = purchases_con.execute("""
             SELECT email, expires_at, used 
             FROM password_reset_tokens 
@@ -297,16 +301,15 @@ async def reset_password(
         """, (token,)).fetchone()
         
         if not token_record:
-            raise HTTPException(status_code=400, detail="Invalid token")
+            raise HTTPException(status_code=400, detail="Invalid or expired reset link")
         
         if token_record['used']:
-            raise HTTPException(status_code=400, detail="Token already used")
+            raise HTTPException(status_code=400, detail="This reset link has already been used")
         
         expires_at = datetime.fromisoformat(token_record['expires_at'])
         if datetime.utcnow() > expires_at:
-            raise HTTPException(status_code=400, detail="Token expired")
+            raise HTTPException(status_code=400, detail="This reset link has expired")
         
-        # Update password
         hashed_password = get_password_hash(new_password)
         purchases_con.execute("""
             UPDATE purchase_users 
@@ -314,7 +317,6 @@ async def reset_password(
             WHERE email = ?
         """, (hashed_password, token_record['email']))
         
-        # Mark token as used
         purchases_con.execute("""
             UPDATE password_reset_tokens 
             SET used = 1 
@@ -323,7 +325,7 @@ async def reset_password(
         
         purchases_con.commit()
         
-        return {"msg": "Password reset successful"}
+        return {"msg": "Password reset successful", "email": token_record['email']}
         
     except HTTPException:
         raise
@@ -359,6 +361,7 @@ except sqlite3.OperationalError as e:
         print(f"Note: Could not add email_verified column: {e}")
 
 
+
 @app.post("/send-verification-email")
 async def send_verification_email(current_user: dict = Depends(get_current_purchase_user)):
     """Sends email verification link"""
@@ -372,14 +375,15 @@ async def send_verification_email(current_user: dict = Depends(get_current_purch
         """, (current_user['email'], token, expires_at))
         purchases_con.commit()
         
-        verify_link = f"https://yourdomain.com/verify-email?token={token}"
+        # CHANGED: Use sopal.com.au domain
+        verify_link = f"https://sopal.com.au/verify-email?token={token}"
         
         msg = EmailMessage()
-        msg["From"] = "sopal.aus@gmail.com"
+        msg["From"] = SMTP_FROM_EMAIL
         msg["To"] = current_user['email']
         msg["Subject"] = "Verify Your Email - Sopal"
         msg.set_content(f"""
-Hello {current_user['first_name']},
+Hello {current_user.get('first_name', '')},
 
 Please verify your email address by clicking the link below:
 {verify_link}
@@ -392,11 +396,11 @@ The Sopal Team
         
         await aiosmtplib.send(
             msg,
-            hostname="smtp.gmail.com",
-            port=587,
+            hostname=SMTP_HOST,
+            port=SMTP_PORT,
             start_tls=True,
-            username="sopal.aus@gmail.com",
-            password=os.getenv("SMTP_PASSWORD"),
+            username=SMTP_USERNAME,
+            password=SMTP_PASSWORD,
         )
         
         return {"msg": "Verification email sent"}
@@ -406,9 +410,10 @@ The Sopal Team
         raise HTTPException(status_code=500, detail="Failed to send verification email")
 
 
+
 @app.get("/verify-email")
 async def verify_email(token: str = Query(...)):
-    """Verifies email using token"""
+    """Verifies email using token and returns JSON for AJAX handling"""
     try:
         token_record = purchases_con.execute("""
             SELECT email, expires_at 
@@ -417,11 +422,11 @@ async def verify_email(token: str = Query(...)):
         """, (token,)).fetchone()
         
         if not token_record:
-            raise HTTPException(status_code=400, detail="Invalid token")
+            raise HTTPException(status_code=400, detail="Invalid verification link")
         
         expires_at = datetime.fromisoformat(token_record['expires_at'])
         if datetime.utcnow() > expires_at:
-            raise HTTPException(status_code=400, detail="Token expired")
+            raise HTTPException(status_code=400, detail="Verification link has expired")
         
         purchases_con.execute("""
             UPDATE purchase_users 
@@ -436,7 +441,7 @@ async def verify_email(token: str = Query(...)):
         
         purchases_con.commit()
         
-        return {"msg": "Email verified successfully"}
+        return {"msg": "Email verified successfully", "email": token_record['email']}
         
     except HTTPException:
         raise

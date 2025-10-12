@@ -1348,12 +1348,10 @@
           <input type="text" id="registerLastName" required>
         </div>
       </div>
-      
       <div class="form-group">
         <label>Email *</label>
         <input type="email" id="registerEmail" required>
       </div>
-      
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
         <div class="form-group">
           <label>Password *</label>
@@ -1364,23 +1362,19 @@
           <input type="password" id="registerPasswordConfirm" required>
         </div>
       </div>
-
       <div class="form-group">
-        <label>Firm/Company Name *</label>
-        <input type="text" id="registerFirmName" required>
+        <label>Firm/Company Name</label>
+        <input type="text" id="registerFirmName">
       </div>
-
       <div class="form-group">
-        <label>ABN *</label>
-        <input type="text" id="registerABN" required pattern="[0-9\s]{11,14}" placeholder="11 digit ABN">
-        <small style="color: #666; font-size: 12px;">Enter 11 digits (spaces optional)</small>
+        <label>ABN</label>
+        <input type="text" id="registerABN" pattern="[0-9\s]{11,14}" placeholder="11 digit ABN (optional)">
+        <small style="color: #666; font-size: 12px;">Optional - Enter 11 digits (spaces optional)</small>
       </div>
-
       <div class="form-group">
         <label>Billing Address *</label>
         <input type="text" id="registerBillingAddress" required placeholder="Street address">
       </div>
-
       <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;">
         <div class="form-group">
           <label>City *</label>
@@ -1405,16 +1399,14 @@
           <input type="text" id="registerBillingPostcode" required pattern="[0-9]{4}" placeholder="4000">
         </div>
       </div>
-
       <div class="form-group">
         <label>Phone</label>
         <input type="tel" id="registerPhone" placeholder="Optional">
       </div>
-
       <div class="form-group">
-        <label>Company Size *</label>
-        <select id="registerEmployeeSize" required>
-          <option value="">Select company size</option>
+        <label>Company Size</label>
+        <select id="registerEmployeeSize">
+          <option value="">Select company size (optional)</option>
           <option value="1-5">1-5 employees</option>
           <option value="6-10">6-10 employees</option>
           <option value="11-25">11-25 employees</option>
@@ -1425,7 +1417,6 @@
           <option value="500+">500+ employees</option>
         </select>
       </div>
-
       <button type="submit" class="auth-submit-btn">Create Account</button>
       <div id="registerError" class="auth-error"></div>
     </form>
@@ -2031,10 +2022,44 @@ async function handleRegister(e) {
   const email = document.getElementById('registerEmail').value;
   const password = document.getElementById('registerPassword').value;
   const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+  const firstName = document.getElementById('registerFirstName').value;
+  const lastName = document.getElementById('registerLastName').value;
+  const firmName = document.getElementById('registerFirmName').value;
+  const abn = document.getElementById('registerABN').value;
+  const billingAddress = document.getElementById('registerBillingAddress').value;
+  const billingCity = document.getElementById('registerBillingCity').value;
+  const billingState = document.getElementById('registerBillingState').value;
+  const billingPostcode = document.getElementById('registerBillingPostcode').value;
+  const employeeSize = document.getElementById('registerEmployeeSize').value;
+  const phone = document.getElementById('registerPhone').value;
   const errorDiv = document.getElementById('registerError');
   
-  if (password !== passwordConfirm) {
-    errorDiv.textContent = 'Passwords do not match';
+  // Validation
+  const errors = [];
+  
+  if (!email) errors.push('Email is required');
+  if (!password) errors.push('Password is required');
+  if (password !== passwordConfirm) errors.push('Passwords do not match');
+  if (password.length < 8) errors.push('Password must be at least 8 characters');
+  if (!firstName) errors.push('First name is required');
+  if (!lastName) errors.push('Last name is required');
+  if (!billingAddress) errors.push('Billing address is required');
+  if (!billingCity) errors.push('City is required');
+  if (!billingState) errors.push('State is required');
+  if (!billingPostcode) errors.push('Postcode is required');
+  
+  // ABN validation only if provided
+  if (abn && abn.trim()) {
+    const abnCleaned = abn.replace(/\s/g, '');
+    if (abnCleaned.length !== 11 || !/^\d+$/.test(abnCleaned)) {
+      errors.push('ABN must be exactly 11 digits');
+    }
+  }
+  
+  if (errors.length > 0) {
+    errorDiv.innerHTML = errors.map(err => `• ${err}`).join('<br>');
+    errorDiv.className = 'auth-error';
+    errorDiv.style.display = 'block';
     return;
   }
   
@@ -2042,6 +2067,16 @@ async function handleRegister(e) {
     const formData = new FormData();
     formData.append('email', email);
     formData.append('password', password);
+    formData.append('first_name', firstName);
+    formData.append('last_name', lastName);
+    formData.append('firm_name', firmName || '');
+    formData.append('abn', abn ? abn.replace(/\s/g, '') : '');
+    formData.append('billing_address', billingAddress);
+    formData.append('billing_city', billingCity);
+    formData.append('billing_state', billingState);
+    formData.append('billing_postcode', billingPostcode);
+    formData.append('employee_size', employeeSize || '');
+    formData.append('phone', phone || '');
     
     const response = await fetch('/purchase-register', {
       method: 'POST',
@@ -2053,6 +2088,7 @@ async function handleRegister(e) {
       throw new Error(error.detail || 'Registration failed');
     }
     
+    // Auto-login after successful registration
     const loginFormData = new FormData();
     loginFormData.append('username', email);
     loginFormData.append('password', password);
@@ -2071,6 +2107,8 @@ async function handleRegister(e) {
     
   } catch (error) {
     errorDiv.textContent = error.message;
+    errorDiv.className = 'auth-error';
+    errorDiv.style.display = 'block';
   }
 }
 

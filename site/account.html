@@ -385,7 +385,7 @@
 <div class="header">
   <div class="header-content">
     <a href="/">
-      <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+      <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
     </a>
     <div class="nav-links">
       <a href="index.html">Search</a>
@@ -405,11 +405,11 @@
     <!-- Email Verification Banner -->
     <div id="emailVerificationBanner" style="display: none; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
+        <div style="flex: 1;">
           <strong>⚠️ Email Not Verified</strong>
-          <p style="margin: 5px 0 0 0; color: #856404;">Please verify your email address to access all features.</p>
+          <p style="margin: 5px 0 0 0; color: #856404;">Please check your email for the verification link we just sent.</p>
         </div>
-        <button onclick="resendVerificationEmail()" class="btn btn-secondary" id="resendBtn">Resend Email</button>
+        <button onclick="resendVerificationEmail()" class="btn btn-secondary" id="resendBtn" style="white-space: nowrap;">Send Again</button>
       </div>
     </div>
 
@@ -428,6 +428,11 @@
                 <div class="card">
                     <div class="card-header">
                         <h2>Profile Information</h2>
+                        <div id="emailVerifiedBadge" style="display: none;">
+                            <span style="background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                ✓ Email Verified
+                            </span>
+                        </div>
                         <div class="form-actions" id="profile-actions">
                            <button class="btn" id="edit-profile-btn">Edit Profile</button>
                            <button class="btn" id="save-profile-btn" style="display: none;">Save Changes</button>
@@ -670,7 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <tr>
                                 <td>${p.adjudicator_name}</td>
                                 <td>${new Date(p.purchase_date).toLocaleDateString('en-AU')}</td>
-                                <td>$${parseFloat(p.amount_paid).toFixed(2)}</td>
+                                <td>${parseFloat(p.amount_paid).toFixed(2)}</td>
                             </tr>
                         `).join('');
                     }
@@ -765,8 +770,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('/purchase-me', { headers });
             if (res.ok) {
                 const user = await res.json();
-                if (!user.email_verified) {
-                    document.getElementById('emailVerificationBanner').style.display = 'block';
+                
+                // Show verified badge if email is verified
+                if (user.email_verified) {
+                    const badge = document.getElementById('emailVerifiedBadge');
+                    if (badge) badge.style.display = 'block';
+                } else {
+                    // Show banner if not verified
+                    const banner = document.getElementById('emailVerificationBanner');
+                    if (banner) banner.style.display = 'block';
                 }
             }
             
@@ -774,6 +786,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const tab = urlParams.get('tab') || 'profile';
             const targetButton = document.querySelector(`.nav-btn[data-target="${tab}-section"]`);
             if (targetButton) setTimeout(() => targetButton.click(), 0);
+            
+            // Check for verification success message from URL
+            const verified = urlParams.get('verified');
+            if (verified === 'success') {
+                showTempBanner('Email verified successfully!', 'success');
+                // Remove the query param from URL
+                const newUrl = window.location.pathname + (tab !== 'profile' ? `?tab=${tab}` : '');
+                window.history.replaceState({}, '', newUrl);
+            }
         }
 
         initializePage();
@@ -796,16 +817,51 @@ async function resendVerificationEmail() {
     });
     
     if (response.ok) {
-      alert('Verification email sent! Please check your inbox.');
+      const banner = document.getElementById('emailVerificationBanner');
+      const message = banner.querySelector('p');
+      message.textContent = 'Verification email sent! Please check your inbox.';
+      message.style.color = '#155724';
+      
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        banner.style.display = 'none';
+      }, 5000);
     } else {
-      alert('Failed to send verification email. Please try again later.');
+      showTempBanner('Failed to send verification email. Please try again later.', 'error');
     }
   } catch (e) {
-    alert('Network error. Please try again later.');
+    showTempBanner('Network error. Please try again later.', 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Resend Email';
+    btn.textContent = 'Send Again';
   }
+}
+
+function showTempBanner(message, type = 'success') {
+  const banner = document.createElement('div');
+  banner.style.cssText = `
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${type === 'success' ? '#d4edda' : '#f8d7da'};
+    color: ${type === 'success' ? '#155724' : '#721c24'};
+    border: 1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'};
+    padding: 15px 30px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    font-size: 14px;
+    font-weight: 500;
+  `;
+  banner.textContent = message;
+  document.body.appendChild(banner);
+  
+  setTimeout(() => {
+    banner.style.opacity = '0';
+    banner.style.transition = 'opacity 0.3s';
+    setTimeout(() => banner.remove(), 300);
+  }, 4000);
 }
 </script>
 
