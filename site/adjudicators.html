@@ -1499,6 +1499,8 @@ let selectedAdjudicator = null;
 let currentAdjudicatorForPurchase = null;
 let userToken = null;
 let isSidebarLocked = true;
+let originalDecisions = [];
+let isDecisionSearchActive = false;
 
 let purchasedAdjudicators = new Set(); // Track purchased adjudicators
 
@@ -1613,6 +1615,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     findAndUnlock();
   }
 });
+
+
+function initializeDecisionSearch() {
+  if (selectedAdjudicator && selectedAdjudicator.decisions) {
+    originalDecisions = [...selectedAdjudicator.decisions];
+  }
+  isDecisionSearchActive = false;
+}
 
 
 function setupEventListeners() {
@@ -1759,6 +1769,7 @@ async function selectAdjudicator(adjudicatorId) {
         
         const decisions = await decisionsResponse.json();
         selectedAdjudicator.decisions = decisions;
+        initializeDecisionSearch();
 
         showAdjudicatorDetail(hasAccess);
 
@@ -1879,9 +1890,27 @@ function showAdjudicatorDetail(hasAccess = false) {
           </div>
         </div>
 
-        <!-- Decisions Tab -->
-        <div id="decisions-tab" class="tab-content">
-          <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+       
+          <!-- Decisions Tab -->
+<div id="decisions-tab" class="tab-content">
+  <!-- ADD SEARCH BAR -->
+  <div style="margin-bottom: 15px;">
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+      <input type="text" id="decisionSearchInput" 
+             placeholder="Search decisions (e.g., 'defect AND delay' or 'payment w/5 claim')"
+             style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
+      <button onclick="searchDecisions()" 
+              style="padding: 10px 20px; background: #00c97c; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        Search
+      </button>
+      <button onclick="clearDecisionSearch()" 
+              style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        Clear
+      </button>
+    </div>
+  </div>
+  
+  <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
             <h4 style="margin: 0;">All Decisions</h4>
             <select id="decisionSort" onchange="sortDecisions()" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
               <option value="date_newest">Date (Newest First)</option>
@@ -1903,7 +1932,8 @@ function showAdjudicatorDetail(hasAccess = false) {
   `;
 }
 
-function renderDecisionItems(decisions, hasAccess) {
+
+function renderDecisionItems(decisions, hasAccess, searchQuery = null) {
     if (!decisions || decisions.length === 0) {
         return '<div class="loading">No decisions found</div>';
     }
@@ -1935,10 +1965,17 @@ function renderDecisionItems(decisions, hasAccess) {
               <div class="decision-actions">
                 ${decisionLinkHtml}
               </div>
+              ${searchQuery && decision.matchedText ? `
+                <div class="snippet" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 12px; color: #333;">
+                  ${extractSnippet(decision.matchedText, searchQuery)}
+                </div>
+              ` : ''}
             </div>
         `;
     }).join('');
 }
+
+
 
 
 function showTab(tabName) {
@@ -2558,6 +2595,151 @@ function logout() {
   localStorage.removeItem('purchase_token');
   window.location.reload();
 }
+
+
+async function searchDecisions() {
+  const searchInput = document.getElementById('decisionSearchInput');
+  const query = searchInput.value.trim();
+  
+  if (!query) {
+    clearDecisionSearch();
+    return;
+  }
+  
+  isDecisionSearchActive = true;
+  
+  const processedQuery = normalizeInput(query);
+  const filtered = await filterDecisionsLocally(originalDecisions, processedQuery);
+  
+  const hasAccess = !document.querySelector('.detail-content.blur-stats');
+  const container = document.getElementById('decisionsListContainer');
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="loading">No matching decisions found</div>';
+  } else {
+    container.innerHTML = renderDecisionItems(filtered, hasAccess, processedQuery);
+  }
+}
+
+function clearDecisionSearch() {
+  document.getElementById('decisionSearchInput').value = '';
+  isDecisionSearchActive = false;
+  
+  const hasAccess = !document.querySelector('.detail-content.blur-stats');
+  const container = document.getElementById('decisionsListContainer');
+  container.innerHTML = renderDecisionItems(originalDecisions, hasAccess);
+}
+
+async function filterDecisionsLocally(decisions, query) {
+  const matches = [];
+  
+  for (const decision of decisions) {
+    try {
+      const response = await fetch(`/api/decision-text/${decision.id}`);
+      if (!response.ok) continue;
+      
+      const data = await response.json();
+      const fullText = data.fullText || '';
+      
+      if (simpleMatchQuery(fullText, query)) {
+        matches.push({...decision, matchedText: fullText});
+      }
+    } catch (e) {
+      console.error('Error fetching decision text:', e);
+    }
+  }
+  
+  return matches;
+}
+
+function simpleMatchQuery(text, query) {
+  const lowerText = text.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  
+  // Handle quoted phrases
+  const phrases = lowerQuery.match(/"([^"]+)"/g);
+  if (phrases) {
+    for (const phrase of phrases) {
+      const clean = phrase.replace(/"/g, '');
+      if (!lowerText.includes(clean)) return false;
+    }
+  }
+  
+  // Handle AND operator
+  if (lowerQuery.includes(' and ')) {
+    const terms = lowerQuery.split(' and ').map(t => t.trim().replace(/"/g, ''));
+    return terms.every(term => lowerText.includes(term));
+  }
+  
+  // Handle OR operator
+  if (lowerQuery.includes(' or ')) {
+    const terms = lowerQuery.split(' or ').map(t => t.trim().replace(/"/g, ''));
+    return terms.some(term => lowerText.includes(term));
+  }
+  
+  // Handle proximity (w/N)
+  const proximityMatch = lowerQuery.match(/(\w+)\s+w\/(\d+)\s+(\w+)/i);
+  if (proximityMatch) {
+    const [, term1, distance, term2] = proximityMatch;
+    return checkProximity(lowerText, term1, term2, parseInt(distance));
+  }
+  
+  // Simple keyword match
+  return lowerText.includes(lowerQuery);
+}
+
+function checkProximity(text, term1, term2, maxDistance) {
+  const words = text.toLowerCase().split(/\s+/);
+  const positions1 = words.map((w, i) => w.includes(term1) ? i : -1).filter(i => i >= 0);
+  const positions2 = words.map((w, i) => w.includes(term2) ? i : -1).filter(i => i >= 0);
+  
+  for (const pos1 of positions1) {
+    for (const pos2 of positions2) {
+      if (Math.abs(pos2 - pos1) <= maxDistance) return true;
+    }
+  }
+  return false;
+}
+
+function extractSnippet(text, query, length = 200) {
+  const lowerText = text.toLowerCase();
+  const firstTerm = query.toLowerCase().split(/\s+and\s+|\s+or\s+|\s+w\/\d+\s+/)[0].replace(/"/g, '');
+  const index = lowerText.indexOf(firstTerm);
+  
+  if (index === -1) return '';
+  
+  const start = Math.max(0, index - 50);
+  const end = Math.min(text.length, index + length);
+  let snippet = text.substring(start, end);
+  
+  if (start > 0) snippet = '...' + snippet;
+  if (end < text.length) snippet = snippet + '...';
+  
+  // Highlight matching terms
+  const terms = query.toLowerCase().match(/\w+/g);
+  if (terms) {
+    terms.forEach(term => {
+      const regex = new RegExp(`(${term})`, 'gi');
+      snippet = snippet.replace(regex, '<mark>$1</mark>');
+    });
+  }
+  
+  return snippet;
+}
+
+// Allow Enter key to trigger search
+document.addEventListener('DOMContentLoaded', function() {
+  // ... your existing DOMContentLoaded code ...
+  
+  // ADD THIS:
+  document.addEventListener('keydown', function(e) {
+    const searchInput = document.getElementById('decisionSearchInput');
+    if (searchInput && document.activeElement === searchInput && e.key === 'Enter') {
+      searchDecisions();
+    }
+  });
+});
+
 </script>
 
 <script src="/assets/js/main.js"></script>

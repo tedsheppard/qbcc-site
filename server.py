@@ -2578,3 +2578,20 @@ async def create_invoice_for_purchase(
     except Exception as e:
         print(f"Error creating invoice: {e}")
         raise HTTPException(status_code=500, detail="Failed to create invoice")
+
+@app.get("/api/decision-text/{decision_id}")
+def get_decision_text(decision_id: str):
+    """Get full text for a specific decision"""
+    try:
+        row = con.execute(
+            "SELECT full_text FROM docs_fresh WHERE ejs_id = ?", 
+            (decision_id,)
+        ).fetchone()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="Decision not found")
+        
+        return {"fullText": row["full_text"] or ""}
+    except Exception as e:
+        print(f"Error fetching decision text: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch decision text")
