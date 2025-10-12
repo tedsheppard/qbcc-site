@@ -909,16 +909,31 @@ body {
 // Replace your existing fetchAdjudicators function with this one
 async function fetchAdjudicators() {
   try {
+    // 1. DEFINE THE EXCEPTION LIST HERE
+    const excludedSurnames = new Set([
+      'bond', 'wood', 'court', 'grant', 'king', 
+      'dowling', 'wright', 'long', 'green', 
+      'white', 'lee', 'smith', 'jones', 'wilson', 
+      'taylor', 'roberts', 'williams', 'martin', 'thomas'
+    ]);
+
     const response = await fetch('/api/adjudicators');
     if (!response.ok) return;
     const data = await response.json();
     
     adjudicatorList = data.map(adj => {
       const parts = adj.name.toLowerCase().split(' ').filter(p => p.length > 1);
+      let lastName = parts.length > 0 ? parts[parts.length - 1] : null;
+
+      // 2. CHECK AGAINST THE EXCEPTION LIST
+      // If the surname is in the list, we nullify it so it won't be used for blocking.
+      if (lastName && excludedSurnames.has(lastName)) {
+        lastName = null; 
+      }
+
       return {
         fullName: adj.name.toLowerCase(),
-        // Get the last significant word as the surname
-        lastName: parts.length > 0 ? parts[parts.length - 1] : null 
+        lastName: lastName 
       };
     });
     console.log(`Loaded ${adjudicatorList.length} adjudicators for surname check.`);
@@ -926,6 +941,7 @@ async function fetchAdjudicators() {
     console.error('Could not fetch adjudicator list:', error);
   }
 }
+
 
 
 
