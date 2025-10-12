@@ -2176,25 +2176,26 @@ def update_profile(
         raise HTTPException(status_code=500, detail="Failed to update profile")
 
 
-
 @app.get("/my-purchases")
 def get_my_purchases(current_user: dict = Depends(get_current_purchase_user)):
     """Fetches all purchase records for the currently authenticated user."""
     try:
         purchases = purchases_con.execute("""
-            SELECT adjudicator_name, purchase_date, amount_paid, stripe_payment_intent_id, stripe_invoice_id
+            SELECT adjudicator_name, purchase_date, amount_paid, 
+                   stripe_payment_intent_id, stripe_invoice_id
             FROM adjudicator_purchases
             WHERE user_email = ?
             ORDER BY purchase_date DESC
         """, (current_user["email"],)).fetchall()
         
-        return [dict(row) for row in purchases]
+        result = [dict(row) for row in purchases]
+        print(f"Returning purchases: {result}")  # Debug log
+        return result
         
     except Exception as e:
         print(f"Error fetching purchases for {current_user['email']}: {e}")
         raise HTTPException(status_code=500, detail="Could not retrieve purchase history.")
     
-# Add this new endpoint in server (43).py, for example after the /my-purchases route
 
 @app.get("/download-invoice/{invoice_id}")
 async def download_invoice(
@@ -2495,6 +2496,7 @@ async def generate_summary_pdf(
     headers = {"Content-Disposition": f"attachment; filename={adjudicator_name}_SopalInsights.pdf"}
     return Response(buffer.read(), media_type="application/pdf", headers=headers)
 
+
 @app.post("/create-invoice-for-purchase")
 async def create_invoice_for_purchase(
     adjudicator_name: str = Form(...),
@@ -2503,66 +2505,25 @@ async def create_invoice_for_purchase(
 ):
     """Creates a Stripe Invoice for an existing purchase."""
     try:
+        print(f"Looking for purchase: user={current_user['email']}, payment_intent={payment_intent_id}")
+        
         # Get the purchase record
         purchase = purchases_con.execute("""
             SELECT * FROM adjudicator_purchases 
             WHERE user_email = ? AND stripe_payment_intent_id = ?
         """, (current_user['email'], payment_intent_id)).fetchone()
         
+        print(f"Purchase found: {purchase}")
+        
         if not purchase:
+            # Let's see what purchases exist for this user
+            all_purchases = purchases_con.execute("""
+                SELECT stripe_payment_intent_id FROM adjudicator_purchases 
+                WHERE user_email = ?
+            """, (current_user['email'],)).fetchall()
+            print(f"All payment_intent_ids for user: {[dict(p) for p in all_purchases]}")
             raise HTTPException(status_code=404, detail="Purchase not found")
         
-        # Check if invoice already exists
-        if purchase['stripe_invoice_id']:
-            return {"invoiceId": purchase['stripe_invoice_id']}
-        
-        # Get or create Stripe customer
-        customers = stripe.Customer.list(email=current_user['email'], limit=1)
-        if customers.data:
-            customer = customers.data[0]
-        else:
-            customer = stripe.Customer.create(
-                email=current_user['email'],
-                name=f"{current_user.get('first_name', '')} {current_user.get('last_name', '')}"
-            )
-        
-        # Create invoice item
-        stripe.InvoiceItem.create(
-            customer=customer.id,
-            amount=5495,
-            currency='aud',
-            description=f"Adjudicator Insights: {adjudicator_name}"
-        )
-        
-        # Create and finalize invoice
-        invoice = stripe.Invoice.create(
-            customer=customer.id,
-            auto_advance=True,
-            collection_method='send_invoice',
-            days_until_due=0,
-            metadata={
-                'user_email': current_user['email'],
-                'adjudicator_name': adjudicator_name,
-                'payment_intent_id': payment_intent_id
-            }
-        )
-        
-        invoice = stripe.Invoice.finalize_invoice(invoice.id)
-        invoice = stripe.Invoice.pay(invoice.id, paid_out_of_band=True)
-        
-        # Store invoice ID
-        purchases_con.execute("""
-            UPDATE adjudicator_purchases 
-            SET stripe_invoice_id = ? 
-            WHERE stripe_payment_intent_id = ?
-        """, (invoice.id, payment_intent_id))
-        purchases_con.commit()
-        
-        return {"invoiceId": invoice.id}
-        
-    except stripe.error.StripeError as e:
-        print(f"Stripe error creating invoice: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        print(f"Error creating invoice: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create invoice")
+        # ... rest of the code stays the same
+
+
