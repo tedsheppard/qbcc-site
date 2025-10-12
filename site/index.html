@@ -906,23 +906,28 @@ body {
     let chatHistories = {};
 
 
-    // Replace your existing fetchAdjudicators function with this one
+// Replace your existing fetchAdjudicators function with this one
 async function fetchAdjudicators() {
   try {
     const response = await fetch('/api/adjudicators');
     if (!response.ok) return;
     const data = await response.json();
-    // Store names AND their parts for flexible matching
-    adjudicatorList = data.map(adj => ({
-      fullName: adj.name.toLowerCase(),
-      parts: adj.name.toLowerCase().split(' ').filter(p => p.length > 1) // Store parts, ignore initials
-    }));
-    console.log(`Loaded ${adjudicatorList.length} adjudicators for search check.`);
+    
+    adjudicatorList = data.map(adj => {
+      const parts = adj.name.toLowerCase().split(' ').filter(p => p.length > 1);
+      return {
+        fullName: adj.name.toLowerCase(),
+        // Get the last significant word as the surname
+        lastName: parts.length > 0 ? parts[parts.length - 1] : null 
+      };
+    });
+    console.log(`Loaded ${adjudicatorList.length} adjudicators for surname check.`);
   } catch (error) {
     console.error('Could not fetch adjudicator list:', error);
   }
 }
-   
+
+
 
     async function runSearch(page=1, bypassAdjudicatorCheck = false){
       if (!bypassAdjudicatorCheck && adjudicatorList.length > 0) {
@@ -989,7 +994,7 @@ async function fetchAdjudicators() {
       }
     }
 
-// Replace your existing findMatchingAdjudicator function with this one
+    // Replace your existing findMatchingAdjudicator function with this one
 function findMatchingAdjudicator(query) {
   if (!query || query.length < 3 || !adjudicatorList.length) return null;
 
@@ -1003,23 +1008,15 @@ function findMatchingAdjudicator(query) {
 
   if (!cleanedQuery) return null;
 
+  // Check if the query contains any known adjudicator's last name
   for (const adjudicator of adjudicatorList) {
-    // We check for names with at least two parts (e.g., "john smith")
-    // to avoid blocking common single-word searches.
-    if (adjudicator.parts.length < 2) continue;
-
-    // Check if ALL parts of the adjudicator's name are present in the user's query
-    const allPartsFound = adjudicator.parts.every(part => cleanedQuery.includes(part));
-
-    if (allPartsFound) {
+    if (adjudicator.lastName && cleanedQuery.includes(adjudicator.lastName)) {
       return adjudicator.fullName;
     }
   }
 
   return null;
-}
-
-  
+}  
 
 
 // Replace your old showAdjudicatorModal function with this one
