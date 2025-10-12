@@ -2224,6 +2224,7 @@ async function unlockAdjudicator(adjudicatorName) {
 
 // Handle payment form submission
 document.getElementById('payment-form').addEventListener('submit', async (e) => {
+
   e.preventDefault();
 
   const submitButton = document.getElementById('submit-payment');
@@ -2234,7 +2235,7 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
     const token = localStorage.getItem('purchase_token');
     if (!token) throw new Error('Not authenticated. Please log in again.');
 
-    // Get the payment intent details (NO invoiceId here anymore)
+    // Get the payment intent details
     const intentResponse = await fetch('/create-payment-intent', {
       method: 'POST',
       headers: {
@@ -2257,7 +2258,7 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
     });
     if (error) throw new Error(error.message);
 
-    // Confirm the purchase on the backend and get the INVOICE ID back
+    // Confirm the purchase on the backend and get the invoice ID
     const confirmResponse = await fetch('/confirm-purchase', {
       method: 'POST',
       headers: {
@@ -2266,54 +2267,43 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
       },
       body: `payment_intent_id=${paymentIntentId}&adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
     });
+    
     if (!confirmResponse.ok) throw new Error('Failed to confirm purchase on server.');
-        
+    
     const confirmData = await confirmResponse.json();
-    const invoiceId = confirmData.invoiceId; // Get the invoice ID from the confirmation step
+    const invoiceId = confirmData.invoiceId;
+    const adjudicatorName = currentAdjudicatorForPurchase; // Store before clearing
 
+    // Add to purchased set
+    purchasedAdjudicators.add(adjudicatorName);
 
-    // Show a styled success message with download button (replaces modal content)
-    purchasedAdjudicators.add(currentAdjudicatorForPurchase);
+    // DON'T close the modal - replace its content instead
     const paymentModal = document.getElementById('paymentModal');
-    const adjudicatorName = currentAdjudicatorForPurchase;
-    closePaymentModal();
-    if (invoiceId) {
-      paymentModal.innerHTML = `
-        <div style="text-align: center; padding: 40px;">
-            <div style="font-size: 48px; color: #00c97c; margin-bottom: 20px;">✓</div>
-            <h2 style="color: #00c97c; margin-bottom: 15px;">Payment Successful!</h2>
-            <p style="margin-bottom: 30px;">You now have access to ${adjudicatorName}'s insights.</p>
-            <button onclick="downloadInvoice('${invoiceId}')" 
-                    style="background: #00c97c; color: white; border: none; padding: 12px 24px; 
-                           border-radius: 6px; cursor: pointer; font-size: 16px; margin-right: 10px;">
-                Download Invoice
-            </button>
-            <button onclick="location.reload()" 
-                    style="background: #6c757d; color: white; border: none; padding: 12px 24px; 
-                           border-radius: 6px; cursor: pointer; font-size: 16px;">
-                Close
-            </button>
-        </div>
-      `;
-    } else {
-      paymentModal.innerHTML = `
-        <div style="text-align: center; padding: 40px;">
-            <div style="font-size: 48px; color: #00c97c; margin-bottom: 20px;">✓</div>
-            <h2 style="color: #00c97c; margin-bottom: 15px;">Payment Successful!</h2>
-            <p style="margin-bottom: 30px;">You now have access to ${adjudicatorName}'s insights.</p>
-            <button onclick="location.reload()" 
-                    style="background: #00c97c; color: white; border: none; padding: 12px 24px; 
-                           border-radius: 6px; cursor: pointer; font-size: 16px;">
-                Close
-            </button>
-        </div>
-      `;
-    }
-// Add this function for downloading invoices
-function downloadInvoice(invoiceId) {
-  const token = localStorage.getItem('purchase_token');
-  window.open(`/download-invoice/${invoiceId}?token=${token}`, '_blank');
-}
+    const modalContent = paymentModal.querySelector('.payment-modal-content');
+    
+    modalContent.innerHTML = `
+      <div style="text-align: center; padding: 40px;">
+        <div style="font-size: 64px; color: #00c97c; margin-bottom: 20px;">✓</div>
+        <h2 style="color: #00c97c; margin-bottom: 15px;">Payment Successful!</h2>
+        <p style="margin-bottom: 30px; font-size: 16px;">
+          You now have permanent access to <strong>${adjudicatorName}</strong>'s insights.
+        </p>
+        ${invoiceId ? `
+          <button onclick="downloadInvoice('${invoiceId}')" 
+                  style="background: #00c97c; color: white; border: none; padding: 14px 28px; 
+                         border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600;
+                         margin-bottom: 10px; width: 100%;">
+            Download Invoice
+          </button>
+        ` : ''}
+        <button onclick="closeSuccessAndRefresh()" 
+                style="background: #6c757d; color: white; border: none; padding: 14px 28px; 
+                       border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600;
+                       width: 100%;">
+          View Insights
+        </button>
+      </div>
+    `;
 
   } catch (error) {
     document.getElementById('card-errors').textContent = error.message;
@@ -2322,6 +2312,20 @@ function downloadInvoice(invoiceId) {
     submitButton.querySelector('#button-text').textContent = 'Complete Purchase';
   }
 });
+
+// Add these helper functions after the payment form handler
+function downloadInvoice(invoiceId) {
+  const token = localStorage.getItem('purchase_token');
+  window.open(`/download-invoice/${invoiceId}`, '_blank');
+}
+
+function closeSuccessAndRefresh() {
+  closePaymentModal();
+  // Refresh the adjudicator details to show unlocked state
+  if (selectedAdjudicator) {
+    selectAdjudicator(selectedAdjudicator.id);
+  }
+}
 
 // --- NEW: Success Modal Functions ---
 function showSuccessModal(adjudicatorName, invoiceId) {
