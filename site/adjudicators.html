@@ -1620,13 +1620,18 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 });
 
-
 function initializeDecisionSearch() {
   if (selectedAdjudicator && selectedAdjudicator.decisions) {
     originalDecisions = [...selectedAdjudicator.decisions];
+    console.log('[DEBUG] initializeDecisionSearch - Set originalDecisions to:', originalDecisions.length, 'decisions');
+    console.log('[DEBUG] Decision IDs:', originalDecisions.map(d => d.id));
+  } else {
+    console.log('[DEBUG] initializeDecisionSearch - No decisions found!');
+    originalDecisions = [];
   }
   isDecisionSearchActive = false;
 }
+
 
 
 function setupEventListeners() {
@@ -2641,6 +2646,7 @@ async function searchDecisions() {
       loadingBar.style.width = '60%';
     }
     
+    
     const filtered = await filterDecisionsLocally(originalDecisions, processedQuery);
     console.log('[DEBUG] Filtered results:', filtered.length); // Debug line
     
@@ -2700,8 +2706,10 @@ function clearDecisionSearch() {
 }
 
 
-
 async function filterDecisionsLocally(decisions, query) {
+  console.log('[DEBUG] filterDecisionsLocally called with:', decisions.length, 'decisions');
+  console.log('[DEBUG] Decision IDs to search:', decisions.map(d => d.id));
+  
   const matches = [];
   
   for (const decision of decisions) {
