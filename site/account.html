@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -394,7 +393,6 @@
 </head>
 
 <body>
-<!-- Header -->
 <div class="header">
   <div class="header-content">
     <a href="/">
@@ -415,7 +413,6 @@
 <main>
     <h1>My Account</h1>
 
-    <!-- Email Verification Banner -->
     <div id="emailVerificationBanner" style="display: none; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <div style="flex: 1;">
@@ -427,16 +424,13 @@
     </div>
 
     <div class="account-container">
-        <!-- Navigation Tabs -->
         <aside class="account-nav">
             <button class="nav-btn active" data-target="profile-section">Profile Settings</button>
             <button class="nav-btn" data-target="purchases-section">Purchase History</button>
             <button class="nav-btn" data-target="payment-section">Payment Settings</button>
         </aside>
 
-        <!-- Content Sections -->
         <div class="account-content">
-            <!-- Profile Settings Section -->
             <section id="profile-section" class="account-section active">
                 <div class="card">
                     <div class="card-header">
@@ -464,7 +458,6 @@
                     
 <form id="profile-form">
     <div class="form-grid">
-        <!-- ADD EMAIL FIELD (permanently locked) -->
         <div class="form-group full-width">
             <label for="email">Email Address</label>
             <input type="email" id="email" name="email" disabled style="cursor: not-allowed;">
@@ -540,7 +533,6 @@
                 </div>
             </section>
 
-            <!-- Purchase History Section -->
             <section id="purchases-section" class="account-section">
                 <div class="card">
                     <h2>Purchase History</h2>
@@ -554,8 +546,7 @@
                             </tr>
                         </thead>
                         <tbody id="purchase-history-body">
-                            <!-- Rows will be populated here -->
-                        </tbody>
+                            </tbody>
                     </table>
                     <div id="no-purchases" class="empty-state" style="display: none;">You have not made any purchases yet.</div>
     .action-buttons {
@@ -601,7 +592,6 @@
                 </div>
             </section>
 
-            <!-- Payment Settings Section -->
             <section id="payment-section" class="account-section">
                 <div class="card">
                     <h2>Payment Settings</h2>
@@ -616,6 +606,74 @@
 </main>
 
 <script>
+// --- GLOBALLY ACCESSIBLE HELPER FUNCTIONS ---
+
+// Download Stripe receipt
+async function downloadReceipt(paymentIntentId) {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) {
+        alert('Please log in to download receipt');
+        return;
+    }
+    try {
+        const response = await fetch(`/get-receipt-url/${paymentIntentId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+            throw new Error('Could not get receipt URL');
+        }
+        const data = await response.json();
+        if (data.receiptUrl) {
+            window.open(data.receiptUrl, '_blank');
+        } else {
+            alert('Receipt not available for this purchase');
+        }
+    } catch (error) {
+        console.error('Receipt download error:', error);
+        alert('Failed to download receipt. Please try again later.');
+    }
+}
+
+// Download generated invoice PDF
+async function downloadInvoice(button, adjudicatorName) {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) {
+        alert('Please log in to download invoice');
+        return;
+    }
+    const originalText = button.textContent;
+    button.textContent = 'Loading...';
+    button.disabled = true;
+    try {
+        const formData = new FormData();
+        formData.append('adjudicator_name', adjudicatorName);
+        const response = await fetch('/generate-summary-pdf', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        if (!response.ok) {
+            throw new Error('Failed to generate invoice');
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `Sopal_Invoice_${adjudicatorName.replace(/\s/g, '_')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    } catch (error) {
+        console.error('Invoice download error:', error);
+        alert('Failed to generate invoice. Please try again later.');
+    } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+}
+
 // --- ACCOUNT PAGE SPECIFIC SCRIPT ---
 document.addEventListener('DOMContentLoaded', () => {
     if (document.querySelector('.account-container')) { 
@@ -641,19 +699,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const navButtons = document.querySelectorAll('.account-nav .nav-btn');
         const sections = document.querySelectorAll('.account-section');
 
+        editBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleEditMode(true);
+        });
 
-
-editBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    toggleEditMode(true);
-});
-
-cancelBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    toggleEditMode(false);
-    populateProfileForm(originalProfileData); 
-});
-
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleEditMode(false);
+            populateProfileForm(originalProfileData); 
+        });
 
         // --- Tab Navigation ---
         navButtons.forEach(button => {
@@ -672,19 +727,17 @@ cancelBtn.addEventListener('click', (e) => {
         });
 
         function toggleEditMode(isEditing) {
-    formElements.forEach(el => {
-        // Keep email field always disabled
-        if (el.id === 'email') {
-            el.disabled = true;
-        } else {
-            el.disabled = !isEditing;
+            formElements.forEach(el => {
+                if (el.id === 'email') {
+                    el.disabled = true;
+                } else {
+                    el.disabled = !isEditing;
+                }
+            });
+            editBtn.style.display = isEditing ? 'none' : 'block';
+            saveBtn.style.display = isEditing ? 'block' : 'none';
+            cancelBtn.style.display = isEditing ? 'block' : 'none';
         }
-    });
-    editBtn.style.display = isEditing ? 'none' : 'block';
-    saveBtn.style.display = isEditing ? 'block' : 'none';
-    cancelBtn.style.display = isEditing ? 'block' : 'none';
-}
-  
 
         // --- Profile Picture ---
         function loadAndSetProfilePicture(email, user) {
@@ -697,26 +750,22 @@ cancelBtn.addEventListener('click', (e) => {
 
         // --- Form Population ---
         function populateProfileForm(user) {
-    originalProfileData = user;
-    userEmail = user.email;
-    
-    // Populate email (always disabled)
-    document.getElementById('email').value = user.email || '';
-    
-    // Populate other fields
-    document.getElementById('firstName').value = user.first_name || '';
-    document.getElementById('lastName').value = user.last_name || '';
-    document.getElementById('firmName').value = user.firm_name || '';
-    document.getElementById('abn').value = user.abn || '';
-    document.getElementById('phone').value = user.phone || '';
-    document.getElementById('employeeSize').value = user.employee_size || '';
-    document.getElementById('billingAddress').value = user.billing_address || '';
-    document.getElementById('billingCity').value = user.billing_city || '';
-    document.getElementById('billingState').value = user.billing_state || '';
-    document.getElementById('billingPostcode').value = user.billing_postcode || '';
-    loadAndSetProfilePicture(user.email, user);
-}
-        
+            originalProfileData = user;
+            userEmail = user.email;
+            
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('firstName').value = user.first_name || '';
+            document.getElementById('lastName').value = user.last_name || '';
+            document.getElementById('firmName').value = user.firm_name || '';
+            document.getElementById('abn').value = user.abn || '';
+            document.getElementById('phone').value = user.phone || '';
+            document.getElementById('employeeSize').value = user.employee_size || '';
+            document.getElementById('billingAddress').value = user.billing_address || '';
+            document.getElementById('billingCity').value = user.billing_city || '';
+            document.getElementById('billingState').value = user.billing_state || '';
+            document.getElementById('billingPostcode').value = user.billing_postcode || '';
+            loadAndSetProfilePicture(user.email, user);
+        }
 
         // --- Load Profile Data ---
         async function loadProfileData() {
@@ -766,7 +815,7 @@ cancelBtn.addEventListener('click', (e) => {
                                             Receipt
                                         </button>
                                         <button class="btn-small btn-invoice" 
-                                                onclick="downloadInvoice('${p.adjudicator_name}')"
+                                                onclick="downloadInvoice(this, '${p.adjudicator_name}')"
                                                 title="Download PDF Invoice">
                                             Invoice
                                         </button>
@@ -782,73 +831,6 @@ cancelBtn.addEventListener('click', (e) => {
                     console.error("[Account] Error populating purchases:", error);
                 });
         }
-// Download Stripe receipt
-async function downloadReceipt(paymentIntentId) {
-    const token = localStorage.getItem('purchase_token');
-    if (!token) {
-        alert('Please log in to download receipt');
-        return;
-    }
-    try {
-        // Get the receipt URL from the payment intent
-        const response = await fetch(`/get-receipt-url/${paymentIntentId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) {
-            throw new Error('Could not get receipt URL');
-        }
-        const data = await response.json();
-        if (data.receiptUrl) {
-            window.open(data.receiptUrl, '_blank');
-        } else {
-            alert('Receipt not available for this purchase');
-        }
-    } catch (error) {
-        console.error('Receipt download error:', error);
-        alert('Failed to download receipt. Please try again later.');
-    }
-}
-
-// Download generated invoice PDF
-async function downloadInvoice(adjudicatorName) {
-    const token = localStorage.getItem('purchase_token');
-    if (!token) {
-        alert('Please log in to download invoice');
-        return;
-    }
-    const button = event.target;
-    const originalText = button.textContent;
-    button.textContent = 'Loading...';
-    button.disabled = true;
-    try {
-        const formData = new FormData();
-        formData.append('adjudicator_name', adjudicatorName);
-        const response = await fetch('/generate-summary-pdf', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
-        });
-        if (!response.ok) {
-            throw new Error('Failed to generate invoice');
-        }
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `Sopal_Invoice_${adjudicatorName.replace(/\s/g, '_')}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        a.remove();
-    } catch (error) {
-        console.error('Invoice download error:', error);
-        alert('Failed to generate invoice. Please try again later.');
-    } finally {
-        button.textContent = originalText;
-        button.disabled = false;
-    }
-}
 
         // --- Form Submission ---
         saveBtn.addEventListener('click', async (e) => {
@@ -929,17 +911,14 @@ async function downloadInvoice(adjudicatorName) {
             await loadProfileData();
             loadPurchaseHistory();
             
-            // Check email verification status
             const res = await fetch('/purchase-me', { headers });
             if (res.ok) {
                 const user = await res.json();
                 
-                // Show verified badge if email is verified
                 if (user.email_verified) {
                     const badge = document.getElementById('emailVerifiedBadge');
                     if (badge) badge.style.display = 'block';
                 } else {
-                    // Show banner if not verified
                     const banner = document.getElementById('emailVerificationBanner');
                     if (banner) banner.style.display = 'block';
                 }
@@ -950,11 +929,9 @@ async function downloadInvoice(adjudicatorName) {
             const targetButton = document.querySelector(`.nav-btn[data-target="${tab}-section"]`);
             if (targetButton) setTimeout(() => targetButton.click(), 0);
             
-            // Check for verification success message from URL
             const verified = urlParams.get('verified');
             if (verified === 'success') {
                 showTempBanner('Email verified successfully!', 'success');
-                // Remove the query param from URL
                 const newUrl = window.location.pathname + (tab !== 'profile' ? `?tab=${tab}` : '');
                 window.history.replaceState({}, '', newUrl);
             }
@@ -985,7 +962,6 @@ async function resendVerificationEmail() {
       message.textContent = 'Verification email sent! Please check your inbox.';
       message.style.color = '#155724';
       
-      // Auto-hide after 5 seconds
       setTimeout(() => {
         banner.style.display = 'none';
       }, 5000);
