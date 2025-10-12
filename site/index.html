@@ -873,15 +873,15 @@ body {
   <div id="results"></div>
   <div class="pagination" id="pagination"></div>
 
-  <div id="adjudicatorSearchModal" class="interception-modal">
+<div id="adjudicatorSearchModal" class="interception-modal">
   <div class="interception-modal-content">
-    <h2>Searching for an Adjudicator?</h2>
+    <h2>Adjudicator Search</h2>
     <p>
-      It looks like you're searching for decisions by an adjudicator. For detailed statistics, analytics, and a complete decision history, please use our dedicated Adjudicator Insights tool.
+      To view decisions and statistics for a specific adjudicator, please use our dedicated Adjudicator Insights tool. Direct searches for adjudicators are disabled on this page.
     </p>
     <div class="interception-modal-buttons">
-      <button id="searchAnywayBtn" class="btn-secondary-action">Search Anyway</button>
-      <button id="viewInsightsBtn" class="btn-primary-action">View Adjudicator Insights</button>
+      <button id="closeModalBtn" class="btn-secondary-action">Run a Different Search</button>
+      <button id="viewInsightsBtn" class="btn-primary-action">Go to Adjudicator Insights</button>
     </div>
   </div>
 </div>
@@ -1019,22 +1019,28 @@ function findMatchingAdjudicator(query) {
   return null;
 }
 
+// Replace your old showAdjudicatorModal function with this one
 function showAdjudicatorModal() {
   const modal = document.getElementById('adjudicatorSearchModal');
   modal.style.display = 'flex';
 
+  // Function to hide the modal
+  const closeModal = () => {
+    modal.style.display = 'none';
+  };
+
+  // Button to go to the adjudicators page
   document.getElementById('viewInsightsBtn').onclick = () => {
     window.location.href = '/adjudicators';
   };
 
-  document.getElementById('searchAnywayBtn').onclick = () => {
-    modal.style.display = 'none';
-    runSearch(1, true); // Re-run the search, bypassing our check
-  };
+  // New "Close" button functionality
+  document.getElementById('closeModalBtn').onclick = closeModal;
 
+  // Allow closing by clicking the background
   modal.onclick = (e) => {
     if (e.target === modal) {
-      modal.style.display = 'none';
+      closeModal();
     }
   };
 }
