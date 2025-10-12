@@ -1910,12 +1910,14 @@ def check_adjudicator_access(
 
 # In server (43).py
 
+
+# --- FIXED create_payment_intent ---
 @app.post("/create-payment-intent")
 async def create_payment_intent(
     adjudicator_name: str = Form(...),
     current_user: dict = Depends(get_current_purchase_user)
 ):
-    """Creates a Stripe Customer, Invoice, and PaymentIntent for purchasing access."""
+    """Creates a Stripe Customer, Invoice, and a PaymentIntent to pay for it."""
     try:
         if not stripe.api_key:
             raise HTTPException(status_code=500, detail="Stripe API key is not configured.")
@@ -1927,10 +1929,10 @@ async def create_payment_intent(
         else:
             customer = stripe.Customer.create(
                 email=current_user['email'],
-                name=f"{current_user['first_name']} {current_user['last_name']}"
+                name=f"{current_user.get('first_name', '')} {current_user.get('last_name', '')}"
             )
 
-        # Step 2: Create an Invoice Item (the line item for the purchase)
+        # Step 2: Create an Invoice Item for the purchase
         stripe.InvoiceItem.create(
             customer=customer.id,
             amount=5495,  # Amount in cents ($54.95)
@@ -1938,34 +1940,21 @@ async def create_payment_intent(
             description=f"Permanent access to Adjudicator Insights: {adjudicator_name}",
         )
 
-        # Step 3: Create an Invoice
+        # Step 3: Create an Invoice that is charged automatically
         invoice = stripe.Invoice.create(
             customer=customer.id,
-            collection_method='send_invoice', # We will pay it via the Payment Intent
-            due_date=None, # No due date needed as it will be paid immediately
-            auto_advance=True, # Automatically finalizes the invoice
+            collection_method='charge_automatically', # This is the key change
+            auto_advance=True  # Automatically finalizes the invoice
         )
 
-        # Step 4: Create a Payment Intent to pay for THIS invoice
-        intent = stripe.PaymentIntent.create(
-            amount=invoice.amount_due,
-            currency='aud',
-            customer=customer.id,
-            description=f"Invoice {invoice.number} - {adjudicator_name}",
-            metadata={
-                'user_email': current_user['email'],
-                'adjudicator_name': adjudicator_name,
-                'invoice_id': invoice.id
-            }
-        )
-        
-        # Link the Payment Intent to the Invoice
-        finalized_invoice = stripe.Invoice.pay(invoice.id, payment_intent=intent.id)
+        # Step 4: Retrieve the Payment Intent that Stripe automatically created for the invoice
+        # The 'payment_intent' field on the invoice object contains the ID of the Payment Intent
+        intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
 
         return {
             'clientSecret': intent.client_secret,
             'paymentIntentId': intent.id,
-            'invoiceId': finalized_invoice.id  # Send the invoice ID to the frontend
+            'invoiceId': invoice.id
         }
     except Exception as e:
         print(f"Stripe PaymentIntent/Invoice creation failed: {e}")
@@ -2314,55 +2303,73 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
 
+
+# --- Helper for summary data ---
+def _get_adjudicator_summary_data(db_con, adjudicator_name: str) -> dict:
+    """Internal helper to fetch summary data for a single adjudicator."""
+    query = """
+        SELECT 
+            name,
+            totalDecisions,
+            totalClaimAmount,
+            totalAwardedAmount,
+            avgAwardRate,
+            avgClaimantFeeProportion,
+            avgRespondentFeeProportion,
+            zeroAwardCount
+        FROM (
+            SELECT 
+                a.adjudicator_name as name,
+                COUNT(*) as totalDecisions,
+                SUM(CASE WHEN a.claimed_amount NOT IN ('N/A', '') AND a.claimed_amount IS NOT NULL THEN CAST(a.claimed_amount AS REAL) ELSE 0 END) as totalClaimAmount,
+                SUM(CASE WHEN a.adjudicated_amount NOT IN ('N/A', '') AND a.adjudicated_amount IS NOT NULL THEN CAST(a.adjudicated_amount AS REAL) ELSE 0 END) as totalAwardedAmount,
+                AVG(CASE WHEN CAST(a.claimed_amount AS REAL) > 0 THEN (CAST(a.adjudicated_amount AS REAL) * 100.0 / CAST(a.claimed_amount AS REAL)) ELSE 0 END) as avgAwardRate,
+                AVG(CAST(a.fee_claimant_proportion AS REAL)) as avgClaimantFeeProportion,
+                AVG(CAST(a.fee_respondent_proportion AS REAL)) as avgRespondentFeeProportion,
+                SUM(CASE WHEN a.adjudicated_amount = '0' OR a.adjudicated_amount = '0.0' THEN 1 ELSE 0 END) as zeroAwardCount
+            FROM ai_adjudicator_extract_v4 a
+            WHERE LOWER(TRIM(a.adjudicator_name)) = LOWER(TRIM(?))
+            GROUP BY a.adjudicator_name
+        )
+    """
+    row = db_con.execute(query, (adjudicator_name,)).fetchone()
+    return dict(row) if row else {}
+
 @app.post("/generate-summary-pdf")
-async def generate_summary_pdf(adjudicator_name: str, authorization: str = Header(None)):
+async def generate_summary_pdf(
+    adjudicator_name: str = Form(...),
+    current_user: dict = Depends(get_current_purchase_user)
+):
     """
-    Generate a one- or two-page branded PDF summary of an adjudicator's insights.
-    Only available to logged-in (paid) users.
+    Generates a branded PDF summary of an adjudicator's insights for logged-in users.
     """
+    # Step 1: Get adjudicator data using our reliable helper
+    data = _get_adjudicator_summary_data(con, adjudicator_name)
+    if not data:
+        raise HTTPException(status_code=404, detail="Adjudicator not found")
 
-    # === 1. Verify JWT token ===
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+    decisions_rows = con.execute("""
+        SELECT claimant_name, respondent_name, decision_date, claimed_amount, adjudicated_amount, 
+               fee_claimant_proportion, fee_respondent_proportion, pdf_path
+        FROM ai_adjudicator_extract_v4
+        WHERE LOWER(TRIM(adjudicator_name)) = LOWER(TRIM(?))
+        ORDER BY decision_date DESC
+    """, (adjudicator_name,)).fetchall()
 
-    token = authorization.split(" ")[1]
-    try:
-        user = await get_user_from_token(token)  # same helper used in /purchase-me
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    decisions = [dict(row) for row in decisions_rows]
+    data["decisions"] = decisions
 
-    # === 2. Get adjudicator data (summary + decisions) ===
-    try:
-        all_adjs = await get_all_adjudicators_data()  # same helper your /api/adjudicators route uses
-        data = next((a for a in all_adjs if a["name"].lower() == adjudicator_name.lower()), None)
-        if not data:
-            raise HTTPException(status_code=404, detail="Adjudicator not found in summary list")
-
-        decisions = await get_adjudicator_data(adjudicator_name)  # same logic as /api/adjudicator/<name>
-        data["decisions"] = decisions
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch adjudicator data: {str(e)}")
-
-    # === 3. Build PDF ===
+    # Step 2: Build the PDF
     buffer = BytesIO()
     pdf = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        topMargin=40,
-        bottomMargin=40,
-        leftMargin=45,
-        rightMargin=45
+        buffer, pagesize=A4, topMargin=40, bottomMargin=40, leftMargin=45, rightMargin=45
     )
 
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="Heading", fontName="Helvetica-Bold",
-                              fontSize=14, textColor=colors.HexColor("#00C97C")))
-    styles.add(ParagraphStyle(name="Label", fontName="Helvetica-Bold",
-                              fontSize=10, textColor=colors.black))
-    styles.add(ParagraphStyle(name="Body", fontName="Helvetica",
-                              fontSize=10, leading=14))
-    styles.add(ParagraphStyle(name="Footer", fontName="Helvetica-Oblique",
-                              fontSize=8, textColor=colors.gray, alignment=1))
+    styles.add(ParagraphStyle(name="Heading", fontName="Helvetica-Bold", fontSize=14, textColor=colors.HexColor("#00C97C")))
+    styles.add(ParagraphStyle(name="Label", fontName="Helvetica-Bold", fontSize=10, textColor=colors.black))
+    styles.add(ParagraphStyle(name="Body", fontName="Helvetica", fontSize=10, leading=14))
+    styles.add(ParagraphStyle(name="Footer", fontName="Helvetica-Oblique", fontSize=8, textColor=colors.gray, alignment=1))
 
     story = []
 
@@ -2371,29 +2378,28 @@ async def generate_summary_pdf(adjudicator_name: str, authorization: str = Heade
     story.append(Paragraph("www.sopal.com.au &nbsp;&nbsp;&nbsp;&nbsp; info@sopal.com.au", styles["Body"]))
     story.append(Spacer(1, 12))
 
-    export_no = f"SJE{datetime.now():%Y%m%d}{str(user.id).zfill(6)}"
+    export_no = f"SJE{datetime.now():%Y%m%d}{str(current_user['id']).zfill(6)}"
     story.append(Paragraph(f"<b>Export No:</b> {export_no}", styles["Body"]))
-    story.append(Paragraph(f"<b>Export for:</b> {user.first_name} {user.last_name}", styles["Body"]))
-    if getattr(user, "firm_name", None):
-        story.append(Paragraph(user.firm_name, styles["Body"]))
+    story.append(Paragraph(f"<b>Export for:</b> {current_user.get('first_name')} {current_user.get('last_name')}", styles["Body"]))
+    if current_user.get("firm_name"):
+        story.append(Paragraph(current_user.get("firm_name"), styles["Body"]))
     story.append(Paragraph(
-        f"{user.billing_address}, {user.billing_city} "
-        f"{user.billing_state} {user.billing_postcode}",
+        f"{current_user.get('billing_address', '')}, {current_user.get('billing_city', '')} "
+        f"{current_user.get('billing_state', '')} {current_user.get('billing_postcode', '')}",
         styles["Body"]
     ))
     story.append(Spacer(1, 18))
 
-    # --- Adjudicator Summary ---
+    # --- Adjudicator Summary Table ---
     story.append(Paragraph("<b>Adjudicator Insights Summary</b>", styles["Heading"]))
     story.append(Spacer(1, 6))
 
+    total_decisions = data.get("totalDecisions", 1)
     summary_data = [
         ["Adjudicator’s Name", data.get("name", "")],
-        ["Number of Decisions", str(data.get("totalDecisions", ""))],
+        ["Number of Decisions", str(data.get("totalDecisions", 0))],
         ["Total Claimed Amount", f"${data.get('totalClaimAmount', 0):,.0f}"],
         ["Total Adjudicated Amount", f"${data.get('totalAwardedAmount', 0):,.0f}"],
-        ["Avg Claimed Amount", f"${(data.get('totalClaimAmount', 0) / max(1, data.get('totalDecisions', 1))):,.0f}"],
-        ["Avg Adjudicated Amount", f"${(data.get('totalAwardedAmount', 0) / max(1, data.get('totalDecisions', 1))):,.0f}"],
         ["Avg Claimant Fee Proportion", f"{data.get('avgClaimantFeeProportion', 0):.1f}%"],
         ["Avg Respondent Fee Proportion", f"{data.get('avgRespondentFeeProportion', 0):.1f}%"],
         ["Number of Nil Decisions", str(data.get('zeroAwardCount', 0))],
@@ -2401,50 +2407,28 @@ async def generate_summary_pdf(adjudicator_name: str, authorization: str = Heade
     ]
 
     table = Table(summary_data, colWidths=[200, 200])
+    # ... (rest of the table styling, which is correct) ...
     table.setStyle(TableStyle([
         ('GRID', (0, 0), (-1, -1), 0.25, colors.grey),
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#F8F9FA")),
         ('FONT', (0, 0), (-1, -1), 'Helvetica', 9),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
     ]))
     story.append(table)
     story.append(Spacer(1, 18))
 
     # --- Decision History ---
     story.append(Paragraph("<b>Adjudicator Decision History</b>", styles["Heading"]))
-    story.append(Paragraph("Sorted in order from most recent to least recent.", styles["Body"]))
     story.append(Spacer(1, 8))
 
     for d in data.get("decisions", []):
-        story.append(Paragraph(f"<b>{d.get('claimant', '')} v {d.get('respondent', '')}</b>", styles["Label"]))
-        story.append(Paragraph(
-            f"Date: {d.get('date', 'N/A')}  —  Claimed: ${d.get('claimAmount', 0):,.0f}  —  "
-            f"Adjudicated: ${d.get('awardedAmount', 0):,.0f}",
-            styles["Body"]
-        ))
-        story.append(Paragraph(
-            f"Claimant Fee: {d.get('claimantFeeProportion', 0):.1f}%  "
-            f"Respondent Fee: {d.get('respondentFeeProportion', 0):.1f}%",
-            styles["Body"]
-        ))
-        if d.get("pdfPath"):
-            story.append(Paragraph(
-                f"<font color='#0066cc'>{d['pdfPath']}</font>",
-                styles["Body"]
-            ))
+        story.append(Paragraph(f"<b>{d.get('claimant_name', '')} v {d.get('respondent_name', '')}</b>", styles["Label"]))
+        story.append(Paragraph(f"Date: {d.get('decision_date', 'N/A')} | Claimed: ${float(d.get('claimed_amount', 0) or 0):,.0f} | Adjudicated: ${float(d.get('adjudicated_amount', 0) or 0):,.0f}", styles["Body"]))
         story.append(Spacer(1, 8))
-
-    story.append(Spacer(1, 20))
-    story.append(Paragraph("Generated by Sopal © 2025 – Intelligent Adjudication Search", styles["Footer"]))
 
     pdf.build(story)
     buffer.seek(0)
 
-    headers = {
-        "Content-Disposition": f"attachment; filename={adjudicator_name}_SopalInsights.pdf"
-    }
+    headers = {"Content-Disposition": f"attachment; filename={adjudicator_name}_SopalInsights.pdf"}
     return Response(buffer.read(), media_type="application/pdf", headers=headers)
 

@@ -2018,18 +2018,48 @@ async function handleLogin(e) {
 
 async function downloadSummary() {
   const token = localStorage.getItem('purchase_token');
+  if (!token) {
+    alert("You must be logged in to download a summary.");
+    return;
+  }
+
   const name = selectedAdjudicator.name;
-  const res = await fetch(`/generate-summary-pdf?adjudicator_name=${encodeURIComponent(name)}`, {
-    headers: { 'Authorization': `Bearer ${token}` },
-    method: 'POST'
-  });
-  const blob = await res.blob();
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${name}_SopalInsights.pdf`;
-  a.click();
-  window.URL.revokeObjectURL(url);
+  const button = event.target;
+  button.textContent = "Generating...";
+  button.disabled = true;
+
+  // Create FormData to send in the POST body
+  const formData = new FormData();
+  formData.append('adjudicator_name', name);
+
+  try {
+    const res = await fetch('/generate-summary-pdf', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to generate PDF. You may not have access.');
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name}_SopalInsights.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+  } catch (error) {
+    console.error("PDF Download Error:", error);
+    alert(error.message);
+  } finally {
+    button.textContent = "Summary (PDF)";
+    button.disabled = false;
+  }
 }
 
 async function handleRegister(e) {
