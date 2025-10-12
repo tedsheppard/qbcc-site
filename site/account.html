@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- DOM References ---
         const form = document.getElementById('profile-form');
-        const formElements = form.querySelectorAll('input, select');
+        const formElements = form.querySelectorAll('input:not(#email), select');
         const editBtn = document.getElementById('edit-profile-btn');
         const saveBtn = document.getElementById('save-profile-btn');
         const cancelBtn = document.getElementById('cancel-edit-btn');
