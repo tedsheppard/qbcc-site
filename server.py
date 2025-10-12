@@ -1963,7 +1963,6 @@ async def create_payment_intent(
         print(f"Stripe PaymentIntent creation failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     
-
 @app.post("/confirm-purchase")
 async def confirm_purchase(
     payment_intent_id: str = Form(...),
@@ -1972,8 +1971,11 @@ async def confirm_purchase(
 ):
     """Confirms purchase after successful payment."""
     try:
-        # Verify the payment succeeded
-        intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        # Verify the payment succeeded - EXPAND charges to get receipt URL
+        intent = stripe.PaymentIntent.retrieve(
+            payment_intent_id,
+            expand=['latest_charge']  # This expands the charge data
+        )
         
         if intent.status != 'succeeded':
             raise HTTPException(status_code=400, detail="Payment not completed")
@@ -1988,10 +1990,10 @@ async def confirm_purchase(
             return {
                 "msg": "Purchase already recorded",
                 "adjudicator_name": adjudicator_name,
-                "invoiceId": None
+                "receiptUrl": None
             }
         
-        # Record the purchase - no invoice creation for now
+        # Record the purchase
         purchases_con.execute("""
             INSERT INTO adjudicator_purchases
             (user_email, adjudicator_name, stripe_payment_intent_id, amount_paid)
@@ -1999,18 +2001,15 @@ async def confirm_purchase(
         """, (current_user['email'], adjudicator_name, payment_intent_id, 54.95))
         purchases_con.commit()
         
-        # Get the Stripe receipt URL instead
-        charge_id = intent.charges.data[0].id if intent.charges.data else None
+        # Get Stripe's built-in receipt URL from the expanded charge
         receipt_url = None
-        if charge_id:
-            charge = stripe.Charge.retrieve(charge_id)
-            receipt_url = charge.receipt_url
+        if intent.latest_charge:
+            receipt_url = intent.latest_charge.receipt_url
         
         return {
             "msg": "Purchase confirmed",
             "adjudicator_name": adjudicator_name,
-            "invoiceId": None,  # No invoice for now
-            "receiptUrl": receipt_url  # Stripe's built-in receipt
+            "receiptUrl": receipt_url
         }
 
     except stripe.error.StripeError as e:
@@ -2022,7 +2021,6 @@ async def confirm_purchase(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to confirm purchase")
     
-
 
         
 # ... surrounding code ...
