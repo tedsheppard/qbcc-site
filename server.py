@@ -2218,90 +2218,81 @@ async def serve_html_page(path_name: str):
     raise HTTPException(status_code=404, detail="Not Found")
 
 
+from io import BytesIO
+from datetime import datetime
+from fastapi import Response, Header, HTTPException
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+
 
 @app.post("/generate-summary-pdf")
-async def generate_summary_pdf(adjudicator_name: str, token: str = Depends(verify_user_token)):
+async def generate_summary_pdf(adjudicator_name: str, authorization: str = Header(None)):
     """
-    Returns a branded PDF summary of an adjudicator's insights.
+    Generate a one- or two-page PDF summary of an adjudicator's insights.
     Only available to logged-in (paid) users.
     """
-    # 1. Pull adjudicator + decisions data
-    data = await get_adjudicator_data(adjudicator_name)   # same as /api/adjudicator/<name>
-    user = await get_user_from_token(token)
+    # === 1. Verify JWT token ===
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
 
+    token = authorization.split(" ")[1]
+    try:
+        user = await get_user_from_token(token)  # same helper used by /purchase-me etc.
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    # === 2. Get adjudicator data ===
+    try:
+        data = await get_adjudicator_data(adjudicator_name)  # same logic as /api/adjudicator/<name>
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Adjudicator not found: {str(e)}")
+
+    # === 3. Build PDF ===
     buffer = BytesIO()
-    pdf = SimpleDocTemplate(buffer, pagesize=A4,
-                            topMargin=40, bottomMargin=40,
-                            leftMargin=45, rightMargin=45)
+    pdf = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        topMargin=40,
+        bottomMargin=40,
+        leftMargin=45,
+        rightMargin=45
+    )
+
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name="Heading", fontName="Helvetica-Bold",
                               fontSize=14, textColor=colors.HexColor("#00C97C")))
-    styles.add(ParagraphStyle(name="Label", fontName="Helvetica-Bold", fontSize=10, textColor=colors.black))
-    styles.add(ParagraphStyle(name="Body", fontName="Helvetica", fontSize=10, leading=14))
+    styles.add(ParagraphStyle(name="Label", fontName="Helvetica-Bold",
+                              fontSize=10, textColor=colors.black))
+    styles.add(ParagraphStyle(name="Body", fontName="Helvetica",
+                              fontSize=10, leading=14))
 
     story = []
 
-    # Header
+    # --- Header ---
     story.append(Paragraph("<b>Intelligent Adjudication Search</b>", styles["Heading"]))
-    story.append(Paragraph("www.sopal.com.au&nbsp;&nbsp;&nbsp;&nbsp;info@sopal.com.au", styles["Body"]))
+    story.append(Paragraph("www.sopal.com.au &nbsp;&nbsp;&nbsp;&nbsp; info@sopal.com.au", styles["Body"]))
     story.append(Spacer(1, 12))
 
     export_no = f"SJE{datetime.now():%Y%m%d}{str(user.id).zfill(6)}"
     story.append(Paragraph(f"<b>Export No:</b> {export_no}", styles["Body"]))
     story.append(Paragraph(f"<b>Export for:</b> {user.first_name} {user.last_name}", styles["Body"]))
-    if user.firm_name:
-        story.append(Paragraph(f"{user.firm_name}", styles["Body"]))
-    story.append(Paragraph(f"{user.billing_address}, {user.billing_city} "
-                           f"{user.billing_state} {user.billing_postcode}", styles["Body"]))
+    if getattr(user, "firm_name", None):
+        story.append(Paragraph(user.firm_name, styles["Body"]))
+    story.append(Paragraph(
+        f"{user.billing_address}, {user.billing_city} "
+        f"{user.billing_state} {user.billing_postcode}",
+        styles["Body"]
+    ))
     story.append(Spacer(1, 18))
 
-    # Adjudicator Summary
+    # --- Adjudicator Summary ---
     story.append(Paragraph("<b>Adjudicator Insights Summary</b>", styles["Heading"]))
     story.append(Spacer(1, 6))
 
     summary_data = [
-        ["Adjudicator’s Name", data["name"]],
-        ["Number of Decisions", str(data["totalDecisions"])],
-        ["Total Claimed Amount", f"${data['totalClaimAmount']:,.0f}"],
-        ["Total Adjudicated Amount", f"${data['totalAwardedAmount']:,.0f}"],
-        ["Avg Claimed Amount", f"${(data['totalClaimAmount']/data['totalDecisions']):,.0f}"],
-        ["Avg Adjudicated Amount", f"${(data['totalAwardedAmount']/data['totalDecisions']):,.0f}"],
-        ["Avg Claimant Fee Proportion", f"{data['avgClaimantFeeProportion']:.1f}%"],
-        ["Avg Respondent Fee Proportion", f"{data['avgRespondentFeeProportion']:.1f}%"],
-        ["Number of Nil Decisions", str(data.get('zeroAwardCount', 0))],
-        ["Avg Portion Awarded Per Decision", f"{data['avgAwardRate']:.1f}%"],
-    ]
-
-    table = Table(summary_data, colWidths=[200, 200])
-    table.setStyle(TableStyle([
-        ('GRID', (0,0), (-1,-1), 0.25, colors.grey),
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#F8F9FA")),
-        ('FONT', (0,0), (-1,-1), 'Helvetica', 9),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.black),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('LEFTPADDING', (0,0), (-1,-1), 6),
-        ('RIGHTPADDING', (0,0), (-1,-1), 6),
-    ]))
-    story.append(table)
-    story.append(Spacer(1, 18))
-
-    # Decision History
-    story.append(Paragraph("<b>Adjudicator Decision History</b>", styles["Heading"]))
-    story.append(Paragraph("Sorted in order from most recent to least recent.", styles["Body"]))
-    story.append(Spacer(1, 8))
-
-    for d in data["decisions"]:
-        story.append(Paragraph(f"<b>{d['claimant']} v {d['respondent']}</b>", styles["Label"]))
-        story.append(Paragraph(f"Date: {d.get('date','N/A')}  —  Claimed: ${d['claimAmount']:,.0f}  —  "
-                               f"Adjudicated: ${d['awardedAmount']:,.0f}", styles["Body"]))
-        story.append(Paragraph(f"Claimant Fee: {d['claimantFeeProportion']:.1f}%  "
-                               f"Respondent Fee: {d['respondentFeeProportion']:.1f}%", styles["Body"]))
-        if d.get("pdfPath"):
-            story.append(Paragraph(f"<font color='#0066cc'>{d['pdfPath']}</font>", styles["Body"]))
-        story.append(Spacer(1, 8))
-
-    pdf.build(story)
-    buffer.seek(0)
-
-    headers = {"Content-Disposition": f"attachment; filename={adjudicator_name}_SopalInsights.pdf"}
-    return Response(buffer.read(), media_type="application/pdf", headers=headers)
+        ["Adjudicator’s Name", data.get("name", "")],
+        ["Number of Decisions", str(data.get("totalDecisions", ""))],
+        ["Total Claimed Amount", f"${data.get('totalClaimAmount', 0):,.0f}"],
+        ["Tota]()
