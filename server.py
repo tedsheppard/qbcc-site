@@ -1,3 +1,32 @@
+# Endpoint to get Stripe receipt URL for a payment intent
+@app.get("/get-receipt-url/{payment_intent_id}")
+async def get_receipt_url(
+    payment_intent_id: str,
+    current_user: dict = Depends(get_current_purchase_user)
+):
+    """Gets the Stripe receipt URL for a payment intent"""
+    try:
+        # Verify this payment belongs to the user
+        purchase = purchases_con.execute("""
+            SELECT 1 FROM adjudicator_purchases 
+            WHERE user_email = ? AND stripe_payment_intent_id = ?
+        """, (current_user['email'], payment_intent_id)).fetchone()
+        if not purchase:
+            raise HTTPException(status_code=403, detail="Access denied")
+        # Get the payment intent with expanded charge
+        intent = stripe.PaymentIntent.retrieve(
+            payment_intent_id,
+            expand=['latest_charge']
+        )
+        receipt_url = None
+        if intent.latest_charge:
+            receipt_url = intent.latest_charge.receipt_url
+        return {"receiptUrl": receipt_url}
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Get receipt URL error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get receipt URL")
 import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io, json
 from urllib.parse import unquote_plus
 from fastapi import FastAPI, Query, Form, Path, HTTPException, UploadFile, File, Body

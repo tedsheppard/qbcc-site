@@ -550,13 +550,54 @@
                                 <th>Adjudicator Name</th>
                                 <th>Date of Purchase</th>
                                 <th>Amount Paid</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="purchase-history-body">
                             <!-- Rows will be populated here -->
                         </tbody>
                     </table>
-                     <div id="no-purchases" class="empty-state" style="display: none;">You have not made any purchases yet.</div>
+                    <div id="no-purchases" class="empty-state" style="display: none;">You have not made any purchases yet.</div>
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 12px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-receipt {
+        background: #00c97c;
+        color: white;
+    }
+
+    .btn-receipt:hover {
+        background: #00a568;
+    }
+
+    .btn-invoice {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-invoice:hover {
+        background: #5a6268;
+    }
+
+    .btn-small:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
                 </div>
             </section>
 
@@ -716,17 +757,98 @@ cancelBtn.addEventListener('click', (e) => {
                             <tr>
                                 <td>${p.adjudicator_name}</td>
                                 <td>${new Date(p.purchase_date).toLocaleDateString('en-AU')}</td>
-                                <td>${parseFloat(p.amount_paid).toFixed(2)}</td>
+                                <td>$${parseFloat(p.amount_paid).toFixed(2)}</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-receipt" 
+                                                onclick="downloadReceipt('${p.stripe_payment_intent_id}')"
+                                                title="Download Stripe Receipt">
+                                            Receipt
+                                        </button>
+                                        <button class="btn-small btn-invoice" 
+                                                onclick="downloadInvoice('${p.adjudicator_name}')"
+                                                title="Download PDF Invoice">
+                                            Invoice
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         `).join('');
                     }
                 })
                 .catch(error => {
                     document.getElementById('purchase-history-body').innerHTML =
-                        '<tr><td colspan="3">Could not load purchase history.</td></tr>';
+                        '<tr><td colspan="4">Could not load purchase history.</td></tr>';
                     console.error("[Account] Error populating purchases:", error);
                 });
         }
+// Download Stripe receipt
+async function downloadReceipt(paymentIntentId) {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) {
+        alert('Please log in to download receipt');
+        return;
+    }
+    try {
+        // Get the receipt URL from the payment intent
+        const response = await fetch(`/get-receipt-url/${paymentIntentId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+            throw new Error('Could not get receipt URL');
+        }
+        const data = await response.json();
+        if (data.receiptUrl) {
+            window.open(data.receiptUrl, '_blank');
+        } else {
+            alert('Receipt not available for this purchase');
+        }
+    } catch (error) {
+        console.error('Receipt download error:', error);
+        alert('Failed to download receipt. Please try again later.');
+    }
+}
+
+// Download generated invoice PDF
+async function downloadInvoice(adjudicatorName) {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) {
+        alert('Please log in to download invoice');
+        return;
+    }
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Loading...';
+    button.disabled = true;
+    try {
+        const formData = new FormData();
+        formData.append('adjudicator_name', adjudicatorName);
+        const response = await fetch('/generate-summary-pdf', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        if (!response.ok) {
+            throw new Error('Failed to generate invoice');
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `Sopal_Invoice_${adjudicatorName.replace(/\s/g, '_')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    } catch (error) {
+        console.error('Invoice download error:', error);
+        alert('Failed to generate invoice. Please try again later.');
+    } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+}
 
         // --- Form Submission ---
         saveBtn.addEventListener('click', async (e) => {
