@@ -1908,33 +1908,70 @@ def check_adjudicator_access(
         print(f"Error checking access for {current_user['email']} to {adjudicator_name}: {e}")
         return {"hasAccess": False}
 
+# In server (43).py
 
 @app.post("/create-payment-intent")
 async def create_payment_intent(
     adjudicator_name: str = Form(...),
     current_user: dict = Depends(get_current_purchase_user)
 ):
-    """Creates a Stripe PaymentIntent for purchasing access."""
+    """Creates a Stripe Customer, Invoice, and PaymentIntent for purchasing access."""
     try:
         if not stripe.api_key:
             raise HTTPException(status_code=500, detail="Stripe API key is not configured.")
-            
-        intent = stripe.PaymentIntent.create(
-            amount=60,  # Amount in cents ($54.95)
+
+        # Step 1: Find or Create a Stripe Customer
+        customers = stripe.Customer.list(email=current_user['email'], limit=1)
+        if customers.data:
+            customer = customers.data[0]
+        else:
+            customer = stripe.Customer.create(
+                email=current_user['email'],
+                name=f"{current_user['first_name']} {current_user['last_name']}"
+            )
+
+        # Step 2: Create an Invoice Item (the line item for the purchase)
+        stripe.InvoiceItem.create(
+            customer=customer.id,
+            amount=5495,  # Amount in cents ($54.95)
             currency='aud',
-            description=f"Access to Adjudicator: {adjudicator_name}",
+            description=f"Permanent access to Adjudicator Insights: {adjudicator_name}",
+        )
+
+        # Step 3: Create an Invoice
+        invoice = stripe.Invoice.create(
+            customer=customer.id,
+            collection_method='send_invoice', # We will pay it via the Payment Intent
+            due_date=None, # No due date needed as it will be paid immediately
+            auto_advance=True, # Automatically finalizes the invoice
+        )
+
+        # Step 4: Create a Payment Intent to pay for THIS invoice
+        intent = stripe.PaymentIntent.create(
+            amount=invoice.amount_due,
+            currency='aud',
+            customer=customer.id,
+            description=f"Invoice {invoice.number} - {adjudicator_name}",
             metadata={
                 'user_email': current_user['email'],
-                'adjudicator_name': adjudicator_name
+                'adjudicator_name': adjudicator_name,
+                'invoice_id': invoice.id
             }
         )
+        
+        # Link the Payment Intent to the Invoice
+        finalized_invoice = stripe.Invoice.pay(invoice.id, payment_intent=intent.id)
+
         return {
             'clientSecret': intent.client_secret,
-            'paymentIntentId': intent.id
+            'paymentIntentId': intent.id,
+            'invoiceId': finalized_invoice.id  # Send the invoice ID to the frontend
         }
     except Exception as e:
-        print(f"Stripe PaymentIntent creation failed: {e}")
+        print(f"Stripe PaymentIntent/Invoice creation failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+
 
 
 @app.post("/confirm-purchase")
@@ -2105,6 +2142,45 @@ def get_my_purchases(current_user: dict = Depends(get_current_purchase_user)):
         print(f"Error fetching purchases for {current_user['email']}: {e}")
         raise HTTPException(status_code=500, detail="Could not retrieve purchase history.")
 
+# Add this new endpoint in server (43).py, for example after the /my-purchases route
+
+@app.get("/download-invoice/{invoice_id}")
+async def download_invoice(
+    invoice_id: str,
+    current_user: dict = Depends(get_current_purchase_user)
+):
+    """Securely streams a Stripe invoice PDF to an authenticated user."""
+    try:
+        # Retrieve the invoice from Stripe
+        invoice = stripe.Invoice.retrieve(invoice_id)
+
+        # Security Check: Ensure the invoice belongs to the current user
+        customers = stripe.Customer.list(email=current_user['email'], limit=1)
+        if not customers.data or customers.data[0].id != invoice.customer:
+            raise HTTPException(status_code=403, detail="Permission denied")
+
+        # Get the PDF URL from the invoice object
+        invoice_pdf_url = invoice.invoice_pdf
+        if not invoice_pdf_url:
+            raise HTTPException(status_code=404, detail="Invoice PDF not available yet.")
+
+        # Stream the PDF content
+        response = requests.get(invoice_pdf_url)
+        response.raise_for_status() # Raise an exception for bad status codes
+
+        return StreamingResponse(
+            io.BytesIO(response.content),
+            media_type='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="Sopal_Invoice_{invoice.number}.pdf"'
+            }
+        )
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=404, detail=f"Stripe error: {e.user_message}")
+    except Exception as e:
+        print(f"Invoice download error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to download invoice.")
+    
 @app.get("/payment-methods")
 async def get_payment_methods(current_user: dict = Depends(get_current_purchase_user)):
     """Get user's saved payment methods from Stripe"""
@@ -2371,3 +2447,4 @@ async def generate_summary_pdf(adjudicator_name: str, authorization: str = Heade
         "Content-Disposition": f"attachment; filename={adjudicator_name}_SopalInsights.pdf"
     }
     return Response(buffer.read(), media_type="application/pdf", headers=headers)
+

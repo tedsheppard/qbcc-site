@@ -1454,12 +1454,11 @@
 <!-- NEW: Payment Success Modal -->
 <div id="paymentSuccessModal" class="success-modal">
   <div class="success-modal-content">
-    <div class="success-icon">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="11" fill="#D1FAE5"/>
-        <path d="M7 13l3 3 7-7" stroke="#065F46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>
+    <p>You now have permanent access to the insights for <strong id="successModalAdjudicatorName"></strong>.</p>
+    <button id="view-insights-btn" class="unlock-btn">View Insights</button>
+    <button id="download-invoice-btn" class="unlock-btn" style="margin-top: 10px; background-color: #6c757d; display: none;">Download Invoice</button>
+  </div>
+</div>
     <h2>Payment Successful!</h2>
     <p>You now have permanent access to the insights for <strong id="successModalAdjudicatorName"></strong>.</p>
     <button id="view-insights-btn" class="unlock-btn">View Insights</button>
@@ -2195,74 +2194,121 @@ async function unlockAdjudicator(adjudicatorName) {
 
 // Handle payment form submission
 document.getElementById('payment-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  const submitButton = document.getElementById('submit-payment');
-  submitButton.disabled = true;
-  submitButton.querySelector('#button-text').textContent = 'Processing...';
-  
-  try {
-    const token = localStorage.getItem('purchase_token');
-    if (!token) {
-      throw new Error('Not authenticated. Please log in again.');
-    }
+    e.preventDefault();
 
-    const intentResponse = await fetch('/create-payment-intent', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
-    });
-    
-    if (!intentResponse.ok) {
-      const error = await intentResponse.json();
-      throw new Error(error.error || 'Failed to create payment intent');
+    const submitButton = document.getElementById('submit-payment');
+    submitButton.disabled = true;
+    submitButton.querySelector('#button-text').textContent = 'Processing...';
+
+    try {
+        const token = localStorage.getItem('purchase_token');
+        if (!token) {
+            throw new Error('Not authenticated. Please log in again.');
+        }
+
+        // 1. Get clientSecret AND invoiceId from your backend
+        const intentResponse = await fetch('/create-payment-intent', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
+        });
+
+        if (!intentResponse.ok) {
+            const error = await intentResponse.json();
+            throw new Error(error.detail || 'Failed to create payment intent');
+        }
+
+        // DESTRUCTURE THE invoiceId from the response
+        const { clientSecret, paymentIntentId, invoiceId } = await intentResponse.json();
+
+        const { error } = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: { card: cardElement }
+        });
+
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        const confirmResponse = await fetch('/confirm-purchase', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `payment_intent_id=${paymentIntentId}&adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
+        });
+
+        if (!confirmResponse.ok) {
+            throw new Error('Failed to confirm purchase');
+        }
+
+        purchasedAdjudicators.add(currentAdjudicatorForPurchase);
+        closePaymentModal();
+        // 2. Pass the invoiceId to the success modal function
+        showSuccessModal(currentAdjudicatorForPurchase, invoiceId);
+
+    } catch (error) {
+        document.getElementById('card-errors').textContent = error.message;
+    } finally {
+        submitButton.disabled = false;
+        submitButton.querySelector('#button-text').textContent = 'Complete Purchase';
     }
-    
-    const { clientSecret, paymentIntentId } = await intentResponse.json();
-    
-    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: cardElement,
-      }
-    });
-    
-    if (error) {
-      throw new Error(error.message);
-    }
-    
-    const confirmResponse = await fetch('/confirm-purchase', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `payment_intent_id=${paymentIntentId}&adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
-    });
-    
-    if (!confirmResponse.ok) {
-      throw new Error('Failed to confirm purchase');
-    }
-    
-    // Payment successful!
-    purchasedAdjudicators.add(currentAdjudicatorForPurchase); // Add to local cache
-    closePaymentModal();
-    showSuccessModal(currentAdjudicatorForPurchase); // Show the new success modal
-    
-  } catch (error) {
-    document.getElementById('card-errors').textContent = error.message;
-  } finally {
-    submitButton.disabled = false;
-    submitButton.querySelector('#button-text').textContent = 'Complete Purchase';
-  }
 });
 
 // --- NEW: Success Modal Functions ---
-function showSuccessModal(adjudicatorName) {
+function showSuccessModal(adjudicatorName, invoiceId) {
   document.getElementById('successModalAdjudicatorName').textContent = adjudicatorName;
+  const downloadBtn = document.getElementById('download-invoice-btn');
+
+  if (invoiceId) {
+    downloadBtn.style.display = 'block';
+    // Use .onclick to easily replace any previous listener
+    downloadBtn.onclick = () => handleInvoiceDownload(invoiceId);
+  } else {
+    downloadBtn.style.display = 'none';
+  }
+
   document.getElementById('paymentSuccessModal').classList.add('active');
+}
+
+// 4. Add the new download handler function
+async function handleInvoiceDownload(invoiceId) {
+  const downloadBtn = document.getElementById('download-invoice-btn');
+  const originalText = downloadBtn.textContent;
+  downloadBtn.textContent = 'Downloading...';
+  downloadBtn.disabled = true;
+
+  try {
+    const token = localStorage.getItem('purchase_token');
+    const response = await fetch(`/download-invoice/${invoiceId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      throw new Error('Could not download invoice. Please try again later from your account page.');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    // The filename is set by the server's Content-Disposition header
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    downloadBtn.textContent = originalText;
+    downloadBtn.disabled = false;
+  }
 }
 
 function closeSuccessModal() {
