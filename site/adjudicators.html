@@ -2224,68 +2224,64 @@ async function unlockAdjudicator(adjudicatorName) {
 
 // Handle payment form submission
 document.getElementById('payment-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const submitButton = document.getElementById('submit-payment');
-    submitButton.disabled = true;
-    submitButton.querySelector('#button-text').textContent = 'Processing...';
+  const submitButton = document.getElementById('submit-payment');
+  submitButton.disabled = true;
+  submitButton.querySelector('#button-text').textContent = 'Processing...';
 
-    try {
-        const token = localStorage.getItem('purchase_token');
-        if (!token) {
-            throw new Error('Not authenticated. Please log in again.');
-        }
+  try {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) throw new Error('Not authenticated. Please log in again.');
 
-        // 1. Get clientSecret AND invoiceId from your backend
-        const intentResponse = await fetch('/create-payment-intent', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
-        });
+    // Get the payment intent details (NO invoiceId here anymore)
+    const intentResponse = await fetch('/create-payment-intent', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
+    });
 
-        if (!intentResponse.ok) {
-            const error = await intentResponse.json();
-            throw new Error(error.detail || 'Failed to create payment intent');
-        }
-
-        // DESTRUCTURE THE invoiceId from the response
-        const { clientSecret, paymentIntentId, invoiceId } = await intentResponse.json();
-
-        const { error } = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: { card: cardElement }
-        });
-
-        if (error) {
-            throw new Error(error.message);
-        }
-
-        const confirmResponse = await fetch('/confirm-purchase', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `payment_intent_id=${paymentIntentId}&adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
-        });
-
-        if (!confirmResponse.ok) {
-            throw new Error('Failed to confirm purchase');
-        }
-
-        purchasedAdjudicators.add(currentAdjudicatorForPurchase);
-        closePaymentModal();
-        // 2. Pass the invoiceId to the success modal function
-        showSuccessModal(currentAdjudicatorForPurchase, invoiceId);
-
-    } catch (error) {
-        document.getElementById('card-errors').textContent = error.message;
-    } finally {
-        submitButton.disabled = false;
-        submitButton.querySelector('#button-text').textContent = 'Complete Purchase';
+    if (!intentResponse.ok) {
+      const error = await intentResponse.json();
+      throw new Error(error.detail || 'Could not initiate payment.');
     }
+
+    const { clientSecret, paymentIntentId } = await intentResponse.json();
+
+    // Confirm the payment on the frontend
+    const { error } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: { card: cardElement }
+    });
+    if (error) throw new Error(error.message);
+
+    // Confirm the purchase on the backend and get the INVOICE ID back
+    const confirmResponse = await fetch('/confirm-purchase', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `payment_intent_id=${paymentIntentId}&adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
+    });
+    if (!confirmResponse.ok) throw new Error('Failed to confirm purchase on server.');
+        
+    const confirmData = await confirmResponse.json();
+    const invoiceId = confirmData.invoiceId; // Get the invoice ID from the confirmation step
+
+    // Show the success modal, now with the correct invoice ID
+    purchasedAdjudicators.add(currentAdjudicatorForPurchase);
+    closePaymentModal();
+    showSuccessModal(currentAdjudicatorForPurchase, invoiceId);
+
+  } catch (error) {
+    document.getElementById('card-errors').textContent = error.message;
+  } finally {
+    submitButton.disabled = false;
+    submitButton.querySelector('#button-text').textContent = 'Complete Purchase';
+  }
 });
 
 // --- NEW: Success Modal Functions ---
