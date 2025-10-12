@@ -28,7 +28,6 @@
     position: sticky;
     top: 0;
     z-index: 100;
-  }
   .header-content {
     display: flex;
     align-items: center;
@@ -904,21 +903,24 @@ body {
     let adjudicatorList = []; 
     let chatHistories = {};
 
-    // ADD THIS NEW FUNCTION
+
+    // Replace your existing fetchAdjudicators function with this one
 async function fetchAdjudicators() {
   try {
     const response = await fetch('/api/adjudicators');
     if (!response.ok) return;
     const data = await response.json();
-    // Store names for flexible matching
+    // Store names AND their parts for flexible matching
     adjudicatorList = data.map(adj => ({
       fullName: adj.name.toLowerCase(),
+      parts: adj.name.toLowerCase().split(' ').filter(p => p.length > 1) // Store parts, ignore initials
     }));
     console.log(`Loaded ${adjudicatorList.length} adjudicators for search check.`);
   } catch (error) {
     console.error('Could not fetch adjudicator list:', error);
   }
 }
+   
 
     async function runSearch(page=1, bypassAdjudicatorCheck = false){
       if (!bypassAdjudicatorCheck && adjudicatorList.length > 0) {
@@ -985,11 +987,10 @@ async function fetchAdjudicators() {
       }
     }
 
-    // ADD THESE TWO NEW FUNCTIONS
+// Replace your existing findMatchingAdjudicator function with this one
 function findMatchingAdjudicator(query) {
-  if (!query || query.length < 3) return null;
+  if (!query || query.length < 3 || !adjudicatorList.length) return null;
 
-  // Clean the query of operators and punctuation for better matching
   const cleanedQuery = query
     .toLowerCase()
     .replace(/"/g, '')
@@ -1000,24 +1001,50 @@ function findMatchingAdjudicator(query) {
 
   if (!cleanedQuery) return null;
 
-  // Check for an exact match first
   for (const adjudicator of adjudicatorList) {
-    if (adjudicator.fullName === cleanedQuery) {
-      return adjudicator.fullName;
-    }
-  }
+    // We check for names with at least two parts (e.g., "john smith")
+    // to avoid blocking common single-word searches.
+    if (adjudicator.parts.length < 2) continue;
 
-  // Check if all parts of the query are in a single adjudicator's name
-  const queryParts = cleanedQuery.split(' ');
-  for (const adjudicator of adjudicatorList) {
-    const allPartsMatch = queryParts.every(part => adjudicator.fullName.includes(part));
-    if (allPartsMatch) {
+    // Check if ALL parts of the adjudicator's name are present in the user's query
+    const allPartsFound = adjudicator.parts.every(part => cleanedQuery.includes(part));
+
+    if (allPartsFound) {
       return adjudicator.fullName;
     }
   }
 
   return null;
 }
+
+  if (!query || query.length < 3 || !adjudicatorList.length) return null;
+
+  const cleanedQuery = query
+    .toLowerCase()
+    .replace(/"/g, '')
+    .replace(/\b(and|or|not|w\/\d+|near\/\d+)\b/gi, ' ')
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleanedQuery) return null;
+
+  for (const adjudicator of adjudicatorList) {
+    // We check for names with at least two parts (e.g., "john smith")
+    // to avoid blocking common single-word searches.
+    if (adjudicator.parts.length < 2) continue;
+
+    // Check if ALL parts of the adjudicator's name are present in the user's query
+    const allPartsFound = adjudicator.parts.every(part => cleanedQuery.includes(part));
+
+    if (allPartsFound) {
+      return adjudicator.fullName;
+    }
+  }
+
+  return null;
+}
+
 
 // Replace your old showAdjudicatorModal function with this one
 function showAdjudicatorModal() {
