@@ -1147,6 +1147,10 @@
   background: #555;
 }
 
+.dark #decisionSearchLoadingBar {
+  background: linear-gradient(to right, #21db87, #42ffaa) !important;
+}
+
 /* Profile Picture Dropdown */
 .profile-container { position: relative; margin-left: 20px; cursor: pointer; }
 .profile-pic { width: 40px; height: 40px; border-radius: 50%; background-color: #ddd; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid #ccc; }
@@ -1890,25 +1894,28 @@ function showAdjudicatorDetail(hasAccess = false) {
           </div>
         </div>
 
-       
-          <!-- Decisions Tab -->
+       <!-- Decisions Tab -->
 <div id="decisions-tab" class="tab-content">
-  <!-- ADD SEARCH BAR -->
-  <div style="margin-bottom: 15px;">
+  <!-- Search Bar with Loading Bar -->
+  <div style="margin-bottom: 15px; position: relative;">
+    <div id="decisionSearchLoadingBar" style="position: absolute; top: 0; left: 0; width: 0%; height: 3px; background: linear-gradient(to right, #00c97c, #00ffa3); transition: width 0.3s ease; z-index: 10; border-radius: 3px;"></div>
+    
     <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
       <input type="text" id="decisionSearchInput" 
              placeholder="Search decisions (e.g., 'defect AND delay' or 'payment w/5 claim')"
-             style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
-      <button onclick="searchDecisions()" 
-              style="padding: 10px 20px; background: #00c97c; color: white; border: none; border-radius: 6px; cursor: pointer;">
+             style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;"
+             onkeydown="if(event.key==='Enter') searchDecisions()">
+      <button type="button" onclick="searchDecisions()" 
+              style="padding: 10px 20px; background: #00c97c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
         Search
       </button>
-      <button onclick="clearDecisionSearch()" 
-              style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">
+      <button type="button" onclick="clearDecisionSearch()" 
+              style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
         Clear
       </button>
     </div>
   </div>
+  
   
   <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
             <h4 style="margin: 0;">All Decisions</h4>
@@ -2559,6 +2566,16 @@ document.getElementById('registerForm').addEventListener('submit', handleRegiste
 </script>
 
 <script>
+
+function normalizeInput(s) {
+  return (s || '')
+    .replace(/[""]/g, '"')
+    .replace(/['']/g, "'")
+    .replace(/[–—‒―]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // replicate account page profile-nav rendering
 document.addEventListener('DOMContentLoaded', async () => {
   const nav = document.getElementById('user-profile-nav');
@@ -2596,39 +2613,93 @@ function logout() {
   window.location.reload();
 }
 
-
 async function searchDecisions() {
   const searchInput = document.getElementById('decisionSearchInput');
   const query = searchInput.value.trim();
+  const loadingBar = document.getElementById('decisionSearchLoadingBar');
+  
+  console.log('[DEBUG] Search clicked, query:', query); // Debug line
   
   if (!query) {
     clearDecisionSearch();
     return;
   }
   
-  isDecisionSearchActive = true;
+  // Start loading bar
+  if (loadingBar) {
+    loadingBar.style.width = '30%';
+  }
   
-  const processedQuery = normalizeInput(query);
-  const filtered = await filterDecisionsLocally(originalDecisions, processedQuery);
-  
-  const hasAccess = !document.querySelector('.detail-content.blur-stats');
-  const container = document.getElementById('decisionsListContainer');
-  
-  if (filtered.length === 0) {
-    container.innerHTML = '<div class="loading">No matching decisions found</div>';
-  } else {
-    container.innerHTML = renderDecisionItems(filtered, hasAccess, processedQuery);
+  try {
+    isDecisionSearchActive = true;
+    
+    const processedQuery = normalizeInput(query);
+    console.log('[DEBUG] Processed query:', processedQuery); // Debug line
+    
+    // Update loading bar
+    if (loadingBar) {
+      loadingBar.style.width = '60%';
+    }
+    
+    const filtered = await filterDecisionsLocally(originalDecisions, processedQuery);
+    console.log('[DEBUG] Filtered results:', filtered.length); // Debug line
+    
+    // Update loading bar
+    if (loadingBar) {
+      loadingBar.style.width = '90%';
+    }
+    
+    const hasAccess = !document.querySelector('.detail-content.blur-stats');
+    const container = document.getElementById('decisionsListContainer');
+    
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="loading">No matching decisions found</div>';
+    } else {
+      container.innerHTML = renderDecisionItems(filtered, hasAccess, processedQuery);
+    }
+    
+    // Complete loading bar
+    if (loadingBar) {
+      loadingBar.style.width = '100%';
+      setTimeout(() => {
+        loadingBar.style.width = '0%';
+      }, 400);
+    }
+    
+  } catch (error) {
+    console.error('[ERROR] Search failed:', error);
+    alert('Search failed: ' + error.message);
+    
+    // Reset loading bar on error
+    if (loadingBar) {
+      loadingBar.style.width = '0%';
+    }
   }
 }
 
 function clearDecisionSearch() {
-  document.getElementById('decisionSearchInput').value = '';
+  const searchInput = document.getElementById('decisionSearchInput');
+  const loadingBar = document.getElementById('decisionSearchLoadingBar');
+  
+  if (searchInput) {
+    searchInput.value = '';
+  }
+  
+  if (loadingBar) {
+    loadingBar.style.width = '0%';
+  }
+  
   isDecisionSearchActive = false;
   
   const hasAccess = !document.querySelector('.detail-content.blur-stats');
   const container = document.getElementById('decisionsListContainer');
-  container.innerHTML = renderDecisionItems(originalDecisions, hasAccess);
+  
+  if (container && originalDecisions) {
+    container.innerHTML = renderDecisionItems(originalDecisions, hasAccess);
+  }
 }
+
+
 
 async function filterDecisionsLocally(decisions, query) {
   const matches = [];
