@@ -2524,6 +2524,57 @@ async def create_invoice_for_purchase(
             print(f"All payment_intent_ids for user: {[dict(p) for p in all_purchases]}")
             raise HTTPException(status_code=404, detail="Purchase not found")
         
-        # ... rest of the code stays the same
-
-
+        # Check if invoice already exists
+        if purchase['stripe_invoice_id']:
+            return {"invoiceId": purchase['stripe_invoice_id']}
+        
+        # Get or create Stripe customer
+        customers = stripe.Customer.list(email=current_user['email'], limit=1)
+        if customers.data:
+            customer = customers.data[0]
+        else:
+            customer = stripe.Customer.create(
+                email=current_user['email'],
+                name=f"{current_user.get('first_name', '')} {current_user.get('last_name', '')}"
+            )
+        
+        # Create invoice item
+        stripe.InvoiceItem.create(
+            customer=customer.id,
+            amount=5495,
+            currency='aud',
+            description=f"Adjudicator Insights: {adjudicator_name}"
+        )
+        
+        # Create and finalize invoice
+        invoice = stripe.Invoice.create(
+            customer=customer.id,
+            auto_advance=True,
+            collection_method='send_invoice',
+            days_until_due=0,
+            metadata={
+                'user_email': current_user['email'],
+                'adjudicator_name': adjudicator_name,
+                'payment_intent_id': payment_intent_id
+            }
+        )
+        
+        invoice = stripe.Invoice.finalize_invoice(invoice.id)
+        invoice = stripe.Invoice.pay(invoice.id, paid_out_of_band=True)
+        
+        # Store invoice ID
+        purchases_con.execute("""
+            UPDATE adjudicator_purchases 
+            SET stripe_invoice_id = ? 
+            WHERE stripe_payment_intent_id = ?
+        """, (invoice.id, payment_intent_id))
+        purchases_con.commit()
+        
+        return {"invoiceId": invoice.id}
+        
+    except stripe.error.StripeError as e:
+        print(f"Stripe error creating invoice: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Error creating invoice: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create invoice")
