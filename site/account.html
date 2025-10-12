@@ -600,6 +600,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const navButtons = document.querySelectorAll('.account-nav .nav-btn');
         const sections = document.querySelectorAll('.account-section');
 
+
+
+editBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    toggleEditMode(true);
+});
+
+cancelBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    toggleEditMode(false);
+    populateProfileForm(originalProfileData); 
+});
+
+
         // --- Tab Navigation ---
         navButtons.forEach(button => {
             button.addEventListener('click', (e) => {
