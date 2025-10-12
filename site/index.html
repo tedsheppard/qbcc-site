@@ -1017,33 +1017,7 @@ function findMatchingAdjudicator(query) {
   return null;
 }
 
-  if (!query || query.length < 3 || !adjudicatorList.length) return null;
-
-  const cleanedQuery = query
-    .toLowerCase()
-    .replace(/"/g, '')
-    .replace(/\b(and|or|not|w\/\d+|near\/\d+)\b/gi, ' ')
-    .replace(/[^\w\s]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  if (!cleanedQuery) return null;
-
-  for (const adjudicator of adjudicatorList) {
-    // We check for names with at least two parts (e.g., "john smith")
-    // to avoid blocking common single-word searches.
-    if (adjudicator.parts.length < 2) continue;
-
-    // Check if ALL parts of the adjudicator's name are present in the user's query
-    const allPartsFound = adjudicator.parts.every(part => cleanedQuery.includes(part));
-
-    if (allPartsFound) {
-      return adjudicator.fullName;
-    }
-  }
-
-  return null;
-}
+  
 
 
 // Replace your old showAdjudicatorModal function with this one
