@@ -1224,6 +1224,29 @@
   color: #aaa;
 }
 
+/* New style for the intro text */
+.intro-text {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  padding: 20px 25px;
+  margin-bottom: 30px;
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+}
+.intro-text p {
+  margin: 0 0 10px 0;
+}
+.intro-text p:last-child {
+  margin-bottom: 0;
+}
+.dark .intro-text {
+  background: #1a1a1a;
+  border-color: #333;
+  color: #ccc;
+}
+
 </style>
 </head>
 
@@ -1251,9 +1274,14 @@
 <main>
   <h1>Adjudicator Insights & Analytics</h1>
 
-  <div class="disclaimer">
-    <strong>Disclaimer:</strong> The information provided on this page is for general informational purposes only. Sopal does not warrant or represent the accuracy, completeness, or reliability of any adjudicator statistics or decision metadata. Users should independently verify all information and seek professional legal advice before making any decisions based on the content provided herein. By using this tool, you acknowledge and agree to this disclaimer.
-  </div>
+<div class="intro-text">
+  <p>
+    Explore comprehensive analytics for adjudicators under Queensland's security of payment legislation. This tool processes publicly available decisions to provide valuable insights into decision-making patterns, award rates, and fee distributions.
+  </p>
+  <p>
+    Use these statistics to better inform your adjudication strategy and understand an adjudicator's complete case history. To unlock the full dataset for an adjudicator, simply select their name from the list.
+  </p>
+</div>
 
   <div class="content-container">
     <!-- Left Pane: Search & Results -->
