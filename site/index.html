@@ -790,6 +790,29 @@ body {
   }
 }
 
+/* --- Adjudicator Search Interception Modal --- */
+.interception-modal {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000;
+}
+.interception-modal-content {
+  background: #fff; color: #333; padding: 30px 35px; border-radius: 8px;
+  max-width: 500px; width: 90%; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+}
+.dark .interception-modal-content { background: #1a1a1a; color: #eee; }
+.interception-modal h2 { font-size: 22px; margin-top: 0; }
+.interception-modal p { margin-bottom: 25px; line-height: 1.6; }
+.interception-modal-buttons { display: flex; gap: 15px; justify-content: center; }
+.interception-modal-buttons button {
+  padding: 12px 20px; border-radius: 6px; border: none; font-size: 15px;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.btn-primary-action { background: #00c97c; color: white; }
+.btn-primary-action:hover { background: #00a568; }
+.btn-secondary-action { background: #e9ecef; color: #333; }
+.dark .btn-secondary-action { background: #333; color: #eee; }
+.btn-secondary-action:hover { background: #dee2e6; }
+
 </style>
 
 </head>
@@ -849,9 +872,11 @@ body {
   <div id="total"></div>
   <div id="results"></div>
   <div class="pagination" id="pagination"></div>
+  <div id="adjudicatorSearchModal" class="interception-modal"></div>
 </main>
 
 <script>
+  
     function $(sel){ return document.querySelector(sel); }
     function sanitize(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function getFileName(path){ if (!path) return ''; return path.split('/').pop(); }
@@ -863,9 +888,33 @@ body {
     }
 
     let state = { q:'', claimant:'', respondent:'', limit:20, offset:0, total:0 };
+    let adjudicatorList = []; 
     let chatHistories = {};
 
-    async function runSearch(page=1){
+    // ADD THIS NEW FUNCTION
+async function fetchAdjudicators() {
+  try {
+    const response = await fetch('/api/adjudicators');
+    if (!response.ok) return;
+    const data = await response.json();
+    // Store names for flexible matching
+    adjudicatorList = data.map(adj => ({
+      fullName: adj.name.toLowerCase(),
+    }));
+    console.log(`Loaded ${adjudicatorList.length} adjudicators for search check.`);
+  } catch (error) {
+    console.error('Could not fetch adjudicator list:', error);
+  }
+}
+
+    async function runSearch(page=1, bypassAdjudicatorCheck = false){
+      if (!bypassAdjudicatorCheck && adjudicatorList.length > 0) {
+    const query = normalizeInput($('#q').value);
+    if (findMatchingAdjudicator(query)) {
+      showAdjudicatorModal();
+      return; // Stop the standard search
+    }
+  }
       try {
         window.scrollTo(0, 0);
         const statusEl = $('#status');
@@ -922,6 +971,60 @@ body {
         finishLoadingBar();
       }
     }
+
+    // ADD THESE TWO NEW FUNCTIONS
+function findMatchingAdjudicator(query) {
+  if (!query || query.length < 3) return null;
+
+  // Clean the query of operators and punctuation for better matching
+  const cleanedQuery = query
+    .toLowerCase()
+    .replace(/"/g, '')
+    .replace(/\b(and|or|not|w\/\d+|near\/\d+)\b/gi, ' ')
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleanedQuery) return null;
+
+  // Check for an exact match first
+  for (const adjudicator of adjudicatorList) {
+    if (adjudicator.fullName === cleanedQuery) {
+      return adjudicator.fullName;
+    }
+  }
+
+  // Check if all parts of the query are in a single adjudicator's name
+  const queryParts = cleanedQuery.split(' ');
+  for (const adjudicator of adjudicatorList) {
+    const allPartsMatch = queryParts.every(part => adjudicator.fullName.includes(part));
+    if (allPartsMatch) {
+      return adjudicator.fullName;
+    }
+  }
+
+  return null;
+}
+
+function showAdjudicatorModal() {
+  const modal = document.getElementById('adjudicatorSearchModal');
+  modal.style.display = 'flex';
+
+  document.getElementById('viewInsightsBtn').onclick = () => {
+    window.location.href = '/adjudicators';
+  };
+
+  document.getElementById('searchAnywayBtn').onclick = () => {
+    modal.style.display = 'none';
+    runSearch(1, true); // Re-run the search, bypassing our check
+  };
+
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  };
+}
 
 function renderItem(it, query) {
   const pdf = buildPdfLinks(it.pdf_path);
@@ -1105,7 +1208,11 @@ if (sortSel) {
   sortSel.addEventListener('change', () => runSearch(1));
 }
 
+fetchAdjudicators();
+
 runSearch();
+
+
 
 function startLoadingBar() {
   const bar = document.getElementById('loadingBar');
