@@ -2218,6 +2218,8 @@ async def serve_html_page(path_name: str):
     raise HTTPException(status_code=404, detail="Not Found")
 
 
+
+
 from io import BytesIO
 from datetime import datetime
 from fastapi import Response, Header, HTTPException
@@ -2295,4 +2297,56 @@ async def generate_summary_pdf(adjudicator_name: str, authorization: str = Heade
         ["Adjudicator’s Name", data.get("name", "")],
         ["Number of Decisions", str(data.get("totalDecisions", ""))],
         ["Total Claimed Amount", f"${data.get('totalClaimAmount', 0):,.0f}"],
-        ["Tota]()
+        ["Total Adjudicated Amount", f"${data.get('totalAwardedAmount', 0):,.0f}"],
+        ["Avg Claimed Amount", f"${(data.get('totalClaimAmount', 0) / max(1, data.get('totalDecisions', 1))):,.0f}"],
+        ["Avg Adjudicated Amount", f"${(data.get('totalAwardedAmount', 0) / max(1, data.get('totalDecisions', 1))):,.0f}"],
+        ["Avg Claimant Fee Proportion", f"{data.get('avgClaimantFeeProportion', 0):.1f}%"],
+        ["Avg Respondent Fee Proportion", f"{data.get('avgRespondentFeeProportion', 0):.1f}%"],
+        ["Number of Nil Decisions", str(data.get('zeroAwardCount', 0))],
+        ["Avg Portion Awarded Per Decision", f"{data.get('avgAwardRate', 0):.1f}%"],
+    ]
+
+    table = Table(summary_data, colWidths=[200, 200])
+    table.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 0.25, colors.grey),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#F8F9FA")),
+        ('FONT', (0, 0), (-1, -1), 'Helvetica', 9),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    story.append(table)
+    story.append(Spacer(1, 18))
+
+    # --- Decision History ---
+    story.append(Paragraph("<b>Adjudicator Decision History</b>", styles["Heading"]))
+    story.append(Paragraph("Sorted in order from most recent to least recent.", styles["Body"]))
+    story.append(Spacer(1, 8))
+
+    for d in data.get("decisions", []):
+        story.append(Paragraph(f"<b>{d.get('claimant', '')} v {d.get('respondent', '')}</b>", styles["Label"]))
+        story.append(Paragraph(
+            f"Date: {d.get('date', 'N/A')}  —  Claimed: ${d.get('claimAmount', 0):,.0f}  —  "
+            f"Adjudicated: ${d.get('awardedAmount', 0):,.0f}",
+            styles["Body"]
+        ))
+        story.append(Paragraph(
+            f"Claimant Fee: {d.get('claimantFeeProportion', 0):.1f}%  "
+            f"Respondent Fee: {d.get('respondentFeeProportion', 0):.1f}%",
+            styles["Body"]
+        ))
+        if d.get("pdfPath"):
+            story.append(Paragraph(
+                f"<font color='#0066cc'>{d['pdfPath']}</font>",
+                styles["Body"]
+            ))
+        story.append(Spacer(1, 8))
+
+    pdf.build(story)
+    buffer.seek(0)
+
+    headers = {
+        "Content-Disposition": f"attachment; filename={adjudicator_name}_SopalInsights.pdf"
+    }
+    return Response(buffer.read(), media_type="application/pdf", headers=headers)
