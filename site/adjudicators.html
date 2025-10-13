@@ -1877,7 +1877,10 @@ function renderAdjudicatorsList() {
     return `
     <div class="adjudicator-item ${selectedAdjudicator?.id === adj.id ? 'selected' : ''}"
          onclick="selectAdjudicator('${adj.id.replace(/'/g, "\\'")}')">
-      <div class="adjudicator-name">${sanitizeHtml(adj.name)}</div>
+      <div class="adjudicator-name">
+        ${sanitizeHtml(adj.name)}
+        ${adj.name === 'Russell Welsh' ? '<span style="background: #00c97c; color: white; font-size: 10px; padding: 2px 6px; border-radius: 3px; margin-left: 8px; font-weight: 600;">FREE DEMO</span>' : ''}
+      </div>
       <div class="adjudicator-stats">
         <div class="stat-item">
           <span class="stat-value">${decisionHtml}</span>
@@ -1903,34 +1906,41 @@ async function selectAdjudicator(adjudicatorId) {
 
     try {
         let hasAccess = false;
-        const token = localStorage.getItem('purchase_token');
+        
+        // Always unlock Russell Welsh as a demo
+        if (selectedAdjudicator.name === 'Russell Welsh') {
+            console.log('[DEBUG] Russell Welsh is demo - always unlocked');
+            hasAccess = true;
+            purchasedAdjudicators.add('Russell Welsh');
+        } else {
+            const token = localStorage.getItem('purchase_token');
 
-        if (token) {
-            console.log('[DEBUG] Token found. Checking if valid...');
-            const isValid = await refreshTokenIfNeeded();
-            
-            if (!isValid) {
-                console.log('[DEBUG] Token invalid or expired');
-            } else {
-                console.log('[DEBUG] Token valid. Fetching from /check-adjudicator-access...');
-                try {
-                    const accessResponse = await fetch(`/check-adjudicator-access/${encodeURIComponent(selectedAdjudicator.name)}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
+            if (token) {
+                console.log('[DEBUG] Token found. Checking if valid...');
+                const isValid = await refreshTokenIfNeeded();
+                
+                if (!isValid) {
+                    console.log('[DEBUG] Token invalid or expired');
+                } else {
+                    console.log('[DEBUG] Token valid. Fetching from /check-adjudicator-access...');
+                    try {
+                        const accessResponse = await fetch(`/check-adjudicator-access/${encodeURIComponent(selectedAdjudicator.name)}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
 
-                    if (accessResponse.ok) {
-                        const accessData = await accessResponse.json();
-                        hasAccess = accessData.hasAccess;
-                        
-                        // ADD THIS: If purchased, add to the Set
-                        if (hasAccess) {
-                            purchasedAdjudicators.add(selectedAdjudicator.name);
+                        if (accessResponse.ok) {
+                            const accessData = await accessResponse.json();
+                            hasAccess = accessData.hasAccess;
+                            
+                            if (hasAccess) {
+                                purchasedAdjudicators.add(selectedAdjudicator.name);
+                            }
+                            
+                            console.log('[DEBUG] Access check successful. Has Access:', hasAccess);
                         }
-                        
-                        console.log('[DEBUG] Access check successful. Has Access:', hasAccess);
+                    } catch (e) {
+                        console.error('[DEBUG] Access check error:', e);
                     }
-                } catch (e) {
-                    console.error('[DEBUG] Access check error:', e);
                 }
             }
         }
@@ -1974,8 +1984,9 @@ function showAdjudicatorDetail(hasAccess = false) {
       <div class="locked-content">
         <h3>🔒 Unlock Full Adjudicator Insights</h3>
         <p>Get access to detailed statistics, decision patterns, and the complete history of decisions for <strong>${sanitizeHtml(selectedAdjudicator.name)}</strong></p>
-       <div class="price-tag">$69.95 <sup style="font-size: 16px;">incl GST</sup></div>
-<p style="color: #666; font-size: 14px;">One-time payment • 12 month access • Chargeable disbursement</p>
+        <p style="font-size: 13px; color: #888; margin-top: 15px;"><em>Tip: Russell Welsh is unlocked as a free demo so you can see what you get!</em></p>
+        <div class="price-tag">$54.95 <sup style="font-size: 16px;">incl GST</sup></div>
+        <p style="color: #666; font-size: 14px;">One-time payment • 12 month access • Chargeable disbursement</p>
         <button class="unlock-btn" onclick="unlockAdjudicator('${selectedAdjudicator.name.replace(/'/g, "\\'")}')">
           Unlock Access
         </button>
@@ -1995,6 +2006,7 @@ function showAdjudicatorDetail(hasAccess = false) {
         <div class="detail-tabs">
           <button class="tab-btn active" onclick="showTab('stats')">Statistics</button>
           <button class="tab-btn" onclick="showTab('decisions')">Decisions</button>
+          <button class="tab-btn" onclick="downloadSummary()">Summary (PDF)</button>
         </div>
 
         <!-- Statistics Tab -->
@@ -2067,37 +2079,34 @@ function showAdjudicatorDetail(hasAccess = false) {
           </div>
         </div>
 
-
         <!-- Decisions Tab -->
-<div id="decisions-tab" class="tab-content">
-  <!-- Search Bar with Loading Bar -->
-  <div style="margin-bottom: 15px; position: relative;">
-    <div id="decisionSearchLoadingBar" style="position: absolute; top: 0; left: 0; width: 0%; height: 3px; background: linear-gradient(to right, #00c97c, #00ffa3); transition: width 0.3s ease; z-index: 10; border-radius: 3px;"></div>
-    
-    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-      <input type="text" id="decisionSearchInput" 
-             placeholder="Search decisions (e.g., 'defect AND delay' or 'payment w/5 claim')"
-             style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;"
-             onkeydown="if(event.key==='Enter') searchDecisions()">
-      <button type="button" onclick="searchDecisions()" 
-              style="padding: 10px 20px; background: #00c97c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-        Search
-      </button>
-      <button type="button" onclick="clearDecisionSearch()" 
-              style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-        Clear
-      </button>
-    </div>
-    
-    <!-- ADD THIS SEARCH RESULTS COUNTER -->
-    <div id="decisionSearchResults" style="font-size: 13px; color: #666; margin-bottom: 10px; display: none;">
-      <span id="decisionSearchCount"></span>
-    </div>
-  </div>
-
-        
-  
-  <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+        <div id="decisions-tab" class="tab-content">
+          <!-- Search Bar with Loading Bar -->
+          <div style="margin-bottom: 15px; position: relative;">
+            <div id="decisionSearchLoadingBar" style="position: absolute; top: 0; left: 0; width: 0%; height: 3px; background: linear-gradient(to right, #00c97c, #00ffa3); transition: width 0.3s ease; z-index: 10; border-radius: 3px;"></div>
+            
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+              <input type="text" id="decisionSearchInput" 
+                     placeholder="Search decisions (e.g., 'defect AND delay' or 'payment w/5 claim')"
+                     style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;"
+                     onkeydown="if(event.key==='Enter') searchDecisions()">
+              <button type="button" onclick="searchDecisions()" 
+                      style="padding: 10px 20px; background: #00c97c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Search
+              </button>
+              <button type="button" onclick="clearDecisionSearch()" 
+                      style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Clear
+              </button>
+            </div>
+            
+            <!-- Search Results Counter -->
+            <div id="decisionSearchResults" style="font-size: 13px; color: #666; margin-bottom: 10px; display: none;">
+              <span id="decisionSearchCount"></span>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
             <h4 style="margin: 0;">All Decisions</h4>
             <select id="decisionSort" onchange="sortDecisions()" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
               <option value="date_newest">Date (Newest First)</option>
@@ -2118,6 +2127,8 @@ function showAdjudicatorDetail(hasAccess = false) {
     </div>
   `;
 }
+
+
 
 function renderDecisionItems(decisions, hasAccess, searchQuery = null) {
     if (!decisions || decisions.length === 0) {
