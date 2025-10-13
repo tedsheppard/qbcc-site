@@ -2707,31 +2707,51 @@ function clearDecisionSearch() {
   }
 }
 
-
 async function filterDecisionsLocally(decisions, query) {
   console.log('[DEBUG] filterDecisionsLocally called with:', decisions.length, 'decisions');
-  console.log('[DEBUG] Decision IDs to search:', decisions.map(d => d.id));
   
-  const matches = [];
-  
-  for (const decision of decisions) {
-    try {
-      const response = await fetch(`/api/decision-text/${decision.id}`);
-      if (!response.ok) continue;
-      
-      const data = await response.json();
-      const fullText = data.fullText || '';
+  try {
+    // Batch fetch all decision texts in ONE request
+    const decisionIds = decisions.map(d => d.id);
+    console.log('[DEBUG] Fetching texts for:', decisionIds);
+    
+    const response = await fetch('/api/adjudicator-decisions-text', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(decisionIds)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch decision texts');
+    }
+    
+    const data = await response.json();
+    const textsMap = data.decisions;
+    
+    console.log('[DEBUG] Received texts for', Object.keys(textsMap).length, 'decisions');
+    
+    // Now filter locally with all the texts
+    const matches = [];
+    for (const decision of decisions) {
+      const fullText = textsMap[decision.id] || '';
       
       if (simpleMatchQuery(fullText, query)) {
         matches.push({...decision, matchedText: fullText});
+        console.log(`[DEBUG] Match found in decision: ${decision.id}`);
       }
-    } catch (e) {
-      console.error('Error fetching decision text:', e);
     }
+    
+    console.log(`[DEBUG] Total matches found: ${matches.length} out of ${decisions.length} decisions`);
+    return matches;
+    
+  } catch (e) {
+    console.error('[ERROR] Batch fetch failed:', e);
+    throw e;
   }
-  
-  return matches;
 }
+
 
 function simpleMatchQuery(text, query) {
   const lowerText = text.toLowerCase();

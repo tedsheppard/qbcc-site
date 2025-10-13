@@ -2595,3 +2595,25 @@ async def create_invoice_for_purchase(
         print(f"Error creating invoice: {e}")
         raise HTTPException(status_code=500, detail="Failed to create invoice")
 
+@app.post("/api/adjudicator-decisions-text")
+async def get_adjudicator_decisions_text(decision_ids: List[str] = Body(...)):
+    """Batch fetch full text for multiple decisions"""
+    try:
+        if not decision_ids:
+            return {"decisions": []}
+        
+        # Create placeholders for SQL IN clause
+        placeholders = ','.join('?' * len(decision_ids))
+        
+        rows = con.execute(
+            f"SELECT ejs_id, full_text FROM docs_fresh WHERE ejs_id IN ({placeholders})",
+            decision_ids
+        ).fetchall()
+        
+        result = {row["ejs_id"]: row["full_text"] or "" for row in rows}
+        
+        return {"decisions": result}
+        
+    except Exception as e:
+        print(f"Error batch fetching decision texts: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch decision texts")
