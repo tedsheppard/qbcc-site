@@ -2055,23 +2055,22 @@ async def confirm_purchase(
         raise HTTPException(status_code=500, detail="Failed to confirm purchase")
     
 
-        
-# ... surrounding code ...
 @app.post("/purchase-register")
 def purchase_register(
     email: str = Form(...),
     password: str = Form(...),
     first_name: str = Form(...),
     last_name: str = Form(...),
-    firm_name: str = Form(...),
-    abn: str = Form(...),
+    firm_name: str = Form(""), # Add default value
+    abn: str = Form(""),       # Add default value
     billing_address: str = Form(...),
     billing_city: str = Form(...),
     billing_state: str = Form(...),
     billing_postcode: str = Form(...),
-    employee_size: str = Form(...),
+    employee_size: str = Form(""), # Add default value
     phone: str = Form("")
 ):
+
     """Enhanced registration with company details"""
     try:
         hashed_password = get_password_hash(password)

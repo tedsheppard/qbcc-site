@@ -318,6 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const billingState = formData.get('billing_state');
         const billingPostcode = formData.get('billing_postcode');
         const abn = formData.get('abn');
+        const employeeSize = formData.get('employee_size'); // ADD THIS
 
         // Client-side validation
         const errors = [];
@@ -333,10 +334,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!billingState) errors.push('State is required');
         if (!billingPostcode) errors.push('Postcode is required');
         
-        // ABN validation only if provided
+       
+                // ABN validation only if provided
         if (abn && abn.trim()) {
             const abnCleaned = abn.replace(/\s/g, '');
-            if (abnCleaned.length !== 11 || !/^\d+$/.test(abnCleaned)) {
+            if (!/^\d{11}$/.test(abnCleaned)) { // Use a regex for 11 digits
                 errors.push('ABN must be exactly 11 digits');
             }
         }
