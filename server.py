@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS adjudicator_purchases (
     adjudicator_name TEXT NOT NULL,
     purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     stripe_payment_intent_id TEXT,
-    amount_paid REAL DEFAULT 54.95,
+    amount_paid REAL DEFAULT 69.95,
     UNIQUE(user_email, adjudicator_name)
 )
 """)
@@ -1975,7 +1975,7 @@ async def create_payment_intent(
 
         # Step 2: Create a simple PaymentIntent (no invoice yet)
         intent = stripe.PaymentIntent.create(
-            amount=5495,
+            amount=6995,
             currency='aud',
             customer=customer.id,
             description=f"Access to Adjudicator Insights: {adjudicator_name}",
@@ -2031,7 +2031,7 @@ async def confirm_purchase(
             INSERT INTO adjudicator_purchases
             (user_email, adjudicator_name, stripe_payment_intent_id, amount_paid)
             VALUES (?, ?, ?, ?)
-        """, (current_user['email'], adjudicator_name, payment_intent_id, 54.95))
+        """, (current_user['email'], adjudicator_name, payment_intent_id, 69.95))
         purchases_con.commit()
         
         # Get Stripe's built-in receipt URL from the expanded charge
@@ -2557,7 +2557,7 @@ async def create_invoice_for_purchase(
         # Create invoice item
         stripe.InvoiceItem.create(
             customer=customer.id,
-            amount=5495,
+            amount=6995,
             currency='aud',
             description=f"Adjudicator Insights: {adjudicator_name}"
         )
