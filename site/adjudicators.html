@@ -1830,6 +1830,14 @@ async function loadAdjudicators() {
   }
 }
 
+function renderAdjudicatorsList() {
+  const container = document.getElementById('adjudicatorsList');
+
+  if (filteredAdjudicators.length === 0) {
+    container.innerHTML = '<div class="loading">No adjudicators found.</div>';
+    return;
+  }
+
 function filterAdjudicators() {
   const searchTerm = document.getElementById('adjudicatorSearch').value.toLowerCase();
   const sortBy = document.getElementById('sortBy').value;
@@ -1841,8 +1849,14 @@ function filterAdjudicators() {
   // Sort
   filteredAdjudicators.sort((a, b) => {
     // Always pin Russell Welsh to the top
-    if (a.name === 'Russell Welsh') return -1;
-    if (b.name === 'Russell Welsh') return 1;
+    if (a.name === 'Russell Welsh') {
+      console.log('[DEBUG] Pinning Russell Welsh to top');
+      return -1;
+    }
+    if (b.name === 'Russell Welsh') {
+      console.log('[DEBUG] Pinning Russell Welsh to top');
+      return 1;
+    }
     
     switch (sortBy) {
       case 'name':
@@ -1855,18 +1869,12 @@ function filterAdjudicators() {
     }
   });
 
+  console.log('[DEBUG] First adjudicator after sort:', filteredAdjudicators[0]?.name);
   renderAdjudicatorsList();
 }
 
 
 
-function renderAdjudicatorsList() {
-  const container = document.getElementById('adjudicatorsList');
-
-  if (filteredAdjudicators.length === 0) {
-    container.innerHTML = '<div class="loading">No adjudicators found.</div>';
-    return;
-  }
 
   container.innerHTML = filteredAdjudicators.map(adj => {
     const decisionCount = adj.totalDecisions;
