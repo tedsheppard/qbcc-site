@@ -1840,6 +1840,10 @@ function filterAdjudicators() {
 
   // Sort
   filteredAdjudicators.sort((a, b) => {
+    // Always pin Russell Welsh to the top
+    if (a.name === 'Russell Welsh') return -1;
+    if (b.name === 'Russell Welsh') return 1;
+    
     switch (sortBy) {
       case 'name':
         return a.name.localeCompare(b.name);
@@ -1853,6 +1857,8 @@ function filterAdjudicators() {
 
   renderAdjudicatorsList();
 }
+
+
 
 function renderAdjudicatorsList() {
   const container = document.getElementById('adjudicatorsList');
