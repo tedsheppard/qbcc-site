@@ -1823,12 +1823,19 @@ async function loadAdjudicators() {
     
     allAdjudicators = await response.json();
     filteredAdjudicators = [...allAdjudicators];
-    renderAdjudicatorsList();
+    
+    // CHANGE THIS LINE FROM:
+    // renderAdjudicatorsList();
+    
+    // TO THIS:
+    filterAdjudicators();  // This will sort AND render
+    
   } catch (error) {
     console.error('Error loading adjudicators:', error);
     container.innerHTML = '<div class="loading">Error loading adjudicators. Please try again later.</div>';
   }
 }
+
 
 
 
