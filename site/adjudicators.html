@@ -1126,6 +1126,10 @@
   background-color: white;
 }
 
+.dark #decisionSearchResults {
+  color: #aaa !important;
+}
+
 .dark .form-group select {
   background: #2a2a2a;
   border-color: #444;
@@ -1901,7 +1905,8 @@ function showAdjudicatorDetail(hasAccess = false) {
           </div>
         </div>
 
-       <!-- Decisions Tab -->
+
+        <!-- Decisions Tab -->
 <div id="decisions-tab" class="tab-content">
   <!-- Search Bar with Loading Bar -->
   <div style="margin-bottom: 15px; position: relative;">
@@ -1921,8 +1926,14 @@ function showAdjudicatorDetail(hasAccess = false) {
         Clear
       </button>
     </div>
+    
+    <!-- ADD THIS SEARCH RESULTS COUNTER -->
+    <div id="decisionSearchResults" style="font-size: 13px; color: #666; margin-bottom: 10px; display: none;">
+      <span id="decisionSearchCount"></span>
+    </div>
   </div>
-  
+
+        
   
   <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
             <h4 style="margin: 0;">All Decisions</h4>
@@ -2624,8 +2635,11 @@ async function searchDecisions() {
   const searchInput = document.getElementById('decisionSearchInput');
   const query = searchInput.value.trim();
   const loadingBar = document.getElementById('decisionSearchLoadingBar');
+  const resultsDiv = document.getElementById('decisionSearchResults');
+  const resultsCount = document.getElementById('decisionSearchCount');
   
-  console.log('[DEBUG] Search clicked, query:', query); // Debug line
+  console.log('[DEBUG] Search clicked, query:', query);
+  console.log('[DEBUG] originalDecisions count:', originalDecisions.length);
   
   if (!query) {
     clearDecisionSearch();
@@ -2641,16 +2655,16 @@ async function searchDecisions() {
     isDecisionSearchActive = true;
     
     const processedQuery = normalizeInput(query);
-    console.log('[DEBUG] Processed query:', processedQuery); // Debug line
+    console.log('[DEBUG] Processed query:', processedQuery);
     
     // Update loading bar
     if (loadingBar) {
       loadingBar.style.width = '60%';
     }
     
-    
     const filtered = await filterDecisionsLocally(originalDecisions, processedQuery);
-    console.log('[DEBUG] Filtered results:', filtered.length); // Debug line
+    console.log('[DEBUG] Filtered results:', filtered.length);
+    console.log('[DEBUG] Filtered decisions:', filtered);
     
     // Update loading bar
     if (loadingBar) {
@@ -2661,9 +2675,17 @@ async function searchDecisions() {
     const container = document.getElementById('decisionsListContainer');
     
     if (filtered.length === 0) {
-      container.innerHTML = '<div class="loading">No matching decisions found</div>';
+      container.innerHTML = '<div class="loading">No matching decisions found. Try different search terms.</div>';
+      // Hide results counter when no results
+      if (resultsDiv) resultsDiv.style.display = 'none';
     } else {
       container.innerHTML = renderDecisionItems(filtered, hasAccess, processedQuery);
+      
+      // ADD THIS: Show results counter
+      if (resultsDiv && resultsCount) {
+        resultsCount.textContent = `Found ${filtered.length} matching decision${filtered.length === 1 ? '' : 's'} out of ${originalDecisions.length} total`;
+        resultsDiv.style.display = 'block';
+      }
     }
     
     // Complete loading bar
@@ -2685,9 +2707,11 @@ async function searchDecisions() {
   }
 }
 
+
 function clearDecisionSearch() {
   const searchInput = document.getElementById('decisionSearchInput');
   const loadingBar = document.getElementById('decisionSearchLoadingBar');
+  const resultsDiv = document.getElementById('decisionSearchResults');
   
   if (searchInput) {
     searchInput.value = '';
@@ -2695,6 +2719,11 @@ function clearDecisionSearch() {
   
   if (loadingBar) {
     loadingBar.style.width = '0%';
+  }
+  
+  // Hide results counter
+  if (resultsDiv) {
+    resultsDiv.style.display = 'none';
   }
   
   isDecisionSearchActive = false;
@@ -2706,6 +2735,7 @@ function clearDecisionSearch() {
     container.innerHTML = renderDecisionItems(originalDecisions, hasAccess);
   }
 }
+
 
 async function filterDecisionsLocally(decisions, query) {
   console.log('[DEBUG] filterDecisionsLocally called with:', decisions.length, 'decisions');
