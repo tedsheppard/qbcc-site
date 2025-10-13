@@ -1260,6 +1260,168 @@
   color: #ccc;
 }
 
+/* AI CHAT INTERFACE STYLES */
+.ai-container {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-top: 15px;
+  max-width: 100%;
+}
+.dark .ai-container {
+  border-color: #444;
+}
+
+.chat-messages {
+  max-height: 450px;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 90%;
+}
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.ai-message .message-avatar {
+  background: #10a37f;
+  color: white;
+}
+.user-message .message-avatar {
+  background: #e0e0e0;
+  color: #333;
+}
+.dark .user-message .message-avatar {
+    background: #555;
+    color: #eee;
+}
+
+.message-content {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ai-message {
+  align-self: flex-start;
+}
+.ai-message .message-content {
+  background: #f0f0f0;
+  color: #222;
+  border-top-left-radius: 0;
+}
+.dark .ai-message .message-content {
+  background: #2a2a2a;
+  color: #eee;
+}
+
+.user-message {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.user-message .message-content {
+  background: #dcf8c6;
+  color: #111;
+  border-top-right-radius: 0;
+}
+.dark .user-message .message-content {
+    background: #056162;
+    color: #e0e0e0;
+}
+
+.chat-input-area {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid #e0e0e0;
+}
+.dark .chat-input-area {
+  border-top-color: #444;
+}
+
+.chat-input-area input {
+  flex-grow: 1;
+  border: none;
+  background: transparent;
+  padding: 10px;
+  font-size: 13px;
+  outline: none;
+  color: #222;
+  margin-right: 8px;
+}
+.dark .chat-input-area input {
+  color: #eee;
+}
+
+.chat-input-area button {
+  background: #10a37f;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.chat-input-area button:hover {
+  background: #0d8a6c;
+}
+.chat-input-area button svg {
+    margin-left: -1px;
+    margin-top: 1px;
+}
+
+.loading-text-gradient {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px;
+  background: linear-gradient(to right, #222 30%, #ccc 50%, #222 70%);
+  background-size: 200% auto;
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: shimmer 1s linear infinite;
+  text-align: left;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% center;
+  }
+}
+
+.dark .loading-text-gradient {
+  background: linear-gradient(to right, #eee 30%, #555 50%, #eee 70%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.ai-output-content p { margin: 4px 0 6px 0; }
+.ai-output-content strong { display: block; margin: 10px 0 4px 0; font-size: 14px; font-weight: 600; }
+.ai-output-content ul { margin: 4px 0 8px 18px; padding: 0; }
+.ai-output-content li { margin: 2px 0; }
+.ai-output-content h3, .ai-output-content h4 { font-size: 15px; font-weight: 600; margin: 10px 0 4px 0; }
+
 </style>
 </head>
 
@@ -1957,7 +2119,6 @@ function showAdjudicatorDetail(hasAccess = false) {
   `;
 }
 
-
 function renderDecisionItems(decisions, hasAccess, searchQuery = null) {
     if (!decisions || decisions.length === 0) {
         return '<div class="loading">No decisions found</div>';
@@ -1989,16 +2150,32 @@ function renderDecisionItems(decisions, hasAccess, searchQuery = null) {
               </div>
               <div class="decision-actions">
                 ${decisionLinkHtml}
+                <span style="color:#666; margin:0 6px;">|</span>
+                <a href="javascript:void(0)" class="decision-link" onclick="summariseDecisionInAdjudicators('${decision.id}')">
+                  Ask SopalAI
+                </a>
               </div>
               ${searchQuery && decision.matchedText ? `
                 <div class="snippet" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 12px; color: #333;">
                   ${extractSnippet(decision.matchedText, searchQuery)}
                 </div>
               ` : ''}
+              
+              <!-- AI Chat Container -->
+              <div id="ai-container-${decision.id}" class="ai-container" style="display:none; margin-top: 15px;">
+                  <div class="chat-messages" id="chat-messages-${decision.id}"></div>
+                  <div class="chat-input-area" id="chat-input-area-${decision.id}" style="display:none;">
+                      <input type="text" id="chat-input-${decision.id}" placeholder="Ask a follow-up question..." onkeydown="if(event.key==='Enter') sendChatMessageInAdjudicators('${decision.id}')">
+                      <button onclick="sendChatMessageInAdjudicators('${decision.id}')" aria-label="Send message">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                      </button>
+                  </div>
+              </div>
             </div>
         `;
     }).join('');
 }
+
 
 
 
@@ -2581,6 +2758,116 @@ async function handleRegister(e) {
 
 // Update the event listener setup
 document.getElementById('registerForm').addEventListener('submit', handleRegister);
+
+// Store chat histories for each decision
+let chatHistoriesAdjudicators = {};
+
+async function summariseDecisionInAdjudicators(id) {
+    const container = document.getElementById(`ai-container-${id}`);
+    const messagesBox = document.getElementById(`chat-messages-${id}`);
+    const inputBox = document.getElementById(`chat-input-area-${id}`);
+
+    if (container.style.display === 'block') {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+    messagesBox.innerHTML = '<div class="loading-text-gradient">Generating summary...</div>';
+    inputBox.style.display = 'none';
+    chatHistoriesAdjudicators[id] = [];
+
+    try {
+        const res = await fetch(`/summarise/${id}`);
+        const data = await res.json();
+        messagesBox.innerHTML = '';
+
+        if (data.summary) {
+            addAiMessageAdjudicators(id, data.summary);
+            inputBox.style.display = 'flex';
+        } else {
+            addAiMessageAdjudicators(id, '⚠️ Failed to generate summary.');
+        }
+    } catch (e) {
+        messagesBox.innerHTML = '';
+        addAiMessageAdjudicators(id, '⚠️ Error contacting server.');
+    }
+}
+
+async function sendChatMessageInAdjudicators(id) {
+    const input = document.getElementById(`chat-input-${id}`);
+    const question = input.value.trim();
+    if (!question) return;
+
+    addUserMessageAdjudicators(id, question);
+    input.value = '';
+
+    const typingIndicator = addTypingIndicatorAdjudicators(id);
+
+    const history = chatHistoriesAdjudicators[id] || [];
+
+    try {
+        const res = await fetch(`/ask/${id}`, {
+            method: "POST",
+            body: new URLSearchParams({ question, history: JSON.stringify(history) }),
+            headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        });
+        const data = await res.json();
+
+        typingIndicator.remove();
+
+        if (data.answer) {
+            addAiMessageAdjudicators(id, data.answer);
+            chatHistoriesAdjudicators[id].push({ role: 'assistant', content: data.answer });
+        } else {
+            addAiMessageAdjudicators(id, `⚠️ Error: ${data.error || "Failed to get answer"}`);
+        }
+    } catch (e) {
+         typingIndicator.remove();
+         addAiMessageAdjudicators(id, `⚠️ Network or server error.`);
+    }
+}
+
+function addAiMessageAdjudicators(id, htmlContent) {
+    const messagesBox = document.getElementById(`chat-messages-${id}`);
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+    messageDiv.innerHTML = `
+        <div class="message-avatar">S</div>
+        <div class="message-content">
+            <div class="ai-output-content">${htmlContent}</div>
+        </div>
+    `;
+    messagesBox.appendChild(messageDiv);
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+function addUserMessageAdjudicators(id, text) {
+    const messagesBox = document.getElementById(`chat-messages-${id}`);
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message user-message';
+    messageDiv.innerHTML = `
+        <div class="message-avatar">U</div>
+        <div class="message-content">${sanitizeHtml(text)}</div>
+    `;
+    messagesBox.appendChild(messageDiv);
+    chatHistoriesAdjudicators[id].push({ role: 'user', content: text });
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+function addTypingIndicatorAdjudicators(id) {
+    const messagesBox = document.getElementById(`chat-messages-${id}`);
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'message ai-message typing-indicator';
+    typingDiv.innerHTML = `
+        <div class="message-avatar">S</div>
+        <div class="message-content">...</div>
+    `;
+    messagesBox.appendChild(typingDiv);
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+    return typingDiv;
+}
+
 </script>
 
 <script>
