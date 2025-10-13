@@ -1830,13 +1830,7 @@ async function loadAdjudicators() {
   }
 }
 
-function renderAdjudicatorsList() {
-  const container = document.getElementById('adjudicatorsList');
 
-  if (filteredAdjudicators.length === 0) {
-    container.innerHTML = '<div class="loading">No adjudicators found.</div>';
-    return;
-  }
 
 function filterAdjudicators() {
   const searchTerm = document.getElementById('adjudicatorSearch').value.toLowerCase();
@@ -1873,7 +1867,13 @@ function filterAdjudicators() {
   renderAdjudicatorsList();
 }
 
+function renderAdjudicatorsList() {
+  const container = document.getElementById('adjudicatorsList');
 
+  if (filteredAdjudicators.length === 0) {
+    container.innerHTML = '<div class="loading">No adjudicators found.</div>';
+    return;
+  }
 
 
   container.innerHTML = filteredAdjudicators.map(adj => {
