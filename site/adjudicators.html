@@ -1422,6 +1422,86 @@
 .ai-output-content li { margin: 2px 0; }
 .ai-output-content h3, .ai-output-content h4 { font-size: 15px; font-weight: 600; margin: 10px 0 4px 0; }
 
+/* Replace your existing .locked-overlay rule with this */
+.locked-overlay {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  max-width: 320px; /* Reduced from 380px */
+  width: 85%; /* Reduced from 90% */
+  box-sizing: border-box;
+  display: none;
+  max-height: calc(100vh - 200px); /* Ensure it fits in viewport */
+  overflow-y: auto; /* Add scrollbar if content is too tall */
+}
+ 
+.blur-stats .locked-overlay {
+    display: flex; /* Shown when parent has blur-stats */
+}
+
+.dark .locked-overlay {
+  background: #1a1a1a;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.locked-content {
+  text-align: center;
+  padding: 25px 20px; /* Reduced from 30px */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.locked-content h3 {
+  font-size: 20px; /* Reduced from 24px */
+  margin-bottom: 12px; /* Reduced from 15px */
+  color: #333;
+}
+
+.dark .locked-content h3 {
+  color: #f0f0f0;
+}
+
+.locked-content p {
+  color: #666;
+  margin-bottom: 15px; /* Reduced from 20px */
+  line-height: 1.5; /* Reduced from 1.6 */
+  font-size: 13px; /* Reduced from 15px */
+}
+
+.dark .locked-content p {
+  color: #aaa;
+}
+
+.price-tag {
+  font-size: 28px; /* Reduced from 32px */
+  font-weight: bold;
+  color: #00c97c;
+  margin: 20px 0; /* Reduced from 25px 0 */
+}
+
+.unlock-btn {
+  background: #00c97c;
+  color: white;
+  border: none;
+  padding: 12px 30px; /* Reduced from 15px 40px */
+  border-radius: 8px;
+  font-size: 15px; /* Reduced from 16px */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.unlock-btn:hover {
+  background: #00a568;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 201, 124, 0.3);
+}
 </style>
 </head>
 
