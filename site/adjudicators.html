@@ -1838,34 +1838,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.body.classList.add('dark');
   }
 
-  // Check if we need to resume an adjudicator unlock process after login
-  const adjudicatorToUnlock = sessionStorage.getItem('unlock_adjudicator_after_login');
-  if (adjudicatorToUnlock && localStorage.getItem('purchase_token')) {
-    console.log(`[Redirect] Resuming purchase for: ${adjudicatorToUnlock}`);
-    sessionStorage.removeItem('unlock_adjudicator_after_login');
-
-    // This function waits for the adjudicator list to be loaded and rendered
-    const findAndUnlock = () => {
-        // We need to wait for allAdjudicators to be fetched
-        if (typeof allAdjudicators !== 'undefined' && allAdjudicators && allAdjudicators.length > 0) {
-            const adjudicator = allAdjudicators.find(adj => adj.name === adjudicatorToUnlock);
-            if (adjudicator) {
-                selectAdjudicator(adjudicator.id); // This opens the details pane
-                // A short delay ensures the details pane is rendered before we open the modal
-                setTimeout(() => {
-                    unlockAdjudicator(adjudicatorToUnlock);
-                }, 300);
-            } else {
-                console.warn(`[Redirect] Could not find adjudicator "${adjudicatorToUnlock}" in the list.`);
-            }
-        } else {
-            // If the list isn't ready, check again shortly
-            setTimeout(findAndUnlock, 200);
-        }
-    };
-    
-    findAndUnlock();
-  }
+  
 });
 
 function initializeDecisionSearch() {
@@ -2396,13 +2369,20 @@ async function handleLogin(e) {
     userToken = data.access_token;
     
     closeAuthModal();
-    updateNavUI();
-    showPaymentModal();
+    
+    // Check if they were trying to unlock an adjudicator
+    const adjudicatorToUnlock = sessionStorage.getItem('unlock_adjudicator_after_login');
+    if (adjudicatorToUnlock && currentAdjudicatorForPurchase) {
+      sessionStorage.removeItem('unlock_adjudicator_after_login');
+      showPaymentModal();
+    }
     
   } catch (error) {
     errorDiv.textContent = error.message;
   }
 }
+
+
 
 async function downloadSummary() {
   const token = localStorage.getItem('purchase_token');
@@ -2449,6 +2429,7 @@ async function downloadSummary() {
     button.disabled = false;
   }
 }
+
 
 async function handleRegister(e) {
   e.preventDefault();
@@ -2537,7 +2518,13 @@ async function handleRegister(e) {
     userToken = loginData.access_token;
     
     closeAuthModal();
-    showPaymentModal();
+    
+    // Check if they were trying to unlock an adjudicator
+    const adjudicatorToUnlock = sessionStorage.getItem('unlock_adjudicator_after_login');
+    if (adjudicatorToUnlock && currentAdjudicatorForPurchase) {
+      sessionStorage.removeItem('unlock_adjudicator_after_login');
+      showPaymentModal();
+    }
     
   } catch (error) {
     errorDiv.textContent = error.message;
@@ -2545,6 +2532,7 @@ async function handleRegister(e) {
     errorDiv.style.display = 'block';
   }
 }
+
 
 async function checkAuthStatus() {
   const token = localStorage.getItem('purchase_token');
@@ -2600,15 +2588,19 @@ async function unlockAdjudicator(adjudicatorName) {
 
     const token = localStorage.getItem('purchase_token');
     if (!token) {
-        // If user is not logged in, save the target adjudicator and redirect to login
+        // Instead of redirecting, show auth modal
+        document.getElementById('authModal').classList.add('active');
+        
+        // Store which adjudicator they want to unlock
         sessionStorage.setItem('unlock_adjudicator_after_login', adjudicatorName);
-        window.location.href = `/login?redirect=${encodeURIComponent(window.location.href)}`;
         return;
     }
 
     // If user is already logged in, proceed directly to the payment modal
     showPaymentModal();
 }
+
+
 
 // Handle payment form submission
 document.getElementById('payment-form').addEventListener('submit', async (e) => {
