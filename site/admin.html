@@ -83,6 +83,28 @@
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('purchase_token');
 
+    // --- START: TIMEZONE FORMATTING HELPER ---
+    function formatAEST(isoString) {
+        if (!isoString) return 'N/A';
+        try {
+            const date = new Date(isoString);
+            // Using Australia/Sydney handles both AEST and AEDT automatically
+            return date.toLocaleString('en-AU', {
+                timeZone: 'Australia/Sydney',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+        } catch (e) {
+            return isoString; // Fallback if date is invalid
+        }
+    }
+    // --- END: TIMEZONE FORMATTING HELPER ---
+
     const navButtons = document.querySelectorAll('.admin-nav .nav-btn');
     const sections = document.querySelectorAll('.admin-section');
     navButtons.forEach(button => {
@@ -124,9 +146,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderUsersTable(users) {
         const container = document.getElementById('users-table-container');
         if (!users || users.length === 0) { container.innerHTML = '<p>No user accounts created yet.</p>'; return; }
-        let tableHTML = `<table><thead><tr><th>ID</th><th>Email</th><th>Name</th><th>Firm</th><th>ABN</th><th>Address</th><th>Phone</th><th>Created</th><th>Last Login</th></tr></thead><tbody>`;
+        let tableHTML = `<table><thead><tr><th>ID</th><th>Email</th><th>Name</th><th>Firm</th><th>ABN</th><th>Address</th><th>Phone</th><th>Created (AEST)</th><th>Last Login (AEST)</th></tr></thead><tbody>`;
         users.forEach(user => {
-            tableHTML += `<tr><td>${user.id}</td><td>${user.email||''}</td><td>${user.first_name||''} ${user.last_name||''}</td><td>${user.firm_name||''}</td><td>${user.abn||''}</td><td>${`${user.billing_address||''}, ${user.billing_city||''}`.replace(/^, |, $/g,'')}</td><td>${user.phone||''}</td><td>${new Date(user.created_at).toLocaleString('en-AU')}</td><td>${user.last_login ? new Date(user.last_login).toLocaleString('en-AU') : 'Never'}</td></tr>`;
+            tableHTML += `<tr><td>${user.id}</td><td>${user.email||''}</td><td>${user.first_name||''} ${user.last_name||''}</td><td>${user.firm_name||''}</td><td>${user.abn||''}</td><td>${`${user.billing_address||''}, ${user.billing_city||''}`.replace(/^, |, $/g,'')}</td><td>${user.phone||''}</td><td>${formatAEST(user.created_at)}</td><td>${user.last_login ? formatAEST(user.last_login) : 'Never'}</td></tr>`;
         });
         container.innerHTML = tableHTML + '</tbody></table>';
     }
@@ -134,10 +156,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSearchesTable(searches) {
         const container = document.getElementById('searches-table-container');
         if (!searches || searches.length === 0) { container.innerHTML = '<p>No search activity logged yet.</p>'; return; }
-        let tableHTML = `<table><thead><tr><th>Timestamp</th><th>User Email</th><th>Search Query</th><th>Blocked</th></tr></thead><tbody>`;
+        let tableHTML = `<table><thead><tr><th>Timestamp (AEST)</th><th>User Email</th><th>Search Query</th><th>Blocked</th></tr></thead><tbody>`;
         searches.forEach(search => {
             const blockedStatus = search.was_blocked ? '<span class="status-badge status-true">Yes</span>' : '<span class="status-badge status-false">No</span>';
-            tableHTML += `<tr><td>${new Date(search.timestamp).toLocaleString('en-AU')}</td><td>${search.user_email || 'Anonymous'}</td><td>${search.search_query}</td><td>${blockedStatus}</td></tr>`;
+            tableHTML += `<tr><td>${formatAEST(search.timestamp)}</td><td>${search.user_email || 'Anonymous'}</td><td>${search.search_query}</td><td>${blockedStatus}</td></tr>`;
         });
         container.innerHTML = tableHTML + '</tbody></table>';
     }
@@ -145,9 +167,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderAdjudicatorActivityTable(views) {
         const container = document.getElementById('adjudicators-table-container');
         if (!views || views.length === 0) { container.innerHTML = '<p>No adjudicator page views logged yet.</p>'; return; }
-        let tableHTML = `<table><thead><tr><th>Timestamp</th><th>User Email</th><th>Adjudicator Viewed</th></tr></thead><tbody>`;
+        let tableHTML = `<table><thead><tr><th>Timestamp (AEST)</th><th>User Email</th><th>Adjudicator Viewed</th></tr></thead><tbody>`;
         views.forEach(view => {
-            tableHTML += `<tr><td>${new Date(view.timestamp).toLocaleString('en-AU')}</td><td>${view.user_email || 'Anonymous'}</td><td>${view.adjudicator_name}</td></tr>`;
+            tableHTML += `<tr><td>${formatAEST(view.timestamp)}</td><td>${view.user_email || 'Anonymous'}</td><td>${view.adjudicator_name}</td></tr>`;
         });
         container.innerHTML = tableHTML + '</tbody></table>';
     }
