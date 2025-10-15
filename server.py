@@ -112,7 +112,11 @@ purchases_con = sqlite3.connect(PURCHASES_DB_PATH, check_same_thread=False)
 purchases_con.row_factory = sqlite3.Row
 purchases_cur = purchases_con.cursor()
 
-# Create enhanced users table with all required columns
+# In server.py, near the top where you define purchases_con
+
+purchases_cur = purchases_con.cursor()
+
+# --- Core user accounts ---
 purchases_cur.execute("""
 CREATE TABLE IF NOT EXISTS purchase_users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -129,11 +133,12 @@ CREATE TABLE IF NOT EXISTS purchase_users (
     employee_size TEXT,
     phone TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP
+    last_login TIMESTAMP,
+    email_verified BOOLEAN DEFAULT 0
 )
 """)
 
-# Create purchases table
+# --- Purchase history ---
 purchases_cur.execute("""
 CREATE TABLE IF NOT EXISTS adjudicator_purchases (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -142,41 +147,12 @@ CREATE TABLE IF NOT EXISTS adjudicator_purchases (
     purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     stripe_payment_intent_id TEXT,
     amount_paid REAL DEFAULT 69.95,
+    stripe_invoice_id TEXT,
     UNIQUE(user_email, adjudicator_name)
 )
 """)
-purchases_con.commit()
 
-ADMIN_EMAILS = {
-    "edwardsheppard5@gmail.com", 
-    "ejsheppard@icloud.com", 
-    "esheppard@tglaw.com.au"
-}
-
-# ... inside the UNIFIED USERS DATABASE CONNECTION section
-
-# Create search logs table
-purchases_cur.execute("""
-CREATE TABLE IF NOT EXISTS search_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_email TEXT,
-    search_query TEXT NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
-""")
-purchases_con.commit()
-
-# Add a try/except block to safely add the new column if it doesn't exist
-try:
-    purchases_cur.execute("ALTER TABLE adjudicator_purchases ADD COLUMN stripe_invoice_id TEXT")
-    purchases_con.commit()
-    print("Added 'stripe_invoice_id' column to adjudicator_purchases table.")
-except sqlite3.OperationalError as e:
-    if "duplicate column name" in str(e).lower():
-        pass # Column already exists, ignore the error
-    else:
-        raise e # Re-raise other errors
-# Create password reset tokens table
+# --- Password reset tokens ---
 purchases_cur.execute("""
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -187,7 +163,61 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 """)
+
+# --- Email verification tokens ---
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+# --- Search activity logging ---
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS search_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT,
+    search_query TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    was_blocked BOOLEAN DEFAULT 0
+)
+""")
+
+# --- Adjudicator page view logging ---
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS adjudicator_page_views (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT,
+    adjudicator_name TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+# --- Safely add columns if they don't exist ---
+try:
+    purchases_cur.execute("ALTER TABLE purchase_users ADD COLUMN email_verified BOOLEAN DEFAULT 0")
+    print("Added 'email_verified' column to purchase_users table.")
+except sqlite3.OperationalError:
+    pass # Column already exists
+
+try:
+    purchases_cur.execute("ALTER TABLE adjudicator_purchases ADD COLUMN stripe_invoice_id TEXT")
+    print("Added 'stripe_invoice_id' column to adjudicator_purchases table.")
+except sqlite3.OperationalError:
+    pass # Column already exists
+
+try:
+    purchases_cur.execute("ALTER TABLE search_logs ADD COLUMN was_blocked BOOLEAN DEFAULT 0")
+    print("Added 'was_blocked' column to search_logs table.")
+except sqlite3.OperationalError:
+    pass # Column already exists
+
+# --- Commit all changes ---
 purchases_con.commit()
+
 
 
 
@@ -602,7 +632,7 @@ if not os.path.exists(CHROMA_PATH):
     try:
         print("ChromaDB not found locally. Downloading from GCS...")
         storage_client = get_gcs_client()
-        bucket = storage_client.bucket(GCS_BUCKET)
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
         blob = bucket.blob(CHROMA_TAR_GCS)
         
         tar_path = "/tmp/chroma_db.tar.gz"
@@ -654,7 +684,7 @@ if not os.path.exists(CHROMA_PATH):
     try:
         print("ChromaDB not found locally. Downloading from GCS...")
         storage_client = get_gcs_client()
-        bucket = storage_client.bucket(GCS_BUCKET)
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
         blob = bucket.blob(CHROMA_TAR_GCS)
         
         tar_path = "/tmp/chroma_db.tar.gz"
@@ -982,9 +1012,12 @@ def get_interest_rate(start_date_str: str = Query(..., alias="startDate"), end_d
 
 from fastapi import Depends
 
+from fastapi import Header, Depends # Ensure Header is imported at the top
+
 @app.get("/search_fast")
 def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newest", authorization: Optional[str] = Header(None)):
-    # --- START: NEW SEARCH LOGGING LOGIC ---
+    
+    # --- START: FINAL SEARCH LOGGING LOGIC ---
     user_email = "Anonymous"
     if authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ")[1]
@@ -996,11 +1029,11 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
     
     if q: # Only log non-empty queries
         purchases_con.execute(
-            "INSERT INTO search_logs (user_email, search_query) VALUES (?, ?)",
+            "INSERT INTO search_logs (user_email, search_query, was_blocked) VALUES (?, ?, 0)",
             (user_email, q)
         )
         purchases_con.commit()
-    # --- END: NEW SEARCH LOGGING LOGIC ---
+    # --- END: FINAL SEARCH LOGGING LOGIC ---
 
     q_norm = normalize_query(q)
     nq = q_norm
@@ -1152,8 +1185,6 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
                     rows = _filter_rows_for_true_phrase_near(rows, nq2)
                     print(f"Phrase-proximity filtered page results: {before} → {len(rows)}")
 
-        # --- START FIX ---
-        # This block now runs for ALL complex queries, not just NEAR queries.
         items = []
         phrase_terms, word_terms = get_highlight_terms(nq2)
 
@@ -1193,12 +1224,9 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
 
             d["snippet"] = snippet_clean
             items.append(d)
-        # --- END FIX ---
 
         return {"total": total, "items": items}
         
-       
-
     # --- Natural language via Meili ---
     payload = {
         "q": q_norm,
@@ -1266,6 +1294,8 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
         items.append(item)
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
 
+    
+
 # ---------- PDF links ----------
 GCS_BUCKET = "sopal-bucket"
 GCS_PREFIX = "pdfs"
@@ -1298,12 +1328,25 @@ def get_all_users(admin: dict = Depends(get_admin_user)):
     """).fetchall()
     return [dict(row) for row in users]
 
+# Replace your existing get_search_activity function with this one
 @app.get("/admin/search-activity")
 def get_search_activity(admin: dict = Depends(get_admin_user)):
     """Admin endpoint to get all user search activity."""
     logs = purchases_con.execute("""
-        SELECT user_email, search_query, timestamp 
+        SELECT user_email, search_query, timestamp, was_blocked 
         FROM search_logs 
+        ORDER BY timestamp DESC
+        LIMIT 1000
+    """).fetchall()
+    return [dict(row) for row in logs]
+
+# Add this new endpoint with your other admin routes
+@app.get("/admin/adjudicator-activity")
+def get_adjudicator_activity(admin: dict = Depends(get_admin_user)):
+    """Admin endpoint to get adjudicator page view activity."""
+    logs = purchases_con.execute("""
+        SELECT user_email, adjudicator_name, timestamp
+        FROM adjudicator_page_views
         ORDER BY timestamp DESC
         LIMIT 1000
     """).fetchall()
@@ -1368,6 +1411,25 @@ Decision text:
     except Exception as e:
         print("ERROR in /summarise:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.post("/log-blocked-search")
+async def log_blocked_search(q: str = Form(...), authorization: Optional[str] = Header(None)):
+    user_email = "Anonymous"
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_email = payload.get("sub", "Anonymous")
+        except JWTError:
+            pass
+    
+    if q:
+        purchases_con.execute(
+            "INSERT INTO search_logs (user_email, search_query, was_blocked) VALUES (?, ?, 1)",
+            (user_email, q)
+        )
+        purchases_con.commit()
+    return {"status": "logged"}
 
 @app.get("/api/adjudicators")
 def get_adjudicators():
@@ -1498,9 +1560,28 @@ def get_adjudicators():
         print(f"Error in /api/adjudicators: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
+
 @app.get("/api/adjudicator/{adjudicator_name}")
-def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
+def get_adjudicator_decisions(adjudicator_name: str = Path(...), authorization: Optional[str] = Header(None)):
     """Get all decisions for a specific adjudicator from ai_adjudicator_extract_v4"""
+    # --- START: FINAL PAGE VIEW LOGGING ---
+    user_email = "Anonymous"
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_email = payload.get("sub", "Anonymous")
+        except JWTError:
+            pass
+    
+    decoded_name_for_log = unquote_plus(adjudicator_name)
+    purchases_con.execute(
+        "INSERT INTO adjudicator_page_views (user_email, adjudicator_name) VALUES (?, ?)",
+        (user_email, decoded_name_for_log)
+    )
+    purchases_con.commit()
+    # --- END: FINAL PAGE VIEW LOGGING ---
+    
     try:
         decoded_name = unquote_plus(adjudicator_name)
         
@@ -1575,6 +1656,9 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
     except Exception as e:
         print(f"Error in /api/adjudicator/{adjudicator_name}: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
+
+
+
 
 @app.post("/ask-rag")
 def ask_rag(query: str = Form(...)):

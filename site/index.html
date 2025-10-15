@@ -963,15 +963,22 @@ async function fetchAdjudicators() {
   }
 }
 
-
 async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
-    if (!bypassAdjudicatorCheck && adjudicatorList.length > 0) {
-        const query = normalizeInput($('#q').value);
-        if (findMatchingAdjudicator(query)) {
-            showAdjudicatorModal();
-            return; // Stop the standard search
-        }
+    const query = normalizeInput($('#q').value);
+    if (!bypassAdjudicatorCheck && adjudicatorList.length > 0 && findMatchingAdjudicator(query)) {
+        // Log the blocked search before stopping
+        const token = localStorage.getItem('purchase_token');
+        const headers = { 'Authorization': token ? `Bearer ${token}` : '' };
+        fetch('/log-blocked-search', {
+            method: 'POST',
+            body: new URLSearchParams({ q: query }),
+            headers: headers
+        });
+        
+        showAdjudicatorModal();
+        return;
     }
+    
     try {
         window.scrollTo(0, 0);
         const statusEl = $('#status');
@@ -988,7 +995,7 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
         statusEl.textContent = 'Searching...';
         startLoadingBar();
 
-        state.q = normalizeInput(qEl.value);
+        state.q = query; // Use the already normalized query
         state.limit = +(limitEl.value || 20);
         state.offset = (page - 1) * state.limit;
         state.sort = (sortEl.value || 'newest');
@@ -999,7 +1006,6 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
         params.set('limit', state.limit);
         params.set('offset', state.offset);
 
-        // --- START: FIX FOR LOGGING ---
         const token = localStorage.getItem('purchase_token');
         const headers = { 'Accept': 'application/json' };
         if (token) {
@@ -1007,7 +1013,6 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
         }
         
         const res = await fetch(`/search_fast?${params.toString()}`, { headers });
-        // --- END: FIX FOR LOGGING ---
 
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
@@ -1033,6 +1038,7 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
         finishLoadingBar();
     }
 }
+
 
 
  // Replace your existing findMatchingAdjudicator function with this one

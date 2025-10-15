@@ -1,12 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-t">
+  <meta charset="utf-8">
   <title>Sopal – Admin Hub</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <style>
-    /* Basic styling for the admin page, similar to account.html */
     body { font-family: Inter, sans-serif; margin: 0; background: #f8f9fa; color: #333; font-size: 14px; }
     .header { background: #fdfdfd; padding: 20px 25px; border-bottom: 1px solid #ddd; }
     .header-content { display: flex; align-items: center; max-width: 1400px; margin: 0 auto; }
@@ -27,6 +26,9 @@
     th { background-color: #f8f9fa; font-weight: 600; }
     .error-message { color: #dc3545; font-weight: bold; }
     .loading-message { color: #666; }
+    .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; color: white; }
+    .status-true { background-color: #dc3545; }
+    .status-false { background-color: #28a745; }
   </style>
 </head>
 <body>
@@ -44,6 +46,7 @@
       <button class="nav-btn active" data-target="users-section">User Accounts</button>
       <button class="nav-btn" data-target="payments-section">Payment Activity</button>
       <button class="nav-btn" data-target="searches-section">Search Activity</button>
+      <button class="nav-btn" data-target="adjudicators-section">Adjudicator Activity</button>
     </aside>
     <div class="admin-content">
       <section id="users-section" class="admin-section active">
@@ -62,8 +65,14 @@
       </section>
       <section id="searches-section" class="admin-section">
         <div class="card">
-          <h2>Latest 1,000 Searches</h2>
+          <h2>Latest 1000 Searches</h2>
           <div id="searches-table-container" style="overflow-x: auto;"></div>
+        </div>
+      </section>
+      <section id="adjudicators-section" class="admin-section">
+        <div class="card">
+          <h2>Latest 1000 Adjudicator Page Views</h2>
+          <div id="adjudicators-table-container" style="overflow-x: auto;"></div>
         </div>
       </section>
     </div>
@@ -74,7 +83,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('purchase_token');
 
-    // --- Tab Switching Logic ---
     const navButtons = document.querySelectorAll('.admin-nav .nav-btn');
     const sections = document.querySelectorAll('.admin-section');
     navButtons.forEach(button => {
@@ -85,97 +93,65 @@ document.addEventListener('DOMContentLoaded', () => {
             sections.forEach(section => {
                 section.classList.toggle('active', section.id === targetId);
             });
-            // Fetch data for the newly activated tab
             if (targetId === 'users-section') fetchUsers();
             if (targetId === 'searches-section') fetchSearches();
+            if (targetId === 'adjudicators-section') fetchAdjudicatorActivity();
         });
     });
 
-    // --- Authentication ---
     if (!token) {
         document.querySelector('main').innerHTML = '<p class="error-message">Access Denied. Please log in as an admin.</p>';
         return;
     }
-    
-    // --- Data Fetching Functions ---
 
-    async function fetchUsers() {
-        const container = document.getElementById('users-table-container');
-        container.innerHTML = '<p class="loading-message">Loading user data...</p>';
+    async function fetchData(url, containerId, renderer) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '<p class="loading-message">Loading data...</p>';
         try {
-            const response = await fetch('/admin/all-users', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!response.ok) throw new Error('Failed to fetch user data from the server.');
-            const users = await response.json();
-            renderUsersTable(users);
+            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!response.ok) throw new Error(`Failed to fetch data (status: ${response.status})`);
+            const data = await response.json();
+            renderer(data);
         } catch (error) {
             container.innerHTML = `<p class="error-message">${error.message}</p>`;
         }
     }
 
-    async function fetchSearches() {
-        const container = document.getElementById('searches-table-container');
-        container.innerHTML = '<p class="loading-message">Loading search activity...</p>';
-        try {
-            const response = await fetch('/admin/search-activity', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!response.ok) throw new Error('Failed to fetch search data from the server.');
-            const searches = await response.json();
-            renderSearchesTable(searches);
-        } catch (error) {
-            container.innerHTML = `<p class="error-message">${error.message}</p>`;
-        }
-    }
-
-    // --- Table Rendering Functions ---
+    const fetchUsers = () => fetchData('/admin/all-users', 'users-table-container', renderUsersTable);
+    const fetchSearches = () => fetchData('/admin/search-activity', 'searches-table-container', renderSearchesTable);
+    const fetchAdjudicatorActivity = () => fetchData('/admin/adjudicator-activity', 'adjudicators-table-container', renderAdjudicatorActivityTable);
 
     function renderUsersTable(users) {
         const container = document.getElementById('users-table-container');
-        if (!users || users.length === 0) {
-            container.innerHTML = '<p>No user accounts have been created yet.</p>';
-            return;
-        }
-        let tableHTML = `<table><thead><tr>
-            <th>ID</th><th>Email</th><th>Name</th><th>Firm</th><th>ABN</th><th>Address</th><th>Phone</th><th>Created At</th><th>Last Login</th>
-        </tr></thead><tbody>`;
+        if (!users || users.length === 0) { container.innerHTML = '<p>No user accounts created yet.</p>'; return; }
+        let tableHTML = `<table><thead><tr><th>ID</th><th>Email</th><th>Name</th><th>Firm</th><th>ABN</th><th>Address</th><th>Phone</th><th>Created</th><th>Last Login</th></tr></thead><tbody>`;
         users.forEach(user => {
-            tableHTML += `<tr>
-                <td>${user.id}</td>
-                <td>${user.email || ''}</td>
-                <td>${user.first_name || ''} ${user.last_name || ''}</td>
-                <td>${user.firm_name || ''}</td>
-                <td>${user.abn || ''}</td>
-                <td>${`${user.billing_address || ''}, ${user.billing_city || ''}, ${user.billing_state || ''} ${user.billing_postcode || ''}`.replace(/^, |, $/g, '')}</td>
-                <td>${user.phone || ''}</td>
-                <td>${user.created_at ? new Date(user.created_at).toLocaleString('en-AU') : 'N/A'}</td>
-                <td>${user.last_login ? new Date(user.last_login).toLocaleString('en-AU') : 'Never'}</td>
-            </tr>`;
+            tableHTML += `<tr><td>${user.id}</td><td>${user.email||''}</td><td>${user.first_name||''} ${user.last_name||''}</td><td>${user.firm_name||''}</td><td>${user.abn||''}</td><td>${`${user.billing_address||''}, ${user.billing_city||''}`.replace(/^, |, $/g,'')}</td><td>${user.phone||''}</td><td>${new Date(user.created_at).toLocaleString('en-AU')}</td><td>${user.last_login ? new Date(user.last_login).toLocaleString('en-AU') : 'Never'}</td></tr>`;
         });
         container.innerHTML = tableHTML + '</tbody></table>';
     }
 
     function renderSearchesTable(searches) {
         const container = document.getElementById('searches-table-container');
-        if (!searches || searches.length === 0) {
-            container.innerHTML = '<p>No search activity has been logged yet.</p>';
-            return;
-        }
-        let tableHTML = `<table><thead><tr>
-            <th>Timestamp</th><th>User Email</th><th>Search Query</th>
-        </tr></thead><tbody>`;
+        if (!searches || searches.length === 0) { container.innerHTML = '<p>No search activity logged yet.</p>'; return; }
+        let tableHTML = `<table><thead><tr><th>Timestamp</th><th>User Email</th><th>Search Query</th><th>Blocked</th></tr></thead><tbody>`;
         searches.forEach(search => {
-            tableHTML += `<tr>
-                <td>${new Date(search.timestamp).toLocaleString('en-AU')}</td>
-                <td>${search.user_email || 'Anonymous'}</td>
-                <td>${search.search_query}</td>
-            </tr>`;
+            const blockedStatus = search.was_blocked ? '<span class="status-badge status-true">Yes</span>' : '<span class="status-badge status-false">No</span>';
+            tableHTML += `<tr><td>${new Date(search.timestamp).toLocaleString('en-AU')}</td><td>${search.user_email || 'Anonymous'}</td><td>${search.search_query}</td><td>${blockedStatus}</td></tr>`;
+        });
+        container.innerHTML = tableHTML + '</tbody></table>';
+    }
+    
+    function renderAdjudicatorActivityTable(views) {
+        const container = document.getElementById('adjudicators-table-container');
+        if (!views || views.length === 0) { container.innerHTML = '<p>No adjudicator page views logged yet.</p>'; return; }
+        let tableHTML = `<table><thead><tr><th>Timestamp</th><th>User Email</th><th>Adjudicator Viewed</th></tr></thead><tbody>`;
+        views.forEach(view => {
+            tableHTML += `<tr><td>${new Date(view.timestamp).toLocaleString('en-AU')}</td><td>${view.user_email || 'Anonymous'}</td><td>${view.adjudicator_name}</td></tr>`;
         });
         container.innerHTML = tableHTML + '</tbody></table>';
     }
 
-    // Initial load for the default active tab
     fetchUsers();
 });
 </script>
