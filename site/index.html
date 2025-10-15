@@ -890,7 +890,28 @@ body {
 </main>
 
 <script>
-  
+
+function levenshtein(s1, s2) {
+  if (s1.length < s2.length) {
+    return levenshtein(s2, s1);
+  }
+  if (s2.length === 0) {
+    return s1.length;
+  }
+  let previousRow = Array.from({ length: s2.length + 1 }, (_, i) => i);
+  for (let i = 0; i < s1.length; i++) {
+    let currentRow = [i + 1];
+    for (let j = 0; j < s2.length; j++) {
+      let insertions = previousRow[j + 1] + 1;
+      let deletions = currentRow[j] + 1;
+      let substitutions = previousRow[j] + (s1[i] !== s2[j]);
+      currentRow.push(Math.min(insertions, deletions, substitutions));
+    }
+    previousRow = currentRow;
+  }
+  return previousRow[previousRow.length - 1];
+}
+ 
     function $(sel){ return document.querySelector(sel); }
     function sanitize(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function getFileName(path){ if (!path) return ''; return path.split('/').pop(); }
@@ -1024,24 +1045,32 @@ function findMatchingAdjudicator(query) {
 
   if (!cleanedQuery) return null;
 
-  // Check if the query contains any known adjudicator's last name AS A WHOLE WORD
+  const queryWords = cleanedQuery.split(' ');
+
   for (const adjudicator of adjudicatorList) {
     if (adjudicator.lastName) {
-      // Create a regular expression to match the last name as a whole word.
-      // The '\b' is a "word boundary".
-      const regex = new RegExp(`\\b${adjudicator.lastName}\\b`);
-      
-      if (regex.test(cleanedQuery)) {
-        return adjudicator.fullName;
+      for (const word of queryWords) {
+        // Calculate the 'edit distance' between the search word and the surname
+        const distance = levenshtein(word, adjudicator.lastName);
+
+        // A distance of 1 catches single typos or missing letters (like 'pyma' vs 'pyman').
+        // A distance of 0 is an exact match.
+        const threshold = 1;
+
+        // Check if the words are close in length to avoid matching very different words
+        const lengthDifference = Math.abs(word.length - adjudicator.lastName.length);
+
+        if (distance <= threshold && lengthDifference <= threshold) {
+          return adjudicator.fullName;
+        }
       }
     }
   }
 
   return null;
 }
+
  
-
-
 
 // Replace your old showAdjudicatorModal function with this one
 function showAdjudicatorModal() {
