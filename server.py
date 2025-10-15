@@ -639,14 +639,16 @@ if not os.path.exists(CHROMA_PATH):
         bucket = storage_client.bucket("sopal-bucket")
         blob = bucket.blob(CHROMA_TAR_GCS)
         
-        tar_path = "/tmp/chroma_db.tar.gz"
+        
+        tar_path = "/var/data/chroma_db.tar.gz"
         blob.download_to_filename(tar_path)
         print("Download complete. Extracting...")
-        
+
         with tarfile.open(tar_path, "r:gz") as tar:
             tar.extractall("/var/data")
-        
+
         os.remove(tar_path)
+
         print(f"ChromaDB extracted to {CHROMA_PATH}")
     except Exception as e:
         print(f"Failed to download ChromaDB: {e}")
