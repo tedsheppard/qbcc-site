@@ -636,59 +636,7 @@ if not os.path.exists(CHROMA_PATH):
     try:
         print("ChromaDB not found locally. Downloading from GCS...")
         storage_client = get_gcs_client()
-        bucket = storage_client.bucket("GCS_BUCKET_NAME")
-        blob = bucket.blob(CHROMA_TAR_GCS)
-        
-        tar_path = "/tmp/chroma_db.tar.gz"
-        blob.download_to_filename(tar_path)
-        print("Download complete. Extracting...")
-        
-        with tarfile.open(tar_path, "r:gz") as tar:
-            tar.extractall("/var/data")
-        
-        os.remove(tar_path)
-        print(f"ChromaDB extracted to {CHROMA_PATH}")
-    except Exception as e:
-        print(f"Failed to download ChromaDB: {e}")
-
-# Initialize ChromaDB client and collection
-chroma_client = None
-chroma_collection = None
-
-if os.path.exists(CHROMA_PATH):
-    try:
-        import chromadb
-        
-        openai_ef = embedding_functions.OpenAIEmbeddingFunction(
-            api_key=os.getenv("OPENAI_API_KEY"),
-            model_name="text-embedding-3-small"
-        )
-        
-        chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
-        chroma_collection = chroma_client.get_collection(
-            name="adjudication_decisions",
-            embedding_function=openai_ef
-        )
-        
-        print(f"✅ ChromaDB loaded: {chroma_collection.count()} chunks available")
-    except Exception as e:
-        print(f"Failed to load ChromaDB: {e}")
-else:
-    print("⚠️  ChromaDB not available - /ask endpoint will be disabled")
-
-# ---------------- RAG / ChromaDB Setup ----------------
-import tarfile
-from chromadb.utils import embedding_functions
-
-CHROMA_PATH = "/var/data/chroma_db"
-CHROMA_TAR_GCS = "chroma_db.tar.gz"
-
-# Download and extract ChromaDB from GCS if not present
-if not os.path.exists(CHROMA_PATH):
-    try:
-        print("ChromaDB not found locally. Downloading from GCS...")
-        storage_client = get_gcs_client()
-        bucket = storage_client.bucket("GCS_BUCKET_NAME")
+        bucket = storage_client.bucket("sopal-bucket")
         blob = bucket.blob(CHROMA_TAR_GCS)
         
         tar_path = "/tmp/chroma_db.tar.gz"
