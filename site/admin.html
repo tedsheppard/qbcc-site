@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sopal – Admin Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <style>
+    /* Basic styling for the admin page, similar to account.html */
+    body { font-family: Inter, sans-serif; margin: 0; background: #f8f9fa; color: #333; font-size: 14px; }
+    .header { background: #fdfdfd; padding: 20px 25px; border-bottom: 1px solid #ddd; }
+    .header-content { display: flex; align-items: center; max-width: 1400px; margin: 0 auto; }
+    .logo { height: 31px; }
+    main { max-width: 1400px; margin: 40px auto; padding: 0 25px; }
+    h1 { font-size: 28px; margin-bottom: 30px; }
+    .admin-container { display: flex; gap: 30px; }
+    .admin-nav { flex: 0 0 200px; }
+    .admin-nav .nav-btn { display: block; width: 100%; text-align: left; padding: 12px 15px; border: none; background: none; border-radius: 6px; cursor: pointer; font-size: 15px; margin-bottom: 5px; }
+    .admin-nav .nav-btn.active { background-color: #e8f8f1; color: #008a5c; font-weight: 600; }
+    .admin-content { flex: 1; }
+    .admin-section { display: none; }
+    .admin-section.active { display: block; }
+    .card { background: #fdfdfd; border: 1px solid #ddd; border-radius: 8px; padding: 30px; }
+    h2 { font-size: 22px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 25px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+    th { background-color: #f8f9fa; font-weight: 600; }
+    .error-message { color: #dc3545; font-weight: bold; }
+    .loading-message { color: #666; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-content">
+    <a href="/"><img src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo"></a>
+  </div>
+</div>
+
+<main>
+  <h1>Admin Hub</h1>
+  <div class="admin-container">
+    <aside class="admin-nav">
+      <button class="nav-btn active" data-target="users-section">User Accounts</button>
+      <button class="nav-btn" data-target="payments-section">Payment Activity</button>
+      <button class="nav-btn" data-target="searches-section">Search Activity</button>
+    </aside>
+    <div class="admin-content">
+      <section id="users-section" class="admin-section active">
+        <div class="card">
+          <h2>Account Creation Activity</h2>
+          <div id="users-table-container" style="overflow-x: auto;"></div>
+        </div>
+      </section>
+      <section id="payments-section" class="admin-section">
+        <div class="card">
+          <h2>Payment Activity</h2>
+          <p>This feature will be implemented next.</p>
+        </div>
+      </section>
+      <section id="searches-section" class="admin-section">
+        <div class="card">
+          <h2>Search Activity</h2>
+          <p>This feature will be implemented next.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('purchase_token');
+    const usersContainer = document.getElementById('users-table-container');
+
+    // --- Tab Switching Logic ---
+    const navButtons = document.querySelectorAll('.admin-nav .nav-btn');
+    const sections = document.querySelectorAll('.admin-section');
+    navButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetId = button.getAttribute('data-target');
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            sections.forEach(section => {
+                section.classList.toggle('active', section.id === targetId);
+            });
+        });
+    });
+
+    // --- Authentication and Data Fetching ---
+    if (!token) {
+        usersContainer.innerHTML = '<p class="error-message">Access Denied. Please log in as an admin.</p>';
+        return;
+    }
+
+    async function fetchUsers() {
+        usersContainer.innerHTML = '<p class="loading-message">Loading user data...</p>';
+        try {
+            const response = await fetch('/admin/all-users', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.status === 403) {
+                throw new Error('Access Denied. You do not have admin privileges.');
+            }
+            if (!response.ok) {
+                throw new Error('Failed to fetch data from the server.');
+            }
+
+            const users = await response.json();
+            renderUsersTable(users);
+        } catch (error) {
+            usersContainer.innerHTML = `<p class="error-message">${error.message}</p>`;
+        }
+    }
+
+    function renderUsersTable(users) {
+        if (users.length === 0) {
+            usersContainer.innerHTML = '<p>No user accounts have been created yet.</p>';
+            return;
+        }
+
+        let tableHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Name</th>
+                        <th>Firm</th>
+                        <th>ABN</th>
+                        <th>Address</th>
+                        <th>Phone</th>
+                        <th>Created At</th>
+                        <th>Last Login</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        users.forEach(user => {
+            const createdAt = user.created_at ? new Date(user.created_at).toLocaleString('en-AU') : 'N/A';
+            const lastLogin = user.last_login ? new Date(user.last_login).toLocaleString('en-AU') : 'Never';
+            
+            tableHTML += `
+                <tr>
+                    <td>${user.id}</td>
+                    <td>${user.email || ''}</td>
+                    <td>${user.first_name || ''} ${user.last_name || ''}</td>
+                    <td>${user.firm_name || ''}</td>
+                    <td>${user.abn || ''}</td>
+                    <td>${user.billing_address || ''}, ${user.billing_city || ''}, ${user.billing_state || ''} ${user.billing_postcode || ''}</td>
+                    <td>${user.phone || ''}</td>
+                    <td>${createdAt}</td>
+                    <td>${lastLogin}</td>
+                </tr>
+            `;
+        });
+
+        tableHTML += '</tbody></table>';
+        usersContainer.innerHTML = tableHTML;
+    }
+
+    fetchUsers();
+});
+</script>
+
+</body>
+</html>

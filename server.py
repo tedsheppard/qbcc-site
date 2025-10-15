@@ -146,6 +146,12 @@ CREATE TABLE IF NOT EXISTS adjudicator_purchases (
 """)
 purchases_con.commit()
 
+ADMIN_EMAILS = {
+    "edwardsheppard5@gmail.com", 
+    "ejsheppard@icloud.com", 
+    "esheppard@tglaw.com.au"
+}
+
 # Add a try/except block to safely add the new column if it doesn't exist
 try:
     purchases_cur.execute("ALTER TABLE adjudicator_purchases ADD COLUMN stripe_invoice_id TEXT")
@@ -2312,6 +2318,10 @@ async def delete_payment_method(
         print(f"Error deleting payment method: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
+def get_admin_user(current_user: dict = Depends(get_current_purchase_user)):
+    if current_user["email"] not in ADMIN_EMAILS:
+        raise HTTPException(status_code=403, detail="Access denied. Admin privileges required.")
+    return current_user
 
 @app.get("/api/decision-text/{decision_id}")
 def get_decision_text(decision_id: str = Path(...)):
@@ -2617,3 +2627,15 @@ async def get_adjudicator_decisions_text(decision_ids: List[str] = Body(...)):
     except Exception as e:
         print(f"Error batch fetching decision texts: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch decision texts")
+
+@app.get("/admin/all-users")
+def get_all_users(admin: dict = Depends(get_admin_user)):
+    """Admin endpoint to get all user registration data."""
+    users = purchases_con.execute("""
+        SELECT id, email, first_name, last_name, firm_name, abn, 
+               billing_address, billing_city, billing_state, billing_postcode, 
+               employee_size, phone, created_at, last_login 
+        FROM purchase_users 
+        ORDER BY created_at DESC
+    """).fetchall()
+    return [dict(row) for row in users]
