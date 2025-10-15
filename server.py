@@ -2342,42 +2342,7 @@ def get_decision_text(decision_id: str = Path(...)):
         print(f"Error fetching decision text: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch decision text")
 
-    # ---------- serve frontend with clean URLs ----------
-@app.get("/{path_name:path}")
-async def serve_html_page(path_name: str):
-    # --- START OF NEW FIX ---
-    # Ignore paths that are clearly intended for API endpoints
-    # In the serve_html_page function
-    api_prefixes = [
-        "api/", "admin/", "check-adjudicator-access/", "create-payment-intent/", 
-        "purchase-register", "purchase-login", "purchase-me", "update-profile", 
-        "my-purchases"
-    ]
-    if any(path_name.startswith(prefix) for prefix in api_prefixes):
-        raise HTTPException(status_code=404, detail="API endpoint not found")
-
-
-    if not path_name:
-        path_name = "index"
-
-
-    file_path = os.path.join(SITE_DIR, f"{path_name}.html")
     
-    if os.path.abspath(file_path).startswith(os.path.abspath(SITE_DIR)) and os.path.exists(file_path) and not os.path.isdir(file_path):
-        return FileResponse(file_path)
-    
-    static_file_path = os.path.join(SITE_DIR, path_name)
-    if os.path.abspath(static_file_path).startswith(os.path.abspath(SITE_DIR)) and os.path.exists(static_file_path) and not os.path.isdir(static_file_path):
-        return FileResponse(static_file_path)
-
-    # Fallback for SPA-like behavior / non-html pages
-    index_path = os.path.join(SITE_DIR, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-
-    raise HTTPException(status_code=404, detail="Not Found")
-
-
 
 
 from io import BytesIO
@@ -2644,3 +2609,40 @@ def get_all_users(admin: dict = Depends(get_admin_user)):
         ORDER BY created_at DESC
     """).fetchall()
     return [dict(row) for row in users]
+
+
+# ---------- serve frontend with clean URLs ----------
+@app.get("/{path_name:path}")
+async def serve_html_page(path_name: str):
+    # --- START OF NEW FIX ---
+    # Ignore paths that are clearly intended for API endpoints
+    # In the serve_html_page function
+    api_prefixes = [
+        "api/", "admin/", "check-adjudicator-access/", "create-payment-intent/", 
+        "purchase-register", "purchase-login", "purchase-me", "update-profile", 
+        "my-purchases"
+    ]
+    if any(path_name.startswith(prefix) for prefix in api_prefixes):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
+
+
+    if not path_name:
+        path_name = "index"
+
+
+    file_path = os.path.join(SITE_DIR, f"{path_name}.html")
+    
+    if os.path.abspath(file_path).startswith(os.path.abspath(SITE_DIR)) and os.path.exists(file_path) and not os.path.isdir(file_path):
+        return FileResponse(file_path)
+    
+    static_file_path = os.path.join(SITE_DIR, path_name)
+    if os.path.abspath(static_file_path).startswith(os.path.abspath(SITE_DIR)) and os.path.exists(static_file_path) and not os.path.isdir(static_file_path):
+        return FileResponse(static_file_path)
+
+    # Fallback for SPA-like behavior / non-html pages
+    index_path = os.path.join(SITE_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+
+    raise HTTPException(status_code=404, detail="Not Found")
+
