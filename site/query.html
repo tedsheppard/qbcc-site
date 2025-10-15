@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Search - Sopal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #00C97C;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #00C97C;
+        }
+
+        button {
+            background: #00C97C;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #00b56d;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .result-box {
+            margin-top: 30px;
+            padding: 24px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #00C97C;
+            display: none;
+        }
+
+        .result-box.show {
+            display: block;
+        }
+
+        .answer {
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+
+        .sources {
+            padding-top: 16px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .sources-title {
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .source-tag {
+            display: inline-block;
+            background: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #00C97C;
+            border: 1px solid #00C97C;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .source-tag:hover {
+            background: #00C97C;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #00C97C;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .examples {
+            margin-top: 20px;
+            padding: 16px;
+            background: #f0f9f5;
+            border-radius: 8px;
+        }
+
+        .examples-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .example {
+            color: #00C97C;
+            cursor: pointer;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+
+        .example:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #00C97C;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Search</a>
+        
+        <h1>AI Search</h1>
+        <p class="subtitle">Ask questions about any Queensland adjudication decision</p>
+
+        <div class="search-box">
+            <textarea 
+                id="queryInput" 
+                placeholder="e.g., What are the common reasons adjudicators reject claims for latent conditions?"
+            ></textarea>
+        </div>
+
+        <button id="searchBtn" onclick="performSearch()">Search</button>
+
+        <div class="examples">
+            <div class="examples-title">Example queries:</div>
+            <div class="example" onclick="setQuery('What did John Carey decide about latent conditions?')">
+                • What did John Carey decide about latent conditions?
+            </div>
+            <div class="example" onclick="setQuery('How do adjudicators typically handle jurisdictional challenges?')">
+                • How do adjudicators typically handle jurisdictional challenges?
+            </div>
+            <div class="example" onclick="setQuery('What evidence is required for delay cost claims?')">
+                • What evidence is required for delay cost claims?
+            </div>
+        </div>
+
+        <div id="resultBox" class="result-box">
+            <div class="answer" id="answerText"></div>
+            <div class="sources" id="sourcesSection" style="display:none;">
+                <div class="sources-title">Referenced decisions:</div>
+                <div id="sourcesList"></div>
+            </div>
+        </div>
+
+        <div id="loadingBox" class="loading" style="display:none;">
+            <div class="spinner"></div>
+            <div>Searching through 7,381 decisions...</div>
+        </div>
+    </div>
+
+    <script>
+        function setQuery(text) {
+            document.getElementById('queryInput').value = text;
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('queryInput').value.trim();
+            
+            if (!query) {
+                alert('Please enter a question');
+                return;
+            }
+
+            const resultBox = document.getElementById('resultBox');
+            const loadingBox = document.getElementById('loadingBox');
+            const searchBtn = document.getElementById('searchBtn');
+            
+            // Show loading, hide results
+            resultBox.classList.remove('show');
+            loadingBox.style.display = 'block';
+            searchBtn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('query', query);
+
+                const response = await fetch('/ask-rag', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Display answer
+                    document.getElementById('answerText').textContent = data.answer;
+
+                    // Display sources if available
+                    if (data.sources && data.sources.length > 0) {
+                        const sourcesList = document.getElementById('sourcesList');
+                        sourcesList.innerHTML = data.sources.map(source => 
+                            `<a href="/search?q=${encodeURIComponent(source)}" class="source-tag" target="_blank">${source}</a>`
+                        ).join('');
+                        document.getElementById('sourcesSection').style.display = 'block';
+                    } else {
+                        document.getElementById('sourcesSection').style.display = 'none';
+                    }
+
+                    resultBox.classList.add('show');
+                } else {
+                    alert('Error: ' + (data.error || 'Search failed'));
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                alert('Failed to perform search. Please try again.');
+            } finally {
+                loadingBox.style.display = 'none';
+                searchBtn.disabled = false;
+            }
+        }
+
+        // Allow Enter key to submit (with Shift+Enter for new lines)
+        document.getElementById('queryInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                performSearch();
+            }
+        });
+    </script>
+</body>
+</html>

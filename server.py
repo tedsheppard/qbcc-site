@@ -1305,7 +1305,7 @@ def get_search_activity(admin: dict = Depends(get_admin_user)):
         SELECT user_email, search_query, timestamp 
         FROM search_logs 
         ORDER BY timestamp DESC
-        LIMIT 200
+        LIMIT 1000
     """).fetchall()
     return [dict(row) for row in logs]
 

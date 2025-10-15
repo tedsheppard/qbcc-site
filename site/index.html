@@ -964,53 +964,56 @@ async function fetchAdjudicators() {
 }
 
 
-
-
-    async function runSearch(page=1, bypassAdjudicatorCheck = false){
-      if (!bypassAdjudicatorCheck && adjudicatorList.length > 0) {
-    const query = normalizeInput($('#q').value);
-    if (findMatchingAdjudicator(query)) {
-      showAdjudicatorModal();
-      return; // Stop the standard search
+async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
+    if (!bypassAdjudicatorCheck && adjudicatorList.length > 0) {
+        const query = normalizeInput($('#q').value);
+        if (findMatchingAdjudicator(query)) {
+            showAdjudicatorModal();
+            return; // Stop the standard search
+        }
     }
-  }
-      try {
+    try {
         window.scrollTo(0, 0);
         const statusEl = $('#status');
         const totalEl = $('#total');
         const qEl = $('#q');
         const limitEl = $('#limit');
         const sortEl = $('#sort');
-        
+
         if (!statusEl || !totalEl || !qEl || !limitEl || !sortEl) {
-          console.error('Missing required elements');
-          return;
+            console.error('Missing required elements');
+            return;
         }
-        
+
         statusEl.textContent = 'Searching...';
         startLoadingBar();
 
         state.q = normalizeInput(qEl.value);
         state.limit = +(limitEl.value || 20);
-        state.offset = (page-1) * state.limit;
+        state.offset = (page - 1) * state.limit;
         state.sort = (sortEl.value || 'newest');
-        
+
         const params = new URLSearchParams();
         params.set('sort', state.sort);
         if (state.q) params.set('q', state.q);
         params.set('limit', state.limit);
         params.set('offset', state.offset);
-        
-        const res = await fetch(`/search_fast?${params.toString()}`, { 
-          headers: { 'Accept':'application/json' }
-        });
-        
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+
+        // --- START: FIX FOR LOGGING ---
+        const token = localStorage.getItem('purchase_token');
+        const headers = { 'Accept': 'application/json' };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
         }
         
-        const data = await res.json();
+        const res = await fetch(`/search_fast?${params.toString()}`, { headers });
+        // --- END: FIX FOR LOGGING ---
 
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const data = await res.json();
         finishLoadingBar();
 
         state.total = data.total || 0;
@@ -1019,17 +1022,18 @@ async function fetchAdjudicators() {
         statusEl.textContent = 'Done.';
 
         const items = data.items || [];
-        $('#results').innerHTML = items.length
-          ? items.map(it => renderItem(it, state.q && state.q.length > 0)).join('')
-          : '<p>No results.</p>';
+        $('#results').innerHTML = items.length ?
+            items.map(it => renderItem(it, state.q && state.q.length > 0)).join('') :
+            '<p>No results.</p>';
 
         renderPagination(page);
-      } catch (error) {
+    } catch (error) {
         console.error('Search error:', error);
         $('#status').textContent = 'Error: ' + error.message;
         finishLoadingBar();
-      }
     }
+}
+
 
  // Replace your existing findMatchingAdjudicator function with this one
 function findMatchingAdjudicator(query) {
