@@ -2347,10 +2347,15 @@ def get_decision_text(decision_id: str = Path(...)):
 async def serve_html_page(path_name: str):
     # --- START OF NEW FIX ---
     # Ignore paths that are clearly intended for API endpoints
-    api_prefixes = ["api/", "check-adjudicator-access/", "create-payment-intent", "purchase-register", "purchase-login", "purchase-me", "update-profile", "my-purchases"]
+    # In the serve_html_page function
+    api_prefixes = [
+        "api/", "admin/", "check-adjudicator-access/", "create-payment-intent/", 
+        "purchase-register", "purchase-login", "purchase-me", "update-profile", 
+        "my-purchases"
+    ]
     if any(path_name.startswith(prefix) for prefix in api_prefixes):
         raise HTTPException(status_code=404, detail="API endpoint not found")
-    # --- END OF NEW FIX ---
+
 
     if not path_name:
         path_name = "index"
