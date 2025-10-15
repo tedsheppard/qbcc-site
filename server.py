@@ -589,6 +589,112 @@ CREATE TABLE IF NOT EXISTS ai_summaries (
 """)
 con.commit()
 
+
+# ---------------- RAG / ChromaDB Setup ----------------
+import tarfile
+from chromadb.utils import embedding_functions
+
+CHROMA_PATH = "/var/data/chroma_db"
+CHROMA_TAR_GCS = "chroma_db.tar.gz"
+
+# Download and extract ChromaDB from GCS if not present
+if not os.path.exists(CHROMA_PATH):
+    try:
+        print("ChromaDB not found locally. Downloading from GCS...")
+        storage_client = get_gcs_client()
+        bucket = storage_client.bucket(GCS_BUCKET)
+        blob = bucket.blob(CHROMA_TAR_GCS)
+        
+        tar_path = "/tmp/chroma_db.tar.gz"
+        blob.download_to_filename(tar_path)
+        print("Download complete. Extracting...")
+        
+        with tarfile.open(tar_path, "r:gz") as tar:
+            tar.extractall("/var/data")
+        
+        os.remove(tar_path)
+        print(f"ChromaDB extracted to {CHROMA_PATH}")
+    except Exception as e:
+        print(f"Failed to download ChromaDB: {e}")
+
+# Initialize ChromaDB client and collection
+chroma_client = None
+chroma_collection = None
+
+if os.path.exists(CHROMA_PATH):
+    try:
+        import chromadb
+        
+        openai_ef = embedding_functions.OpenAIEmbeddingFunction(
+            api_key=os.getenv("OPENAI_API_KEY"),
+            model_name="text-embedding-3-small"
+        )
+        
+        chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+        chroma_collection = chroma_client.get_collection(
+            name="adjudication_decisions",
+            embedding_function=openai_ef
+        )
+        
+        print(f"✅ ChromaDB loaded: {chroma_collection.count()} chunks available")
+    except Exception as e:
+        print(f"Failed to load ChromaDB: {e}")
+else:
+    print("⚠️  ChromaDB not available - /ask endpoint will be disabled")
+
+# ---------------- RAG / ChromaDB Setup ----------------
+import tarfile
+from chromadb.utils import embedding_functions
+
+CHROMA_PATH = "/var/data/chroma_db"
+CHROMA_TAR_GCS = "chroma_db.tar.gz"
+
+# Download and extract ChromaDB from GCS if not present
+if not os.path.exists(CHROMA_PATH):
+    try:
+        print("ChromaDB not found locally. Downloading from GCS...")
+        storage_client = get_gcs_client()
+        bucket = storage_client.bucket(GCS_BUCKET)
+        blob = bucket.blob(CHROMA_TAR_GCS)
+        
+        tar_path = "/tmp/chroma_db.tar.gz"
+        blob.download_to_filename(tar_path)
+        print("Download complete. Extracting...")
+        
+        with tarfile.open(tar_path, "r:gz") as tar:
+            tar.extractall("/var/data")
+        
+        os.remove(tar_path)
+        print(f"ChromaDB extracted to {CHROMA_PATH}")
+    except Exception as e:
+        print(f"Failed to download ChromaDB: {e}")
+
+# Initialize ChromaDB client and collection
+chroma_client = None
+chroma_collection = None
+
+if os.path.exists(CHROMA_PATH):
+    try:
+        import chromadb
+        
+        openai_ef = embedding_functions.OpenAIEmbeddingFunction(
+            api_key=os.getenv("OPENAI_API_KEY"),
+            model_name="text-embedding-3-small"
+        )
+        
+        chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+        chroma_collection = chroma_client.get_collection(
+            name="adjudication_decisions",
+            embedding_function=openai_ef
+        )
+        
+        print(f"✅ ChromaDB loaded: {chroma_collection.count()} chunks available")
+    except Exception as e:
+        print(f"Failed to load ChromaDB: {e}")
+else:
+    print("⚠️  ChromaDB not available - /ask endpoint will be disabled")
+
+
 # ---------------- ensure FTS ----------------
 def ensure_fts():
     try:
@@ -1175,6 +1281,35 @@ def open_pdf(p: str, disposition: str = "inline"):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
+def get_admin_user(current_user: dict = Depends(get_current_purchase_user)):
+    if current_user["email"] not in ADMIN_EMAILS:
+        raise HTTPException(status_code=403, detail="Access denied. Admin privileges required.")
+    return current_user
+
+@app.get("/admin/all-users")
+def get_all_users(admin: dict = Depends(get_admin_user)):
+    """Admin endpoint to get all user registration data."""
+    users = purchases_con.execute("""
+        SELECT id, email, first_name, last_name, firm_name, abn, 
+               billing_address, billing_city, billing_state, billing_postcode, 
+               employee_size, phone, created_at, last_login 
+        FROM purchase_users 
+        ORDER BY created_at DESC
+    """).fetchall()
+    return [dict(row) for row in users]
+
+@app.get("/admin/search-activity")
+def get_search_activity(admin: dict = Depends(get_admin_user)):
+    """Admin endpoint to get all user search activity."""
+    logs = purchases_con.execute("""
+        SELECT user_email, search_query, timestamp 
+        FROM search_logs 
+        ORDER BY timestamp DESC
+        LIMIT 200
+    """).fetchall()
+    return [dict(row) for row in logs]
+
+
 # ---------- AI Summarise ----------
 @app.get("/summarise/{decision_id}")
 def summarise(decision_id: str = Path(...)):
@@ -1441,6 +1576,67 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...)):
         print(f"Error in /api/adjudicator/{adjudicator_name}: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
+@app.post("/ask-rag")
+def ask_rag(query: str = Form(...)):
+    """Natural language search across all adjudication decisions using RAG"""
+    try:
+        if not chroma_collection:
+            raise HTTPException(status_code=503, detail="RAG search not available")
+        
+        # Query the vector database
+        results = chroma_collection.query(
+            query_texts=[query],
+            n_results=5
+        )
+        
+        if not results['documents'][0]:
+            return {"answer": "I couldn't find any relevant information in the adjudication decisions for your query."}
+        
+        # Combine retrieved chunks as context
+        context_chunks = results['documents'][0]
+        metadata_list = results['metadatas'][0]
+        
+        context = "\n\n---\n\n".join([
+            f"[Decision {meta.get('decision_id', 'Unknown')}]\n{doc}"
+            for doc, meta in zip(context_chunks, metadata_list)
+        ])
+        
+        # Send to GPT for answer generation
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are SopalAI, an expert assistant for Queensland adjudication decisions. "
+                        "Answer questions based on the provided context from adjudication decisions. "
+                        "Cite specific decisions when possible. Be concise and accurate."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Context from decisions:\n\n{context}\n\nQuestion: {query}"
+                }
+            ],
+            max_tokens=800
+        )
+        
+        answer = resp.choices[0].message.content.strip()
+        
+        # Return answer with source references
+        sources = list(set([meta.get('decision_id', 'Unknown') for meta in metadata_list]))
+        
+        return {
+            "answer": answer,
+            "sources": sources[:5]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in /ask-rag: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 # Add this helper endpoint to debug the database schema
 @app.get("/debug/schema")
 def debug_schema():
@@ -1651,6 +1847,7 @@ async def analyse_document(doc_type: str = Form(...), file: UploadFile = File(..
         print(f"ERROR in /analyse-document: {e}")
         return JSONResponse(content={"error": f"An unexpected error occurred: {str(e)}"}, status_code=500)
 
+
 # -------------------------------------------------------------------
 # --- START: LEXIFILE FUNCTIONALITY (MERGED & UPDATED) ---
 # -------------------------------------------------------------------
@@ -1800,16 +1997,6 @@ async def rename_document(file: UploadFile = File(...), project_id: str = Form(.
             os.remove(temp_path)
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
 
-@app.get("/admin/search-activity")
-def get_search_activity(admin: dict = Depends(get_admin_user)):
-    """Admin endpoint to get all user search activity."""
-    logs = purchases_con.execute("""
-        SELECT user_email, search_query, timestamp 
-        FROM search_logs 
-        ORDER BY timestamp DESC
-        LIMIT 200
-    """).fetchall()
-    return [dict(row) for row in logs]
 
 @app.get("/get-receipt-url/{payment_intent_id}")
 async def get_receipt_url(
@@ -2359,10 +2546,7 @@ async def delete_payment_method(
         print(f"Error deleting payment method: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-def get_admin_user(current_user: dict = Depends(get_current_purchase_user)):
-    if current_user["email"] not in ADMIN_EMAILS:
-        raise HTTPException(status_code=403, detail="Access denied. Admin privileges required.")
-    return current_user
+
 
 @app.get("/api/decision-text/{decision_id}")
 def get_decision_text(decision_id: str = Path(...)):
@@ -2639,17 +2823,7 @@ async def get_adjudicator_decisions_text(decision_ids: List[str] = Body(...)):
         print(f"Error batch fetching decision texts: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch decision texts")
 
-@app.get("/admin/all-users")
-def get_all_users(admin: dict = Depends(get_admin_user)):
-    """Admin endpoint to get all user registration data."""
-    users = purchases_con.execute("""
-        SELECT id, email, first_name, last_name, firm_name, abn, 
-               billing_address, billing_city, billing_state, billing_postcode, 
-               employee_size, phone, created_at, last_login 
-        FROM purchase_users 
-        ORDER BY created_at DESC
-    """).fetchall()
-    return [dict(row) for row in users]
+
 
 
 # ---------- serve frontend with clean URLs ----------
