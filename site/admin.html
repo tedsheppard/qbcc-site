@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-t">
   <title>Sopal – Admin Hub</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
@@ -55,13 +55,15 @@
       <section id="payments-section" class="admin-section">
         <div class="card">
           <h2>Payment Activity</h2>
-          <p>This feature will be implemented next.</p>
+          <div id="payments-table-container">
+            <p>This feature will be implemented next.</p>
+          </div>
         </div>
       </section>
       <section id="searches-section" class="admin-section">
         <div class="card">
-          <h2>Search Activity</h2>
-          <p>This feature will be implemented next.</p>
+          <h2>Latest 200 Searches</h2>
+          <div id="searches-table-container" style="overflow-x: auto;"></div>
         </div>
       </section>
     </div>
@@ -71,7 +73,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('purchase_token');
-    const usersContainer = document.getElementById('users-table-container');
 
     // --- Tab Switching Logic ---
     const navButtons = document.querySelectorAll('.admin-nav .nav-btn');
@@ -84,83 +85,97 @@ document.addEventListener('DOMContentLoaded', () => {
             sections.forEach(section => {
                 section.classList.toggle('active', section.id === targetId);
             });
+            // Fetch data for the newly activated tab
+            if (targetId === 'users-section') fetchUsers();
+            if (targetId === 'searches-section') fetchSearches();
         });
     });
 
-    // --- Authentication and Data Fetching ---
+    // --- Authentication ---
     if (!token) {
-        usersContainer.innerHTML = '<p class="error-message">Access Denied. Please log in as an admin.</p>';
+        document.querySelector('main').innerHTML = '<p class="error-message">Access Denied. Please log in as an admin.</p>';
         return;
     }
+    
+    // --- Data Fetching Functions ---
 
     async function fetchUsers() {
-        usersContainer.innerHTML = '<p class="loading-message">Loading user data...</p>';
+        const container = document.getElementById('users-table-container');
+        container.innerHTML = '<p class="loading-message">Loading user data...</p>';
         try {
             const response = await fetch('/admin/all-users', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-
-            if (response.status === 403) {
-                throw new Error('Access Denied. You do not have admin privileges.');
-            }
-            if (!response.ok) {
-                throw new Error('Failed to fetch data from the server.');
-            }
-
+            if (!response.ok) throw new Error('Failed to fetch user data from the server.');
             const users = await response.json();
             renderUsersTable(users);
         } catch (error) {
-            usersContainer.innerHTML = `<p class="error-message">${error.message}</p>`;
+            container.innerHTML = `<p class="error-message">${error.message}</p>`;
         }
     }
+
+    async function fetchSearches() {
+        const container = document.getElementById('searches-table-container');
+        container.innerHTML = '<p class="loading-message">Loading search activity...</p>';
+        try {
+            const response = await fetch('/admin/search-activity', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error('Failed to fetch search data from the server.');
+            const searches = await response.json();
+            renderSearchesTable(searches);
+        } catch (error) {
+            container.innerHTML = `<p class="error-message">${error.message}</p>`;
+        }
+    }
+
+    // --- Table Rendering Functions ---
 
     function renderUsersTable(users) {
-        if (users.length === 0) {
-            usersContainer.innerHTML = '<p>No user accounts have been created yet.</p>';
+        const container = document.getElementById('users-table-container');
+        if (!users || users.length === 0) {
+            container.innerHTML = '<p>No user accounts have been created yet.</p>';
             return;
         }
-
-        let tableHTML = `
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Email</th>
-                        <th>Name</th>
-                        <th>Firm</th>
-                        <th>ABN</th>
-                        <th>Address</th>
-                        <th>Phone</th>
-                        <th>Created At</th>
-                        <th>Last Login</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
+        let tableHTML = `<table><thead><tr>
+            <th>ID</th><th>Email</th><th>Name</th><th>Firm</th><th>ABN</th><th>Address</th><th>Phone</th><th>Created At</th><th>Last Login</th>
+        </tr></thead><tbody>`;
         users.forEach(user => {
-            const createdAt = user.created_at ? new Date(user.created_at).toLocaleString('en-AU') : 'N/A';
-            const lastLogin = user.last_login ? new Date(user.last_login).toLocaleString('en-AU') : 'Never';
-            
-            tableHTML += `
-                <tr>
-                    <td>${user.id}</td>
-                    <td>${user.email || ''}</td>
-                    <td>${user.first_name || ''} ${user.last_name || ''}</td>
-                    <td>${user.firm_name || ''}</td>
-                    <td>${user.abn || ''}</td>
-                    <td>${user.billing_address || ''}, ${user.billing_city || ''}, ${user.billing_state || ''} ${user.billing_postcode || ''}</td>
-                    <td>${user.phone || ''}</td>
-                    <td>${createdAt}</td>
-                    <td>${lastLogin}</td>
-                </tr>
-            `;
+            tableHTML += `<tr>
+                <td>${user.id}</td>
+                <td>${user.email || ''}</td>
+                <td>${user.first_name || ''} ${user.last_name || ''}</td>
+                <td>${user.firm_name || ''}</td>
+                <td>${user.abn || ''}</td>
+                <td>${`${user.billing_address || ''}, ${user.billing_city || ''}, ${user.billing_state || ''} ${user.billing_postcode || ''}`.replace(/^, |, $/g, '')}</td>
+                <td>${user.phone || ''}</td>
+                <td>${user.created_at ? new Date(user.created_at).toLocaleString('en-AU') : 'N/A'}</td>
+                <td>${user.last_login ? new Date(user.last_login).toLocaleString('en-AU') : 'Never'}</td>
+            </tr>`;
         });
-
-        tableHTML += '</tbody></table>';
-        usersContainer.innerHTML = tableHTML;
+        container.innerHTML = tableHTML + '</tbody></table>';
     }
 
+    function renderSearchesTable(searches) {
+        const container = document.getElementById('searches-table-container');
+        if (!searches || searches.length === 0) {
+            container.innerHTML = '<p>No search activity has been logged yet.</p>';
+            return;
+        }
+        let tableHTML = `<table><thead><tr>
+            <th>Timestamp</th><th>User Email</th><th>Search Query</th>
+        </tr></thead><tbody>`;
+        searches.forEach(search => {
+            tableHTML += `<tr>
+                <td>${new Date(search.timestamp).toLocaleString('en-AU')}</td>
+                <td>${search.user_email || 'Anonymous'}</td>
+                <td>${search.search_query}</td>
+            </tr>`;
+        });
+        container.innerHTML = tableHTML + '</tbody></table>';
+    }
+
+    // Initial load for the default active tab
     fetchUsers();
 });
 </script>

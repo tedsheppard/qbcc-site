@@ -33,6 +33,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from fastapi import Header, Depends
 
 def get_gcs_client():
     """
@@ -151,6 +152,19 @@ ADMIN_EMAILS = {
     "ejsheppard@icloud.com", 
     "esheppard@tglaw.com.au"
 }
+
+# ... inside the UNIFIED USERS DATABASE CONNECTION section
+
+# Create search logs table
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS search_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT,
+    search_query TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+purchases_con.commit()
 
 # Add a try/except block to safely add the new column if it doesn't exist
 try:
@@ -862,10 +876,26 @@ def get_interest_rate(start_date_str: str = Query(..., alias="startDate"), end_d
 
 from fastapi import Depends
 
-
-
 @app.get("/search_fast")
-def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newest"):
+def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newest", authorization: Optional[str] = Header(None)):
+    # --- START: NEW SEARCH LOGGING LOGIC ---
+    user_email = "Anonymous"
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_email = payload.get("sub", "Anonymous")
+        except JWTError:
+            pass # Token is invalid or expired, treat as Anonymous
+    
+    if q: # Only log non-empty queries
+        purchases_con.execute(
+            "INSERT INTO search_logs (user_email, search_query) VALUES (?, ?)",
+            (user_email, q)
+        )
+        purchases_con.commit()
+    # --- END: NEW SEARCH LOGGING LOGIC ---
+
     q_norm = normalize_query(q)
     nq = q_norm
 
@@ -1769,6 +1799,17 @@ async def rename_document(file: UploadFile = File(...), project_id: str = Form(.
         if os.path.exists(temp_path):
             os.remove(temp_path)
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+
+@app.get("/admin/search-activity")
+def get_search_activity(admin: dict = Depends(get_admin_user)):
+    """Admin endpoint to get all user search activity."""
+    logs = purchases_con.execute("""
+        SELECT user_email, search_query, timestamp 
+        FROM search_logs 
+        ORDER BY timestamp DESC
+        LIMIT 200
+    """).fetchall()
+    return [dict(row) for row in logs]
 
 @app.get("/get-receipt-url/{payment_intent_id}")
 async def get_receipt_url(
