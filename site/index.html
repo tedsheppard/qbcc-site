@@ -1010,7 +1010,7 @@ async function fetchAdjudicators() {
       }
     }
 
-    // Replace your existing findMatchingAdjudicator function with this one
+ // Replace your existing findMatchingAdjudicator function with this one
 function findMatchingAdjudicator(query) {
   if (!query || query.length < 3 || !adjudicatorList.length) return null;
 
@@ -1024,15 +1024,23 @@ function findMatchingAdjudicator(query) {
 
   if (!cleanedQuery) return null;
 
-  // Check if the query contains any known adjudicator's last name
+  // Check if the query contains any known adjudicator's last name AS A WHOLE WORD
   for (const adjudicator of adjudicatorList) {
-    if (adjudicator.lastName && cleanedQuery.includes(adjudicator.lastName)) {
-      return adjudicator.fullName;
+    if (adjudicator.lastName) {
+      // Create a regular expression to match the last name as a whole word.
+      // The '\b' is a "word boundary".
+      const regex = new RegExp(`\\b${adjudicator.lastName}\\b`);
+      
+      if (regex.test(cleanedQuery)) {
+        return adjudicator.fullName;
+      }
     }
   }
 
   return null;
-}  
+}
+ 
+
 
 
 // Replace your old showAdjudicatorModal function with this one
