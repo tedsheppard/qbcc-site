@@ -218,7 +218,11 @@ except sqlite3.OperationalError:
 # --- Commit all changes ---
 purchases_con.commit()
 
-
+ADMIN_EMAILS = {
+    "edwardsheppard5@gmail.com", 
+    "ejsheppard@icloud.com", 
+    "esheppard@tglaw.com.au"
+}
 
 
 
@@ -632,7 +636,7 @@ if not os.path.exists(CHROMA_PATH):
     try:
         print("ChromaDB not found locally. Downloading from GCS...")
         storage_client = get_gcs_client()
-        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        bucket = storage_client.bucket("GCS_BUCKET_NAME")
         blob = bucket.blob(CHROMA_TAR_GCS)
         
         tar_path = "/tmp/chroma_db.tar.gz"
@@ -684,7 +688,7 @@ if not os.path.exists(CHROMA_PATH):
     try:
         print("ChromaDB not found locally. Downloading from GCS...")
         storage_client = get_gcs_client()
-        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        bucket = storage_client.bucket("GCS_BUCKET_NAME")
         blob = bucket.blob(CHROMA_TAR_GCS)
         
         tar_path = "/tmp/chroma_db.tar.gz"
