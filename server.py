@@ -1541,7 +1541,6 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...), authorization: 
 
 
 
-
 @app.post("/ask-rag")
 def ask_rag(query: str = Form(...)):
     """Natural language search across all adjudication decisions using RAG"""
@@ -1549,11 +1548,21 @@ def ask_rag(query: str = Form(...)):
         if not chroma_collection:
             raise HTTPException(status_code=503, detail="RAG search not available")
         
+        print(f"Querying ChromaDB with: {query}")
+        
         # Query the vector database
         results = chroma_collection.query(
             query_texts=[query],
             n_results=5
         )
+        
+        print(f"Query results type: {type(results)}")
+        print(f"Query results keys: {results.keys() if isinstance(results, dict) else 'Not a dict'}")
+        
+        if not results or 'documents' not in results or not results['documents']:
+            return {"answer": "I couldn't find any relevant information in the adjudication decisions for your query."}
+        
+        print(f"Documents found: {len(results['documents'])}")
         
         if not results['documents'][0]:
             return {"answer": "I couldn't find any relevant information in the adjudication decisions for your query."}
@@ -1600,8 +1609,11 @@ def ask_rag(query: str = Form(...)):
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
         print(f"Error in /ask-rag: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
         return JSONResponse({"error": str(e)}, status_code=500)
+    
 
 # Add this helper endpoint to debug the database schema
 @app.get("/debug/schema")
