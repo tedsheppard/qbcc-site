@@ -668,16 +668,24 @@ if os.path.exists(CHROMA_PATH):
         from openai import OpenAI as OpenAIClient
 
         class CustomOpenAIEmbedding:
-            def __init__(self, api_key, model_name):
-                self.client = OpenAIClient(api_key=api_key)
-                self.model_name = model_name
-            
-            def __call__(self, input):
-                response = self.client.embeddings.create(
-                    input=input,
-                    model=self.model_name
-                )
-                return [item.embedding for item in response.data]
+        def __init__(self, api_key, model_name):
+        self.client = OpenAIClient(api_key=api_key)
+        self.model_name = model_name
+    
+         def __call__(self, input):
+        # Ensure input is always a list
+        if isinstance(input, str):
+            input = [input]
+        
+        response = self.client.embeddings.create(
+            input=input,
+            model=self.model_name
+        )
+        
+        # Return list of embeddings
+        return [item.embedding for item in response.data]
+    
+        
 
         openai_ef = CustomOpenAIEmbedding(
             api_key=os.getenv("OPENAI_API_KEY"),

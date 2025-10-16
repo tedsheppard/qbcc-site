@@ -814,44 +814,42 @@ body {
 .dark .btn-secondary-action { background: #333; color: #eee; }
 .btn-secondary-action:hover { background: #dee2e6; }
 
-/* --- NEW, POLISHED STYLES FOR FILTERS --- */
+
+/* Add these new styles to your CSS block */
 .advanced-filters {
-  background: #f8f9fa;
+  background: #f0f0f0;
   border-radius: 6px;
-  padding: 20px;
+  padding: 15px;
   margin-top: 15px;
-  border: 1px solid #e9ecef;
   display: none; /* Hidden by default */
 }
 .dark .advanced-filters {
   background: #222;
-  border-color: #333;
 }
 
 .filter-grid {
   display: grid;
-  grid-template-columns: 1fr 1.5fr 1.5fr;
-  gap: 25px;
-  align-items: end;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
 }
-
-.filter-group { font-size: 13px; }
+.filter-group {
+  font-size: 13px;
+}
 .filter-group label {
   display: block;
   font-weight: 600;
-  margin-bottom: 10px;
-  color: #333;
+  margin-bottom: 8px;
 }
-.dark .filter-group label { color: #eee; }
-
-.filter-group .date-inputs { display: flex; gap: 10px; }
+.filter-group .date-inputs {
+  display: flex;
+  gap: 10px;
+}
 .filter-group input[type="date"] {
   width: 100%;
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: 6px;
+  border-radius: 4px;
   border: 1px solid #ccc;
   font-family: inherit;
-  font-size: 13px;
 }
 .dark .filter-group input[type="date"] {
     background: #333;
@@ -859,15 +857,16 @@ body {
     color: #eee;
 }
 
-.slider-container { padding: 10px 5px 0 5px; }
-
+/* Slider styles */
+.slider-container {
+    padding-top: 10px;
+}
 .slider-values {
     font-size: 12px;
     color: #555;
-    margin-top: 10px;
-    font-weight: 500;
+    margin-top: 8px;
 }
-.dark .slider-values { color: #bbb; }
+.dark .slider-values { color: #aaa; }
 
 #toggleFiltersBtn {
   background: transparent;
@@ -882,55 +881,6 @@ body {
 .dark #toggleFiltersBtn {
     border-color: #444;
     color: #eee;
-}
-
-/* --- SLIDER UI OVERRIDE --- */
-.noUi-target {
-  height: 6px;
-  background: #e9ecef;
-  border: 1px solid #dee2e6;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-}
-.dark .noUi-target {
-  background: #3a3a3a;
-  border: 1px solid #444;
-}
-.noUi-connect {
-  background: #00c97c;
-}
-.noUi-handle {
-  height: 18px;
-  width: 18px;
-  top: -7px;
-  right: -9px;
-  border-radius: 50%;
-  border: 3px solid white;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  cursor: grab;
-}
-.dark .noUi-handle {
-  border: 3px solid #555;
-}
-.noUi-handle:focus { outline: none; }
-.noUi-handle:after, .noUi-handle:before { display: none; }
-
-.noUi-tooltip {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 7px;
-  border: none;
-  background: #222;
-  color: white;
-  border-radius: 4px;
-  transform: translate(-50%, -10px);
-}
-
-@media (max-width: 900px) {
-  .filter-grid {
-    grid-template-columns: 1fr;
-    align-items: stretch;
-    gap: 25px;
-  }
 }
 
 </style>
@@ -966,9 +916,9 @@ body {
       <div class="search-row">
         <div class="search-bar">
           <input id="q" placeholder="Search adjudication decisions... (e.g. 'example' AND 'text'; 'example' w/10 'text')">
-          <button="runSearch()">Search</button>
+          <button onclick="runSearch()">Search</button>
         </div>
-        <button id="themeToggle"="toggleTheme()">Switch to Dark Mode</button>
+        <button id="themeToggle" onclick="toggleTheme()">Switch to Dark Mode</button>
       </div>
       <div class="search-controls">
         <select id="limit" class="results-limit">
@@ -1065,44 +1015,65 @@ function levenshtein(s1, s2) {
 
 // PASTE THIS EMPTY BLOCK HERE
 document.addEventListener('DOMContentLoaded', function() {
-        
-    
-claimSlider = document.getElementById('claimSlider');
-adjudicatedSlider = document.getElementById('adjudicatedSlider');
+        // We will move all the setup code inside this block
+        // --- START: Filter Panel Logic ---
 
-  const formatSliderCurrency = (value) => {
-    value = Math.round(value);
-    if (value >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`;
-    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-    if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
-    return `$${value}`;
-};
+    const claimSlider = document.getElementById('claimSlider');
+    const adjudicatedSlider = document.getElementById('adjudicatedSlider');
 
-const sliderConfig = {
-    start: [0, 1000000000],
-    connect: true,
-    tooltips: [ { to: v => formatSliderCurrency(v) }, { to: v => formatSliderCurrency(v) } ],
-    range: {
-        'min': [0],
-        '10%': [100000, 10000],      // From 0 to 100k, step by 10k
-        '30%': [1000000, 100000],   // From 100k to 1M, step by 100k
-        '60%': [10000000, 1000000], // From 1M to 10M, step by 1M
-        '85%': [100000000, 10000000], // From 10M to 100M, step by 10M
-        'max': [1000000000]          // From 100M to 1B
-    }
-};
+    // Helper to format currency for slider display
+    const formatSliderCurrency = (value) => {
+        if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+        if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
+        return `$${value}`;
+    };
 
-noUiSlider.create(claimSlider, sliderConfig);
-noUiSlider.create(adjudicatedSlider, sliderConfig);
+    // Initialize Claimed Amount Slider
+    noUiSlider.create(claimSlider, {
+        start: [0, 5000000],
+        connect: true,
+        range: { 'min': 0, 'max': 5000000 },
+        step: 10000,
+        tooltips: [
+          { to: value => formatSliderCurrency(Math.round(value)) },
+          { to: value => formatSliderCurrency(Math.round(value)) }
+        ]
+    });
 
-claimSlider.noUiSlider.on('update', (values) => {
-    $('#claimSliderValues').innerHTML = `${formatSliderCurrency(values[0])} – ${formatSliderCurrency(values[1])}`;
-});
-adjudicatedSlider.noUiSlider.on('update', (values) => {
-    $('#adjudicatedSliderValues').innerHTML = `${formatSliderCurrency(values[0])} – ${formatSliderCurrency(values[1])}`;
-});
+    // Initialize Adjudicated Amount Slider
+    noUiSlider.create(adjudicatedSlider, {
+        start: [0, 5000000],
+        connect: true,
+        range: { 'min': 0, 'max': 5000000 },
+        step: 10000,
+        tooltips: [
+          { to: value => formatSliderCurrency(Math.round(value)) },
+          { to: value => formatSliderCurrency(Math.round(value)) }
+        ]
+    });
+
+    // Update display values when sliders change
+    claimSlider.noUiSlider.on('update', function (values, handle) {
+        document.getElementById('claimSliderValues').innerHTML = 
+            `${formatSliderCurrency(Math.round(values[0]))} – ${formatSliderCurrency(Math.round(values[1]))}`;
+    });
+    adjudicatedSlider.noUiSlider.on('update', function (values, handle) {
+        document.getElementById('adjudicatedSliderValues').innerHTML = 
+            `${formatSliderCurrency(Math.round(values[0]))} – ${formatSliderCurrency(Math.round(values[1]))}`;
+    });
 
 
+    // Toggle filter panel visibility
+    document.getElementById('toggleFiltersBtn').addEventListener('click', () => {
+        const filters = document.getElementById('advancedFilters');
+        if (filters.style.display === 'block') {
+            filters.style.display = 'none';
+        } else {
+            filters.style.display = 'block';
+        }
+    });
+
+// --- END: Filter Panel Logic ---
 
   const saved = localStorage.getItem('theme');
   if (saved === 'dark') {
@@ -1153,7 +1124,7 @@ function $(sel){ return document.querySelector(sel); }
     let state = { q:'', claimant:'', respondent:'', limit:20, offset:0, total:0 };
     let adjudicatorList = []; 
     let chatHistories = {};
-    let claimSlider, adjudicatedSlider;
+
 
 // Replace your existing fetchAdjudicators function with this one
 async function fetchAdjudicators() {
@@ -1245,10 +1216,10 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
         
         // Only add amount filters if they are not at the default max range
         if (parseFloat(claimRange[0]) > 0) params.set('minClaim', parseFloat(claimRange[0]));
-        if (parseFloat(claimRange[1]) < 1000000000) params.set('maxClaim', parseFloat(claimRange[1]));
+        if (parseFloat(claimRange[1]) < 5000000) params.set('maxClaim', parseFloat(claimRange[1]));
         
         if (parseFloat(adjudicatedRange[0]) > 0) params.set('minAdjudicated', parseFloat(adjudicatedRange[0]));
-        if (parseFloat(adjudicatedRange[1]) < 1000000000) params.set('maxAdjudicated', parseFloat(adjudicatedRange[1]));
+        if (parseFloat(adjudicatedRange[1]) < 5000000) params.set('maxAdjudicated', parseFloat(adjudicatedRange[1]));
         
         const token = localStorage.getItem('purchase_token');
         const headers = { 'Accept': 'application/json' };
