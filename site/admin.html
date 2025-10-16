@@ -43,13 +43,13 @@
   <h1>Admin Hub</h1>
   <div class="admin-container">
     <aside class="admin-nav">
-      <button class="nav-btn active" data-target="users-section">User Accounts</button>
-      <button class="nav-btn" data-target="payments-section">Payment Activity</button>
-      <button class="nav-btn" data-target="searches-section">Search Activity</button>
-      <button class="nav-btn" data-target="adjudicators-section">Adjudicator Activity</button>
+      <button class="nav-btn" data-hash="users">User Accounts</button>
+      <button class="nav-btn" data-hash="payments">Payment Activity</button>
+      <button class="nav-btn" data-hash="searches">Search Activity</button>
+      <button class="nav-btn" data-hash="adjudicators">Adjudicator Activity</button>
     </aside>
     <div class="admin-content">
-      <section id="users-section" class="admin-section active">
+      <section id="users-section" class="admin-section">
         <div class="card">
           <h2>Account Creation Activity</h2>
           <div id="users-table-container" style="overflow-x: auto;"></div>
@@ -83,44 +83,66 @@
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('purchase_token');
 
-    // --- START: TIMEZONE FORMATTING HELPER ---
+    // --- TIMEZONE FORMATTING HELPER ---
     function formatAEST(isoString) {
         if (!isoString) return 'N/A';
         try {
-            const date = new Date(isoString);
-            // Using Australia/Sydney handles both AEST and AEDT automatically
+            // **FIX:** Force JavaScript to parse the date as UTC by replacing space with 'T' and adding 'Z'
+            const utcDateString = isoString.replace(' ', 'T') + 'Z';
+            const date = new Date(utcDateString);
             return date.toLocaleString('en-AU', {
                 timeZone: 'Australia/Sydney',
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
                 hour12: true
             });
         } catch (e) {
-            return isoString; // Fallback if date is invalid
+            return isoString;
         }
     }
-    // --- END: TIMEZONE FORMATTING HELPER ---
 
+    // --- URL HASH-BASED NAVIGATION ---
     const navButtons = document.querySelectorAll('.admin-nav .nav-btn');
     const sections = document.querySelectorAll('.admin-section');
+    const dataLoaded = new Set();
+
+    function showTab(hash) {
+        const targetHash = hash.substring(1); // remove '#'
+        let dataFetched = false;
+
+        navButtons.forEach(btn => {
+            const isActive = btn.dataset.hash === targetHash;
+            btn.classList.toggle('active', isActive);
+        });
+
+        sections.forEach(section => {
+            const sectionId = section.id.replace('-section', '');
+            const isActive = sectionId === targetHash;
+            section.classList.toggle('active', isActive);
+
+            if (isActive && !dataLoaded.has(targetHash)) {
+                switch (targetHash) {
+                    case 'users': fetchUsers(); break;
+                    case 'searches': fetchSearches(); break;
+                    case 'adjudicators': fetchAdjudicatorActivity(); break;
+                }
+                dataLoaded.add(targetHash);
+            }
+        });
+    }
+
     navButtons.forEach(button => {
         button.addEventListener('click', () => {
-            const targetId = button.getAttribute('data-target');
-            navButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            sections.forEach(section => {
-                section.classList.toggle('active', section.id === targetId);
-            });
-            if (targetId === 'users-section') fetchUsers();
-            if (targetId === 'searches-section') fetchSearches();
-            if (targetId === 'adjudicators-section') fetchAdjudicatorActivity();
+            window.location.hash = button.dataset.hash;
         });
     });
 
+    window.addEventListener('hashchange', () => {
+        const hash = window.location.hash || '#users';
+        showTab(hash);
+    });
+    
+    // --- AUTH & DATA FETCHING ---
     if (!token) {
         document.querySelector('main').innerHTML = '<p class="error-message">Access Denied. Please log in as an admin.</p>';
         return;
@@ -143,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchSearches = () => fetchData('/admin/search-activity', 'searches-table-container', renderSearchesTable);
     const fetchAdjudicatorActivity = () => fetchData('/admin/adjudicator-activity', 'adjudicators-table-container', renderAdjudicatorActivityTable);
 
+    // --- TABLE RENDERING ---
     function renderUsersTable(users) {
         const container = document.getElementById('users-table-container');
         if (!users || users.length === 0) { container.innerHTML = '<p>No user accounts created yet.</p>'; return; }
@@ -174,7 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = tableHTML + '</tbody></table>';
     }
 
-    fetchUsers();
+    // --- INITIAL PAGE LOAD ---
+    const initialHash = window.location.hash || '#users';
+    showTab(initialHash);
 });
 </script>
 
