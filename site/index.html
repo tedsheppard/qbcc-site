@@ -1011,8 +1011,106 @@ function levenshtein(s1, s2) {
   }
   return previousRow[previousRow.length - 1];
 }
- 
-    function $(sel){ return document.querySelector(sel); }
+
+// PASTE THIS EMPTY BLOCK HERE
+document.addEventListener('DOMContentLoaded', function() {
+        // We will move all the setup code inside this block
+        // --- START: Filter Panel Logic ---
+
+    const claimSlider = document.getElementById('claimSlider');
+    const adjudicatedSlider = document.getElementById('adjudicatedSlider');
+
+    // Helper to format currency for slider display
+    const formatSliderCurrency = (value) => {
+        if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+        if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
+        return `$${value}`;
+    };
+
+    // Initialize Claimed Amount Slider
+    noUiSlider.create(claimSlider, {
+        start: [0, 5000000],
+        connect: true,
+        range: { 'min': 0, 'max': 5000000 },
+        step: 10000,
+        tooltips: [
+          { to: value => formatSliderCurrency(Math.round(value)) },
+          { to: value => formatSliderCurrency(Math.round(value)) }
+        ]
+    });
+
+    // Initialize Adjudicated Amount Slider
+    noUiSlider.create(adjudicatedSlider, {
+        start: [0, 5000000],
+        connect: true,
+        range: { 'min': 0, 'max': 5000000 },
+        step: 10000,
+        tooltips: [
+          { to: value => formatSliderCurrency(Math.round(value)) },
+          { to: value => formatSliderCurrency(Math.round(value)) }
+        ]
+    });
+
+    // Update display values when sliders change
+    claimSlider.noUiSlider.on('update', function (values, handle) {
+        document.getElementById('claimSliderValues').innerHTML = 
+            `${formatSliderCurrency(Math.round(values[0]))} – ${formatSliderCurrency(Math.round(values[1]))}`;
+    });
+    adjudicatedSlider.noUiSlider.on('update', function (values, handle) {
+        document.getElementById('adjudicatedSliderValues').innerHTML = 
+            `${formatSliderCurrency(Math.round(values[0]))} – ${formatSliderCurrency(Math.round(values[1]))}`;
+    });
+
+
+    // Toggle filter panel visibility
+    document.getElementById('toggleFiltersBtn').addEventListener('click', () => {
+        const filters = document.getElementById('advancedFilters');
+        if (filters.style.display === 'block') {
+            filters.style.display = 'none';
+        } else {
+            filters.style.display = 'block';
+        }
+    });
+
+// --- END: Filter Panel Logic ---
+
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') {
+    document.body.classList.remove('light');
+    document.body.classList.add('dark');
+    document.getElementById('themeToggle').textContent = 'Switch to Light Mode';
+  } else {
+    document.body.classList.add('light');
+    document.getElementById('themeToggle').textContent = 'Switch to Dark Mode';
+  }
+
+  const input = document.getElementById('q');
+  if (input) {
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        runSearch(1);
+      }
+    });
+  }
+
+  const limitSel = document.getElementById('limit');
+  if (limitSel) {
+    limitSel.addEventListener('change', () => runSearch(1));
+  }
+
+  const sortSel = document.getElementById('sort');
+  if (sortSel) {
+    sortSel.addEventListener('change', () => runSearch(1));
+  }
+
+  fetchAdjudicators();
+
+  runSearch();
+});
+
+
+function $(sel){ return document.querySelector(sel); }
     function sanitize(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function getFileName(path){ if (!path) return ''; return path.split('/').pop(); }
     function buildPdfLinks(path){
@@ -1378,39 +1476,7 @@ function toggleTheme() {
   }
 }
 
-const saved = localStorage.getItem('theme');
-if (saved === 'dark') {
-  document.body.classList.remove('light');
-  document.body.classList.add('dark');
-  document.getElementById('themeToggle').textContent = 'Switch to Light Mode';
-} else {
-  document.body.classList.add('light');
-  document.getElementById('themeToggle').textContent = 'Switch to Dark Mode';
-}
 
-const input = document.getElementById('q');
-if (input) {
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      runSearch(1);
-    }
-  });
-}
-
-const limitSel = document.getElementById('limit');
-if (limitSel) {
-  limitSel.addEventListener('change', () => runSearch(1));
-}
-
-const sortSel = document.getElementById('sort');
-if (sortSel) {
-  sortSel.addEventListener('change', () => runSearch(1));
-}
-
-fetchAdjudicators();
-
-runSearch();
 
 
 
@@ -1530,64 +1596,7 @@ function addUserMessage(id, text) {
     messagesBox.scrollTop = messagesBox.scrollHeight;
 }
 
-// --- START: Filter Panel Logic ---
 
-const claimSlider = document.getElementById('claimSlider');
-const adjudicatedSlider = document.getElementById('adjudicatedSlider');
-
-// Helper to format currency for slider display
-const formatSliderCurrency = (value) => {
-    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-    if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
-    return `$${value}`;
-};
-
-// Initialize Claimed Amount Slider
-noUiSlider.create(claimSlider, {
-    start: [0, 5000000],
-    connect: true,
-    range: { 'min': 0, 'max': 5000000 },
-    step: 10000,
-    tooltips: [
-      { to: value => formatSliderCurrency(Math.round(value)) },
-      { to: value => formatSliderCurrency(Math.round(value)) }
-    ]
-});
-
-// Initialize Adjudicated Amount Slider
-noUiSlider.create(adjudicatedSlider, {
-    start: [0, 5000000],
-    connect: true,
-    range: { 'min': 0, 'max': 5000000 },
-    step: 10000,
-    tooltips: [
-      { to: value => formatSliderCurrency(Math.round(value)) },
-      { to: value => formatSliderCurrency(Math.round(value)) }
-    ]
-});
-
-// Update display values when sliders change
-claimSlider.noUiSlider.on('update', function (values, handle) {
-    document.getElementById('claimSliderValues').innerHTML = 
-        `${formatSliderCurrency(Math.round(values[0]))} – ${formatSliderCurrency(Math.round(values[1]))}`;
-});
-adjudicatedSlider.noUiSlider.on('update', function (values, handle) {
-    document.getElementById('adjudicatedSliderValues').innerHTML = 
-        `${formatSliderCurrency(Math.round(values[0]))} – ${formatSliderCurrency(Math.round(values[1]))}`;
-});
-
-
-// Toggle filter panel visibility
-document.getElementById('toggleFiltersBtn').addEventListener('click', () => {
-    const filters = document.getElementById('advancedFilters');
-    if (filters.style.display === 'block') {
-        filters.style.display = 'none';
-    } else {
-        filters.style.display = 'block';
-    }
-});
-
-// --- END: Filter Panel Logic ---
 
 function addTypingIndicator(id) {
     const messagesBox = document.getElementById(`chat-messages-${id}`);
