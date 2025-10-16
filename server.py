@@ -664,11 +664,26 @@ if os.path.exists(CHROMA_PATH):
         import chromadb
         
         from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
+        
+        from openai import OpenAI as OpenAIClient
 
-        openai_ef = OpenAIEmbeddingFunction(
+        class CustomOpenAIEmbedding:
+            def __init__(self, api_key, model_name):
+                self.client = OpenAIClient(api_key=api_key)
+                self.model_name = model_name
+            
+            def __call__(self, input):
+                response = self.client.embeddings.create(
+                    input=input,
+                    model=self.model_name
+                )
+                return [item.embedding for item in response.data]
+
+        openai_ef = CustomOpenAIEmbedding(
             api_key=os.getenv("OPENAI_API_KEY"),
             model_name="text-embedding-3-small"
         )
+
         
         
         chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
