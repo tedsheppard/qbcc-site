@@ -34,6 +34,8 @@ from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from fastapi import Header, Depends
+from typing import List, Optional
+
 
 def get_gcs_client():
     """
@@ -969,7 +971,20 @@ from fastapi import Depends
 from fastapi import Header, Depends # Ensure Header is imported at the top
 
 @app.get("/search_fast")
-def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newest", authorization: Optional[str] = Header(None)):
+def search_fast(
+    q: str = "", 
+    limit: int = 20, 
+    offset: int = 0, 
+    sort: str = "newest", 
+    authorization: Optional[str] = Header(None),
+    # --- NEW: Add filter parameters ---
+    startDate: Optional[str] = None,
+    endDate: Optional[str] = None,
+    minClaim: Optional[float] = None,
+    maxClaim: Optional[float] = None,
+    minAdjudicated: Optional[float] = None,
+    maxAdjudicated: Optional[float] = None
+):
     
     # --- START: FINAL SEARCH LOGGING LOGIC ---
     user_email = "Anonymous"
@@ -1033,8 +1048,40 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             nq2 = preprocess_sqlite_query(nq)
             print("Executing MATCH with:", nq2)
             
-            total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (nq2,)).fetchone()[0]
-
+            # --- NEW: Dynamic WHERE clause construction ---
+            where_clauses = ["fts MATCH ?"]
+            params = [nq2]
+            
+            if startDate:
+                where_clauses.append("m.decision_date_norm >= ?")
+                params.append(startDate)
+            if endDate:
+                where_clauses.append("m.decision_date_norm <= ?")
+                params.append(endDate)
+            if minClaim is not None:
+                where_clauses.append("CAST(a.claimed_amount AS REAL) >= ?")
+                params.append(minClaim)
+            if maxClaim is not None:
+                where_clauses.append("CAST(a.claimed_amount AS REAL) <= ?")
+                params.append(maxClaim)
+            if minAdjudicated is not None:
+                where_clauses.append("CAST(a.adjudicated_amount AS REAL) >= ?")
+                params.append(minAdjudicated)
+            if maxAdjudicated is not None:
+                where_clauses.append("CAST(a.adjudicated_amount AS REAL) <= ?")
+                params.append(maxAdjudicated)
+                
+            final_where_clause = " AND ".join(where_clauses)
+            
+            count_sql = f"""
+                SELECT COUNT(DISTINCT d.rowid) 
+                FROM fts
+                JOIN docs_fresh d ON fts.rowid = d.rowid
+                LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+                LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
+                WHERE {final_where_clause}
+            """
+            total = con.execute(count_sql, tuple(params)).fetchone()[0]
 
             # In the complex query section, update the sorting logic
             order_clause = ""
@@ -1055,26 +1102,19 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
             elif sort == "adj_low":
                 order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 0 ELSE CAST(a.adjudicated_amount AS REAL) END ASC"
 
-            if order_clause:
-                sql = f"""
-                SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                FROM fts
-                JOIN docs_fresh d ON fts.rowid = d.rowid
-                LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-                LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
-                WHERE fts MATCH ?
-                {order_clause}
-                LIMIT ? OFFSET ?
-                """
-            else:
-                sql = """
-                SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                FROM fts
-                WHERE fts MATCH ?
-                LIMIT ? OFFSET ?
-                """
+            # Use the new dynamic WHERE clause here
+            sql = f"""
+            SELECT DISTINCT d.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+            FROM fts
+            JOIN docs_fresh d ON fts.rowid = d.rowid
+            LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+            LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
+            WHERE {final_where_clause}
+            {order_clause}
+            LIMIT ? OFFSET ?
+            """
             
-            rows = con.execute(sql, (nq2, limit, offset)).fetchall()
+            rows = con.execute(sql, tuple(params + [limit, offset])).fetchall()
 
         except sqlite3.OperationalError as e:
             print("FTS MATCH error for:", nq, "->", e)
@@ -1182,6 +1222,8 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
         return {"total": total, "items": items}
         
     # --- Natural language via Meili ---
+    # This path does not currently support the new filters.
+    # It will be skipped if a complex query or any filters are used.
     payload = {
         "q": q_norm,
         "limit": limit,
@@ -1247,6 +1289,7 @@ def search_fast(q: str = "", limit: int = 20, offset: int = 0, sort: str = "newe
         
         items.append(item)
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
+
 
     
 

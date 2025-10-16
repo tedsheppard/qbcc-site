@@ -814,6 +814,74 @@ body {
 .dark .btn-secondary-action { background: #333; color: #eee; }
 .btn-secondary-action:hover { background: #dee2e6; }
 
+/* Add these new styles to your CSS block */
+.advanced-filters {
+  background: #f0f0f0;
+  border-radius: 6px;
+  padding: 15px;
+  margin-top: 15px;
+  display: none; /* Hidden by default */
+}
+.dark .advanced-filters {
+  background: #222;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+.filter-group {
+  font-size: 13px;
+}
+.filter-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.filter-group .date-inputs {
+  display: flex;
+  gap: 10px;
+}
+.filter-group input[type="date"] {
+  width: 100%;
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-family: inherit;
+}
+.dark .filter-group input[type="date"] {
+    background: #333;
+    border-color: #555;
+    color: #eee;
+}
+
+/* Slider styles */
+.slider-container {
+    padding-top: 10px;
+}
+.slider-values {
+    font-size: 12px;
+    color: #555;
+    margin-top: 8px;
+}
+.dark .slider-values { color: #aaa; }
+
+#toggleFiltersBtn {
+  background: transparent;
+  border: 1px solid #ccc;
+  color: #333;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+.dark #toggleFiltersBtn {
+    border-color: #444;
+    color: #eee;
+}
+
 </style>
 
 </head>
@@ -857,14 +925,46 @@ body {
           <option value="50">50 results</option>
           <option value="100">100 results</option>
         </select>
-    
+
         <select id="sort" class="results-limit">
           <option value="relevance">Relevance</option>
           <option value="newest" selected>Date: Newest to Oldest</option>
           <option value="oldest">Date: Oldest to Newest</option>
           <option value="atoz">A → Z (Claimant)</option>
           <option value="ztoa">Z → A (Claimant)</option>
+          <option value="claim_high">Claimed Amount (High-Low)</option>
+          <option value="claim_low">Claimed Amount (Low-High)</option>
+          <option value="adj_high">Adjudicated Amount (High-Low)</option>
+          <option value="adj_low">Adjudicated Amount (Low-High)</option>
         </select>
+
+        <button id="toggleFiltersBtn">Advanced Filters</button>
+      </div>
+
+      <div id="advancedFilters" class="advanced-filters">
+        <div class="filter-grid">
+          <div class="filter-group">
+            <label>Decision Date</label>
+            <div class="date-inputs">
+              <input type="date" id="startDate" title="Start Date">
+              <input type="date" id="endDate" title="End Date">
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>Claimed Amount</label>
+            <div class="slider-container">
+                <div id="claimSlider"></div>
+                <div id="claimSliderValues" class="slider-values">Any</div>
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>Adjudicated Amount</label>
+            <div class="slider-container">
+                <div id="adjudicatedSlider"></div>
+                <div id="adjudicatedSliderValues" class="slider-values">Any</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -995,7 +1095,7 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
         statusEl.textContent = 'Searching...';
         startLoadingBar();
 
-        state.q = query; // Use the already normalized query
+        state.q = normalizeInput(qEl.value);
         state.limit = +(limitEl.value || 20);
         state.offset = (page - 1) * state.limit;
         state.sort = (sortEl.value || 'newest');
@@ -1006,6 +1106,22 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
         params.set('limit', state.limit);
         params.set('offset', state.offset);
 
+        // NEW: Get filter values and add them to params
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const claimRange = claimSlider.noUiSlider.get();
+        const adjudicatedRange = adjudicatedSlider.noUiSlider.get();
+
+        if (startDate) params.set('startDate', startDate);
+        if (endDate) params.set('endDate', endDate);
+        
+        // Only add amount filters if they are not at the default max range
+        if (parseFloat(claimRange[0]) > 0) params.set('minClaim', parseFloat(claimRange[0]));
+        if (parseFloat(claimRange[1]) < 5000000) params.set('maxClaim', parseFloat(claimRange[1]));
+        
+        if (parseFloat(adjudicatedRange[0]) > 0) params.set('minAdjudicated', parseFloat(adjudicatedRange[0]));
+        if (parseFloat(adjudicatedRange[1]) < 5000000) params.set('maxAdjudicated', parseFloat(adjudicatedRange[1]));
+        
         const token = localStorage.getItem('purchase_token');
         const headers = { 'Accept': 'application/json' };
         if (token) {
@@ -1038,6 +1154,8 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
         finishLoadingBar();
     }
 }
+
+
 
 
 
@@ -1411,6 +1529,65 @@ function addUserMessage(id, text) {
     chatHistories[id].push({ role: 'user', content: text });
     messagesBox.scrollTop = messagesBox.scrollHeight;
 }
+
+// --- START: Filter Panel Logic ---
+
+const claimSlider = document.getElementById('claimSlider');
+const adjudicatedSlider = document.getElementById('adjudicatedSlider');
+
+// Helper to format currency for slider display
+const formatSliderCurrency = (value) => {
+    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
+    return `$${value}`;
+};
+
+// Initialize Claimed Amount Slider
+noUiSlider.create(claimSlider, {
+    start: [0, 5000000],
+    connect: true,
+    range: { 'min': 0, 'max': 5000000 },
+    step: 10000,
+    tooltips: [
+      { to: value => formatSliderCurrency(Math.round(value)) },
+      { to: value => formatSliderCurrency(Math.round(value)) }
+    ]
+});
+
+// Initialize Adjudicated Amount Slider
+noUiSlider.create(adjudicatedSlider, {
+    start: [0, 5000000],
+    connect: true,
+    range: { 'min': 0, 'max': 5000000 },
+    step: 10000,
+    tooltips: [
+      { to: value => formatSliderCurrency(Math.round(value)) },
+      { to: value => formatSliderCurrency(Math.round(value)) }
+    ]
+});
+
+// Update display values when sliders change
+claimSlider.noUiSlider.on('update', function (values, handle) {
+    document.getElementById('claimSliderValues').innerHTML = 
+        `${formatSliderCurrency(Math.round(values[0]))} – ${formatSliderCurrency(Math.round(values[1]))}`;
+});
+adjudicatedSlider.noUiSlider.on('update', function (values, handle) {
+    document.getElementById('adjudicatedSliderValues').innerHTML = 
+        `${formatSliderCurrency(Math.round(values[0]))} – ${formatSliderCurrency(Math.round(values[1]))}`;
+});
+
+
+// Toggle filter panel visibility
+document.getElementById('toggleFiltersBtn').addEventListener('click', () => {
+    const filters = document.getElementById('advancedFilters');
+    if (filters.style.display === 'block') {
+        filters.style.display = 'none';
+    } else {
+        filters.style.display = 'block';
+    }
+});
+
+// --- END: Filter Panel Logic ---
 
 function addTypingIndicator(id) {
     const messagesBox = document.getElementById(`chat-messages-${id}`);
