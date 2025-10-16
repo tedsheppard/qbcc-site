@@ -663,10 +663,13 @@ if os.path.exists(CHROMA_PATH):
     try:
         import chromadb
         
-        openai_ef = embedding_functions.OpenAIEmbeddingFunction(
+        from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
+
+        openai_ef = OpenAIEmbeddingFunction(
             api_key=os.getenv("OPENAI_API_KEY"),
             model_name="text-embedding-3-small"
         )
+        
         
         chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
         chroma_collection = chroma_client.get_collection(
@@ -970,14 +973,15 @@ from fastapi import Depends
 
 from fastapi import Header, Depends # Ensure Header is imported at the top
 
+# In server (53).py, REPLACE the entire search_fast function with this one.
+
 @app.get("/search_fast")
 def search_fast(
-    q: str = "", 
-    limit: int = 20, 
-    offset: int = 0, 
-    sort: str = "newest", 
+    q: str = "",
+    limit: int = 20,
+    offset: int = 0,
+    sort: str = "newest",
     authorization: Optional[str] = Header(None),
-    # --- NEW: Add filter parameters ---
     startDate: Optional[str] = None,
     endDate: Optional[str] = None,
     minClaim: Optional[float] = None,
@@ -986,7 +990,7 @@ def search_fast(
     maxAdjudicated: Optional[float] = None
 ):
     
-    # --- START: FINAL SEARCH LOGGING LOGIC ---
+    # --- Logging Logic ---
     user_email = "Anonymous"
     if authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ")[1]
@@ -994,42 +998,35 @@ def search_fast(
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             user_email = payload.get("sub", "Anonymous")
         except JWTError:
-            pass # Token is invalid or expired, treat as Anonymous
+            pass
     
-    if q: # Only log non-empty queries
+    if q:
         purchases_con.execute(
             "INSERT INTO search_logs (user_email, search_query, was_blocked) VALUES (?, ?, 0)",
             (user_email, q)
         )
         purchases_con.commit()
-    # --- END: FINAL SEARCH LOGGING LOGIC ---
 
     q_norm = normalize_query(q)
     nq = q_norm
 
-    # Check if query is an EJS ID (format: numbers followed by letters, e.g. "12345ABC")
+    # --- EJS ID check (unchanged) ---
     if re.match(r'^\d+[A-Z]+$', nq.upper().replace(' ', '')):
-        ejs_id = nq.upper().replace(' ', '')
         try:
-            # Direct lookup by EJS ID
             meta = con.execute("""
               SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
                      m.act, d.reference, d.pdf_path, d.ejs_id, d.full_text
               FROM docs_fresh d
               LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
               WHERE d.ejs_id = ?
-            """, (ejs_id,)).fetchone()
-            
+            """, (nq.upper().replace(' ', ''),)).fetchone()
             if meta:
                 result = dict(meta)
                 result["id"] = result.get("ejs_id")
                 result["snippet"] = (result.get("full_text", "") or "")[:500] + "..."
                 return {"total": 1, "items": [result]}
-            else:
-                return {"total": 0, "items": []}
         except Exception as e:
             print(f"Error searching by EJS ID: {e}")
-            # Fall through to normal search if error
 
     nq_expanded = expand_wildcards(nq)
     
@@ -1037,261 +1034,125 @@ def search_fast(
         re.search(r'\b(AND|OR|NOT)\b', nq, flags=re.I) or
         re.search(r'\bw/\d+\b', nq, flags=re.I) or
         re.search(r'\bNEAR/\d+\b', nq, flags=re.I) or
-        nq.startswith('"') or
-        '!' in nq or
-        '*' in nq_expanded or
-        nq != nq_expanded
+        nq.startswith('"') or '!' in nq or '*' in nq_expanded or nq != nq_expanded
     )
+    
+    has_filters = any([startDate, endDate, minClaim is not None, maxClaim is not None, minAdjudicated is not None, maxAdjudicated is not None])
 
-    if is_complex_query:
+    if is_complex_query or has_filters:
         try:
             nq2 = preprocess_sqlite_query(nq)
-            print("Executing MATCH with:", nq2)
             
-            # --- NEW: Dynamic WHERE clause construction ---
-            where_clauses = ["fts MATCH ?"]
-            params = [nq2]
+            where_clauses = []
+            params = []
             
-            if startDate:
-                where_clauses.append("m.decision_date_norm >= ?")
-                params.append(startDate)
-            if endDate:
-                where_clauses.append("m.decision_date_norm <= ?")
-                params.append(endDate)
-            if minClaim is not None:
-                where_clauses.append("CAST(a.claimed_amount AS REAL) >= ?")
-                params.append(minClaim)
-            if maxClaim is not None:
-                where_clauses.append("CAST(a.claimed_amount AS REAL) <= ?")
-                params.append(maxClaim)
-            if minAdjudicated is not None:
-                where_clauses.append("CAST(a.adjudicated_amount AS REAL) >= ?")
-                params.append(minAdjudicated)
-            if maxAdjudicated is not None:
-                where_clauses.append("CAST(a.adjudicated_amount AS REAL) <= ?")
-                params.append(maxAdjudicated)
-                
-            final_where_clause = " AND ".join(where_clauses)
-            
-            count_sql = f"""
-                SELECT COUNT(DISTINCT d.rowid) 
-                FROM fts
-                JOIN docs_fresh d ON fts.rowid = d.rowid
+            # This is the core logic that combines FTS and regular filters
+            base_sql_from = """
+                FROM docs_fresh d
                 LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
                 LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
-                WHERE {final_where_clause}
-            """
-            total = con.execute(count_sql, tuple(params)).fetchone()[0]
-
-            # In the complex query section, update the sorting logic
-            order_clause = ""
-            if sort == "newest":
-                order_clause = "ORDER BY a.decision_date DESC"
-            elif sort == "oldest":
-                order_clause = "ORDER BY a.decision_date ASC"
-            elif sort == "atoz":
-                order_clause = "ORDER BY m.claimant ASC"
-            elif sort == "ztoa":
-                order_clause = "ORDER BY m.claimant DESC"
-            elif sort == "claim_high":
-                order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN 0 ELSE CAST(a.claimed_amount AS REAL) END DESC"
-            elif sort == "claim_low":
-                order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN 0 ELSE CAST(a.claimed_amount AS REAL) END ASC"
-            elif sort == "adj_high":
-                order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 0 ELSE CAST(a.adjudicated_amount AS REAL) END DESC"
-            elif sort == "adj_low":
-                order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 0 ELSE CAST(a.adjudicated_amount AS REAL) END ASC"
-
-            # Use the new dynamic WHERE clause here
-            sql = f"""
-            SELECT DISTINCT d.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-            FROM fts
-            JOIN docs_fresh d ON fts.rowid = d.rowid
-            LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-            LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
-            WHERE {final_where_clause}
-            {order_clause}
-            LIMIT ? OFFSET ?
             """
             
+            # If there's a text query, we must use the FTS table
+            if nq2:
+                where_clauses.append("d.rowid IN (SELECT rowid FROM fts WHERE fts MATCH ?)")
+                params.append(nq2)
+
+            if startDate: where_clauses.append("m.decision_date_norm >= ?"); params.append(startDate)
+            if endDate: where_clauses.append("m.decision_date_norm <= ?"); params.append(endDate)
+            if minClaim is not None: where_clauses.append("CAST(a.claimed_amount AS REAL) >= ?"); params.append(minClaim)
+            if maxClaim is not None: where_clauses.append("CAST(a.claimed_amount AS REAL) <= ?"); params.append(maxClaim)
+            if minAdjudicated is not None: where_clauses.append("CAST(a.adjudicated_amount AS REAL) >= ?"); params.append(minAdjudicated)
+            if maxAdjudicated is not None: where_clauses.append("CAST(a.adjudicated_amount AS REAL) <= ?"); params.append(maxAdjudicated)
+                
+            final_where_clause = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+
+            count_sql = f"SELECT COUNT(DISTINCT d.rowid) {base_sql_from} {final_where_clause}"
+            total = con.execute(count_sql, tuple(params)).fetchone()[0]
+
+            order_clause = ""
+            if sort == "newest": order_clause = "ORDER BY m.decision_date_norm DESC"
+            elif sort == "oldest": order_clause = "ORDER BY m.decision_date_norm ASC"
+            elif sort == "atoz": order_clause = "ORDER BY m.claimant ASC"
+            elif sort == "ztoa": order_clause = "ORDER BY m.claimant DESC"
+            elif sort == "claim_high": order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN -1 ELSE CAST(a.claimed_amount AS REAL) END DESC"
+            elif sort == "claim_low": order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN 999999999999 ELSE CAST(a.claimed_amount AS REAL) END ASC"
+            elif sort == "adj_high": order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN -1 ELSE CAST(a.adjudicated_amount AS REAL) END DESC"
+            elif sort == "adj_low": order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 999999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC"
+            
+            sql = f"""
+                SELECT d.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
+                {base_sql_from}
+                LEFT JOIN fts ON d.rowid = fts.rowid
+                {final_where_clause}
+                {order_clause}
+                LIMIT ? OFFSET ?
+            """
             rows = con.execute(sql, tuple(params + [limit, offset])).fetchall()
 
+            items = []
+            phrase_terms, word_terms = get_highlight_terms(nq2 or "")
+            for r in rows:
+                meta = con.execute("""
+                SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
+                        m.act, d.reference, d.pdf_path, d.ejs_id,
+                        a.claimed_amount, a.adjudicated_amount, 
+                        a.fee_claimant_proportion, a.fee_respondent_proportion
+                FROM docs_fresh d
+                LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+                LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
+                WHERE d.rowid = ?
+                """, (r["rowid"],)).fetchone()
+
+                d = dict(meta) if meta else {}
+                d["id"] = d.get("ejs_id", r["rowid"])
+                snippet_raw = r["snippet"] or ""
+                snippet_clean = re.sub(r'\b\d+([A-Za-z]+)\b', r'\1', snippet_raw)
+
+                for phrase in sorted(set(phrase_terms), key=len, reverse=True):
+                    snippet_clean = re.sub(fr'(?i)\b{re.escape(phrase)}\b', f"<mark>{phrase}</mark>", snippet_clean)
+                for term in sorted(set(word_terms), key=len, reverse=True):
+                    if any(term.lower() in p.lower() for p in phrase_terms): continue
+                    if term.endswith('*'):
+                        stem = term[:-1]
+                        snippet_clean = re.sub(f'\\b({re.escape(stem)}\\w*)', r'<mark>\1</mark>', snippet_clean, flags=re.I)
+                    else:
+                        snippet_clean = re.sub(fr'(?i)\b({re.escape(term)})\b', r'<mark>\1</mark>', snippet_clean)
+                
+                d["snippet"] = snippet_clean
+                items.append(d)
+            return {"total": total, "items": items}
+
         except sqlite3.OperationalError as e:
-            print("FTS MATCH error for:", nq, "->", e)
-            if re.search(r'\b(w|near)\s*/\s*\d+', nq, flags=re.I):
-                repaired = _parse_near_robust(nq)
-                if repaired:
-                    print("Retrying with repaired proximity:", repaired)
-                    try:
-                        total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (repaired,)).fetchone()[0]
-                        rows = con.execute("""
-                          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                          FROM fts
-                          WHERE fts MATCH ?
-                          LIMIT ? OFFSET ?
-                        """, (repaired, limit, offset)).fetchall()
-                        nq2 = repaired
-                    except sqlite3.OperationalError:
-                        degraded = re.sub(r'\b(?:w|near)\s*/\s*\d+\b', 'AND', nq, flags=re.I)
-                        degraded = re.sub(r'[!*]', '', degraded)
-                        print("Degrading to:", degraded)
-                        total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (degraded,)).fetchone()[0]
-                        rows = con.execute("""
-                          SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                          FROM fts
-                          WHERE fts MATCH ?
-                          LIMIT ? OFFSET ?
-                        """, (degraded, limit, offset)).fetchall()
-                        nq2 = degraded
-                else:
-                    degraded = re.sub(r'\b(?:w|near)\s*/\s*\d+\b', 'AND', nq, flags=re.I)
-                    degraded = re.sub(r'[!*]', '', degraded)
-                    print("Degrading proximity to AND:", degraded)
-                    total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (degraded,)).fetchone()[0]
-                    rows = con.execute("""
-                      SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                      FROM fts
-                      WHERE fts MATCH ?
-                      LIMIT ? OFFSET ?
-                    """, (degraded, limit, offset)).fetchall()
-                    nq2 = degraded
-            else:
-                fallback = re.sub(r'[!*]', '', nq)
-                total = con.execute("SELECT COUNT(*) FROM fts WHERE fts MATCH ?", (fallback,)).fetchone()[0]
-                rows = con.execute("""
-                  SELECT fts.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                  FROM fts
-                  WHERE fts MATCH ?
-                  LIMIT ? OFFSET ?
-                """, (fallback, limit, offset)).fetchall()
-                nq2 = fallback
+            print(f"FTS search failed: {e}")
+            return {"total": 0, "items": []}
 
-
-        is_simple_near_query = "NEAR/" in nq2 and " AND " not in nq2 and " OR " not in nq2
-
-        if is_simple_near_query:
-            comp = _extract_near_components(nq2)
-            if comp:
-                left, _, right = comp
-                if (' ' in left.strip()) or (' ' in right.strip()):
-                    print(f"Applying true-phrase proximity filter for simple NEAR query.")
-                    before = len(rows)
-                    rows = _filter_rows_for_true_phrase_near(rows, nq2)
-                    print(f"Phrase-proximity filtered page results: {before} → {len(rows)}")
-
-        items = []
-        phrase_terms, word_terms = get_highlight_terms(nq2)
-
-        for r in rows:
-            meta = con.execute("""
-            SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
-                    m.act, d.reference, d.pdf_path, d.ejs_id,
-                    a.claimed_amount, a.adjudicated_amount, 
-                    a.fee_claimant_proportion, a.fee_respondent_proportion
-            FROM docs_fresh d
-            LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-            LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
-            WHERE d.rowid = ?
-            """, (r["rowid"],)).fetchone()
-
-            d = dict(meta) if meta else {}
-            d["id"] = d.get("ejs_id", r["rowid"])
-
-            snippet_raw = r["snippet"]
-            snippet_clean = re.sub(r'\b\d+([A-Za-z]+)\b', r'\1', snippet_raw)
-
-            for phrase in sorted(set(phrase_terms), key=len, reverse=True):
-                pattern = re.escape(phrase)
-                snippet_clean = re.sub(fr'(?i)\b{pattern}\b', f"<mark>{phrase}</mark>", snippet_clean)
-
-            for term in sorted(set(word_terms), key=len, reverse=True):
-                if any(term.lower() in phrase.lower() for phrase in phrase_terms):
-                    continue
-
-                if term.endswith('*'):
-                    stem = term[:-1]
-                    pattern = f'\\b({re.escape(stem)}\\w*)'
-                    snippet_clean = re.sub(pattern, r'<mark>\1</mark>', snippet_clean, flags=re.I)
-                else:
-                    pattern = re.escape(term)
-                    snippet_clean = re.sub(fr'(?i)\b({pattern})\b', r'<mark>\1</mark>', snippet_clean)
-
-            d["snippet"] = snippet_clean
-            items.append(d)
-
-        return {"total": total, "items": items}
-        
-    # --- Natural language via Meili ---
-    # This path does not currently support the new filters.
-    # It will be skipped if a complex query or any filters are used.
-    payload = {
-        "q": q_norm,
-        "limit": limit,
-        "offset": offset,
-        "attributesToRetrieve": [
-            "id", "reference", "pdf_path",
-            "claimant", "respondent", "adjudicator",
-            "date", "act", "content"
-        ],
-        "attributesToHighlight": ["content"],
-        "highlightPreTag": "<mark>",
-        "highlightPostTag": "</mark>",
-        "attributesToCrop": ["content"],
-        "cropLength": 100
-    }
+    # Fallback to MeiliSearch for simple keyword searches WITHOUT filters
+    payload = { "q": q_norm, "limit": limit, "offset": offset,
+        "attributesToRetrieve": ["id", "reference", "pdf_path", "claimant", "respondent", "adjudicator", "date", "act", "content"],
+        "attributesToHighlight": ["content"], "highlightPreTag": "<mark>", "highlightPostTag": "</mark>",
+        "attributesToCrop": ["content"], "cropLength": 100 }
     
-    if sort == "relevance" and not q_norm:
-        sort = "newest"
-
-    if sort == "newest":
-        payload["sort"] = ["sortable_date:desc"]
-    elif sort == "oldest":
-        payload["sort"] = ["sortable_date:asc"]
-    elif sort == "atoz":
-        payload["sort"] = ["claimant:asc"]
-    elif sort == "ztoa":
-        payload["sort"] = ["claimant:desc"]
+    if sort == "relevance" and not q_norm: sort = "newest"
+    if sort == "newest": payload["sort"] = ["sortable_date:desc"]
+    elif sort == "oldest": payload["sort"] = ["sortable_date:asc"]
+    elif sort == "atoz": payload["sort"] = ["claimant:asc"]
+    elif sort == "ztoa": payload["sort"] = ["claimant:desc"]
         
     headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
     res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
     data = res.json()
     items = []
     for hit in data.get("hits", []):
-        # Fetch additional data from ai_adjudicator_extract_v4
-        extra_data = con.execute("""
-            SELECT claimed_amount, adjudicated_amount, 
-                   fee_claimant_proportion, fee_respondent_proportion
-            FROM ai_adjudicator_extract_v4
-            WHERE ejs_id = ?
-        """, (hit.get("id"),)).fetchone()
-        
-        snippet = hit.get("_formatted", {}).get("content", "")
-        item = {
-            "id": hit.get("id"),
-            "reference": hit.get("reference"),
-            "pdf_path": hit.get("pdf_path"),
-            "claimant": hit.get("claimant"),
-            "respondent": hit.get("respondent"),
-            "adjudicator": hit.get("adjudicator"),
-            "decision_date_norm": hit.get("date"),
-            "act": hit.get("act"),
-            "snippet": snippet
-        }
-        
-        # Add extra fields if available
-        if extra_data:
-            item.update({
-                "claimed_amount": extra_data["claimed_amount"],
-                "adjudicated_amount": extra_data["adjudicated_amount"],
-                "fee_claimant_proportion": extra_data["fee_claimant_proportion"],
-                "fee_respondent_proportion": extra_data["fee_respondent_proportion"]
-            })
-        
+        extra_data = con.execute("SELECT claimed_amount, adjudicated_amount, fee_claimant_proportion, fee_respondent_proportion FROM ai_adjudicator_extract_v4 WHERE ejs_id = ?", (hit.get("id"),)).fetchone()
+        item = { "id": hit.get("id"), "reference": hit.get("reference"), "pdf_path": hit.get("pdf_path"), "claimant": hit.get("claimant"),
+            "respondent": hit.get("respondent"), "adjudicator": hit.get("adjudicator"), "decision_date_norm": hit.get("date"),
+            "act": hit.get("act"), "snippet": hit.get("_formatted", {}).get("content", "") }
+        if extra_data: item.update(dict(extra_data))
         items.append(item)
     return {"total": data.get("estimatedTotalHits", 0), "items": items}
 
 
-    
 
 # ---------- PDF links ----------
 GCS_BUCKET = "sopal-bucket"
