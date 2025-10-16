@@ -966,9 +966,9 @@ body {
       <div class="search-row">
         <div class="search-bar">
           <input id="q" placeholder="Search adjudication decisions... (e.g. 'example' AND 'text'; 'example' w/10 'text')">
-          <button onclick="runSearch()">Search</button>
+          <button="runSearch()">Search</button>
         </div>
-        <button id="themeToggle" onclick="toggleTheme()">Switch to Dark Mode</button>
+        <button id="themeToggle"="toggleTheme()">Switch to Dark Mode</button>
       </div>
       <div class="search-controls">
         <select id="limit" class="results-limit">
@@ -1067,8 +1067,8 @@ function levenshtein(s1, s2) {
 document.addEventListener('DOMContentLoaded', function() {
         
     
- const claimSlider = document.getElementById('claimSlider');
- const adjudicatedSlider = document.getElementById('adjudicatedSlider');
+claimSlider = document.getElementById('claimSlider');
+adjudicatedSlider = document.getElementById('adjudicatedSlider');
 
   const formatSliderCurrency = (value) => {
     value = Math.round(value);
@@ -1153,7 +1153,7 @@ function $(sel){ return document.querySelector(sel); }
     let state = { q:'', claimant:'', respondent:'', limit:20, offset:0, total:0 };
     let adjudicatorList = []; 
     let chatHistories = {};
-
+    let claimSlider, adjudicatedSlider;
 
 // Replace your existing fetchAdjudicators function with this one
 async function fetchAdjudicators() {
