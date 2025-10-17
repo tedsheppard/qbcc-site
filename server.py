@@ -1,4 +1,5 @@
 import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io, json
+from urllib import response
 from urllib.parse import unquote_plus
 from fastapi import FastAPI, Query, Form, Path, HTTPException, UploadFile, File, Body
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse
@@ -671,19 +672,22 @@ if os.path.exists(CHROMA_PATH):
             def __init__(self, api_key, model_name):
                 self.client = OpenAIClient(api_key=api_key)
                 self.model_name = model_name
-            
+                self.name = model_name  # Add this line - ChromaDB needs it
+        
             def __call__(self, input):
                 # Ensure input is always a list
                 if isinstance(input, str):
                     input = [input]
-                
+            
                 response = self.client.embeddings.create(
                     input=input,
                     model=self.model_name
                 )
-                
+            
                 # Return list of embeddings
                 return [item.embedding for item in response.data]
+    
+    
     
     
         
