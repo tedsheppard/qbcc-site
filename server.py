@@ -138,6 +138,17 @@ CREATE TABLE IF NOT EXISTS purchase_users (
 )
 """)
 
+# In server.py, add this with your other table creation statements
+
+# --- Full Access Users ---
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS full_access_users (
+    email TEXT PRIMARY KEY NOT NULL,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+purchases_con.commit()
+
 # --- Purchase history ---
 purchases_cur.execute("""
 CREATE TABLE IF NOT EXISTS adjudicator_purchases (
@@ -1267,6 +1278,40 @@ def get_admin_user(current_user: dict = Depends(get_current_purchase_user)):
         raise HTTPException(status_code=403, detail="Access denied. Admin privileges required.")
     return current_user
 
+# In server.py, add these new endpoints with your other admin routes
+
+@app.get("/admin/full-access-users")
+def get_full_access_users(admin: dict = Depends(get_admin_user)):
+    """Admin endpoint to get all users with full access."""
+    users = purchases_con.execute("SELECT email, added_at FROM full_access_users ORDER BY added_at DESC").fetchall()
+    return [dict(row) for row in users]
+
+@app.post("/admin/add-full-access")
+def add_full_access_user(email: str = Form(...), admin: dict = Depends(get_admin_user)):
+    """Admin endpoint to grant a user full access."""
+    try:
+        # Check if the user exists in the main user table first
+        user_exists = purchases_con.execute("SELECT 1 FROM purchase_users WHERE email = ?", (email,)).fetchone()
+        if not user_exists:
+            raise HTTPException(status_code=404, detail="User with this email does not have an account.")
+        
+        purchases_con.execute("INSERT OR IGNORE INTO full_access_users (email) VALUES (?)", (email,))
+        purchases_con.commit()
+        return {"status": "success", "message": f"{email} granted full access."}
+    except sqlite3.IntegrityError:
+        return {"status": "success", "message": f"{email} already has full access."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/admin/remove-full-access")
+def remove_full_access_user(email: str = Form(...), admin: dict = Depends(get_admin_user)):
+    """Admin endpoint to revoke a user's full access."""
+    purchases_con.execute("DELETE FROM full_access_users WHERE email = ?", (email,))
+    purchases_con.commit()
+    return {"status": "success", "message": f"Full access revoked for {email}."}
+
 @app.get("/admin/all-users")
 def get_all_users(admin: dict = Depends(get_admin_user)):
     """Admin endpoint to get all user registration data."""
@@ -2197,16 +2242,29 @@ async def download_db():
 # ---------------- STRIPE & PURCHASE LOGIC ----------------
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
+# In server.py, REPLACE your existing /check-adjudicator-access function with this one
+
 @app.get("/check-adjudicator-access/{adjudicator_name}")
 def check_adjudicator_access(
     adjudicator_name: str,
     current_user: dict = Depends(get_current_purchase_user)
 ):
-    """Checks if the current user has purchased access to a specific adjudicator."""
+    """
+    Checks if the user has access, either through full privileges or a specific purchase.
+    """
     try:
+        # --- NEW: First, check for full access privileges ---
+        full_access = purchases_con.execute("""
+            SELECT 1 FROM full_access_users WHERE email = ?
+        """, (current_user["email"],)).fetchone()
+
+        if full_access:
+            return {"hasAccess": True}
+        # --- END NEW ---
+
         decoded_name = unquote_plus(adjudicator_name)
         
-        # Check for purchase record in the database
+        # Original logic: check for a specific purchase record
         purchase = purchases_con.execute("""
             SELECT 1 FROM adjudicator_purchases 
             WHERE user_email = ? AND adjudicator_name = ?
@@ -2216,10 +2274,9 @@ def check_adjudicator_access(
         return {"hasAccess": has_access}
         
     except Exception as e:
-        # In case of error, default to no access to be safe
         print(f"Error checking access for {current_user['email']} to {adjudicator_name}: {e}")
         return {"hasAccess": False}
-
+    
 # In server (43).py
 
 @app.post("/create-payment-intent")

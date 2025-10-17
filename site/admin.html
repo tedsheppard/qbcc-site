@@ -29,6 +29,9 @@
     .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; color: white; }
     .status-true { background-color: #dc3545; }
     .status-false { background-color: #28a745; }
+    .form-inline { display: flex; gap: 10px; margin-bottom: 20px; }
+    .form-inline input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    .form-inline button { background: #00c97c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -44,10 +47,9 @@
   <div class="admin-container">
     <aside class="admin-nav">
       <button class="nav-btn" data-hash="users">User Accounts</button>
-      <button class="nav-btn" data-hash="payments">Payment Activity</button>
       <button class="nav-btn" data-hash="searches">Search Activity</button>
       <button class="nav-btn" data-hash="adjudicators">Adjudicator Activity</button>
-    </aside>
+      <button class="nav-btn" data-hash="fullaccess">Full Access Privileges</button> </aside>
     <div class="admin-content">
       <section id="users-section" class="admin-section">
         <div class="card">
@@ -55,26 +57,29 @@
           <div id="users-table-container" style="overflow-x: auto;"></div>
         </div>
       </section>
-      <section id="payments-section" class="admin-section">
-        <div class="card">
-          <h2>Payment Activity</h2>
-          <div id="payments-table-container">
-            <p>This feature will be implemented next.</p>
-          </div>
-        </div>
-      </section>
+
       <section id="searches-section" class="admin-section">
         <div class="card">
           <h2>Latest 1000 Searches</h2>
           <div id="searches-table-container" style="overflow-x: auto;"></div>
         </div>
       </section>
+
       <section id="adjudicators-section" class="admin-section">
         <div class="card">
           <h2>Latest 1000 Adjudicator Page Views</h2>
           <div id="adjudicators-table-container" style="overflow-x: auto;"></div>
         </div>
       </section>
+
+      <section id="fullaccess-section" class="admin-section">
+        <div class="card">
+          <h2>Manage Full Access Users</h2>
+          <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">Users added here will have free access to all adjudicator insights.</p>
+          <div id="fullaccess-container"></div>
+        </div>
+      </section>
+
     </div>
   </div>
 </main>
@@ -83,66 +88,43 @@
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('purchase_token');
 
-    // --- TIMEZONE FORMATTING HELPER ---
     function formatAEST(isoString) {
         if (!isoString) return 'N/A';
         try {
-            // **FIX:** Force JavaScript to parse the date as UTC by replacing space with 'T' and adding 'Z'
             const utcDateString = isoString.replace(' ', 'T') + 'Z';
             const date = new Date(utcDateString);
             return date.toLocaleString('en-AU', {
                 timeZone: 'Australia/Sydney',
                 year: 'numeric', month: 'short', day: 'numeric',
-                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour: '2-digit', minute: '2-digit',
                 hour12: true
             });
-        } catch (e) {
-            return isoString;
-        }
+        } catch (e) { return isoString; }
     }
 
-    // --- URL HASH-BASED NAVIGATION ---
     const navButtons = document.querySelectorAll('.admin-nav .nav-btn');
     const sections = document.querySelectorAll('.admin-section');
     const dataLoaded = new Set();
 
     function showTab(hash) {
-        const targetHash = hash.substring(1); // remove '#'
-        let dataFetched = false;
+        const targetHash = hash.substring(1);
+        navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.hash === targetHash));
+        sections.forEach(section => section.classList.toggle('active', section.id.replace('-section', '') === targetHash));
 
-        navButtons.forEach(btn => {
-            const isActive = btn.dataset.hash === targetHash;
-            btn.classList.toggle('active', isActive);
-        });
-
-        sections.forEach(section => {
-            const sectionId = section.id.replace('-section', '');
-            const isActive = sectionId === targetHash;
-            section.classList.toggle('active', isActive);
-
-            if (isActive && !dataLoaded.has(targetHash)) {
-                switch (targetHash) {
-                    case 'users': fetchUsers(); break;
-                    case 'searches': fetchSearches(); break;
-                    case 'adjudicators': fetchAdjudicatorActivity(); break;
-                }
-                dataLoaded.add(targetHash);
+        if (!dataLoaded.has(targetHash)) {
+            switch (targetHash) {
+                case 'users': fetchUsers(); break;
+                case 'searches': fetchSearches(); break;
+                case 'adjudicators': fetchAdjudicatorActivity(); break;
+                case 'fullaccess': fetchFullAccessUsers(); break; // ADDED
             }
-        });
+            dataLoaded.add(targetHash);
+        }
     }
 
-    navButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            window.location.hash = button.dataset.hash;
-        });
-    });
-
-    window.addEventListener('hashchange', () => {
-        const hash = window.location.hash || '#users';
-        showTab(hash);
-    });
+    navButtons.forEach(button => button.addEventListener('click', () => window.location.hash = button.dataset.hash));
+    window.addEventListener('hashchange', () => showTab(window.location.hash || '#users'));
     
-    // --- AUTH & DATA FETCHING ---
     if (!token) {
         document.querySelector('main').innerHTML = '<p class="error-message">Access Denied. Please log in as an admin.</p>';
         return;
@@ -164,14 +146,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchUsers = () => fetchData('/admin/all-users', 'users-table-container', renderUsersTable);
     const fetchSearches = () => fetchData('/admin/search-activity', 'searches-table-container', renderSearchesTable);
     const fetchAdjudicatorActivity = () => fetchData('/admin/adjudicator-activity', 'adjudicators-table-container', renderAdjudicatorActivityTable);
+    const fetchFullAccessUsers = () => fetchData('/admin/full-access-users', 'fullaccess-container', renderFullAccessUsers); // ADDED
 
-    // --- TABLE RENDERING ---
     function renderUsersTable(users) {
         const container = document.getElementById('users-table-container');
         if (!users || users.length === 0) { container.innerHTML = '<p>No user accounts created yet.</p>'; return; }
-        let tableHTML = `<table><thead><tr><th>ID</th><th>Email</th><th>Name</th><th>Firm</th><th>ABN</th><th>Address</th><th>Phone</th><th>Created (AEST)</th><th>Last Login (AEST)</th></tr></thead><tbody>`;
+        let tableHTML = `<table><thead><tr><th>ID</th><th>Email</th><th>Name</th><th>Firm</th><th>Created (AEST)</th><th>Last Login (AEST)</th></tr></thead><tbody>`;
         users.forEach(user => {
-            tableHTML += `<tr><td>${user.id}</td><td>${user.email||''}</td><td>${user.first_name||''} ${user.last_name||''}</td><td>${user.firm_name||''}</td><td>${user.abn||''}</td><td>${`${user.billing_address||''}, ${user.billing_city||''}`.replace(/^, |, $/g,'')}</td><td>${user.phone||''}</td><td>${formatAEST(user.created_at)}</td><td>${user.last_login ? formatAEST(user.last_login) : 'Never'}</td></tr>`;
+            tableHTML += `<tr><td>${user.id}</td><td>${user.email||''}</td><td>${user.first_name||''} ${user.last_name||''}</td><td>${user.firm_name||''}</td><td>${formatAEST(user.created_at)}</td><td>${user.last_login ? formatAEST(user.last_login) : 'Never'}</td></tr>`;
         });
         container.innerHTML = tableHTML + '</tbody></table>';
     }
@@ -197,9 +179,72 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = tableHTML + '</tbody></table>';
     }
 
-    // --- INITIAL PAGE LOAD ---
-    const initialHash = window.location.hash || '#users';
-    showTab(initialHash);
+    // --- NEW RENDERING & EVENT HANDLER FUNCTIONS ---
+    function renderFullAccessUsers(users) {
+        const container = document.getElementById('fullaccess-container');
+        let contentHTML = `
+            <div id="fullaccess-feedback" style="margin-bottom: 15px;"></div>
+            <div class="form-inline">
+                <input type="email" id="add-email-input" placeholder="Enter user's email address">
+                <button id="add-email-btn">Add User</button>
+            </div>
+            <table>
+                <thead><tr><th>Email Address</th><th>Date Added (AEST)</th><th>Action</th></tr></thead>
+                <tbody>
+        `;
+        if (users && users.length > 0) {
+            users.forEach(user => {
+                contentHTML += `
+                    <tr>
+                        <td>${user.email}</td>
+                        <td>${formatAEST(user.added_at)}</td>
+                        <td><button class="remove-btn" data-email="${user.email}" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Remove</button></td>
+                    </tr>
+                `;
+            });
+        } else {
+            contentHTML += `<tr><td colspan="3" style="text-align:center; padding: 20px; color: #666;">No users currently have full access.</td></tr>`;
+        }
+        container.innerHTML = contentHTML + '</tbody></table>';
+
+        document.getElementById('add-email-btn').addEventListener('click', handleAddFullAccess);
+        document.querySelectorAll('.remove-btn').forEach(btn => btn.addEventListener('click', handleRemoveFullAccess));
+    }
+    
+    async function handleAddFullAccess() {
+        const emailInput = document.getElementById('add-email-input');
+        const email = emailInput.value.trim();
+        if (!email) return;
+
+        const formData = new FormData();
+        formData.append('email', email);
+
+        const response = await fetch('/admin/add-full-access', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+        const data = await response.json();
+        const feedbackDiv = document.getElementById('fullaccess-feedback');
+
+        if (response.ok) {
+            feedbackDiv.style.color = '#155724';
+            emailInput.value = '';
+            fetchFullAccessUsers();
+        } else {
+            feedbackDiv.style.color = '#721c24';
+        }
+        feedbackDiv.textContent = data.detail || data.message;
+    }
+
+    async function handleRemoveFullAccess(event) {
+        const email = event.target.dataset.email;
+        if (!confirm(`Are you sure you want to revoke full access for ${email}?`)) return;
+
+        const formData = new FormData();
+        formData.append('email', email);
+        
+        await fetch('/admin/remove-full-access', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+        fetchFullAccessUsers();
+    }
+
+    showTab(window.location.hash || '#users');
 });
 </script>
 
