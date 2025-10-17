@@ -883,6 +883,73 @@ body {
     color: #eee;
 }
 
+/* --- Custom noUiSlider Styles --- */
+
+/* Adjust container padding to give tooltips space */
+.slider-container {
+    padding-top: 20px;
+}
+
+/* Slider track */
+.noUi-target {
+  height: 6px; /* Make the track thinner */
+  border-radius: 3px;
+  background: #e9ecef;
+  border: 1px solid #dee2e6;
+  box-shadow: none; /* Remove default shadow */
+}
+.dark .noUi-target {
+  background: #333;
+  border-color: #444;
+}
+
+/* Connect bar (the selected range) */
+.noUi-connect {
+  background: #00c97c; /* Use your site's primary green */
+}
+
+/* Slider handles */
+.noUi-handle {
+  height: 16px; /* Make handles smaller */
+  width: 16px;
+  top: -6px; /* Reposition for the thinner track */
+  right: -8px;
+  border-radius: 4px; /* Change to rounded squares */
+  border: 1px solid #adb5bd;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  cursor: grab;
+}
+.dark .noUi-handle {
+  background: #e0e0e0;
+  border-color: #777;
+}
+
+.noUi-handle:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 201, 124, 0.3); /* Add a focus ring */
+}
+
+/* Remove the default grip lines on handles for a cleaner look */
+.noUi-handle::before,
+.noUi-handle::after {
+  display: none;
+}
+
+/* Tooltips */
+.noUi-tooltip {
+  font-size: 11px; /* Smaller font */
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #343a40; /* Dark background for light mode */
+  color: #fff;
+  border: none;
+  bottom: 150%; /* Position it higher above the handle */
+}
+.dark .noUi-tooltip {
+    background: #f8f9fa; /* Light background for dark mode */
+    color: #212529;
+}
 </style>
 
 </head>
@@ -1022,49 +1089,59 @@ body {
     document.addEventListener('DOMContentLoaded', function() {
         // --- START: Filter Panel Logic ---
 
-        // FIX 2: Assign the DOM elements to the GLOBAL variables (remove 'const')
         claimSlider = document.getElementById('claimSlider');
         adjudicatedSlider = document.getElementById('adjudicatedSlider');
 
-        // Helper to format currency for slider display
+        // CHANGED: Updated formatter to handle billions
         const formatSliderCurrency = (value) => {
+            value = Math.round(value);
+            if (value >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`;
             if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
             if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
             return `$${value}`;
         };
 
+        // CHANGED: Define the non-linear range
+        const logRange = {
+            'min': 0,
+            '10%': 10000,      // First 10% of slider is for 0-10k
+            '30%': 100000,     // Next 20% is for 10k-100k
+            '50%': 1000000,    // Next 20% is for 100k-1M
+            '70%': 10000000,   // Next 20% is for 1M-10M
+            '90%': 100000000,  // Next 20% is for 10M-100M
+            'max': 1000000000  // Final 10% is for 100M-1B
+        };
+
         // Initialize Claimed Amount Slider
         noUiSlider.create(claimSlider, {
-            start: [0, 5000000],
+            start: [0, 1000000000], // CHANGED: Updated start values
             connect: true,
-            range: { 'min': 0, 'max': 5000000 },
-            step: 10000,
+            range: logRange, // CHANGED: Use the new log range
             tooltips: [
-              { to: value => formatSliderCurrency(Math.round(value)) },
-              { to: value => formatSliderCurrency(Math.round(value)) }
+              { to: value => formatSliderCurrency(value) },
+              { to: value => formatSliderCurrency(value) }
             ]
         });
 
         // Initialize Adjudicated Amount Slider
         noUiSlider.create(adjudicatedSlider, {
-            start: [0, 5000000],
+            start: [0, 1000000000], // CHANGED: Updated start values
             connect: true,
-            range: { 'min': 0, 'max': 5000000 },
-            step: 10000,
+            range: logRange, // CHANGED: Use the new log range
             tooltips: [
-              { to: value => formatSliderCurrency(Math.round(value)) },
-              { to: value => formatSliderCurrency(Math.round(value)) }
+              { to: value => formatSliderCurrency(value) },
+              { to: value => formatSliderCurrency(value) }
             ]
         });
 
         // Update display values when sliders change
         claimSlider.noUiSlider.on('update', function (values, handle) {
             document.getElementById('claimSliderValues').innerHTML = 
-                `${formatSliderCurrency(Math.round(values[0]))} – ${formatSliderCurrency(Math.round(values[1]))}`;
+                `${formatSliderCurrency(values[0])} – ${formatSliderCurrency(values[1])}`;
         });
         adjudicatedSlider.noUiSlider.on('update', function (values, handle) {
             document.getElementById('adjudicatedSliderValues').innerHTML = 
-                `${formatSliderCurrency(Math.round(values[0]))} – ${formatSliderCurrency(Math.round(values[1]))}`;
+                `${formatSliderCurrency(values[0])} – ${formatSliderCurrency(values[1])}`;
         });
 
 
@@ -1080,49 +1157,50 @@ body {
 
         // --- END: Filter Panel Logic ---
 
-      const saved = localStorage.getItem('theme');
-      if (saved === 'dark') {
-        document.body.classList.remove('light');
-        document.body.classList.add('dark');
-        document.getElementById('themeToggle').textContent = 'Switch to Light Mode';
-      } else {
-        document.body.classList.add('light');
-        document.getElementById('themeToggle').textContent = 'Switch to Dark Mode';
-      }
+        // (The rest of your DOMContentLoaded listener remains the same...)
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark') {
+            document.body.classList.remove('light');
+            document.body.classList.add('dark');
+            document.getElementById('themeToggle').textContent = 'Switch to Light Mode';
+        } else {
+            document.body.classList.add('light');
+            document.getElementById('themeToggle').textContent = 'Switch to Dark Mode';
+        }
 
-      const input = document.getElementById('q');
-      if (input) {
-        input.addEventListener('keydown', e => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            runSearch(1);
-          }
-        });
-      }
+        const input = document.getElementById('q');
+        if (input) {
+            input.addEventListener('keydown', e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                runSearch(1);
+              }
+            });
+        }
 
-      const limitSel = document.getElementById('limit');
-      if (limitSel) {
-        limitSel.addEventListener('change', () => runSearch(1));
-      }
+        const limitSel = document.getElementById('limit');
+        if (limitSel) {
+            limitSel.addEventListener('change', () => runSearch(1));
+        }
 
-      const sortSel = document.getElementById('sort');
-      if (sortSel) {
-        sortSel.addEventListener('change', () => runSearch(1));
-      }
-      
-      // Add event listeners to trigger search when filters change
-      const startDateInput = document.getElementById('startDate');
-      const endDateInput = document.getElementById('endDate');
-      if(startDateInput) startDateInput.addEventListener('change', () => runSearch(1));
-      if(endDateInput) endDateInput.addEventListener('change', () => runSearch(1));
-      claimSlider.noUiSlider.on('end', () => runSearch(1)); // 'end' event fires when user stops dragging
-      adjudicatedSlider.noUiSlider.on('end', () => runSearch(1));
+        const sortSel = document.getElementById('sort');
+        if (sortSel) {
+            sortSel.addEventListener('change', () => runSearch(1));
+        }
+        
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        if(startDateInput) startDateInput.addEventListener('change', () => runSearch(1));
+        if(endDateInput) endDateInput.addEventListener('change', () => runSearch(1));
+        claimSlider.noUiSlider.on('end', () => runSearch(1));
+        adjudicatedSlider.noUiSlider.on('end', () => runSearch(1));
 
-
-      fetchAdjudicators();
-
-      runSearch();
+        fetchAdjudicators();
+        runSearch();
     });
+
+
+
 
 
     function $(sel){ return document.querySelector(sel); }
@@ -1198,21 +1276,22 @@ body {
             params.set('limit', state.limit);
             params.set('offset', state.offset);
 
-            // Get filter values and add them to params
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
-            // FIX 3: This will now work correctly because the global variables are assigned
             const claimRange = claimSlider.noUiSlider.get();
             const adjudicatedRange = adjudicatedSlider.noUiSlider.get();
 
             if (startDate) params.set('startDate', startDate);
             if (endDate) params.set('endDate', endDate);
             
+            // Only add amount filters if they are not at the default max range
             if (parseFloat(claimRange[0]) > 0) params.set('minClaim', parseFloat(claimRange[0]));
-            if (parseFloat(claimRange[1]) < 5000000) params.set('maxClaim', parseFloat(claimRange[1]));
+            // CHANGED: Update the maximum value to 1 billion
+            if (parseFloat(claimRange[1]) < 1000000000) params.set('maxClaim', parseFloat(claimRange[1]));
             
             if (parseFloat(adjudicatedRange[0]) > 0) params.set('minAdjudicated', parseFloat(adjudicatedRange[0]));
-            if (parseFloat(adjudicatedRange[1]) < 5000000) params.set('maxAdjudicated', parseFloat(adjudicatedRange[1]));
+            // CHANGED: Update the maximum value to 1 billion
+            if (parseFloat(adjudicatedRange[1]) < 1000000000) params.set('maxAdjudicated', parseFloat(adjudicatedRange[1]));
             
             const token = localStorage.getItem('purchase_token');
             const headers = { 'Accept': 'application/json' };
@@ -1246,6 +1325,7 @@ body {
             finishLoadingBar();
         }
     }
+    
     
     function findMatchingAdjudicator(query) {
       if (!query || query.length < 3 || !adjudicatorList.length) return null;
