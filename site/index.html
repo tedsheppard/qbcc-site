@@ -827,11 +827,14 @@ body {
   background: #222;
 }
 
+/* Find and replace this entire rule */
 .filter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  /* CHANGED: Increased the minimum width from 250px to 300px */
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 20px;
 }
+
 .filter-group {
   font-size: 13px;
 }
