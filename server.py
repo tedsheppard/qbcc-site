@@ -629,7 +629,7 @@ con.commit()
 
 # ---------------- RAG / ChromaDB Setup ----------------
 import tarfile
-from chromadb.utils import embedding_functions
+import chromadb
 
 CHROMA_PATH = "/var/data/chroma_db"
 CHROMA_TAR_GCS = "chroma_db.tar.gz"
@@ -642,7 +642,6 @@ if not os.path.exists(CHROMA_PATH):
         bucket = storage_client.bucket("sopal-bucket")
         blob = bucket.blob(CHROMA_TAR_GCS)
         
-        
         tar_path = "/var/data/chroma_db.tar.gz"
         blob.download_to_filename(tar_path)
         print("Download complete. Extracting...")
@@ -651,7 +650,6 @@ if not os.path.exists(CHROMA_PATH):
             tar.extractall("/var/data")
 
         os.remove(tar_path)
-
         print(f"ChromaDB extracted to {CHROMA_PATH}")
     except Exception as e:
         print(f"Failed to download ChromaDB: {e}")
@@ -662,52 +660,14 @@ chroma_collection = None
 
 if os.path.exists(CHROMA_PATH):
     try:
-        import chromadb
-        
-        from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
-        
-        from openai import OpenAI as OpenAIClient
-
-        class CustomOpenAIEmbedding:
-            def __init__(self, api_key, model_name):
-                self.client = OpenAIClient(api_key=api_key)
-                self.model_name = model_name
-                self.name = model_name  # Add this line - ChromaDB needs it
-        
-            def __call__(self, input):
-                # Ensure input is always a list
-                if isinstance(input, str):
-                    input = [input]
-            
-                response = self.client.embeddings.create(
-                    input=input,
-                    model=self.model_name
-                )
-            
-                # Return list of embeddings
-                return [item.embedding for item in response.data]
-    
-    
-    
-    
-        
-
-        openai_ef = CustomOpenAIEmbedding(
-            api_key=os.getenv("OPENAI_API_KEY"),
-            model_name="text-embedding-3-small"
-        )
-
-        
-        
         chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
         chroma_collection = chroma_client.get_collection(
-            name="adjudication_decisions",
-            embedding_function=openai_ef
+            name="adjudication_decisions"
         )
-        
         print(f"✅ ChromaDB loaded: {chroma_collection.count()} chunks available")
     except Exception as e:
         print(f"Failed to load ChromaDB: {e}")
+        chroma_collection = None
 else:
     print("⚠️  ChromaDB not available - /ask endpoint will be disabled")
 
@@ -1544,7 +1504,6 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...), authorization: 
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
-
 @app.post("/ask-rag")
 def ask_rag(query: str = Form(...)):
     """Natural language search across all adjudication decisions using RAG"""
@@ -1552,23 +1511,20 @@ def ask_rag(query: str = Form(...)):
         if not chroma_collection:
             raise HTTPException(status_code=503, detail="RAG search not available")
         
-        print(f"Querying ChromaDB with: {query}")
+        # Manually embed query using OpenAI client
+        embedding_response = client.embeddings.create(
+            input=[query],
+            model="text-embedding-3-small"
+        )
+        query_embedding = embedding_response.data[0].embedding
         
-        # Query the vector database
+        # Query ChromaDB with embedding vector directly
         results = chroma_collection.query(
-            query_texts=[query],
+            query_embeddings=[query_embedding],
             n_results=5
         )
         
-        print(f"Query results type: {type(results)}")
-        print(f"Query results keys: {results.keys() if isinstance(results, dict) else 'Not a dict'}")
-        
-        if not results or 'documents' not in results or not results['documents']:
-            return {"answer": "I couldn't find any relevant information in the adjudication decisions for your query."}
-        
-        print(f"Documents found: {len(results['documents'])}")
-        
-        if not results['documents'][0]:
+        if not results or 'documents' not in results or not results['documents'][0]:
             return {"answer": "I couldn't find any relevant information in the adjudication decisions for your query."}
         
         # Combine retrieved chunks as context
@@ -1613,11 +1569,10 @@ def ask_rag(query: str = Form(...)):
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
         print(f"Error in /ask-rag: {e}")
+        import traceback
         print(f"Traceback: {traceback.format_exc()}")
-        return JSONResponse({"error": str(e)}, status_code=500)
-    
+        return JSONResponse({"error": str(e)}, status_code=500)    
 
 # Add this helper endpoint to debug the database schema
 @app.get("/debug/schema")
