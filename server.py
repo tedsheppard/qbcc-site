@@ -990,17 +990,25 @@ def search_fast(
             where_clauses = []
             params = []
             
-            # This is the core logic that combines FTS and regular filters
             base_sql_from = """
                 FROM docs_fresh d
                 LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
                 LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
             """
             
-            # If there's a text query, we must use the FTS table
+            # --- START FIX: Restructure query for snippet generation ---
+            # Define FROM clauses for count and main queries separately
+            count_from_sql = base_sql_from
+            main_from_sql = base_sql_from + " LEFT JOIN fts ON d.rowid = fts.rowid"
+
             if nq2:
-                where_clauses.append("d.rowid IN (SELECT rowid FROM fts WHERE fts MATCH ?)")
+                # Add MATCH to the WHERE clause so snippet() can see it
+                where_clauses.append("fts MATCH ?")
                 params.append(nq2)
+                # The count query needs a hard JOIN if there's a text query
+                count_from_sql += " JOIN fts ON d.rowid = fts.rowid"
+            
+            # --- END FIX ---
 
             if startDate: where_clauses.append("m.decision_date_norm >= ?"); params.append(startDate)
             if endDate: where_clauses.append("m.decision_date_norm <= ?"); params.append(endDate)
@@ -1011,7 +1019,7 @@ def search_fast(
                 
             final_where_clause = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
 
-            count_sql = f"SELECT COUNT(DISTINCT d.rowid) {base_sql_from} {final_where_clause}"
+            count_sql = f"SELECT COUNT(DISTINCT d.rowid) {count_from_sql} {final_where_clause}"
             total = con.execute(count_sql, tuple(params)).fetchone()[0]
 
             order_clause = ""
@@ -1024,10 +1032,11 @@ def search_fast(
             elif sort == "adj_high": order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN -1 ELSE CAST(a.adjudicated_amount AS REAL) END DESC"
             elif sort == "adj_low": order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 999999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC"
             
+            # --- START FIX: Let SQLite do the highlighting ---
+            # Use `main_from_sql` which has the join, and have snippet() create the <mark> tags
             sql = f"""
-                SELECT d.rowid, snippet(fts, 0, '', '', ' … ', 100) AS snippet
-                {base_sql_from}
-                LEFT JOIN fts ON d.rowid = fts.rowid
+                SELECT d.rowid, snippet(fts, 0, '<mark>', '</mark>', ' … ', 100) AS snippet
+                {main_from_sql}
                 {final_where_clause}
                 {order_clause}
                 LIMIT ? OFFSET ?
@@ -1035,7 +1044,6 @@ def search_fast(
             rows = con.execute(sql, tuple(params + [limit, offset])).fetchall()
 
             items = []
-            phrase_terms, word_terms = get_highlight_terms(nq2 or "")
             for r in rows:
                 meta = con.execute("""
                 SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
@@ -1051,20 +1059,12 @@ def search_fast(
                 d = dict(meta) if meta else {}
                 d["id"] = d.get("ejs_id", r["rowid"])
                 snippet_raw = r["snippet"] or ""
+                # We no longer need the complex Python highlighting logic. Just clean up artifacts.
                 snippet_clean = re.sub(r'\b\d+([A-Za-z]+)\b', r'\1', snippet_raw)
-
-                for phrase in sorted(set(phrase_terms), key=len, reverse=True):
-                    snippet_clean = re.sub(fr'(?i)\b{re.escape(phrase)}\b', f"<mark>{phrase}</mark>", snippet_clean)
-                for term in sorted(set(word_terms), key=len, reverse=True):
-                    if any(term.lower() in p.lower() for p in phrase_terms): continue
-                    if term.endswith('*'):
-                        stem = term[:-1]
-                        snippet_clean = re.sub(f'\\b({re.escape(stem)}\\w*)', r'<mark>\1</mark>', snippet_clean, flags=re.I)
-                    else:
-                        snippet_clean = re.sub(fr'(?i)\b({re.escape(term)})\b', r'<mark>\1</mark>', snippet_clean)
                 
                 d["snippet"] = snippet_clean
                 items.append(d)
+            # --- END FIX ---
             return {"total": total, "items": items}
 
         except sqlite3.OperationalError as e:
@@ -2753,4 +2753,3 @@ async def serve_html_page(path_name: str):
         return FileResponse(index_path)
 
     raise HTTPException(status_code=404, detail="Not Found")
-
