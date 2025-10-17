@@ -1124,7 +1124,7 @@ function $(sel){ return document.querySelector(sel); }
     let state = { q:'', claimant:'', respondent:'', limit:20, offset:0, total:0 };
     let adjudicatorList = []; 
     let chatHistories = {};
-
+    let claimSlider, adjudicatedSlider;
 
 // Replace your existing fetchAdjudicators function with this one
 async function fetchAdjudicators() {
