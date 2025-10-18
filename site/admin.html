@@ -13,6 +13,7 @@
     main { max-width: 1400px; margin: 40px auto; padding: 0 25px; }
     h1 { font-size: 28px; margin-bottom: 30px; }
     h2 { font-size: 22px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 25px; }
+    h3 { font-size: 16px; margin-top: 25px; margin-bottom: 15px; color: #008a5c; }
     .admin-container { display: flex; gap: 30px; }
     .admin-nav { flex: 0 0 200px; }
     .admin-nav .nav-btn { display: block; width: 100%; text-align: left; padding: 12px 15px; border: none; background: none; border-radius: 6px; cursor: pointer; font-size: 15px; margin-bottom: 5px; }
@@ -33,6 +34,9 @@
     .form-inline input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
     .form-inline button, .btn-primary { background: #00c97c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 14px; }
     .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
   </style>
 </head>
 <body>
@@ -52,13 +56,106 @@
       <button class="nav-btn" data-hash="adjudicators">Adjudicator Activity</button>
       <button class="nav-btn" data-hash="fullaccess">Full Access Privileges</button>
       <button class="nav-btn" data-hash="upload">Upload New Decisions</button>
-      <button class="nav-btn" data-hash="backup">Backups</button> </aside>
+      <button class="nav-btn" data-hash="backup">Backups</button>
+    </aside>
     <div class="admin-content">
         <section id="users-section" class="admin-section"></section>
         <section id="searches-section" class="admin-section"></section>
         <section id="adjudicators-section" class="admin-section"></section>
         <section id="fullaccess-section" class="admin-section"></section>
-        <section id="upload-section" class="admin-section"></section>
+
+        <section id="upload-section" class="admin-section">
+            <div class="card">
+              <h2>Upload New Adjudication Decision</h2>
+              <form id="upload-form">
+                <div id="upload-feedback" style="margin-bottom: 15px; padding: 10px; border-radius: 4px; display: none;"></div>
+                
+                <h3>File Upload</h3>
+                <div class="form-group">
+                    <label for="pdf_file">Decision PDF *</label>
+                    <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" required>
+                </div>
+    
+                <h3>Primary Details</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="reference">Decision Reference ID *</label>
+                        <input type="text" id="reference" name="reference" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="decision_date">Decision Date (e.g., 18 October 2025) *</label>
+                        <input type="text" id="decision_date" name="decision_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="decision_date_norm">Decision Date (YYYY-MM-DD) *</label>
+                        <input type="date" id="decision_date_norm" name="decision_date_norm" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="act">Governing Act *</label>
+                        <input type="text" id="act" name="act" value="BIF Act" required>
+                    </div>
+                </div>
+    
+                <h3>Party Details</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="adjudicator">Adjudicator Name *</label>
+                        <input type="text" id="adjudicator" name="adjudicator" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="claimant">Claimant Name *</label>
+                        <input type="text" id="claimant" name="claimant" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="respondent">Respondent Name *</label>
+                        <input type="text" id="respondent" name="respondent" required>
+                    </div>
+                </div>
+    
+                <h3>Financial Details</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="claimed_amount">Claimed Amount *</label>
+                        <input type="number" step="0.01" id="claimed_amount" name="claimed_amount" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="payment_schedule_amount">Payment Schedule Amount</label>
+                        <input type="number" step="0.01" id="payment_schedule_amount" name="payment_schedule_amount">
+                    </div>
+                    <div class="form-group">
+                        <label for="adjudicated_amount">Adjudicated Amount *</label>
+                        <input type="number" step="0.01" id="adjudicated_amount" name="adjudicated_amount" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fee_claimant_proportion">Claimant Fee Proportion (%)</label>
+                        <input type="number" step="0.1" id="fee_claimant_proportion" name="fee_claimant_proportion">
+                    </div>
+                     <div class="form-group">
+                        <label for="fee_respondent_proportion">Respondent Fee Proportion (%)</label>
+                        <input type="number" step="0.1" id="fee_respondent_proportion" name="fee_respondent_proportion">
+                    </div>
+                </div>
+    
+                <h3>Classification Details</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="project_type">Project Type</label>
+                        <input type="text" id="project_type" name="project_type">
+                    </div>
+                    <div class="form-group">
+                        <label for="contract_type">Contract Type</label>
+                        <input type="text" id="contract_type" name="contract_type">
+                    </div>
+                    <div class="form-group">
+                        <label for="outcome">Outcome</label>
+                        <input type="text" id="outcome" name="outcome">
+                    </div>
+                </div>
+    
+                <button type="submit" id="upload-btn" class="btn-primary" style="margin-top: 20px;">Upload Decision</button>
+              </form>
+            </div>
+        </section>
 
         <section id="backup-section" class="admin-section">
             <div class="card">
@@ -118,7 +215,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadSectionContent(targetHash) {
         const section = document.getElementById(`${targetHash}-section`);
-        if (!section || (section.innerHTML.trim() !== '' && !section.querySelector('.loading-message'))) return;
+        if (!section) return;
+
+        // Don't reload static tabs or already loaded dynamic tabs
+        if (targetHash === 'upload' || targetHash === 'backup' || loadedTabs.has(targetHash)) {
+            return;
+        }
 
         loadedTabs.add(targetHash);
         switch (targetHash) {
@@ -243,6 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response.ok) {
             feedbackDiv.style.color = '#155724';
             emailInput.value = '';
+            loadedTabs.delete('fullaccess'); // Force reload
             loadSectionContent('fullaccess');
         } else {
             feedbackDiv.style.color = '#721c24';
@@ -258,10 +361,12 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('email', email);
         
         await fetch('/admin/remove-full-access', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+        loadedTabs.delete('fullaccess'); // Force reload
         loadSectionContent('fullaccess');
     }
     
     async function handleCreateBackup() {
+        const backupBtn = document.getElementById('backup-btn');
         const feedbackDiv = document.getElementById('backup-feedback');
         if (!confirm('Are you sure you want to create a new Meilisearch backup?')) return;
 
@@ -332,17 +437,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- BACKUP BUTTON LOGIC ---
-    const backupBtn = document.getElementById('backup-btn');
-    if (backupBtn) {
-        backupBtn.addEventListener('click', handleCreateBackup);
-    }
-    
     // --- INITIALIZATION ---
     navButtons.forEach(button => button.addEventListener('click', () => window.location.hash = button.dataset.hash));
     window.addEventListener('hashchange', () => showTab(window.location.hash || '#users'));
     showTab(window.location.hash || '#users');
 });
 </script>
+
 </body>
 </html>
