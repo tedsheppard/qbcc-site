@@ -373,7 +373,7 @@ Sopal Team
         
         await aiosmtplib.send(
             msg,
-            hostname=os.getenv("SMTP_HOST", "smtp.office35.com"),
+            hostname=os.getenv("SMTP_HOST", "smtp.office365.com"),
             port=int(os.getenv("SMTP_PORT", "587")),
             start_tls=True,
             username=os.getenv("SMTP_USERNAME", "info@sopal.com.au"),
@@ -973,201 +973,221 @@ def search_fast(
 
     q_norm = normalize_query(q)
 
-    # --- START: Unified Search Logic using SQLite FTS ---
-    try:
-        nq2 = preprocess_sqlite_query(q_norm) if q_norm else ""
+    # --- START: Hybrid Search Logic ---
+    # Determine which search engine to use.
+    # Use advanced SQLite FTS if any advanced filters are applied or if the query syntax is complex.
+    # Otherwise, use the faster MeiliSearch for simple queries.
 
-        where_clauses = []
-        sql_params = []
-        
-        # Always filter out results that are missing critical information
-        where_clauses.extend([
-            "a.decision_date IS NOT NULL",
-            "a.decision_date != ''",
-            "m.claimant IS NOT NULL",
-            "m.claimant != ''"
-        ])
+    has_advanced_filters = any([
+        startDate, endDate, minClaim is not None, maxClaim is not None,
+        minAdjudicated is not None, maxAdjudicated is not None
+    ])
 
-        if nq2:
-            where_clauses.append("fts MATCH ?")
-            sql_params.append(nq2)
+    nq_expanded = expand_wildcards(q_norm)
+    is_complex_query = (
+        re.search(r'\b(AND|OR|NOT)\b', q_norm, flags=re.I) or
+        re.search(r'\bw/\d+\b', q_norm, flags=re.I) or
+        re.search(r'\bNEAR/\d+\b', q_norm, flags=re.I) or
+        q_norm.startswith('"') or
+        '!' in q_norm or
+        '*' in nq_expanded or
+        q_norm != nq_expanded
+    )
+    
+    # --- BRANCH 1: SQLite FTS for Advanced/Complex Queries ---
+    if has_advanced_filters or is_complex_query:
+        try:
+            nq2 = preprocess_sqlite_query(q_norm) if q_norm else ""
 
-        # Base join for all queries
-        base_join = """
-            FROM fts
-            JOIN docs_fresh d ON fts.rowid = d.rowid
+            where_clauses = []
+            sql_params = []
+            
+            # Always filter out results that are missing critical information
+            where_clauses.extend([
+                "a.decision_date IS NOT NULL",
+                "a.decision_date != ''",
+                "m.claimant IS NOT NULL",
+                "m.claimant != ''"
+            ])
+
+            if nq2:
+                where_clauses.append("fts MATCH ?")
+                sql_params.append(nq2)
+
+            # Base join for all queries
+            base_join = """
+                FROM fts
+                JOIN docs_fresh d ON fts.rowid = d.rowid
+                LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+                LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
+            """
+
+            # Add filter conditions
+            if startDate:
+                where_clauses.append("a.decision_date >= ?")
+                sql_params.append(startDate)
+            if endDate:
+                where_clauses.append("a.decision_date <= ?")
+                sql_params.append(endDate)
+            if minClaim is not None:
+                where_clauses.append("CAST(a.claimed_amount AS REAL) >= ?")
+                sql_params.append(minClaim)
+            if maxClaim is not None:
+                where_clauses.append("CAST(a.claimed_amount AS REAL) <= ?")
+                sql_params.append(maxClaim)
+            if minAdjudicated is not None:
+                where_clauses.append("CAST(a.adjudicated_amount AS REAL) >= ?")
+                sql_params.append(minAdjudicated)
+            if maxAdjudicated is not None:
+                where_clauses.append("CAST(a.adjudicated_amount AS REAL) <= ?")
+                sql_params.append(maxAdjudicated)
+
+            where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+
+            # Execute COUNT query
+            count_sql = f"SELECT COUNT(DISTINCT fts.rowid) {base_join} {where_sql}"
+            total = con.execute(count_sql, tuple(sql_params)).fetchone()[0]
+
+            # Determine ORDER BY clause
+            order_clause = "ORDER BY rank"  # Default relevance for text queries
+            if not q_norm and sort == "relevance": # If no query, relevance is meaningless
+                 sort = "newest"
+            
+            if sort == "newest":
+                order_clause = "ORDER BY a.decision_date DESC"
+            elif sort == "oldest":
+                order_clause = "ORDER BY a.decision_date ASC"
+            elif sort == "atoz":
+                order_clause = "ORDER BY m.claimant ASC"
+            elif sort == "ztoa":
+                order_clause = "ORDER BY m.claimant DESC"
+            elif sort == "claim_high":
+                order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN -1 ELSE CAST(a.claimed_amount AS REAL) END DESC"
+            elif sort == "claim_low":
+                order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN 9999999999 ELSE CAST(a.claimed_amount AS REAL) END ASC"
+            elif sort == "adj_high":
+                order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN -1 ELSE CAST(a.adjudicated_amount AS REAL) END DESC"
+            elif sort == "adj_low":
+                order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 9999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC"
+            
+            # Build and execute the main query
+            snippet_select = "snippet(fts, 0, '<mark>', '</mark>', ' … ', 100)" if nq2 else "substr(d.full_text, 1, 500) || '...'"
+            
+            sql = f"""
+                SELECT DISTINCT fts.rowid, {snippet_select} AS snippet
+                {base_join}
+                {where_sql}
+                {order_clause}
+                LIMIT ? OFFSET ?
+            """
+            
+            final_params = tuple(sql_params) + (limit, offset)
+            rows = con.execute(sql, final_params).fetchall()
+
+        except sqlite3.OperationalError as e:
+            print("FTS Query error:", e)
+            raise HTTPException(status_code=500, detail=f"Search query failed: {e}")
+
+        # Process SQLite results
+        items = []
+        for r in rows:
+            meta = con.execute("""
+            SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
+                    m.act, d.reference, d.pdf_path, d.ejs_id,
+                    a.claimed_amount, a.adjudicated_amount, 
+                    a.fee_claimant_proportion, a.fee_respondent_proportion,
+                    a.decision_date
+            FROM docs_fresh d
             LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
             LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
-        """
+            WHERE d.rowid = ?
+            """, (r["rowid"],)).fetchone()
 
-        # Add filter conditions
-        if startDate:
-            where_clauses.append("a.decision_date >= ?")
-            sql_params.append(startDate)
-        if endDate:
-            where_clauses.append("a.decision_date <= ?")
-            sql_params.append(endDate)
-        if minClaim is not None:
-            where_clauses.append("CAST(a.claimed_amount AS REAL) >= ?")
-            sql_params.append(minClaim)
-        if maxClaim is not None:
-            where_clauses.append("CAST(a.claimed_amount AS REAL) <= ?")
-            sql_params.append(maxClaim)
-        if minAdjudicated is not None:
-            where_clauses.append("CAST(a.adjudicated_amount AS REAL) >= ?")
-            sql_params.append(minAdjudicated)
-        if maxAdjudicated is not None:
-            where_clauses.append("CAST(a.adjudicated_amount AS REAL) <= ?")
-            sql_params.append(maxAdjudicated)
+            d = dict(meta) if meta else {}
+            d["id"] = d.get("ejs_id", r["rowid"])
+            d["decision_date_norm"] = d.get("decision_date") or d.get("decision_date_norm")
+            
+            snippet_raw = r["snippet"]
+            
+            # Manually highlight wildcard matches if snippet function didn't catch them
+            wildcard_stems = [term[:-1] for term in re.findall(r'\b\w+\*\b', nq2)]
+            for stem in wildcard_stems:
+                 # Avoid highlighting inside HTML tags
+                if '<mark>' not in snippet_raw:
+                     snippet_raw = highlight_wildcard_matches(snippet_raw, stem)
 
-        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+            d["snippet"] = snippet_raw
+            items.append(d)
 
-        # Execute COUNT query
-        count_sql = f"SELECT COUNT(DISTINCT fts.rowid) {base_join} {where_sql}"
-        total = con.execute(count_sql, tuple(sql_params)).fetchone()[0]
-
-        # Determine ORDER BY clause
-        order_clause = "ORDER BY rank"  # Default relevance for text queries
-        if not q_norm and sort == "relevance": # If no query, relevance is meaningless
-             sort = "newest"
+        return {"total": total, "items": items}
         
-        if sort == "newest":
-            order_clause = "ORDER BY a.decision_date DESC"
-        elif sort == "oldest":
-            order_clause = "ORDER BY a.decision_date ASC"
-        elif sort == "atoz":
-            order_clause = "ORDER BY m.claimant ASC"
-        elif sort == "ztoa":
-            order_clause = "ORDER BY m.claimant DESC"
-        elif sort == "claim_high":
-            order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN -1 ELSE CAST(a.claimed_amount AS REAL) END DESC"
-        elif sort == "claim_low":
-            order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN 9999999999 ELSE CAST(a.claimed_amount AS REAL) END ASC"
-        elif sort == "adj_high":
-            order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN -1 ELSE CAST(a.adjudicated_amount AS REAL) END DESC"
-        elif sort == "adj_low":
-            order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 9999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC"
-        
-        # Build and execute the main query
-        snippet_select = "snippet(fts, 0, '<mark>', '</mark>', ' … ', 100)" if nq2 else "substr(d.full_text, 1, 500) || '...'"
-        
-        sql = f"""
-            SELECT DISTINCT fts.rowid, {snippet_select} AS snippet
-            {base_join}
-            {where_sql}
-            {order_clause}
-            LIMIT ? OFFSET ?
-        """
-        
-        final_params = tuple(sql_params) + (limit, offset)
-        rows = con.execute(sql, final_params).fetchall()
-
-    except sqlite3.OperationalError as e:
-        print("FTS Query error:", e)
-        raise HTTPException(status_code=500, detail=f"Search query failed: {e}")
-
-    # Process results
-    items = []
-    for r in rows:
-        meta = con.execute("""
-        SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
-                m.act, d.reference, d.pdf_path, d.ejs_id,
-                a.claimed_amount, a.adjudicated_amount, 
-                a.fee_claimant_proportion, a.fee_respondent_proportion,
-                a.decision_date
-        FROM docs_fresh d
-        LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-        LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
-        WHERE d.rowid = ?
-        """, (r["rowid"],)).fetchone()
-
-        d = dict(meta) if meta else {}
-        d["id"] = d.get("ejs_id", r["rowid"])
-        d["decision_date_norm"] = d.get("decision_date") or d.get("decision_date_norm")
-        
-        snippet_raw = r["snippet"]
-        
-        # Manually highlight wildcard matches if snippet function didn't catch them
-        wildcard_stems = [term[:-1] for term in re.findall(r'\b\w+\*\b', nq2)]
-        for stem in wildcard_stems:
-             # Avoid highlighting inside HTML tags
-            if '<mark>' not in snippet_raw:
-                 snippet_raw = highlight_wildcard_matches(snippet_raw, stem)
-
-        d["snippet"] = snippet_raw
-        items.append(d)
-
-    return {"total": total, "items": items}
-    # --- END: Unified Search Logic ---
-
-
-        
-    # --- Natural language via Meili ---
-    payload = {
-        "q": q_norm,
-        "limit": limit,
-        "offset": offset,
-        "attributesToRetrieve": [
-            "id", "reference", "pdf_path",
-            "claimant", "respondent", "adjudicator",
-            "date", "act", "content"
-        ],
-        "attributesToHighlight": ["content"],
-        "highlightPreTag": "<mark>",
-        "highlightPostTag": "</mark>",
-        "attributesToCrop": ["content"],
-        "cropLength": 100
-    }
-    
-    if sort == "relevance" and not q_norm:
-        sort = "newest"
-
-    if sort == "newest":
-        payload["sort"] = ["sortable_date:desc"]
-    elif sort == "oldest":
-        payload["sort"] = ["sortable_date:asc"]
-    elif sort == "atoz":
-        payload["sort"] = ["claimant:asc"]
-    elif sort == "ztoa":
-        payload["sort"] = ["claimant:desc"]
-        
-    headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
-    res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
-    data = res.json()
-    items = []
-    for hit in data.get("hits", []):
-        # Fetch additional data from ai_adjudicator_extract_v4
-        extra_data = con.execute("""
-            SELECT claimed_amount, adjudicated_amount, 
-                   fee_claimant_proportion, fee_respondent_proportion
-            FROM ai_adjudicator_extract_v4
-            WHERE ejs_id = ?
-        """, (hit.get("id"),)).fetchone()
-        
-        snippet = hit.get("_formatted", {}).get("content", "")
-        item = {
-            "id": hit.get("id"),
-            "reference": hit.get("reference"),
-            "pdf_path": hit.get("pdf_path"),
-            "claimant": hit.get("claimant"),
-            "respondent": hit.get("respondent"),
-            "adjudicator": hit.get("adjudicator"),
-            "decision_date_norm": hit.get("date"),
-            "act": hit.get("act"),
-            "snippet": snippet
+    # --- BRANCH 2: MeiliSearch for Simple Queries ---
+    else:
+        payload = {
+            "q": q_norm,
+            "limit": limit,
+            "offset": offset,
+            "attributesToRetrieve": [
+                "id", "reference", "pdf_path",
+                "claimant", "respondent", "adjudicator",
+                "date", "act", "content"
+            ],
+            "attributesToHighlight": ["content"],
+            "highlightPreTag": "<mark>",
+            "highlightPostTag": "</mark>",
+            "attributesToCrop": ["content"],
+            "cropLength": 100
         }
         
-        # Add extra fields if available
-        if extra_data:
-            item.update({
-                "claimed_amount": extra_data["claimed_amount"],
-                "adjudicated_amount": extra_data["adjudicated_amount"],
-                "fee_claimant_proportion": extra_data["fee_claimant_proportion"],
-                "fee_respondent_proportion": extra_data["fee_respondent_proportion"]
-            })
-        
-        items.append(item)
-    return {"total": data.get("estimatedTotalHits", 0), "items": items}
+        if sort == "relevance" and not q_norm:
+            sort = "newest"
+
+        if sort == "newest":
+            payload["sort"] = ["sortable_date:desc"]
+        elif sort == "oldest":
+            payload["sort"] = ["sortable_date:asc"]
+        elif sort == "atoz":
+            payload["sort"] = ["claimant:asc"]
+        elif sort == "ztoa":
+            payload["sort"] = ["claimant:desc"]
+            
+        headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
+        res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
+        data = res.json()
+        items = []
+        for hit in data.get("hits", []):
+            # Fetch additional data from ai_adjudicator_extract_v4 as it's not in Meili
+            extra_data = con.execute("""
+                SELECT claimed_amount, adjudicated_amount, 
+                       fee_claimant_proportion, fee_respondent_proportion
+                FROM ai_adjudicator_extract_v4
+                WHERE ejs_id = ?
+            """, (hit.get("id"),)).fetchone()
+            
+            snippet = hit.get("_formatted", {}).get("content", "")
+            item = {
+                "id": hit.get("id"),
+                "reference": hit.get("reference"),
+                "pdf_path": hit.get("pdf_path"),
+                "claimant": hit.get("claimant"),
+                "respondent": hit.get("respondent"),
+                "adjudicator": hit.get("adjudicator"),
+                "decision_date_norm": hit.get("date"),
+                "act": hit.get("act"),
+                "snippet": snippet
+            }
+            
+            # Add extra fields if available
+            if extra_data:
+                item.update({
+                    "claimed_amount": extra_data["claimed_amount"],
+                    "adjudicated_amount": extra_data["adjudicated_amount"],
+                    "fee_claimant_proportion": extra_data["fee_claimant_proportion"],
+                    "fee_respondent_proportion": extra_data["fee_respondent_proportion"]
+                })
+            
+            items.append(item)
+        return {"total": data.get("estimatedTotalHits", 0), "items": items}
 
     
 
@@ -3233,4 +3253,3 @@ async def serve_html_page(path_name: str):
         return FileResponse(index_path)
 
     raise HTTPException(status_code=404, detail="Not Found")
-
