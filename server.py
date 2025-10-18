@@ -14,6 +14,13 @@ from jose import JWTError, jwt
 import PyPDF2
 import docx
 import extract_msg
+import time
+import random
+import string
+import io
+import requests
+import time
+import os
 import bcrypt
 import pypandoc
 from typing import List, Optional
@@ -1348,7 +1355,183 @@ def get_adjudicator_activity(admin: dict = Depends(get_admin_user)):
     """).fetchall()
     return [dict(row) for row in logs]
 
+# In server.py, add this new endpoint with your other admin routes
+@app.post("/admin/upload-decision")
+async def upload_decision(
+    admin: dict = Depends(get_admin_user),
+    # File
+    pdf_file: UploadFile = File(...),
+    # Primary Details
+    reference: str = Form(...),
+    decision_date: str = Form(...),
+    decision_date_norm: str = Form(...),
+    act: str = Form(...),
+    # Party Details
+    adjudicator: str = Form(...),
+    claimant: str = Form(...),
+    respondent: str = Form(...),
+    # Financial Details
+    claimed_amount: float = Form(...),
+    adjudicated_amount: float = Form(...),
+    payment_schedule_amount: Optional[float] = Form(None),
+    fee_claimant_proportion: Optional[float] = Form(None),
+    fee_respondent_proportion: Optional[float] = Form(None),
+    # Classification
+    project_type: Optional[str] = Form(None),
+    contract_type: Optional[str] = Form(None),
+    outcome: Optional[str] = Form(None)
+):
+    """
+    Admin endpoint to upload a new decision, process it, and add to all databases.
+    """
+    try:
+        # 1. Generate a unique ID for the new decision
+        ejs_id = f"MANUAL{int(time.time())}{''.join(random.choices(string.ascii_uppercase, k=3))}"
+        
+        # 2. Handle the PDF file
+        pdf_content = await pdf_file.read()
+        pdf_filename = pdf_file.filename
 
+        # 3. Upload PDF to Google Cloud Storage
+        storage_client = get_gcs_client()
+        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
+        if not storage_client or not gcs_bucket_name:
+            raise HTTPException(status_code=500, detail="GCS not configured on server.")
+            
+        bucket = storage_client.bucket(gcs_bucket_name)
+        blob = bucket.blob(f"pdfs/{pdf_filename}")
+        blob.upload_from_string(pdf_content, content_type='application/pdf')
+        pdf_path = f"/gcs/{gcs_bucket_name}/pdfs/{pdf_filename}" # Storing path in this format
+
+        # 4. Extract text from the PDF
+        full_text = ""
+        with io.BytesIO(pdf_content) as f:
+            reader = PyPDF2.PdfReader(f)
+            for page in reader.pages:
+                full_text += page.extract_text() or ""
+        
+        if not full_text:
+            # If no text could be extracted, we should still proceed but log a warning
+            print(f"WARNING: No text could be extracted from {pdf_filename} for ejs_id {ejs_id}")
+
+        # 5. Insert data into SQLite database tables
+        # Table: docs_fresh
+        con.execute(
+            "INSERT INTO docs_fresh (ejs_id, reference, pdf_path, full_text) VALUES (?, ?, ?, ?)",
+            (ejs_id, reference, pdf_path, full_text)
+        )
+
+        # Table: docs_meta
+        con.execute(
+            "INSERT INTO docs_meta (ejs_id, claimant, respondent, adjudicator, decision_date_norm, act) VALUES (?, ?, ?, ?, ?, ?)",
+            (ejs_id, claimant, respondent, adjudicator, decision_date_norm, act)
+        )
+
+        # Table: ai_adjudicator_extract_v4
+        con.execute(
+            """
+            INSERT INTO ai_adjudicator_extract_v4 (
+                ejs_id, adjudicator_name, claimant_name, respondent_name, claimed_amount,
+                payment_schedule_amount, adjudicated_amount, fee_claimant_proportion,
+                fee_respondent_proportion, decision_date, outcome, project_type, contract_type
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                ejs_id, adjudicator, claimant, respondent, str(claimed_amount),
+                str(payment_schedule_amount) if payment_schedule_amount is not None else None,
+                str(adjudicated_amount),
+                str(fee_claimant_proportion) if fee_claimant_proportion is not None else None,
+                str(fee_respondent_proportion) if fee_respondent_proportion is not None else None,
+                decision_date, outcome, project_type, contract_type
+            )
+        )
+        con.commit()
+
+        # 6. Update Meilisearch index
+        meili_doc = {
+            "id": ejs_id,
+            "reference": reference,
+            "pdf_path": pdf_path,
+            "claimant": claimant,
+            "respondent": respondent,
+            "adjudicator": adjudicator,
+            "date": decision_date_norm,
+            "sortable_date": int(time.mktime(datetime.strptime(decision_date_norm, "%Y-%m-%d").timetuple())),
+            "act": act,
+            "content": full_text
+        }
+        headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
+        res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=headers, json=[meili_doc])
+        res.raise_for_status() # Raise an exception if Meilisearch update fails
+
+        return {"status": "success", "message": f"Decision '{reference}' uploaded and indexed successfully."}
+
+    except Exception as e:
+        # Rollback DB changes if anything fails
+        con.rollback()
+        print(f"ERROR in /admin/upload-decision: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An error occurred during upload: {e}")
+
+@app.post("/admin/create-meilisearch-backup")
+def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
+    """
+    Triggers a Meilisearch snapshot, waits for it, and uploads it to the GCS bucket.
+    This assumes Meilisearch is configured with --snapshot-dir /meili_data/snapshots
+    and the /meili_data disk is mounted on this service.
+    """
+    # This is the path on the shared Render Disk
+    SNAPSHOT_DIR = "/meili_data/snapshots"
+
+    try:
+        # Step 1: Tell Meilisearch to start creating a snapshot
+        headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
+        start_res = requests.post(f"{MEILI_URL}/snapshots", headers=headers)
+        start_res.raise_for_status()
+        task = start_res.json()
+        task_uid = task['taskUid']
+
+        # Step 2: Poll Meilisearch until the snapshot task is complete
+        while True:
+            time.sleep(2) # Wait 2 seconds between checks
+            task_res = requests.get(f"{MEILI_URL}/tasks/{task_uid}", headers=headers)
+            task_res.raise_for_status()
+            task_status = task_res.json()
+
+            if task_status['status'] == 'succeeded':
+                snapshot_filename = task_status['details']['snapshotName']
+                break
+            if task_status['status'] in ['failed', 'canceled']:
+                error_details = task_status.get('error', {})
+                raise Exception(f"Meilisearch snapshot failed: {error_details.get('message')}")
+
+        # Step 3: Upload the snapshot from the shared disk to GCS
+        local_snapshot_path = os.path.join(SNAPSHOT_DIR, snapshot_filename)
+        
+        if not os.path.exists(local_snapshot_path):
+             raise Exception(f"Snapshot file not found at {local_snapshot_path}. Check disk mount paths and Meilisearch start command.")
+
+        storage_client = get_gcs_client()
+        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
+        if not storage_client or not gcs_bucket_name:
+            raise HTTPException(status_code=500, detail="GCS not configured on the server.")
+
+        bucket = storage_client.bucket(gcs_bucket_name)
+        gcs_path = f"meili_backups/{snapshot_filename}"
+        blob = bucket.blob(gcs_path)
+        
+        blob.upload_from_filename(local_snapshot_path)
+
+        # Step 4 (Optional but recommended): Clean up the local snapshot to save disk space
+        os.remove(local_snapshot_path)
+
+        return {"status": "success", "message": f"Backup '{snapshot_filename}' successfully uploaded to GCS."}
+
+    except Exception as e:
+        print(f"ERROR in /admin/create-meilisearch-backup: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
 # ---------- AI Summarise ----------
 @app.get("/summarise/{decision_id}")
 def summarise(decision_id: str = Path(...)):
