@@ -21,7 +21,7 @@
     .admin-content { flex: 1; }
     .admin-section { display: none; }
     .admin-section.active { display: block; }
-    .card { background: #fdfdfd; border: 1px solid #ddd; border-radius: 8px; padding: 30px; }
+    .card { background: #fdfdfd; border: 1px solid #ddd; border-radius: 8px; padding: 30px; margin-bottom: 30px; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; }
     th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
     th { background-color: #f8f9fa; font-weight: 600; white-space: nowrap; }
@@ -125,6 +125,15 @@
         </section>
 
         <section id="backup-section" class="admin-section">
+            <div class="card">
+                <h2>Save Database to Cloud</h2>
+                <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">
+                    After uploading new decisions, click this button to save the updated database to Google Cloud Storage.
+                </p>
+                <button id="save-db-btn" class="btn-primary">Save Database</button>
+                <div id="save-db-feedback" style="margin-top: 20px; padding: 10px; border-radius: 4px; display: none;"></div>
+            </div>
+
             <div class="card">
                 <h2>Meilisearch Backup</h2>
                 <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">
@@ -367,6 +376,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    async function handleSaveDatabase() {
+        const saveDbBtn = document.getElementById('save-db-btn');
+        const feedbackDiv = document.getElementById('save-db-feedback');
+        if (!confirm('Are you sure you want to save the current database to the cloud? This will overwrite the existing file.')) return;
+
+        saveDbBtn.disabled = true;
+        saveDbBtn.textContent = 'Saving...';
+        feedbackDiv.style.display = 'block';
+        feedbackDiv.style.color = '#333';
+        feedbackDiv.textContent = 'Uploading database to Google Cloud Storage...';
+
+        try {
+            const response = await fetch('/admin/save-database', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.detail || 'An unknown error occurred.');
+            
+            feedbackDiv.textContent = result.message;
+            feedbackDiv.style.background = '#e8f8f1';
+            feedbackDiv.style.color = '#008a5c';
+        } catch (error) {
+            feedbackDiv.textContent = `Error: ${error.message}`;
+            feedbackDiv.style.background = '#f8d7da';
+            feedbackDiv.style.color = '#721c24';
+        } finally {
+            saveDbBtn.disabled = false;
+            saveDbBtn.textContent = 'Save Database';
+        }
+    }
+    
     // --- BATCH UPLOAD LOGIC ---
     function setupUploadTab() {
         dropZone.addEventListener('click', () => fileInput.click());
@@ -532,6 +573,11 @@ document.addEventListener('DOMContentLoaded', () => {
         backupBtn.addEventListener('click', handleCreateBackup);
     }
     
+    const saveDbBtn = document.getElementById('save-db-btn');
+    if (saveDbBtn) {
+        saveDbBtn.addEventListener('click', handleSaveDatabase);
+    }
+    
     navButtons.forEach(button => button.addEventListener('click', () => window.location.hash = button.dataset.hash));
     window.addEventListener('hashchange', () => showTab(window.location.hash));
     
@@ -540,3 +586,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
