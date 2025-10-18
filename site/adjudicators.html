@@ -1754,27 +1754,41 @@ let isSidebarLocked = true;
 let originalDecisions = [];
 let isDecisionSearchActive = false;
 
-let purchasedAdjudicators = new Set(); // Track purchased adjudicators
+let purchasedAdjudicators = new Set();
 
-// Load purchased adjudicators on page load
-async function loadPurchasedAdjudicators() {
+// REPLACED this function
+async function loadUserAccessStatus() {
   const token = localStorage.getItem('purchase_token');
   if (!token) return;
   
   try {
-    const response = await fetch('/my-purchases', {
+    const response = await fetch('/purchase-me', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
     if (response.ok) {
-      const purchases = await response.json();
-      purchases.forEach(p => {
-        purchasedAdjudicators.add(p.adjudicator_name);
-      });
-      console.log('[DEBUG] Loaded purchased adjudicators:', Array.from(purchasedAdjudicators));
+      const user = await response.json();
+      
+      // If user has full access, unlock all adjudicators
+      if (user.has_full_access) {
+        console.log('[DEBUG] User has full access. Unlocking all adjudicators.');
+        allAdjudicators.forEach(adj => purchasedAdjudicators.add(adj.name));
+      } 
+      // Otherwise, load only their individual purchases
+      else {
+        console.log('[DEBUG] User does not have full access. Loading individual purchases.');
+        const purchasesResponse = await fetch('/my-purchases', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (purchasesResponse.ok) {
+          const purchases = await purchasesResponse.json();
+          purchases.forEach(p => purchasedAdjudicators.add(p.adjudicator_name));
+        }
+      }
+      console.log('[DEBUG] Final access list:', Array.from(purchasedAdjudicators));
     }
   } catch (e) {
-    console.error('[DEBUG] Failed to load purchases:', e);
+    console.error('[DEBUG] Failed to load user access status:', e);
   }
 }
 
@@ -1783,7 +1797,7 @@ let stripe = null;
 let elements = null;
 let cardElement = null;
 
-
+// REPLACED this event listener
 document.addEventListener('DOMContentLoaded', async function() {
   // Initialize Stripe
   stripe = Stripe('pk_live_51SGxeHAIOAykxV504w220IB6SNF8PWmMovA3Vcj7BU34qr4lxSftuuc6vhGtb0CURpjiR2e2OMMNdyMuzVXbH286002Y11rMPE');
@@ -1800,7 +1814,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     },
   });
 
-   // ADD THIS SNIPPET
   const termsCheckbox = document.getElementById('terms-checkbox');
   const paymentButton = document.getElementById('submit-payment');
   if (termsCheckbox && paymentButton) {
@@ -1824,22 +1837,26 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('loginForm').addEventListener('submit', handleLogin);
   document.getElementById('registerForm').addEventListener('submit', handleRegister);
   
-  // Load purchased adjudicators FIRST
-  await loadPurchasedAdjudicators();
-  
-  // Then load adjudicators list
-  loadAdjudicators();
-  setupEventListeners();
-
-  // Apply saved theme
+  // Apply saved theme first
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme === 'dark') {
     document.body.classList.remove('light');
     document.body.classList.add('dark');
   }
 
+  // Load all adjudicators (needed for the full access check)
+  await loadAdjudicators();
   
+  // Load the user's specific access status
+  await loadUserAccessStatus();
+
+  // Now that access is known, re-render the list to apply blurring correctly
+  renderAdjudicatorsList();
+
+  setupEventListeners();
 });
+
+
 
 function initializeDecisionSearch() {
   if (selectedAdjudicator && selectedAdjudicator.decisions) {

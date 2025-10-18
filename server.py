@@ -2445,11 +2445,21 @@ def purchase_login(form_data: OAuth2PasswordRequestForm = Depends()):
 # ... surrounding code ...
 
 
-# Replace the existing /purchase-me endpoint with this:
+# In server.py, REPLACE your existing /purchase-me function with this one
+
 @app.get("/purchase-me")
 def read_purchase_user_me(current_user: dict = Depends(get_current_purchase_user)):
-    """Get current purchase user info including company details"""
-    return {
+    """Get current purchase user info including full access status."""
+
+    # --- NEW: Check for full access privileges ---
+    full_access_check = purchases_con.execute(
+        "SELECT 1 FROM full_access_users WHERE email = ?",
+        (current_user["email"],)
+    ).fetchone()
+    has_full_access = full_access_check is not None
+    # --- END NEW ---
+
+    user_data = {
         "email": current_user["email"],
         "first_name": current_user["first_name"],
         "last_name": current_user["last_name"],
@@ -2463,8 +2473,11 @@ def read_purchase_user_me(current_user: dict = Depends(get_current_purchase_user
         "phone": current_user["phone"],
         "created_at": current_user["created_at"],
         "last_login": current_user.get("last_login"),
-        "email_verified": current_user.get("email_verified", 0)
+        "email_verified": current_user.get("email_verified", 0),
+        "has_full_access": has_full_access # ADDED THIS LINE
     }
+    return user_data
+
 
 
 @app.put("/update-profile")
