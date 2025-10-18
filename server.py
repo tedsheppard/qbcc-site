@@ -371,7 +371,7 @@ Sopal Team
         
         await aiosmtplib.send(
             msg,
-            hostname=os.getenv("SMTP_HOST", "smtp.office365.com"),
+            hostname=os.getenv("SMTP_HOST", "smtp.office35.com"),
             port=int(os.getenv("SMTP_PORT", "587")),
             start_tls=True,
             username=os.getenv("SMTP_USERNAME", "info@sopal.com.au"),
@@ -1447,7 +1447,20 @@ async def upload_decision(
         )
         con.commit()
 
-        # 6. Update Meilisearch index
+        # --- START: CRITICAL FIX ---
+        # 6. Update the FTS index for the newly inserted document
+        new_doc_row = con.execute("SELECT rowid FROM docs_fresh WHERE ejs_id = ?", (ejs_id,)).fetchone()
+        if new_doc_row:
+            new_rowid = new_doc_row['rowid']
+            con.execute("INSERT INTO fts (rowid, full_text) VALUES (?, ?)", (new_rowid, full_text))
+            con.commit()
+            print(f"INFO: Successfully updated FTS index for new document ejs_id {ejs_id}")
+        else:
+            print(f"WARN: Could not find new document {ejs_id} to update FTS index.")
+        # --- END: CRITICAL FIX ---
+
+
+        # 7. Update Meilisearch index
         meili_doc = {
             "id": ejs_id,
             "reference": reference,
@@ -1474,7 +1487,78 @@ async def upload_decision(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred during upload: {e}")
 
-# In server.py, REPLACE the entire create_meilisearch_backup function with this one
+# In server.py, add this new endpoint with your other admin routes
+@app.post("/admin/rebuild-indexes")
+async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
+    """
+    Forces a rebuild of the local FTS index and resynchronizes all documents with Meilisearch.
+    This is useful if new documents are not appearing in search results.
+    """
+    try:
+        # 1. Rebuild the local SQLite FTS index
+        print("INFO: Starting FTS index rebuild...")
+        ensure_fts()
+        print("INFO: FTS index rebuild complete.")
+
+        # 2. Resynchronize with Meilisearch
+        print("INFO: Starting Meilisearch synchronization...")
+        
+        # Fetch all documents from the local database
+        docs_to_sync = con.execute("""
+            SELECT 
+                d.ejs_id, d.reference, d.pdf_path, d.full_text,
+                m.claimant, m.respondent, m.adjudicator, m.decision_date_norm
+            FROM docs_fresh d
+            LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+        """).fetchall()
+
+        if not docs_to_sync:
+            return {"status": "warning", "message": "No documents found in the database to sync."}
+
+        meili_docs = []
+        for doc in docs_to_sync:
+            try:
+                # Ensure date is valid before creating timestamp
+                sortable_date = 0
+                if doc["decision_date_norm"]:
+                    sortable_date = int(time.mktime(datetime.strptime(doc["decision_date_norm"], "%Y-%m-%d").timetuple()))
+                
+                meili_docs.append({
+                    "id": doc["ejs_id"],
+                    "reference": doc["reference"],
+                    "pdf_path": doc["pdf_path"],
+                    "claimant": doc["claimant"],
+                    "respondent": doc["respondent"],
+                    "adjudicator": doc["adjudicator"],
+                    "date": doc["decision_date_norm"],
+                    "sortable_date": sortable_date,
+                    "act": "BIF Act", # Assuming a default value, adjust if needed
+                    "content": doc["full_text"] or ""
+                })
+            except (ValueError, TypeError) as e:
+                print(f"WARN: Skipping document {doc['ejs_id']} due to invalid date '{doc['decision_date_norm']}': {e}")
+
+
+        # Send documents to Meilisearch in batches to avoid large payloads
+        batch_size = 500
+        headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
+        
+        for i in range(0, len(meili_docs), batch_size):
+            batch = meili_docs[i:i + batch_size]
+            res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=headers, json=batch)
+            res.raise_for_status()
+            print(f"INFO: Sent batch {i//batch_size + 1} to Meilisearch.")
+
+        print(f"INFO: Meilisearch synchronization complete. {len(meili_docs)} documents processed.")
+        
+        return {"status": "success", "message": "Successfully rebuilt SQLite FTS index and synchronized all documents with Meilisearch."}
+
+    except Exception as e:
+        print(f"ERROR in /admin/rebuild-indexes: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An error occurred during index rebuild: {e}")
+
 
 # In server.py, REPLACE the entire create_meilisearch_backup function with this one
 
