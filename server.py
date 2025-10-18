@@ -3198,5 +3198,3 @@ async def serve_html_page(path_name: str):
         return FileResponse(index_path)
 
     raise HTTPException(status_code=404, detail="Not Found")
-" in the canvas "Sopal Server", the user wants to add `import sys` to the beginning of the python file
-
