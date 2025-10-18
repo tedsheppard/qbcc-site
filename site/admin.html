@@ -57,6 +57,7 @@
       <button class="nav-btn" data-hash="fullaccess">Full Access Privileges</button>
       <button class="nav-btn" data-hash="upload">Upload New Decisions</button>
       <button class="nav-btn" data-hash="backup">Backups</button>
+      <button class="nav-btn" data-hash="database">Database</button>
     </aside>
     <div class="admin-content">
         <section id="users-section" class="admin-section"></section>
@@ -69,89 +70,38 @@
               <h2>Upload New Adjudication Decision</h2>
               <form id="upload-form">
                 <div id="upload-feedback" style="margin-bottom: 15px; padding: 10px; border-radius: 4px; display: none;"></div>
-                
                 <h3>File Upload</h3>
                 <div class="form-group">
                     <label for="pdf_file">Decision PDF *</label>
                     <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" required>
                 </div>
-    
                 <h3>Primary Details</h3>
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label for="reference">Decision Reference ID *</label>
-                        <input type="text" id="reference" name="reference" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="decision_date">Decision Date (e.g., 18 October 2025) *</label>
-                        <input type="text" id="decision_date" name="decision_date" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="decision_date_norm">Decision Date (YYYY-MM-DD) *</label>
-                        <input type="date" id="decision_date_norm" name="decision_date_norm" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="act">Governing Act *</label>
-                        <input type="text" id="act" name="act" value="BIF Act" required>
-                    </div>
+                    <div class="form-group"><label for="reference">Decision Reference ID *</label><input type="text" id="reference" name="reference" required></div>
+                    <div class="form-group"><label for="decision_date">Decision Date (e.g., 18 October 2025) *</label><input type="text" id="decision_date" name="decision_date" required></div>
+                    <div class="form-group"><label for="decision_date_norm">Decision Date (YYYY-MM-DD) *</label><input type="date" id="decision_date_norm" name="decision_date_norm" required></div>
+                    <div class="form-group"><label for="act">Governing Act *</label><input type="text" id="act" name="act" value="BIF Act" required></div>
                 </div>
-    
                 <h3>Party Details</h3>
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label for="adjudicator">Adjudicator Name *</label>
-                        <input type="text" id="adjudicator" name="adjudicator" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="claimant">Claimant Name *</label>
-                        <input type="text" id="claimant" name="claimant" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="respondent">Respondent Name *</label>
-                        <input type="text" id="respondent" name="respondent" required>
-                    </div>
+                    <div class="form-group"><label for="adjudicator">Adjudicator Name *</label><input type="text" id="adjudicator" name="adjudicator" required></div>
+                    <div class="form-group"><label for="claimant">Claimant Name *</label><input type="text" id="claimant" name="claimant" required></div>
+                    <div class="form-group"><label for="respondent">Respondent Name *</label><input type="text" id="respondent" name="respondent" required></div>
                 </div>
-    
                 <h3>Financial Details</h3>
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label for="claimed_amount">Claimed Amount *</label>
-                        <input type="number" step="0.01" id="claimed_amount" name="claimed_amount" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="payment_schedule_amount">Payment Schedule Amount</label>
-                        <input type="number" step="0.01" id="payment_schedule_amount" name="payment_schedule_amount">
-                    </div>
-                    <div class="form-group">
-                        <label for="adjudicated_amount">Adjudicated Amount *</label>
-                        <input type="number" step="0.01" id="adjudicated_amount" name="adjudicated_amount" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="fee_claimant_proportion">Claimant Fee Proportion (%)</label>
-                        <input type="number" step="0.1" id="fee_claimant_proportion" name="fee_claimant_proportion">
-                    </div>
-                     <div class="form-group">
-                        <label for="fee_respondent_proportion">Respondent Fee Proportion (%)</label>
-                        <input type="number" step="0.1" id="fee_respondent_proportion" name="fee_respondent_proportion">
-                    </div>
+                    <div class="form-group"><label for="claimed_amount">Claimed Amount *</label><input type="number" step="0.01" id="claimed_amount" name="claimed_amount" required></div>
+                    <div class="form-group"><label for="payment_schedule_amount">Payment Schedule Amount</label><input type="number" step="0.01" id="payment_schedule_amount" name="payment_schedule_amount"></div>
+                    <div class="form-group"><label for="adjudicated_amount">Adjudicated Amount *</label><input type="number" step="0.01" id="adjudicated_amount" name="adjudicated_amount" required></div>
+                    <div class="form-group"><label for="fee_claimant_proportion">Claimant Fee Proportion (%)</label><input type="number" step="0.1" id="fee_claimant_proportion" name="fee_claimant_proportion"></div>
+                    <div class="form-group"><label for="fee_respondent_proportion">Respondent Fee Proportion (%)</label><input type="number" step="0.1" id="fee_respondent_proportion" name="fee_respondent_proportion"></div>
                 </div>
-    
                 <h3>Classification Details</h3>
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label for="project_type">Project Type</label>
-                        <input type="text" id="project_type" name="project_type">
-                    </div>
-                    <div class="form-group">
-                        <label for="contract_type">Contract Type</label>
-                        <input type="text" id="contract_type" name="contract_type">
-                    </div>
-                    <div class="form-group">
-                        <label for="outcome">Outcome</label>
-                        <input type="text" id="outcome" name="outcome">
-                    </div>
+                    <div class="form-group"><label for="project_type">Project Type</label><input type="text" id="project_type" name="project_type"></div>
+                    <div class="form-group"><label for="contract_type">Contract Type</label><input type="text" id="contract_type" name="contract_type"></div>
+                    <div class="form-group"><label for="outcome">Outcome</label><input type="text" id="outcome" name="outcome"></div>
                 </div>
-    
                 <button type="submit" id="upload-btn" class="btn-primary" style="margin-top: 20px;">Upload Decision</button>
               </form>
             </div>
@@ -160,11 +110,18 @@
         <section id="backup-section" class="admin-section">
             <div class="card">
                 <h2>Meilisearch Backup</h2>
-                <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">
-                    Create a point-in-time snapshot of the Meilisearch database and upload it to Google Cloud Storage.
-                </p>
+                <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">Create a point-in-time snapshot of the Meilisearch database and upload it to Google Cloud Storage.</p>
                 <button id="backup-btn" class="btn-primary">Create New Backup</button>
                 <div id="backup-feedback" style="margin-top: 20px; padding: 10px; border-radius: 4px; display: none;"></div>
+            </div>
+        </section>
+
+        <section id="database-section" class="admin-section">
+            <div class="card">
+                <h2>Database Management</h2>
+                <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">Permanently save all changes (like new decision uploads) from the server's local database back to the master copy in Google Cloud Storage.</p>
+                <button id="save-db-btn" class="btn-primary">Save Database to GCS</button>
+                <div id="db-feedback" style="margin-top: 20px; padding: 10px; border-radius: 4px; display: none;"></div>
             </div>
         </section>
     </div>
@@ -175,18 +132,15 @@
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('purchase_token');
 
-    // --- DOM References ---
     const navButtons = document.querySelectorAll('.admin-nav .nav-btn');
     const sections = document.querySelectorAll('.admin-section');
     const loadedTabs = new Set();
 
-    // --- AUTHENTICATION CHECK ---
     if (!token) {
         document.querySelector('main').innerHTML = '<p class="error-message">Access Denied. Please log in as an admin.</p>';
         return;
     }
 
-    // --- HELPER FUNCTIONS ---
     function formatAEST(isoString) {
         if (!isoString) return 'N/A';
         try {
@@ -202,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- NAVIGATION ---
     function showTab(hash) {
         const targetHash = (hash || '#users').substring(1);
         navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.hash === targetHash));
@@ -217,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const section = document.getElementById(`${targetHash}-section`);
         if (!section) return;
 
-        if (targetHash === 'upload' || targetHash === 'backup' || loadedTabs.has(targetHash)) {
+        if (['upload', 'backup', 'database'].includes(targetHash) || loadedTabs.has(targetHash)) {
             return;
         }
 
@@ -238,7 +191,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- DATA FETCHING ---
     async function fetchData(url, sectionElement, renderer, title) {
         sectionElement.innerHTML = `<div class="card"><h2>${title}</h2><p class="loading-message">Loading data...</p></div>`;
         try {
@@ -251,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- TABLE RENDERERS ---
     function renderUsersTable(users, sectionElement) {
         let content = '<h2>Account Creation Activity</h2>';
         if (!users || users.length === 0) {
@@ -298,37 +249,26 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderFullAccessUsers(users, sectionElement) {
         let content = `
             <h2>Manage Full Access Users</h2>
-            <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">Users added here will have free access to all adjudicator insights.</p>
+            <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">Users added here have free access to all adjudicator insights.</p>
             <div id="fullaccess-feedback" style="margin-bottom: 15px;"></div>
             <div class="form-inline">
                 <input type="email" id="add-email-input" placeholder="Enter user's email address">
                 <button id="add-email-btn" class="btn-primary">Add User</button>
             </div>
-            <table>
-                <thead><tr><th>Email Address</th><th>Date Added (AEST)</th><th>Action</th></tr></thead>
-                <tbody>
-        `;
+            <table><thead><tr><th>Email Address</th><th>Date Added (AEST)</th><th>Action</th></tr></thead><tbody>`;
         if (users && users.length > 0) {
             users.forEach(user => {
-                content += `
-                    <tr>
-                        <td>${user.email}</td>
-                        <td>${formatAEST(user.added_at)}</td>
-                        <td><button class="remove-btn" data-email="${user.email}" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Remove</button></td>
-                    </tr>
-                `;
+                content += `<tr><td>${user.email}</td><td>${formatAEST(user.added_at)}</td><td><button class="remove-btn" data-email="${user.email}" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Remove</button></td></tr>`;
             });
         } else {
             content += `<tr><td colspan="3" style="text-align:center; padding: 20px; color: #666;">No users currently have full access.</td></tr>`;
         }
         content += '</tbody></table>';
         sectionElement.innerHTML = `<div class="card">${content}</div>`;
-
         document.getElementById('add-email-btn').addEventListener('click', handleAddFullAccess);
         document.querySelectorAll('.remove-btn').forEach(btn => btn.addEventListener('click', handleRemoveFullAccess));
     }
 
-    // --- EVENT HANDLERS ---
     async function handleAddFullAccess() {
         const emailInput = document.getElementById('add-email-input');
         const email = emailInput.value.trim();
@@ -359,26 +299,19 @@ document.addEventListener('DOMContentLoaded', () => {
         loadSectionContent('fullaccess');
     }
     
-    // THIS FUNCTION WAS MISSING
     async function handleCreateBackup() {
         const backupBtn = document.getElementById('backup-btn');
         const feedbackDiv = document.getElementById('backup-feedback');
         if (!confirm('Are you sure you want to create a new Meilisearch backup?')) return;
-
         backupBtn.disabled = true;
         backupBtn.textContent = 'Backup in Progress...';
         feedbackDiv.style.display = 'block';
         feedbackDiv.style.color = '#333';
         feedbackDiv.textContent = 'Starting snapshot... This may take several minutes.';
-
         try {
-            const response = await fetch('/admin/create-meilisearch-backup', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const response = await fetch('/admin/create-meilisearch-backup', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
             const result = await response.json();
             if (!response.ok) throw new Error(result.detail || 'An unknown error occurred.');
-            
             feedbackDiv.textContent = result.message;
             feedbackDiv.style.background = '#e8f8f1';
             feedbackDiv.style.color = '#008a5c';
@@ -391,8 +324,33 @@ document.addEventListener('DOMContentLoaded', () => {
             backupBtn.textContent = 'Create New Backup';
         }
     }
+
+    async function handleSaveDatabase() {
+        const saveDbBtn = document.getElementById('save-db-btn');
+        const feedbackDiv = document.getElementById('db-feedback');
+        if (!confirm('Are you sure you want to save the current database to GCS? This will overwrite the previous version.')) return;
+        saveDbBtn.disabled = true;
+        saveDbBtn.textContent = 'Saving...';
+        feedbackDiv.style.display = 'block';
+        feedbackDiv.style.color = '#333';
+        feedbackDiv.textContent = 'Saving database to Google Cloud Storage...';
+        try {
+            const response = await fetch('/admin/save-database', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.detail || 'An unknown error occurred.');
+            feedbackDiv.textContent = result.message;
+            feedbackDiv.style.background = '#e8f8f1';
+            feedbackDiv.style.color = '#008a5c';
+        } catch (error) {
+            feedbackDiv.textContent = `Error: ${error.message}`;
+            feedbackDiv.style.background = '#f8d7da';
+            feedbackDiv.style.color = '#721c24';
+        } finally {
+            saveDbBtn.disabled = false;
+            saveDbBtn.textContent = 'Save Database to GCS';
+        }
+    }
     
-    // --- UPLOAD FORM LOGIC ---
     const uploadForm = document.getElementById('upload-form');
     if (uploadForm) {
         uploadForm.addEventListener('submit', async (e) => {
@@ -403,13 +361,8 @@ document.addEventListener('DOMContentLoaded', () => {
             uploadBtn.disabled = true;
             uploadBtn.textContent = 'Uploading...';
             const formData = new FormData(uploadForm);
-            
             try {
-                const response = await fetch('/admin/upload-decision', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
-                });
+                const response = await fetch('/admin/upload-decision', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.detail || 'An unknown error occurred.');
                 feedbackDiv.textContent = result.message || 'Upload successful!';
@@ -428,20 +381,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- INITIALIZATION ---
-    // Attach backup button listener
     const backupBtn = document.getElementById('backup-btn');
     if (backupBtn) {
         backupBtn.addEventListener('click', handleCreateBackup);
     }
     
-    // Setup navigation
+    const saveDbBtn = document.getElementById('save-db-btn');
+    if (saveDbBtn) {
+        saveDbBtn.addEventListener('click', handleSaveDatabase);
+    }
+    
     navButtons.forEach(button => button.addEventListener('click', () => window.location.hash = button.dataset.hash));
     window.addEventListener('hashchange', () => showTab(window.location.hash));
     
-    // Initial page load
     showTab(window.location.hash || '#users');
 });
 </script>
+
 </body>
 </html>

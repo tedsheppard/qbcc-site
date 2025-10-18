@@ -1556,7 +1556,37 @@ def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     
+# In server.py, add this with your other admin endpoints
 
+@app.post("/admin/save-database")
+def save_database_to_gcs(admin: dict = Depends(get_admin_user)):
+    """
+    Uploads the current local qbcc.db file from /tmp back to GCS, overwriting the old one.
+    """
+    try:
+        # DB_PATH is defined at the top of your server.py file as "/tmp/qbcc.db"
+        if not os.path.exists(DB_PATH):
+            raise HTTPException(status_code=404, detail="Local database file not found.")
+
+        storage_client = get_gcs_client()
+        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
+        gcs_db_object_name = os.getenv("GCS_DB_OBJECT_NAME", "qbcc.db") # The filename in the bucket
+
+        if not storage_client or not gcs_bucket_name:
+            raise HTTPException(status_code=500, detail="GCS not configured on the server.")
+
+        print(f"INFO: Uploading local database '{DB_PATH}' to GCS bucket '{gcs_bucket_name}' as '{gcs_db_object_name}'...")
+
+        bucket = storage_client.bucket(gcs_bucket_name)
+        blob = bucket.blob(gcs_db_object_name)
+        blob.upload_from_filename(DB_PATH)
+
+        print("INFO: Database upload successful.")
+        return {"status": "success", "message": "Database successfully saved to Google Cloud Storage."}
+
+    except Exception as e:
+        print(f"ERROR in /admin/save-database: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
     
 # ---------- AI Summarise ----------
