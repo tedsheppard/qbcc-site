@@ -977,6 +977,14 @@ def search_fast(
 
         where_clauses = []
         sql_params = []
+        
+        # Always filter out results that are missing critical information
+        where_clauses.extend([
+            "a.decision_date IS NOT NULL",
+            "a.decision_date != ''",
+            "m.claimant IS NOT NULL",
+            "m.claimant != ''"
+        ])
 
         if nq2:
             where_clauses.append("fts MATCH ?")
@@ -3185,5 +3193,4 @@ async def serve_html_page(path_name: str):
         return FileResponse(index_path)
 
     raise HTTPException(status_code=404, detail="Not Found")
-
 
