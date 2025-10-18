@@ -1,4 +1,4 @@
-import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io, json
+import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io, json, sys
 from urllib.parse import unquote_plus
 from fastapi import FastAPI, Query, Form, Path, HTTPException, UploadFile, File, Body
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse
@@ -110,6 +110,8 @@ con.row_factory = sqlite3.Row
 con.execute("PRAGMA cache_size = -20000")
 con.execute("PRAGMA temp_store = MEMORY")
 con.execute("PRAGMA mmap_size = 30000000000")
+con.execute("PRAGMA journal_mode=WAL;")
+
 
 app = FastAPI()
 
@@ -1047,7 +1049,7 @@ def search_fast(
             order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 9999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC"
         
         # Build and execute the main query
-        snippet_select = "snippet(fts, '<mark>', '</mark>', ' … ', 100)" if nq2 else "substr(d.full_text, 1, 500) || '...'"
+        snippet_select = "snippet(fts, 0, '<mark>', '</mark>', ' … ', 100)" if nq2 else "substr(d.full_text, 1, 500) || '...'"
         
         sql = f"""
             SELECT DISTINCT fts.rowid, {snippet_select} AS snippet
@@ -1265,16 +1267,18 @@ async def upload_decision(
     admin: dict = Depends(get_admin_user),
     # File
     pdf_file: UploadFile = File(...),
-    # Primary Details
+    # IDs
+    ejs_id: str = Form(...),
     reference: str = Form(...),
+    # Dates
     decision_date: str = Form(...),
     decision_date_norm: str = Form(...),
+    # Meta
     act: str = Form(...),
-    # Party Details
     adjudicator: str = Form(...),
     claimant: str = Form(...),
     respondent: str = Form(...),
-    # Financial Details
+    # Financial
     claimed_amount: float = Form(...),
     adjudicated_amount: float = Form(...),
     payment_schedule_amount: Optional[float] = Form(None),
@@ -1289,14 +1293,11 @@ async def upload_decision(
     Admin endpoint to upload a new decision, process it, and add to all databases.
     """
     try:
-        # 1. Generate a unique ID for the new decision
-        ejs_id = f"MANUAL{int(time.time())}{''.join(random.choices(string.ascii_uppercase, k=3))}"
-        
-        # 2. Handle the PDF file
+        # 1. Handle the PDF file
         pdf_content = await pdf_file.read()
         pdf_filename = pdf_file.filename
 
-        # 3. Upload PDF to Google Cloud Storage
+        # 2. Upload PDF to Google Cloud Storage
         storage_client = get_gcs_client()
         gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
         if not storage_client or not gcs_bucket_name:
@@ -1307,16 +1308,40 @@ async def upload_decision(
         blob.upload_from_string(pdf_content, content_type='application/pdf')
         pdf_path = f"/gcs/{gcs_bucket_name}/pdfs/{pdf_filename}" # Storing path in this format
 
-        # 4. Extract text from the PDF
+        # 3. Extract text and page count from the PDF
         full_text = ""
+        doc_length_pages = 0
         with io.BytesIO(pdf_content) as f:
             reader = PyPDF2.PdfReader(f)
+            doc_length_pages = len(reader.pages)
             for page in reader.pages:
                 full_text += page.extract_text() or ""
         
         if not full_text:
-            # If no text could be extracted, we should still proceed but log a warning
             print(f"WARNING: No text could be extracted from {pdf_filename} for ejs_id {ejs_id}")
+
+        # 4. Construct raw_json object
+        raw_json_data = {
+            "ejs_id": ejs_id,
+            "adjudicator_name": adjudicator,
+            "claimant_name": claimant,
+            "respondent_name": respondent,
+            "claimed_amount": claimed_amount,
+            "payment_schedule_amount": payment_schedule_amount,
+            "adjudicated_amount": adjudicated_amount,
+            "jurisdiction_upheld": 0, # Default value
+            "fee_claimant_proportion": fee_claimant_proportion,
+            "fee_respondent_proportion": fee_respondent_proportion,
+            "decision_date": decision_date_norm,
+            "keywords": [], # Default value
+            "outcome": outcome,
+            "sections_referenced": None, # Default value
+            "project_type": project_type,
+            "contract_type": contract_type,
+            "doc_length_pages": doc_length_pages,
+            "act_category": act 
+        }
+        raw_json_string = json.dumps(raw_json_data)
 
         # 5. Insert data into SQLite database tables
         # Table: docs_fresh
@@ -1326,10 +1351,19 @@ async def upload_decision(
         )
 
         # Table: docs_meta
-        con.execute(
-            "INSERT INTO docs_meta (ejs_id, claimant, respondent, adjudicator, decision_date_norm, act) VALUES (?, ?, ?, ?, ?, ?)",
-            (ejs_id, claimant, respondent, adjudicator, decision_date_norm, act)
-        )
+        # NOTE: Assuming 'application_no' and 'decision_date' columns exist.
+        try:
+            con.execute(
+                "INSERT INTO docs_meta (ejs_id, claimant, respondent, adjudicator, decision_date, decision_date_norm, act, application_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (ejs_id, claimant, respondent, adjudicator, decision_date, decision_date_norm, act, reference)
+            )
+        except sqlite3.OperationalError as e:
+            print(f"Warning: Could not insert into docs_meta with extended columns: {e}. Trying basic insert.")
+            con.execute(
+                "INSERT INTO docs_meta (ejs_id, claimant, respondent, adjudicator, decision_date_norm, act) VALUES (?, ?, ?, ?, ?, ?)",
+                (ejs_id, claimant, respondent, adjudicator, decision_date_norm, act)
+            )
+
 
         # Table: ai_adjudicator_extract_v4
         con.execute(
@@ -1337,8 +1371,9 @@ async def upload_decision(
             INSERT INTO ai_adjudicator_extract_v4 (
                 ejs_id, adjudicator_name, claimant_name, respondent_name, claimed_amount,
                 payment_schedule_amount, adjudicated_amount, fee_claimant_proportion,
-                fee_respondent_proportion, decision_date, outcome, project_type, contract_type
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                fee_respondent_proportion, decision_date, outcome, project_type, contract_type,
+                doc_length_pages, raw_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 ejs_id, adjudicator, claimant, respondent, str(claimed_amount),
@@ -1346,12 +1381,14 @@ async def upload_decision(
                 str(adjudicated_amount),
                 str(fee_claimant_proportion) if fee_claimant_proportion is not None else None,
                 str(fee_respondent_proportion) if fee_respondent_proportion is not None else None,
-                decision_date, outcome, project_type, contract_type
+                decision_date_norm, # Using the YYYY-MM-DD date
+                outcome, project_type, contract_type,
+                doc_length_pages,
+                raw_json_string
             )
         )
         con.commit()
 
-        # --- START: CRITICAL FIX ---
         # 6. Update the FTS index for the newly inserted document
         new_doc_row = con.execute("SELECT rowid FROM docs_fresh WHERE ejs_id = ?", (ejs_id,)).fetchone()
         if new_doc_row:
@@ -1361,8 +1398,6 @@ async def upload_decision(
             print(f"INFO: Successfully updated FTS index for new document ejs_id {ejs_id}")
         else:
             print(f"WARN: Could not find new document {ejs_id} to update FTS index.")
-        # --- END: CRITICAL FIX ---
-
 
         # 7. Update Meilisearch index
         meili_doc = {
@@ -3198,3 +3233,4 @@ async def serve_html_page(path_name: str):
         return FileResponse(index_path)
 
     raise HTTPException(status_code=404, detail="Not Found")
+

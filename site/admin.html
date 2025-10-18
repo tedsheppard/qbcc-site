@@ -100,6 +100,7 @@
                       <tr>
                         <th>Filename</th>
                         <th>Status</th>
+                        <th>EJS ID *</th>
                         <th>Reference ID *</th>
                         <th>Decision Date (Text) *</th>
                         <th>Decision Date (YYYY-MM-DD) *</th>
@@ -108,12 +109,13 @@
                         <th>Respondent *</th>
                         <th>Claimed $*</th>
                         <th>Adjudicated $*</th>
+                        <th>Fee Claimant %</th>
+                        <th>Fee Respondent %</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody id="metadata-table-body">
-                      <!-- Rows will be added dynamically -->
-                    </tbody>
+                      </tbody>
                   </table>
                 </div>
                 <div id="batch-actions" style="margin-top: 20px;">
@@ -453,6 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
         row.innerHTML = `
             <td>${file.name}</td>
             <td class="status-cell status-pending">Pending</td>
+            <td><input type="text" name="ejs_id" required></td>
             <td><input type="text" name="reference" required></td>
             <td><input type="text" name="decision_date" required></td>
             <td><input type="date" name="decision_date_norm" required></td>
@@ -461,6 +464,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <td><input type="text" name="respondent" required></td>
             <td><input type="number" step="0.01" name="claimed_amount" required></td>
             <td><input type="number" step="0.01" name="adjudicated_amount" required></td>
+            <td><input type="number" step="0.01" name="fee_claimant_proportion" placeholder="e.g., 50"></td>
+            <td><input type="number" step="0.01" name="fee_respondent_proportion" placeholder="e.g., 50"></td>
             <td>
                 <button class="btn-primary btn-small save-row-btn">Save</button>
                 <button class="btn-danger btn-small remove-row-btn" style="margin-top: 4px;">Remove</button>
@@ -511,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Append all required fields from the original form logic
         const fields = [
-            'reference', 'decision_date', 'decision_date_norm', 'act', 'adjudicator', 
+            'ejs_id', 'reference', 'decision_date', 'decision_date_norm', 'act', 'adjudicator', 
             'claimant', 'respondent', 'claimed_amount', 'adjudicated_amount', 
             'payment_schedule_amount', 'fee_claimant_proportion', 'fee_respondent_proportion', 
             'project_type', 'contract_type', 'outcome'
@@ -586,4 +591,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-
