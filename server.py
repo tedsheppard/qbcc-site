@@ -1476,10 +1476,13 @@ async def upload_decision(
 
 # In server.py, REPLACE the entire create_meilisearch_backup function with this one
 
+# In server.py, REPLACE the entire create_meilisearch_backup function with this one
+
 @app.post("/admin/create-meilisearch-backup")
 def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
     """
-    Triggers a Meilisearch snapshot, waits for it, and uploads it to GCS.
+    Triggers a Meilisearch snapshot, waits for it, finds the new file on disk,
+    and uploads it to the GCS bucket.
     """
     SNAPSHOT_DIR = "/meili_data/snapshots" # The shared disk path
 
@@ -1494,6 +1497,7 @@ def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
             raise Exception("Meilisearch did not return a valid task UID to track.")
 
         # Step 2: Poll Meilisearch until the snapshot task is complete
+        print(f"INFO: Waiting for Meilisearch snapshot task {task_uid} to complete...")
         while True:
             time.sleep(2) # Wait 2 seconds between checks
             task_res = requests.get(f"{MEILI_URL}/tasks/{task_uid}", headers=headers)
@@ -1501,44 +1505,50 @@ def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
             task_status = task_res.json()
 
             if task_status.get('status') == 'succeeded':
-                # --- START: CORRECTED LOGIC ---
-                details = task_status.get('details')
-                if not details:
-                    print(f"DEBUG: Meilisearch task {task_uid} succeeded but had no 'details' field. Full task object: {task_status}")
-                    raise Exception("Snapshot task succeeded but details were not available from Meilisearch.")
-
-                snapshot_filename = details.get('snapshotName')
-                if not snapshot_filename:
-                    print(f"DEBUG: Meilisearch task {task_uid} details missing 'snapshotName'. Full details object: {details}")
-                    raise Exception("Snapshot task succeeded but the snapshot filename could not be found.")
-                # --- END: CORRECTED LOGIC ---
-                break
+                print(f"INFO: Snapshot task {task_uid} succeeded.")
+                break # Exit the loop on success
 
             if task_status.get('status') in ['failed', 'canceled']:
                 error_details = task_status.get('error', {})
                 raise Exception(f"Meilisearch snapshot failed: {error_details.get('message', 'No error details provided.')}")
-
-        # Step 3: Upload the snapshot from the shared disk to GCS
-        local_snapshot_path = os.path.join(SNAPSHOT_DIR, snapshot_filename)
         
-        if not os.path.exists(local_snapshot_path):
-             raise Exception(f"Snapshot file not found at {local_snapshot_path}. Check disk mount paths and Meilisearch start command.")
+        # --- START: NEW, MORE ROBUST LOGIC ---
+        # Step 3: Find the newest snapshot file directly from the shared disk
+        print(f"INFO: Searching for the newest snapshot file in '{SNAPSHOT_DIR}'...")
+        
+        # Ensure the directory exists before listing
+        if not os.path.isdir(SNAPSHOT_DIR):
+             raise Exception(f"Snapshot directory '{SNAPSHOT_DIR}' not found. Check your Meilisearch start command and disk mount.")
 
+        snapshot_files = [f for f in os.listdir(SNAPSHOT_DIR) if f.endswith('.snapshot')]
+        if not snapshot_files:
+            raise Exception("Snapshot task succeeded, but no snapshot files were found in the directory.")
+            
+        # Find the most recently created/modified snapshot file
+        latest_snapshot_filename = max(snapshot_files, key=lambda f: os.path.getmtime(os.path.join(SNAPSHOT_DIR, f)))
+        local_snapshot_path = os.path.join(SNAPSHOT_DIR, latest_snapshot_filename)
+        print(f"INFO: Found latest snapshot file: {latest_snapshot_filename}")
+        # --- END: NEW LOGIC ---
+
+        # Step 4: Upload the snapshot from the shared disk to GCS
+        print(f"INFO: Uploading '{latest_snapshot_filename}' to GCS...")
         storage_client = get_gcs_client()
         gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
         if not storage_client or not gcs_bucket_name:
             raise HTTPException(status_code=500, detail="GCS not configured on the server.")
 
         bucket = storage_client.bucket(gcs_bucket_name)
-        gcs_path = f"meili_backups/{snapshot_filename}"
+        gcs_path = f"meili_backups/{latest_snapshot_filename}"
         blob = bucket.blob(gcs_path)
         
         blob.upload_from_filename(local_snapshot_path)
+        print(f"INFO: Successfully uploaded to GCS at '{gcs_path}'.")
 
-        # Step 4 (Optional): Clean up the local snapshot to save disk space
+        # Step 5: Clean up the local snapshot to save disk space
         os.remove(local_snapshot_path)
+        print(f"INFO: Cleaned up local file: {local_snapshot_path}")
 
-        return {"status": "success", "message": f"Backup '{snapshot_filename}' successfully uploaded to GCS."}
+        return {"status": "success", "message": f"Backup '{latest_snapshot_filename}' successfully uploaded to GCS."}
 
     except Exception as e:
         print(f"ERROR in /admin/create-meilisearch-backup: {e}")
@@ -1546,6 +1556,7 @@ def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     
+
 
     
 # ---------- AI Summarise ----------
