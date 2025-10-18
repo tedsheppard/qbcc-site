@@ -1552,6 +1552,11 @@ def save_database_to_gcs(admin: dict = Depends(get_admin_user)):
     Uploads the current local qbcc.db file from /tmp back to GCS, overwriting the old one.
     """
     try:
+        # CRITICAL FIX: Force a checkpoint to merge the WAL file into the main DB file
+        print("INFO: Checkpointing database to ensure all changes are written...")
+        con.execute("PRAGMA wal_checkpoint(FULL);")
+        print("INFO: Checkpoint complete.")
+
         # DB_PATH is defined at the top of your server.py file as "/tmp/qbcc.db"
         if not os.path.exists(DB_PATH):
             raise HTTPException(status_code=404, detail="Local database file not found.")
@@ -3193,4 +3198,5 @@ async def serve_html_page(path_name: str):
         return FileResponse(index_path)
 
     raise HTTPException(status_code=404, detail="Not Found")
+" in the canvas "Sopal Server", the user wants to add `import sys` to the beginning of the python file
 
