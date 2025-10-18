@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- NAVIGATION ---
     function showTab(hash) {
-        const targetHash = hash.substring(1);
+        const targetHash = (hash || '#users').substring(1);
         navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.hash === targetHash));
         sections.forEach(section => section.classList.toggle('active', section.id.replace('-section', '') === targetHash));
 
@@ -217,7 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const section = document.getElementById(`${targetHash}-section`);
         if (!section) return;
 
-        // Don't reload static tabs or already loaded dynamic tabs
         if (targetHash === 'upload' || targetHash === 'backup' || loadedTabs.has(targetHash)) {
             return;
         }
@@ -234,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetchData('/admin/adjudicator-activity', section, renderAdjudicatorActivityTable, 'Latest 1000 Adjudicator Page Views');
                 break;
             case 'fullaccess':
-                fetchData('/admin/full-access-users', section, renderFullAccessUsers, 'Manage Full Access Users');
+                fetchData('/admin/full-access-users', section, renderFullAccessUsers, 'Manage Full Access Privileges');
                 break;
         }
     }
@@ -303,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="fullaccess-feedback" style="margin-bottom: 15px;"></div>
             <div class="form-inline">
                 <input type="email" id="add-email-input" placeholder="Enter user's email address">
-                <button id="add-email-btn">Add User</button>
+                <button id="add-email-btn" class="btn-primary">Add User</button>
             </div>
             <table>
                 <thead><tr><th>Email Address</th><th>Date Added (AEST)</th><th>Action</th></tr></thead>
@@ -334,18 +333,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const emailInput = document.getElementById('add-email-input');
         const email = emailInput.value.trim();
         if (!email) return;
-
         const formData = new FormData();
         formData.append('email', email);
-
         const response = await fetch('/admin/add-full-access', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
         const data = await response.json();
         const feedbackDiv = document.getElementById('fullaccess-feedback');
-
         if (response.ok) {
             feedbackDiv.style.color = '#155724';
             emailInput.value = '';
-            loadedTabs.delete('fullaccess'); // Force reload
+            loadedTabs.delete('fullaccess'); 
             loadSectionContent('fullaccess');
         } else {
             feedbackDiv.style.color = '#721c24';
@@ -356,15 +352,14 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleRemoveFullAccess(event) {
         const email = event.target.dataset.email;
         if (!confirm(`Are you sure you want to revoke full access for ${email}?`)) return;
-
         const formData = new FormData();
         formData.append('email', email);
-        
         await fetch('/admin/remove-full-access', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
-        loadedTabs.delete('fullaccess'); // Force reload
+        loadedTabs.delete('fullaccess');
         loadSectionContent('fullaccess');
     }
     
+    // THIS FUNCTION WAS MISSING
     async function handleCreateBackup() {
         const backupBtn = document.getElementById('backup-btn');
         const feedbackDiv = document.getElementById('backup-feedback');
@@ -374,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
         backupBtn.textContent = 'Backup in Progress...';
         feedbackDiv.style.display = 'block';
         feedbackDiv.style.color = '#333';
-        feedbackDiv.textContent = 'Starting snapshot... This may take several minutes depending on database size.';
+        feedbackDiv.textContent = 'Starting snapshot... This may take several minutes.';
 
         try {
             const response = await fetch('/admin/create-meilisearch-backup', {
@@ -404,11 +399,9 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const feedbackDiv = document.getElementById('upload-feedback');
             const uploadBtn = document.getElementById('upload-btn');
-            
             feedbackDiv.style.display = 'none';
             uploadBtn.disabled = true;
             uploadBtn.textContent = 'Uploading...';
-
             const formData = new FormData(uploadForm);
             
             try {
@@ -418,9 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: formData
                 });
                 const result = await response.json();
-                
                 if (!response.ok) throw new Error(result.detail || 'An unknown error occurred.');
-
                 feedbackDiv.textContent = result.message || 'Upload successful!';
                 feedbackDiv.style.background = '#e8f8f1';
                 feedbackDiv.style.color = '#008a5c';
@@ -438,11 +429,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- INITIALIZATION ---
+    // Attach backup button listener
+    const backupBtn = document.getElementById('backup-btn');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', handleCreateBackup);
+    }
+    
+    // Setup navigation
     navButtons.forEach(button => button.addEventListener('click', () => window.location.hash = button.dataset.hash));
-    window.addEventListener('hashchange', () => showTab(window.location.hash || '#users'));
+    window.addEventListener('hashchange', () => showTab(window.location.hash));
+    
+    // Initial page load
     showTab(window.location.hash || '#users');
 });
 </script>
-
 </body>
 </html>
