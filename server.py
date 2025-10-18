@@ -1474,15 +1474,14 @@ async def upload_decision(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred during upload: {e}")
 
+# In server.py, REPLACE the entire create_meilisearch_backup function with this one
+
 @app.post("/admin/create-meilisearch-backup")
 def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
     """
-    Triggers a Meilisearch snapshot, waits for it, and uploads it to the GCS bucket.
-    This assumes Meilisearch is configured with --snapshot-dir /meili_data/snapshots
-    and the /meili_data disk is mounted on this service.
+    Triggers a Meilisearch snapshot, waits for it, and uploads it to GCS.
     """
-    # This is the path on the shared Render Disk
-    SNAPSHOT_DIR = "/meili_data/snapshots"
+    SNAPSHOT_DIR = "/meili_data/snapshots" # The shared disk path
 
     try:
         # Step 1: Tell Meilisearch to start creating a snapshot
@@ -1490,7 +1489,9 @@ def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
         start_res = requests.post(f"{MEILI_URL}/snapshots", headers=headers)
         start_res.raise_for_status()
         task = start_res.json()
-        task_uid = task['taskUid']
+        task_uid = task.get('taskUid')
+        if not task_uid:
+            raise Exception("Meilisearch did not return a valid task UID to track.")
 
         # Step 2: Poll Meilisearch until the snapshot task is complete
         while True:
@@ -1499,12 +1500,23 @@ def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
             task_res.raise_for_status()
             task_status = task_res.json()
 
-            if task_status['status'] == 'succeeded':
-                snapshot_filename = task_status['details']['snapshotName']
+            if task_status.get('status') == 'succeeded':
+                # --- START: CORRECTED LOGIC ---
+                details = task_status.get('details')
+                if not details:
+                    print(f"DEBUG: Meilisearch task {task_uid} succeeded but had no 'details' field. Full task object: {task_status}")
+                    raise Exception("Snapshot task succeeded but details were not available from Meilisearch.")
+
+                snapshot_filename = details.get('snapshotName')
+                if not snapshot_filename:
+                    print(f"DEBUG: Meilisearch task {task_uid} details missing 'snapshotName'. Full details object: {details}")
+                    raise Exception("Snapshot task succeeded but the snapshot filename could not be found.")
+                # --- END: CORRECTED LOGIC ---
                 break
-            if task_status['status'] in ['failed', 'canceled']:
+
+            if task_status.get('status') in ['failed', 'canceled']:
                 error_details = task_status.get('error', {})
-                raise Exception(f"Meilisearch snapshot failed: {error_details.get('message')}")
+                raise Exception(f"Meilisearch snapshot failed: {error_details.get('message', 'No error details provided.')}")
 
         # Step 3: Upload the snapshot from the shared disk to GCS
         local_snapshot_path = os.path.join(SNAPSHOT_DIR, snapshot_filename)
@@ -1523,14 +1535,18 @@ def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
         
         blob.upload_from_filename(local_snapshot_path)
 
-        # Step 4 (Optional but recommended): Clean up the local snapshot to save disk space
+        # Step 4 (Optional): Clean up the local snapshot to save disk space
         os.remove(local_snapshot_path)
 
         return {"status": "success", "message": f"Backup '{snapshot_filename}' successfully uploaded to GCS."}
 
     except Exception as e:
         print(f"ERROR in /admin/create-meilisearch-backup: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+    
+
     
 # ---------- AI Summarise ----------
 @app.get("/summarise/{decision_id}")
