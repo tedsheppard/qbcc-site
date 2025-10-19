@@ -995,7 +995,7 @@ def search_fast(
     )
     
     # --- BRANCH 1: SQLite FTS for Advanced/Complex Queries ---
-    if has_advanced_filters or is_complex_query:
+    if True: # Temporarily force all queries to use SQLite FTS
         try:
             nq2 = preprocess_sqlite_query(q_norm) if q_norm else ""
 
