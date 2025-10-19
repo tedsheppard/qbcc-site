@@ -3062,7 +3062,7 @@ async def generate_summary_pdf(
     story = []
 
     # --- Header ---
-    story.append(Paragraph("<b>Intelligent Adjudication Search</b>", styles["Heading"]))
+    story.append(Paragraph("<b>Search adjudicator's decisions</b>", styles["Heading"]))
     story.append(Paragraph("www.sopal.com.au &nbsp;&nbsp;&nbsp;&nbsp; info@sopal.com.au", styles["Body"]))
     story.append(Spacer(1, 12))
 
