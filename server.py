@@ -1109,15 +1109,25 @@ def search_fast(
             
             snippet_raw = r["snippet"]
             
-            # Manually highlight wildcard matches if snippet function didn't catch them
-            wildcard_stems = [term[:-1] for term in re.findall(r'\b\w+\*\b', nq2)]
-            for stem in wildcard_stems:
-                 # Avoid highlighting inside HTML tags
-                if '<mark>' not in snippet_raw:
-                     snippet_raw = highlight_wildcard_matches(snippet_raw, stem)
-
+            # Quick fix: Remove leading 0s and clean up highlighting
+            if snippet_raw and q_norm:
+                # Remove leading 0s from the snippet
+                snippet_raw = re.sub(r'\b0+(\w+)', r'\1', snippet_raw)
+                
+                # Extract only actual search words (no operators, no numbers)
+                search_words = re.findall(r'\b\w+\b', q_norm)
+                search_words = [w for w in search_words if w.upper() not in ['AND', 'OR', 'NOT', 'NEAR', 'W'] and not w.isdigit() and len(w) > 1]
+                
+                # Remove existing marks
+                snippet_raw = snippet_raw.replace('<mark>', '').replace('</mark>', '')
+                
+                # Re-highlight only the actual search terms
+                for word in search_words:
+                    snippet_raw = re.sub(r'\b(' + re.escape(word) + r')\b', r'<mark>\1</mark>', snippet_raw, flags=re.IGNORECASE)
+            
             d["snippet"] = snippet_raw
             items.append(d)
+
 
         return {"total": total, "items": items}
         
