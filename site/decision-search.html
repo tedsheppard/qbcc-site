@@ -951,6 +951,7 @@ async function runSearch(page=1, bypassAdjudicatorCheck = false){
       if (!bypassAdjudicatorCheck && adjudicatorList.length > 0) {
         const query = normalizeInput($('#q').value);
         matchedAdjudicator = findMatchingAdjudicator(query);
+        console.log('[DEBUG] Matched adjudicator:', matchedAdjudicator); // Add this debug line
       }
       
       try {
@@ -1010,12 +1011,15 @@ async function runSearch(page=1, bypassAdjudicatorCheck = false){
       }
       
       // Show adjudicator modal after search completes (with 1 second delay)
+      // matchedAdjudicator will be a string (the name) if found, or null if not
       if (matchedAdjudicator) {
+        console.log('[DEBUG] Showing modal for:', matchedAdjudicator); // Add this debug line
         setTimeout(() => {
           showAdjudicatorModal();
         }, 1000);
       }
     }
+
 
  
 
