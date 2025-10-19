@@ -110,12 +110,28 @@
     border-bottom: 1px solid #ccc !important;
   }
 
+  .dark .header {
+    background: #141414 !important;
+    border-bottom-color: #333 !important;
+  }
+
+  .dark .nav-links a {
+    color: #f0f0f0 !important;
+  }
+
+  .dark .nav-links a:hover {
+    color: #00c97c !important;
+  }
+
+  .dark .nav-links a.active {
+    color: #00c97c !important;
+  }
+
   /* ===== HERO SECTION ===== */
   
   .hero-section {
     background: linear-gradient(135deg, #00c97c 0%, #008a5c 100%);
-    padding: 80px 25px 100px;
-    text-align: center;
+    padding: 60px 25px 80px;
     color: white;
   }
 
@@ -124,43 +140,102 @@
   }
 
   .hero-content {
-    max-width: 800px;
+    max-width: 1100px;
     margin: 0 auto;
   }
 
   .hero-title {
-    font-size: 48px;
+    font-size: 42px;
     font-weight: 700;
-    margin: 0 0 20px;
+    margin: 0 0 15px;
     line-height: 1.2;
+    text-align: center;
   }
 
   .hero-subtitle {
-    font-size: 20px;
+    font-size: 18px;
     margin: 0 0 40px;
     opacity: 0.95;
     line-height: 1.5;
+    text-align: center;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-top: 40px;
+  }
+
+  .hero-card {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .dark .hero-card {
+    background: rgba(26, 26, 26, 0.95);
+  }
+
+  .hero-card-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 8px;
+  }
+
+  .dark .hero-card-title {
+    color: #f0f0f0;
+  }
+
+  .hero-card-subtitle {
+    font-size: 14px;
+    color: #666;
+    margin: 0 0 20px;
+    line-height: 1.5;
+  }
+
+  .dark .hero-card-subtitle {
+    color: #aaa;
   }
 
   .hero-search-bar {
     display: flex;
     align-items: center;
     background: #fff;
-    border-radius: 50px;
-    padding: 8px 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    max-width: 600px;
-    margin: 0 auto;
+    border-radius: 8px;
+    padding: 5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+
+  .hero-search-bar:focus-within {
+    border-color: #00c97c;
+  }
+
+  .dark .hero-search-bar {
+    background: #2a2a2a;
+    border-color: #444;
+  }
+
+  .dark .hero-search-bar:focus-within {
+    border-color: #00c97c;
   }
 
   .hero-search-bar input {
     flex: 1;
     padding: 12px 15px;
-    font-size: 16px;
+    font-size: 15px;
     border: none;
     outline: none;
     background: transparent;
     color: #000;
+  }
+
+  .dark .hero-search-bar input {
+    color: #fff;
   }
 
   .hero-search-bar input::placeholder {
@@ -171,18 +246,17 @@
     background: #00c97c;
     border: none;
     color: white;
-    padding: 12px 32px;
-    border-radius: 40px;
+    padding: 12px 28px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     transition: all 0.2s;
   }
 
   .hero-search-bar button:hover {
     background: #00a568;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,201,124,0.3);
+    transform: translateY(-1px);
   }
 
   /* ===== FEATURES SECTION ===== */
@@ -388,25 +462,16 @@
     }
     
     .hero-title {
-      font-size: 32px;
+      font-size: 28px;
     }
     
     .hero-subtitle {
       font-size: 16px;
     }
-    
-    .hero-search-bar {
-      flex-direction: column;
-      padding: 12px;
-    }
-    
-    .hero-search-bar input {
-      width: 100%;
-      margin-bottom: 10px;
-    }
-    
-    .hero-search-bar button {
-      width: 100%;
+
+    .hero-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
     }
     
     .footer-content {
@@ -423,6 +488,34 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 15px;
     }
+
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* Auth Button */
+  .auth-button {
+    background: #00c97c;
+    color: white;
+    padding: 10px 24px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+    margin-left: 20px;
+  }
+
+  .auth-button:hover {
+    background: #00a568;
+    transform: translateY(-1px);
+    color: white;
+  }
+
+  .dark .auth-button {
+    background: #00c97c;
+    color: white;
   }
 </style>
 
@@ -443,6 +536,7 @@
       <a href="how-to">How-To Guide</a>
       <a href="feedback">Feedback</a>
     </div>
+    <a href="/account.html" class="auth-button">Login / Register</a>
     <button id="themeToggle" onclick="toggleTheme()">Switch to Dark Mode</button>
     <div id="user-profile-nav"></div>
   </div>
@@ -453,24 +547,47 @@
   <div class="hero-content">
     <h1 class="hero-title">Intelligent Adjudication Search</h1>
     <p class="hero-subtitle">
-      Search adjudication decisions under Queensland's Building Industry Fairness (Security of Payment) Act 2017
+      Search adjudication decisions and explore adjudicator insights under Queensland's Building Industry Fairness (Security of Payment) Act 2017
     </p>
-    <form id="heroSearchForm" class="hero-search-bar">
-      <input 
-        type="text" 
-        id="heroSearchInput" 
-        placeholder="Search decisions, adjudicators, parties..."
-        autocomplete="off"
-      >
-      <button type="submit">Search</button>
-    </form>
+    
+    <div class="hero-grid">
+      <!-- Decision Search Card -->
+      <div class="hero-card">
+        <h2 class="hero-card-title">Search Adjudication Decisions</h2>
+        <p class="hero-card-subtitle">Use simple or complex/boolean terms to search over 7,300+ adjudicator's decisions</p>
+        <form id="heroSearchForm" class="hero-search-bar">
+          <input 
+            type="text" 
+            id="heroSearchInput" 
+            placeholder='e.g., "payment claim" AND jurisdiction'
+            autocomplete="off"
+          >
+          <button type="submit">Search</button>
+        </form>
+      </div>
+
+      <!-- Adjudicator Insights Card -->
+      <div class="hero-card">
+        <h2 class="hero-card-title">Search Adjudicator Insights & Analytics</h2>
+        <p class="hero-card-subtitle">Search by Adjudicator's Name and view a list of their decisions and summary of decision-making statistics</p>
+        <form id="adjudicatorSearchForm" class="hero-search-bar">
+          <input 
+            type="text" 
+            id="adjudicatorSearchInput" 
+            placeholder="insert adjudicator's name"
+            autocomplete="off"
+          >
+          <button type="submit">Search</button>
+        </form>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- Features Section -->
 <section class="features-section">
   <div class="features-content">
-    <h2 class="features-title">Why Choose Sopal?</h2>
+    <h2 class="features-title">Sopal's Features</h2>
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">🔍</div>
@@ -504,7 +621,7 @@
       
       <div class="feature-card">
         <div class="feature-icon">📱</div>
-        <h3>Always Up-to-Date</h3>
+        <h3>Consistently Updated</h3>
         <p>Our database is continuously updated with the latest adjudication decisions as they're published.</p>
       </div>
     </div>
@@ -515,18 +632,28 @@
 <section class="stats-section">
   <div class="stats-grid">
     <div class="stat-item">
-      <div class="stat-number" id="totalDecisions">2,500+</div>
+      <div class="stat-number" id="totalDecisions">7,300+</div>
       <div class="stat-label">Decisions Indexed</div>
     </div>
     
     <div class="stat-item">
-      <div class="stat-number" id="totalAdjudicators">150+</div>
+      <div class="stat-number" id="totalAdjudicators">180+</div>
       <div class="stat-label">Adjudicators Tracked</div>
     </div>
     
     <div class="stat-item">
-      <div class="stat-number">$2.5B+</div>
+      <div class="stat-number">$4.5B+</div>
+      <div class="stat-label">In Claimed Amounts</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-number">$2.8B+</div>
       <div class="stat-label">In Adjudicated Amounts</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-number">21 Years</div>
+      <div class="stat-label">Decision Range (2004-2025)</div>
     </div>
   </div>
 </section>
@@ -605,6 +732,15 @@
     const query = document.getElementById('heroSearchInput').value.trim();
     if (query) {
       window.location.href = `/decision-search?q=${encodeURIComponent(query)}`;
+    }
+  });
+
+  // Adjudicator search form submission
+  document.getElementById('adjudicatorSearchForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const query = document.getElementById('adjudicatorSearchInput').value.trim();
+    if (query) {
+      window.location.href = `/adjudicators?q=${encodeURIComponent(query)}`;
     }
   });
 
