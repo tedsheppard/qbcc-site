@@ -1797,6 +1797,7 @@ let stripe = null;
 let elements = null;
 let cardElement = null;
 
+
 // REPLACED this event listener
 document.addEventListener('DOMContentLoaded', async function() {
   // Initialize Stripe
@@ -1853,8 +1854,13 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Now that access is known, re-render the list to apply blurring correctly
   renderAdjudicatorsList();
 
+  // ADD THIS - Check for URL params and auto-search
+  checkUrlParams();
+
   setupEventListeners();
 });
+
+
 
 
 
@@ -1870,7 +1876,26 @@ function initializeDecisionSearch() {
   isDecisionSearchActive = false;
 }
 
-
+function checkUrlParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryParam = urlParams.get('q');
+  
+  if (queryParam) {
+    // Populate the search box
+    const searchInput = document.getElementById('adjudicatorSearch');
+    if (searchInput) {
+      searchInput.value = queryParam;
+    }
+    
+    // Trigger the search
+    filterAdjudicators();
+    
+    // If there's exactly one match, auto-select it
+    if (filteredAdjudicators.length === 1) {
+      selectAdjudicator(filteredAdjudicators[0].id);
+    }
+  }
+}
 
 function setupEventListeners() {
   document.getElementById('adjudicatorSearch').addEventListener('input', filterAdjudicators);
