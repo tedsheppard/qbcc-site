@@ -603,6 +603,16 @@
   .dark .btn-secondary-action:hover {
     background: #444;
   }
+
+  .interception-modal p.helper-text {
+    font-size: 14px;
+    color: #999;
+    margin-top: 15px;
+  }
+
+  .dark .interception-modal p.helper-text {
+    color: #666;
+  }
 </style>
 
 </head>
@@ -774,11 +784,14 @@
   <div class="interception-modal-content">
     <h2>Adjudicator Search Detected</h2>
     <p>
-      It looks like you're searching for an adjudicator. For detailed adjudicator statistics and insights, please use the <strong>Adjudicator Insights & Analytics</strong> search on the right.
+      It looks like you're searching for an adjudicator. For detailed adjudicator statistics and insights, please use the <strong>Adjudicator Insights & Analytics</strong> tool.
+    </p>
+    <p style="font-size: 14px; color: #666; margin-top: 15px;">
+      To search decisions instead, please modify your search query.
     </p>
     <div class="interception-modal-buttons">
-      <button id="closeModalBtn" class="btn-secondary-action">Search Decisions Anyway</button>
-      <button id="useInsightsBtn" class="btn-primary-action">Use Adjudicator Insights</button>
+      <button id="closeModalBtn" class="btn-secondary-action">Modify Search</button>
+      <button id="useInsightsBtn" class="btn-primary-action">View Adjudicator Insights</button>
     </div>
   </div>
 </div>
@@ -898,18 +911,15 @@
 
     document.getElementById('useInsightsBtn').onclick = () => {
       modal.classList.remove('active');
-      // Focus on the adjudicator search input
-      const adjInput = document.getElementById('adjudicatorSearchInput');
-      adjInput.value = currentDecisionQuery;
-      adjInput.focus();
+      // Redirect to adjudicators page with search query
+      if (currentDecisionQuery) {
+        window.location.href = `/adjudicators?q=${encodeURIComponent(currentDecisionQuery)}`;
+      }
     };
 
     document.getElementById('closeModalBtn').onclick = () => {
       modal.classList.remove('active');
-      // Proceed with decision search
-      if (currentDecisionQuery) {
-        window.location.href = `/decision-search?q=${encodeURIComponent(currentDecisionQuery)}`;
-      }
+      // Just close the modal - user can modify their search
     };
 
     // Allow closing by clicking background
