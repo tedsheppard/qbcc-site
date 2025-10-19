@@ -1272,11 +1272,11 @@ function checkUrlParams() {
   }
 }
 
-fetchAdjudicators();
-
-// Replace the standalone runSearch() call with checkUrlParams()
-checkUrlParams();
-// ============ END NEW SECTION ============
+// NEW CODE - Wait for adjudicators to load first
+async function initializePage() {
+  await fetchAdjudicators(); // Wait for this to finish
+  checkUrlParams(); // Then check URL params and run search
+}
 
 
 
