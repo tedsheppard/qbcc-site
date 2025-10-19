@@ -944,15 +944,15 @@ async function fetchAdjudicators() {
 
 
 
-
-    async function runSearch(page=1, bypassAdjudicatorCheck = false){
+async function runSearch(page=1, bypassAdjudicatorCheck = false){
+      let matchedAdjudicator = null;
+      
+      // Check for adjudicator match but don't block the search yet
       if (!bypassAdjudicatorCheck && adjudicatorList.length > 0) {
-    const query = normalizeInput($('#q').value);
-    if (findMatchingAdjudicator(query)) {
-      showAdjudicatorModal();
-      return; // Stop the standard search
-    }
-  }
+        const query = normalizeInput($('#q').value);
+        matchedAdjudicator = findMatchingAdjudicator(query);
+      }
+      
       try {
         window.scrollTo(0, 0);
         const statusEl = $('#status');
@@ -1008,7 +1008,16 @@ async function fetchAdjudicators() {
         $('#status').textContent = 'Error: ' + error.message;
         finishLoadingBar();
       }
+      
+      // Show adjudicator modal after search completes (with 1 second delay)
+      if (matchedAdjudicator) {
+        setTimeout(() => {
+          showAdjudicatorModal();
+        }, 1000);
+      }
     }
+
+ 
 
     // Replace your existing findMatchingAdjudicator function with this one
 function findMatchingAdjudicator(query) {
