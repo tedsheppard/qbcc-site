@@ -1484,6 +1484,7 @@ async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
         if not docs_to_sync:
             return {"status": "warning", "message": "No documents found in the database to sync."}
 
+        
         meili_docs = []
         for doc in docs_to_sync:
             try:
@@ -1492,8 +1493,24 @@ async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
                 if doc["decision_date_norm"]:
                     sortable_date = int(time.mktime(datetime.strptime(doc["decision_date_norm"], "%Y-%m-%d").timetuple()))
                 
-                meili_docs.append({
-                    "id": doc["ejs_id"],
+                # --- Replace it with this new block ---
+                # Helper function to safely convert values to float
+                def to_float(value):
+                    try:
+                        return float(value)
+                    except (ValueError, TypeError):
+                        return 0.0
+
+                # Fetch the extra financial data for this document
+                extra_data = con.execute("""
+                    SELECT claimed_amount, adjudicated_amount,
+                           fee_claimant_proportion, fee_respondent_proportion
+                    FROM ai_adjudicator_extract_v4
+                    WHERE ejs_id = ?
+                """, (doc["ejs_id"],)).fetchone()
+
+                meili_doc = {
+                    "ejs_id": doc["ejs_id"], # Correct primary key
                     "reference": doc["reference"],
                     "pdf_path": doc["pdf_path"],
                     "claimant": doc["claimant"],
@@ -1501,9 +1518,19 @@ async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
                     "adjudicator": doc["adjudicator"],
                     "date": doc["decision_date_norm"],
                     "sortable_date": sortable_date,
-                    "act": "BIF Act", # Assuming a default value, adjust if needed
+                    "act": "BIF Act",
                     "content": doc["full_text"] or ""
-                })
+                }
+
+                # Add the financial data if it was found
+                if extra_data:
+                    meili_doc["claimed_amount"] = to_float(extra_data["claimed_amount"])
+                    meili_doc["adjudicated_amount"] = to_float(extra_data["adjudicated_amount"])
+                    meili_doc["fee_claimant_proportion"] = to_float(extra_data["fee_claimant_proportion"])
+                    meili_doc["fee_respondent_proportion"] = to_float(extra_data["fee_respondent_proportion"])
+
+                meili_docs.append(meili_doc)
+
             except (ValueError, TypeError) as e:
                 print(f"WARN: Skipping document {doc['ejs_id']} due to invalid date '{doc['decision_date_norm']}': {e}")
 
