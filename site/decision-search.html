@@ -849,7 +849,6 @@ body {
           <input id="q" placeholder="Search adjudication decisions... (e.g. 'example' AND 'text'; 'example' w/10 'text')">
           <button onclick="runSearch()">Search</button>
         </div>
-        <button id="themeToggle" onclick="toggleTheme()">Switch to Dark Mode</button>
       </div>
       <div class="search-controls">
         <select id="limit" class="results-limit">
@@ -1201,17 +1200,18 @@ function renderPagination(currentPage) {
 function toggleTheme() {
   const body = document.body;
   const isDark = body.classList.contains('dark');
+  const themeToggleButton = document.getElementById('themeToggle');
 
   if (isDark) {
     body.classList.remove('dark');
     body.classList.add('light');
     localStorage.setItem('theme', 'light');
-    document.getElementById('themeToggle').textContent = 'Switch to Dark Mode';
+    if (themeToggleButton) themeToggleButton.textContent = 'Switch to Dark Mode';
   } else {
     body.classList.remove('light');
     body.classList.add('dark');
     localStorage.setItem('theme', 'dark');
-    document.getElementById('themeToggle').textContent = 'Switch to Light Mode';
+    if (themeToggleButton) themeToggleButton.textContent = 'Switch to Light Mode';
   }
 
   const logo = document.getElementById('logo');
@@ -1226,15 +1226,23 @@ function toggleTheme() {
   }
 }
 
-const saved = localStorage.getItem('theme');
-if (saved === 'dark') {
-  document.body.classList.remove('light');
-  document.body.classList.add('dark');
-  document.getElementById('themeToggle').textContent = 'Switch to Light Mode';
-} else {
-  document.body.classList.add('light');
-  document.getElementById('themeToggle').textContent = 'Switch to Dark Mode';
-}
+document.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('theme');
+    const themeToggleButton = document.getElementById('themeToggle');
+
+    if (saved === 'dark') {
+        document.body.classList.remove('light');
+        document.body.classList.add('dark');
+        if (themeToggleButton) themeToggleButton.textContent = 'Switch to Light Mode';
+    } else {
+        document.body.classList.add('light');
+        if (themeToggleButton) themeToggleButton.textContent = 'Switch to Dark Mode';
+    }
+    // Update logos on initial load
+    toggleTheme();
+    toggleTheme(); // Call twice to ensure correct state
+});
+
 
 const input = document.getElementById('q');
 if (input) {
