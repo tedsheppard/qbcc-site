@@ -1054,16 +1054,6 @@
     document.getElementById('themeToggle').textContent = 'Switch to Dark Mode';
   }
 
-  // Transparent navbar until scroll
-  window.addEventListener('scroll', function() {
-    const header = document.querySelector('.header');
-    if (window.scrollY > 50) {
-      header.classList.add('scrolled');
-    } else {
-      header.classList.remove('scrolled');
-    }
-  });
-
   // Adjudicator detection
   let adjudicatorList = [];
   let currentDecisionQuery = '';
@@ -1137,6 +1127,7 @@
 
     document.getElementById('useInsightsBtn').onclick = () => {
       modal.classList.remove('active');
+      // Redirect to adjudicators page with search query
       if (currentDecisionQuery) {
         window.location.href = `/adjudicators?q=${encodeURIComponent(currentDecisionQuery)}`;
       }
@@ -1144,8 +1135,10 @@
 
     document.getElementById('closeModalBtn').onclick = () => {
       modal.classList.remove('active');
+      // Just close the modal - user can modify their search
     };
 
+    // Allow closing by clicking background
     modal.onclick = (e) => {
       if (e.target === modal) {
         modal.classList.remove('active');
@@ -1164,8 +1157,10 @@
       const matchedAdjudicator = findMatchingAdjudicator(normalizedQuery);
       
       if (matchedAdjudicator) {
+        // Show modal instead of redirecting
         showAdjudicatorModal();
       } else {
+        // No adjudicator detected, proceed to decision search
         window.location.href = `/decision-search?q=${encodeURIComponent(query)}`;
       }
     }
