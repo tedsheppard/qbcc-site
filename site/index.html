@@ -386,7 +386,6 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     border: 2px solid transparent;
     transition: all 0.2s;
-    /* Push the hero/adjudicator search forms down by 50px */
   }
 
   .hero-search-bar:focus-within {
@@ -867,30 +866,31 @@
         <h2 class="hero-card-title">In-text Search Qld Decisions</h2>
         <p class="hero-card-subtitle">Use simple or complex/boolean terms to search over 7,300+ adjudicator's decisions</p>
         <div class="hero-search-bar">
-        <input 
-          type="text" 
-          id="heroSearchInput" 
-          placeholder='e.g., "payment claim" AND jurisdiction'
-          autocomplete="off"
-          onkeydown="if(event.key==='Enter') { event.preventDefault(); handleHeroSearch(); }"
-        >
-        <button type="button" onclick="handleHeroSearch()">Search</button>
+          <input 
+            type="text" 
+            id="heroSearchInput" 
+            placeholder='e.g., "payment claim" AND jurisdiction'
+            autocomplete="off"
+            onkeydown="if(event.key==='Enter') { event.preventDefault(); handleHeroSearch(); }"
+          >
+          <button type="button" onclick="handleHeroSearch()">Search</button>
+        </div>
       </div>
-
 
       <!-- Adjudicator Insights Card -->
       <div class="hero-card">
         <h2 class="hero-card-title">Search Adjudicator Insights & Analytics</h2>
         <p class="hero-card-subtitle">Search by Adjudicator's name and view a list of their decisions and summary of decision-making statistics</p>
         <div class="hero-search-bar">
-        <input 
-          type="text" 
-          id="adjudicatorSearchInput" 
-          placeholder="e.g., insert adjudicator's name"
-          autocomplete="off"
-          onkeydown="if(event.key==='Enter') { event.preventDefault(); handleAdjudicatorSearch(); }"
-        >
-        <button type="button" onclick="handleAdjudicatorSearch()">Search</button>
+          <input 
+            type="text" 
+            id="adjudicatorSearchInput" 
+            placeholder="e.g., insert adjudicator's name"
+            autocomplete="off"
+            onkeydown="if(event.key==='Enter') { event.preventDefault(); handleAdjudicatorSearch(); }"
+          >
+          <button type="button" onclick="handleAdjudicatorSearch()">Search</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1015,7 +1015,7 @@
 
 <script src="/assets/js/main.js"></script>
 <script>
-  // Theme toggle
+  // This function is kept in case it's needed elsewhere, but it's not actively used by a button.
   function toggleTheme() {
     const body = document.body;
     const isDark = body.classList.contains('dark');
@@ -1024,16 +1024,10 @@
       body.classList.remove('dark');
       body.classList.add('light');
       localStorage.setItem('theme', 'light');
-      if (document.getElementById('themeToggle')) {
-        document.getElementById('themeToggle').textContent = 'Switch to Dark Mode';
-      }
     } else {
       body.classList.remove('light');
       body.classList.add('dark');
       localStorage.setItem('theme', 'dark');
-      if (document.getElementById('themeToggle')) {
-        document.getElementById('themeToggle').textContent = 'Switch to Light Mode';
-      }
     }
 
     const logo = document.getElementById('logo');
@@ -1048,23 +1042,19 @@
     }
   }
 
-  // Load saved theme
+  // Force Light Theme on page load
   document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark') {
-      document.body.classList.remove('light');
-      document.body.classList.add('dark');
-      if (document.getElementById('themeToggle')) {
-        document.getElementById('themeToggle').textContent = 'Switch to Light Mode';
-      }
-    } else {
-      document.body.classList.remove('light');
-      document.body.classList.add('light');
-       if (document.getElementById('themeToggle')) {
-        document.getElementById('themeToggle').textContent = 'Switch to Dark Mode';
-      }
-    }
-    toggleTheme(); // Call once to set logos correctly on load
+    const body = document.body;
+    
+    // Always apply the light theme and remove dark theme classes
+    body.classList.remove('dark');
+    body.classList.add('light');
+    
+    // Set the correct logos for the light theme
+    const logo = document.getElementById('logo');
+    const footerLogo = document.getElementById('footerLogo');
+    if (logo) logo.src = "assets/sopal_logo_v1.png";
+    if (footerLogo) footerLogo.src = "assets/sopal_logo_v1.png";
   });
 
 
@@ -1084,7 +1074,7 @@
       const response = await fetch('/api/adjudicators');
       if (!response.ok) return;
       const data = await response.json();
-
+      
       adjudicatorList = data.map(adj => {
         const parts = adj.name.toLowerCase().split(' ').filter(p => p.length > 1);
         let lastName = parts.length > 0 ? parts[parts.length - 1] : null;
@@ -1164,7 +1154,7 @@
     currentDecisionQuery = query;
     const normalizedQuery = normalizeInput(query);
     const matchedAdjudicator = findMatchingAdjudicator(normalizedQuery);
-
+    
     if (matchedAdjudicator) {
       showAdjudicatorModal();
     } else {
@@ -1176,7 +1166,7 @@
   function handleAdjudicatorSearch() {
     const query = document.getElementById('adjudicatorSearchInput').value.trim();
     if (!query) return;
-
+    
     window.location.href = `/adjudicators?q=${encodeURIComponent(query)}`;
   }
 
@@ -1186,7 +1176,7 @@
     try {
       const searchRes = await fetch('/search_fast?limit=1');
       const searchData = await searchRes.json();
-
+      
       if (searchData.total) {
         document.getElementById('totalDecisions').textContent = 
           searchData.total.toLocaleString() + '+';
@@ -1194,7 +1184,7 @@
 
       const adjRes = await fetch('/api/adjudicators');
       const adjData = await adjRes.json();
-
+      
       if (adjData.length) {
         document.getElementById('totalAdjudicators').textContent = 
           adjData.length + '+';
