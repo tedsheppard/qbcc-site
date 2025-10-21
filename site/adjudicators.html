@@ -1704,6 +1704,29 @@
       .next-arrow { right: 10px; }
   }
 
+/* --- NEW: Main heading for the intro modal --- */
+.modal-main-heading {
+  font-size: 14px;            /* Smaller, like a subtitle */
+  font-weight: 600;
+  color: #888;                 /* A slightly muted grey color */
+  margin-bottom: 25px;        /* Adds space below the heading */
+  padding-bottom: 15px;       /* Adds space above the separator line */
+  border-bottom: 1px solid #eee; /* A subtle separator line */
+  width: 100%;                /* Ensures the line spans the full width */
+  text-transform: uppercase;  /* Optional: Makes it look more like a title */
+  letter-spacing: 0.5px;      /* Optional: A bit of extra spacing */
+}
+
+/* Reduces the space above the original h2 that is no longer needed */
+.intro-slide h2 {
+  margin-top: 0;
+}
+
+/* Dark mode style for the new heading */
+.dark .modal-main-heading {
+  color: #aaa;
+  border-bottom-color: #444;
+}
 </style>
 </head>
 
@@ -1951,6 +1974,7 @@
         <div class="intro-carousel">
             <!-- Slide 1: Stats -->
             <div class="intro-slide active">
+                <h3 class="modal-main-heading">Adjudicator Insights & Analytics</h3>
                 <h2>View Key Statistics at a Glance</h2>
                 <p>Unlock an adjudicator's full profile to see comprehensive statistics that reveal their decision-making patterns.</p>
                 <div class="feature-mockup">
@@ -1974,6 +1998,7 @@
 
             <!-- Slide 2: Decision Search -->
             <div class="intro-slide">
+                <h3 class="modal-main-heading">Adjudicator Insights & Analytics</h3>
                 <h2>Search Within Decisions</h2>
                 <p>Use powerful search operators to instantly find relevant cases within a specific adjudicator's entire history.</p>
                 <div class="feature-mockup">
@@ -1997,6 +2022,7 @@
 
             <!-- Slide 3: Sopal AI -->
             <div class="intro-slide">
+                <h3 class="modal-main-heading">Adjudicator Insights & Analytics</h3>
                 <h2>Ask SopalAI Anything</h2>
                 <p>Get instant summaries and ask follow-up questions about any decision to understand the core reasoning faster.</p>
                  <div class="feature-mockup">
@@ -2012,6 +2038,7 @@
 
             <!-- Slide 4: How It Works -->
             <div class="intro-slide">
+                <h3 class="modal-main-heading">Adjudicator Insights & Analytics</h3>
                 <h2>Simple & Permanent Access</h2>
                 <p>Get started in seconds. Unlocking an adjudicator is a single, one-time purchase for lifetime access.</p>
                 <ol>
