@@ -2095,72 +2095,25 @@ let elements = null;
 let cardElement = null;
 
 
-// REPLACED this event listener
-document.addEventListener('DOMContentLoaded', async function() {
-  // Initialize Stripe
-  stripe = Stripe('pk_live_51SGxeHAIOAykxV504w220IB6SNF8PWmMovA3Vcj7BU34qr4lxSftuuc6vhGtb0CURpjiR2e2OMMNdyMuzVXbH286002Y11rMPE');
-  elements = stripe.elements();
-  cardElement = elements.create('card', {
-    style: {
-      base: {
-        fontSize: '16px',
-        color: '#333',
-        '::placeholder': {
-          color: '#aaa',
-        },
-      },
-    },
-  });
 
-  const termsCheckbox = document.getElementById('terms-checkbox');
-  const paymentButton = document.getElementById('submit-payment');
-  if (termsCheckbox && paymentButton) {
-    termsCheckbox.addEventListener('change', () => {
-      paymentButton.disabled = !termsCheckbox.checked;
-    });
-  }
-  
-  cardElement.mount('#card-element');
-  
-  cardElement.on('change', function(event) {
-    const displayError = document.getElementById('card-errors');
-    if (event.error) {
-      displayError.textContent = event.error.message;
-    } else {
-      displayError.textContent = '';
+
+// These functions are now outside, making them globally accessible
+function openIntroModal() {
+    const modal = document.getElementById('introModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.classList.add('modal-open');
     }
-  });
+}
 
-  // Setup auth forms
-  document.getElementById('loginForm').addEventListener('submit', handleLogin);
-  document.getElementById('registerForm').addEventListener('submit', handleRegister);
-  
-  // Apply saved theme first
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'dark') {
-    document.body.classList.remove('light');
-    document.body.classList.add('dark');
-  }
-
-  // Load all adjudicators (needed for the full access check)
-  await loadAdjudicators();
-  
-  // Load the user's specific access status
-  await loadUserAccessStatus();
-
-  // Now that access is known, re-render the list to apply blurring correctly
-  renderAdjudicatorsList();
-
-  checkUrlParams();
-  setupEventListeners();
-
-  // --- Onboarding Modal Logic ---
-  if (!localStorage.getItem('hasSeenIntro')) {
-      openIntroModal();
-  }
-  setupIntroModal();
-});
-
+function closeIntroModal() {
+    const modal = document.getElementById('introModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.classList.remove('modal-open');
+        localStorage.setItem('hasSeenIntro', 'true');
+    }
+}
 
 function setupIntroModal() {
     let currentSlide = 0;
@@ -2172,18 +2125,7 @@ function setupIntroModal() {
     const carouselNav = document.querySelector('.carousel-nav');
     const modal = document.getElementById('introModal');
 
-    function openIntroModal() {
-        modal.classList.add('active');
-        document.body.classList.add('modal-open');
-        showSlide(0);
-    }
-
-    function closeIntroModal() {
-        modal.classList.remove('active');
-        document.body.classList.remove('modal-open');
-        localStorage.setItem('hasSeenIntro', 'true');
-    }
-
+    // This function stays inside because it depends on all the local variables above
     function showSlide(n) {
         if (n >= slides.length) n = slides.length - 1;
         if (n < 0) n = 0;
@@ -2207,6 +2149,7 @@ function setupIntroModal() {
         }
     }
 
+    // Attach event listeners
     nextBtn.addEventListener('click', () => showSlide(currentSlide + 1));
     prevBtn.addEventListener('click', () => showSlide(currentSlide - 1));
     dots.forEach(dot => {
@@ -2215,8 +2158,79 @@ function setupIntroModal() {
             showSlide(slideIndex);
         });
     });
-    startBtn.addEventListener('click', closeIntroModal);
+    startBtn.addEventListener('click', closeIntroModal); // This calls the global function
+
+    // IMPORTANT: Check if the modal is active when setting up, and if so, show the first slide.
+    if (modal && modal.classList.contains('active')) {
+        showSlide(0);
+    }
 }
+
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize Stripe
+    stripe = Stripe('pk_live_51SGxeHAIOAykxV504w220IB6SNF8PWmMovA3Vcj7BU34qr4lxSftuuc6vhGtb0CURpjiR2e2OMMNdyMuzVXbH286002Y11rMPE');
+    elements = stripe.elements();
+    cardElement = elements.create('card', {
+        style: {
+            base: {
+                fontSize: '16px',
+                color: '#333',
+                '::placeholder': {
+                    color: '#aaa',
+                },
+            },
+        },
+    });
+
+    const termsCheckbox = document.getElementById('terms-checkbox');
+    const paymentButton = document.getElementById('submit-payment');
+    if (termsCheckbox && paymentButton) {
+        termsCheckbox.addEventListener('change', () => {
+            paymentButton.disabled = !termsCheckbox.checked;
+        });
+    }
+    
+    cardElement.mount('#card-element');
+    
+    cardElement.on('change', function(event) {
+        const displayError = document.getElementById('card-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
+    });
+
+    // Setup auth forms
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    document.getElementById('registerForm').addEventListener('submit', handleRegister);
+    
+    // Apply saved theme first
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.remove('light');
+        document.body.classList.add('dark');
+    }
+
+    // Load all adjudicators (needed for the full access check)
+    await loadAdjudicators();
+    
+    // Load the user's specific access status
+    await loadUserAccessStatus();
+
+    // Now that access is known, re-render the list to apply blurring correctly
+    renderAdjudicatorsList();
+
+    checkUrlParams();
+    setupEventListeners();
+
+    // --- Onboarding Modal Logic ---
+    if (!localStorage.getItem('hasSeenIntro')) {
+        openIntroModal(); // This now calls the globally accessible function
+    }
+    setupIntroModal(); // This sets up the listeners and shows the first slide if the modal is open
+});
 
 
 
@@ -3380,6 +3394,8 @@ function normalizeInput(s) {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+
 
 // replicate account page profile-nav rendering
 document.addEventListener('DOMContentLoaded', async () => {
