@@ -1062,31 +1062,41 @@ function findMatchingAdjudicator(query) {
 }  
 
 
-// Replace your old showAdjudicatorModal function with this one
 function showAdjudicatorModal() {
   const modal = document.getElementById('adjudicatorSearchModal');
   modal.style.display = 'flex';
 
-  // Function to hide the modal
+  // This helper function can still be used for clicks on the background
   const closeModal = () => {
     modal.style.display = 'none';
   };
 
-  // Button to go to the adjudicators page
+  // This button's behavior is unchanged
   document.getElementById('viewInsightsBtn').onclick = () => {
     window.location.href = '/adjudicators';
   };
 
-  // New "Close" button functionality
-  document.getElementById('closeModalBtn').onclick = closeModal;
+  // --- START OF THE FIX ---
+  // Modify the behavior for the "Run a Different Search" button
+  document.getElementById('closeModalBtn').onclick = () => {
+    // 1. First, close the modal
+    closeModal();
+    // 2. Clear the search input field
+    document.getElementById('q').value = '';
+    // 3. Re-run the search to show the default results (newest decisions)
+    runSearch(1);
+  };
+  // --- END OF THE FIX ---
 
-  // Allow closing by clicking the background
+  // Allow closing by clicking the background (no change here)
   modal.onclick = (e) => {
     if (e.target === modal) {
       closeModal();
     }
   };
 }
+
+
 
 function renderItem(it, query) {
   const pdf = buildPdfLinks(it.pdf_path);
