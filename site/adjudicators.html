@@ -1714,7 +1714,7 @@
       <h2>Unlock Adjudicator Access</h2>
       <p id="modalAdjudicatorName" style="color: #666; font-size: 16px;"></p>
 <div class="price-tag">$69.95 <sup style="font-size: 16px;">incl GST</sup></div>
-<p style="font-size: 14px; margin-bottom: 25px;">One-time payment • 12 month access • Chargeable disbursement • Receipt/invoice immediately on payment</p>
+<p style="font-size: 14px; margin-bottom: 25px;">One-time payment • Chargeable disbursement • Receipt/invoice immediately on payment</p>
       
       <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 6px; text-align: left;">
         <label style="display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; line-height: 1.5;">
@@ -2098,10 +2098,10 @@ function showAdjudicatorDetail(hasAccess = false) {
   const lockedOverlay = !hasAccess ? `
     <div class="locked-overlay">
       <div class="locked-content">
-        <h3>🔒 Unlock Full Adjudicator Insights</h3>
+        <h3>🔒 Unlock Full Adjudicator Insights for <strong>${sanitizeHtml(selectedAdjudicator.name)}</strong></h3>
         <p>Get access to detailed statistics, decision patterns, and the complete history of decisions for <strong>${sanitizeHtml(selectedAdjudicator.name)}</strong></p>
         <div class="price-tag">$69.95 <sup style="font-size: 16px;">incl GST</sup></div>
-        <p style="color: #666; font-size: 14px;">One-time payment • 12 month access • Chargeable disbursement</p>
+        <p style="color: #666; font-size: 14px;">One-time payment • Chargeable disbursement</p>
         <button class="unlock-btn" onclick="unlockAdjudicator('${selectedAdjudicator.name.replace(/'/g, "\\'")}')">
           Unlock Access
         </button>

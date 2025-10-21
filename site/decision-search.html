@@ -828,6 +828,9 @@ body {
   border-color: #555;
   color: #eee;
 }
+body.modal-open {
+  overflow: hidden;
+}
 
 </style>
 
@@ -1061,40 +1064,44 @@ function findMatchingAdjudicator(query) {
   return null;
 }  
 
-
 function showAdjudicatorModal() {
   const modal = document.getElementById('adjudicatorSearchModal');
+  
+  // --- START OF CHANGE 1 ---
+  // Add class to body to prevent scrolling
+  document.body.classList.add('modal-open');
+  // --- END OF CHANGE 1 ---
+  
   modal.style.display = 'flex';
 
-  // This helper function can still be used for clicks on the background
   const closeModal = () => {
     modal.style.display = 'none';
+    // --- START OF CHANGE 2 ---
+    // Remove class from body to restore scrolling
+    document.body.classList.remove('modal-open');
+    // --- END OF CHANGE 2 ---
   };
 
-  // This button's behavior is unchanged
   document.getElementById('viewInsightsBtn').onclick = () => {
+    // We also need to remove the class if the user navigates away
+    document.body.classList.remove('modal-open');
     window.location.href = '/adjudicators';
   };
 
-  // --- START OF THE FIX ---
-  // Modify the behavior for the "Run a Different Search" button
   document.getElementById('closeModalBtn').onclick = () => {
-    // 1. First, close the modal
     closeModal();
-    // 2. Clear the search input field
     document.getElementById('q').value = '';
-    // 3. Re-run the search to show the default results (newest decisions)
     runSearch(1);
   };
-  // --- END OF THE FIX ---
 
-  // Allow closing by clicking the background (no change here)
   modal.onclick = (e) => {
     if (e.target === modal) {
       closeModal();
     }
   };
 }
+
+
 
 
 
