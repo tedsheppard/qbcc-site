@@ -113,8 +113,6 @@
     min-height: 70vh;
   }
 
-/* Find and replace these two rules */
-
 .left-pane {
   flex: 0 0 400px;
   max-width: 400px;
@@ -149,8 +147,6 @@
   color: #666;
   font-style: italic;
 }
-
-/* Find and update these two rules */
 
 .search-section {
   background: #fdfdfd;
@@ -1422,7 +1418,6 @@
 .ai-output-content li { margin: 2px 0; }
 .ai-output-content h3, .ai-output-content h4 { font-size: 15px; font-weight: 600; margin: 10px 0 4px 0; }
 
-/* Replace your existing .locked-overlay rule with this */
 .locked-overlay {
   position: absolute;
   top: 50px;
@@ -1502,6 +1497,213 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 201, 124, 0.3);
 }
+
+  /* --- Onboarding Modal Styles --- */
+  .intro-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+  }
+  .intro-modal.active {
+      display: flex;
+      opacity: 1;
+  }
+  body.modal-open {
+      overflow: hidden;
+  }
+
+  .intro-modal-content {
+      background: white;
+      color: #333;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 800px;
+      height: 85vh;
+      max-height: 640px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+      position: relative; /* For arrow positioning */
+  }
+  .intro-modal.active .intro-modal-content {
+      transform: scale(1);
+  }
+  .dark .intro-modal-content {
+      background: #1e1e1e;
+      color: #f0f0f0;
+  }
+
+  .intro-carousel {
+      flex-grow: 1;
+      position: relative;
+      padding: 20px 0;
+  }
+
+  .intro-slide {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(20px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      justify-content: center;
+      padding: 0 50px;
+  }
+  .intro-slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0);
+  }
+
+  .intro-slide h2 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 10px;
+  }
+  .dark .intro-slide h2 { color: #fff; }
+
+  .intro-slide p {
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 550px;
+      color: #666;
+      margin-bottom: 20px;
+  }
+  .dark .intro-slide p { color: #aaa; }
+
+  .intro-slide ol {
+      text-align: left;
+      display: inline-block;
+      font-size: 15px;
+      line-height: 1.8;
+      margin-bottom: 20px;
+  }
+  .dark .intro-slide ol { color: #ccc; }
+  
+  .promo-text {
+      font-size: 14px !important;
+      color: #555 !important;
+      background: #f0f9f4;
+      padding: 8px 12px;
+      border-radius: 6px;
+  }
+  .dark .promo-text {
+      background: #1a2f1a;
+      color: #a7d7b9 !important;
+  }
+
+  /* Carousel Navigation */
+  .carousel-nav {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+      border-top: 1px solid #eee;
+  }
+  .dark .carousel-nav { border-top-color: #333; }
+  
+  .nav-dots { display: flex; gap: 10px; }
+  .nav-dot { width: 10px; height: 10px; background: #ccc; border-radius: 50%; cursor: pointer; transition: background 0.2s; }
+  .nav-dot.active { background: #00c97c; }
+
+  .start-exploring-btn {
+      background: #00c97c; color: white; border: none; padding: 15px;
+      font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+      display: none; /* Hidden by default */
+  }
+  .start-exploring-btn:hover { background: #00a568; }
+
+  /* Side Arrow Styles */
+  .side-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.9); color: #333;
+      border: 1px solid #eee; border-radius: 50%; width: 44px; height: 44px;
+      font-size: 20px; font-weight: bold; cursor: pointer; z-index: 10;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.2s ease;
+  }
+  .side-arrow:hover { background: white; transform: translateY(-50%) scale(1.1); }
+  .prev-arrow { left: 20px; }
+  .next-arrow { right: 20px; }
+  .dark .side-arrow {
+      background: rgba(40, 40, 40, 0.9); color: #f0f0f0; border-color: #444;
+  }
+  .dark .side-arrow:hover { background: #333; }
+
+  /* --- Mockup Styles --- */
+  .feature-mockup {
+      background: #f8f9fa; border: 1px solid #e5e5e5; border-radius: 8px;
+      padding: 12px; width: 100%; max-width: 500px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  .dark .feature-mockup { background: #111; border-color: #444; }
+
+  .mockup-header { display: flex; gap: 6px; margin-bottom: 12px; }
+  .mockup-header .dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; }
+  .dark .mockup-header .dot { background: #555; }
+
+  .mockup-body { background: white; border-radius: 4px; padding: 15px; }
+  .dark .mockup-body { background: #1e1e1e; }
+  
+  /* Stats Mockup */
+  .stats-mockup-title { font-weight: 600; font-size: 16px; color: #333; }
+  .dark .stats-mockup-title { color: #f0f0f0; }
+  .stats-mockup-subtitle { font-size: 12px; color: #888; margin-bottom: 15px; }
+  .stats-mockup-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
+  .stat-box { text-align: center; }
+  .stat-box span { display: block; font-weight: 600; font-size: 16px; color: #00c97c; }
+  .stat-box label { font-size: 9px; color: #888; text-transform: none; }
+  
+  /* Search Mockup */
+  .search-mockup-bar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center;}
+  .search-mockup-input { flex-grow: 1; border: 1px solid #ddd; border-radius: 4px; padding: 8px; font-size: 12px; color: #888; }
+  .dark .search-mockup-input { background: #333; border-color: #555; color: #aaa; }
+  .search-mockup-btn { background: #333; color: white; border: none; border-radius: 4px; padding: 8px 12px; font-size: 12px; }
+  .dark .search-mockup-btn { background: #555; }
+  .search-mockup-result { text-align: left; font-size: 12px; padding: 8px; border-bottom: 1px solid #f0f0f0; }
+  .dark .search-mockup-result { border-bottom-color: #333; }
+  .search-mockup-result strong { color: #333; font-weight: 600; }
+  .dark .search-mockup-result strong { color: #f0f0f0; }
+  .search-mockup-result p { font-size: 11px; color: #777; margin: 4px 0 0; }
+  .dark .search-mockup-result p { color: #999; }
+  .search-mockup-result mark { background-color: #d9f3e9; color: #008a5c; border-radius: 2px; padding: 1px 2px; }
+  .dark .search-mockup-result mark { background-color: #1a422f; color: #a7d7b9; }
+
+  /* AI Mockup */
+  .ai-mockup-chat { display: flex; flex-direction: column; gap: 10px; }
+  .ai-mockup-bubble { padding: 8px 12px; border-radius: 10px; max-width: 80%; font-size: 12px; line-height: 1.5; text-align: left; }
+  .ai-user { background: #e9e9eb; color: #333; align-self: flex-end; border-bottom-right-radius: 2px; }
+  .dark .ai-user { background: #3a3b3c; color: #e4e6eb; }
+  .ai-sopal { background: #d9f3e9; color: #006041; align-self: flex-start; border-bottom-left-radius: 2px; }
+  .dark .ai-sopal { background: #1a422f; color: #d0f0e0; }
+
+  @media (max-width: 768px) {
+      .intro-modal-content { height: 90vh; max-height: 90vh; }
+      .intro-carousel, .intro-slide { padding: 25px 20px; }
+      .intro-slide h2 { font-size: 22px; }
+      .intro-slide p { font-size: 15px; }
+      .side-arrow { width: 38px; height: 38px; font-size: 18px; }
+      .prev-arrow { left: 10px; }
+      .next-arrow { right: 10px; }
+  }
+
 </style>
 </head>
 
@@ -1743,6 +1945,101 @@
   </div>
 </div>
 
+<!-- START: Onboarding Modal -->
+<div id="introModal" class="intro-modal">
+    <div class="intro-modal-content">
+        <div class="intro-carousel">
+            <!-- Slide 1: Stats -->
+            <div class="intro-slide active">
+                <h2>View Key Statistics at a Glance</h2>
+                <p>Unlock an adjudicator's full profile to see comprehensive statistics that reveal their decision-making patterns.</p>
+                <div class="feature-mockup">
+                    <div class="mockup-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    <div class="mockup-body">
+                        <div class="stats-mockup-title">John Doe</div>
+                        <div class="stats-mockup-subtitle">88 decisions analysed</div>
+                        <div class="stats-mockup-grid">
+                            <div class="stat-box"><span>88</span><label>Total Decisions</label></div>
+                            <div class="stat-box"><span>72.1%</span><label>Avg Portion Awarded</label></div>
+                            <div class="stat-box"><span>$172k</span><label>Avg Adjudicated Amount</label></div>
+                            <div class="stat-box"><span>9</span><label>$Nil Decisions</label></div>
+                            <div class="stat-box"><span>$15.2M</span><label>Total Claimed Amount</label></div>
+                            <div class="stat-box"><span>$11.0M</span><label>Total Adjudicated Amount</label></div>
+                            <div class="stat-box"><span>45.5%</span><label>Avg Claimant Fee</label></div>
+                            <div class="stat-box"><span>54.5%</span><label>Avg Respondent Fee</label></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 2: Decision Search -->
+            <div class="intro-slide">
+                <h2>Search Within Decisions</h2>
+                <p>Use powerful search operators to instantly find relevant cases within a specific adjudicator's entire history.</p>
+                <div class="feature-mockup">
+                    <div class="mockup-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    <div class="mockup-body">
+                       <div class="search-mockup-bar">
+                            <div class="search-mockup-input">"EOT" AND "delay"</div>
+                            <button class="search-mockup-btn">Search</button>
+                       </div>
+                       <div class="search-mockup-result">
+                            <strong>ABC Pty Ltd v XYZ Pty Ltd</strong>
+                            <p>...the respondent disputed the <mark>"EOT"</mark> claim due to a concurrent <mark>"delay"</mark> caused by the claimant...</p>
+                       </div>
+                       <div class="search-mockup-result">
+                            <strong>DEF Pty Ltd v UVW Pty Ltd</strong>
+                            <p>...the adjudicator assessed the claim for <mark>"delay"</mark> costs and found the entitlement to an <mark>"EOT"</mark> was established...</p>
+                       </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3: Sopal AI -->
+            <div class="intro-slide">
+                <h2>Ask SopalAI Anything</h2>
+                <p>Get instant summaries and ask follow-up questions about any decision to understand the core reasoning faster.</p>
+                 <div class="feature-mockup">
+                    <div class="mockup-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    <div class="mockup-body">
+                        <div class="ai-mockup-chat">
+                            <div class="ai-mockup-bubble ai-user">What was the main basis for the adjudicator deciding they had no jurisdiction in this case?</div>
+                            <div class="ai-mockup-bubble ai-sopal">The adjudicator found they lacked jurisdiction because the payment claim failed to request payment of the claimed amount, citing MWB Everton Park Pty Ltd as trustee for MWB Everton Park Unit Trust v Devcon Building Co Pty Ltd [2024] QCA 94</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 4: How It Works -->
+            <div class="intro-slide">
+                <h2>Simple & Permanent Access</h2>
+                <p>Get started in seconds. Unlocking an adjudicator is a single, one-time purchase for lifetime access.</p>
+                <ol>
+                    <li><strong>Select an Adjudicator:</strong> Choose any adjudicator from the list.</li>
+                    <li><strong>Unlock Access:</strong> A simple, secure one-time payment of $69.95.</li>
+                    <li><strong>Gain Full Insight:</strong> Immediately view their complete profile and all historical data.</li>
+                </ol>
+                <p class="promo-text">Try it for free! The profile for <strong>Russell Welsh</strong> is fully unlocked as a demo.</p>
+            </div>
+        </div>
+        
+        <button id="prevSlide" class="side-arrow prev-arrow">&lt;</button>
+        <button id="nextSlide" class="side-arrow next-arrow">&gt;</button>
+
+        <div class="carousel-nav">
+            <div class="nav-dots">
+                <span class="nav-dot active" data-slide="0"></span>
+                <span class="nav-dot" data-slide="1"></span>
+                <span class="nav-dot" data-slide="2"></span>
+                <span class="nav-dot" data-slide="3"></span>
+            </div>
+        </div>
+        
+        <button id="startExploringBtn" class="start-exploring-btn">Start Exploring</button>
+    </div>
+</div>
+<!-- END: Onboarding Modal -->
+
 
 <script>
 let allAdjudicators = [];
@@ -1854,13 +2151,72 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Now that access is known, re-render the list to apply blurring correctly
   renderAdjudicatorsList();
 
-  // ADD THIS - Check for URL params and auto-search
   checkUrlParams();
-
   setupEventListeners();
+
+  // --- Onboarding Modal Logic ---
+  if (!localStorage.getItem('hasSeenIntro')) {
+      openIntroModal();
+  }
+  setupIntroModal();
 });
 
 
+function setupIntroModal() {
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.intro-slide');
+    const dots = document.querySelectorAll('.nav-dot');
+    const nextBtn = document.getElementById('nextSlide');
+    const prevBtn = document.getElementById('prevSlide');
+    const startBtn = document.getElementById('startExploringBtn');
+    const carouselNav = document.querySelector('.carousel-nav');
+    const modal = document.getElementById('introModal');
+
+    function openIntroModal() {
+        modal.classList.add('active');
+        document.body.classList.add('modal-open');
+        showSlide(0);
+    }
+
+    function closeIntroModal() {
+        modal.classList.remove('active');
+        document.body.classList.remove('modal-open');
+        localStorage.setItem('hasSeenIntro', 'true');
+    }
+
+    function showSlide(n) {
+        if (n >= slides.length) n = slides.length - 1;
+        if (n < 0) n = 0;
+        currentSlide = n;
+
+        slides.forEach(slide => slide.classList.remove('active'));
+        dots.forEach(dot => dot.classList.remove('active'));
+
+        slides[currentSlide].classList.add('active');
+        dots[currentSlide].classList.add('active');
+        
+        prevBtn.style.display = currentSlide === 0 ? 'none' : 'flex';
+        nextBtn.style.display = currentSlide === slides.length - 1 ? 'none' : 'flex';
+
+        if (currentSlide === slides.length - 1) {
+            startBtn.style.display = 'block';
+            carouselNav.style.display = 'none';
+        } else {
+            startBtn.style.display = 'none';
+            carouselNav.style.display = 'flex';
+        }
+    }
+
+    nextBtn.addEventListener('click', () => showSlide(currentSlide + 1));
+    prevBtn.addEventListener('click', () => showSlide(currentSlide - 1));
+    dots.forEach(dot => {
+        dot.addEventListener('click', (e) => {
+            const slideIndex = parseInt(e.target.getAttribute('data-slide'));
+            showSlide(slideIndex);
+        });
+    });
+    startBtn.addEventListener('click', closeIntroModal);
+}
 
 
 
@@ -1919,10 +2275,6 @@ async function loadAdjudicators() {
     allAdjudicators = await response.json();
     filteredAdjudicators = [...allAdjudicators];
     
-    // CHANGE THIS LINE FROM:
-    // renderAdjudicatorsList();
-    
-    // TO THIS:
     filterAdjudicators();  // This will sort AND render
     
   } catch (error) {
@@ -2852,7 +3204,7 @@ async function handleRegister(e) {
   
   // Clean ABN
   const abnCleaned = abn.replace(/\s/g, '');
-  if (abnCleaned.length !== 11 || !/^\d+$/.test(abnCleaned)) {
+  if (abnCleaned && (abnCleaned.length !== 11 || !/^\d+$/.test(abnCleaned))) {
     errorDiv.textContent = 'ABN must be exactly 11 digits';
     return;
   }
