@@ -814,6 +814,21 @@ body {
 .dark .btn-secondary-action { background: #333; color: #eee; }
 .btn-secondary-action:hover { background: #dee2e6; }
 
+.theme-toggle-btn {
+  background: none;
+  border: 1px solid #ccc;
+  color: #333;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 12px;
+}
+.dark .theme-toggle-btn {
+  border-color: #555;
+  color: #eee;
+}
+
 </style>
 
 </head>
@@ -1200,18 +1215,25 @@ function renderPagination(currentPage) {
 function toggleTheme() {
   const body = document.body;
   const isDark = body.classList.contains('dark');
+  
+  // Get references to both buttons
   const themeToggleButton = document.getElementById('themeToggle');
+  const themeToggleFooterButton = document.getElementById('themeToggleFooter');
 
   if (isDark) {
     body.classList.remove('dark');
     body.classList.add('light');
     localStorage.setItem('theme', 'light');
+    // Update text for both buttons
     if (themeToggleButton) themeToggleButton.textContent = 'Switch to Dark Mode';
+    if (themeToggleFooterButton) themeToggleFooterButton.textContent = 'Switch to Dark Mode';
   } else {
     body.classList.remove('light');
     body.classList.add('dark');
     localStorage.setItem('theme', 'dark');
+    // Update text for both buttons
     if (themeToggleButton) themeToggleButton.textContent = 'Switch to Light Mode';
+    if (themeToggleFooterButton) themeToggleFooterButton.textContent = 'Switch to Light Mode';
   }
 
   const logo = document.getElementById('logo');
@@ -1226,22 +1248,36 @@ function toggleTheme() {
   }
 }
 
+
 document.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem('theme');
+    
+    // Get references to both buttons
     const themeToggleButton = document.getElementById('themeToggle');
+    const themeToggleFooterButton = document.getElementById('themeToggleFooter');
 
     if (saved === 'dark') {
         document.body.classList.remove('light');
         document.body.classList.add('dark');
         if (themeToggleButton) themeToggleButton.textContent = 'Switch to Light Mode';
+        if (themeToggleFooterButton) themeToggleFooterButton.textContent = 'Switch to Light Mode';
     } else {
         document.body.classList.add('light');
         if (themeToggleButton) themeToggleButton.textContent = 'Switch to Dark Mode';
+        if (themeToggleFooterButton) themeToggleFooterButton.textContent = 'Switch to Dark Mode';
     }
+    
+    // Add the click listener for the new footer button
+    if (themeToggleFooterButton) {
+        themeToggleFooterButton.addEventListener('click', toggleTheme);
+    }
+
     // Update logos on initial load
     toggleTheme();
     toggleTheme(); // Call twice to ensure correct state
 });
+
+
 
 
 const input = document.getElementById('q');
@@ -1455,6 +1491,7 @@ function normalizeInput(s) {
   </div>
   <div class="footer-bottom">
     <p>© 2025 Sopal Australia. All rights reserved.</p>
+    <button id="themeToggleFooter" class="theme-toggle-btn">Switch Theme</button>
   </div>
 </footer>
 <script src="/assets/js/main.js"></script>
