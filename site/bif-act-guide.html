@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Sopal — BIF Act Knowledge Centre</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Base styles matching main site */
+    body {
+      font-family: Inter, sans-serif;
+      margin: 0;
+      background: #ffffff;
+      color: #222;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .header {
+      background: #fdfdfd;
+      padding: 20px 25px;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      height: 31px;
+      margin-right: 20px;
+    }
+
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      color: black;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #00c97c;
+    }
+
+    .nav-links a.active {
+      color: #008a5c;
+      font-weight: 600;
+    }
+
+    /* Footer */
+    .footer {
+      background: #fcfcfc;
+      color: #333;
+      padding: 40px 25px 20px;
+      margin-top: 60px;
+      border-top: 1px solid #ddd;
+    }
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .footer-left { max-width: 400px; text-align: left; }
+    .footer-logo { height: 24px; margin-bottom: 10px; }
+    .footer-links {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px 40px;
+      text-align: left;
+    }
+    .footer-links a { font-size: 13px; color: black; text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: #00c97c; }
+    .footer-bottom {
+      text-align: center;
+      border-top: 1px solid #eee;
+      margin-top: 30px;
+      padding-top: 20px;
+      width: 100%;
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    /* --- NEW KNOWLEDGE CENTRE STYLES --- */
+    .page-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 16px;
+    }
+
+    .page-subtitle {
+      font-size: 18px;
+      color: #555;
+      margin-top: -10px;
+      margin-bottom: 40px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    .knowledge-container {
+      display: grid;
+      grid-template-columns: 260px 1fr; /* Sidebar width and main content */
+      gap: 40px;
+      align-items: flex-start;
+    }
+
+    /* Sidebar Styles */
+    .knowledge-sidebar {
+      position: sticky;
+      top: 100px; /* Adjust based on your header's height */
+      height: calc(100vh - 120px);
+      overflow-y: auto;
+      padding-right: 20px;
+    }
+
+    .knowledge-sidebar h4 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+      margin: 0 0 10px 0;
+      padding: 0 8px;
+    }
+
+    .sidebar-nav {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .sidebar-nav li {
+      margin-bottom: 2px;
+    }
+
+    .sidebar-nav a {
+      display: block;
+      text-decoration: none;
+      color: #333;
+      font-size: 14px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      transition: background 0.2s, color 0.2s;
+    }
+    
+    .sidebar-nav a:hover {
+      background: #f4f4f4;
+    }
+    
+    .sidebar-nav a.active {
+      background: #e6f9f2;
+      color: #008a5c;
+      font-weight: 600;
+    }
+
+    /* Sub-list for nested items */
+    .sidebar-nav ul {
+        list-style: none;
+        padding-left: 12px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+    }
+    .sidebar-nav ul a {
+        font-size: 13px;
+        color: #555;
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+    .sidebar-nav ul a.active {
+        background: #e6f9f2;
+        color: #008a5c;
+        font-weight: 500;
+    }
+
+    /* Content Area Styles */
+    .knowledge-content {
+      /* This will contain the scrollable content */
+      padding-top: 20px; /* Added padding to align with welcome message */
+      min-height: 400px; /* Ensure it doesn't collapse */
+    }
+
+    /* HIDE ALL CONTENT SECTIONS BY DEFAULT */
+    .knowledge-content section {
+      display: none;
+      margin-bottom: 48px;
+      scroll-margin-top: 100px; /* Offset for sticky header */
+    }
+
+    /* WELCOME MESSAGE */
+    #welcome-message {
+      color: #555;
+    }
+    #welcome-message h2 {
+      font-weight: 600;
+      color: #000;
+      margin-top: 0;
+    }
+
+    /* STYLES FOR NEW CONTENT SECTIONS */
+    .knowledge-content h2 { /* This is now the sub-topic title */
+      font-size: 24px;
+      font-weight: 600;
+      color: #000;
+      margin-top: 4px;
+      margin-bottom: 16px;
+    }
+
+    /* New breadcrumb style */
+    .breadcrumb-heading {
+      font-size: 14px;
+      font-weight: 500;
+      color: #555;
+      margin: 0;
+    }
+    
+    .knowledge-content p {
+      margin-bottom: 16px;
+      color: #444;
+    }
+    
+    .knowledge-content ul {
+      margin-bottom: 16px;
+      padding-left: 20px;
+    }
+
+    .knowledge-content li {
+      margin-bottom: 8px;
+      color: #444;
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 768px) {
+      .knowledge-container {
+        grid-template-columns: 1fr; /* Stack columns */
+      }
+      .knowledge-sidebar {
+        position: static;
+        height: auto;
+        overflow-y: visible;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+      }
+      .knowledge-content section {
+        scroll-margin-top: 80px; /* Adjust for smaller header */
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <a href="/">
+        <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+      </a>
+      <div class="nav-links">
+        <a href="decision-search.html">Search</a>
+        <a href="adjudicators">Adjudicators</a>
+        <a href="knowledge-centre" class="active">Knowledge Centre</a> 
+        <a href="interest-calculator">Interest Calculator</a>
+        <a href="due-date-calculator">Due Date Calculator</a>
+        <a href="how-to">How-To Guide</a>
+        <a href="feedback">Feedback</a>
+      </div>
+      <div id="user-profile-nav"></div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <h1 class="page-title">BIF Act Knowledge Centre</h1>
+    <p class="page-subtitle">A practical guide to the requirements of the BIF Act for payment claims, schedules, and adjudication.</p>
+
+    <div class="knowledge-container">
+      
+      <!-- Sidebar Navigation -->
+      <aside class="knowledge-sidebar">
+        <h4>Guide</h4>
+        <!-- UPDATED SIDEBAR LINKS: Main links now point to the first sub-item -->
+        <ul class="sidebar-nav">
+          <li>
+            <a href="#pc-amount">Requirements of a payment claim</a>
+            <ul>
+              <li><a href="#pc-amount">State the claimed amount</a></li>
+              <li><a href="#pc-request">Request payment</a></li>
+              <li><a href="#pc-identify">Identify the construction works</a></li>
+              <li><a href="#pc-ref-date">Claim for a valid reference date</a></li>
+              <li><a href="#pc-license">Not be for unlicensed work</a></li>
+              <li><a href="#pc-timing">Within six months of work</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#ps-identify">Requirements of a payment schedule</a>
+            <ul>
+              <li><a href="#ps-identify">Identify the payment claim</a></li>
+              <li><a href="#ps-reasons">Reasons for withholding</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#aa-form">Requirements of an adjudication application</a>
+            <ul>
+                <li><a href="#aa-form">Form S79</a></li>
+                <li><a href="#aa-identify">Identify the claim/schedule</a></li>
+                <li><a href="#aa-fee">Pay prescribed fee</a></li>
+                <li><a href="#aa-corners">Not outside four corners</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#ar-reasons">Requirements of an adjudication response</a>
+            <ul>
+                <li><a href="#ar-reasons">Not exceed reasons for withholding</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#s-pc">Service</a>
+            <ul>
+              <li><a href="#s-pc">Service of payment claim</a></li>
+              <li><a href="#s-ps">Service of payment schedule</a></li>
+              <li><a href="#s-aa">Service of adjudication app</a></li>
+              <li><a href="#s-ar">Service of adjudication response</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#d-consider">Adjudicator’s decision</a>
+            <ul>
+              <li><a href="#d-consider">What the Adjudicator must consider</a></li>
+              <li><a href="#d-not-consider">What the Adjudicator must not consider</a></li>
+              <li><a href="#d-timing">Timing of decision</a></li>
+            </ul>
+          </li>
+        </ul>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main class="knowledge-content">
+        
+        <div id="welcome-message">
+          <h2>Welcome to the BIF Act Knowledge Centre</h2>
+          <p>Please select a topic from the guide on the left to get started.</p>
+        </div>
+
+        <!-- === Requirements of a payment claim === -->
+        <section id="pc-amount">
+          <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
+          <h2>State the claimed amount</h2>
+          <p>The payment claim must clearly and unambiguously state the specific monetary amount being claimed. This is a fundamental requirement. Issues can arise if the claim lists multiple different amounts or provides a vague range without a clear final figure.</p>
+        </section>
+        <section id="pc-request">
+          <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
+          <h2>Request payment</h2>
+          <p>The document must make it clear that it is a request for payment. The BIF Act assists here, stating that a document bearing the word "invoice" is taken to satisfy this requirement. Best practice is to also include a statement such as "This is a payment claim made under the Building Industry Fairness (Security of Payment) Act 2017."</p>
+        </section>
+        <section id="pc-identify">
+          <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
+          <h2>Identify the construction works</h2>
+          <p>The claim must identify the construction work or related goods and services to which the payment relates. The standard is not overly onerous, but it must be reasonably clear what work the claim is for. A simple reference to "works on site" may be insufficient, whereas "Civil works for Project X - May 2025" is likely to be compliant.</p>
+        </section>
+        <section id="pc-ref-date">
+          <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
+          <h2>Claim for a valid reference date</h2>
+          <p>This is a critical jurisdictional requirement. A payment claim can only be made on and from a "reference date," which is determined by the contract or, if the contract is silent, by the default provisions in the Act. A claim made without a valid reference date (e.g., claiming twice for the same date) is invalid.</p>
+        </section>
+        <section id="pc-license">
+          <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
+          <h2>Not be for unlicensed building work</h2>
+          <p>A payment claim cannot be made for construction work carried out by an unlicensed person if the QBCC Act requires that person to be licensed to carry out that work. This is a common jurisdictional challenge in adjudication.</p>
+        </section>
+        <section id="pc-timing">
+          <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
+          <h2>Within six months of work</h2>
+          <p>A payment claim (other than a final claim) must be given within 6 months after the construction work to which the claim relates was last carried out. This is a strict time bar, and claims served outside this period are invalid.</p>
+        </section>
+
+        <!-- === Requirements of a payment schedule === -->
+        <section id="ps-identify">
+          <h4 class_name="breadcrumb-heading">Requirements of a payment schedule</h4>
+          <h2>Identify the payment claim</h2>
+          <p>The payment schedule must clearly identify the payment claim to which it is responding. This is usually done by referencing the claim's date, invoice number, or project reference.</p>
+        </section>
+        <section id="ps-reasons">
+          <h4 class_name="breadcrumb-heading">Requirements of a payment schedule</h4>
+          <h2>Reasons for withholding payment</h2>
+          <p>This is the most critical requirement. If the respondent proposes to pay less than the full amount claimed (even if they propose to pay $0), they must state all their reasons for withholding payment. These reasons must be articulated with sufficient detail for the claimant to understand the case against them. A respondent is bound by these reasons at adjudication and cannot introduce new ones later.</p>
+        </section>
+
+        <!-- === Requirements of an adjudication application === -->
+        <section id="aa-form">
+          <h4 class_name="breadcrumb-heading">Requirements of an adjudication application</h4>
+          <h2>Form S79</h2>
+          <p>The application must be made in the approved form (Form S79) and filed with an Authorised Nominating Authority (ANA), not the QBCC.</p>
+        </section>
+        <section id="aa-identify">
+          <h4 class_name="breadcrumb-heading">Requirements of an adjudication application</h4>
+          <h2>Identify the claim/schedule</h2>
+          <p>The application must identify the payment claim and the payment schedule (if any) to which it relates. Copies of these documents must be attached.</p>
+        </section>
+        <section id="aa-fee">
+          <h4 class_name="breadcrumb-heading">Requirements of an adjudication application</h4>
+          <h2>Pay prescribed fee</h2>
+          <p>The claimant must pay the application fee charged by the ANA. Failure to pay the fee means the application is not considered "made" and may fall out of time.</p>
+        </section>
+        <section id="aa-corners">
+          <h4 class_name="breadcrumb-heading">Requirements of an adjudication application</h4>
+          <h2>Not outside four corners</h2>
+          <p>The adjudication application (including its submissions) cannot raise new claims or reasons that were not included in the original payment claim. The application is limited to the issues and amounts claimed in the payment claim and responded to in the payment schedule.</p>
+        </section>
+
+        <!-- === Requirements of an adjudication response === -->
+        <section id="ar-reasons">
+          <h4 class_name="breadcrumb-heading">Requirements of an adjudication response</h4>
+          <h2>Not exceed reasons for withholding payment</h2>
+          <p>An adjudication response can only include reasons for withholding payment that were first raised in the payment schedule. A respondent cannot introduce new arguments, new expert reports, or new reasons for non-payment at this stage. This is why the payment schedule is so important.</p>
+        </section>
+
+        <!-- === Service === -->
+        <section id="s-pc">
+          <h4 class_name="breadcrumb-heading">Service</h4>
+          <h2>Service of payment claim</h2>
+          <p>The payment claim must be served on the person liable to make the payment, as identified in the contract. Service must be in accordance with the contract's "notice" provisions (e.g., to a specific email address or physical address).</p>
+        </section>
+        <section id="s-ps">
+          <h4 class_name="breadcrumb-heading">Service</h4>
+          <h2>Service of payment schedule</h2>
+          <p>The payment schedule must be served on the claimant within the strict statutory timeframe (15 business days or as per the contract). Service must also comply with the contract's notice provisions.</p>
+        </section>
+        <section id="s-aa">
+          <h4 class_name="breadcrumb-heading">Service</h4>
+          <h2>Service of adjudication application</h2>
+          <p>A copy of the adjudication application must be served on the respondent, either before or immediately after it is filed with the ANA.</p>
+        </section>
+        <section id="s-ar">
+          <h4 class_name="breadcrumb-heading">Service</h4>
+          <h2>Service of adjudication response</h2>
+          <p>A copy of the adjudication response must be served on the claimant and the adjudicator within the time allowed by the Act or the adjudicator.</p>
+        </section>
+
+        <!-- === Adjudicator’s decision === -->
+        <section id="d-consider">
+          <h4 class_name="breadcrumb-heading">Adjudicator’s decision</h4>
+          <h2>What the Adjudicator must consider</h2>
+          <p>The adjudicator *must* consider the provisions of the BIF Act, the contract, the payment claim, the payment schedule, the adjudication application, and the adjudication response (and all submissions and evidence properly included within them).</p>
+        </section>
+        <section id="d-not-consider">
+          <h4 class_name="breadcrumb-heading">Adjudicator’s decision</h4>
+          <h2>What the Adjudicator must not consider</h2>
+          <p>The adjudicator *must not* consider an adjudication response that was not served on time. They also *must not* consider any reasons for withholding payment that were not included in the payment schedule. This is the key "four corners" doctrine of security of payment.</p>
+        </section>
+        <section id="d-timing">
+          <h4 class_name="breadcrumb-heading">Adjudicator’s decision</h4>
+          <h2>Timing of decision</h2>
+          <p>An adjudicator must make their decision within 10 business days of receiving the adjudication response, or within a longer period if agreed by the parties. This tight timeframe is a key feature of the "pay now, argue later" regime.</p>
+Note: I noticed a small typo in your provided HTML (`class_name=` instead of `class=`) for the breadcrumb headings. I have corrected this in the code below for sections `ps-identify` and onwards.
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+        <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+      </div>
+
+      <div class="footer-links">
+        <a href="adjudicators">Adjudicators</a>
+        <a href="decision-search.html">Search</a>
+        <a href="knowledge-centre">Knowledge Centre</a>
+        <a href="interest-calculator">Interest Calculator</a>
+        <a href="due-date-calculator">Due Date Calculator</a>
+        <a href="how-to">How-To Guide</a>
+        <a href="feedback">Feedback</a>
+        <a href="privacy">Privacy</a>
+        <a href="adjudicator-insights-terms.html">Adjudicator Insights Terms</a>
+        <a href="terms">General Terms of Use</a>
+        <a href="account-terms.html">Account Terms</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 Sopal Australia. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="/assets/js/main.js"></script>
+
+  <!-- UPDATED SCRIPT for showing/hiding individual sections -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const sidebarNav = document.querySelector('.sidebar-nav');
+      if (!sidebarNav) return;
+
+      const navLinks = sidebarNav.querySelectorAll('a[href^="#"]');
+      const contentSections = document.querySelectorAll('.knowledge-content section');
+      const welcomeMessage = document.getElementById('welcome-message');
+
+      // --- 1. Core Function to Update View ---
+      const setActiveState = (hash) => {
+        let targetSection = hash ? document.querySelector(hash) : null;
+        
+        // Ensure the target is a valid content section
+        if (!targetSection || !targetSection.matches('.knowledge-content section')) {
+          // If hash is invalid or missing, show welcome message
+          welcomeMessage.style.display = 'block';
+          contentSections.forEach(s => s.style.display = 'none');
+          navLinks.forEach(l => l.classList.remove('active'));
+          return;
+        }
+
+        // 1. Manage Visibility
+        welcomeMessage.style.display = 'none';
+        contentSections.forEach(s => s.style.display = 'none');
+        targetSection.style.display = 'block'; // Show the specific target section
+
+        // 2. Manage Active Links
+        navLinks.forEach(l => l.classList.remove('active'));
+        const activeLink = sidebarNav.querySelector(`a[href="${hash}"]`);
+        
+        if (activeLink) {
+          activeLink.classList.add('active');
+          // Also activate the parent link if it's a sub-link
+          const parentLink = activeLink.closest('ul')?.previousElementSibling;
+          if (parentLink && parentLink.tagName === 'A') {
+            parentLink.classList.add('active');
+          }
+        }
+      };
+
+      // --- 2. Click-to-Scroll/Show Logic ---
+      sidebarNav.addEventListener('click', (e) => {
+        const link = e.target.closest('a[href^="#"]');
+        if (link) {
+          e.preventDefault();
+          const hash = link.getAttribute('href');
+          
+          setActiveState(hash);
+
+          if (window.location.hash !== hash) {
+            history.pushState(null, null, window.location.pathname + hash);
+          }
+
+          // Find the content area to scroll, not the whole window
+          const contentArea = document.querySelector('.knowledge-content');
+          // We scroll the main window, but align to the top of the content area
+          // to account for the sticky header.
+          window.scrollTo({
+            top: contentArea.offsetTop - 100, // 100px offset for sticky header
+            behavior: 'smooth'
+          });
+        }
+      });
+
+      // --- 3. Handle Browser Back/Forward Buttons ---
+      window.addEventListener('popstate', () => {
+        setActiveState(window.location.hash);
+      });
+
+      // --- 4. Handle Page Load with a Hash ---
+      if (window.location.hash) {
+        setActiveState(window.location.hash);
+        setTimeout(() => {
+          const contentArea = document.querySelector('.knowledge-content');
+          if (contentArea) {
+            window.scrollTo({
+              top: contentArea.offsetTop - 100, // 100px offset for sticky header
+              behavior: 'auto'
+            });
+          }
+        }, 100);
+      }
+
+    });
+  </script>
+</body>
+</html>
+
