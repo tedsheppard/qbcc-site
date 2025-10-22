@@ -105,6 +105,40 @@
       color: #666;
     }
 
+    .statute-excerpt {
+      margin: 18px 0;
+      border: 1px solid #d7e5df;
+      border-radius: 10px;
+      background: #f6fbf9;
+      padding: 12px 16px;
+    }
+
+    .statute-excerpt summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: #155d47;
+    }
+
+    .statute-body {
+      margin-top: 12px;
+      color: #1b3a2d;
+      line-height: 1.6;
+    }
+
+    .analysis {
+      margin-top: 24px;
+      background: #fafafa;
+      border-left: 4px solid #2ea88c;
+      padding: 18px 22px;
+      border-radius: 8px;
+    }
+
+    .authority-list {
+      margin: 16px 0 0 0;
+      padding-left: 20px;
+      color: #333;
+    }
+
     /* --- NEW KNOWLEDGE CENTRE STYLES --- */
     .page-title {
       font-size: 32px;
@@ -373,7 +407,27 @@
         <section id="pc-amount">
           <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
           <h2>State the claimed amount</h2>
-          <p>The payment claim must clearly and unambiguously state the specific monetary amount being claimed. This is a fundamental requirement. Issues can arise if the claim lists multiple different amounts or provides a vague range without a clear final figure.</p>
+
+          <p>Pursuant to section 68(1)(b) of the BIF Act: the claimant must state, on the face of the payment claim, the exact amount said to be due. Any ambiguity about that figure risks invalidating the claim and depriving an adjudicator of jurisdiction.</p>
+
+          <details class="statute-excerpt">
+            <summary>Section 68(1)(b) BIF Act – Meaning of payment claim</summary>
+            <div class="statute-body">
+              <strong>68 Meaning of payment claim</strong>
+              <p>(1) &nbsp;A payment claim, for a progress payment, is a written document that—</p>
+              <p style="margin-left: 1.5rem;">(b) &nbsp;states the amount (the claimed amount) of the progress payment that the claimant claims is payable by the respondent; and</p>
+            </div>
+          </details>
+
+          <div class="analysis">
+            <p>Queensland courts and adjudicators look for a single, objectively ascertainable claimed amount. Including several competing totals, netting off retentions without explanation, or pointing to another document to work out the figure will usually fall short.</p>
+            <ul class="authority-list">
+              <li><strong>Matrix Projects (Qld) Pty Ltd v Lusarn Pty Ltd [2013] QCA 295</strong> — the Court of Appeal confirmed that a compliant claim must enable the respondent to identify, without calculation gymnastics, the sum being pressed for payment.</li>
+              <li><strong>Nepean Engineering Pty Ltd v Total Process Services Pty Ltd (In liq) [2005] NSWCA 409</strong> — consistently followed in Queensland, the court held that a payment claim fails if the respondent cannot “readily discern” the amount sought from the document itself.</li>
+              <li><strong>Protectavale Pty Ltd v K2K Pty Ltd [2008] NSWCA 354</strong> — emphasised that cross-referencing spreadsheets or schedules is permissible only where the claim clearly points to a single claimed amount.</li>
+            </ul>
+            <p>In practice this means prefacing the invoice with a clear heading such as “Claimed amount (BIF Act)” and stating one figure inclusive of GST. Any explanatory breakdown should follow but must not introduce competing totals.</p>
+          </div>
         </section>
         <section id="pc-request">
           <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
