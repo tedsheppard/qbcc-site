@@ -216,6 +216,22 @@ CREATE TABLE IF NOT EXISTS adjudicator_page_views (
 )
 """)
 
+# --- Feedback submissions ---
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    name TEXT,
+    email TEXT,
+    subject TEXT NOT NULL,
+    priority TEXT NOT NULL,
+    details TEXT NOT NULL,
+    browser TEXT,
+    device TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
 # --- Safely add columns if they don't exist ---
 try:
     purchases_cur.execute("ALTER TABLE purchase_users ADD COLUMN email_verified BOOLEAN DEFAULT 0")
@@ -2072,6 +2088,23 @@ async def send_feedback(
     browser: str = Form(""),
     device: str = Form("")
 ):
+    # Save feedback to database as backup
+    try:
+        purchases_con.execute("""
+            INSERT INTO feedback (type, name, email, subject, priority, details, browser, device, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        """, (type, name, email, subject, priority, details, browser, device))
+        purchases_con.commit()
+    except Exception as db_err:
+        print(f"Warning: Could not save feedback to database: {db_err}")
+
+    # Try to send email notification
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    if not smtp_password:
+        # If no SMTP password configured, just save to DB and return success
+        print("Warning: SMTP_PASSWORD not configured, feedback saved to database only")
+        return {"ok": True, "message": "Feedback received and saved"}
+
     msg = EmailMessage()
     msg["From"] = "sopal.aus@gmail.com"
     msg["To"] = "sopal.aus@gmail.com"
@@ -2096,11 +2129,13 @@ Details:
             port=587,
             start_tls=True,
             username="sopal.aus@gmail.com",
-            password=os.getenv("SMTP_PASSWORD"),
+            password=smtp_password,
         )
         return {"ok": True, "message": "Feedback sent successfully"}
     except Exception as e:
-        return {"ok": False, "error": str(e)}
+        # Email failed but feedback is already saved in DB
+        print(f"SMTP error (feedback saved to DB): {e}")
+        return {"ok": True, "message": "Feedback received and saved"}
 
 # ---------- AI Ask ----------
 @app.post("/ask/{decision_id}")
