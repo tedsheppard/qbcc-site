@@ -1113,25 +1113,33 @@
   }
 
   function findMatchingAdjudicator(query) {
-    if (!query || query.length < 3 || !adjudicatorList.length) return null;
+  if (!query || query.length < 3 || !adjudicatorList.length) return null;
 
-    const cleanedQuery = query
-      .toLowerCase()
-      .replace(/"/g, '')
-      .replace(/\b(and|or|not|w\/\d+|near\/\d+)\b/gi, ' ')
-      .replace(/[^\w\s]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
+  const cleanedQuery = query
+    .toLowerCase()
+    .replace(/"/g, '')
+    .replace(/\b(and|or|not|w\/\d+|near\/\d+)\b/gi, ' ')
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-    if (!cleanedQuery) return null;
+  if (!cleanedQuery) return null;
 
-    for (const adjudicator of adjudicatorList) {
-      if (adjudicator.lastName && cleanedQuery.includes(adjudicator.lastName)) {
+  // Split the cleaned query into individual words
+  const queryWords = cleanedQuery.split(/\s+/);
+
+  for (const adjudicator of adjudicatorList) {
+    if (adjudicator.lastName) {
+      // Check if the adjudicator's last name matches any complete word in the query
+      if (queryWords.includes(adjudicator.lastName)) {
         return adjudicator.fullName;
       }
     }
-    return null;
   }
+  return null;
+}
+  
+  
 
   function showAdjudicatorModal() {
     const modal = document.getElementById('adjudicatorSearchModal');
