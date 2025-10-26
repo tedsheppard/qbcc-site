@@ -3359,32 +3359,101 @@ Simply stating the payment claim is made under the BIF Act is not, by itself, su
 ### Practice Tips
 - Include the word "invoice" or a phrase like "this is a request for payment under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)" (or both)
 - If relying only on "invoice", ensure the document complies with tax invoice requirements (claimant's name and ABN, taxable supplies identified, GST amounts, date of issue)
+
+## 4. CLAIM FOR A VALID REFERENCE DATE
+
+Pursuant to section 70 of the BIF Act, a person who has carried out construction work, or supplied related goods and services, under a construction contract is entitled to a progress payment from each reference date.
+
+A "reference date" is defined under section 67 of the BIF Act as:
+- (a) the date stated in, or worked out under, the contract as the date on which a progress payment may be made; or
+- (b) if the contract does not provide for the matter, the last day of the month.
+
+### Jurisdictional Requirement
+A payment claim will be invalid if it is not made from a valid reference date. As the High Court unanimously found in Southern Han Breakfast Point Pty Ltd (in liq) v Lewence Construction Pty Ltd (2016) 260 CLR 340:
+
+The existence of a reference date under a construction contract is a precondition to the making of a valid payment claim. The High Court confirmed that where one payment claim has already been made in relation to a particular reference date, any later payment claim purportedly made in respect of the same reference date is not valid.
+
+Thus, if a payment claim is made without the accrual of a valid reference date, then it is invalid and cannot be adjudicated upon.
+
+### From Each Reference Date
+Under the BIF Act, the correct approach is that a payment claim can be served both on and from/after the reference date. A claim can be made at any time after the contractual date, subject to the statutory outer limit (6 months).
+
+### Cannot Claim Twice for the Same Reference Date
+Pursuant to section 75(4) of the BIF Act, a claimant cannot make more than one payment claim for each reference date. If a payment claim is made in respect of a reference date already relied upon for a previous valid payment claim, then it will be invalid.
+
+### Work Must Be Up To Reference Date
+There is authority in Queensland which suggests that a payment claim will be invalid if it claims for work performed after the reference date:
+- Karam Group Pty Ltd v Earthmoving Contractors Pty Ltd [2021] QSC 10 stated that a payment claim which includes work beyond the reference date is not a valid payment claim
+- Watkins Contracting Pty Ltd v Hyatt Ground Engineering Pty Ltd [2018] QSC 065 held that payment claims which included work carried out after the reference date were not valid
+
+The reference date is the point in time at which a payment claim is to be assessed. Events which post-date the reference date are not strictly relevant to the valuation of the payment claim.
+
+### Contractual Preconditions
+Generally, a contractual provision that purports to set preconditions to the accrual of a reference date will be void for the purposes of the BIF Act. A provision which inordinately delays or effectively prevents a reference date from arising would be contrary to the Act's objective.
+
+### Reference Dates Following Take Out
+Under many unamended Australian Standard contracts, payment to the claimant is suspended upon the respondent validly taking the work out of its hands. In such cases, reference dates do not arise upon payments being suspended following take out.
+
+### Reference Dates Following Termination
+If a construction contract is terminated and the contract does not provide for, or purports to prevent, a reference date surviving beyond termination, the final reference date for the contract is the date the contract is terminated.
+
+### Practice Tips
+- Serve only on or after the reference date, never before
+- Make one claim per reference date
+- If needed, re-include unpaid amounts in a later claim rather than issuing a second claim for the same date
+- Include only work up to the reference date (exclude work done later, late variations, or post-date quantities)
+- On termination/take-out, confirm whether reference dates survive
+
+## 5. NOT BE FOR UNLICENSED BUILDING WORK
+
+Under section 42 of the Queensland Building and Construction Commission Act 1991 (Qld), a person who performs unlicensed building work is not entitled to any monetary or other consideration – including under the BIF Act – for doing so.
+
+Section 42(3) states: "A person who carries out building work in contravention of this section is not entitled to any monetary or other consideration for doing so."
+
+### Jurisdictional Bar
+A payment claim cannot be made for construction work carried out by an unlicensed person if the QBCC Act requires that person to be licensed to carry out that work. This is a common jurisdictional challenge in adjudication.
+
+### Contract Cannot Be Severed
+In Dart Holdings Pty Ltd v Total Concept Group Pty Ltd [2012] QSC 158, the Court held that where part of a lump-sum contract required unlicensed work (glass awnings outside the carpentry licence), the entire contract was tainted. Because the contract could not be severed to save part of the payment provisions, there was no security of payment entitlement and the adjudicator's decision was void.
+
+### Small Items Can Taint Large Contracts
+In Galaxy Developments Pty Ltd v Civil Contractors (Aust) Pty Ltd [2020] QSC 51, a $1.3 million contract was held unenforceable because the claimant lacked appropriate licences for minor "bus stop" items (a freestanding seat and bike rack). The Court acknowledged this was "absurd in reality" but correct in law, highlighting the harsh consequences of licensing requirements.
+
+### Exemptions Apply
+In Ingeteam Australia Pty Ltd v Susan River Solar Pty Ltd [2024] QSC 30, a $2.39m payment claim was initially rejected because of a $294 plywood "floor repair". However, the Court held the adjudicator had misapplied the "floating floor" and sub-$3,300 exemption, so no licence was actually required.
+
+### Practice Tips
+- As a claimant, do a licence-scope audit for every item/variation
+- If using the head-contractor exemption, require and file proof that only appropriately licensed subcontractors will perform building work
+- Respondents should perform QBCC licence searches to check whether the claimant held appropriate licence(s) at all material times
 """
 
 BIF_ACT_SYSTEM_PROMPT = f"""You are an expert AI assistant specialized in Queensland's Building Industry Fairness (Security of Payment) Act 2017 (BIF Act), specifically regarding payment claim requirements.
 
-Your knowledge base covers three critical requirements for valid payment claims:
+Your knowledge base covers five critical requirements for valid payment claims:
 1. Identify the construction works
 2. State the claimed amount
 3. Request payment
+4. Claim for a valid reference date
+5. Not be for unlicensed building work
 
 {BIF_ACT_KNOWLEDGE_BASE}
 
 When answering questions:
 - Be precise and cite specific requirements from the BIF Act
 - Provide practical, actionable advice
-- Reference relevant case law when appropriate (e.g., MWB Everton Park v Devcon Building Co)
+- Reference relevant case law when appropriate (e.g., MWB Everton Park v Devcon Building Co, Southern Han, Dart Holdings, Galaxy Developments)
 - Be clear about what will pass vs fail
 - Use Australian legal terminology and spelling
 
 When analyzing uploaded payment claims:
-- Check each of the three requirements systematically
+- Check each of the five requirements systematically
 - Look for specific text that satisfies or fails each requirement
 - Quote relevant excerpts from the document
 - Give a clear pass/fail/warning for each requirement
 - Provide specific recommendations for improvement
 
-Be helpful but professional. If asked about topics outside the three requirements, politely redirect to what you can help with.
+Be helpful but professional. If asked about topics outside the five requirements, politely redirect to what you can help with.
 """
 
 
@@ -3519,6 +3588,18 @@ async def bifact_chat(
       "status": "pass|fail|warning",
       "explanation": "Detailed explanation",
       "quote": "Relevant quote"
+    },
+    {
+      "title": "Claim for a Valid Reference Date",
+      "status": "pass|fail|warning",
+      "explanation": "Detailed explanation",
+      "quote": "Relevant quote"
+    },
+    {
+      "title": "Not Be for Unlicensed Building Work",
+      "status": "pass|fail|warning",
+      "explanation": "Detailed explanation - check if claimant appears to be properly licensed",
+      "quote": "Relevant quote (e.g., licence number if shown)"
     }
   ]
 }"""
