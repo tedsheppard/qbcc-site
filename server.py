@@ -3289,6 +3289,322 @@ async def get_adjudicator_decisions_text(decision_ids: List[str] = Body(...)):
         raise HTTPException(status_code=500, detail="Failed to fetch decision texts")
 
 
+# ==================== BIF ACT AI CHATBOT ====================
+
+# Knowledge base content - the three requirements from your knowledge centre
+BIF_ACT_KNOWLEDGE_BASE = """
+# BIF Act Payment Claim Requirements
+
+## 1. IDENTIFY THE CONSTRUCTION WORKS
+
+Pursuant to section 68(1)(a) of the BIF Act, a payment claim must identify the construction work or related goods and services to which it relates.
+
+### General Principles
+The test is not whether the claim explains every calculation, but whether the relevant construction work (and/or related goods and services) is sufficiently identified such that the basis of the claim is reasonably comprehensible to the recipient.
+
+Key factors:
+- Payment claims are given and received by people experienced in the building industry
+- The parties' background knowledge from past dealings is relevant
+- The claim may reference the construction contract to identify items
+- A practical, not overly technical attitude is taken
+
+### Degree of Particularity
+The construction work must be identified with some degree of particularity. The specific work should be identified, not just the general work of the whole contract. The respondent should be capable of determining whether to pay the claim.
+
+However, a few failures to identify work won't necessarily invalidate the claim if most work is properly identified.
+
+### What Fails
+- Percentages against broad trade headings without tethering to identifiable scopes/locations/activities (e.g., "5% of concreting" for a 56-townhouse project)
+- Generic categories with only percentages and no particulars
+- Trade breakdowns like "Electrical", "Mechanical", "Builder's Preliminaries" without specifics
+
+### Practice Tips
+- Use location + scope + activity + period for every line (e.g., "Tower 1, L10–L12: install grid & tile to corridors – 1 January 2025 to 10 January 2025")
+- Anchor to the contract: cite contract/Annexure item ID, unit, quantity, rate, previously approved and this period columns
+- Avoid percentages against broad trades; make it findable on site with concrete descriptors
+- Keep all supporting documents with the claim
+- For supply-only items, specify units/tonnage/quantities, delivery dates/locations
+- Variations should ideally be communicated by project letter first, then attached to the claim
+
+## 2. STATE THE CLAIMED AMOUNT
+
+Pursuant to section 68(1)(b) of the BIF Act, a payment claim must state the amount of the progress payment (i.e. the claimed amount) that the claimant claims is payable by the respondent.
+
+### Must State a Claimed Amount
+To avoid ambiguity, a payment claim should clearly identify a single, specific figure as the "claimed amount". Failing to state the claimed amount may invalidate the payment claim, even if the total is ascertainable by summing individual items.
+
+### Avoid Multiple Figures
+A payment claim should avoid presenting multiple figures that could each be read as the "claimed amount". Multiple spreadsheets with different "due this claim" totals for separable parts, with no single total, will fail.
+
+However, there is authority suggesting multiple amounts which collectively constitute the claimed amount may be sufficient, as long as they're stated as part of one payment claim.
+
+### GST Inclusive
+To the extent GST applies, best practice is to express the claimed amount as the GST inclusive figure. Expressing it as GST exclusive may expose the claim to argument that the GST component is not part of the payment claim.
+
+## 3. REQUEST PAYMENT
+
+Pursuant to section 68(1)(c) of the BIF Act, a payment claim must request payment of the claimed amount.
+
+### "Invoice" is Sufficient
+It is sufficient to include the word "invoice" on the face of the payment claim (section 68(3) of the BIF Act). However, best practice is to ensure it's a valid tax invoice.
+
+### What's Not Sufficient
+The words "amount due this claim" is NOT sufficient. Something more is required - there must be a request for payment of the amount claimed.
+
+### Must Be Express or Clearly Implied
+A request for payment must be either expressly stated in the payment claim, or necessarily and clearly implied. 
+
+Simply stating the payment claim is made under the BIF Act is not, by itself, sufficient. However, a document with "payment claim" and stating "This is a payment claim made under the Building Industry Fairness (Security of Payment) Act 2017" may be valid, especially with additional language like "net payment claimed".
+
+### Practice Tips
+- Include the word "invoice" or a phrase like "this is a request for payment under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)" (or both)
+- If relying only on "invoice", ensure the document complies with tax invoice requirements (claimant's name and ABN, taxable supplies identified, GST amounts, date of issue)
+"""
+
+BIF_ACT_SYSTEM_PROMPT = f"""You are an expert AI assistant specialized in Queensland's Building Industry Fairness (Security of Payment) Act 2017 (BIF Act), specifically regarding payment claim requirements.
+
+Your knowledge base covers three critical requirements for valid payment claims:
+1. Identify the construction works
+2. State the claimed amount
+3. Request payment
+
+{BIF_ACT_KNOWLEDGE_BASE}
+
+When answering questions:
+- Be precise and cite specific requirements from the BIF Act
+- Provide practical, actionable advice
+- Reference relevant case law when appropriate (e.g., MWB Everton Park v Devcon Building Co)
+- Be clear about what will pass vs fail
+- Use Australian legal terminology and spelling
+
+When analyzing uploaded payment claims:
+- Check each of the three requirements systematically
+- Look for specific text that satisfies or fails each requirement
+- Quote relevant excerpts from the document
+- Give a clear pass/fail/warning for each requirement
+- Provide specific recommendations for improvement
+
+Be helpful but professional. If asked about topics outside the three requirements, politely redirect to what you can help with.
+"""
+
+
+def extract_text_from_pdf_bifact(pdf_file):
+    """Extract text from PDF file for BIF Act analysis"""
+    try:
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        return text
+    except Exception as e:
+        return f"Error reading PDF: {str(e)}"
+
+
+def encode_image_bifact(image_bytes):
+    """Encode image to base64 for GPT-4 Vision"""
+    import base64
+    try:
+        image = Image.open(io.BytesIO(image_bytes))
+        # Convert to RGB if necessary
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        # Resize if too large (max 2048x2048 for GPT-4 Vision)
+        max_size = 2048
+        if image.width > max_size or image.height > max_size:
+            image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+        
+        # Convert to base64
+        buffered = io.BytesIO()
+        image.save(buffered, format="JPEG")
+        return base64.b64encode(buffered.getvalue()).decode('utf-8')
+    except Exception as e:
+        print(f"Error encoding image: {e}")
+        return None
+
+
+@app.post("/api/chat")
+async def bifact_chat(
+    message: str = Form(""),
+    history: str = Form("[]"),
+    file: Optional[UploadFile] = File(None)
+):
+    """
+    BIF Act AI Assistant endpoint
+    Handles both Q&A and document compliance checking
+    """
+    try:
+        # Initialize OpenAI client
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if not openai_api_key:
+            raise HTTPException(status_code=500, detail="OpenAI API key not configured")
+        
+        client = OpenAI(api_key=openai_api_key)
+        
+        # Parse conversation history
+        try:
+            conversation_history = json.loads(history)
+        except:
+            conversation_history = []
+        
+        # Check if this is a document analysis request
+        if file:
+            # Read file content
+            file_content = await file.read()
+            filename = file.filename.lower()
+            
+            # Determine file type and extract content
+            if filename.endswith('.pdf'):
+                # Extract text from PDF
+                document_text = extract_text_from_pdf_bifact(io.BytesIO(file_content))
+                
+                # Use GPT-4 for text analysis
+                messages = [
+                    {"role": "system", "content": BIF_ACT_SYSTEM_PROMPT + "\n\nAnalyze the following payment claim document and check compliance with the three requirements. For each requirement, determine if it PASSES, FAILS, or needs a WARNING. Provide specific quotes from the document and detailed explanations."},
+                    {"role": "user", "content": f"Please analyze this payment claim for compliance:\n\n{document_text[:8000]}"}
+                ]
+                
+                model = "gpt-4-turbo-preview"
+                
+            elif filename.endswith(('.png', '.jpg', '.jpeg')):
+                # Handle image with GPT-4 Vision
+                base64_image = encode_image_bifact(file_content)
+                
+                if not base64_image:
+                    raise HTTPException(status_code=400, detail="Failed to process image")
+                
+                messages = [
+                    {"role": "system", "content": BIF_ACT_SYSTEM_PROMPT + "\n\nAnalyze the payment claim document image and check compliance with the three requirements. For each requirement, determine if it PASSES, FAILS, or needs a WARNING. Provide specific quotes from the document and detailed explanations."},
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Please analyze this payment claim document for compliance with the three BIF Act requirements (identify works, state amount, request payment)."
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                }
+                            }
+                        ]
+                    }
+                ]
+                
+                model = "gpt-4-vision-preview"
+            else:
+                raise HTTPException(status_code=400, detail="Unsupported file type. Please upload PDF, PNG, or JPG.")
+            
+            # Add structured output request
+            messages.append({
+                "role": "system",
+                "content": """Respond with a JSON object in this exact format:
+{
+  "requirements": [
+    {
+      "title": "Identify the Construction Works",
+      "status": "pass|fail|warning",
+      "explanation": "Detailed explanation of why it passes/fails/needs attention",
+      "quote": "Relevant quote from the document (if available)"
+    },
+    {
+      "title": "State the Claimed Amount",
+      "status": "pass|fail|warning",
+      "explanation": "Detailed explanation",
+      "quote": "Relevant quote"
+    },
+    {
+      "title": "Request Payment",
+      "status": "pass|fail|warning",
+      "explanation": "Detailed explanation",
+      "quote": "Relevant quote"
+    }
+  ]
+}"""
+            })
+            
+            # Call OpenAI API
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=0.3,
+                max_tokens=2000
+            )
+            
+            assistant_message = response.choices[0].message.content
+            
+            # Try to parse JSON response
+            try:
+                json_start = assistant_message.find('{')
+                json_end = assistant_message.rfind('}') + 1
+                json_str = assistant_message[json_start:json_end]
+                compliance_result = json.loads(json_str)
+            except:
+                # If JSON parsing fails, return raw response
+                compliance_result = {
+                    "requirements": [
+                        {
+                            "title": "Analysis",
+                            "status": "warning",
+                            "explanation": assistant_message,
+                            "quote": None
+                        }
+                    ]
+                }
+            
+            return JSONResponse({
+                "message": assistant_message,
+                "compliance_check": compliance_result
+            })
+            
+        else:
+            # This is a Q&A request
+            messages = [
+                {"role": "system", "content": BIF_ACT_SYSTEM_PROMPT}
+            ]
+            
+            # Add conversation history (limit to last 10 messages)
+            for msg in conversation_history[-10:]:
+                messages.append(msg)
+            
+            # Add current message
+            messages.append({"role": "user", "content": message})
+            
+            # Call OpenAI API
+            response = client.chat.completions.create(
+                model="gpt-4-turbo-preview",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=2000
+            )
+            
+            assistant_message = response.choices[0].message.content
+            
+            return JSONResponse({
+                "message": assistant_message,
+                "compliance_check": None
+            })
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in BIF Act chat endpoint: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to process request: {str(e)}")
+
+
+@app.get("/api/chat/health")
+async def bifact_chat_health():
+    """Health check for BIF Act chatbot"""
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    return JSONResponse({
+        "status": "healthy",
+        "openai_configured": bool(openai_api_key)
+    })
+
+
 
 
 # ---------- serve frontend with clean URLs ----------
@@ -3300,7 +3616,7 @@ async def serve_html_page(path_name: str):
     api_prefixes = [
         "api/", "admin/", "check-adjudicator-access/", "create-payment-intent/", 
         "purchase-register", "purchase-login", "purchase-me", "update-profile", 
-        "my-purchases"
+        "my-purchases", "api/chat"
     ]
     if any(path_name.startswith(prefix) for prefix in api_prefixes):
         raise HTTPException(status_code=404, detail="API endpoint not found")

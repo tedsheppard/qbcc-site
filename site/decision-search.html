@@ -1040,7 +1040,6 @@ async function runSearch(page=1, bypassAdjudicatorCheck = false){
 
  
 
-    // Replace your existing findMatchingAdjudicator function with this one
 function findMatchingAdjudicator(query) {
   if (!query || query.length < 3 || !adjudicatorList.length) return null;
 
@@ -1054,15 +1053,22 @@ function findMatchingAdjudicator(query) {
 
   if (!cleanedQuery) return null;
 
-  // Check if the query contains any known adjudicator's last name
+  // Split the cleaned query into individual words
+  const queryWords = cleanedQuery.split(/\s+/);
+
+  // Check if the query contains any known adjudicator's last name as a complete word
   for (const adjudicator of adjudicatorList) {
-    if (adjudicator.lastName && cleanedQuery.includes(adjudicator.lastName)) {
-      return adjudicator.fullName;
+    if (adjudicator.lastName) {
+      // Check if the adjudicator's last name matches any complete word in the query
+      if (queryWords.includes(adjudicator.lastName)) {
+        return adjudicator.fullName;
+      }
     }
   }
 
   return null;
-}  
+}
+ 
 
 function showAdjudicatorModal() {
   const modal = document.getElementById('adjudicatorSearchModal');

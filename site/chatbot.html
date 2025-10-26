@@ -1,0 +1,880 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Sopal — BIF Act AI Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Base styles matching main site */
+    body {
+      font-family: Inter, sans-serif;
+      margin: 0;
+      background: #ffffff;
+      color: #222;
+      font-size: 15px;
+      line-height: 1.6;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      background: #fdfdfd;
+      padding: 20px 25px;
+      border-bottom: 1px solid #ddd;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      height: 31px;
+      margin-right: 20px;
+    }
+
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      color: black;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #00c97c;
+    }
+
+    .nav-links a.active {
+      color: #008a5c;
+      font-weight: 600;
+    }
+
+    /* Chat Container */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    /* Welcome Message */
+    .welcome-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      text-align: center;
+      flex: 1;
+    }
+
+    .welcome-screen h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 16px;
+    }
+
+    .welcome-screen p {
+      font-size: 16px;
+      color: #555;
+      margin-bottom: 40px;
+      max-width: 600px;
+    }
+
+    .capability-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 800px;
+      margin-bottom: 40px;
+    }
+
+    .capability-card {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .capability-card:hover {
+      background: #f0f0f0;
+      border-color: #00c97c;
+    }
+
+    .capability-card h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      color: #000;
+    }
+
+    .capability-card p {
+      font-size: 14px;
+      color: #666;
+      margin: 0;
+    }
+
+    /* Messages Area */
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: none;
+    }
+
+    .messages-container.active {
+      display: block;
+    }
+
+    .message {
+      margin-bottom: 24px;
+      display: flex;
+      gap: 12px;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .message.user .message-avatar {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .message.assistant .message-avatar {
+      background: #00c97c;
+      color: white;
+    }
+
+    .message-content {
+      flex: 1;
+      line-height: 1.6;
+    }
+
+    .message.user .message-content {
+      background: #f0f0f0;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .message.assistant .message-content {
+      padding: 4px 0;
+    }
+
+    /* Compliance Check Results */
+    .compliance-result {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 16px 0;
+    }
+
+    .compliance-header {
+      font-weight: 600;
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: #000;
+    }
+
+    .requirement-check {
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border-left: 4px solid #ccc;
+    }
+
+    .requirement-check.pass {
+      background: #d4edda;
+      border-left-color: #28a745;
+    }
+
+    .requirement-check.fail {
+      background: #f8d7da;
+      border-left-color: #dc3545;
+    }
+
+    .requirement-check.warning {
+      background: #fff3cd;
+      border-left-color: #ffc107;
+    }
+
+    .requirement-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-icon {
+      font-size: 20px;
+    }
+
+    .requirement-explanation {
+      font-size: 14px;
+      color: #333;
+      margin-top: 8px;
+    }
+
+    .requirement-quote {
+      background: white;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 8px;
+      font-size: 13px;
+      font-style: italic;
+      color: #555;
+      border-left: 3px solid #999;
+    }
+
+    /* Input Area */
+    .input-container {
+      border-top: 1px solid #e0e0e0;
+      padding: 20px;
+      background: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .input-wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .file-upload-area {
+      display: none;
+      background: #f8f9fa;
+      border: 2px dashed #00c97c;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .file-upload-area:hover {
+      background: #f0f0f0;
+      border-color: #008a5c;
+    }
+
+    .file-upload-area.active {
+      display: block;
+    }
+
+    .uploaded-file {
+      display: none;
+      background: #e8f4f8;
+      border: 1px solid #17a2b8;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .uploaded-file.active {
+      display: flex;
+    }
+
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .remove-file {
+      background: transparent;
+      border: none;
+      color: #dc3545;
+      cursor: pointer;
+      font-size: 20px;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+    }
+
+    .input-box {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    #message-input {
+      flex: 1;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 15px;
+      font-family: Inter, sans-serif;
+      resize: none;
+      max-height: 200px;
+      min-height: 50px;
+    }
+
+    #message-input:focus {
+      outline: none;
+      border-color: #00c97c;
+    }
+
+    .input-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: Inter, sans-serif;
+    }
+
+    .btn-primary {
+      background: #00c97c;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #008a5c;
+    }
+
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-icon {
+      width: 50px;
+      height: 50px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    /* Loading indicator */
+    .typing-indicator {
+      display: none;
+      padding: 12px 16px;
+    }
+
+    .typing-indicator.active {
+      display: block;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .typing-dots span {
+      width: 8px;
+      height: 8px;
+      background: #999;
+      border-radius: 50%;
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-10px); }
+    }
+
+    /* Footer */
+    .footer {
+      background: #fcfcfc;
+      color: #333;
+      padding: 40px 25px 20px;
+      border-top: 1px solid #ddd;
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .footer-left { 
+      max-width: 400px; 
+      text-align: left; 
+    }
+
+    .footer-logo { 
+      height: 24px; 
+      margin-bottom: 10px; 
+    }
+
+    .footer-links {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px 40px;
+      text-align: left;
+    }
+
+    .footer-links a { 
+      font-size: 13px; 
+      color: black; 
+      text-decoration: none; 
+      transition: color 0.2s; 
+    }
+
+    .footer-links a:hover { 
+      color: #00c97c; 
+    }
+
+    .footer-bottom {
+      text-align: center;
+      border-top: 1px solid #eee;
+      margin-top: 30px;
+      padding-top: 20px;
+      width: 100%;
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    /* Error message */
+    .error-message {
+      background: #f8d7da;
+      border: 1px solid #dc3545;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 12px 0;
+      color: #721c24;
+      display: none;
+    }
+
+    .error-message.active {
+      display: block;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .capability-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .input-actions {
+        flex-direction: column;
+      }
+
+      .btn-icon {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <a href="/"><img id="headerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo"></a>
+      <div class="nav-links">
+        <a href="decision-search.html">Search</a>
+        <a href="adjudicators">Adjudicators</a>
+        <a href="knowledge-centre">Knowledge Centre</a>
+        <a href="chatbot.html" class="active">AI Assistant</a>
+        <a href="interest-calculator">Interest Calculator</a>
+        <a href="due-date-calculator">Due Date Calculator</a>
+        <a href="how-to">How-To Guide</a>
+        <a href="feedback">Feedback</a>
+      </div>
+      <div id="user-profile-nav"></div>
+    </div>
+  </div>
+
+  <!-- Chat Container -->
+  <div class="chat-container">
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcome-screen">
+      <h1>BIF Act AI Assistant</h1>
+      <p>Ask me anything about payment claim requirements, or upload a payment claim for compliance analysis.</p>
+      
+      <div class="capability-cards">
+        <div class="capability-card" onclick="insertSampleQuestion('What are the requirements for identifying construction works in a payment claim?')">
+          <h3>📋 Learn Requirements</h3>
+          <p>Ask questions about the three key requirements for valid payment claims under the BIF Act</p>
+        </div>
+        <div class="capability-card" onclick="insertSampleQuestion('What should I include to properly identify construction works?')">
+          <h3>💡 Get Practical Tips</h3>
+          <p>Get actionable advice on how to draft compliant payment claims with best practices</p>
+        </div>
+        <div class="capability-card" onclick="showFileUpload()">
+          <h3>🔍 Check Compliance</h3>
+          <p>Upload your payment claim and get instant analysis on whether it meets the three requirements</p>
+        </div>
+      </div>
+
+      <p style="font-size: 13px; color: #999; margin-top: 20px;">
+        This AI assistant is trained on Queensland's BIF Act requirements for payment claims
+      </p>
+    </div>
+
+    <!-- Messages Area -->
+    <div class="messages-container" id="messages-container">
+      <!-- Messages will be inserted here -->
+    </div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="input-container">
+    <div class="input-wrapper">
+      <div class="error-message" id="error-message"></div>
+      
+      <!-- File Upload Area -->
+      <div class="file-upload-area" id="file-upload-area">
+        <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg" style="display: none;">
+        <p style="margin: 0; font-weight: 600; color: #333;">📎 Click to upload payment claim</p>
+        <p style="margin: 8px 0 0 0; font-size: 13px; color: #666;">Supports PDF, PNG, JPG (Max 10MB)</p>
+      </div>
+
+      <!-- Uploaded File Display -->
+      <div class="uploaded-file" id="uploaded-file">
+        <div class="file-info">
+          <span>📄</span>
+          <span id="file-name"></span>
+        </div>
+        <button class="remove-file" onclick="removeFile()">×</button>
+      </div>
+
+      <!-- Input Box -->
+      <div class="input-box">
+        <textarea 
+          id="message-input" 
+          placeholder="Ask about payment claim requirements or upload a document..."
+          rows="1"
+        ></textarea>
+        <div class="input-actions">
+          <button class="btn btn-secondary btn-icon" onclick="toggleFileUpload()" title="Attach file">
+            📎
+          </button>
+          <button class="btn btn-primary" id="send-button" onclick="sendMessage()">
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/main.js"></script>
+  <script>
+    let uploadedFile = null;
+    let conversationHistory = [];
+
+    // Auto-resize textarea
+    const textarea = document.getElementById('message-input');
+    textarea.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = this.scrollHeight + 'px';
+    });
+
+    // Enter to send (Shift+Enter for new line)
+    textarea.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    function insertSampleQuestion(question) {
+      document.getElementById('message-input').value = question;
+      document.getElementById('message-input').focus();
+    }
+
+    function showFileUpload() {
+      toggleFileUpload();
+      document.getElementById('message-input').value = 'Please analyze this payment claim for compliance with the BIF Act requirements.';
+    }
+
+    function toggleFileUpload() {
+      const uploadArea = document.getElementById('file-upload-area');
+      uploadArea.classList.toggle('active');
+    }
+
+    // File upload handling
+    document.getElementById('file-upload-area').addEventListener('click', function() {
+      document.getElementById('file-input').click();
+    });
+
+    document.getElementById('file-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        if (file.size > 10 * 1024 * 1024) {
+          showError('File size must be less than 10MB');
+          return;
+        }
+        uploadedFile = file;
+        document.getElementById('file-name').textContent = file.name;
+        document.getElementById('uploaded-file').classList.add('active');
+        document.getElementById('file-upload-area').classList.remove('active');
+      }
+    });
+
+    function removeFile() {
+      uploadedFile = null;
+      document.getElementById('file-input').value = '';
+      document.getElementById('uploaded-file').classList.remove('active');
+    }
+
+    function showError(message) {
+      const errorEl = document.getElementById('error-message');
+      errorEl.textContent = message;
+      errorEl.classList.add('active');
+      setTimeout(() => {
+        errorEl.classList.remove('active');
+      }, 5000);
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('message-input');
+      const message = input.value.trim();
+      
+      if (!message && !uploadedFile) return;
+
+      // Hide welcome screen
+      document.getElementById('welcome-screen').style.display = 'none';
+      document.getElementById('messages-container').classList.add('active');
+
+      // Add user message
+      addMessage('user', message, uploadedFile ? uploadedFile.name : null);
+      
+      // Clear input
+      input.value = '';
+      input.style.height = 'auto';
+
+      // Show typing indicator
+      showTypingIndicator();
+
+      // Disable send button
+      document.getElementById('send-button').disabled = true;
+
+      try {
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('message', message);
+        formData.append('history', JSON.stringify(conversationHistory));
+        
+        if (uploadedFile) {
+          formData.append('file', uploadedFile);
+        }
+
+        // Send to backend
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get response from server');
+        }
+
+        const data = await response.json();
+        
+        // Hide typing indicator
+        hideTypingIndicator();
+
+        // Add assistant response
+        if (data.compliance_check) {
+          addComplianceResult(data.compliance_check);
+        } else {
+          addMessage('assistant', data.message);
+        }
+
+        // Update conversation history
+        conversationHistory.push({
+          role: 'user',
+          content: message
+        });
+        conversationHistory.push({
+          role: 'assistant',
+          content: data.message
+        });
+
+        // Clear uploaded file
+        if (uploadedFile) {
+          removeFile();
+        }
+
+      } catch (error) {
+        hideTypingIndicator();
+        showError('Sorry, something went wrong. Please try again.');
+        console.error(error);
+      }
+
+      // Re-enable send button
+      document.getElementById('send-button').disabled = false;
+    }
+
+    function addMessage(role, content, fileName = null) {
+      const container = document.getElementById('messages-container');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${role}`;
+      
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = role === 'user' ? 'Y' : 'AI';
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      
+      if (fileName) {
+        contentDiv.innerHTML = `<div style="font-size: 13px; color: #666; margin-bottom: 4px;">📄 ${fileName}</div>${content}`;
+      } else {
+        contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+      }
+      
+      messageDiv.appendChild(avatar);
+      messageDiv.appendChild(contentDiv);
+      container.appendChild(messageDiv);
+      
+      // Scroll to bottom
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function addComplianceResult(result) {
+      const container = document.getElementById('messages-container');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message assistant';
+      
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = 'AI';
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      
+      let html = '<div class="compliance-result">';
+      html += '<div class="compliance-header">Payment Claim Compliance Analysis</div>';
+      
+      // Overall summary
+      const passCount = result.requirements.filter(r => r.status === 'pass').length;
+      const totalCount = result.requirements.length;
+      html += `<p><strong>Overall: ${passCount}/${totalCount} requirements met</strong></p>`;
+      
+      // Each requirement
+      result.requirements.forEach(req => {
+        const statusClass = req.status;
+        const statusIcon = req.status === 'pass' ? '✅' : req.status === 'fail' ? '❌' : '⚠️';
+        
+        html += `<div class="requirement-check ${statusClass}">`;
+        html += `<div class="requirement-title"><span class="status-icon">${statusIcon}</span>${req.title}</div>`;
+        html += `<div class="requirement-explanation">${req.explanation}</div>`;
+        
+        if (req.quote) {
+          html += `<div class="requirement-quote">"${req.quote}"</div>`;
+        }
+        
+        html += '</div>';
+      });
+      
+      html += '</div>';
+      
+      contentDiv.innerHTML = html;
+      messageDiv.appendChild(avatar);
+      messageDiv.appendChild(contentDiv);
+      container.appendChild(messageDiv);
+      
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+      const container = document.getElementById('messages-container');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message assistant';
+      messageDiv.id = 'typing-indicator-msg';
+      
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = 'AI';
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content typing-indicator active';
+      contentDiv.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+      
+      messageDiv.appendChild(avatar);
+      messageDiv.appendChild(contentDiv);
+      container.appendChild(messageDiv);
+      
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function hideTypingIndicator() {
+      const indicator = document.getElementById('typing-indicator-msg');
+      if (indicator) {
+        indicator.remove();
+      }
+    }
+  </script>
+</body>
+</html>
