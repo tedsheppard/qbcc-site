@@ -1119,7 +1119,13 @@ def search_fast(
 
             d = dict(meta) if meta else {}
             d["id"] = d.get("ejs_id", r["rowid"])
-            d["decision_date"] = d.get("decision_date")
+            
+            # Add backward-compatible field names for frontend
+            d["claimant"] = d.get("claimant_name")
+            d["respondent"] = d.get("respondent_name")
+            d["adjudicator"] = d.get("adjudicator_name")
+            d["decision_date_norm"] = d.get("decision_date")
+            d["act"] = d.get("act_category")
             
             snippet_raw = r["snippet"]
             
@@ -1189,6 +1195,7 @@ def search_fast(
             """, (hit.get("id"),)).fetchone()
             
             snippet = hit.get("_formatted", {}).get("content", "")
+            # Map new field names to old field names for backward compatibility
             item = {
                 "id": hit.get("id"),
                 "reference": hit.get("reference"),
@@ -1196,8 +1203,13 @@ def search_fast(
                 "claimant": hit.get("claimant_name"),
                 "respondent": hit.get("respondent_name"),
                 "adjudicator": hit.get("adjudicator_name"),
+                "claimant_name": hit.get("claimant_name"),
+                "respondent_name": hit.get("respondent_name"),
+                "adjudicator_name": hit.get("adjudicator_name"),
                 "decision_date_norm": hit.get("decision_date") or hit.get("date"),
+                "decision_date": hit.get("decision_date") or hit.get("date"),
                 "act": hit.get("act"),
+                "act_category": hit.get("act"),
                 "snippet": snippet
             }
             
