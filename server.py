@@ -1459,7 +1459,7 @@ async def upload_decision(
 
         # 7. Update Meilisearch index
         meili_doc = {
-            "ejs_id": ejs_id,
+            "id": ejs_id,
             "reference": reference,
             "pdf_path": pdf_path,
             "claimant": claimant,
@@ -1538,7 +1538,7 @@ async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
                 """, (doc["ejs_id"],)).fetchone()
 
                 meili_doc = {
-                    "ejs_id": doc["ejs_id"], # Correct primary key
+                    "id": doc["ejs_id"], # <-- FIX: Changed this key from "ejs_id" to "id"
                     "reference": doc["reference"],
                     "pdf_path": doc["pdf_path"],
                     "claimant": doc["claimant"],
