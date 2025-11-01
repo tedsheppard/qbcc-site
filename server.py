@@ -1022,8 +1022,8 @@ def search_fast(
             where_clauses.extend([
                 "a.decision_date IS NOT NULL",
                 "a.decision_date != ''",
-                "m.claimant IS NOT NULL",
-                "m.claimant != ''"
+                "a.claimant_name IS NOT NULL",
+                "a.claimant_name != ''"
             ])
 
             if nq2:
@@ -1034,8 +1034,7 @@ def search_fast(
             base_join = """
                 FROM fts
                 JOIN docs_fresh d ON fts.rowid = d.rowid
-                LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-                LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
+                LEFT JOIN decision_details a ON d.ejs_id = a.ejs_id
             """
 
             # Add filter conditions
@@ -1074,9 +1073,9 @@ def search_fast(
             elif sort == "oldest":
                 order_clause = "ORDER BY a.decision_date ASC"
             elif sort == "atoz":
-                order_clause = "ORDER BY m.claimant ASC"
+                order_clause = "ORDER BY a.claimant_name ASC"
             elif sort == "ztoa":
-                order_clause = "ORDER BY m.claimant DESC"
+                order_clause = "ORDER BY a.claimant_name DESC"
             elif sort == "claim_high":
                 order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN -1 ELSE CAST(a.claimed_amount AS REAL) END DESC"
             elif sort == "claim_low":
@@ -1108,20 +1107,19 @@ def search_fast(
         items = []
         for r in rows:
             meta = con.execute("""
-            SELECT m.claimant, m.respondent, m.adjudicator, m.decision_date_norm,
-                    m.act, d.reference, d.pdf_path, d.ejs_id,
+            SELECT a.claimant_name, a.respondent_name, a.adjudicator_name,
+                    a.act_category, d.reference, d.pdf_path, d.ejs_id,
                     a.claimed_amount, a.adjudicated_amount, 
                     a.fee_claimant_proportion, a.fee_respondent_proportion,
                     a.decision_date
             FROM docs_fresh d
-            LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
-            LEFT JOIN ai_adjudicator_extract_v4 a ON d.ejs_id = a.ejs_id
+            LEFT JOIN decision_details a ON d.ejs_id = a.ejs_id
             WHERE d.rowid = ?
             """, (r["rowid"],)).fetchone()
 
             d = dict(meta) if meta else {}
             d["id"] = d.get("ejs_id", r["rowid"])
-            d["decision_date_norm"] = d.get("decision_date") or d.get("decision_date_norm")
+            d["decision_date"] = d.get("decision_date")
             
             snippet_raw = r["snippet"]
             
@@ -1155,7 +1153,7 @@ def search_fast(
             "offset": offset,
             "attributesToRetrieve": [
                 "id", "reference", "pdf_path",
-                "claimant", "respondent", "adjudicator",
+                "claimant_name", "respondent_name", "adjudicator_name",
                 "date", "act", "content"
             ],
             "attributesToHighlight": ["content"],
@@ -1182,11 +1180,11 @@ def search_fast(
         data = res.json()
         items = []
         for hit in data.get("hits", []):
-            # Fetch additional data from ai_adjudicator_extract_v4 as it's not in Meili
+            # Fetch additional data from decision_details as it's not in Meili
             extra_data = con.execute("""
                 SELECT claimed_amount, adjudicated_amount, 
                        fee_claimant_proportion, fee_respondent_proportion
-                FROM ai_adjudicator_extract_v4
+                FROM decision_details
                 WHERE ejs_id = ?
             """, (hit.get("id"),)).fetchone()
             
@@ -1195,10 +1193,10 @@ def search_fast(
                 "id": hit.get("id"),
                 "reference": hit.get("reference"),
                 "pdf_path": hit.get("pdf_path"),
-                "claimant": hit.get("claimant"),
-                "respondent": hit.get("respondent"),
-                "adjudicator": hit.get("adjudicator"),
-                "decision_date_norm": hit.get("date"),
+                "claimant": hit.get("claimant_name"),
+                "respondent": hit.get("respondent_name"),
+                "adjudicator": hit.get("adjudicator_name"),
+                "decision_date_norm": hit.get("decision_date") or hit.get("date"),
                 "act": hit.get("act"),
                 "snippet": snippet
             }
@@ -1396,25 +1394,25 @@ async def upload_decision(
             (ejs_id, reference, pdf_path, full_text)
         )
 
-        # Table: docs_meta
+        # Table: decision_details
         # NOTE: Assuming 'application_no' and 'decision_date' columns exist.
         try:
             con.execute(
-                "INSERT INTO docs_meta (ejs_id, claimant, respondent, adjudicator, decision_date, decision_date_norm, act, application_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO decision_details (ejs_id, claimant, respondent, adjudicator, decision_date, decision_date_norm, act, application_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (ejs_id, claimant, respondent, adjudicator, decision_date, decision_date_norm, act, reference)
             )
         except sqlite3.OperationalError as e:
-            print(f"Warning: Could not insert into docs_meta with extended columns: {e}. Trying basic insert.")
+            print(f"Warning: Could not insert into decision_details with extended columns: {e}. Trying basic insert.")
             con.execute(
-                "INSERT INTO docs_meta (ejs_id, claimant, respondent, adjudicator, decision_date_norm, act) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO decision_details (ejs_id, claimant, respondent, adjudicator, decision_date_norm, act) VALUES (?, ?, ?, ?, ?, ?)",
                 (ejs_id, claimant, respondent, adjudicator, decision_date_norm, act)
             )
 
 
-        # Table: ai_adjudicator_extract_v4
+        # Table: decision_details
         con.execute(
             """
-            INSERT INTO ai_adjudicator_extract_v4 (
+            INSERT INTO decision_details (
                 ejs_id, adjudicator_name, claimant_name, respondent_name, claimed_amount,
                 payment_schedule_amount, adjudicated_amount, fee_claimant_proportion,
                 fee_respondent_proportion, decision_date, outcome, project_type, contract_type,
@@ -1494,7 +1492,7 @@ async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
                 d.ejs_id, d.reference, d.pdf_path, d.full_text,
                 m.claimant, m.respondent, m.adjudicator, m.decision_date_norm
             FROM docs_fresh d
-            LEFT JOIN docs_meta m ON d.ejs_id = m.ejs_id
+            LEFT JOIN decision_details m ON d.ejs_id = m.ejs_id
         """).fetchall()
 
         if not docs_to_sync:
@@ -1521,7 +1519,7 @@ async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
                 extra_data = con.execute("""
                     SELECT claimed_amount, adjudicated_amount,
                            fee_claimant_proportion, fee_respondent_proportion
-                    FROM ai_adjudicator_extract_v4
+                    FROM decision_details
                     WHERE ejs_id = ?
                 """, (doc["ejs_id"],)).fetchone()
 
@@ -1770,7 +1768,7 @@ async def log_blocked_search(q: str = Form(...), authorization: Optional[str] = 
 
 @app.get("/api/adjudicators")
 def get_adjudicators():
-    """Get list of all adjudicators with their statistics from ai_adjudicator_extract_v4"""
+    """Get list of all adjudicators with their statistics from decision_details"""
     try:
         # First get all decisions per adjudicator to calculate median
         query_all = """
@@ -1780,7 +1778,7 @@ def get_adjudicators():
             adjudicated_amount,
             fee_claimant_proportion,
             fee_respondent_proportion
-        FROM ai_adjudicator_extract_v4
+        FROM decision_details
         WHERE adjudicator_name IS NOT NULL 
         AND adjudicator_name != ''
         AND TRIM(adjudicator_name) != ''
@@ -1847,7 +1845,7 @@ def get_adjudicators():
                 THEN CAST(adjudicated_amount AS REAL) 
                 ELSE 0 
             END) as total_adjudicated
-        FROM ai_adjudicator_extract_v4
+        FROM decision_details
         WHERE adjudicator_name IS NOT NULL 
         AND adjudicator_name != ''
         AND TRIM(adjudicator_name) != ''
@@ -1900,7 +1898,7 @@ def get_adjudicators():
 
 @app.get("/api/adjudicator/{adjudicator_name}")
 def get_adjudicator_decisions(adjudicator_name: str = Path(...), authorization: Optional[str] = Header(None)):
-    """Get all decisions for a specific adjudicator from ai_adjudicator_extract_v4"""
+    """Get all decisions for a specific adjudicator from decision_details"""
     # --- START: FINAL PAGE VIEW LOGGING ---
     user_email = "Anonymous"
     if authorization and authorization.startswith("Bearer "):
@@ -1939,7 +1937,7 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...), authorization: 
             a.fee_respondent_proportion,
             d.reference,
             d.pdf_path
-        FROM ai_adjudicator_extract_v4 a
+        FROM decision_details a
         LEFT JOIN docs_fresh d ON a.ejs_id = d.ejs_id
         WHERE LOWER(TRIM(a.adjudicator_name)) = LOWER(TRIM(?))
         ORDER BY a.decision_date DESC
@@ -2063,14 +2061,14 @@ def ask_rag(query: str = Form(...)):
 def debug_schema():
     """Debug endpoint to check database schema"""
     try:
-        # Get docs_meta table schema
-        meta_columns = con.execute("PRAGMA table_info(docs_meta)").fetchall()
+        # Get decision_details table schema
+        meta_columns = con.execute("PRAGMA table_info(decision_details)").fetchall()
         
         # Get a sample row to see what data looks like
-        sample_row = con.execute("SELECT * FROM docs_meta LIMIT 1").fetchone()
+        sample_row = con.execute("SELECT * FROM decision_details LIMIT 1").fetchone()
         
         return {
-            "docs_meta_columns": [{"name": col[1], "type": col[2]} for col in meta_columns],
+            "decision_details_columns": [{"name": col[1], "type": col[2]} for col in meta_columns],
             "sample_data": dict(sample_row) if sample_row else None
         }
     except Exception as e:
@@ -3077,7 +3075,7 @@ def _get_adjudicator_summary_data(db_con, adjudicator_name: str) -> dict:
                 AVG(CAST(a.fee_claimant_proportion AS REAL)) as avgClaimantFeeProportion,
                 AVG(CAST(a.fee_respondent_proportion AS REAL)) as avgRespondentFeeProportion,
                 SUM(CASE WHEN a.adjudicated_amount = '0' OR a.adjudicated_amount = '0.0' THEN 1 ELSE 0 END) as zeroAwardCount
-            FROM ai_adjudicator_extract_v4 a
+            FROM decision_details a
             WHERE LOWER(TRIM(a.adjudicator_name)) = LOWER(TRIM(?))
             GROUP BY a.adjudicator_name
         )
@@ -3101,7 +3099,7 @@ async def generate_summary_pdf(
     decisions_rows = con.execute("""
         SELECT claimant_name, respondent_name, decision_date, claimed_amount, adjudicated_amount, 
                fee_claimant_proportion, fee_respondent_proportion, pdf_path
-        FROM ai_adjudicator_extract_v4
+        FROM decision_details
         WHERE LOWER(TRIM(adjudicator_name)) = LOWER(TRIM(?))
         ORDER BY decision_date DESC
     """, (adjudicator_name,)).fetchall()
