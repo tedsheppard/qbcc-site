@@ -1499,70 +1499,68 @@ async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
 
         # 2. Resynchronize with Meilisearch
         print("INFO: Starting Meilisearch synchronization...")
-        
+
         # Fetch all documents from the local database
         docs_to_sync = con.execute("""
             SELECT 
                 d.ejs_id, d.reference, d.pdf_path, d.full_text,
-                m.claimant, m.respondent, m.adjudicator, m.decision_date_norm
+                m.claimant_name, m.respondent_name, m.adjudicator_name,
+                m.decision_date_norm, m.claimed_amount, m.adjudicated_amount,
+                m.fee_claimant_proportion, m.fee_respondent_proportion
             FROM docs_fresh d
             LEFT JOIN decision_details m ON d.ejs_id = m.ejs_id
         """).fetchall()
+        
+      
 
         if not docs_to_sync:
             return {"status": "warning", "message": "No documents found in the database to sync."}
 
-        
+
         meili_docs = []
+        
+        # Helper function to safely convert values to float
+        def to_float(value):
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return 0.0
+
         for doc in docs_to_sync:
             try:
                 # Ensure date is valid before creating timestamp
                 sortable_date = 0
                 if doc["decision_date_norm"]:
                     sortable_date = int(time.mktime(datetime.strptime(doc["decision_date_norm"], "%Y-%m-%d").timetuple()))
-                
-                # --- Replace it with this new block ---
-                # Helper function to safely convert values to float
-                def to_float(value):
-                    try:
-                        return float(value)
-                    except (ValueError, TypeError):
-                        return 0.0
-
-                # Fetch the extra financial data for this document
-                extra_data = con.execute("""
-                    SELECT claimed_amount, adjudicated_amount,
-                           fee_claimant_proportion, fee_respondent_proportion
-                    FROM decision_details
-                    WHERE ejs_id = ?
-                """, (doc["ejs_id"],)).fetchone()
 
                 meili_doc = {
-                    "id": doc["ejs_id"], # <-- FIX: Changed this key from "ejs_id" to "id"
+                    "id": doc["ejs_id"], # Primary key
                     "reference": doc["reference"],
                     "pdf_path": doc["pdf_path"],
-                    "claimant": doc["claimant"],
-                    "respondent": doc["respondent"],
-                    "adjudicator": doc["adjudicator"],
+                    
+                    # Use the correct new _name columns
+                    "claimant": doc["claimant_name"],
+                    "respondent": doc["respondent_name"],
+                    "adjudicator": doc["adjudicator_name"],
+                    
                     "date": doc["decision_date_norm"],
                     "sortable_date": sortable_date,
                     "act": "BIF Act",
-                    "content": doc["full_text"] or ""
+                    "content": doc["full_text"] or "",
+
+                    # Add financial data directly from our unified query
+                    "claimed_amount": to_float(doc["claimed_amount"]),
+                    "adjudicated_amount": to_float(doc["adjudicated_amount"]),
+                    "fee_claimant_proportion": to_float(doc["fee_claimant_proportion"]),
+                    "fee_respondent_proportion": to_float(doc["fee_respondent_proportion"])
                 }
-
-                # Add the financial data if it was found
-                if extra_data:
-                    meili_doc["claimed_amount"] = to_float(extra_data["claimed_amount"])
-                    meili_doc["adjudicated_amount"] = to_float(extra_data["adjudicated_amount"])
-                    meili_doc["fee_claimant_proportion"] = to_float(extra_data["fee_claimant_proportion"])
-                    meili_doc["fee_respondent_proportion"] = to_float(extra_data["fee_respondent_proportion"])
-
+                
                 meili_docs.append(meili_doc)
 
             except (ValueError, TypeError) as e:
                 print(f"WARN: Skipping document {doc['ejs_id']} due to invalid date '{doc['decision_date_norm']}': {e}")
-
-
+                
+        
         # Send documents to Meilisearch in batches to avoid large payloads
         batch_size = 500
         headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
