@@ -1459,7 +1459,7 @@ async def upload_decision(
 
         # 7. Update Meilisearch index
         meili_doc = {
-            "id": ejs_id,
+            "ejs_id": ejs_id,
             "reference": reference,
             "pdf_path": pdf_path,
             "claimant": claimant,
