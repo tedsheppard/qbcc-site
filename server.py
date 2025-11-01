@@ -1159,7 +1159,7 @@ def search_fast(
             "offset": offset,
             "attributesToRetrieve": [
                 "id", "reference", "pdf_path",
-                "claimant_name", "respondent_name", "adjudicator_name",
+                "claimant", "respondent", "adjudicator",  # OLD field names in Meili index
                 "date", "act", "content"
             ],
             "attributesToHighlight": ["content"],
@@ -1195,19 +1195,21 @@ def search_fast(
             """, (hit.get("id"),)).fetchone()
             
             snippet = hit.get("_formatted", {}).get("content", "")
-            # Map new field names to old field names for backward compatibility
+            # MeiliSearch still has OLD field names, map them to both old and new
             item = {
                 "id": hit.get("id"),
                 "reference": hit.get("reference"),
                 "pdf_path": hit.get("pdf_path"),
-                "claimant": hit.get("claimant_name"),
-                "respondent": hit.get("respondent_name"),
-                "adjudicator": hit.get("adjudicator_name"),
-                "claimant_name": hit.get("claimant_name"),
-                "respondent_name": hit.get("respondent_name"),
-                "adjudicator_name": hit.get("adjudicator_name"),
-                "decision_date_norm": hit.get("decision_date") or hit.get("date"),
-                "decision_date": hit.get("decision_date") or hit.get("date"),
+                # Old field names from Meili (for frontend compatibility)
+                "claimant": hit.get("claimant"),
+                "respondent": hit.get("respondent"),
+                "adjudicator": hit.get("adjudicator"),
+                # New field names (also map from old)
+                "claimant_name": hit.get("claimant"),
+                "respondent_name": hit.get("respondent"),
+                "adjudicator_name": hit.get("adjudicator"),
+                "decision_date_norm": hit.get("date"),
+                "decision_date": hit.get("date"),
                 "act": hit.get("act"),
                 "act_category": hit.get("act"),
                 "snippet": snippet
