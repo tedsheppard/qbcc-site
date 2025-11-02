@@ -989,233 +989,139 @@ def search_fast(
 
     q_norm = normalize_query(q)
 
-    # --- START: Hybrid Search Logic ---
-    # Determine which search engine to use.
-    # Use advanced SQLite FTS if any advanced filters are applied or if the query syntax is complex.
-    # Otherwise, use the faster MeiliSearch for simple queries.
+    # --- NOW ALWAYS USE SQLITE FTS ---
+    try:
+        nq2 = preprocess_sqlite_query(q_norm) if q_norm else ""
 
-    has_advanced_filters = any([
-        startDate, endDate, minClaim is not None, maxClaim is not None,
-        minAdjudicated is not None, maxAdjudicated is not None
-    ])
-
-    nq_expanded = expand_wildcards(q_norm)
-    is_complex_query = (
-        re.search(r'\b(AND|OR|NOT)\b', q_norm, flags=re.I) or
-        re.search(r'\bw/\d+\b', q_norm, flags=re.I) or
-        re.search(r'\bNEAR/\d+\b', q_norm, flags=re.I) or
-        q_norm.startswith('"') or
-        '!' in q_norm or
-        '*' in nq_expanded or
-        q_norm != nq_expanded
-    )
-    
-    # --- BRANCH 1: SQLite FTS for Advanced/Complex Queries ---
-    if has_advanced_filters or is_complex_query:
-        try:
-            nq2 = preprocess_sqlite_query(q_norm) if q_norm else ""
-
-            where_clauses = []
-            sql_params = []
-            
-            # Always filter out results that are missing critical information
-            where_clauses.extend([
-                "a.decision_date IS NOT NULL",
-                "a.decision_date != ''",
-                "a.claimant_name IS NOT NULL",
-                "a.claimant_name != ''"
-            ])
-
-            if nq2:
-                where_clauses.append("fts MATCH ?")
-                sql_params.append(nq2)
-
-            # Base join for all queries
-            base_join = """
-                FROM fts
-                JOIN docs_fresh d ON fts.rowid = d.rowid
-                LEFT JOIN decision_details a ON d.ejs_id = a.ejs_id
-            """
-
-            # Add filter conditions
-            if startDate:
-                where_clauses.append("a.decision_date >= ?")
-                sql_params.append(startDate)
-            if endDate:
-                where_clauses.append("a.decision_date <= ?")
-                sql_params.append(endDate)
-            if minClaim is not None:
-                where_clauses.append("CAST(a.claimed_amount AS REAL) >= ?")
-                sql_params.append(minClaim)
-            if maxClaim is not None:
-                where_clauses.append("CAST(a.claimed_amount AS REAL) <= ?")
-                sql_params.append(maxClaim)
-            if minAdjudicated is not None:
-                where_clauses.append("CAST(a.adjudicated_amount AS REAL) >= ?")
-                sql_params.append(minAdjudicated)
-            if maxAdjudicated is not None:
-                where_clauses.append("CAST(a.adjudicated_amount AS REAL) <= ?")
-                sql_params.append(maxAdjudicated)
-
-            where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
-
-            # Execute COUNT query
-            count_sql = f"SELECT COUNT(DISTINCT fts.rowid) {base_join} {where_sql}"
-            total = con.execute(count_sql, tuple(sql_params)).fetchone()[0]
-
-            # Determine ORDER BY clause
-            order_clause = "ORDER BY rank"  # Default relevance for text queries
-            if not q_norm and sort == "relevance": # If no query, relevance is meaningless
-                 sort = "newest"
-            
-            if sort == "newest":
-                order_clause = "ORDER BY a.decision_date DESC"
-            elif sort == "oldest":
-                order_clause = "ORDER BY a.decision_date ASC"
-            elif sort == "atoz":
-                order_clause = "ORDER BY a.claimant_name ASC"
-            elif sort == "ztoa":
-                order_clause = "ORDER BY a.claimant_name DESC"
-            elif sort == "claim_high":
-                order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN -1 ELSE CAST(a.claimed_amount AS REAL) END DESC"
-            elif sort == "claim_low":
-                order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN 9999999999 ELSE CAST(a.claimed_amount AS REAL) END ASC"
-            elif sort == "adj_high":
-                order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN -1 ELSE CAST(a.adjudicated_amount AS REAL) END DESC"
-            elif sort == "adj_low":
-                order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 9999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC"
-            
-            # Build and execute the main query
-            snippet_select = "snippet(fts, 0, '<mark>', '</mark>', ' … ', 100)" if nq2 else "substr(d.full_text, 1, 500) || '...'"
-            
-            sql = f"""
-                SELECT DISTINCT fts.rowid, {snippet_select} AS snippet
-                {base_join}
-                {where_sql}
-                {order_clause}
-                LIMIT ? OFFSET ?
-            """
-            
-            final_params = tuple(sql_params) + (limit, offset)
-            rows = con.execute(sql, final_params).fetchall()
-
-        except sqlite3.OperationalError as e:
-            print("FTS Query error:", e)
-            raise HTTPException(status_code=500, detail=f"Search query failed: {e}")
-
-        # Process SQLite results
-        items = []
-        for r in rows:
-            meta = con.execute("""
-            SELECT a.claimant_name, a.respondent_name, a.adjudicator_name,
-                    a.act_category, d.reference, d.pdf_path, d.ejs_id,
-                    a.claimed_amount, a.adjudicated_amount, 
-                    a.fee_claimant_proportion, a.fee_respondent_proportion,
-                    a.decision_date
-            FROM docs_fresh d
-            LEFT JOIN decision_details a ON d.ejs_id = a.ejs_id
-            WHERE d.rowid = ?
-            """, (r["rowid"],)).fetchone()
-
-            d = dict(meta) if meta else {}
-            d["id"] = d.get("ejs_id", r["rowid"])
-            
-            # Add backward-compatible field names for frontend
-            d["claimant"] = d.get("claimant_name")
-            d["respondent"] = d.get("respondent_name")
-            d["adjudicator"] = d.get("adjudicator_name")
-            d["decision_date_norm"] = d.get("decision_date")
-            d["act"] = d.get("act_category")
-            
-            snippet_raw = r["snippet"]
-            
-            # Quick fix: Remove leading 0s and clean up highlighting
-            if snippet_raw and q_norm:
-                # Remove leading 0s from the snippet
-                snippet_raw = re.sub(r'\b0+(\w+)', r'\1', snippet_raw)
-                
-                # Extract only actual search words (no operators, no numbers)
-                search_words = re.findall(r'\b\w+\b', q_norm)
-                search_words = [w for w in search_words if w.upper() not in ['AND', 'OR', 'NOT', 'NEAR', 'W'] and not w.isdigit() and len(w) > 1]
-                
-                # Remove existing marks
-                snippet_raw = snippet_raw.replace('<mark>', '').replace('</mark>', '')
-                
-                # Re-highlight only the actual search terms
-                for word in search_words:
-                    snippet_raw = re.sub(r'\b(' + re.escape(word) + r')\b', r'<mark>\1</mark>', snippet_raw, flags=re.IGNORECASE)
-            
-            d["snippet"] = snippet_raw
-            items.append(d)
-
-
-        return {"total": total, "items": items}
-
-
-    # --- BRANCH 2: MeiliSearch for Simple Queries ---
-    else:
-        payload = {
-            "q": q_norm,
-            "limit": limit,
-            "offset": offset,
-            "attributesToRetrieve": [
-                # --- FIX: Retrieve 'ejs_id' not 'id' ---
-                "ejs_id", "reference", "pdf_path",
-                "claimant", "respondent", "adjudicator",
-                "date", "act", "content",
-                "claimed_amount", "adjudicated_amount",
-                "fee_claimant_proportion", "fee_respondent_proportion"
-            ],
-            "attributesToHighlight": ["content"],
-            "highlightPreTag": "<mark>",
-            "highlightPostTag": "</mark>",
-            "attributesToCrop": ["content"],
-            "cropLength": 100
-        }
+        where_clauses = []
+        sql_params = []
         
-        if sort == "relevance" and not q_norm:
-            sort = "newest"
+        # Always filter out results that are missing critical information
+        where_clauses.extend([
+            "a.decision_date IS NOT NULL",
+            "a.decision_date != ''",
+            "a.claimant_name IS NOT NULL",
+            "a.claimant_name != ''"
+        ])
 
+        if nq2:
+            where_clauses.append("fts MATCH ?")
+            sql_params.append(nq2)
+
+        # Base join for all queries
+        base_join = """
+            FROM fts
+            JOIN docs_fresh d ON fts.rowid = d.rowid
+            LEFT JOIN decision_details a ON d.ejs_id = a.ejs_id
+        """
+
+        # Add filter conditions
+        if startDate:
+            where_clauses.append("a.decision_date >= ?")
+            sql_params.append(startDate)
+        if endDate:
+            where_clauses.append("a.decision_date <= ?")
+            sql_params.append(endDate)
+        if minClaim is not None:
+            where_clauses.append("CAST(a.claimed_amount AS REAL) >= ?")
+            sql_params.append(minClaim)
+        if maxClaim is not None:
+            where_clauses.append("CAST(a.claimed_amount AS REAL) <= ?")
+            sql_params.append(maxClaim)
+        if minAdjudicated is not None:
+            where_clauses.append("CAST(a.adjudicated_amount AS REAL) >= ?")
+            sql_params.append(minAdjudicated)
+        if maxAdjudicated is not None:
+            where_clauses.append("CAST(a.adjudicated_amount AS REAL) <= ?")
+            sql_params.append(maxAdjudicated)
+
+        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+
+        # Execute COUNT query
+        count_sql = f"SELECT COUNT(DISTINCT fts.rowid) {base_join} {where_sql}"
+        total = con.execute(count_sql, tuple(sql_params)).fetchone()[0]
+
+        # Determine ORDER BY clause
+        order_clause = "ORDER BY rank"  # Default relevance for text queries
+        if not q_norm and sort == "relevance": # If no query, relevance is meaningless
+             sort = "newest"
+        
         if sort == "newest":
-            payload["sort"] = ["sortable_date:desc"]
+            order_clause = "ORDER BY a.decision_date DESC"
         elif sort == "oldest":
-            payload["sort"] = ["sortable_date:asc"]
+            order_clause = "ORDER BY a.decision_date ASC"
         elif sort == "atoz":
-            payload["sort"] = ["claimant:asc"]
+            order_clause = "ORDER BY a.claimant_name ASC"
         elif sort == "ztoa":
-            payload["sort"] = ["claimant:desc"]
-            
-        headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
-        res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/search", headers=headers, json=payload)
-        data = res.json()
-        items = []
-        for hit in data.get("hits", []):
-            snippet = hit.get("_formatted", {}).get("content", "")
-            
-            # --- FIX: Get the ID from 'ejs_id' ---
-            item = {
-                "id": hit.get("ejs_id"), # Use ejs_id as the main 'id' for the frontend
-                "reference": hit.get("reference"),
-                "pdf_path": hit.get("pdf_path"),
-                "claimant": hit.get("claimant"),
-                "respondent": hit.get("respondent"),
-                "adjudicator": hit.get("adjudicator"),
-                "claimant_name": hit.get("claimant"),
-                "respondent_name": hit.get("respondent"),
-                "adjudicator_name": hit.get("adjudicator"),
-                "decision_date_norm": hit.get("date"),
-                "decision_date": hit.get("date"),
-                "act": hit.get("act"),
-                "act_category": hit.get("act"),
-                "snippet": snippet,
-                "claimed_amount": hit.get("claimed_amount"),
-                "adjudicated_amount": hit.get("adjudicated_amount"),
-                "fee_claimant_proportion": hit.get("fee_claimant_proportion"),
-                "fee_respondent_proportion": hit.get("fee_respondent_proportion")
-            }
-            
-            items.append(item)
-        return {"total": data.get("estimatedTotalHits", 0), "items": items}
+            order_clause = "ORDER BY a.claimant_name DESC"
+        elif sort == "claim_high":
+            order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN -1 ELSE CAST(a.claimed_amount AS REAL) END DESC"
+        elif sort == "claim_low":
+            order_clause = "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN 9999999999 ELSE CAST(a.claimed_amount AS REAL) END ASC"
+        elif sort == "adj_high":
+            order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN -1 ELSE CAST(a.adjudicated_amount AS REAL) END DESC"
+        elif sort == "adj_low":
+            order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 9999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC"
+        
+        # Build and execute the main query
+        snippet_select = "snippet(fts, 0, '<mark>', '</mark>', ' … ', 100)" if nq2 else "substr(d.full_text, 1, 500) || '...'"
+        
+        sql = f"""
+            SELECT DISTINCT fts.rowid, {snippet_select} AS snippet
+            {base_join}
+            {where_sql}
+            {order_clause}
+            LIMIT ? OFFSET ?
+        """
+        
+        final_params = tuple(sql_params) + (limit, offset)
+        rows = con.execute(sql, final_params).fetchall()
+
+    except sqlite3.OperationalError as e:
+        print("FTS Query error:", e)
+        raise HTTPException(status_code=500, detail=f"Search query failed: {e}")
+
+    # Process SQLite results
+    items = []
+    for r in rows:
+        meta = con.execute("""
+        SELECT a.claimant_name, a.respondent_name, a.adjudicator_name,
+                a.act_category, d.reference, d.pdf_path, d.ejs_id,
+                a.claimed_amount, a.adjudicated_amount, 
+                a.fee_claimant_proportion, a.fee_respondent_proportion,
+                a.decision_date
+        FROM docs_fresh d
+        LEFT JOIN decision_details a ON d.ejs_id = a.ejs_id
+        WHERE d.rowid = ?
+        """, (r["rowid"],)).fetchone()
+
+        d = dict(meta) if meta else {}
+        d["id"] = d.get("ejs_id", r["rowid"])
+        
+        # Add backward-compatible field names for frontend
+        d["claimant"] = d.get("claimant_name")
+        d["respondent"] = d.get("respondent_name")
+        d["adjudicator"] = d.get("adjudicator_name")
+        d["decision_date_norm"] = d.get("decision_date")
+        d["act"] = d.get("act_category")
+        
+        snippet_raw = r["snippet"]
+        
+        if snippet_raw and q_norm:
+            snippet_raw = re.sub(r'\b0+(\w+)', r'\1', snippet_raw)
+            search_words = re.findall(r'\b\w+\b', q_norm)
+            search_words = [w for w in search_words if w.upper() not in ['AND', 'OR', 'NOT', 'NEAR', 'W'] and not w.isdigit() and len(w) > 1]
+            snippet_raw = snippet_raw.replace('<mark>', '').replace('</mark>', '')
+            for word in search_words:
+                snippet_raw = re.sub(r'\b(' + re.escape(word) + r')\b', r'<mark>\1</mark>', snippet_raw, flags=re.IGNORECASE)
+        
+        d["snippet"] = snippet_raw
+        items.append(d)
+
+    return {"total": total, "items": items}
+    
+
+
         
    
 
@@ -1519,9 +1425,13 @@ async def fix_meili_key():
 @app.get("/admin/rebuild-indexes")
 async def rebuild_indexes():
     """
-    Forces a rebuild of the local FTS index and resynchronizes all documents with Meilisearch
-    in a memory-efficient way AND using the correct 'ejs_id' primary key.
+    Rebuilds index...
     """
+    
+    # --- ADD THIS LINE TO DISABLE THE FUNCTION ---
+    return {"status": "success", "message": "Meilisearch sync is permanently disabled."}
+    
+    # The rest of the function will now be ignored...
     try:
         # 1. Rebuild the local SQLite FTS index
         print("INFO: Starting FTS index rebuild...")
