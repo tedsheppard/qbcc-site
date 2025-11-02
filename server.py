@@ -1486,11 +1486,13 @@ async def upload_decision(
 
 # In server (3).py, REPLACE the entire /admin/rebuild-indexes function with this:
 
+        # In server (3).py, REPLACE the entire /admin/rebuild-indexes function with this:
+
 @app.get("/admin/rebuild-indexes")
 async def rebuild_indexes():
     """
-    Forces a rebuild of the local FTS index and resynchronizes all documents with Meilisearch.
-    This is useful if new documents are not appearing in search results.
+    Forces a rebuild of the local FTS index and resynchronizes all documents with Meilisearch
+    in a memory-efficient way.
     """
     try:
         # 1. Rebuild the local SQLite FTS index
@@ -1500,24 +1502,29 @@ async def rebuild_indexes():
 
         # 2. Resynchronize with Meilisearch
         print("INFO: Starting Meilisearch synchronization...")
+        headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
         
-        # --- FIX: THIS QUERY NOW MATCHES YOUR SCHEMA ---
-        # It fetches all required data in a single, correct query
-        docs_to_sync = con.execute("""
-            SELECT 
-                d.ejs_id, d.reference, d.pdf_path, d.full_text,
-                m.claimant_name, m.respondent_name, m.adjudicator_name,
-                m.decision_date, m.claimed_amount, m.adjudicated_amount,
-                m.fee_claimant_proportion, m.fee_respondent_proportion
-            FROM docs_fresh d
-            LEFT JOIN decision_details m ON d.ejs_id = m.ejs_id
-        """).fetchall()
+        # --- FIX: Clear the index at the very beginning ---
+        print("INFO: Deleting all existing documents from Meilisearch...")
+        try:
+            res = requests.delete(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=headers)
+            res.raise_for_status()
+            print("INFO: Meilisearch index cleared.")
+        except Exception as e:
+            print(f"WARN: Could not clear Meilisearch index (it might be empty already): {e}")
 
-        if not docs_to_sync:
+
+        # --- MEMORY FIX: Fetch only IDs first, then process in batches ---
+        print("INFO: Fetching all document IDs...")
+        all_doc_ids = con.execute("SELECT ejs_id FROM docs_fresh WHERE ejs_id IS NOT NULL").fetchall()
+        
+        if not all_doc_ids:
             return {"status": "warning", "message": "No documents found in the database to sync."}
+            
+        total_docs = len(all_doc_ids)
+        print(f"INFO: Found {total_docs} document IDs to process.")
 
-        
-        meili_docs = []
+        batch_size = 200 # Process 200 docs at a time to keep memory low
         
         # Helper function to safely convert values to float
         def to_float(value):
@@ -1526,66 +1533,66 @@ async def rebuild_indexes():
             except (ValueError, TypeError):
                 return 0.0
 
-        # --- FIX: THIS LOOP IS NOW CLEANED UP AND USES THE CORRECT DATA ---
-        for doc in docs_to_sync:
-            try:
-                # Ensure date is valid before creating timestamp
-                sortable_date = 0
-                if doc["decision_date"]: # Use the correct column
-                    sortable_date = int(time.mktime(datetime.strptime(doc["decision_date"], "%Y-%m-%d").timetuple()))
-                
-                meili_doc = {
-                    "id": doc["ejs_id"], # Primary key
-                    "reference": doc["reference"],
-                    "pdf_path": doc["pdf_path"],
-                    
-                    # Map new schema names to old Meili field names
-                    "claimant": doc["claimant_name"],
-                    "respondent": doc["respondent_name"],
-                    "adjudicator": doc["adjudicator_name"],
-                    "date": doc["decision_date"], # Use the correct column
-                    
-                    "sortable_date": sortable_date,
-                    "act": "BIF Act", # This was missing, adding for consistency
-                    "content": doc["full_text"] or "",
+        for i in range(0, total_docs, batch_size):
+            # Get the list of ejs_ids for the current batch
+            batch_ids_tuples = all_doc_ids[i:i + batch_size]
+            batch_ids = [row['ejs_id'] for row in batch_ids_tuples]
+            placeholders = ",".join("?" * len(batch_ids))
 
-                    # Add financial data directly from our unified query
-                    "claimed_amount": to_float(doc["claimed_amount"]),
-                    "adjudicated_amount": to_float(doc["adjudicated_amount"]),
-                    "fee_claimant_proportion": to_float(doc["fee_claimant_proportion"]),
-                    "fee_respondent_proportion": to_float(doc["fee_respondent_proportion"])
-                }
+            print(f"INFO: Processing batch {i//batch_size + 1} / {-(total_docs // -batch_size)} (docs {i+1} to {min(i+batch_size, total_docs)})...")
 
-                meili_docs.append(meili_doc)
+            # Run the full query for *only* this batch of IDs
+            docs_to_sync = con.execute(f"""
+                SELECT 
+                    d.ejs_id, d.reference, d.pdf_path, d.full_text,
+                    m.claimant_name, m.respondent_name, m.adjudicator_name,
+                    m.decision_date, m.claimed_amount, m.adjudicated_amount,
+                    m.fee_claimant_proportion, m.fee_respondent_proportion
+                FROM docs_fresh d
+                LEFT JOIN decision_details m ON d.ejs_id = m.ejs_id
+                WHERE d.ejs_id IN ({placeholders})
+            """, batch_ids).fetchall()
 
-            except (ValueError, TypeError) as e:
-                # This will catch errors from bad dates
-                print(f"WARN: Skipping document {doc['ejs_id']} due to invalid date '{doc['decision_date']}': {e}")
-            except Exception as e:
-                # This will catch any other unexpected errors during processing
-                print(f"WARN: Skipping document {doc['ejs_id']} due to processing error: {e}")
+            meili_docs = []
+            for doc in docs_to_sync:
+                try:
+                    sortable_date = 0
+                    if doc["decision_date"]:
+                        sortable_date = int(time.mktime(datetime.strptime(doc["decision_date"], "%Y-%m-%d").timetuple()))
 
+                    meili_doc = {
+                        "id": doc["ejs_id"],
+                        "reference": doc["reference"],
+                        "pdf_path": doc["pdf_path"],
+                        "claimant": doc["claimant_name"],
+                        "respondent": doc["respondent_name"],
+                        "adjudicator": doc["adjudicator_name"],
+                        "date": doc["decision_date"],
+                        "sortable_date": sortable_date,
+                        "act": "BIF Act",
+                        "content": doc["full_text"] or "",
+                        "claimed_amount": to_float(doc["claimed_amount"]),
+                        "adjudicated_amount": to_float(doc["adjudicated_amount"]),
+                        "fee_claimant_proportion": to_float(doc["fee_claimant_proportion"]),
+                        "fee_respondent_proportion": to_float(doc["fee_respondent_proportion"])
+                    }
+                    meili_docs.append(meili_doc)
+                except (ValueError, TypeError) as e:
+                    print(f"WARN: Skipping document {doc['ejs_id']} due to invalid date '{doc['decision_date']}': {e}")
+                except Exception as e:
+                    print(f"WARN: Skipping document {doc['ejs_id']} due to processing error: {e}")
 
-        # Send documents to Meilisearch in batches to avoid large payloads
-        batch_size = 500
-        headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
+            # Send this batch to Meilisearch
+            if meili_docs:
+                res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=headers, json=meili_docs)
+                res.raise_for_status()
+                print(f"INFO: Sent batch {i//batch_size + 1} to Meilisearch.")
+            else:
+                print(f"INFO: Batch {i//batch_size + 1} had no documents to send.")
+
+        print(f"INFO: Meilisearch synchronization complete. {total_docs} documents processed.")
         
-        # --- FIX: ADDED A 'DELETE ALL' BEFORE ADDING NEW DOCS ---
-        # This ensures you start with a clean index every time
-        print("INFO: Deleting all existing documents from Meilisearch...")
-        res = requests.delete(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=headers)
-        res.raise_for_status()
-        
-        print(f"INFO: Sending {len(meili_docs)} documents to Meilisearch in batches...")
-        for i in range(0, len(meili_docs), batch_size):
-            batch = meili_docs[i:i + batch_size]
-            res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=headers, json=batch)
-            res.raise_for_status()
-            print(f"INFO: Sent batch {i//batch_size + 1} to Meilisearch.")
-
-        print(f"INFO: Meilisearch synchronization complete. {len(meili_docs)} documents processed.")
-        
-        return {"status": "success", "message": "Successfully rebuilt SQLite FTS index and synchronized all documents with Meilisearch."}
+        return {"status": "success", "message": f"Successfully rebuilt SQLite FTS index and synchronized all {total_docs} documents with Meilisearch."}
 
     except Exception as e:
         print(f"ERROR in /admin/rebuild-indexes: {e}")
@@ -1593,6 +1600,8 @@ async def rebuild_indexes():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred during index rebuild: {e}")
         
+
+
 
 
 # In server.py, REPLACE the entire create_meilisearch_backup function with this one
