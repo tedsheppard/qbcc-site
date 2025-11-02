@@ -1487,7 +1487,7 @@ async def upload_decision(
 # In server (3).py, REPLACE the entire /admin/rebuild-indexes function with this:
 
 @app.get("/admin/rebuild-indexes")
-async def rebuild_indexes:
+async def rebuild_indexes():
     """
     Forces a rebuild of the local FTS index and resynchronizes all documents with Meilisearch.
     This is useful if new documents are not appearing in search results.
