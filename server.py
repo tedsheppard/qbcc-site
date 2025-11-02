@@ -112,6 +112,29 @@ con.execute("PRAGMA temp_store = MEMORY")
 con.execute("PRAGMA mmap_size = 30000000000")
 con.execute("PRAGMA journal_mode=WAL;")
 
+# --- Add this entire block to create database indexes ---
+try:
+    print("Ensuring database indexes exist for performance...")
+    
+    # Index for the main JOIN operation
+    con.execute("CREATE INDEX IF NOT EXISTS idx_details_ejs_id ON decision_details (ejs_id);")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_docs_fresh_ejs_id ON docs_fresh (ejs_id);")
+    
+    # Indexes for sorting
+    con.execute("CREATE INDEX IF NOT EXISTS idx_details_decision_date ON decision_details (decision_date);")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_details_claimant_name ON decision_details (claimant_name);")
+    
+    # Indexes for numerical filtering and sorting
+    con.execute("CREATE INDEX IF NOT EXISTS idx_details_claimed_amount ON decision_details (CAST(claimed_amount AS REAL));")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_details_adjudicated_amount ON decision_details (CAST(adjudicated_amount AS REAL));")
+    
+    con.commit()
+    print("Database indexes are ready.")
+
+except Exception as e:
+    print(f"Warning: Could not create indexes. Error: {e}")
+# --- End of new block ---
+
 
 app = FastAPI()
 
