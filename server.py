@@ -1549,7 +1549,7 @@ async def rebuild_indexes():
         total_docs = len(all_doc_ids)
         print(f"INFO: Found {total_docs} document IDs to process.")
 
-        batch_size = 50 # Process 200 docs at a time
+        batch_size = 10 
         
         def to_float(value):
             try: return float(value)
