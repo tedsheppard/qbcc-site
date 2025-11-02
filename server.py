@@ -1150,7 +1150,8 @@ def search_fast(
 
 
         return {"total": total, "items": items}
-        
+
+
     # --- BRANCH 2: MeiliSearch for Simple Queries ---
     else:
         payload = {
@@ -1158,9 +1159,12 @@ def search_fast(
             "limit": limit,
             "offset": offset,
             "attributesToRetrieve": [
-                "id", "reference", "pdf_path",
-                "claimant", "respondent", "adjudicator",  # OLD field names in Meili index
-                "date", "act", "content"
+                # --- FIX: Retrieve 'ejs_id' not 'id' ---
+                "ejs_id", "reference", "pdf_path",
+                "claimant", "respondent", "adjudicator",
+                "date", "act", "content",
+                "claimed_amount", "adjudicated_amount",
+                "fee_claimant_proportion", "fee_respondent_proportion"
             ],
             "attributesToHighlight": ["content"],
             "highlightPreTag": "<mark>",
@@ -1186,25 +1190,16 @@ def search_fast(
         data = res.json()
         items = []
         for hit in data.get("hits", []):
-            # Fetch additional data from decision_details as it's not in Meili
-            extra_data = con.execute("""
-                SELECT claimed_amount, adjudicated_amount, 
-                       fee_claimant_proportion, fee_respondent_proportion
-                FROM decision_details
-                WHERE ejs_id = ?
-            """, (hit.get("id"),)).fetchone()
-            
             snippet = hit.get("_formatted", {}).get("content", "")
-            # MeiliSearch still has OLD field names, map them to both old and new
+            
+            # --- FIX: Get the ID from 'ejs_id' ---
             item = {
-                "id": hit.get("id"),
+                "id": hit.get("ejs_id"), # Use ejs_id as the main 'id' for the frontend
                 "reference": hit.get("reference"),
                 "pdf_path": hit.get("pdf_path"),
-                # Old field names from Meili (for frontend compatibility)
                 "claimant": hit.get("claimant"),
                 "respondent": hit.get("respondent"),
                 "adjudicator": hit.get("adjudicator"),
-                # New field names (also map from old)
                 "claimant_name": hit.get("claimant"),
                 "respondent_name": hit.get("respondent"),
                 "adjudicator_name": hit.get("adjudicator"),
@@ -1212,22 +1207,17 @@ def search_fast(
                 "decision_date": hit.get("date"),
                 "act": hit.get("act"),
                 "act_category": hit.get("act"),
-                "snippet": snippet
+                "snippet": snippet,
+                "claimed_amount": hit.get("claimed_amount"),
+                "adjudicated_amount": hit.get("adjudicated_amount"),
+                "fee_claimant_proportion": hit.get("fee_claimant_proportion"),
+                "fee_respondent_proportion": hit.get("fee_respondent_proportion")
             }
-            
-            # Add extra fields if available
-            if extra_data:
-                item.update({
-                    "claimed_amount": extra_data["claimed_amount"],
-                    "adjudicated_amount": extra_data["adjudicated_amount"],
-                    "fee_claimant_proportion": extra_data["fee_claimant_proportion"],
-                    "fee_respondent_proportion": extra_data["fee_respondent_proportion"]
-                })
             
             items.append(item)
         return {"total": data.get("estimatedTotalHits", 0), "items": items}
-
-    
+        
+   
 
 # ---------- PDF links ----------
 GCS_BUCKET = "sopal-bucket"
@@ -1524,11 +1514,13 @@ async def fix_meili_key():
 
         # In server (3).py, REPLACE the entire /admin/rebuild-indexes function with this:
 
+# In server (3).py, REPLACE the entire /admin/rebuild-indexes function with this:
+
 @app.get("/admin/rebuild-indexes")
 async def rebuild_indexes():
     """
     Forces a rebuild of the local FTS index and resynchronizes all documents with Meilisearch
-    in a memory-efficient way.
+    in a memory-efficient way AND using the correct 'ejs_id' primary key.
     """
     try:
         # 1. Rebuild the local SQLite FTS index
@@ -1540,7 +1532,6 @@ async def rebuild_indexes():
         print("INFO: Starting Meilisearch synchronization...")
         headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
         
-        # --- FIX: Clear the index at the very beginning ---
         print("INFO: Deleting all existing documents from Meilisearch...")
         try:
             res = requests.delete(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=headers)
@@ -1549,8 +1540,6 @@ async def rebuild_indexes():
         except Exception as e:
             print(f"WARN: Could not clear Meilisearch index (it might be empty already): {e}")
 
-
-        # --- MEMORY FIX: Fetch only IDs first, then process in batches ---
         print("INFO: Fetching all document IDs...")
         all_doc_ids = con.execute("SELECT ejs_id FROM docs_fresh WHERE ejs_id IS NOT NULL").fetchall()
         
@@ -1560,24 +1549,19 @@ async def rebuild_indexes():
         total_docs = len(all_doc_ids)
         print(f"INFO: Found {total_docs} document IDs to process.")
 
-        batch_size = 200 # Process 200 docs at a time to keep memory low
+        batch_size = 200 # Process 200 docs at a time
         
-        # Helper function to safely convert values to float
         def to_float(value):
-            try:
-                return float(value)
-            except (ValueError, TypeError):
-                return 0.0
+            try: return float(value)
+            except (ValueError, TypeError): return 0.0
 
         for i in range(0, total_docs, batch_size):
-            # Get the list of ejs_ids for the current batch
             batch_ids_tuples = all_doc_ids[i:i + batch_size]
             batch_ids = [row['ejs_id'] for row in batch_ids_tuples]
             placeholders = ",".join("?" * len(batch_ids))
 
-            print(f"INFO: Processing batch {i//batch_size + 1} / {-(total_docs // -batch_size)} (docs {i+1} to {min(i+batch_size, total_docs)})...")
+            print(f"INFO: Processing batch {i//batch_size + 1} / {-(total_docs // -batch_size)}...")
 
-            # Run the full query for *only* this batch of IDs
             docs_to_sync = con.execute(f"""
                 SELECT 
                     d.ejs_id, d.reference, d.pdf_path, d.full_text,
@@ -1596,8 +1580,10 @@ async def rebuild_indexes():
                     if doc["decision_date"]:
                         sortable_date = int(time.mktime(datetime.strptime(doc["decision_date"], "%Y-%m-%d").timetuple()))
 
+                    # --- THIS IS THE CRITICAL FIX ---
+                    # We are sending 'ejs_id' as the key, which MeiliSearch expects.
                     meili_doc = {
-                        "id": doc["ejs_id"],
+                        "ejs_id": doc["ejs_id"], # The correct primary key
                         "reference": doc["reference"],
                         "pdf_path": doc["pdf_path"],
                         "claimant": doc["claimant_name"],
@@ -1618,7 +1604,6 @@ async def rebuild_indexes():
                 except Exception as e:
                     print(f"WARN: Skipping document {doc['ejs_id']} due to processing error: {e}")
 
-            # Send this batch to Meilisearch
             if meili_docs:
                 res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=headers, json=meili_docs)
                 res.raise_for_status()
@@ -1636,7 +1621,6 @@ async def rebuild_indexes():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred during index rebuild: {e}")
         
-
 
 
 
