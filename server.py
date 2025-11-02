@@ -996,15 +996,15 @@ def search_fast(
         where_clauses = []
         sql_params = []
         
-        # Always filter out results that are missing critical information
+
         # Always filter out results that are missing critical information
         where_clauses.extend([
             "a.decision_date IS NOT NULL",
             "a.decision_date != ''",
-            "LOWER(a.decision_date) != 'null'",
+            "LOWER(TRIM(a.decision_date)) != 'null'",
             "a.claimant_name IS NOT NULL",
             "a.claimant_name != ''",
-            "LOWER(a.claimant_name) != 'not specified'"
+            "LOWER(TRIM(a.claimant_name)) != 'not specified'"
         ])
 
         if nq2:
