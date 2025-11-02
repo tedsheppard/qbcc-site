@@ -1487,20 +1487,25 @@ async def upload_decision(
 
 # In server (3).py, add this ENTIRE new function:
 
+# In server (3).py, REPLACE your /admin/fix-meili-key function with this one:
+
 @app.get("/admin/fix-meili-key")
 async def fix_meili_key():
     """
-    Temporarily endpoint to force MeiliSearch to update its primary key setting.
+    Temporary endpoint to force MeiliSearch to update its primary key setting.
     """
     try:
         print("INFO: Attempting to update Meilisearch primary key to 'id'...")
         headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
         
-        # We must use PUT on the /indexes/decisions route to update settings
-        url = f"{MEILI_URL}/indexes/{MEILI_INDEX}"
+        # --- FIX: THIS IS THE CORRECT ENDPOINT AND METHOD ---
+        # The correct route is /settings and the method is PATCH
+        url = f"{MEILI_URL}/indexes/{MEILI_INDEX}/settings"
         payload = {"primaryKey": "id"}
         
-        res = requests.put(url, headers=headers, json=payload)
+        res = requests.patch(url, headers=headers, json=payload)
+        # --- END FIX ---
+        
         res.raise_for_status()
         
         task = res.json()
@@ -1512,6 +1517,7 @@ async def fix_meili_key():
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        
 
 
 # In server (3).py, REPLACE the entire /admin/rebuild-indexes function with this:
