@@ -1484,6 +1484,36 @@ async def upload_decision(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred during upload: {e}")
 
+
+# In server (3).py, add this ENTIRE new function:
+
+@app.get("/admin/fix-meili-key")
+async def fix_meili_key():
+    """
+    Temporarily endpoint to force MeiliSearch to update its primary key setting.
+    """
+    try:
+        print("INFO: Attempting to update Meilisearch primary key to 'id'...")
+        headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
+        
+        # We must use PUT on the /indexes/decisions route to update settings
+        url = f"{MEILI_URL}/indexes/{MEILI_INDEX}"
+        payload = {"primaryKey": "id"}
+        
+        res = requests.put(url, headers=headers, json=payload)
+        res.raise_for_status()
+        
+        task = res.json()
+        print(f"INFO: Meilisearch primary key update enqueued. Task UID: {task.get('taskUid')}")
+        return {"status": "success", "message": "Meilisearch primary key update has been enqueued.", "task": task}
+        
+    except Exception as e:
+        print(f"ERROR in /admin/fix-meili-key: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+
 # In server (3).py, REPLACE the entire /admin/rebuild-indexes function with this:
 
         # In server (3).py, REPLACE the entire /admin/rebuild-indexes function with this:
