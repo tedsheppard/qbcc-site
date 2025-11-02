@@ -984,7 +984,7 @@ async function runSearch(page=1, bypassAdjudicatorCheck = false){
           return;
         }
         
-        statusEl.textContent = 'Searching...';
+        statusEl.innerHTML = '<div class="loading-text-gradient">Searching...</div>'; // Use the gradient class
         startLoadingBar();
 
         state.q = normalizeInput(qEl.value);
