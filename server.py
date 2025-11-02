@@ -1484,7 +1484,8 @@ async def upload_decision(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred during upload: {e}")
 
-# In server.py, add this new endpoint with your other admin routes
+# In server (3).py, REPLACE the entire /admin/rebuild-indexes function with this:
+
 @app.post("/admin/rebuild-indexes")
 async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
     """
@@ -1499,24 +1500,23 @@ async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
 
         # 2. Resynchronize with Meilisearch
         print("INFO: Starting Meilisearch synchronization...")
-
-        # Fetch all documents from the local database
+        
+        # --- FIX: THIS QUERY NOW MATCHES YOUR SCHEMA ---
+        # It fetches all required data in a single, correct query
         docs_to_sync = con.execute("""
             SELECT 
                 d.ejs_id, d.reference, d.pdf_path, d.full_text,
                 m.claimant_name, m.respondent_name, m.adjudicator_name,
-                m.decision_date_norm, m.claimed_amount, m.adjudicated_amount,
+                m.decision_date, m.claimed_amount, m.adjudicated_amount,
                 m.fee_claimant_proportion, m.fee_respondent_proportion
             FROM docs_fresh d
             LEFT JOIN decision_details m ON d.ejs_id = m.ejs_id
         """).fetchall()
-        
-      
 
         if not docs_to_sync:
             return {"status": "warning", "message": "No documents found in the database to sync."}
 
-
+        
         meili_docs = []
         
         # Helper function to safely convert values to float
@@ -1526,26 +1526,27 @@ async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
             except (ValueError, TypeError):
                 return 0.0
 
+        # --- FIX: THIS LOOP IS NOW CLEANED UP AND USES THE CORRECT DATA ---
         for doc in docs_to_sync:
             try:
                 # Ensure date is valid before creating timestamp
                 sortable_date = 0
-                if doc["decision_date_norm"]:
-                    sortable_date = int(time.mktime(datetime.strptime(doc["decision_date_norm"], "%Y-%m-%d").timetuple()))
-
+                if doc["decision_date"]: # Use the correct column
+                    sortable_date = int(time.mktime(datetime.strptime(doc["decision_date"], "%Y-%m-%d").timetuple()))
+                
                 meili_doc = {
                     "id": doc["ejs_id"], # Primary key
                     "reference": doc["reference"],
                     "pdf_path": doc["pdf_path"],
                     
-                    # Use the correct new _name columns
+                    # Map new schema names to old Meili field names
                     "claimant": doc["claimant_name"],
                     "respondent": doc["respondent_name"],
                     "adjudicator": doc["adjudicator_name"],
+                    "date": doc["decision_date"], # Use the correct column
                     
-                    "date": doc["decision_date_norm"],
                     "sortable_date": sortable_date,
-                    "act": "BIF Act",
+                    "act": "BIF Act", # This was missing, adding for consistency
                     "content": doc["full_text"] or "",
 
                     # Add financial data directly from our unified query
@@ -1554,17 +1555,28 @@ async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
                     "fee_claimant_proportion": to_float(doc["fee_claimant_proportion"]),
                     "fee_respondent_proportion": to_float(doc["fee_respondent_proportion"])
                 }
-                
+
                 meili_docs.append(meili_doc)
 
             except (ValueError, TypeError) as e:
-                print(f"WARN: Skipping document {doc['ejs_id']} due to invalid date '{doc['decision_date_norm']}': {e}")
-                
-        
+                # This will catch errors from bad dates
+                print(f"WARN: Skipping document {doc['ejs_id']} due to invalid date '{doc['decision_date']}': {e}")
+            except Exception as e:
+                # This will catch any other unexpected errors during processing
+                print(f"WARN: Skipping document {doc['ejs_id']} due to processing error: {e}")
+
+
         # Send documents to Meilisearch in batches to avoid large payloads
         batch_size = 500
         headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
         
+        # --- FIX: ADDED A 'DELETE ALL' BEFORE ADDING NEW DOCS ---
+        # This ensures you start with a clean index every time
+        print("INFO: Deleting all existing documents from Meilisearch...")
+        res = requests.delete(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=headers)
+        res.raise_for_status()
+        
+        print(f"INFO: Sending {len(meili_docs)} documents to Meilisearch in batches...")
         for i in range(0, len(meili_docs), batch_size):
             batch = meili_docs[i:i + batch_size]
             res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=headers, json=batch)
@@ -1580,6 +1592,7 @@ async def rebuild_indexes(admin: dict = Depends(get_admin_user)):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred during index rebuild: {e}")
+        
 
 
 # In server.py, REPLACE the entire create_meilisearch_backup function with this one
