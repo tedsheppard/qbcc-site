@@ -23,7 +23,8 @@ import time
 import os
 import bcrypt
 import pypandoc
-from typing import List, Optional
+from typing import List, Optional, Tuple
+from pydantic import BaseModel
 import zipstream
 import pytesseract
 from PIL import Image
@@ -76,9 +77,38 @@ def get_gcs_client():
 # ---------------- setup ----------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SITE_DIR = os.path.join(ROOT, "site")
+os.makedirs(SITE_DIR, exist_ok=True)
+PAGE_BACKUP_DIR = os.path.join(SITE_DIR, ".page_backups")
+os.makedirs(PAGE_BACKUP_DIR, exist_ok=True)
 DB_PATH = "/tmp/qbcc.db"
 LEXIFILE_STORAGE = "/tmp/lexifile_storage"
 os.makedirs(LEXIFILE_STORAGE, exist_ok=True)
+
+
+def resolve_site_page_path(page_path: str, create_dirs: bool = False) -> Tuple[str, str]:
+    """
+    Returns the absolute file path inside SITE_DIR for a requested page.
+    Ensures no path traversal and optionally creates parent directories.
+    """
+    cleaned = (page_path or "").strip().lstrip("/").replace("\\", "/")
+    if not cleaned:
+        raise HTTPException(status_code=400, detail="Missing page path")
+    if ".." in cleaned:
+        raise HTTPException(status_code=400, detail="Invalid page path")
+    if cleaned.endswith("/"):
+        cleaned = cleaned[:-1]
+    if not cleaned.lower().endswith(".html"):
+        cleaned = f"{cleaned}.html"
+
+    abs_path = os.path.abspath(os.path.join(SITE_DIR, cleaned))
+    site_root = os.path.abspath(SITE_DIR)
+    if not abs_path.startswith(site_root):
+        raise HTTPException(status_code=400, detail="Invalid page path")
+
+    if create_dirs:
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+
+    return abs_path, cleaned
 
 
 # Download DB from GCS on startup if it doesn't exist in /tmp
@@ -1170,6 +1200,67 @@ def get_admin_user(current_user: dict = Depends(get_current_purchase_user)):
     if current_user["email"] not in ADMIN_EMAILS:
         raise HTTPException(status_code=403, detail="Access denied. Admin privileges required.")
     return current_user
+
+
+class PageUpdateRequest(BaseModel):
+    content: str
+
+
+@app.get("/admin/page/{page_path:path}")
+def get_editable_page(
+    page_path: str,
+    include_content: bool = Query(False),
+    admin: dict = Depends(get_admin_user)
+):
+    """Return metadata (and optionally content) for an editable static page."""
+    file_path, relative_path = resolve_site_page_path(page_path)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Page not found")
+
+    response = {
+        "page": relative_path,
+        "last_modified": datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat(),
+        "size": os.path.getsize(file_path)
+    }
+
+    if include_content:
+        with open(file_path, "r", encoding="utf-8") as f:
+            response["content"] = f.read()
+
+    return response
+
+
+@app.post("/admin/page/{page_path:path}")
+def update_editable_page(
+    page_path: str,
+    payload: PageUpdateRequest,
+    admin: dict = Depends(get_admin_user)
+):
+    """Persist inline edits for a static HTML page and capture a backup."""
+    file_path, relative_path = resolve_site_page_path(page_path, create_dirs=True)
+    content = payload.content or ""
+    if not content.strip():
+        raise HTTPException(status_code=400, detail="File content cannot be empty")
+
+    backup_path = None
+    if os.path.exists(file_path):
+        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+        safe_name = relative_path.replace("/", "_")
+        backup_filename = f"{safe_name}.{timestamp}.bak"
+        backup_path = os.path.join(PAGE_BACKUP_DIR, backup_filename)
+        shutil.copy2(file_path, backup_path)
+
+    temp_path = f"{file_path}.tmp"
+    with open(temp_path, "w", encoding="utf-8") as temp_file:
+        temp_file.write(content + "\n")
+    os.replace(temp_path, file_path)
+
+    return {
+        "message": "Page updated",
+        "page": relative_path,
+        "bytes_written": len((content + "\n").encode("utf-8")),
+        "backup": os.path.relpath(backup_path, SITE_DIR) if backup_path else None
+    }
 
 # In server.py, add these new endpoints with your other admin routes
 
