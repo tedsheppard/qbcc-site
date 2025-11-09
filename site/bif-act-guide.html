@@ -403,10 +403,6 @@
       transform: translateY(-1px);
     }
 
-    .admin-editor-toggle[data-state="login"] {
-      background: #1f2632;
-    }
-
     .admin-editor-toolbar {
       position: fixed;
       bottom: 96px;
@@ -470,86 +466,6 @@
       color: #cbd5f5;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-    }
-
-    .admin-login-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(15,23,42,0.65);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 600;
-      padding: 20px;
-    }
-
-    .admin-login-modal.active {
-      display: flex;
-    }
-
-    .admin-login-panel {
-      background: white;
-      border-radius: 20px;
-      padding: 28px;
-      width: min(420px, 100%);
-      box-shadow: 0 20px 60px rgba(15,23,42,0.35);
-    }
-
-    .admin-login-panel h3 {
-      margin-top: 0;
-      margin-bottom: 6px;
-      font-size: 22px;
-    }
-
-    .admin-login-panel p {
-      margin-top: 0;
-      color: #4b5563;
-      margin-bottom: 18px;
-    }
-
-    .admin-login-panel label {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-weight: 600;
-      color: #111827;
-      margin-bottom: 14px;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .admin-login-panel input {
-      border-radius: 10px;
-      border: 1px solid #d1d5db;
-      padding: 10px 12px;
-      font-size: 15px;
-      font-family: inherit;
-    }
-
-    .admin-login-error {
-      color: #b91c1c;
-      min-height: 18px;
-      font-size: 13px;
-      text-align: center;
-      margin-top: 6px;
-    }
-
-    .admin-login-panel button {
-      width: 100%;
-      border: none;
-      border-radius: 999px;
-      padding: 12px 0;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      background: #008a5c;
-      color: white;
-      transition: background 0.15s ease;
-    }
-
-    .admin-login-panel button:hover {
-      background: #00a76f;
     }
 
     .admin-toast {
@@ -2235,85 +2151,31 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
 
       const pagePath = document.body.dataset.pagePath || 'bif-act-guide.html';
       const encodedPagePath = encodeURIComponent(pagePath);
-      const tokenStorageKey = 'sopalPurchaseToken';
+      const TOKEN_STORAGE_KEYS = ['purchase_token', 'sopalPurchaseToken'];
+
       const state = {
-        token: window.localStorage.getItem(tokenStorageKey) || '',
+        token: '',
+        tokenKey: null,
         isAdmin: false,
         isEditing: false,
         dirty: false,
         snapshot: '',
-        pending: false
+        pending: false,
+        uiMounted: false
       };
 
       const adminNodes = [];
+      let toggleBtn = null;
+      let toolbar = null;
+      let statusEl = null;
+      let toast = null;
+      let toastTimer = null;
+
       const registerNode = (node) => {
         node.dataset.adminEditor = 'ui';
         adminNodes.push(node);
         return node;
       };
-
-      const toggleBtn = registerNode(document.createElement('button'));
-      toggleBtn.type = 'button';
-      toggleBtn.className = 'admin-editor-toggle';
-      toggleBtn.dataset.state = 'login';
-      toggleBtn.textContent = 'Admin login';
-      document.body.appendChild(toggleBtn);
-
-      const toolbar = registerNode(document.createElement('div'));
-      toolbar.className = 'admin-editor-toolbar';
-      toolbar.innerHTML = `
-        <div class="admin-editor-status" data-role="status">Admin login required</div>
-        <div class="admin-toolbar-row" data-row="format">
-          <button type="button" data-command="paragraph">Paragraph</button>
-          <button type="button" data-command="h2">H2</button>
-          <button type="button" data-command="h3">H3</button>
-          <button type="button" data-command="bold">Bold</button>
-          <button type="button" data-command="italic">Italic</button>
-          <button type="button" data-command="bullets">• List</button>
-          <button type="button" data-command="numbers">1. List</button>
-        </div>
-        <div class="admin-toolbar-row" data-row="insert">
-          <button type="button" data-insert="statute">Insert green excerpt</button>
-          <button type="button" data-insert="case">Insert grey excerpt</button>
-        </div>
-        <div class="admin-toolbar-row" data-row="actions">
-          <button type="button" data-action="reload" data-variant="ghost">Reload file</button>
-          <button type="button" data-action="logout" data-variant="ghost">Log out</button>
-          <button type="button" data-action="exit" data-variant="danger">Exit</button>
-          <button type="button" data-action="save" data-variant="primary">Save & Publish</button>
-        </div>
-      `;
-      document.body.appendChild(toolbar);
-      const statusEl = toolbar.querySelector('[data-role="status"]');
-
-      const loginModal = registerNode(document.createElement('div'));
-      loginModal.className = 'admin-login-modal';
-      loginModal.innerHTML = `
-        <div class="admin-login-panel">
-          <h3>Admin login</h3>
-          <p>Sign in with your Sopal admin credentials to edit this guide in-place.</p>
-          <form>
-            <label>Email
-              <input type="email" name="email" autocomplete="username" required />
-            </label>
-            <label>Password
-              <input type="password" name="password" autocomplete="current-password" required />
-            </label>
-            <button type="submit">Sign in</button>
-            <div class="admin-login-error" data-role="error"></div>
-          </form>
-          <button type="button" data-close="true">Cancel</button>
-        </div>
-      `;
-      document.body.appendChild(loginModal);
-      const loginForm = loginModal.querySelector('form');
-      const loginErrorEl = loginModal.querySelector('[data-role="error"]');
-
-      const toast = registerNode(document.createElement('div'));
-      toast.className = 'admin-toast';
-      toast.textContent = '';
-      document.body.appendChild(toast);
-      let toastTimer = null;
 
       const documentHasNativeDoctype = () => {
         const dt = document.doctype;
@@ -2330,6 +2192,7 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
       };
 
       const showToast = (message) => {
+        if (!toast) return;
         toast.textContent = message;
         toast.classList.add('active');
         if (toastTimer) window.clearTimeout(toastTimer);
@@ -2338,49 +2201,20 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
         }, 3200);
       };
 
-      const hideLoginModal = () => {
-        loginModal.classList.remove('active');
-        loginForm.reset();
-        loginErrorEl.textContent = '';
-      };
-
-      const showLoginModal = () => {
-        loginModal.classList.add('active');
-        const emailInput = loginForm.querySelector('input[name="email"]');
-        window.setTimeout(() => emailInput && emailInput.focus(), 50);
-      };
-
-      loginModal.addEventListener('click', (event) => {
-        if (event.target === loginModal || event.target.dataset.close === 'true') {
-          hideLoginModal();
-        }
-      });
-
       const setStatus = (message) => {
-        if (statusEl) statusEl.textContent = message;
-      };
-
-      const setToken = (token) => {
-        state.token = token || '';
-        if (state.token) {
-          window.localStorage.setItem(tokenStorageKey, state.token);
-        } else {
-          window.localStorage.removeItem(tokenStorageKey);
+        if (statusEl) {
+          statusEl.textContent = message;
         }
       };
 
       const updateToggleLabel = () => {
-        if (!state.isAdmin) {
-          toggleBtn.dataset.state = 'login';
-          toggleBtn.textContent = 'Admin login';
-          return;
-        }
-        if (!state.isEditing) {
-          toggleBtn.dataset.state = 'idle';
-          toggleBtn.textContent = 'Edit page';
-        } else {
+        if (!toggleBtn) return;
+        if (state.isEditing) {
           toggleBtn.dataset.state = 'editing';
           toggleBtn.textContent = 'Exit editor';
+        } else {
+          toggleBtn.dataset.state = 'idle';
+          toggleBtn.textContent = 'Edit page';
         }
       };
 
@@ -2392,15 +2226,28 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
         }
       };
 
-      const fetchPageMeta = async (includeContent = false) => {
-        const headers = { Accept: 'application/json' };
-        if (state.token) {
-          headers.Authorization = `Bearer ${state.token}`;
+      const getStoredToken = () => {
+        for (const key of TOKEN_STORAGE_KEYS) {
+          const value = window.localStorage.getItem(key);
+          if (value) return { key, value };
         }
+        return { key: null, value: '' };
+      };
+
+      const fetchPageMeta = async (includeContent = false) => {
+        if (!state.token) {
+          throw new Error('Admin login required');
+        }
+        const headers = { Accept: 'application/json' };
+        headers.Authorization = `Bearer ${state.token}`;
         const response = await fetch(`/admin/page/${encodedPagePath}?include_content=${includeContent ? '1' : '0'}`, {
-          headers
+          headers,
+          cache: 'no-store'
         });
         if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            throw new Error('Admin login required');
+          }
           const payload = await safeJson(response);
           const error = payload.detail || `Request failed (${response.status})`;
           throw new Error(error);
@@ -2408,27 +2255,63 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
         return response.json();
       };
 
-      const verifyAdminAccess = async () => {
-        if (!state.token) {
-          state.isAdmin = false;
-          updateToggleLabel();
-          setStatus('Admin login required');
-          return false;
-        }
-        try {
-          setStatus('Verifying access…');
-          await fetchPageMeta(false);
-          state.isAdmin = true;
-          setStatus('Editor ready');
-          updateToggleLabel();
-          return true;
-        } catch (error) {
-          setToken('');
-          state.isAdmin = false;
-          setStatus(error.message || 'Access denied');
-          updateToggleLabel();
-          return false;
-        }
+      const mountEditorUI = () => {
+        if (state.uiMounted) return;
+
+        toggleBtn = registerNode(document.createElement('button'));
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'admin-editor-toggle';
+        toggleBtn.dataset.state = 'idle';
+        toggleBtn.textContent = 'Edit page';
+        document.body.appendChild(toggleBtn);
+
+        toolbar = registerNode(document.createElement('div'));
+        toolbar.className = 'admin-editor-toolbar';
+        toolbar.innerHTML = `
+        <div class="admin-editor-status" data-role="status">Editor idle</div>
+        <div class="admin-toolbar-row" data-row="format">
+          <button type="button" data-command="paragraph">Paragraph</button>
+          <button type="button" data-command="h2">H2</button>
+          <button type="button" data-command="h3">H3</button>
+          <button type="button" data-command="bold">Bold</button>
+          <button type="button" data-command="italic">Italic</button>
+          <button type="button" data-command="bullets">• List</button>
+          <button type="button" data-command="numbers">1. List</button>
+        </div>
+        <div class="admin-toolbar-row" data-row="insert">
+          <button type="button" data-insert="statute">Insert green excerpt</button>
+          <button type="button" data-insert="case">Insert grey excerpt</button>
+        </div>
+        <div class="admin-toolbar-row" data-row="actions">
+          <button type="button" data-action="reload" data-variant="ghost">Reload file</button>
+          <button type="button" data-action="exit" data-variant="danger">Exit</button>
+          <button type="button" data-action="save" data-variant="primary">Save & Publish</button>
+        </div>
+      `;
+        document.body.appendChild(toolbar);
+        statusEl = toolbar.querySelector('[data-role="status"]');
+
+        toast = registerNode(document.createElement('div'));
+        toast.className = 'admin-toast';
+        toast.textContent = '';
+        document.body.appendChild(toast);
+
+        toggleBtn.addEventListener('click', handleToggleClick);
+        toolbar.addEventListener('click', handleToolbarClick);
+
+        state.uiMounted = true;
+        updateToggleLabel();
+      };
+
+      const unmountEditorUI = () => {
+        if (!state.uiMounted) return;
+        exitEditing({ restoreSnapshot: false });
+        adminNodes.splice(0).forEach((node) => node.remove());
+        toggleBtn = null;
+        toolbar = null;
+        statusEl = null;
+        toast = null;
+        state.uiMounted = false;
       };
 
       const markDirty = () => {
@@ -2444,7 +2327,7 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
       };
 
       const enterEditing = () => {
-        if (!state.isAdmin || state.isEditing) return;
+        if (!state.isAdmin || state.isEditing || !toolbar) return;
         state.isEditing = true;
         document.body.classList.add('admin-editor-editing');
         contentArea.setAttribute('contenteditable', 'true');
@@ -2461,7 +2344,9 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
           contentArea.innerHTML = state.snapshot;
         }
         contentArea.removeAttribute('contenteditable');
-        toolbar.classList.remove('active');
+        if (toolbar) {
+          toolbar.classList.remove('active');
+        }
         document.body.classList.remove('admin-editor-editing');
         state.isEditing = false;
         state.dirty = false;
@@ -2492,6 +2377,14 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
 ${clone.outerHTML}`;
       };
 
+      const handleAuthLoss = (message) => {
+        showToast(message || 'Admin access required');
+        exitEditing({ restoreSnapshot: true });
+        state.isAdmin = false;
+        unmountEditorUI();
+        refreshAdminState(true);
+      };
+
       const saveChanges = async () => {
         if (!state.isAdmin || !state.isEditing || state.pending) return;
         state.pending = true;
@@ -2499,17 +2392,19 @@ ${clone.outerHTML}`;
         try {
           const payload = serializePage();
           const headers = {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${state.token}`
           };
-          if (state.token) {
-            headers.Authorization = `Bearer ${state.token}`;
-          }
           const response = await fetch(`/admin/page/${encodedPagePath}`, {
             method: 'POST',
             headers,
             body: JSON.stringify({ content: payload })
           });
           if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+              handleAuthLoss('Admin session expired. Please log in again.');
+              return;
+            }
             const data = await safeJson(response);
             throw new Error(data.detail || 'Failed to save file');
           }
@@ -2542,12 +2437,17 @@ ${clone.outerHTML}`;
           updateSnapshot();
           showToast('Reloaded from server');
         } catch (error) {
+          if (/login required/i.test(error.message)) {
+            handleAuthLoss('Admin session expired. Please log in again.');
+            return;
+          }
           setStatus(error.message || 'Reload failed');
           showToast(error.message || 'Reload failed');
         }
       };
 
       const insertBlock = (type) => {
+        if (!state.isEditing) return;
         let template = '';
         if (type === 'statute') {
           template = `<details class="statute-excerpt" open>
@@ -2576,20 +2476,24 @@ ${clone.outerHTML}`;
         numbers: () => document.execCommand('insertOrderedList')
       };
 
-      toolbar.addEventListener('click', (event) => {
+      const handleToolbarClick = (event) => {
         const button = event.target.closest('button');
-        if (!button || !state.isEditing) return;
+        if (!button) return;
         const { command, insert, action } = button.dataset;
+
         if (command && COMMANDS[command]) {
+          if (!state.isEditing) return;
           contentArea.focus();
           COMMANDS[command]();
           markDirty();
           return;
         }
+
         if (insert) {
           insertBlock(insert);
           return;
         }
+
         if (action === 'save') {
           saveChanges();
         } else if (action === 'exit') {
@@ -2598,76 +2502,61 @@ ${clone.outerHTML}`;
           }
         } else if (action === 'reload') {
           reloadFromServer();
-        } else if (action === 'logout') {
-          if (state.isEditing && !ensureCanExit()) {
-            return;
-          }
-          exitEditing({ restoreSnapshot: true });
-          setToken('');
-          state.isAdmin = false;
-          updateToggleLabel();
-          setStatus('Logged out');
-          showToast('Signed out');
         }
-      });
+      };
 
-      contentArea.addEventListener('input', markDirty);
-
-      toggleBtn.addEventListener('click', () => {
-        if (!state.isAdmin) {
-          showLoginModal();
-          return;
-        }
+      const handleToggleClick = () => {
         if (!state.isEditing) {
           enterEditing();
         } else if (ensureCanExit()) {
           exitEditing({ restoreSnapshot: true });
         }
-      });
+      };
 
-      loginForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const formData = new FormData(loginForm);
-        const email = String(formData.get('email') || '').trim();
-        const password = String(formData.get('password') || '');
-        if (!email || !password) {
-          loginErrorEl.textContent = 'Email and password are required.';
+      const verifyAdminAccess = async () => {
+        if (!state.token) {
+          state.isAdmin = false;
+          unmountEditorUI();
+          return false;
+        }
+        try {
+          await fetchPageMeta(false);
+          state.isAdmin = true;
+          mountEditorUI();
+          setStatus('Editor idle');
+          updateToggleLabel();
+          return true;
+        } catch (error) {
+          state.isAdmin = false;
+          unmountEditorUI();
+          return false;
+        }
+      };
+
+      const refreshAdminState = async (force = false) => {
+        const stored = getStoredToken();
+        if (!stored.value) {
+          if (state.token || state.isAdmin || force) {
+            state.token = '';
+            state.tokenKey = null;
+            state.isAdmin = false;
+            unmountEditorUI();
+          }
           return;
         }
-        loginErrorEl.textContent = 'Signing in…';
-        try {
-          const response = await fetch('/purchase-login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: new URLSearchParams({
-              username: email,
-              password
-            })
-          });
-          if (!response.ok) {
-            const data = await safeJson(response);
-            throw new Error(data.detail || 'Login failed');
-          }
-          const data = await response.json();
-          setToken(data.access_token);
-          const verified = await verifyAdminAccess();
-          if (!verified) {
-            throw new Error('This account does not have admin privileges');
-          }
-          hideLoginModal();
-          showToast('Admin access granted');
-        } catch (error) {
-          loginErrorEl.textContent = error.message || 'Login failed';
-        }
-      });
 
-      window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && loginModal.classList.contains('active')) {
-          hideLoginModal();
+        const tokenChanged = stored.value !== state.token;
+        state.token = stored.value;
+        state.tokenKey = stored.key;
+
+        if (!tokenChanged && state.isAdmin && !force) {
+          return;
         }
-      });
+
+        await verifyAdminAccess();
+      };
+
+      contentArea.addEventListener('input', markDirty);
 
       window.addEventListener('beforeunload', (event) => {
         if (state.isEditing && state.dirty) {
@@ -2676,12 +2565,19 @@ ${clone.outerHTML}`;
         }
       });
 
-      if (state.token) {
-        verifyAdminAccess();
-      } else {
-        setStatus('Admin login required');
-      }
-      updateToggleLabel();
+      window.addEventListener('storage', (event) => {
+        if (event.key && TOKEN_STORAGE_KEYS.includes(event.key)) {
+          refreshAdminState(true);
+        }
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          refreshAdminState();
+        }
+      });
+
+      refreshAdminState(true);
     })();
   </script>
 </body>
