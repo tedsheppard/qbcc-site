@@ -2151,11 +2151,20 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
 
       const pagePath = document.body.dataset.pagePath || 'bif-act-guide.html';
       const encodedPagePath = encodeURIComponent(pagePath);
-      const TOKEN_STORAGE_KEYS = ['purchase_token', 'sopalPurchaseToken'];
+      const TOKEN_STORAGE_KEY = 'purchase_token';
+      const LEGACY_TOKEN_KEYS = ['sopalPurchaseToken'];
+      LEGACY_TOKEN_KEYS.forEach((legacyKey) => {
+        try {
+          if (window.localStorage.getItem(legacyKey)) {
+            window.localStorage.removeItem(legacyKey);
+          }
+        } catch (err) {
+          console.warn('Admin editor: unable to clear legacy token key', legacyKey, err);
+        }
+      });
 
       const state = {
         token: '',
-        tokenKey: null,
         isAdmin: false,
         isEditing: false,
         dirty: false,
@@ -2227,11 +2236,7 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
       };
 
       const getStoredToken = () => {
-        for (const key of TOKEN_STORAGE_KEYS) {
-          const value = window.localStorage.getItem(key);
-          if (value) return { key, value };
-        }
-        return { key: null, value: '' };
+        return window.localStorage.getItem(TOKEN_STORAGE_KEY) || '';
       };
 
       const fetchPageMeta = async (includeContent = false) => {
@@ -2535,19 +2540,17 @@ ${clone.outerHTML}`;
 
       const refreshAdminState = async (force = false) => {
         const stored = getStoredToken();
-        if (!stored.value) {
+        if (!stored) {
           if (state.token || state.isAdmin || force) {
             state.token = '';
-            state.tokenKey = null;
             state.isAdmin = false;
             unmountEditorUI();
           }
           return;
         }
 
-        const tokenChanged = stored.value !== state.token;
-        state.token = stored.value;
-        state.tokenKey = stored.key;
+        const tokenChanged = stored !== state.token;
+        state.token = stored;
 
         if (!tokenChanged && state.isAdmin && !force) {
           return;
@@ -2566,7 +2569,7 @@ ${clone.outerHTML}`;
       });
 
       window.addEventListener('storage', (event) => {
-        if (event.key && TOKEN_STORAGE_KEYS.includes(event.key)) {
+        if (event.key === TOKEN_STORAGE_KEY) {
           refreshAdminState(true);
         }
       });
