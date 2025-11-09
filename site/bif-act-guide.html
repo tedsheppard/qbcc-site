@@ -371,9 +371,221 @@
         scroll-margin-top: 80px; /* Adjust for smaller header */
       }
     }
+
+    /* --- Inline admin editor styles --- */
+    body.admin-editor-editing .knowledge-content[contenteditable="true"] {
+      outline: 2px dashed #2ea88c;
+      outline-offset: 4px;
+      background: #fcfffc;
+    }
+
+    .admin-editor-toggle {
+      position: fixed;
+      bottom: 26px;
+      right: 26px;
+      z-index: 500;
+      border: none;
+      background: #008a5c;
+      color: white;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-weight: 600;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .admin-editor-toggle:hover {
+      background: #00a76f;
+      transform: translateY(-1px);
+    }
+
+    .admin-editor-toggle[data-state="login"] {
+      background: #1f2632;
+    }
+
+    .admin-editor-toolbar {
+      position: fixed;
+      bottom: 96px;
+      right: 26px;
+      z-index: 500;
+      background: #111827;
+      color: white;
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.35);
+      width: min(440px, calc(100% - 32px));
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .admin-editor-toolbar.active {
+      display: flex;
+    }
+
+    .admin-toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .admin-toolbar-row button {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #111827;
+      background: white;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .admin-toolbar-row button:hover {
+      background: #f1f5f9;
+      transform: translateY(-1px);
+    }
+
+    .admin-toolbar-row button[data-variant="primary"] {
+      background: #2ea88c;
+      color: white;
+    }
+
+    .admin-toolbar-row button[data-variant="danger"] {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .admin-toolbar-row button[data-variant="ghost"] {
+      background: rgba(255,255,255,0.08);
+      color: white;
+    }
+
+    .admin-editor-status {
+      font-size: 12px;
+      color: #cbd5f5;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .admin-login-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 600;
+      padding: 20px;
+    }
+
+    .admin-login-modal.active {
+      display: flex;
+    }
+
+    .admin-login-panel {
+      background: white;
+      border-radius: 20px;
+      padding: 28px;
+      width: min(420px, 100%);
+      box-shadow: 0 20px 60px rgba(15,23,42,0.35);
+    }
+
+    .admin-login-panel h3 {
+      margin-top: 0;
+      margin-bottom: 6px;
+      font-size: 22px;
+    }
+
+    .admin-login-panel p {
+      margin-top: 0;
+      color: #4b5563;
+      margin-bottom: 18px;
+    }
+
+    .admin-login-panel label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 14px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .admin-login-panel input {
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      padding: 10px 12px;
+      font-size: 15px;
+      font-family: inherit;
+    }
+
+    .admin-login-error {
+      color: #b91c1c;
+      min-height: 18px;
+      font-size: 13px;
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    .admin-login-panel button {
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 0;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #008a5c;
+      color: white;
+      transition: background 0.15s ease;
+    }
+
+    .admin-login-panel button:hover {
+      background: #00a76f;
+    }
+
+    .admin-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      background: #111827;
+      color: white;
+      border-radius: 999px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 700;
+      transition: transform 0.25s ease;
+    }
+
+    .admin-toast.active {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 640px) {
+      .admin-editor-toggle {
+        width: calc(100% - 40px);
+        right: 20px;
+        bottom: 20px;
+        justify-content: center;
+      }
+      .admin-editor-toolbar {
+        right: 20px;
+        bottom: 100px;
+      }
+    }
   </style>
 </head>
-<body>
+<body data-page-path="bif-act-guide.html">
   <!-- Header -->
   <div class="header">
     <div class="header-content">
@@ -2015,6 +2227,462 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
       }
 
     });
+  </script>
+  <script>
+    (function () {
+      const contentArea = document.querySelector('.knowledge-content');
+      if (!contentArea) return;
+
+      const pagePath = document.body.dataset.pagePath || 'bif-act-guide.html';
+      const encodedPagePath = encodeURIComponent(pagePath);
+      const tokenStorageKey = 'sopalPurchaseToken';
+      const state = {
+        token: window.localStorage.getItem(tokenStorageKey) || '',
+        isAdmin: false,
+        isEditing: false,
+        dirty: false,
+        snapshot: '',
+        pending: false
+      };
+
+      const adminNodes = [];
+      const registerNode = (node) => {
+        node.dataset.adminEditor = 'ui';
+        adminNodes.push(node);
+        return node;
+      };
+
+      const toggleBtn = registerNode(document.createElement('button'));
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'admin-editor-toggle';
+      toggleBtn.dataset.state = 'login';
+      toggleBtn.textContent = 'Admin login';
+      document.body.appendChild(toggleBtn);
+
+      const toolbar = registerNode(document.createElement('div'));
+      toolbar.className = 'admin-editor-toolbar';
+      toolbar.innerHTML = `
+        <div class="admin-editor-status" data-role="status">Admin login required</div>
+        <div class="admin-toolbar-row" data-row="format">
+          <button type="button" data-command="paragraph">Paragraph</button>
+          <button type="button" data-command="h2">H2</button>
+          <button type="button" data-command="h3">H3</button>
+          <button type="button" data-command="bold">Bold</button>
+          <button type="button" data-command="italic">Italic</button>
+          <button type="button" data-command="bullets">• List</button>
+          <button type="button" data-command="numbers">1. List</button>
+        </div>
+        <div class="admin-toolbar-row" data-row="insert">
+          <button type="button" data-insert="statute">Insert green excerpt</button>
+          <button type="button" data-insert="case">Insert grey excerpt</button>
+        </div>
+        <div class="admin-toolbar-row" data-row="actions">
+          <button type="button" data-action="reload" data-variant="ghost">Reload file</button>
+          <button type="button" data-action="logout" data-variant="ghost">Log out</button>
+          <button type="button" data-action="exit" data-variant="danger">Exit</button>
+          <button type="button" data-action="save" data-variant="primary">Save & Publish</button>
+        </div>
+      `;
+      document.body.appendChild(toolbar);
+      const statusEl = toolbar.querySelector('[data-role="status"]');
+
+      const loginModal = registerNode(document.createElement('div'));
+      loginModal.className = 'admin-login-modal';
+      loginModal.innerHTML = `
+        <div class="admin-login-panel">
+          <h3>Admin login</h3>
+          <p>Sign in with your Sopal admin credentials to edit this guide in-place.</p>
+          <form>
+            <label>Email
+              <input type="email" name="email" autocomplete="username" required />
+            </label>
+            <label>Password
+              <input type="password" name="password" autocomplete="current-password" required />
+            </label>
+            <button type="submit">Sign in</button>
+            <div class="admin-login-error" data-role="error"></div>
+          </form>
+          <button type="button" data-close="true">Cancel</button>
+        </div>
+      `;
+      document.body.appendChild(loginModal);
+      const loginForm = loginModal.querySelector('form');
+      const loginErrorEl = loginModal.querySelector('[data-role="error"]');
+
+      const toast = registerNode(document.createElement('div'));
+      toast.className = 'admin-toast';
+      toast.textContent = '';
+      document.body.appendChild(toast);
+      let toastTimer = null;
+
+      const documentHasNativeDoctype = () => {
+        const dt = document.doctype;
+        if (!dt) return '<!doctype html>';
+        let docTypeString = '<!doctype ' + dt.name;
+        if (dt.publicId) {
+          docTypeString += ` PUBLIC "${dt.publicId}"`;
+        }
+        if (dt.systemId) {
+          docTypeString += ` "${dt.systemId}"`;
+        }
+        docTypeString += '>';
+        return docTypeString;
+      };
+
+      const showToast = (message) => {
+        toast.textContent = message;
+        toast.classList.add('active');
+        if (toastTimer) window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => {
+          toast.classList.remove('active');
+        }, 3200);
+      };
+
+      const hideLoginModal = () => {
+        loginModal.classList.remove('active');
+        loginForm.reset();
+        loginErrorEl.textContent = '';
+      };
+
+      const showLoginModal = () => {
+        loginModal.classList.add('active');
+        const emailInput = loginForm.querySelector('input[name="email"]');
+        window.setTimeout(() => emailInput && emailInput.focus(), 50);
+      };
+
+      loginModal.addEventListener('click', (event) => {
+        if (event.target === loginModal || event.target.dataset.close === 'true') {
+          hideLoginModal();
+        }
+      });
+
+      const setStatus = (message) => {
+        if (statusEl) statusEl.textContent = message;
+      };
+
+      const setToken = (token) => {
+        state.token = token || '';
+        if (state.token) {
+          window.localStorage.setItem(tokenStorageKey, state.token);
+        } else {
+          window.localStorage.removeItem(tokenStorageKey);
+        }
+      };
+
+      const updateToggleLabel = () => {
+        if (!state.isAdmin) {
+          toggleBtn.dataset.state = 'login';
+          toggleBtn.textContent = 'Admin login';
+          return;
+        }
+        if (!state.isEditing) {
+          toggleBtn.dataset.state = 'idle';
+          toggleBtn.textContent = 'Edit page';
+        } else {
+          toggleBtn.dataset.state = 'editing';
+          toggleBtn.textContent = 'Exit editor';
+        }
+      };
+
+      const safeJson = async (response) => {
+        try {
+          return await response.json();
+        } catch {
+          return {};
+        }
+      };
+
+      const fetchPageMeta = async (includeContent = false) => {
+        const headers = { Accept: 'application/json' };
+        if (state.token) {
+          headers.Authorization = `Bearer ${state.token}`;
+        }
+        const response = await fetch(`/admin/page/${encodedPagePath}?include_content=${includeContent ? '1' : '0'}`, {
+          headers
+        });
+        if (!response.ok) {
+          const payload = await safeJson(response);
+          const error = payload.detail || `Request failed (${response.status})`;
+          throw new Error(error);
+        }
+        return response.json();
+      };
+
+      const verifyAdminAccess = async () => {
+        if (!state.token) {
+          state.isAdmin = false;
+          updateToggleLabel();
+          setStatus('Admin login required');
+          return false;
+        }
+        try {
+          setStatus('Verifying access…');
+          await fetchPageMeta(false);
+          state.isAdmin = true;
+          setStatus('Editor ready');
+          updateToggleLabel();
+          return true;
+        } catch (error) {
+          setToken('');
+          state.isAdmin = false;
+          setStatus(error.message || 'Access denied');
+          updateToggleLabel();
+          return false;
+        }
+      };
+
+      const markDirty = () => {
+        if (!state.isEditing) return;
+        state.dirty = true;
+        setStatus('Unsaved changes');
+      };
+
+      const updateSnapshot = () => {
+        state.snapshot = contentArea.innerHTML;
+        state.dirty = false;
+        setStatus('All changes saved');
+      };
+
+      const enterEditing = () => {
+        if (!state.isAdmin || state.isEditing) return;
+        state.isEditing = true;
+        document.body.classList.add('admin-editor-editing');
+        contentArea.setAttribute('contenteditable', 'true');
+        toolbar.classList.add('active');
+        updateSnapshot();
+        updateToggleLabel();
+        window.setTimeout(() => contentArea.focus(), 30);
+      };
+
+      const exitEditing = (options = {}) => {
+        if (!state.isEditing) return;
+        const restoreSnapshot = options.restoreSnapshot !== false;
+        if (restoreSnapshot && state.snapshot) {
+          contentArea.innerHTML = state.snapshot;
+        }
+        contentArea.removeAttribute('contenteditable');
+        toolbar.classList.remove('active');
+        document.body.classList.remove('admin-editor-editing');
+        state.isEditing = false;
+        state.dirty = false;
+        updateToggleLabel();
+        setStatus('Editor idle');
+      };
+
+      const ensureCanExit = () => {
+        if (state.dirty) {
+          return window.confirm('You have unsaved changes. Discard them?');
+        }
+        return true;
+      };
+
+      const serializePage = () => {
+        const clone = document.documentElement.cloneNode(true);
+        clone.querySelectorAll('[data-admin-editor="ui"]').forEach((node) => node.remove());
+        const editableClone = clone.querySelector('.knowledge-content');
+        if (editableClone) {
+          editableClone.removeAttribute('contenteditable');
+        }
+        const bodyClone = clone.querySelector('body');
+        if (bodyClone) {
+          bodyClone.classList.remove('admin-editor-editing');
+        }
+        const docType = documentHasNativeDoctype();
+        return `${docType}
+${clone.outerHTML}`;
+      };
+
+      const saveChanges = async () => {
+        if (!state.isAdmin || !state.isEditing || state.pending) return;
+        state.pending = true;
+        setStatus('Saving changes…');
+        try {
+          const payload = serializePage();
+          const headers = {
+            'Content-Type': 'application/json'
+          };
+          if (state.token) {
+            headers.Authorization = `Bearer ${state.token}`;
+          }
+          const response = await fetch(`/admin/page/${encodedPagePath}`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ content: payload })
+          });
+          if (!response.ok) {
+            const data = await safeJson(response);
+            throw new Error(data.detail || 'Failed to save file');
+          }
+          await response.json();
+          updateSnapshot();
+          showToast('Changes published');
+        } catch (error) {
+          setStatus(error.message || 'Save failed');
+          showToast(error.message || 'Save failed');
+        } finally {
+          state.pending = false;
+        }
+      };
+
+      const reloadFromServer = async () => {
+        if (!state.isAdmin || !state.isEditing) return;
+        setStatus('Loading latest file…');
+        try {
+          const data = await fetchPageMeta(true);
+          if (!data.content) {
+            throw new Error('Server returned empty file');
+          }
+          const parser = new DOMParser();
+          const parsed = parser.parseFromString(data.content, 'text/html');
+          const latestContent = parsed.querySelector('.knowledge-content');
+          if (!latestContent) {
+            throw new Error('Could not locate .knowledge-content in file');
+          }
+          contentArea.innerHTML = latestContent.innerHTML;
+          updateSnapshot();
+          showToast('Reloaded from server');
+        } catch (error) {
+          setStatus(error.message || 'Reload failed');
+          showToast(error.message || 'Reload failed');
+        }
+      };
+
+      const insertBlock = (type) => {
+        let template = '';
+        if (type === 'statute') {
+          template = `<details class="statute-excerpt" open>
+  <summary>Statutory excerpt title</summary>
+  <div class="statute-body">
+    <p>Replace this text with the legislative extract you need.</p>
+  </div>
+</details>`;
+        } else {
+          template = `<div class="case-excerpt">
+  <p><span class="para-number">[1]</span>Replace this text with the case or commentary excerpt you need.</p>
+</div>`;
+        }
+        contentArea.focus();
+        document.execCommand('insertHTML', false, template);
+        markDirty();
+      };
+
+      const COMMANDS = {
+        paragraph: () => document.execCommand('formatBlock', false, 'p'),
+        h2: () => document.execCommand('formatBlock', false, 'h2'),
+        h3: () => document.execCommand('formatBlock', false, 'h3'),
+        bold: () => document.execCommand('bold'),
+        italic: () => document.execCommand('italic'),
+        bullets: () => document.execCommand('insertUnorderedList'),
+        numbers: () => document.execCommand('insertOrderedList')
+      };
+
+      toolbar.addEventListener('click', (event) => {
+        const button = event.target.closest('button');
+        if (!button || !state.isEditing) return;
+        const { command, insert, action } = button.dataset;
+        if (command && COMMANDS[command]) {
+          contentArea.focus();
+          COMMANDS[command]();
+          markDirty();
+          return;
+        }
+        if (insert) {
+          insertBlock(insert);
+          return;
+        }
+        if (action === 'save') {
+          saveChanges();
+        } else if (action === 'exit') {
+          if (ensureCanExit()) {
+            exitEditing({ restoreSnapshot: true });
+          }
+        } else if (action === 'reload') {
+          reloadFromServer();
+        } else if (action === 'logout') {
+          if (state.isEditing && !ensureCanExit()) {
+            return;
+          }
+          exitEditing({ restoreSnapshot: true });
+          setToken('');
+          state.isAdmin = false;
+          updateToggleLabel();
+          setStatus('Logged out');
+          showToast('Signed out');
+        }
+      });
+
+      contentArea.addEventListener('input', markDirty);
+
+      toggleBtn.addEventListener('click', () => {
+        if (!state.isAdmin) {
+          showLoginModal();
+          return;
+        }
+        if (!state.isEditing) {
+          enterEditing();
+        } else if (ensureCanExit()) {
+          exitEditing({ restoreSnapshot: true });
+        }
+      });
+
+      loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(loginForm);
+        const email = String(formData.get('email') || '').trim();
+        const password = String(formData.get('password') || '');
+        if (!email || !password) {
+          loginErrorEl.textContent = 'Email and password are required.';
+          return;
+        }
+        loginErrorEl.textContent = 'Signing in…';
+        try {
+          const response = await fetch('/purchase-login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+              username: email,
+              password
+            })
+          });
+          if (!response.ok) {
+            const data = await safeJson(response);
+            throw new Error(data.detail || 'Login failed');
+          }
+          const data = await response.json();
+          setToken(data.access_token);
+          const verified = await verifyAdminAccess();
+          if (!verified) {
+            throw new Error('This account does not have admin privileges');
+          }
+          hideLoginModal();
+          showToast('Admin access granted');
+        } catch (error) {
+          loginErrorEl.textContent = error.message || 'Login failed';
+        }
+      });
+
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && loginModal.classList.contains('active')) {
+          hideLoginModal();
+        }
+      });
+
+      window.addEventListener('beforeunload', (event) => {
+        if (state.isEditing && state.dirty) {
+          event.preventDefault();
+          event.returnValue = '';
+        }
+      });
+
+      if (state.token) {
+        verifyAdminAccess();
+      } else {
+        setStatus('Admin login required');
+      }
+      updateToggleLabel();
+    })();
   </script>
 </body>
 </html>
