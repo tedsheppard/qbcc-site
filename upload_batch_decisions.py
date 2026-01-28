@@ -18,11 +18,11 @@ from openai import OpenAI
 from google.cloud import storage
 
 # Configuration
-DB_PATH = "../qbcc-site/qbcc.db"  # Use the downloaded one
-PDF_DIR = "../qbcc-site/new_decisions_upload"
+DB_PATH = "qbcc.db"  # Use the local one
+PDF_DIR = "new_decisions_upload"
 LOG_FILE = "/tmp/batch_upload.log"
 FAIL_FILE = "/tmp/batch_failures.log"
-START_EJS_NUM = 7419  # Next EJS ID to assign
+START_EJS_NUM = 7419  # Next EJS ID to assign - will auto-increment from DB
 
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -237,21 +237,42 @@ def main():
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
 
-    # Get PDF files sorted by application number
+    # Get existing application numbers from database
+    existing_apps = set()
+    for row in con.execute("SELECT reference FROM docs_fresh"):
+        existing_apps.add(row[0])
+    log(f"📋 Found {len(existing_apps)} existing decisions in database")
+
+    # Get next EJS ID from database
+    row = con.execute("SELECT ejs_id FROM docs_fresh ORDER BY ejs_id DESC LIMIT 1").fetchone()
+    if row:
+        last_ejs = row[0]
+        ejs_counter = int(last_ejs[3:]) + 1
+        log(f"📋 Last EJS ID in database: {last_ejs}")
+        log(f"📋 Next EJS ID will be: EJS{ejs_counter:05d}")
+    else:
+        ejs_counter = START_EJS_NUM
+        log(f"📋 Starting from EJS{ejs_counter:05d}")
+
+    # Get PDF files sorted by application number - ONLY NEW ONES
     pdf_dir = Path(PDF_DIR)
     pdf_files = []
     for pdf_path in pdf_dir.glob("*.pdf"):
         app_num = extract_app_number_from_filename(pdf_path.name)
-        if app_num:
+        if app_num and app_num not in existing_apps:
             pdf_files.append((int(app_num), app_num, pdf_path))
 
     pdf_files.sort()  # Sort by application number
-    log(f"📁 Found {len(pdf_files)} PDFs to process")
+    log(f"📁 Found {len(pdf_files)} NEW PDFs to process")
+
+    if len(pdf_files) == 0:
+        log("✅ No new PDFs to process!")
+        con.close()
+        return
 
     # Process each PDF
     success_count = 0
     fail_count = 0
-    ejs_counter = START_EJS_NUM
 
     for _, app_num, pdf_path in pdf_files:
         ejs_id = f"EJS{ejs_counter:05d}"
