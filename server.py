@@ -1119,17 +1119,22 @@ def search_fast(
         elif sort == "adj_low":
             order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 9999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC"
         
-        # Build and execute the main query
+        # Build and execute the main query - FETCH ALL DATA IN ONE QUERY
         snippet_select = "snippet(fts, 0, '<mark>', '</mark>', ' … ', 100)" if nq2 else "substr(d.full_text, 1, 500) || '...'"
-        
+
         sql = f"""
-            SELECT DISTINCT fts.rowid, {snippet_select} AS snippet
+            SELECT DISTINCT fts.rowid, {snippet_select} AS snippet,
+                   a.claimant_name, a.respondent_name, a.adjudicator_name,
+                   a.act_category, d.reference, d.pdf_path, d.ejs_id,
+                   a.claimed_amount, a.adjudicated_amount,
+                   a.fee_claimant_proportion, a.fee_respondent_proportion,
+                   a.decision_date
             {base_join}
             {where_sql}
             {order_clause}
             LIMIT ? OFFSET ?
         """
-        
+
         final_params = tuple(sql_params) + (limit, offset)
         rows = con.execute(sql, final_params).fetchall()
 
@@ -1137,22 +1142,11 @@ def search_fast(
         print("FTS Query error:", e)
         raise HTTPException(status_code=500, detail=f"Search query failed: {e}")
 
-    # Process SQLite results
+    # Process SQLite results - NO MORE N+1 QUERIES!
     items = []
     for r in rows:
-        meta = con.execute("""
-        SELECT a.claimant_name, a.respondent_name, a.adjudicator_name,
-                a.act_category, d.reference, d.pdf_path, d.ejs_id,
-                a.claimed_amount, a.adjudicated_amount, 
-                a.fee_claimant_proportion, a.fee_respondent_proportion,
-                a.decision_date
-        FROM docs_fresh d
-        LEFT JOIN decision_details a ON d.ejs_id = a.ejs_id
-        WHERE d.rowid = ?
-        """, (r["rowid"],)).fetchone()
-
-        d = dict(meta) if meta else {}
-        d["id"] = d.get("ejs_id", r["rowid"])
+        d = dict(r)
+        d["id"] = d.get("ejs_id", d.get("rowid"))
         
         # Add backward-compatible field names for frontend
         d["claimant"] = d.get("claimant_name")
