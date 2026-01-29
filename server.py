@@ -1143,12 +1143,6 @@ def search_fast(
         raise HTTPException(status_code=500, detail=f"Search query failed: {e}")
 
     # Process SQLite results - NO MORE N+1 QUERIES!
-    # Pre-compute search words ONCE (not in the loop!)
-    search_words = []
-    if q_norm:
-        search_words = re.findall(r'\b\w+\b', q_norm)
-        search_words = [w for w in search_words if w.upper() not in ['AND', 'OR', 'NOT', 'NEAR', 'W'] and not w.isdigit() and len(w) > 1]
-
     items = []
     for r in rows:
         d = dict(r)
@@ -1163,10 +1157,18 @@ def search_fast(
 
         snippet_raw = r["snippet"]
 
-        # Only process snippet if we have search words
-        if snippet_raw and search_words:
-            # SQLite FTS already provides snippets, just use them directly
-            pass
+        # Truncate long snippets to ~300 chars for readability
+        if snippet_raw and len(snippet_raw) > 350:
+            # Try to truncate at a sentence or word boundary
+            truncated = snippet_raw[:300]
+            last_period = truncated.rfind('.')
+            last_space = truncated.rfind(' ')
+            if last_period > 200:
+                snippet_raw = truncated[:last_period + 1] + ' ...'
+            elif last_space > 200:
+                snippet_raw = truncated[:last_space] + ' ...'
+            else:
+                snippet_raw = truncated + ' ...'
 
         d["snippet"] = snippet_raw
         items.append(d)
