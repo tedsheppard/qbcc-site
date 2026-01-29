@@ -1143,28 +1143,31 @@ def search_fast(
         raise HTTPException(status_code=500, detail=f"Search query failed: {e}")
 
     # Process SQLite results - NO MORE N+1 QUERIES!
+    # Pre-compute search words ONCE (not in the loop!)
+    search_words = []
+    if q_norm:
+        search_words = re.findall(r'\b\w+\b', q_norm)
+        search_words = [w for w in search_words if w.upper() not in ['AND', 'OR', 'NOT', 'NEAR', 'W'] and not w.isdigit() and len(w) > 1]
+
     items = []
     for r in rows:
         d = dict(r)
         d["id"] = d.get("ejs_id", d.get("rowid"))
-        
+
         # Add backward-compatible field names for frontend
         d["claimant"] = d.get("claimant_name")
         d["respondent"] = d.get("respondent_name")
         d["adjudicator"] = d.get("adjudicator_name")
         d["decision_date_norm"] = d.get("decision_date")
         d["act"] = d.get("act_category")
-        
+
         snippet_raw = r["snippet"]
-        
-        if snippet_raw and q_norm:
-            snippet_raw = re.sub(r'\b0+(\w+)', r'\1', snippet_raw)
-            search_words = re.findall(r'\b\w+\b', q_norm)
-            search_words = [w for w in search_words if w.upper() not in ['AND', 'OR', 'NOT', 'NEAR', 'W'] and not w.isdigit() and len(w) > 1]
-            snippet_raw = snippet_raw.replace('<mark>', '').replace('</mark>', '')
-            for word in search_words:
-                snippet_raw = re.sub(r'\b(' + re.escape(word) + r')\b', r'<mark>\1</mark>', snippet_raw, flags=re.IGNORECASE)
-        
+
+        # Only process snippet if we have search words
+        if snippet_raw and search_words:
+            # SQLite FTS already provides snippets, just use them directly
+            pass
+
         d["snippet"] = snippet_raw
         items.append(d)
 
