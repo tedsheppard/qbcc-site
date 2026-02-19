@@ -1,0 +1,36 @@
+# Database
+qbcc.db
+*.db
+
+# PDFs in upload directory
+new_decisions_upload/
+*.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+/tmp/
+
+# Scripts that might contain sensitive data
+*.bak
+*.tmp
