@@ -1120,7 +1120,7 @@ def search_fast(
             order_clause = "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 9999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC"
         
         # Build and execute the main query - FETCH ALL DATA IN ONE QUERY
-        snippet_select = "snippet(fts, 0, '<mark>', '</mark>', ' … ', 100)" if nq2 else "substr(d.full_text, 1, 500) || '...'"
+        snippet_select = "snippet(fts, '<mark>', '</mark>', ' … ', 0, 30)" if nq2 else "substr(d.full_text, 1, 200) || '...'"
 
         sql = f"""
             SELECT DISTINCT fts.rowid, {snippet_select} AS snippet,
