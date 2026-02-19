@@ -433,7 +433,8 @@
             <p class="indent-2">(b) 7 business days after receiving notice of the adjudicator’s acceptance of the adjudication application.</p>
             <p class="indent-1">(2) If responding to a complex payment claim, the respondent must give the adjudicator the adjudication response within the later of the following to end—</p>
             <p class="indent-2">(a) 15 business days after receiving the documents mentioned in section 79(4);</p>
-            <p class="indent-2">(b) 12 business days after receiving notice of the adjudicator’s acceptance of the adjudication application.</p>
+            <p class="indent-2">(b) 12 business days after receiving notice of the adjudicator's acceptance of the adjudication application.</p>
+            <p class="indent-1">(3) However, if responding to a complex payment claim, the respondent may apply to the adjudicator for an extension of time, of up to 15 additional business days, to give the adjudication response to the adjudicator.</p>
         </div>
       </details>
       <div class="form-grid">
@@ -449,10 +450,21 @@
       <div class="form-group claim-type-group">
         <label>Claim Type</label>
         <div class="radio-group">
-          <input type="radio" id="ar-standard" name="ar-claim-type" value="standard" checked>
+          <input type="radio" id="ar-standard" name="ar-claim-type" value="standard" checked onchange="toggleArEotSection()">
           <label for="ar-standard">Standard Claim (up to and including $750,000)</label>
-          <input type="radio" id="ar-complex" name="ar-claim-type" value="complex">
+          <input type="radio" id="ar-complex" name="ar-claim-type" value="complex" onchange="toggleArEotSection()">
           <label for="ar-complex">Complex Claim (over $750,000)</label>
+        </div>
+      </div>
+      <div class="form-group" id="ar-eot-group" style="display: none;">
+        <label>Extension of Time — s 83(3)</label>
+        <div class="radio-group">
+          <input type="checkbox" id="ar-eot-granted" onchange="toggleArEotDays()">
+          <label for="ar-eot-granted">Extension of time granted by adjudicator</label>
+        </div>
+        <div id="ar-eot-days-group" style="display: none; margin-top: 10px;">
+          <label for="ar-eot-days">Additional business days granted (1–15)</label><br>
+          <input type="number" id="ar-eot-days" min="1" max="15" value="1" style="width: 80px; margin-top: 4px;">
         </div>
       </div>
       <button class="calculate-btn" onclick="calculateAdjudicationResponseDueDate()">Calculate Due Date</button>
@@ -720,6 +732,20 @@
     displayResult('Adjudication Application Due Date:', result, description, startDate, days);
   }
   
+  function toggleArEotSection() {
+    const isComplex = document.querySelector('input[name="ar-claim-type"]:checked').value === 'complex';
+    document.getElementById('ar-eot-group').style.display = isComplex ? 'block' : 'none';
+    if (!isComplex) {
+      document.getElementById('ar-eot-granted').checked = false;
+      document.getElementById('ar-eot-days-group').style.display = 'none';
+    }
+  }
+
+  function toggleArEotDays() {
+    const granted = document.getElementById('ar-eot-granted').checked;
+    document.getElementById('ar-eot-days-group').style.display = granted ? 'block' : 'none';
+  }
+
   function calculateAdjudicationResponseDueDate() {
     const location = document.getElementById('location').value;
     const appReceivedDate = new Date(document.getElementById('ar-app-received-date').value);
@@ -737,17 +763,27 @@
     const result1 = addBusinessDays(appReceivedDate, days1, location);
     const result2 = addBusinessDays(acceptanceReceivedDate, days2, location);
 
-    const finalDate = new Date(Math.max(result1.finalDate, result2.finalDate));
+    let finalDate = new Date(Math.max(result1.finalDate, result2.finalDate));
     // For breakdown, we just show the one that determined the final date
     const isResult1Later = result1.finalDate.getTime() >= result2.finalDate.getTime();
     const finalResult = isResult1Later ? result1 : result2;
     const finalStartDate = isResult1Later ? appReceivedDate : acceptanceReceivedDate;
     const finalDays = isResult1Later ? days1 : days2;
-    
+
+    // Apply s 83(3) extension of time if complex claim and EOT granted
+    let eotNote = '';
+    if (claimType === 'complex' && document.getElementById('ar-eot-granted').checked) {
+      const eotDays = parseInt(document.getElementById('ar-eot-days').value, 10) || 1;
+      const clampedDays = Math.min(Math.max(eotDays, 1), 15);
+      const eotResult = addBusinessDays(finalDate, clampedDays, location);
+      finalDate = eotResult.finalDate;
+      eotNote = ` Plus ${clampedDays} additional business day${clampedDays !== 1 ? 's' : ''} extension of time granted under s 83(3).`;
+    }
+
     displayResult(
         'Adjudication Response Due Date:',
         { finalDate: finalDate, skipped: finalResult.skipped },
-        `Calculated as the LATER of ${days1} business days after receiving the application, or ${days2} business days after receiving the adjudicator's acceptance (section 83 BIF Act).`,
+        `Calculated as the LATER of ${days1} business days after receiving the application, or ${days2} business days after receiving the adjudicator's acceptance (section 83 BIF Act).${eotNote}`,
         finalStartDate, finalDays
     );
   }
