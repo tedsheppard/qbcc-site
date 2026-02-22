@@ -842,6 +842,51 @@ body.modal-open {
   overflow: hidden;
 }
 
+/* Search gate UI */
+.gate-banner {
+  padding: 12px 20px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.gate-banner a { color: #008a5c; font-weight: 600; text-decoration: none; }
+.gate-banner a:hover { text-decoration: underline; }
+.gate-info { background: #e8f8f1; border: 1px solid #00c97c; color: #006644; }
+.gate-warning { background: #fff3cd; border: 1px solid #ffc107; color: #856404; }
+.gate-login { background: #e8f8f1; border: 1px solid #00c97c; color: #006644; }
+.dark .gate-info { background: #0a2e1a; border-color: #00c97c; color: #a7f3d0; }
+.dark .gate-warning { background: #2d1b0a; border-color: #f59e0b; color: #fbbf24; }
+.dark .gate-login { background: #0a2e1a; border-color: #00c97c; color: #a7f3d0; }
+.dark .gate-banner a { color: #34d399; }
+
+.gate-block {
+  text-align: center;
+  padding: 60px 20px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.gate-block h3 { font-size: 22px; margin-bottom: 10px; }
+.gate-block p { color: #666; margin-bottom: 25px; line-height: 1.6; }
+.dark .gate-block p { color: #aaa; }
+.gate-btn {
+  display: inline-block;
+  padding: 12px 24px;
+  background: #00c97c;
+  color: white !important;
+  border-radius: 6px;
+  text-decoration: none !important;
+  font-weight: 600;
+  margin: 0 8px;
+  transition: opacity 0.2s;
+}
+.gate-btn:hover { opacity: 0.9; }
+.gate-btn-secondary {
+  background: #e9ecef;
+  color: #333 !important;
+}
+.dark .gate-btn-secondary { background: #333; color: #eee !important; }
+
 </style>
 
 </head>
@@ -929,8 +974,10 @@ body.modal-open {
     }
 
     let state = { q:'', claimant:'', respondent:'', limit:20, offset:0, total:0 };
-    let adjudicatorList = []; 
+    let adjudicatorList = [];
     let chatHistories = {};
+    let gateEnabled = false;
+    let searchUsage = null;
 
 
 // Replace your existing fetchAdjudicators function with this one
@@ -1008,14 +1055,58 @@ async function runSearch(page=1, bypassAdjudicatorCheck = false){
         params.set('limit', state.limit);
         params.set('offset', state.offset);
         
-        const res = await fetch(`/search_fast?${params.toString()}`, { 
-          headers: { 'Accept':'application/json' }
-        });
-        
+        const fetchHeaders = { 'Accept': 'application/json' };
+        const userToken = localStorage.getItem('purchase_token');
+        if (userToken) {
+          fetchHeaders['Authorization'] = `Bearer ${userToken}`;
+        }
+
+        const res = await fetch(`/search_fast?${params.toString()}`, { headers: fetchHeaders });
+
+        if (res.status === 401) {
+          const errData = await res.json();
+          if (errData.error === 'auth_required') {
+            finishLoadingBar();
+            statusEl.textContent = '';
+            totalEl.textContent = '';
+            const redir = encodeURIComponent(window.location.pathname + window.location.search);
+            $('#results').innerHTML = `
+              <div class="gate-block">
+                <h3>Sign in to search</h3>
+                <p>Create a free account to get 10 searches per month.</p>
+                <a href="/login?redirect=${redir}" class="gate-btn">Sign In</a>
+                <a href="/register?redirect=${redir}" class="gate-btn gate-btn-secondary">Create Account</a>
+              </div>
+            `;
+            return;
+          }
+        }
+
+        if (res.status === 429) {
+          const errData = await res.json();
+          if (errData.error === 'limit_exceeded') {
+            finishLoadingBar();
+            statusEl.textContent = '';
+            totalEl.textContent = '';
+            $('#results').innerHTML = `
+              <div class="gate-block">
+                <h3>Monthly search limit reached</h3>
+                <p>You've used all ${errData.search_limit} of your free searches this month. Your limit resets on the 1st of next month.</p>
+                <a href="/account" class="gate-btn">View Account</a>
+              </div>
+            `;
+            if (searchUsage) {
+              searchUsage.searches_used = errData.searches_used;
+              renderGateUI();
+            }
+            return;
+          }
+        }
+
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-        
+
         const data = await res.json();
 
         finishLoadingBar();
@@ -1031,6 +1122,12 @@ async function runSearch(page=1, bypassAdjudicatorCheck = false){
           : '<p>No results.</p>';
 
         renderPagination(page);
+
+        // Update usage counter after successful search
+        if (gateEnabled && searchUsage && !searchUsage.is_unlimited) {
+          searchUsage.searches_used++;
+          renderGateUI();
+        }
       } catch (error) {
         console.error('Search error:', error);
         $('#status').textContent = 'Error: ' + error.message;
@@ -1350,10 +1447,80 @@ function checkUrlParams() {
 }
 
 
-fetchAdjudicators();
+// --- Search Gate UI ---
+function renderGateUI() {
+  const existing = document.getElementById('gate-banner');
+  if (existing) existing.remove();
 
-// Replace the standalone runSearch() call with checkUrlParams()
-checkUrlParams();
+  if (!gateEnabled) return;
+
+  const token = localStorage.getItem('purchase_token');
+  const banner = document.createElement('div');
+  banner.id = 'gate-banner';
+
+  if (!token) {
+    const redir = encodeURIComponent(window.location.pathname + window.location.search);
+    banner.className = 'gate-banner gate-login';
+    banner.innerHTML = `
+      <strong>Sign in required.</strong>
+      Create a free account to search adjudication decisions (10 searches/month free).
+      <a href="/login?redirect=${redir}">Sign In</a> or
+      <a href="/register?redirect=${redir}">Register</a>
+    `;
+  } else if (searchUsage && !searchUsage.is_unlimited) {
+    const remaining = Math.max(0, searchUsage.search_limit - searchUsage.searches_used);
+    banner.className = 'gate-banner ' + (remaining <= 2 ? 'gate-warning' : 'gate-info');
+    if (remaining === 0) {
+      banner.innerHTML = `
+        <strong>0</strong> free searches remaining this month.
+        <a href="/account">View account</a> for upgrade options.
+      `;
+    } else {
+      banner.innerHTML = `<strong>${remaining}</strong> of ${searchUsage.search_limit} free searches remaining this month.`;
+    }
+  }
+  // Unlimited users and admins see no banner
+
+  const searchSection = document.querySelector('.search-section');
+  if (searchSection && banner.innerHTML) {
+    searchSection.parentNode.insertBefore(banner, searchSection);
+  }
+}
+
+async function initSearchPage() {
+  // 1. Check if gate is enabled
+  try {
+    const gateRes = await fetch('/api/search-gate-status');
+    const gateData = await gateRes.json();
+    gateEnabled = gateData.gate_enabled;
+  } catch (e) {
+    gateEnabled = false; // Fail open
+  }
+
+  // 2. If gate is enabled, check user's usage
+  if (gateEnabled) {
+    const token = localStorage.getItem('purchase_token');
+    if (token) {
+      try {
+        const usageRes = await fetch('/api/my-search-usage', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (usageRes.ok) {
+          searchUsage = await usageRes.json();
+        }
+      } catch (e) {
+        console.warn('Could not fetch search usage:', e);
+      }
+    }
+    renderGateUI();
+  }
+
+  // 3. Normal page initialization
+  fetchAdjudicators();
+  checkUrlParams();
+}
+
+initSearchPage();
 // ============ END NEW SECTION ============
 
 

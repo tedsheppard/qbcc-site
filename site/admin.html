@@ -64,6 +64,7 @@
   <h1>Admin Hub</h1>
   <div class="admin-container">
     <aside class="admin-nav">
+      <button class="nav-btn" data-hash="gate">Search Gate</button>
       <button class="nav-btn" data-hash="users">User Accounts</button>
       <button class="nav-btn" data-hash="searches">Search Activity</button>
       <button class="nav-btn" data-hash="adjudicators">Adjudicator Activity</button>
@@ -72,6 +73,7 @@
       <button class="nav-btn" data-hash="backup">Backups</button>
     </aside>
     <div class="admin-content">
+        <section id="gate-section" class="admin-section"></section>
         <section id="users-section" class="admin-section"></section>
         <section id="searches-section" class="admin-section"></section>
         <section id="adjudicators-section" class="admin-section"></section>
@@ -210,6 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         loadedTabs.add(targetHash);
         switch (targetHash) {
+            case 'gate':
+                loadGateSection();
+                break;
             case 'users':
                 fetchData('/admin/all-users', section, renderUsersTable, 'Account Creation Activity');
                 break;
@@ -235,6 +240,67 @@ document.addEventListener('DOMContentLoaded', () => {
             renderer(data, sectionElement);
         } catch (error) {
             sectionElement.innerHTML = `<div class="card"><h2>${title}</h2><p class="error-message">${error.message}</p></div>`;
+        }
+    }
+
+    // --- SEARCH GATE SECTION ---
+    async function loadGateSection() {
+        const section = document.getElementById('gate-section');
+        try {
+            const res = await fetch('/admin/search-gate', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error(`Failed to fetch gate status (${res.status})`);
+            const data = await res.json();
+            const isEnabled = data.gate_enabled;
+
+            section.innerHTML = `
+                <div class="card">
+                    <h2>Search Gate Control</h2>
+                    <p style="color: #666; margin-top: -15px; margin-bottom: 25px;">
+                        Master switch for the search gating system. When enabled, users must be logged in
+                        and are limited to 10 free searches per month. Full-access users and admins are exempt.
+                    </p>
+                    <div id="gate-status-box" style="display: flex; align-items: center; gap: 20px; padding: 20px; background: ${isEnabled ? '#fff3cd' : '#e8f8f1'}; border-radius: 8px; border: 1px solid ${isEnabled ? '#ffc107' : '#00c97c'};">
+                        <div style="flex: 1;">
+                            <strong style="font-size: 16px;">Search Gate is currently ${isEnabled ? 'ON' : 'OFF'}</strong>
+                            <p style="margin: 5px 0 0; color: #666; font-size: 13px;">
+                                ${isEnabled
+                                    ? 'Users must log in to search. Free tier limited to 10 searches/month.'
+                                    : 'Search is open to everyone with no limits.'}
+                            </p>
+                        </div>
+                        <button id="gate-toggle-btn" style="padding: 10px 24px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; color: white; background: ${isEnabled ? '#dc3545' : '#00c97c'}; min-width: 130px; font-size: 14px;">
+                            ${isEnabled ? 'Disable Gate' : 'Enable Gate'}
+                        </button>
+                    </div>
+                    <div id="gate-feedback" style="margin-top: 15px; font-size: 14px; color: #008a5c;"></div>
+                </div>
+            `;
+
+            document.getElementById('gate-toggle-btn').addEventListener('click', async () => {
+                const newState = !isEnabled;
+                const confirmMsg = newState
+                    ? 'ENABLE the search gate? All users will need to log in to search.'
+                    : 'DISABLE the search gate? Search will be open to everyone.';
+                if (!confirm(confirmMsg)) return;
+
+                const formData = new FormData();
+                formData.append('enabled', newState);
+                const toggleRes = await fetch('/admin/search-gate', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const result = await toggleRes.json();
+                document.getElementById('gate-feedback').textContent = result.message;
+
+                // Refresh the section
+                loadedTabs.delete('gate');
+                setTimeout(() => loadGateSection(), 500);
+            });
+        } catch (err) {
+            section.innerHTML = `<div class="card"><h2>Search Gate Control</h2><p class="error-message">Error: ${err.message}</p></div>`;
         }
     }
 

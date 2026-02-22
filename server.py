@@ -304,8 +304,29 @@ try:
 except sqlite3.OperationalError:
     pass # Column already exists
 
+# --- System settings (for kill switches etc.) ---
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS system_settings (
+    key TEXT PRIMARY KEY NOT NULL,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+# --- Index for fast monthly search counting ---
+purchases_cur.execute("""
+CREATE INDEX IF NOT EXISTS idx_search_logs_usage
+ON search_logs (user_email, was_blocked, timestamp)
+""")
+
 # --- Commit all changes ---
 purchases_con.commit()
+
+# --- Load search gate state (default: OFF) ---
+_gate_row = purchases_con.execute(
+    "SELECT value FROM system_settings WHERE key = 'search_gate_enabled'"
+).fetchone()
+SEARCH_GATE_ENABLED = (_gate_row and _gate_row["value"] == "1") if _gate_row else False
 
 ADMIN_EMAILS = {
     "edwardsheppard5@gmail.com", 
@@ -1022,7 +1043,7 @@ def search_fast(
     minAdjudicated: Optional[float] = Query(None),
     maxAdjudicated: Optional[float] = Query(None)
 ):
-    # --- START: User and Search Logging ---
+    # --- START: User Identification ---
     user_email = "Anonymous"
     if authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ")[1]
@@ -1031,14 +1052,68 @@ def search_fast(
             user_email = payload.get("sub", "Anonymous")
         except JWTError:
             pass  # Token is invalid, treat as Anonymous
+    # --- END: User Identification ---
 
+    # --- START: Search Gate Enforcement ---
+    if SEARCH_GATE_ENABLED:
+        if user_email == "Anonymous":
+            if q:
+                purchases_con.execute(
+                    "INSERT INTO search_logs (user_email, search_query, was_blocked) VALUES (?, ?, 1)",
+                    ("Anonymous", q)
+                )
+                purchases_con.commit()
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "error": "auth_required",
+                    "message": "Please sign in to search. Create a free account to get 10 searches per month."
+                }
+            )
+
+        # Check if user has unlimited access (admin or full_access)
+        is_unlimited = (
+            user_email in ADMIN_EMAILS or
+            purchases_con.execute(
+                "SELECT 1 FROM full_access_users WHERE email = ?", (user_email,)
+            ).fetchone() is not None
+        )
+
+        if not is_unlimited:
+            count_row = purchases_con.execute("""
+                SELECT COUNT(*) as cnt FROM search_logs
+                WHERE user_email = ?
+                AND was_blocked = 0
+                AND timestamp >= date('now', 'start of month')
+            """, (user_email,)).fetchone()
+
+            searches_used = count_row["cnt"] if count_row else 0
+
+            if searches_used >= 10:
+                if q:
+                    purchases_con.execute(
+                        "INSERT INTO search_logs (user_email, search_query, was_blocked) VALUES (?, ?, 1)",
+                        (user_email, q)
+                    )
+                    purchases_con.commit()
+                return JSONResponse(
+                    status_code=429,
+                    content={
+                        "error": "limit_exceeded",
+                        "message": "You have reached your free search limit for this month.",
+                        "searches_used": searches_used,
+                        "search_limit": 10
+                    }
+                )
+    # --- END: Search Gate Enforcement ---
+
+    # --- Log successful search ---
     if q:
         purchases_con.execute(
             "INSERT INTO search_logs (user_email, search_query, was_blocked) VALUES (?, ?, 0)",
             (user_email, q)
         )
         purchases_con.commit()
-    # --- END: User and Search Logging ---
 
     q_norm = normalize_query(q)
 
@@ -1294,6 +1369,60 @@ def remove_full_access_user(email: str = Form(...), admin: dict = Depends(get_ad
     purchases_con.execute("DELETE FROM full_access_users WHERE email = ?", (email,))
     purchases_con.commit()
     return {"status": "success", "message": f"Full access revoked for {email}."}
+
+# --- Search Gate Admin Endpoints ---
+
+@app.get("/admin/search-gate")
+def get_search_gate(admin: dict = Depends(get_admin_user)):
+    """Admin endpoint to get current search gate status."""
+    return {"gate_enabled": SEARCH_GATE_ENABLED}
+
+@app.post("/admin/search-gate")
+def toggle_search_gate(enabled: bool = Form(...), admin: dict = Depends(get_admin_user)):
+    """Admin endpoint to enable or disable the search gate."""
+    global SEARCH_GATE_ENABLED
+    SEARCH_GATE_ENABLED = enabled
+    purchases_con.execute("""
+        INSERT INTO system_settings (key, value, updated_at)
+        VALUES ('search_gate_enabled', ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    """, ("1" if enabled else "0",))
+    purchases_con.commit()
+    return {"gate_enabled": SEARCH_GATE_ENABLED, "message": f"Search gate {'enabled' if enabled else 'disabled'}."}
+
+# --- Public Search Gate Status ---
+
+@app.get("/api/search-gate-status")
+def get_search_gate_status():
+    """Public endpoint: tells the frontend whether search gating is active."""
+    return {"gate_enabled": SEARCH_GATE_ENABLED}
+
+# --- User Search Usage ---
+
+@app.get("/api/my-search-usage")
+def get_my_search_usage(current_user: dict = Depends(get_current_purchase_user)):
+    """Returns the current user's monthly search count and limit."""
+    email = current_user["email"]
+
+    is_unlimited = (
+        email in ADMIN_EMAILS or
+        purchases_con.execute(
+            "SELECT 1 FROM full_access_users WHERE email = ?", (email,)
+        ).fetchone() is not None
+    )
+
+    if is_unlimited:
+        return {"searches_used": 0, "search_limit": -1, "is_unlimited": True}
+
+    count_row = purchases_con.execute("""
+        SELECT COUNT(*) as cnt FROM search_logs
+        WHERE user_email = ?
+        AND was_blocked = 0
+        AND timestamp >= date('now', 'start of month')
+    """, (email,)).fetchone()
+
+    searches_used = count_row["cnt"] if count_row else 0
+    return {"searches_used": searches_used, "search_limit": 10, "is_unlimited": False}
 
 @app.get("/admin/all-users")
 def get_all_users(admin: dict = Depends(get_admin_user)):
