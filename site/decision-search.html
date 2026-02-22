@@ -1035,16 +1035,49 @@ async function runSearch(page=1, bypassAdjudicatorCheck = false){
         const qEl = $('#q');
         const limitEl = $('#limit');
         const sortEl = $('#sort');
-        
+
         if (!statusEl || !totalEl || !qEl || !limitEl || !sortEl) {
           console.error('Missing required elements');
           return;
         }
-        
+
+        const inputQuery = normalizeInput(qEl.value);
+
+        // Client-side gate check: block real searches when limit is reached
+        if (inputQuery && gateEnabled) {
+          const token = localStorage.getItem('purchase_token');
+          if (!token) {
+            const redir = encodeURIComponent(window.location.pathname + window.location.search);
+            statusEl.textContent = '';
+            totalEl.textContent = '';
+            $('#results').innerHTML = `
+              <div class="gate-block">
+                <h3>Sign in to search</h3>
+                <p>Create a free account to get 10 searches per month.</p>
+                <a href="/login?redirect=${redir}" class="gate-btn">Sign In</a>
+                <a href="/register?redirect=${redir}" class="gate-btn gate-btn-secondary">Create Account</a>
+              </div>
+            `;
+            return;
+          }
+          if (searchUsage && !searchUsage.is_unlimited && searchUsage.searches_used >= searchUsage.search_limit) {
+            statusEl.textContent = '';
+            totalEl.textContent = '';
+            $('#results').innerHTML = `
+              <div class="gate-block">
+                <h3>Monthly search limit reached</h3>
+                <p>You've used all ${searchUsage.search_limit} of your free searches this month. Your limit resets on the 1st of next month.</p>
+                <a href="/account" class="gate-btn">View Account</a>
+              </div>
+            `;
+            return;
+          }
+        }
+
         statusEl.innerHTML = '<div class="loading-text-gradient">Searching...</div>'; // Use the gradient class
         startLoadingBar();
 
-        state.q = normalizeInput(qEl.value);
+        state.q = inputQuery;
         state.limit = +(limitEl.value || 20);
         state.offset = (page-1) * state.limit;
         state.sort = (sortEl.value || 'newest');
@@ -1123,8 +1156,8 @@ async function runSearch(page=1, bypassAdjudicatorCheck = false){
 
         renderPagination(page);
 
-        // Update usage counter after successful search
-        if (gateEnabled && searchUsage && !searchUsage.is_unlimited) {
+        // Update usage counter after successful search (only for real queries)
+        if (state.q && gateEnabled && searchUsage && !searchUsage.is_unlimited) {
           searchUsage.searches_used++;
           renderGateUI();
         }

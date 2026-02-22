@@ -1055,14 +1055,14 @@ def search_fast(
     # --- END: User Identification ---
 
     # --- START: Search Gate Enforcement ---
-    if SEARCH_GATE_ENABLED:
+    # Only enforce gate on actual searches (non-empty query), not default page loads
+    if SEARCH_GATE_ENABLED and q:
         if user_email == "Anonymous":
-            if q:
-                purchases_con.execute(
-                    "INSERT INTO search_logs (user_email, search_query, was_blocked) VALUES (?, ?, 1)",
-                    ("Anonymous", q)
-                )
-                purchases_con.commit()
+            purchases_con.execute(
+                "INSERT INTO search_logs (user_email, search_query, was_blocked) VALUES (?, ?, 1)",
+                ("Anonymous", q)
+            )
+            purchases_con.commit()
             return JSONResponse(
                 status_code=401,
                 content={
@@ -1090,12 +1090,11 @@ def search_fast(
             searches_used = count_row["cnt"] if count_row else 0
 
             if searches_used >= 10:
-                if q:
-                    purchases_con.execute(
-                        "INSERT INTO search_logs (user_email, search_query, was_blocked) VALUES (?, ?, 1)",
-                        (user_email, q)
-                    )
-                    purchases_con.commit()
+                purchases_con.execute(
+                    "INSERT INTO search_logs (user_email, search_query, was_blocked) VALUES (?, ?, 1)",
+                    (user_email, q)
+                )
+                purchases_con.commit()
                 return JSONResponse(
                     status_code=429,
                     content={
