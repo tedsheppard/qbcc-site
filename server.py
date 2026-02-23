@@ -3019,12 +3019,31 @@ async def stripe_webhook(request: Request):
         cancel_at = data.get("canceled_at")
         cancelled_at = datetime.utcfromtimestamp(cancel_at).isoformat() if cancel_at else None
 
-        purchases_con.execute("""
-            UPDATE subscriptions
-            SET status = ?, current_period_start = ?, current_period_end = ?,
-                cancelled_at = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE stripe_subscription_id = ?
-        """, (db_status, period_start, period_end, cancelled_at, stripe_sub_id))
+        # Check if subscription exists in DB; if not, create it (inline payment flow)
+        existing = purchases_con.execute(
+            "SELECT id FROM subscriptions WHERE stripe_subscription_id = ?", (stripe_sub_id,)
+        ).fetchone()
+
+        if existing:
+            purchases_con.execute("""
+                UPDATE subscriptions
+                SET status = ?, current_period_start = ?, current_period_end = ?,
+                    cancelled_at = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE stripe_subscription_id = ?
+            """, (db_status, period_start, period_end, cancelled_at, stripe_sub_id))
+        else:
+            # Subscription created via inline payment — insert new row
+            user_email = data.get("metadata", {}).get("user_email", "")
+            plan_type = data.get("metadata", {}).get("plan_type", "monthly")
+            stripe_cust_id = data.get("customer")
+            if user_email:
+                purchases_con.execute("""
+                    INSERT INTO subscriptions
+                    (user_email, plan_type, payment_method, status, stripe_subscription_id, stripe_customer_id, current_period_start, current_period_end)
+                    VALUES (?, ?, 'stripe', ?, ?, ?, ?, ?)
+                """, (user_email, plan_type, db_status, stripe_sub_id, stripe_cust_id, period_start, period_end))
+                print(f"[Webhook] Subscription created via inline payment for {user_email} ({plan_type})")
+
         purchases_con.commit()
         print(f"[Webhook] Subscription {stripe_sub_id} updated to {db_status}")
 
@@ -3063,6 +3082,45 @@ async def stripe_webhook(request: Request):
             print(f"[Webhook] Invoice paid, subscription {stripe_sub_id} renewed")
 
     return {"status": "ok"}
+
+# --- Create subscription with inline payment (Stripe Elements) ---
+
+@app.post("/create-subscription-intent")
+async def create_subscription_intent(
+    plan: str = Form(...),
+    current_user: dict = Depends(get_current_purchase_user)
+):
+    """Creates a Stripe Subscription with incomplete payment, returns client_secret for inline card confirmation."""
+    if plan not in ("monthly", "annual"):
+        raise HTTPException(status_code=400, detail="Invalid plan. Must be 'monthly' or 'annual'.")
+
+    price_id = STRIPE_MONTHLY_PRICE_ID if plan == "monthly" else STRIPE_ANNUAL_PRICE_ID
+    if not price_id:
+        raise HTTPException(status_code=500, detail="Stripe price not configured for this plan.")
+
+    try:
+        customer = get_or_create_stripe_customer(current_user)
+
+        subscription = stripe.Subscription.create(
+            customer=customer.id,
+            items=[{"price": price_id}],
+            payment_behavior="default_incomplete",
+            payment_settings={"save_default_payment_method": "on_subscription"},
+            expand=["latest_invoice.payment_intent"],
+            metadata={
+                "user_email": current_user["email"],
+                "plan_type": plan
+            }
+        )
+
+        client_secret = subscription.latest_invoice.payment_intent.client_secret
+        return {
+            "subscription_id": subscription.id,
+            "client_secret": client_secret
+        }
+    except stripe.error.StripeError as e:
+        print(f"Stripe subscription intent error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 # --- Cancel subscription ---
 
@@ -4397,7 +4455,8 @@ async def serve_html_page(path_name: str):
         "api/", "admin/", "check-adjudicator-access/", "create-payment-intent/",
         "purchase-register", "purchase-login", "purchase-me", "update-profile",
         "my-purchases", "api/chat", "stripe-webhook", "create-checkout-session",
-        "cancel-subscription", "request-invoice-subscription", "create-customer-portal-session"
+        "cancel-subscription", "request-invoice-subscription", "create-customer-portal-session",
+        "create-subscription-intent"
     ]
     if any(path_name.startswith(prefix) for prefix in api_prefixes):
         raise HTTPException(status_code=404, detail="API endpoint not found")
