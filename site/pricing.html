@@ -94,7 +94,6 @@
     margin-bottom: 40px;
   }
 
-  /* Already subscribed / pending states */
   .status-card {
     background: #e8f8f1;
     border: 1px solid #00c97c;
@@ -107,7 +106,6 @@
   .status-card p { margin: 0; color: #006644; }
   .status-card a { color: #008a5c; font-weight: 600; }
 
-  /* Pricing cards */
   .pricing-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -187,77 +185,11 @@
     transition: background-color 0.2s;
     text-align: center;
     box-sizing: border-box;
+    text-decoration: none;
   }
   .btn:hover { background: #00a568; }
   .btn:disabled { background: #ccc; cursor: not-allowed; }
-  .btn-outline {
-    background: white;
-    color: #008a5c;
-    border: 2px solid #00c97c;
-  }
-  .btn-outline:hover {
-    background: #e8f8f1;
-  }
-  .invoice-link {
-    display: block;
-    text-align: center;
-    margin-top: 10px;
-    color: #666;
-    font-size: 13px;
-    cursor: pointer;
-    text-decoration: underline;
-  }
-  .invoice-link:hover { color: #008a5c; }
 
-  /* Invoice Modal */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-overlay.show { display: flex; }
-  .modal {
-    background: white;
-    border-radius: 12px;
-    padding: 30px;
-    max-width: 500px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-  .modal h3 { margin: 0 0 20px; font-size: 20px; }
-  .modal .form-group { margin-bottom: 15px; }
-  .modal .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: #555; }
-  .modal .form-group input,
-  .modal .form-group textarea,
-  .modal .form-group select {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 14px;
-    box-sizing: border-box;
-  }
-  .modal .form-group textarea { resize: vertical; min-height: 60px; }
-  .modal .form-group input:focus,
-  .modal .form-group textarea:focus { outline: none; border-color: #00c97c; }
-  .modal-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-  }
-  .modal-actions .btn { flex: 1; }
-  .btn-cancel {
-    background: #e9ecef;
-    color: #333;
-  }
-  .btn-cancel:hover { background: #dee2e6; }
-
-  /* FAQ */
   .faq-section { margin-bottom: 40px; }
   .faq-section h2 {
     font-size: 22px;
@@ -282,17 +214,6 @@
     font-size: 14px;
   }
 
-  /* Free tier */
-  .free-tier {
-    text-align: center;
-    padding: 20px;
-    background: #f0f0f0;
-    border-radius: 8px;
-    margin-bottom: 40px;
-  }
-  .free-tier p { margin: 0; color: #555; }
-
-  /* Footer */
   .footer {
     background: #fcfcfc;
     color: #333;
@@ -357,7 +278,6 @@
   <h1 class="page-title">Unlimited Access to Sopal</h1>
   <p class="page-subtitle">Unlock unlimited searches, full adjudicator insights, and AI decision summaries.</p>
 
-  <!-- Dynamic status messages (hidden by default) -->
   <div id="already-subscribed" class="status-card" style="display:none;">
     <h3>You're already subscribed</h3>
     <p>Manage your subscription from your <a href="/account?tab=subscription">account settings</a>.</p>
@@ -368,24 +288,19 @@
     <p>Your invoice subscription request is being reviewed. We'll email you within 1 business day.</p>
   </div>
 
-  <div class="free-tier">
-    <p>Already getting started? Every account includes <strong>10 free searches per month</strong> at no cost.</p>
-  </div>
-
   <div id="pricing-cards" class="pricing-grid">
-    <!-- Monthly -->
+    <!-- Weekly -->
     <div class="pricing-card">
-      <div class="plan-name">Monthly</div>
+      <div class="plan-name">Weekly</div>
       <div class="plan-price">$12.95<span>/week</span></div>
-      <div class="plan-billing">Billed monthly at $56.12</div>
+      <div class="plan-billing">Billed weekly or monthly</div>
       <ul class="plan-features">
         <li>Unlimited decision searches</li>
         <li>Full adjudicator insights access</li>
         <li>AI-powered decision summaries</li>
         <li>Cancel anytime</li>
       </ul>
-      <button class="btn" onclick="startCheckout('monthly')">Subscribe Monthly</button>
-      <a class="invoice-link" onclick="openInvoiceModal('monthly')">Pay by invoice instead</a>
+      <a href="/checkout?plan=weekly" class="btn" id="btn-weekly">Select Weekly Plan</a>
     </div>
 
     <!-- Annual (highlighted) -->
@@ -398,19 +313,17 @@
         <li>Unlimited decision searches</li>
         <li>Full adjudicator insights access</li>
         <li>AI-powered decision summaries</li>
-        <li>Save ~20% vs monthly</li>
+        <li>Save ~20% vs weekly</li>
       </ul>
-      <button class="btn" onclick="startCheckout('annual')">Subscribe Annually</button>
-      <a class="invoice-link" onclick="openInvoiceModal('annual')">Pay by invoice instead</a>
+      <a href="/checkout?plan=annual" class="btn" id="btn-annual">Select Annual Plan</a>
     </div>
   </div>
 
-  <!-- FAQ -->
   <div class="faq-section">
     <h2>Frequently Asked Questions</h2>
     <div class="faq-item">
       <h4>What payment methods do you accept?</h4>
-      <p>We accept all major credit and debit cards (Visa, Mastercard, Amex) via Stripe. For firms that prefer to pay by invoice, select the "Pay by invoice" option and we'll set up your account after approval.</p>
+      <p>We accept all major credit and debit cards (Visa, Mastercard, Amex) via Stripe. For firms that prefer to pay by invoice, you can choose that option on the payment setup page.</p>
     </div>
     <div class="faq-item">
       <h4>Can I cancel at any time?</h4>
@@ -418,11 +331,7 @@
     </div>
     <div class="faq-item">
       <h4>How does the invoice process work?</h4>
-      <p>Click "Pay by invoice", fill in your firm's billing details, and submit the request. An admin will review it within 1 business day. Once approved, your access is activated immediately and an invoice is sent to your accounts email.</p>
-    </div>
-    <div class="faq-item">
-      <h4>What's included in the free tier?</h4>
-      <p>Every registered account gets 10 free decision searches per month. To access adjudicator insights or exceed the search limit, you'll need a subscription.</p>
+      <p>Select your plan, choose "Pay by Invoice" on the payment page, and fill in your firm's billing details. An admin will review it within 1 business day. Once approved, your access is activated immediately.</p>
     </div>
     <div class="faq-item">
       <h4>Do I need an account to subscribe?</h4>
@@ -430,41 +339,6 @@
     </div>
   </div>
 </main>
-
-<!-- Invoice Request Modal -->
-<div id="invoice-modal" class="modal-overlay">
-  <div class="modal">
-    <h3>Request Invoice Subscription</h3>
-    <form id="invoice-form">
-      <input type="hidden" id="invoice-plan" value="">
-      <div class="form-group">
-        <label>Plan</label>
-        <input type="text" id="invoice-plan-display" disabled>
-      </div>
-      <div class="form-group">
-        <label for="invoice-accounts-email">Accounts/Billing Email *</label>
-        <input type="email" id="invoice-accounts-email" required placeholder="accounts@yourfirm.com.au">
-      </div>
-      <div class="form-group">
-        <label>Firm Name</label>
-        <input type="text" id="invoice-firm" disabled>
-      </div>
-      <div class="form-group">
-        <label>ABN</label>
-        <input type="text" id="invoice-abn" disabled>
-      </div>
-      <div class="form-group">
-        <label for="invoice-notes">Notes (optional)</label>
-        <textarea id="invoice-notes" placeholder="Any special billing instructions..."></textarea>
-      </div>
-      <div id="invoice-feedback" style="display:none; padding:10px; border-radius:6px; margin-bottom:10px;"></div>
-      <div class="modal-actions">
-        <button type="button" class="btn btn-cancel" onclick="closeInvoiceModal()">Cancel</button>
-        <button type="submit" class="btn" id="invoice-submit-btn">Submit Request</button>
-      </div>
-    </form>
-  </div>
-</div>
 
 <footer class="footer">
   <div class="footer-content">
@@ -490,23 +364,14 @@
 
 <script>
 const token = localStorage.getItem('purchase_token');
-let userData = null;
 
 async function initPricingPage() {
-  if (!token) return; // Cards stay visible for non-logged-in users
+  if (!token) return;
 
   const headers = { 'Authorization': `Bearer ${token}` };
 
   try {
-    // Load user data and subscription status in parallel
-    const [userRes, subRes] = await Promise.all([
-      fetch('/purchase-me', { headers }),
-      fetch('/api/subscription-status', { headers })
-    ]);
-
-    if (userRes.ok) {
-      userData = await userRes.json();
-    }
+    const subRes = await fetch('/api/subscription-status', { headers });
 
     if (subRes.ok) {
       const subData = await subRes.json();
@@ -527,117 +392,6 @@ async function initPricingPage() {
     console.warn('Could not load pricing state:', e);
   }
 }
-
-async function startCheckout(plan) {
-  if (!token) {
-    window.location.href = '/login?redirect=' + encodeURIComponent('/pricing');
-    return;
-  }
-
-  const btn = event.target;
-  btn.disabled = true;
-  btn.textContent = 'Redirecting...';
-
-  try {
-    const formData = new FormData();
-    formData.append('plan', plan);
-
-    const res = await fetch('/create-checkout-session', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: formData
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || 'Failed to create checkout session');
-    }
-
-    const data = await res.json();
-    window.location.href = data.checkout_url;
-  } catch (e) {
-    alert('Error: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = plan === 'monthly' ? 'Subscribe Monthly' : 'Subscribe Annually';
-  }
-}
-
-function openInvoiceModal(plan) {
-  if (!token) {
-    window.location.href = '/login?redirect=' + encodeURIComponent('/pricing');
-    return;
-  }
-
-  document.getElementById('invoice-plan').value = plan;
-  document.getElementById('invoice-plan-display').value = plan === 'monthly' ? 'Monthly — $56.12/month' : 'Annual — $580/year';
-
-  if (userData) {
-    document.getElementById('invoice-firm').value = userData.firm_name || '';
-    document.getElementById('invoice-abn').value = userData.abn || '';
-  }
-
-  document.getElementById('invoice-feedback').style.display = 'none';
-  document.getElementById('invoice-modal').classList.add('show');
-}
-
-function closeInvoiceModal() {
-  document.getElementById('invoice-modal').classList.remove('show');
-}
-
-document.getElementById('invoice-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('invoice-submit-btn');
-  const feedback = document.getElementById('invoice-feedback');
-  btn.disabled = true;
-  btn.textContent = 'Submitting...';
-  feedback.style.display = 'none';
-
-  try {
-    const formData = new FormData();
-    formData.append('plan', document.getElementById('invoice-plan').value);
-    formData.append('accounts_email', document.getElementById('invoice-accounts-email').value);
-    formData.append('notes', document.getElementById('invoice-notes').value);
-
-    const res = await fetch('/request-invoice-subscription', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: formData
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.detail || 'Request failed');
-    }
-
-    feedback.style.display = 'block';
-    feedback.style.background = '#e8f8f1';
-    feedback.style.color = '#006644';
-    feedback.textContent = data.message;
-
-    setTimeout(() => {
-      closeInvoiceModal();
-      document.getElementById('pending-request').style.display = 'block';
-      document.getElementById('pricing-cards').style.display = 'none';
-    }, 2000);
-
-  } catch (err) {
-    feedback.style.display = 'block';
-    feedback.style.background = '#f8d7da';
-    feedback.style.color = '#721c24';
-    feedback.textContent = err.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Submit Request';
-  }
-});
-
-// Close modal on outside click
-document.getElementById('invoice-modal').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('invoice-modal')) {
-    closeInvoiceModal();
-  }
-});
 
 initPricingPage();
 </script>
