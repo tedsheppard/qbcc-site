@@ -407,7 +407,7 @@
         <div id="card-element"></div>
         <div id="card-errors" role="alert"></div>
         <div id="stripe-feedback" class="feedback-msg"></div>
-        <button type="submit" class="btn" id="stripe-btn">Subscribe Now</button>
+        <button type="submit" class="btn" id="stripe-btn">Process Payment</button>
       </form>
       <div class="secure-note">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -659,7 +659,8 @@ document.getElementById('stripe-form').addEventListener('submit', async (e) => {
   const feedback = document.getElementById('stripe-feedback');
   const cardErrors = document.getElementById('card-errors');
   feedback.className = 'feedback-msg';
-  feedback.style.display = 'none';
+  feedback.textContent = '';
+  feedback.removeAttribute('style');
   cardErrors.textContent = '';
   btn.disabled = true;
   btn.textContent = 'Processing...';
@@ -669,6 +670,7 @@ document.getElementById('stripe-form').addEventListener('submit', async (e) => {
     const formData = new FormData();
     formData.append('plan', backendPlan);
 
+    console.log('[Checkout] Creating subscription intent for plan:', backendPlan);
     const res = await fetch('/create-subscription-intent', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
@@ -676,14 +678,21 @@ document.getElementById('stripe-form').addEventListener('submit', async (e) => {
     });
 
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || 'Failed to create subscription');
+      let errMsg = 'Failed to create subscription';
+      try {
+        const err = await res.json();
+        errMsg = err.detail || errMsg;
+      } catch (parseErr) {
+        errMsg = `Server error (${res.status})`;
+      }
+      throw new Error(errMsg);
     }
 
-    const { client_secret } = await res.json();
+    const data = await res.json();
+    console.log('[Checkout] Got client_secret, confirming payment...');
 
     // Step 2: Confirm the payment with the card element
-    const { error, paymentIntent } = await stripe.confirmCardPayment(client_secret, {
+    const { error, paymentIntent } = await stripe.confirmCardPayment(data.client_secret, {
       payment_method: { card: cardElement }
     });
 
@@ -692,8 +701,7 @@ document.getElementById('stripe-form').addEventListener('submit', async (e) => {
     }
 
     if (paymentIntent.status === 'succeeded') {
-      // Show success message
-      feedback.innerHTML = 'Payment successful! Your subscription is now active. Redirecting to your account...';
+      feedback.textContent = 'Payment successful! Your subscription is now active. Redirecting to your account...';
       feedback.className = 'feedback-msg success';
       btn.style.display = 'none';
 
@@ -702,10 +710,11 @@ document.getElementById('stripe-form').addEventListener('submit', async (e) => {
       }, 2500);
     }
   } catch (err) {
+    console.error('[Checkout] Payment error:', err);
     feedback.textContent = err.message;
     feedback.className = 'feedback-msg error';
     btn.disabled = false;
-    btn.textContent = 'Subscribe Now';
+    btn.textContent = 'Process Payment';
   }
 });
 
