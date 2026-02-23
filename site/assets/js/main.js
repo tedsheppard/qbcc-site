@@ -31,7 +31,8 @@ async function updateNavUI() {
         });
 
         if (res.status === 401) {
-            console.warn("updateNavUI: 401 Unauthorized — showing logged-out UI but keeping token for now");
+            console.warn("updateNavUI: 401 Unauthorized — clearing stale token");
+            localStorage.removeItem('purchase_token');
             renderLoggedOutNav(navContainer);
             return;
         }
