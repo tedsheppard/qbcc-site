@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="utf-8">
+  <title>Sopal – Pricing</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body {
+    font-family: "Manrope", sans-serif;
+    margin: 0;
+    background: #f8f9fa;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Space Grotesk", sans-serif;
+    letter-spacing: -0.02em;
+  }
+  .header {
+    background: #fdfdfd;
+    padding: 20px 25px;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-content {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .logo { height: 31px; margin-right: 20px; }
+  .nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+  }
+  .nav-links a {
+    color: black;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: #00c97c; }
+  .nav-links a.active { color: #008a5c; font-weight: 600; }
+
+  #user-profile-nav { margin-left: 20px; position: relative; }
+  .profile-avatar {
+    width: 36px; height: 36px; border-radius: 50%; background-color: #00c97c;
+    color: white; display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 14px; cursor: pointer;
+    border: 2px solid transparent; transition: border-color 0.2s;
+  }
+  .profile-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .profile-avatar:hover { border-color: #00a568; }
+  .profile-dropdown {
+    display: none; position: absolute; top: 45px; right: 0; background: white;
+    border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border: 1px solid #eee; width: 200px; overflow: hidden; z-index: 110;
+  }
+  .profile-dropdown.show { display: block; }
+  .dropdown-item { display: block; padding: 12px 15px; color: #333; text-decoration: none; font-size: 14px; }
+  .dropdown-item:hover { background-color: #f8f9fa; }
+  .dropdown-divider { height: 1px; background-color: #eee; margin: 5px 0; }
+
+  main {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 25px;
+  }
+  .page-title {
+    text-align: center;
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+  .page-subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 16px;
+    margin-bottom: 40px;
+  }
+
+  /* Already subscribed / pending states */
+  .status-card {
+    background: #e8f8f1;
+    border: 1px solid #00c97c;
+    border-radius: 8px;
+    padding: 25px 30px;
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  .status-card h3 { margin: 0 0 8px; color: #006644; }
+  .status-card p { margin: 0; color: #006644; }
+  .status-card a { color: #008a5c; font-weight: 600; }
+
+  /* Pricing cards */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-bottom: 50px;
+  }
+  .pricing-card {
+    background: #fdfdfd;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    padding: 30px;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .pricing-card:hover { border-color: #00c97c; }
+  .pricing-card.highlighted {
+    border-color: #00c97c;
+    box-shadow: 0 4px 20px rgba(0,201,124,0.15);
+  }
+  .popular-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #00c97c;
+    color: white;
+    padding: 4px 16px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .plan-name {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  .plan-price {
+    font-size: 36px;
+    font-weight: 700;
+    color: #008a5c;
+    margin-bottom: 4px;
+  }
+  .plan-price span { font-size: 16px; font-weight: 400; color: #666; }
+  .plan-billing {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+  .plan-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 25px;
+  }
+  .plan-features li {
+    padding: 6px 0;
+    font-size: 14px;
+    color: #555;
+  }
+  .plan-features li::before {
+    content: "\2713";
+    color: #00c97c;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  .btn {
+    display: block;
+    width: 100%;
+    background: #00c97c;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+    text-align: center;
+    box-sizing: border-box;
+  }
+  .btn:hover { background: #00a568; }
+  .btn:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-outline {
+    background: white;
+    color: #008a5c;
+    border: 2px solid #00c97c;
+  }
+  .btn-outline:hover {
+    background: #e8f8f1;
+  }
+  .invoice-link {
+    display: block;
+    text-align: center;
+    margin-top: 10px;
+    color: #666;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .invoice-link:hover { color: #008a5c; }
+
+  /* Invoice Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal h3 { margin: 0 0 20px; font-size: 20px; }
+  .modal .form-group { margin-bottom: 15px; }
+  .modal .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: #555; }
+  .modal .form-group input,
+  .modal .form-group textarea,
+  .modal .form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+  .modal .form-group textarea { resize: vertical; min-height: 60px; }
+  .modal .form-group input:focus,
+  .modal .form-group textarea:focus { outline: none; border-color: #00c97c; }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .modal-actions .btn { flex: 1; }
+  .btn-cancel {
+    background: #e9ecef;
+    color: #333;
+  }
+  .btn-cancel:hover { background: #dee2e6; }
+
+  /* FAQ */
+  .faq-section { margin-bottom: 40px; }
+  .faq-section h2 {
+    font-size: 22px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .faq-item {
+    background: #fdfdfd;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+  .faq-item h4 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    color: #333;
+  }
+  .faq-item p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+  }
+
+  /* Free tier */
+  .free-tier {
+    text-align: center;
+    padding: 20px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    margin-bottom: 40px;
+  }
+  .free-tier p { margin: 0; color: #555; }
+
+  /* Footer */
+  .footer {
+    background: #fcfcfc;
+    color: #333;
+    padding: 30px 25px 15px;
+    border-top: 1px solid #ddd;
+  }
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    max-width: 1000px;
+    margin: auto;
+  }
+  .footer-left { max-width: 350px; }
+  .footer-logo { height: 24px; margin-bottom: 10px; }
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 30px;
+  }
+  .footer-links a { font-size: 13px; color: #333; text-decoration: none; }
+  .footer-links a:hover { color: #00c97c; }
+  .footer-bottom {
+    text-align: center;
+    border-top: 1px solid #eee;
+    margin-top: 20px;
+    padding-top: 15px;
+    font-size: 0.85em;
+    color: #666;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media (max-width: 768px) {
+    .pricing-grid { grid-template-columns: 1fr; }
+    .header-content { flex-direction: column; gap: 16px; }
+    .nav-links { margin: 0; flex-wrap: wrap; justify-content: center; }
+    .footer-content { flex-direction: column; align-items: center; text-align: center; gap: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-content">
+    <a href="/">
+      <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+    </a>
+    <div class="nav-links">
+      <a href="decision-search">Search</a>
+      <a href="adjudicators">Adjudicators</a>
+      <a href="interest-calculator">Interest Calculator</a>
+      <a href="due-date-calculator">Due Date Calculator</a>
+      <a href="pricing" class="active">Pricing</a>
+      <a href="feedback">Feedback</a>
+    </div>
+    <div id="user-profile-nav"></div>
+  </div>
+</div>
+
+<main>
+  <h1 class="page-title">Unlimited Access to Sopal</h1>
+  <p class="page-subtitle">Unlock unlimited searches, full adjudicator insights, and AI decision summaries.</p>
+
+  <!-- Dynamic status messages (hidden by default) -->
+  <div id="already-subscribed" class="status-card" style="display:none;">
+    <h3>You're already subscribed</h3>
+    <p>Manage your subscription from your <a href="/account?tab=subscription">account settings</a>.</p>
+  </div>
+
+  <div id="pending-request" class="status-card" style="display:none;">
+    <h3>Invoice request pending</h3>
+    <p>Your invoice subscription request is being reviewed. We'll email you within 1 business day.</p>
+  </div>
+
+  <div class="free-tier">
+    <p>Already getting started? Every account includes <strong>10 free searches per month</strong> at no cost.</p>
+  </div>
+
+  <div id="pricing-cards" class="pricing-grid">
+    <!-- Monthly -->
+    <div class="pricing-card">
+      <div class="plan-name">Monthly</div>
+      <div class="plan-price">$12.95<span>/week</span></div>
+      <div class="plan-billing">Billed monthly at $56.12</div>
+      <ul class="plan-features">
+        <li>Unlimited decision searches</li>
+        <li>Full adjudicator insights access</li>
+        <li>AI-powered decision summaries</li>
+        <li>Cancel anytime</li>
+      </ul>
+      <button class="btn" onclick="startCheckout('monthly')">Subscribe Monthly</button>
+      <a class="invoice-link" onclick="openInvoiceModal('monthly')">Pay by invoice instead</a>
+    </div>
+
+    <!-- Annual (highlighted) -->
+    <div class="pricing-card highlighted">
+      <div class="popular-badge">Best Value</div>
+      <div class="plan-name">Annual</div>
+      <div class="plan-price">$580<span>/year</span></div>
+      <div class="plan-billing">Just $11.15/week &mdash; save ~20%</div>
+      <ul class="plan-features">
+        <li>Unlimited decision searches</li>
+        <li>Full adjudicator insights access</li>
+        <li>AI-powered decision summaries</li>
+        <li>Save ~20% vs monthly</li>
+      </ul>
+      <button class="btn" onclick="startCheckout('annual')">Subscribe Annually</button>
+      <a class="invoice-link" onclick="openInvoiceModal('annual')">Pay by invoice instead</a>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="faq-section">
+    <h2>Frequently Asked Questions</h2>
+    <div class="faq-item">
+      <h4>What payment methods do you accept?</h4>
+      <p>We accept all major credit and debit cards (Visa, Mastercard, Amex) via Stripe. For firms that prefer to pay by invoice, select the "Pay by invoice" option and we'll set up your account after approval.</p>
+    </div>
+    <div class="faq-item">
+      <h4>Can I cancel at any time?</h4>
+      <p>Yes. You can cancel your subscription at any time from your account settings. You'll retain access until the end of your current billing period.</p>
+    </div>
+    <div class="faq-item">
+      <h4>How does the invoice process work?</h4>
+      <p>Click "Pay by invoice", fill in your firm's billing details, and submit the request. An admin will review it within 1 business day. Once approved, your access is activated immediately and an invoice is sent to your accounts email.</p>
+    </div>
+    <div class="faq-item">
+      <h4>What's included in the free tier?</h4>
+      <p>Every registered account gets 10 free decision searches per month. To access adjudicator insights or exceed the search limit, you'll need a subscription.</p>
+    </div>
+    <div class="faq-item">
+      <h4>Do I need an account to subscribe?</h4>
+      <p>Yes. You'll need to <a href="/register" style="color:#008a5c;font-weight:600;">create an account</a> first, then return to this page to subscribe.</p>
+    </div>
+  </div>
+</main>
+
+<!-- Invoice Request Modal -->
+<div id="invoice-modal" class="modal-overlay">
+  <div class="modal">
+    <h3>Request Invoice Subscription</h3>
+    <form id="invoice-form">
+      <input type="hidden" id="invoice-plan" value="">
+      <div class="form-group">
+        <label>Plan</label>
+        <input type="text" id="invoice-plan-display" disabled>
+      </div>
+      <div class="form-group">
+        <label for="invoice-accounts-email">Accounts/Billing Email *</label>
+        <input type="email" id="invoice-accounts-email" required placeholder="accounts@yourfirm.com.au">
+      </div>
+      <div class="form-group">
+        <label>Firm Name</label>
+        <input type="text" id="invoice-firm" disabled>
+      </div>
+      <div class="form-group">
+        <label>ABN</label>
+        <input type="text" id="invoice-abn" disabled>
+      </div>
+      <div class="form-group">
+        <label for="invoice-notes">Notes (optional)</label>
+        <textarea id="invoice-notes" placeholder="Any special billing instructions..."></textarea>
+      </div>
+      <div id="invoice-feedback" style="display:none; padding:10px; border-radius:6px; margin-bottom:10px;"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-cancel" onclick="closeInvoiceModal()">Cancel</button>
+        <button type="submit" class="btn" id="invoice-submit-btn">Submit Request</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-left">
+      <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+      <p>An intelligent search tool for adjudication decisions under the BIF Act 2017 (Qld)</p>
+    </div>
+    <div class="footer-links">
+      <a href="adjudicators">Adjudicators</a>
+      <a href="decision-search">Search</a>
+      <a href="interest-calculator">Interest Calculator</a>
+      <a href="due-date-calculator">Due Date Calculator</a>
+      <a href="feedback">Feedback</a>
+      <a href="how-to">How-To Guide</a>
+      <a href="privacy">Privacy</a>
+      <a href="terms">Terms of Use</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2026 Sopal Australia. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+const token = localStorage.getItem('purchase_token');
+let userData = null;
+
+async function initPricingPage() {
+  if (!token) return; // Cards stay visible for non-logged-in users
+
+  const headers = { 'Authorization': `Bearer ${token}` };
+
+  try {
+    // Load user data and subscription status in parallel
+    const [userRes, subRes] = await Promise.all([
+      fetch('/purchase-me', { headers }),
+      fetch('/api/subscription-status', { headers })
+    ]);
+
+    if (userRes.ok) {
+      userData = await userRes.json();
+    }
+
+    if (subRes.ok) {
+      const subData = await subRes.json();
+
+      if (subData.has_subscription) {
+        document.getElementById('already-subscribed').style.display = 'block';
+        document.getElementById('pricing-cards').style.display = 'none';
+        return;
+      }
+
+      if (subData.pending_invoice_request) {
+        document.getElementById('pending-request').style.display = 'block';
+        document.getElementById('pricing-cards').style.display = 'none';
+        return;
+      }
+    }
+  } catch (e) {
+    console.warn('Could not load pricing state:', e);
+  }
+}
+
+async function startCheckout(plan) {
+  if (!token) {
+    window.location.href = '/login?redirect=' + encodeURIComponent('/pricing');
+    return;
+  }
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Redirecting...';
+
+  try {
+    const formData = new FormData();
+    formData.append('plan', plan);
+
+    const res = await fetch('/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Failed to create checkout session');
+    }
+
+    const data = await res.json();
+    window.location.href = data.checkout_url;
+  } catch (e) {
+    alert('Error: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = plan === 'monthly' ? 'Subscribe Monthly' : 'Subscribe Annually';
+  }
+}
+
+function openInvoiceModal(plan) {
+  if (!token) {
+    window.location.href = '/login?redirect=' + encodeURIComponent('/pricing');
+    return;
+  }
+
+  document.getElementById('invoice-plan').value = plan;
+  document.getElementById('invoice-plan-display').value = plan === 'monthly' ? 'Monthly — $56.12/month' : 'Annual — $580/year';
+
+  if (userData) {
+    document.getElementById('invoice-firm').value = userData.firm_name || '';
+    document.getElementById('invoice-abn').value = userData.abn || '';
+  }
+
+  document.getElementById('invoice-feedback').style.display = 'none';
+  document.getElementById('invoice-modal').classList.add('show');
+}
+
+function closeInvoiceModal() {
+  document.getElementById('invoice-modal').classList.remove('show');
+}
+
+document.getElementById('invoice-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('invoice-submit-btn');
+  const feedback = document.getElementById('invoice-feedback');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+  feedback.style.display = 'none';
+
+  try {
+    const formData = new FormData();
+    formData.append('plan', document.getElementById('invoice-plan').value);
+    formData.append('accounts_email', document.getElementById('invoice-accounts-email').value);
+    formData.append('notes', document.getElementById('invoice-notes').value);
+
+    const res = await fetch('/request-invoice-subscription', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.detail || 'Request failed');
+    }
+
+    feedback.style.display = 'block';
+    feedback.style.background = '#e8f8f1';
+    feedback.style.color = '#006644';
+    feedback.textContent = data.message;
+
+    setTimeout(() => {
+      closeInvoiceModal();
+      document.getElementById('pending-request').style.display = 'block';
+      document.getElementById('pricing-cards').style.display = 'none';
+    }, 2000);
+
+  } catch (err) {
+    feedback.style.display = 'block';
+    feedback.style.background = '#f8d7da';
+    feedback.style.color = '#721c24';
+    feedback.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Submit Request';
+  }
+});
+
+// Close modal on outside click
+document.getElementById('invoice-modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('invoice-modal')) {
+    closeInvoiceModal();
+  }
+});
+
+initPricingPage();
+</script>
+
+<script src="/assets/js/main.js"></script>
+</body>
+</html>

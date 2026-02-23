@@ -193,7 +193,7 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const loginForm = document.getElementById('loginForm');
     const feedbackDiv = document.getElementById('feedbackDiv');
     const urlParams = new URLSearchParams(window.location.search);
@@ -205,10 +205,24 @@ document.addEventListener('DOMContentLoaded', () => {
         registerLink.href = `/register?redirect=${encodeURIComponent(redirectUrl)}`;
     }
 
-    // Redirect if already logged in, respecting the redirect URL
-    if (localStorage.getItem('purchase_token')) {
-        window.location.href = redirectUrl || '/account.html';
-        return;
+    // Redirect if already logged in (but validate the token first)
+    const existingToken = localStorage.getItem('purchase_token');
+    if (existingToken) {
+        try {
+            const checkRes = await fetch('/purchase-me', {
+                headers: { 'Authorization': `Bearer ${existingToken}` }
+            });
+            if (checkRes.ok) {
+                // Token is valid — redirect
+                window.location.href = redirectUrl || '/account.html';
+                return;
+            }
+            // Token is stale/expired — clear it and show login form
+            localStorage.removeItem('purchase_token');
+        } catch (e) {
+            // Network error — clear token and show login form
+            localStorage.removeItem('purchase_token');
+        }
     }
 
     loginForm.addEventListener('submit', async (e) => {

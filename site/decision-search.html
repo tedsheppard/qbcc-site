@@ -904,7 +904,7 @@ body.modal-open {
       <a href="adjudicators">Adjudicators</a>
       <a href="interest-calculator">Interest Calculator</a>
       <a href="due-date-calculator">Due Date Calculator</a>
-      <a href="how-to">How-To Guide</a>
+      <a href="pricing">Pricing</a>
       <a href="feedback">Feedback</a>
     </div>
     <div id="user-profile-nav"></div>
@@ -1067,7 +1067,7 @@ async function runSearch(page=1, bypassAdjudicatorCheck = false){
               <div class="gate-block">
                 <h3>Monthly search limit reached</h3>
                 <p>You've used all ${searchUsage.search_limit} of your free searches this month. Your limit resets on the 1st of next month.</p>
-                <a href="/account" class="gate-btn">View Account</a>
+                <a href="/pricing" class="gate-btn">Upgrade to Unlimited</a>
               </div>
             `;
             return;
@@ -1125,7 +1125,7 @@ async function runSearch(page=1, bypassAdjudicatorCheck = false){
               <div class="gate-block">
                 <h3>Monthly search limit reached</h3>
                 <p>You've used all ${errData.search_limit} of your free searches this month. Your limit resets on the 1st of next month.</p>
-                <a href="/account" class="gate-btn">View Account</a>
+                <a href="/pricing" class="gate-btn">Upgrade to Unlimited</a>
               </div>
             `;
             if (searchUsage) {
@@ -1506,7 +1506,7 @@ function renderGateUI() {
     if (remaining === 0) {
       banner.innerHTML = `
         <strong>0</strong> free searches remaining this month.
-        <a href="/account">View account</a> for upgrade options.
+        <a href="/pricing">Upgrade to Unlimited</a>
       `;
     } else {
       banner.innerHTML = `<strong>${remaining}</strong> of ${searchUsage.search_limit} free searches remaining this month.`;

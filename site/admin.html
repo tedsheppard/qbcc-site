@@ -69,6 +69,8 @@
       <button class="nav-btn" data-hash="searches">Search Activity</button>
       <button class="nav-btn" data-hash="adjudicators">Adjudicator Activity</button>
       <button class="nav-btn" data-hash="fullaccess">Full Access Privileges</button>
+      <button class="nav-btn" data-hash="invoicerequests">Invoice Requests</button>
+      <button class="nav-btn" data-hash="subscriptions">Subscriptions</button>
       <button class="nav-btn" data-hash="upload">Upload New Decisions</button>
       <button class="nav-btn" data-hash="backup">Backups</button>
     </aside>
@@ -78,6 +80,9 @@
         <section id="searches-section" class="admin-section"></section>
         <section id="adjudicators-section" class="admin-section"></section>
         <section id="fullaccess-section" class="admin-section"></section>
+
+        <section id="invoicerequests-section" class="admin-section"></section>
+        <section id="subscriptions-section" class="admin-section"></section>
 
         <section id="upload-section" class="admin-section">
             <div class="card">
@@ -226,6 +231,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'fullaccess':
                 fetchData('/admin/full-access-users', section, renderFullAccessUsers, 'Manage Full Access Privileges');
+                break;
+            case 'invoicerequests':
+                loadInvoiceRequestsSection();
+                break;
+            case 'subscriptions':
+                fetchData('/admin/all-subscriptions', section, renderSubscriptionsTable, 'All Subscriptions');
                 break;
         }
     }
@@ -381,7 +392,123 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.remove-btn').forEach(btn => btn.addEventListener('click', handleRemoveFullAccess));
     }
 
+    // --- Invoice Requests Section ---
+    async function loadInvoiceRequestsSection() {
+        const section = document.getElementById('invoicerequests-section');
+        section.innerHTML = '<div class="card"><h2>Invoice Requests</h2><p class="loading-message">Loading...</p></div>';
+
+        try {
+            const [pendingRes, allRes] = await Promise.all([
+                fetch('/admin/invoice-requests?status_filter=pending', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/admin/invoice-requests?status_filter=all', { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+
+            if (!pendingRes.ok || !allRes.ok) throw new Error('Failed to fetch invoice requests');
+            const pending = await pendingRes.json();
+            const all = await allRes.json();
+
+            let content = '<h2>Pending Invoice Requests</h2>';
+            if (pending.length === 0) {
+                content += '<p style="color:#666;">No pending requests.</p>';
+            } else {
+                content += '<div style="overflow-x:auto;"><table><thead><tr><th>ID</th><th>Email</th><th>Firm</th><th>ABN</th><th>Plan</th><th>Accounts Email</th><th>Notes</th><th>Submitted</th><th>Actions</th></tr></thead><tbody>';
+                pending.forEach(r => {
+                    content += `<tr>
+                        <td>${r.id}</td><td>${r.user_email}</td><td>${r.firm_name||''}</td>
+                        <td>${r.abn||''}</td><td>${r.plan_type}</td><td>${r.accounts_email||''}</td>
+                        <td>${r.notes||''}</td><td>${formatAEST(r.created_at)}</td>
+                        <td>
+                            <button class="btn-primary btn-small" onclick="handleApproveInvoice(${r.id})" style="margin-bottom:4px;">Approve</button>
+                            <button class="btn-primary btn-small btn-danger" onclick="handleRejectInvoice(${r.id})">Reject</button>
+                        </td>
+                    </tr>`;
+                });
+                content += '</tbody></table></div>';
+            }
+
+            content += '<h3 style="margin-top:30px;">All Requests</h3>';
+            if (all.length === 0) {
+                content += '<p style="color:#666;">No requests yet.</p>';
+            } else {
+                content += '<div style="overflow-x:auto;"><table><thead><tr><th>ID</th><th>Email</th><th>Plan</th><th>Status</th><th>Reviewed By</th><th>Reviewed At</th><th>Submitted</th></tr></thead><tbody>';
+                all.forEach(r => {
+                    const statusColor = r.status === 'approved' ? '#28a745' : r.status === 'rejected' ? '#dc3545' : '#ffc107';
+                    content += `<tr>
+                        <td>${r.id}</td><td>${r.user_email}</td><td>${r.plan_type}</td>
+                        <td><span class="status-badge" style="background:${statusColor};">${r.status}</span></td>
+                        <td>${r.reviewed_by||''}</td><td>${r.reviewed_at ? formatAEST(r.reviewed_at) : ''}</td>
+                        <td>${formatAEST(r.created_at)}</td>
+                    </tr>`;
+                });
+                content += '</tbody></table></div>';
+            }
+
+            section.innerHTML = `<div class="card">${content}</div>`;
+        } catch (err) {
+            section.innerHTML = `<div class="card"><h2>Invoice Requests</h2><p class="error-message">${err.message}</p></div>`;
+        }
+    }
+
+    function renderSubscriptionsTable(subs, sectionElement) {
+        let content = '<h2>All Subscriptions</h2>';
+        if (!subs || subs.length === 0) {
+            content += '<p style="color:#666;">No subscriptions yet.</p>';
+        } else {
+            content += '<div style="overflow-x:auto;"><table><thead><tr><th>ID</th><th>Email</th><th>Plan</th><th>Payment</th><th>Status</th><th>Period End</th><th>Created</th></tr></thead><tbody>';
+            subs.forEach(s => {
+                const statusColors = { active: '#28a745', cancelled: '#ffc107', past_due: '#dc3545', expired: '#6c757d' };
+                content += `<tr>
+                    <td>${s.id}</td><td>${s.user_email}</td><td>${s.plan_type}</td>
+                    <td>${s.payment_method}</td>
+                    <td><span class="status-badge" style="background:${statusColors[s.status]||'#6c757d'};">${s.status}</span></td>
+                    <td>${s.current_period_end ? formatAEST(s.current_period_end) : ''}</td>
+                    <td>${formatAEST(s.created_at)}</td>
+                </tr>`;
+            });
+            content += '</tbody></table></div>';
+        }
+        sectionElement.innerHTML = `<div class="card">${content}</div>`;
+    }
+
     // --- EVENT HANDLERS ---
+    window.handleApproveInvoice = async function(id) {
+        if (!confirm('Approve this invoice request? This will create an active subscription for the user.')) return;
+        try {
+            const res = await fetch(`/admin/approve-invoice-request/${id}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Approval failed');
+            alert(data.message);
+            loadedTabs.delete('invoicerequests');
+            loadSectionContent('invoicerequests');
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    };
+
+    window.handleRejectInvoice = async function(id) {
+        const notes = prompt('Rejection reason (optional):');
+        if (notes === null) return; // cancelled
+        try {
+            const formData = new FormData();
+            formData.append('admin_notes', notes);
+            const res = await fetch(`/admin/reject-invoice-request/${id}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Rejection failed');
+            alert(data.message);
+            loadedTabs.delete('invoicerequests');
+            loadSectionContent('invoicerequests');
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    };
+
     async function handleAddFullAccess() {
         const emailInput = document.getElementById('add-email-input');
         const email = emailInput.value.trim();

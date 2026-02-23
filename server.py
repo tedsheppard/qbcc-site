@@ -319,6 +319,67 @@ CREATE INDEX IF NOT EXISTS idx_search_logs_usage
 ON search_logs (user_email, was_blocked, timestamp)
 """)
 
+# --- Subscriptions ---
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT NOT NULL,
+    plan_type TEXT NOT NULL CHECK(plan_type IN ('monthly','annual')),
+    payment_method TEXT NOT NULL CHECK(payment_method IN ('stripe','invoice')),
+    status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','cancelled','past_due','expired')),
+    stripe_subscription_id TEXT,
+    stripe_customer_id TEXT,
+    current_period_start TIMESTAMP,
+    current_period_end TIMESTAMP,
+    cancelled_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+purchases_cur.execute("""
+CREATE INDEX IF NOT EXISTS idx_subscriptions_email_status
+ON subscriptions (user_email, status, current_period_end)
+""")
+
+purchases_cur.execute("""
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_id
+ON subscriptions (stripe_subscription_id)
+""")
+
+# --- Invoice requests ---
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS invoice_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT NOT NULL,
+    plan_type TEXT NOT NULL CHECK(plan_type IN ('monthly','annual')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
+    firm_name TEXT,
+    abn TEXT,
+    billing_address TEXT,
+    billing_city TEXT,
+    billing_state TEXT,
+    billing_postcode TEXT,
+    accounts_email TEXT,
+    notes TEXT,
+    admin_notes TEXT,
+    reviewed_by TEXT,
+    reviewed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+purchases_cur.execute("""
+CREATE INDEX IF NOT EXISTS idx_invoice_requests_status
+ON invoice_requests (status)
+""")
+
+purchases_cur.execute("""
+CREATE INDEX IF NOT EXISTS idx_invoice_requests_email
+ON invoice_requests (user_email)
+""")
+
 # --- Commit all changes ---
 purchases_con.commit()
 
@@ -1071,12 +1132,13 @@ def search_fast(
                 }
             )
 
-        # Check if user has unlimited access (admin or full_access)
+        # Check if user has unlimited access (admin, full_access, or subscription)
         is_unlimited = (
             user_email in ADMIN_EMAILS or
             purchases_con.execute(
                 "SELECT 1 FROM full_access_users WHERE email = ?", (user_email,)
-            ).fetchone() is not None
+            ).fetchone() is not None or
+            has_active_subscription(user_email)
         )
 
         if not is_unlimited:
@@ -1407,7 +1469,8 @@ def get_my_search_usage(current_user: dict = Depends(get_current_purchase_user))
         email in ADMIN_EMAILS or
         purchases_con.execute(
             "SELECT 1 FROM full_access_users WHERE email = ?", (email,)
-        ).fetchone() is not None
+        ).fetchone() is not None or
+        has_active_subscription(email)
     )
 
     if is_unlimited:
@@ -2807,6 +2870,433 @@ async def download_db():
 
 # ---------------- STRIPE & PURCHASE LOGIC ----------------
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_MONTHLY_PRICE_ID = os.getenv("STRIPE_MONTHLY_PRICE_ID", "")
+STRIPE_ANNUAL_PRICE_ID = os.getenv("STRIPE_ANNUAL_PRICE_ID", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+
+# --- Subscription helpers ---
+
+def has_active_subscription(email: str) -> bool:
+    """Check if user has an active (or grace-period) subscription."""
+    row = purchases_con.execute("""
+        SELECT 1 FROM subscriptions
+        WHERE user_email = ?
+        AND status IN ('active', 'cancelled', 'past_due')
+        AND current_period_end > datetime('now')
+        LIMIT 1
+    """, (email,)).fetchone()
+    return row is not None
+
+def get_active_subscription(email: str):
+    """Get the user's active subscription details, or None."""
+    row = purchases_con.execute("""
+        SELECT * FROM subscriptions
+        WHERE user_email = ?
+        AND status IN ('active', 'cancelled', 'past_due')
+        AND current_period_end > datetime('now')
+        ORDER BY current_period_end DESC
+        LIMIT 1
+    """, (email,)).fetchone()
+    return dict(row) if row else None
+
+def get_or_create_stripe_customer(user: dict):
+    """Find existing Stripe customer by email or create one."""
+    customers = stripe.Customer.list(email=user['email'], limit=1)
+    if customers.data:
+        return customers.data[0]
+    return stripe.Customer.create(
+        email=user['email'],
+        name=f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
+    )
+
+# --- Subscription status endpoint ---
+
+@app.get("/api/subscription-status")
+def get_subscription_status(current_user: dict = Depends(get_current_purchase_user)):
+    """Returns the user's subscription state and any pending invoice request."""
+    email = current_user["email"]
+    sub = get_active_subscription(email)
+
+    pending_request = purchases_con.execute("""
+        SELECT id, plan_type, status, created_at FROM invoice_requests
+        WHERE user_email = ? AND status = 'pending'
+        ORDER BY created_at DESC LIMIT 1
+    """, (email,)).fetchone()
+
+    return {
+        "has_subscription": sub is not None,
+        "subscription": dict(sub) if sub else None,
+        "pending_invoice_request": dict(pending_request) if pending_request else None
+    }
+
+# --- Stripe Checkout session ---
+
+@app.post("/create-checkout-session")
+async def create_checkout_session(
+    plan: str = Form(...),
+    current_user: dict = Depends(get_current_purchase_user)
+):
+    """Creates a Stripe Checkout Session for monthly or annual subscription."""
+    if plan not in ("monthly", "annual"):
+        raise HTTPException(status_code=400, detail="Invalid plan. Must be 'monthly' or 'annual'.")
+
+    price_id = STRIPE_MONTHLY_PRICE_ID if plan == "monthly" else STRIPE_ANNUAL_PRICE_ID
+    if not price_id:
+        raise HTTPException(status_code=500, detail="Stripe price not configured for this plan.")
+
+    try:
+        customer = get_or_create_stripe_customer(current_user)
+
+        session = stripe.checkout.Session.create(
+            customer=customer.id,
+            mode="subscription",
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url="https://sopal.com.au/account?tab=subscription&checkout=success",
+            cancel_url="https://sopal.com.au/pricing",
+            metadata={
+                "user_email": current_user["email"],
+                "plan_type": plan
+            },
+            subscription_data={
+                "metadata": {
+                    "user_email": current_user["email"],
+                    "plan_type": plan
+                }
+            }
+        )
+        return {"checkout_url": session.url}
+    except stripe.error.StripeError as e:
+        print(f"Stripe checkout error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+# --- Stripe Webhook ---
+
+from fastapi import Request
+
+@app.post("/stripe-webhook")
+async def stripe_webhook(request: Request):
+    """Handles Stripe webhook events for subscription lifecycle."""
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    event_type = event["type"]
+    data = event["data"]["object"]
+
+    if event_type == "checkout.session.completed":
+        if data.get("mode") == "subscription":
+            user_email = data.get("metadata", {}).get("user_email", "")
+            plan_type = data.get("metadata", {}).get("plan_type", "monthly")
+            stripe_sub_id = data.get("subscription")
+            stripe_cust_id = data.get("customer")
+
+            if stripe_sub_id and user_email:
+                sub = stripe.Subscription.retrieve(stripe_sub_id)
+                period_start = datetime.utcfromtimestamp(sub["current_period_start"]).isoformat()
+                period_end = datetime.utcfromtimestamp(sub["current_period_end"]).isoformat()
+
+                purchases_con.execute("""
+                    INSERT INTO subscriptions
+                    (user_email, plan_type, payment_method, status, stripe_subscription_id, stripe_customer_id, current_period_start, current_period_end)
+                    VALUES (?, ?, 'stripe', 'active', ?, ?, ?, ?)
+                """, (user_email, plan_type, stripe_sub_id, stripe_cust_id, period_start, period_end))
+                purchases_con.commit()
+                print(f"[Webhook] Subscription created for {user_email} ({plan_type})")
+
+    elif event_type == "customer.subscription.updated":
+        stripe_sub_id = data.get("id")
+        status = data.get("status", "active")
+        status_map = {"active": "active", "past_due": "past_due", "canceled": "cancelled", "unpaid": "past_due"}
+        db_status = status_map.get(status, "active")
+        period_start = datetime.utcfromtimestamp(data["current_period_start"]).isoformat()
+        period_end = datetime.utcfromtimestamp(data["current_period_end"]).isoformat()
+        cancel_at = data.get("canceled_at")
+        cancelled_at = datetime.utcfromtimestamp(cancel_at).isoformat() if cancel_at else None
+
+        purchases_con.execute("""
+            UPDATE subscriptions
+            SET status = ?, current_period_start = ?, current_period_end = ?,
+                cancelled_at = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE stripe_subscription_id = ?
+        """, (db_status, period_start, period_end, cancelled_at, stripe_sub_id))
+        purchases_con.commit()
+        print(f"[Webhook] Subscription {stripe_sub_id} updated to {db_status}")
+
+    elif event_type == "customer.subscription.deleted":
+        stripe_sub_id = data.get("id")
+        purchases_con.execute("""
+            UPDATE subscriptions SET status = 'expired', updated_at = CURRENT_TIMESTAMP
+            WHERE stripe_subscription_id = ?
+        """, (stripe_sub_id,))
+        purchases_con.commit()
+        print(f"[Webhook] Subscription {stripe_sub_id} deleted/expired")
+
+    elif event_type == "invoice.payment_failed":
+        stripe_sub_id = data.get("subscription")
+        if stripe_sub_id:
+            purchases_con.execute("""
+                UPDATE subscriptions SET status = 'past_due', updated_at = CURRENT_TIMESTAMP
+                WHERE stripe_subscription_id = ?
+            """, (stripe_sub_id,))
+            purchases_con.commit()
+            print(f"[Webhook] Payment failed for subscription {stripe_sub_id}")
+
+    elif event_type == "invoice.paid":
+        stripe_sub_id = data.get("subscription")
+        if stripe_sub_id:
+            sub = stripe.Subscription.retrieve(stripe_sub_id)
+            period_start = datetime.utcfromtimestamp(sub["current_period_start"]).isoformat()
+            period_end = datetime.utcfromtimestamp(sub["current_period_end"]).isoformat()
+            purchases_con.execute("""
+                UPDATE subscriptions
+                SET status = 'active', current_period_start = ?, current_period_end = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE stripe_subscription_id = ?
+            """, (period_start, period_end, stripe_sub_id))
+            purchases_con.commit()
+            print(f"[Webhook] Invoice paid, subscription {stripe_sub_id} renewed")
+
+    return {"status": "ok"}
+
+# --- Cancel subscription ---
+
+@app.post("/cancel-subscription")
+async def cancel_subscription(current_user: dict = Depends(get_current_purchase_user)):
+    """Cancel subscription at end of billing period."""
+    sub = get_active_subscription(current_user["email"])
+    if not sub:
+        raise HTTPException(status_code=400, detail="No active subscription found.")
+
+    if sub["payment_method"] == "stripe" and sub["stripe_subscription_id"]:
+        try:
+            stripe.Subscription.modify(
+                sub["stripe_subscription_id"],
+                cancel_at_period_end=True
+            )
+        except stripe.error.StripeError as e:
+            print(f"Stripe cancel error: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
+
+    purchases_con.execute("""
+        UPDATE subscriptions SET status = 'cancelled', cancelled_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (sub["id"],))
+    purchases_con.commit()
+
+    return {"message": "Subscription cancelled. You'll retain access until the end of your billing period.",
+            "access_until": sub["current_period_end"]}
+
+# --- Invoice subscription request ---
+
+@app.post("/request-invoice-subscription")
+async def request_invoice_subscription(
+    plan: str = Form(...),
+    accounts_email: str = Form(...),
+    notes: str = Form(""),
+    current_user: dict = Depends(get_current_purchase_user)
+):
+    """Submit an invoice-based subscription request for admin approval."""
+    if plan not in ("monthly", "annual"):
+        raise HTTPException(status_code=400, detail="Invalid plan.")
+
+    existing = purchases_con.execute("""
+        SELECT 1 FROM invoice_requests WHERE user_email = ? AND status = 'pending'
+    """, (current_user["email"],)).fetchone()
+    if existing:
+        raise HTTPException(status_code=400, detail="You already have a pending invoice request.")
+
+    if has_active_subscription(current_user["email"]):
+        raise HTTPException(status_code=400, detail="You already have an active subscription.")
+
+    purchases_con.execute("""
+        INSERT INTO invoice_requests
+        (user_email, plan_type, firm_name, abn, billing_address, billing_city, billing_state, billing_postcode, accounts_email, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        current_user["email"], plan,
+        current_user.get("firm_name", ""), current_user.get("abn", ""),
+        current_user.get("billing_address", ""), current_user.get("billing_city", ""),
+        current_user.get("billing_state", ""), current_user.get("billing_postcode", ""),
+        accounts_email, notes
+    ))
+    purchases_con.commit()
+
+    # Email admin
+    try:
+        msg = EmailMessage()
+        msg["From"] = SMTP_FROM_EMAIL
+        msg["To"] = "info@sopal.com.au"
+        msg["Subject"] = f"New Invoice Subscription Request - {current_user.get('firm_name', current_user['email'])}"
+        msg.set_content(f"""
+New invoice subscription request:
+
+User: {current_user['email']}
+Firm: {current_user.get('firm_name', 'N/A')}
+ABN: {current_user.get('abn', 'N/A')}
+Plan: {plan}
+Accounts Email: {accounts_email}
+Notes: {notes or 'None'}
+
+Review at: https://sopal.com.au/admin#invoicerequests
+        """)
+        await aiosmtplib.send(msg, hostname=SMTP_HOST, port=SMTP_PORT, start_tls=True,
+                              username=SMTP_USERNAME, password=SMTP_PASSWORD)
+    except Exception as e:
+        print(f"Failed to send admin notification email: {e}")
+
+    return {"message": "Invoice request submitted. We'll review it within 1 business day."}
+
+# --- Admin: Invoice requests ---
+
+@app.get("/admin/invoice-requests")
+def get_invoice_requests(status_filter: str = Query("pending"), admin: dict = Depends(get_admin_user)):
+    """List invoice requests by status."""
+    if status_filter == "all":
+        rows = purchases_con.execute("SELECT * FROM invoice_requests ORDER BY created_at DESC").fetchall()
+    else:
+        rows = purchases_con.execute(
+            "SELECT * FROM invoice_requests WHERE status = ? ORDER BY created_at DESC",
+            (status_filter,)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+@app.post("/admin/approve-invoice-request/{request_id}")
+async def approve_invoice_request(request_id: int, admin: dict = Depends(get_admin_user)):
+    """Approve an invoice request, create subscription, email user."""
+    req = purchases_con.execute("SELECT * FROM invoice_requests WHERE id = ?", (request_id,)).fetchone()
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found.")
+    if req["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Request already processed.")
+
+    plan = req["plan_type"]
+    now = datetime.utcnow()
+    if plan == "annual":
+        period_end = now + timedelta(days=365)
+    else:
+        period_end = now + timedelta(days=30)
+
+    purchases_con.execute("""
+        INSERT INTO subscriptions
+        (user_email, plan_type, payment_method, status, current_period_start, current_period_end)
+        VALUES (?, ?, 'invoice', 'active', ?, ?)
+    """, (req["user_email"], plan, now.isoformat(), period_end.isoformat()))
+
+    purchases_con.execute("""
+        UPDATE invoice_requests SET status = 'approved', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (admin["email"], request_id))
+    purchases_con.commit()
+
+    # Email user
+    try:
+        msg = EmailMessage()
+        msg["From"] = SMTP_FROM_EMAIL
+        msg["To"] = req["user_email"]
+        if req["accounts_email"] and req["accounts_email"] != req["user_email"]:
+            msg["Cc"] = req["accounts_email"]
+        msg["Subject"] = "Sopal Subscription Approved"
+        msg.set_content(f"""
+Hello,
+
+Your Sopal subscription request has been approved.
+
+Plan: {plan.title()}
+Access until: {period_end.strftime('%d %B %Y')}
+
+You now have unlimited access to searches and adjudicator insights.
+
+Log in at: https://sopal.com.au/login
+
+Kind regards,
+Sopal Team
+        """)
+        await aiosmtplib.send(msg, hostname=SMTP_HOST, port=SMTP_PORT, start_tls=True,
+                              username=SMTP_USERNAME, password=SMTP_PASSWORD)
+    except Exception as e:
+        print(f"Failed to send approval email: {e}")
+
+    return {"message": f"Request approved. Subscription created for {req['user_email']}."}
+
+@app.post("/admin/reject-invoice-request/{request_id}")
+async def reject_invoice_request(
+    request_id: int,
+    admin_notes: str = Form(""),
+    admin: dict = Depends(get_admin_user)
+):
+    """Reject an invoice request and email user."""
+    req = purchases_con.execute("SELECT * FROM invoice_requests WHERE id = ?", (request_id,)).fetchone()
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found.")
+    if req["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Request already processed.")
+
+    purchases_con.execute("""
+        UPDATE invoice_requests SET status = 'rejected', admin_notes = ?, reviewed_by = ?,
+            reviewed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (admin_notes, admin["email"], request_id))
+    purchases_con.commit()
+
+    try:
+        msg = EmailMessage()
+        msg["From"] = SMTP_FROM_EMAIL
+        msg["To"] = req["user_email"]
+        msg["Subject"] = "Sopal Subscription Request Update"
+        msg.set_content(f"""
+Hello,
+
+Your subscription request for a {req['plan_type']} plan could not be approved at this time.
+
+{('Reason: ' + admin_notes) if admin_notes else ''}
+
+You can still subscribe instantly via credit card at: https://sopal.com.au/pricing
+
+If you have questions, please reply to this email.
+
+Kind regards,
+Sopal Team
+        """)
+        await aiosmtplib.send(msg, hostname=SMTP_HOST, port=SMTP_PORT, start_tls=True,
+                              username=SMTP_USERNAME, password=SMTP_PASSWORD)
+    except Exception as e:
+        print(f"Failed to send rejection email: {e}")
+
+    return {"message": f"Request rejected for {req['user_email']}."}
+
+# --- Admin: All subscriptions ---
+
+@app.get("/admin/all-subscriptions")
+def get_all_subscriptions(admin: dict = Depends(get_admin_user)):
+    """Get all subscriptions for admin overview."""
+    rows = purchases_con.execute("""
+        SELECT * FROM subscriptions ORDER BY created_at DESC
+    """).fetchall()
+    return [dict(r) for r in rows]
+
+# --- Stripe Customer Portal ---
+
+@app.post("/create-customer-portal-session")
+async def create_customer_portal_session(current_user: dict = Depends(get_current_purchase_user)):
+    """Creates a Stripe Customer Portal session for billing management."""
+    try:
+        customer = get_or_create_stripe_customer(current_user)
+        session = stripe.billing_portal.Session.create(
+            customer=customer.id,
+            return_url="https://sopal.com.au/account?tab=subscription"
+        )
+        return {"portal_url": session.url}
+    except stripe.error.StripeError as e:
+        print(f"Stripe portal error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 # In server.py, REPLACE your existing /check-adjudicator-access function with this one
 
@@ -2819,23 +3309,25 @@ def check_adjudicator_access(
     Checks if the user has access, either through full privileges or a specific purchase.
     """
     try:
-        # --- NEW: First, check for full access privileges ---
+        # Check for full access privileges
         full_access = purchases_con.execute("""
             SELECT 1 FROM full_access_users WHERE email = ?
         """, (current_user["email"],)).fetchone()
-
         if full_access:
             return {"hasAccess": True}
-        # --- END NEW ---
+
+        # Check for active subscription
+        if has_active_subscription(current_user["email"]):
+            return {"hasAccess": True}
 
         decoded_name = unquote_plus(adjudicator_name)
-        
-        # Original logic: check for a specific purchase record
+
+        # Check for a specific purchase record
         purchase = purchases_con.execute("""
-            SELECT 1 FROM adjudicator_purchases 
+            SELECT 1 FROM adjudicator_purchases
             WHERE user_email = ? AND adjudicator_name = ?
         """, (current_user["email"], decoded_name)).fetchone()
-        
+
         has_access = purchase is not None
         return {"hasAccess": has_access}
         
@@ -3040,7 +3532,8 @@ def read_purchase_user_me(current_user: dict = Depends(get_current_purchase_user
         "created_at": current_user["created_at"],
         "last_login": current_user.get("last_login"),
         "email_verified": current_user.get("email_verified", 0),
-        "has_full_access": has_full_access # ADDED THIS LINE
+        "has_full_access": has_full_access,
+        "has_subscription": has_active_subscription(current_user["email"])
     }
     return user_data
 
@@ -3901,9 +4394,10 @@ async def serve_html_page(path_name: str):
     # Ignore paths that are clearly intended for API endpoints
     # In the serve_html_page function
     api_prefixes = [
-        "api/", "admin/", "check-adjudicator-access/", "create-payment-intent/", 
-        "purchase-register", "purchase-login", "purchase-me", "update-profile", 
-        "my-purchases", "api/chat"
+        "api/", "admin/", "check-adjudicator-access/", "create-payment-intent/",
+        "purchase-register", "purchase-login", "purchase-me", "update-profile",
+        "my-purchases", "api/chat", "stripe-webhook", "create-checkout-session",
+        "cancel-subscription", "request-invoice-subscription", "create-customer-portal-session"
     ]
     if any(path_name.startswith(prefix) for prefix in api_prefixes):
         raise HTTPException(status_code=404, detail="API endpoint not found")
