@@ -384,11 +384,10 @@ ON invoice_requests (user_email)
 purchases_con.commit()
 
 # --- Load search gate state (default: OFF) ---
-# Temporarily forced OFF while subscription system is being set up
 _gate_row = purchases_con.execute(
     "SELECT value FROM system_settings WHERE key = 'search_gate_enabled'"
 ).fetchone()
-SEARCH_GATE_ENABLED = False  # was: (_gate_row and _gate_row["value"] == "1") if _gate_row else False
+SEARCH_GATE_ENABLED = (_gate_row and _gate_row["value"] == "1") if _gate_row else False
 
 ADMIN_EMAILS = {
     "edwardsheppard5@gmail.com", 
