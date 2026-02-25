@@ -2998,8 +2998,8 @@ async def stripe_webhook(request: Request):
 
             if stripe_sub_id and user_email:
                 sub = stripe.Subscription.retrieve(stripe_sub_id)
-                period_start = datetime.utcfromtimestamp(sub["current_period_start"]).isoformat()
-                period_end = datetime.utcfromtimestamp(sub["current_period_end"]).isoformat()
+                period_start = datetime.utcfromtimestamp(sub.current_period_start).isoformat()
+                period_end = datetime.utcfromtimestamp(sub.current_period_end).isoformat()
 
                 purchases_con.execute("""
                     INSERT INTO subscriptions
@@ -3014,9 +3014,9 @@ async def stripe_webhook(request: Request):
         status = data.get("status", "active")
         status_map = {"active": "active", "past_due": "past_due", "canceled": "cancelled", "unpaid": "past_due"}
         db_status = status_map.get(status, "active")
-        period_start = datetime.utcfromtimestamp(data["current_period_start"]).isoformat()
-        period_end = datetime.utcfromtimestamp(data["current_period_end"]).isoformat()
-        cancel_at = data.get("canceled_at")
+        period_start = datetime.utcfromtimestamp(getattr(data, 'current_period_start', None) or data.get("current_period_start", 0)).isoformat()
+        period_end = datetime.utcfromtimestamp(getattr(data, 'current_period_end', None) or data.get("current_period_end", 0)).isoformat()
+        cancel_at = getattr(data, 'canceled_at', None) or data.get("canceled_at")
         cancelled_at = datetime.utcfromtimestamp(cancel_at).isoformat() if cancel_at else None
 
         # Check if subscription exists in DB; if not, create it (inline payment flow)
@@ -3070,8 +3070,8 @@ async def stripe_webhook(request: Request):
         stripe_sub_id = data.get("subscription")
         if stripe_sub_id:
             sub = stripe.Subscription.retrieve(stripe_sub_id)
-            period_start = datetime.utcfromtimestamp(sub["current_period_start"]).isoformat()
-            period_end = datetime.utcfromtimestamp(sub["current_period_end"]).isoformat()
+            period_start = datetime.utcfromtimestamp(sub.current_period_start).isoformat()
+            period_end = datetime.utcfromtimestamp(sub.current_period_end).isoformat()
             purchases_con.execute("""
                 UPDATE subscriptions
                 SET status = 'active', current_period_start = ?, current_period_end = ?,
