@@ -2989,6 +2989,20 @@ async def stripe_webhook(request: Request):
     event_type = event["type"]
     data = event["data"]["object"]
 
+    def _get_sub_period(sub_data):
+        """Extract current_period_start/end from subscription data.
+        In newer Stripe API versions these moved to items.data[0]."""
+        ps = sub_data.get("current_period_start")
+        pe = sub_data.get("current_period_end")
+        if not ps or not pe:
+            items = sub_data.get("items", {})
+            items_data = items.get("data", []) if isinstance(items, dict) else getattr(items, 'data', [])
+            if items_data:
+                item = items_data[0] if isinstance(items_data, list) else items_data
+                ps = ps or (item.get("current_period_start") if hasattr(item, 'get') else getattr(item, 'current_period_start', None))
+                pe = pe or (item.get("current_period_end") if hasattr(item, 'get') else getattr(item, 'current_period_end', None))
+        return ps, pe
+
     if event_type == "checkout.session.completed":
         if data.get("mode") == "subscription":
             user_email = data.get("metadata", {}).get("user_email", "")
@@ -2998,8 +3012,9 @@ async def stripe_webhook(request: Request):
 
             if stripe_sub_id and user_email:
                 sub = stripe.Subscription.retrieve(stripe_sub_id)
-                period_start = datetime.utcfromtimestamp(sub.current_period_start).isoformat()
-                period_end = datetime.utcfromtimestamp(sub.current_period_end).isoformat()
+                ps, pe = _get_sub_period(sub)
+                period_start = datetime.utcfromtimestamp(ps).isoformat() if ps else datetime.utcnow().isoformat()
+                period_end = datetime.utcfromtimestamp(pe).isoformat() if pe else datetime.utcnow().isoformat()
 
                 purchases_con.execute("""
                     INSERT INTO subscriptions
@@ -3014,9 +3029,10 @@ async def stripe_webhook(request: Request):
         status = data.get("status", "active")
         status_map = {"active": "active", "past_due": "past_due", "canceled": "cancelled", "unpaid": "past_due"}
         db_status = status_map.get(status, "active")
-        period_start = datetime.utcfromtimestamp(getattr(data, 'current_period_start', None) or data.get("current_period_start", 0)).isoformat()
-        period_end = datetime.utcfromtimestamp(getattr(data, 'current_period_end', None) or data.get("current_period_end", 0)).isoformat()
-        cancel_at = getattr(data, 'canceled_at', None) or data.get("canceled_at")
+        ps, pe = _get_sub_period(data)
+        period_start = datetime.utcfromtimestamp(ps).isoformat() if ps else datetime.utcnow().isoformat()
+        period_end = datetime.utcfromtimestamp(pe).isoformat() if pe else datetime.utcnow().isoformat()
+        cancel_at = data.get("canceled_at")
         cancelled_at = datetime.utcfromtimestamp(cancel_at).isoformat() if cancel_at else None
 
         # Check if subscription exists in DB; if not, create it (inline payment flow)
@@ -3070,8 +3086,9 @@ async def stripe_webhook(request: Request):
         stripe_sub_id = data.get("subscription")
         if stripe_sub_id:
             sub = stripe.Subscription.retrieve(stripe_sub_id)
-            period_start = datetime.utcfromtimestamp(sub.current_period_start).isoformat()
-            period_end = datetime.utcfromtimestamp(sub.current_period_end).isoformat()
+            ps, pe = _get_sub_period(sub)
+            period_start = datetime.utcfromtimestamp(ps).isoformat() if ps else datetime.utcnow().isoformat()
+            period_end = datetime.utcfromtimestamp(pe).isoformat() if pe else datetime.utcnow().isoformat()
             purchases_con.execute("""
                 UPDATE subscriptions
                 SET status = 'active', current_period_start = ?, current_period_end = ?,
