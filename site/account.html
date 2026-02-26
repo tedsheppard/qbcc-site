@@ -624,9 +624,16 @@
             <section id="payment-section" class="account-section">
                 <div class="card">
                     <h2>Payment Settings</h2>
-                    <div class="payment-placeholder">
-                        <p>Securely manage your saved payment methods with Stripe.</p>
-                        <button class="btn" onclick="openBillingPortal()">Manage Payment Methods</button>
+                    <div id="payment-methods-loading" style="color:#666; padding:10px 0;">Loading payment methods...</div>
+                    <div id="payment-methods-list" style="display:none;"></div>
+                    <div id="add-card-section" style="display:none; margin-top:20px; padding-top:20px; border-top:1px solid #eee;">
+                        <h3 style="font-size:16px; margin-bottom:12px;">Add New Card</h3>
+                        <div id="card-element" style="padding:12px; border:1px solid #ddd; border-radius:6px; background:#fafafa;"></div>
+                        <div id="card-errors" style="color:#dc3545; font-size:13px; margin-top:8px;"></div>
+                        <div style="display:flex; gap:10px; margin-top:12px;">
+                            <button class="btn" id="save-card-btn" onclick="saveCard()" style="max-width:160px;">Save Card</button>
+                            <button class="btn" onclick="hideAddCard()" style="max-width:120px; background:#666;">Cancel</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -636,6 +643,7 @@
 
 
 
+<script src="https://js.stripe.com/v3/"></script>
 <script>
 // --- GLOBALLY ACCESSIBLE HELPER FUNCTIONS ---
 
@@ -829,6 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
             navButtons.forEach(btn => btn.classList.remove('active'));
             const activeBtn = document.querySelector(`.nav-btn[data-target="${targetId}"]`);
             if (activeBtn) activeBtn.classList.add('active');
+            if (targetId === 'payment-section') loadPaymentMethods();
             if (pushState !== false) {
                 const url = new URL(window.location);
                 url.searchParams.set('tab', targetId.replace('-section',''));
@@ -1236,6 +1245,137 @@ function showTempBanner(message, type = 'success') {
     banner.style.transition = 'opacity 0.3s';
     setTimeout(() => banner.remove(), 300);
   }, 4000);
+}
+
+// --- Payment Methods (embedded) ---
+const stripeInstance = Stripe('pk_live_51SGxeHAIOAykxV504w220IB6SNF8PWmMovA3Vcj7BU34qr4lxSftuuc6vhGtb0CURpjiR2e2OMMNdyMuzVXbH286002Y11rMPE');
+let cardElement = null;
+let setupIntentSecret = null;
+
+function brandIcon(brand) {
+    const icons = { visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex', discover: 'Discover', diners: 'Diners', jcb: 'JCB', unionpay: 'UnionPay' };
+    return icons[brand] || brand.charAt(0).toUpperCase() + brand.slice(1);
+}
+
+async function loadPaymentMethods() {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) return;
+    const loading = document.getElementById('payment-methods-loading');
+    const list = document.getElementById('payment-methods-list');
+    try {
+        const res = await fetch('/payment-methods', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        loading.style.display = 'none';
+        list.style.display = 'block';
+
+        if (data.payment_methods.length === 0) {
+            list.innerHTML = `
+                <p style="color:#666; margin-bottom:15px;">No saved payment methods.</p>
+                <button class="btn" onclick="showAddCard()" style="max-width:180px;">Add a Card</button>
+            `;
+        } else {
+            list.innerHTML = data.payment_methods.map(pm => `
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border:1px solid #e0e0e0; border-radius:8px; margin-bottom:10px; background:#fafafa;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="font-weight:600; font-size:14px; color:#333;">${brandIcon(pm.brand)}</span>
+                        <span style="color:#555; font-size:14px;">•••• ${pm.last4}</span>
+                        <span style="color:#999; font-size:13px;">Exp ${String(pm.exp_month).padStart(2,'0')}/${pm.exp_year}</span>
+                    </div>
+                    <button onclick="removeCard('${pm.id}')" style="background:none; border:none; color:#dc3545; cursor:pointer; font-size:13px; font-weight:500;">Remove</button>
+                </div>
+            `).join('') + `
+                <button class="btn" onclick="showAddCard()" style="max-width:180px; margin-top:10px;">Add a Card</button>
+            `;
+        }
+    } catch (e) {
+        loading.style.display = 'none';
+        list.style.display = 'block';
+        list.innerHTML = '<p style="color:#999;">Could not load payment methods.</p><button class="btn" onclick="showAddCard()" style="max-width:180px; margin-top:10px;">Add a Card</button>';
+        console.error('Error loading payment methods:', e);
+    }
+}
+
+async function showAddCard() {
+    const section = document.getElementById('add-card-section');
+    section.style.display = 'block';
+    document.getElementById('card-errors').textContent = '';
+
+    if (!cardElement) {
+        const elements = stripeInstance.elements();
+        cardElement = elements.create('card', {
+            style: {
+                base: { fontSize: '15px', color: '#333', '::placeholder': { color: '#aab7c4' } },
+                invalid: { color: '#dc3545' }
+            }
+        });
+        cardElement.mount('#card-element');
+        cardElement.on('change', (event) => {
+            document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+        });
+    }
+
+    // Get setup intent
+    const token = localStorage.getItem('purchase_token');
+    try {
+        const res = await fetch('/setup-intent', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setupIntentSecret = data.client_secret;
+    } catch (e) {
+        document.getElementById('card-errors').textContent = 'Could not initialize. Please try again.';
+    }
+}
+
+function hideAddCard() {
+    document.getElementById('add-card-section').style.display = 'none';
+}
+
+async function saveCard() {
+    if (!setupIntentSecret || !cardElement) return;
+    const btn = document.getElementById('save-card-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    document.getElementById('card-errors').textContent = '';
+
+    const { error } = await stripeInstance.confirmCardSetup(setupIntentSecret, {
+        payment_method: { card: cardElement }
+    });
+
+    if (error) {
+        document.getElementById('card-errors').textContent = error.message;
+        btn.disabled = false;
+        btn.textContent = 'Save Card';
+    } else {
+        hideAddCard();
+        cardElement.clear();
+        setupIntentSecret = null;
+        btn.disabled = false;
+        btn.textContent = 'Save Card';
+        loadPaymentMethods();
+        showBanner('Card saved successfully.');
+    }
+}
+
+async function removeCard(pmId) {
+    if (!confirm('Remove this card?')) return;
+    const token = localStorage.getItem('purchase_token');
+    try {
+        const res = await fetch(`/payment-method/${pmId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            loadPaymentMethods();
+            showBanner('Card removed.');
+        } else {
+            alert('Failed to remove card.');
+        }
+    } catch (e) {
+        alert('Failed to remove card.');
+    }
 }
 </script>
 
