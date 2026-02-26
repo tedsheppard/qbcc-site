@@ -88,6 +88,8 @@ async function updateNavUI() {
         // --- Logout handler ---
         document.getElementById('logout-link').addEventListener('click', (e) => handleLogout(e, user.email));
 
+        navContainer.classList.add('loaded');
+
     } catch (err) {
         console.error("updateNavUI: Network or parse error:", err);
         renderLoggedOutNav(navContainer);
@@ -103,6 +105,7 @@ function renderLoggedOutNav(navContainer) {
     navContainer.innerHTML = `
         <a href="/login${redirectUrl}" id="login-link" style="text-decoration:none;color:#008a5c;font-weight:600;">Sign In</a>
     `;
+    navContainer.classList.add('loaded');
 }
 
 function handleLogout(e, userEmail) {
@@ -125,7 +128,12 @@ style.innerHTML = `
 #user-profile-nav {
     margin-left: 25px;
     min-width: 36px;
+    min-height: 36px;
     flex-shrink: 0;
+    visibility: hidden;
+}
+#user-profile-nav.loaded {
+    visibility: visible;
 }
 .nav-links {
     white-space: nowrap;
