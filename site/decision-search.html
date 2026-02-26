@@ -1521,32 +1521,8 @@ function renderGateUI() {
 }
 
 async function initSearchPage() {
-  // 1. Check if gate is enabled
-  try {
-    const gateRes = await fetch('/api/search-gate-status');
-    const gateData = await gateRes.json();
-    gateEnabled = gateData.gate_enabled;
-  } catch (e) {
-    gateEnabled = false; // Fail open
-  }
-
-  // 2. If gate is enabled, check user's usage
-  if (gateEnabled) {
-    const token = localStorage.getItem('purchase_token');
-    if (token) {
-      try {
-        const usageRes = await fetch('/api/my-search-usage', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (usageRes.ok) {
-          searchUsage = await usageRes.json();
-        }
-      } catch (e) {
-        console.warn('Could not fetch search usage:', e);
-      }
-    }
-    renderGateUI();
-  }
+  // Search gate disabled — skip gate check and banner
+  gateEnabled = false;
 
   // 3. Normal page initialization
   fetchAdjudicators();

@@ -2107,7 +2107,10 @@ async function loadUserAccessStatus() {
       if (user.has_full_access) {
         console.log('[DEBUG] User has full access. Unlocking all adjudicators.');
         allAdjudicators.forEach(adj => purchasedAdjudicators.add(adj.name));
-      } 
+      } else if (user.has_subscription) {
+        console.log('[DEBUG] User has active subscription. Unlocking all adjudicators.');
+        allAdjudicators.forEach(adj => purchasedAdjudicators.add(adj.name));
+      }
       // Otherwise, load only their individual purchases
       else {
         console.log('[DEBUG] User does not have full access. Loading individual purchases.');

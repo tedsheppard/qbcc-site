@@ -186,9 +186,16 @@
   }
   .account-section {
     display: none;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
   }
   .account-section.active {
     display: block;
+  }
+  .account-section.visible {
+    opacity: 1;
+    transform: translateY(0);
   }
   .card {
     background: #fdfdfd;
@@ -479,7 +486,7 @@
         <aside class="account-nav">
             <button class="nav-btn active" data-target="profile-section">Profile Settings</button>
             <button class="nav-btn" data-target="subscription-section">Subscription</button>
-            <button class="nav-btn" data-target="purchases-section">Purchase History</button>
+            <button class="nav-btn" data-target="purchases-section">Payment History</button>
             <button class="nav-btn" data-target="payment-section">Payment Settings</button>
         </aside>
 
@@ -596,20 +603,21 @@
 
             <section id="purchases-section" class="account-section">
                 <div class="card">
-                    <h2>Purchase History</h2>
+                    <h2>Payment History</h2>
                     <table class="purchase-history-table">
                         <thead>
                             <tr>
-                                <th>Adjudicator Name</th>
-                                <th>Date of Purchase</th>
-                                <th>Amount Paid</th>
+                                <th>Date &amp; Time</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th>Card</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="purchase-history-body">
                         </tbody>
                     </table>
-                    <div id="no-purchases" class="empty-state" style="display: none;">You have not made any purchases yet.</div>
+                    <div id="no-purchases" class="empty-state" style="display: none;">No payment history found.</div>
                 </div>
             </section>
 
@@ -720,6 +728,37 @@ async function downloadInvoice(button, adjudicatorName, paymentIntentId, existin
     }
 }
 
+// Download subscription invoice PDF
+async function downloadSubscriptionInvoice(button, invoiceId) {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) { alert('Please log in to download invoice'); return; }
+    const originalText = button.textContent;
+    button.textContent = 'Loading...';
+    button.disabled = true;
+    try {
+        const response = await fetch(`/download-invoice/${invoiceId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Failed to download invoice');
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `Sopal_Invoice.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    } catch (error) {
+        console.error('Invoice download error:', error);
+        alert('Failed to download invoice. Please try again later.');
+    } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+}
+
 // --- ACCOUNT PAGE SPECIFIC SCRIPT ---
 document.addEventListener('DOMContentLoaded', () => {
     if (document.querySelector('.account-container')) { 
@@ -757,20 +796,57 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // --- Tab Navigation ---
+        function switchSection(targetId, pushState) {
+            // Fade out current visible section
+            const currentSection = document.querySelector('.account-section.visible');
+            if (currentSection && currentSection.id !== targetId) {
+                currentSection.classList.remove('visible');
+                setTimeout(() => {
+                    currentSection.classList.remove('active');
+                    // Show and fade in new section
+                    const nextSection = document.getElementById(targetId);
+                    if (nextSection) {
+                        nextSection.classList.add('active');
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                nextSection.classList.add('visible');
+                            });
+                        });
+                    }
+                }, 200);
+            } else {
+                // No current section or same section - just show it
+                const nextSection = document.getElementById(targetId);
+                if (nextSection) {
+                    nextSection.classList.add('active');
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            nextSection.classList.add('visible');
+                        });
+                    });
+                }
+            }
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.nav-btn[data-target="${targetId}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+            if (pushState !== false) {
+                const url = new URL(window.location);
+                url.searchParams.set('tab', targetId.replace('-section',''));
+                window.history.pushState({}, '', url);
+            }
+        }
+
         navButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 e.preventDefault();
                 const targetId = button.getAttribute('data-target');
-                navButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                sections.forEach(section => {
-                    section.classList.toggle('active', section.id === targetId);
-                });
-                const url = new URL(window.location);
-                url.searchParams.set('tab', targetId.replace('-section',''));
-                window.history.pushState({}, '', url);
+                switchSection(targetId);
             });
         });
+
+        // Initialize: make the initially active section visible
+        const initialActive = document.querySelector('.account-section.active');
+        if (initialActive) initialActive.classList.add('visible');
 
         function toggleEditMode(isEditing) {
             formElements.forEach(el => {
@@ -836,38 +912,55 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // --- Load Purchase History ---
+        // --- Load Payment History ---
         function loadPurchaseHistory() {
-            fetch('/my-purchases', { headers })
-                .then(res => res.ok ? res.json() : Promise.reject('Could not fetch purchase history.'))
-                .then(purchases => {
+            fetch('/api/payment-history', { headers })
+                .then(res => res.ok ? res.json() : Promise.reject('Could not fetch payment history.'))
+                .then(payments => {
                     const historyBody = document.getElementById('purchase-history-body');
                     const noPurchasesEl = document.getElementById('no-purchases');
-                    if (purchases.length === 0) {
+                    if (payments.length === 0) {
                         historyBody.innerHTML = '';
                         noPurchasesEl.style.display = 'block';
                     } else {
                         noPurchasesEl.style.display = 'none';
-                        historyBody.innerHTML = purchases.map(p => {
+                        historyBody.innerHTML = payments.map(p => {
+                            const date = new Date(p.date * 1000);
+                            const dateStr = date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+                                + ', ' + date.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true });
+                            const cardStr = p.card_brand && p.card_last4
+                                ? `${p.card_brand.charAt(0).toUpperCase() + p.card_brand.slice(1)} •••• ${p.card_last4}`
+                                : '—';
+                            const hasPI = p.stripe_payment_intent_id && p.stripe_payment_intent_id !== 'null';
                             const hasInvoice = p.stripe_invoice_id && p.stripe_invoice_id !== 'null';
+                            const isAdjudicator = p.description && p.description.startsWith('Adjudicator:');
+                            const adjName = isAdjudicator ? p.description.replace('Adjudicator: ', '') : '';
                             return `
                             <tr>
-                                <td>${p.adjudicator_name}</td>
-                                <td>${new Date(p.purchase_date).toLocaleDateString('en-AU')}</td>
-                                <td>${parseFloat(p.amount_paid).toFixed(2)}</td>
+                                <td>${dateStr}</td>
+                                <td>${p.description || '—'}</td>
+                                <td>$${parseFloat(p.amount).toFixed(2)}</td>
+                                <td>${cardStr}</td>
                                 <td>
                                     <div class="action-buttons">
-                                        <button class="btn-small btn-receipt" 
-                                                onclick="downloadReceipt('${p.stripe_payment_intent_id}')"
-                                                title="Download Stripe Receipt">
+                                        <button class="btn-small btn-receipt"
+                                                onclick="downloadReceipt('${p.stripe_payment_intent_id || ''}')"
+                                                title="Download Receipt"
+                                                ${!hasPI ? 'disabled' : ''}>
                                             Receipt
                                         </button>
-                                        <button class="btn-small btn-invoice" 
-                                                onclick="downloadInvoice('${p.stripe_invoice_id || ''}')"
-                                                title="Download Stripe Invoice"
-                                                ${!hasInvoice ? 'disabled' : ''}>
+                                        ${isAdjudicator ? `
+                                        <button class="btn-small btn-invoice"
+                                                onclick="downloadInvoice(this, '${adjName.replace(/'/g, "\\'")}', '${p.stripe_payment_intent_id || ''}', '${p.stripe_invoice_id || ''}')"
+                                                title="Download Invoice"
+                                                ${!hasPI ? 'disabled' : ''}>
                                             Invoice
-                                        </button>
+                                        </button>` : hasInvoice ? `
+                                        <button class="btn-small btn-invoice"
+                                                onclick="downloadSubscriptionInvoice(this, '${p.stripe_invoice_id}')"
+                                                title="Download Invoice">
+                                            Invoice
+                                        </button>` : ''}
                                     </div>
                                 </td>
                             </tr>
@@ -876,8 +969,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .catch(error => {
                     document.getElementById('purchase-history-body').innerHTML =
-                        '<tr><td colspan="4">Could not load purchase history.</td></tr>';
-                    console.error("[Account] Error populating purchases:", error);
+                        '<tr><td colspan="5">Could not load payment history.</td></tr>';
+                    console.error("[Account] Error populating payment history:", error);
                 });
         }
 
@@ -901,7 +994,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="padding:20px; background:${isCancelled ? '#fff3cd' : '#e8f8f1'}; border-radius:8px; border:1px solid ${isCancelled ? '#ffc107' : '#00c97c'}; margin-bottom:20px;">
                             <strong style="font-size:16px;">${isCancelled ? 'Subscription Cancelled' : 'Active Subscription'}</strong>
                             <p style="margin:8px 0 0; color:#555;">
-                                Plan: <strong>${sub.plan_type === 'annual' ? 'Annual ($580/year)' : 'Monthly ($56.12/month)'}</strong><br>
+                                Plan: <strong>${sub.plan_type === 'annual' ? 'Annual ($520/year)' : 'Weekly ($12.95/week)'}</strong><br>
                                 Payment: <strong>${sub.payment_method === 'stripe' ? 'Credit Card' : 'Invoice'}</strong><br>
                                 ${isCancelled
                                     ? 'Access until: <strong>' + periodEnd + '</strong>'

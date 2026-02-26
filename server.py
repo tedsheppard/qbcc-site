@@ -387,7 +387,7 @@ purchases_con.commit()
 _gate_row = purchases_con.execute(
     "SELECT value FROM system_settings WHERE key = 'search_gate_enabled'"
 ).fetchone()
-SEARCH_GATE_ENABLED = (_gate_row and _gate_row["value"] == "1") if _gate_row else False
+SEARCH_GATE_ENABLED = False  # Subscription paywall disabled
 
 ADMIN_EMAILS = {
     "edwardsheppard5@gmail.com", 
@@ -2714,27 +2714,31 @@ async def get_receipt_url(
 ):
     """Gets the Stripe receipt URL for a payment intent"""
     try:
-        # Verify this payment belongs to the user
-        purchase = purchases_con.execute("""
-            SELECT 1 FROM adjudicator_purchases 
-            WHERE user_email = ? AND stripe_payment_intent_id = ?
-        """, (current_user['email'], payment_intent_id)).fetchone()
-        
-        if not purchase:
-            raise HTTPException(status_code=403, detail="Access denied")
-        
         # Get the payment intent with expanded charge
         intent = stripe.PaymentIntent.retrieve(
             payment_intent_id,
             expand=['latest_charge']
         )
-        
+
+        # Verify this payment belongs to the user via Stripe customer email match
+        # or via local adjudicator_purchases table
+        purchase = purchases_con.execute("""
+            SELECT 1 FROM adjudicator_purchases
+            WHERE user_email = ? AND stripe_payment_intent_id = ?
+        """, (current_user['email'], payment_intent_id)).fetchone()
+
+        if not purchase:
+            # Fallback: verify via Stripe customer
+            customers = stripe.Customer.list(email=current_user['email'], limit=1)
+            if not customers.data or customers.data[0].id != intent.customer:
+                raise HTTPException(status_code=403, detail="Access denied")
+
         receipt_url = None
         if intent.latest_charge:
             receipt_url = intent.latest_charge.receipt_url
-        
+
         return {"receiptUrl": receipt_url}
-        
+
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -3667,7 +3671,88 @@ def get_my_purchases(current_user: dict = Depends(get_current_purchase_user)):
     except Exception as e:
         print(f"Error fetching purchases for {current_user['email']}: {e}")
         raise HTTPException(status_code=500, detail="Could not retrieve purchase history.")
-    
+
+
+@app.get("/api/payment-history")
+def get_payment_history(current_user: dict = Depends(get_current_purchase_user)):
+    """Returns unified payment history from Stripe charges + local adjudicator purchases."""
+    email = current_user["email"]
+    payments = []
+
+    # 1. Get Stripe charges for the customer
+    try:
+        customers = stripe.Customer.list(email=email, limit=1)
+        if customers.data:
+            customer_id = customers.data[0].id
+            charges = stripe.Charge.list(customer=customer_id, limit=100)
+            for charge in charges.auto_paging_iter():
+                if charge.status != "succeeded":
+                    continue
+                card_brand = ""
+                card_last4 = ""
+                if charge.payment_method_details and charge.payment_method_details.get("card"):
+                    card_info = charge.payment_method_details["card"]
+                    card_brand = card_info.get("brand", "")
+                    card_last4 = card_info.get("last4", "")
+
+                # Determine description from metadata or invoice
+                description = charge.description or ""
+                metadata = charge.metadata or {}
+                if metadata.get("plan_type"):
+                    plan = metadata["plan_type"]
+                    description = "Annual Subscription" if plan == "annual" else "Weekly Subscription"
+                elif metadata.get("adjudicator_name"):
+                    description = f"Adjudicator: {metadata['adjudicator_name']}"
+                elif "subscription" in description.lower():
+                    description = "Subscription Payment"
+
+                payments.append({
+                    "date": charge.created,
+                    "description": description,
+                    "amount": charge.amount / 100.0,
+                    "card_brand": card_brand,
+                    "card_last4": card_last4,
+                    "stripe_payment_intent_id": charge.payment_intent,
+                    "stripe_invoice_id": charge.invoice,
+                    "source": "stripe"
+                })
+    except stripe.error.StripeError as e:
+        print(f"Stripe error fetching charges for {email}: {e}")
+
+    # 2. Get local adjudicator purchases (may overlap with Stripe charges)
+    try:
+        local_purchases = purchases_con.execute("""
+            SELECT adjudicator_name, purchase_date, amount_paid,
+                   stripe_payment_intent_id, stripe_invoice_id
+            FROM adjudicator_purchases
+            WHERE user_email = ?
+            ORDER BY purchase_date DESC
+        """, (email,)).fetchall()
+
+        # Build set of Stripe payment intent IDs already included
+        stripe_pi_ids = {p["stripe_payment_intent_id"] for p in payments if p["stripe_payment_intent_id"]}
+
+        for p in local_purchases:
+            # Skip if already captured from Stripe charges
+            if p["stripe_payment_intent_id"] and p["stripe_payment_intent_id"] in stripe_pi_ids:
+                continue
+            payments.append({
+                "date": int(datetime.fromisoformat(p["purchase_date"]).timestamp()) if p["purchase_date"] else 0,
+                "description": f"Adjudicator: {p['adjudicator_name']}",
+                "amount": float(p["amount_paid"]) if p["amount_paid"] else 0,
+                "card_brand": "",
+                "card_last4": "",
+                "stripe_payment_intent_id": p["stripe_payment_intent_id"],
+                "stripe_invoice_id": p["stripe_invoice_id"],
+                "source": "local"
+            })
+    except Exception as e:
+        print(f"Error fetching local purchases for {email}: {e}")
+
+    # Sort by date descending
+    payments.sort(key=lambda x: x["date"], reverse=True)
+    return payments
+
 
 @app.get("/download-invoice/{invoice_id}")
 async def download_invoice(
