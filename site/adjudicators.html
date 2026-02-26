@@ -1164,32 +1164,6 @@
   background: linear-gradient(to right, #21db87, #42ffaa) !important;
 }
 
-/* Profile Picture Dropdown */
-.profile-container { position: relative; margin-left: 20px; cursor: pointer; }
-.profile-pic { width: 40px; height: 40px; border-radius: 50%; background-color: #ddd; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid #ccc; }
-.profile-pic img { width: 100%; height: 100%; object-fit: cover; }
-.profile-pic .initials { font-weight: bold; color: #555; }
-.dropdown-menu { display: none; position: absolute; top: 50px; right: 0; background-color: white; color: #333; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 200px; z-index: 1001; }
-.dropdown-menu a, .dropdown-menu button { display: block; width: 100%; text-align: left; padding: 12px 15px; text-decoration: none; color: #333; border: none; background: none; cursor: pointer; font-size: 14px; font-family: Inter, sans-serif; }
-.dropdown-menu a:hover, .dropdown-menu button:hover { background-color: #f5f5f5; }
-.profile-container.active .dropdown-menu { display: block; }
-
-/* Ensures consistent top-nav alignment for avatar */
-#user-profile-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  margin-left: 25px;
-}
-
-.profile-avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  vertical-align: middle;
-}
-
 /* --- NEW: Payment Success Modal --- */
 .success-modal {
   position: fixed;
@@ -3437,42 +3411,7 @@ function normalizeInput(s) {
 
 
 
-// replicate account page profile-nav rendering
-document.addEventListener('DOMContentLoaded', async () => {
-  const nav = document.getElementById('user-profile-nav');
-  if (!nav) return;
-
-  const token = localStorage.getItem('purchase_token');
-  if (!token) {
-    nav.innerHTML = `<a href="/login" style="color:#00c97c;text-decoration:none;">Login Register</a>`;
-    return;
-  }
-
-  try {
-    const res = await fetch('/purchase-me', { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) throw new Error('Not logged in');
-    const user = await res.json();
-    const initials = (user.first_name?.[0] || '') + (user.last_name?.[0] || '');
-    nav.innerHTML = `
-      <div class="profile-container" onclick="this.classList.toggle('active')">
-        <div class="profile-pic"><div class="initials">${initials.toUpperCase()}</div></div>
-        <div class="dropdown-menu">
-          <a href="/account.html?tab=profile">Profile Settings</a>
-          <a href="/account.html?tab=purchases">Purchase History</a>
-          <a href="/account.html?tab=payment">Payment Settings</a>
-          <button onclick="logout()">Logout</button>
-        </div>
-      </div>
-    `;
-  } catch {
-    nav.innerHTML = `<a href="/login" style="color:#00c97c;text-decoration:none;">Login Register</a>`;
-  }
-});
-
-function logout() {
-  localStorage.removeItem('purchase_token');
-  window.location.reload();
-}
+// Profile nav is handled by main.js
 
 async function searchDecisions() {
   const searchInput = document.getElementById('decisionSearchInput');
