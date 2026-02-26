@@ -124,6 +124,14 @@ const style = document.createElement('style');
 style.innerHTML = `
 #user-profile-nav {
     margin-left: 25px;
+    min-width: 36px;
+    flex-shrink: 0;
+}
+.nav-links {
+    white-space: nowrap;
+}
+.nav-links a {
+    white-space: nowrap;
 }
 .profile-avatar {
     position: relative;
