@@ -4094,16 +4094,15 @@ async def create_invoice_for_purchase(
         # Create and finalize invoice
         invoice = stripe.Invoice.create(
             customer=customer.id,
-            auto_advance=True,
-            collection_method='send_invoice',
-            days_until_due=0,
+            auto_advance=False,
+            collection_method='charge_automatically',
             metadata={
                 'user_email': current_user['email'],
                 'adjudicator_name': adjudicator_name,
                 'payment_intent_id': payment_intent_id
             }
         )
-        
+
         invoice = stripe.Invoice.finalize_invoice(invoice.id)
         invoice = stripe.Invoice.pay(invoice.id, paid_out_of_band=True)
         
