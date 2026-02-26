@@ -103,7 +103,7 @@ function renderLoggedOutNav(navContainer) {
         : `?redirect=${encodeURIComponent(window.location.href)}`;
 
     navContainer.innerHTML = `
-        <a href="/login${redirectUrl}" id="login-link" style="text-decoration:none;color:#008a5c;font-weight:600;">Sign In</a>
+        <a href="/login${redirectUrl}" id="login-link" style="text-decoration:none;color:#008a5c;font-weight:600;font-size:14px;white-space:nowrap;">Sign In</a>
     `;
     navContainer.classList.add('loaded');
 }
@@ -130,6 +130,8 @@ style.innerHTML = `
     min-width: 36px;
     min-height: 36px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
     visibility: hidden;
 }
 #user-profile-nav.loaded {
