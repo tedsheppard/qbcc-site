@@ -19,64 +19,71 @@
       --text-muted: #888;
       --border-light: #e5e5e5;
     }
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100vh; }
     a { text-decoration: none; color: inherit; }
     button { border: none; cursor: pointer; font-family: inherit; }
     .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
 
+    /* NAV */
     .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
     .nav-left { display: flex; align-items: center; gap: 32px; }
     .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
-    .nav-logo-icon { width: 28px; height: 28px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
-    .nav-logo-icon svg { width: 16px; height: 16px; }
     .nav-links { display: flex; align-items: center; gap: 24px; }
     .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
     .nav-links a:hover { color: white; }
     .nav-links a.active { color: white; font-weight: 500; }
     .nav-right { display: flex; align-items: center; gap: 12px; }
-    .btn-signin { background: transparent; color: white; font-size: 13.5px; font-weight: 500; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; }
-    .btn-signin:hover { background: rgba(255,255,255,0.08); }
 
-    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 32px 0; }
-    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
-    .page-header p { font-size: 14px; color: var(--text-secondary); }
+    /* PAGE CONTENT */
+    .page-wrap { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 56px 20px 80px; }
 
-    .form-layout { max-width: 640px; margin: 0 auto; padding: 40px 0 72px; }
+    .feedback-card { background: white; border: 1px solid var(--border-light); border-radius: 14px; width: 100%; max-width: 520px; padding: 40px; }
+    .feedback-card h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 4px; }
+    .feedback-card .subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 32px; line-height: 1.5; }
 
-    .type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 28px; }
-    .type-card { background: white; border: 1px solid var(--border-light); border-radius: 10px; padding: 16px 14px; text-align: center; cursor: pointer; transition: all 0.2s; }
-    .type-card:hover { border-color: #ccc; }
-    .type-card.selected { border-color: var(--green); background: #f0fdf4; }
-    .type-card .type-icon { font-size: 24px; margin-bottom: 6px; }
-    .type-card .type-label { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+    /* TYPE PILLS */
+    .type-selector { margin-bottom: 28px; }
+    .type-selector-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px; }
+    .type-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .type-pill { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: #fafafa; border: 1px solid var(--border-light); border-radius: 100px; cursor: pointer; transition: all 0.15s ease; user-select: none; }
+    .type-pill:hover { border-color: #ccc; color: var(--text-primary); }
+    .type-pill.selected { background: #f0faf5; border-color: var(--green); color: #0a6e42; }
+    .type-pill svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .type-pill.selected svg { stroke: #0a6e42; }
 
-    .form-card { background: white; border: 1px solid var(--border-light); border-radius: 14px; padding: 28px; margin-bottom: 16px; }
-    .form-card h2 { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
-
-    .form-group { margin-bottom: 18px; }
-    .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
-    .form-label .optional { font-weight: 400; color: var(--text-muted); text-transform: none; letter-spacing: 0; }
-    .form-input { width: 100%; padding: 10px 14px; font-size: 14px; font-family: inherit; border: 1px solid var(--border-light); border-radius: 8px; outline: none; transition: border-color 0.2s; }
-    .form-input:focus { border-color: var(--green); }
-    .form-textarea { width: 100%; padding: 12px 14px; font-size: 14px; font-family: inherit; border: 1px solid var(--border-light); border-radius: 8px; outline: none; resize: vertical; min-height: 120px; transition: border-color 0.2s; }
-    .form-textarea:focus { border-color: var(--green); }
-    .form-select { width: 100%; padding: 10px 14px; font-size: 14px; font-family: inherit; border: 1px solid var(--border-light); border-radius: 8px; background: white; cursor: pointer; appearance: none; -webkit-appearance: none; padding-right: 32px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+    /* FORM */
+    .form-divider { height: 1px; background: var(--border-light); margin-bottom: 24px; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .submit-btn { width: 100%; padding: 12px; font-size: 14px; font-weight: 600; border-radius: 8px; background: var(--green); color: #000; transition: background 0.2s; }
+    .form-group { margin-bottom: 18px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 6px; }
+    .form-label .optional { font-weight: 400; color: var(--text-muted); font-size: 12px; }
+    .form-input { width: 100%; padding: 9px 13px; font-size: 14px; font-family: inherit; border: 1px solid var(--border-light); border-radius: 8px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; background: white; color: var(--text-primary); }
+    .form-input::placeholder { color: #bbb; }
+    .form-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0, 212, 126, 0.08); }
+    .form-textarea { width: 100%; padding: 10px 13px; font-size: 14px; font-family: inherit; border: 1px solid var(--border-light); border-radius: 8px; outline: none; resize: vertical; min-height: 110px; transition: border-color 0.2s, box-shadow 0.2s; background: white; color: var(--text-primary); line-height: 1.5; }
+    .form-textarea::placeholder { color: #bbb; }
+    .form-textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0, 212, 126, 0.08); }
+
+    .submit-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 600; border-radius: 8px; background: var(--green); color: #000; transition: background 0.2s; margin-top: 8px; }
     .submit-btn:hover { background: var(--green-dark); }
+    .submit-btn:active { transform: scale(0.995); }
 
-    .success-message { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 24px; text-align: center; display: none; }
-    .success-message svg { width: 40px; height: 40px; stroke: var(--green); fill: none; stroke-width: 2; margin-bottom: 12px; }
-    .success-message h3 { font-size: 18px; font-weight: 700; color: #166534; margin-bottom: 6px; }
-    .success-message p { font-size: 14px; color: #166534; }
+    /* SUCCESS */
+    .success-state { display: none; text-align: center; padding: 20px 0; }
+    .success-icon { width: 48px; height: 48px; border-radius: 50%; background: #f0faf5; border: 1.5px solid #c6f0da; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+    .success-icon svg { width: 22px; height: 22px; stroke: var(--green-dark); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .success-state h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; color: var(--text-primary); }
+    .success-state p { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+    .success-state .back-link { display: inline-block; margin-top: 20px; font-size: 13px; font-weight: 500; color: var(--green-dark); }
+    .success-state .back-link:hover { text-decoration: underline; }
 
+    /* FOOTER */
     .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
     .footer-inner { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); gap: 24px; }
     .footer-brand { padding-right: 16px; }
     .footer-brand .footer-logo { display: flex; align-items: center; gap: 7px; color: white; font-weight: 700; font-size: 15px; margin-bottom: 10px; }
-    .footer-logo-icon { width: 20px; height: 20px; background: var(--green); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
-    .footer-logo-icon svg { width: 12px; height: 12px; }
     .footer-brand p { font-size: 12px; color: #555; line-height: 1.5; }
     .footer-col h4 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
     .footer-col a { display: block; font-size: 13px; color: #666; margin-bottom: 7px; transition: color 0.2s; }
@@ -85,9 +92,15 @@
 
     @media (max-width: 768px) {
       .nav-links { display: none; }
-      .type-grid { grid-template-columns: repeat(2, 1fr); }
       .form-row { grid-template-columns: 1fr; }
       .footer-inner { grid-template-columns: 1fr; }
+      .feedback-card { padding: 28px 24px; }
+      .page-wrap { padding: 32px 16px 60px; }
+    }
+
+    @media (max-width: 480px) {
+      .type-pills { gap: 6px; }
+      .type-pill { padding: 6px 12px; font-size: 12px; }
     }
   </style>
 </head>
@@ -96,10 +109,7 @@
   <nav class="nav">
     <div class="nav-inner">
       <div class="nav-left">
-        <a href="/new-test/" class="nav-logo">
-          <div class="nav-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9m-9 9a9 9 0 019-9"/></svg></div>
-          Sopal
-        </a>
+        <a href="/new-test/" class="nav-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;"></a>
         <div class="nav-links">
           <a href="/new-test/search">Search</a>
           <a href="/new-test/adjudicators">Adjudicators</a>
@@ -113,39 +123,39 @@
     </div>
   </nav>
 
-  <div class="page-header">
-    <div class="container">
-      <h1>Send Feedback</h1>
-      <p>Help us improve Sopal by sharing your thoughts and suggestions</p>
-    </div>
-  </div>
+  <div class="page-wrap">
+    <div class="feedback-card">
+      <h1>Send us feedback</h1>
+      <p class="subtitle">Found a bug, have an idea, or just want to say something? We'd like to hear it.</p>
 
-  <div class="form-layout">
-    <div class="type-grid">
-      <div class="type-card" data-type="bug">
-        <div class="type-icon">&#x1F41B;</div>
-        <div class="type-label">Bug Report</div>
-      </div>
-      <div class="type-card" data-type="feature">
-        <div class="type-icon">&#x1F4A1;</div>
-        <div class="type-label">Feature Request</div>
-      </div>
-      <div class="type-card" data-type="content">
-        <div class="type-icon">&#x1F4C4;</div>
-        <div class="type-label">Content Issue</div>
-      </div>
-      <div class="type-card" data-type="general">
-        <div class="type-icon">&#x1F4AC;</div>
-        <div class="type-label">General</div>
-      </div>
-    </div>
+      <form id="feedbackForm">
+        <input type="hidden" id="feedbackType" name="type" required>
+        <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
 
-    <form id="feedbackForm">
-      <input type="hidden" id="feedbackType" name="type" required>
-      <input type="text" name="_honey" style="display:none">
+        <div class="type-selector">
+          <span class="type-selector-label">What is this about?</span>
+          <div class="type-pills">
+            <div class="type-pill" data-type="bug">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Bug report
+            </div>
+            <div class="type-pill" data-type="feature">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Feature request
+            </div>
+            <div class="type-pill" data-type="content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Content issue
+            </div>
+            <div class="type-pill" data-type="general">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              General
+            </div>
+          </div>
+        </div>
 
-      <div class="form-card">
-        <h2>Contact Information</h2>
+        <div class="form-divider"></div>
+
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Name <span class="optional">(optional)</span></label>
@@ -153,39 +163,29 @@
           </div>
           <div class="form-group">
             <label class="form-label">Email <span class="optional">(optional)</span></label>
-            <input type="email" class="form-input" name="email" placeholder="your@email.com">
+            <input type="email" class="form-input" name="email" placeholder="you@example.com">
           </div>
         </div>
-      </div>
-
-      <div class="form-card">
-        <h2>Feedback Details</h2>
         <div class="form-group">
           <label class="form-label">Subject</label>
-          <input type="text" class="form-input" name="subject" required placeholder="Brief summary of your feedback">
+          <input type="text" class="form-input" name="subject" required placeholder="What's this about?">
         </div>
         <div class="form-group">
-          <label class="form-label">Description</label>
-          <textarea class="form-textarea" name="details" required placeholder="Please provide as much detail as possible..."></textarea>
+          <label class="form-label">Details</label>
+          <textarea class="form-textarea" name="details" required placeholder="Tell us more..."></textarea>
         </div>
-        <div class="form-group">
-          <label class="form-label">Priority</label>
-          <select class="form-select" name="priority">
-            <option value="low">Low — Nice to have</option>
-            <option value="medium" selected>Medium — Would be helpful</option>
-            <option value="high">High — Significant impact</option>
-            <option value="urgent">Urgent — Blocking issue</option>
-          </select>
+
+        <button type="submit" class="submit-btn">Send feedback</button>
+      </form>
+
+      <div class="success-state" id="successMessage">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
+        <h2>Feedback sent</h2>
+        <p>Thanks for taking the time. We'll review this shortly.</p>
+        <a href="/new-test/feedback" class="back-link">Send another</a>
       </div>
-
-      <button type="submit" class="submit-btn">Submit Feedback</button>
-    </form>
-
-    <div class="success-message" id="successMessage">
-      <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      <h3>Thank you!</h3>
-      <p>Your feedback has been submitted successfully. We'll review it shortly.</p>
     </div>
   </div>
 
@@ -193,7 +193,7 @@
     <div class="container">
       <div class="footer-inner">
         <div class="footer-brand">
-          <div class="footer-logo"><div class="footer-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9m-9 9a9 9 0 019-9"/></svg></div>Sopal</div>
+          <div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div>
           <p>An intelligent search tool for adjudication decisions under the BIF Act 2017 (Qld)</p>
         </div>
         <div class="footer-col"><h4>Tools</h4><a href="/new-test/search">Decision Search</a><a href="/new-test/adjudicators">Adjudicators</a><a href="/new-test/interest-calculator">Interest Calculator</a><a href="/new-test/due-date-calculator">Due Date Calculator</a></div>
@@ -206,9 +206,9 @@
 
 <script>
 // Feedback type selection
-document.querySelectorAll('.type-card').forEach(card => {
-  card.addEventListener('click', function() {
-    document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+document.querySelectorAll('.type-pill').forEach(pill => {
+  pill.addEventListener('click', function() {
+    document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('selected'));
     this.classList.add('selected');
     document.getElementById('feedbackType').value = this.dataset.type;
   });
@@ -236,7 +236,6 @@ document.getElementById('feedbackForm').addEventListener('submit', async functio
     if (data.ok) {
       document.getElementById('successMessage').style.display = 'block';
       this.style.display = 'none';
-      document.querySelector('.type-grid').style.display = 'none';
       document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
       alert('Error sending feedback: ' + data.error);

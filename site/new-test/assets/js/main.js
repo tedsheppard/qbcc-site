@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     updateNavUI();
+    initPageTransition();
 });
 
 async function updateNavUI() {
@@ -101,6 +102,80 @@ function handleLogout(e, userEmail) {
     location.reload();
 }
 
+/* ── Page Transition (staggered columns) ── */
+function initPageTransition() {
+    const COLS = 5;
+    const STAGGER = 50;
+    const COL_DURATION = 280;
+    const PAUSE = 60;
+
+    // Create overlay container
+    const overlay = document.createElement('div');
+    overlay.id = 'nt-transition';
+    overlay.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < COLS; i++) {
+        const col = document.createElement('div');
+        col.className = 'nt-col';
+        overlay.appendChild(col);
+    }
+    document.body.appendChild(overlay);
+
+    const cols = overlay.querySelectorAll('.nt-col');
+
+    // On page load: if we came from a transition, play reveal (bars sweep up)
+    if (sessionStorage.getItem('nt-transitioning')) {
+        sessionStorage.removeItem('nt-transitioning');
+        cols.forEach(c => { c.style.transform = 'scaleY(1)'; c.style.transformOrigin = 'top'; });
+        overlay.style.display = 'flex';
+        requestAnimationFrame(() => {
+            cols.forEach((c, i) => {
+                c.style.transition = `transform ${COL_DURATION}ms cubic-bezier(0.76, 0, 0.24, 1) ${i * STAGGER}ms`;
+                c.style.transformOrigin = 'top';
+                c.style.transform = 'scaleY(0)';
+            });
+            setTimeout(() => { overlay.style.display = 'none'; }, COL_DURATION + COLS * STAGGER + 50);
+        });
+    }
+
+    // Intercept link clicks
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a[href]');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('mailto') || href.startsWith('tel')) return;
+        if (link.target === '_blank') return;
+        if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+
+        // Only transition for /new-test/ internal links
+        if (!href.startsWith('/new-test/') && !href.startsWith('/new-test')) return;
+
+        // Skip account pages (tabs switch without full reload)
+        if (href.includes('/account')) return;
+
+        // Skip if same page
+        if (href === window.location.pathname || href === window.location.pathname + window.location.search) return;
+
+        e.preventDefault();
+
+        // Play cover animation (bars sweep down)
+        overlay.style.display = 'flex';
+        cols.forEach(c => { c.style.transition = 'none'; c.style.transform = 'scaleY(0)'; c.style.transformOrigin = 'bottom'; });
+
+        requestAnimationFrame(() => {
+            cols.forEach((c, i) => {
+                c.style.transition = `transform ${COL_DURATION}ms cubic-bezier(0.76, 0, 0.24, 1) ${i * STAGGER}ms`;
+                c.style.transform = 'scaleY(1)';
+            });
+
+            setTimeout(() => {
+                sessionStorage.setItem('nt-transitioning', '1');
+                window.location.href = href;
+            }, COL_DURATION + COLS * STAGGER + PAUSE);
+        });
+    });
+}
+
 /* Styles for profile avatar/dropdown in dark nav */
 const ntStyle = document.createElement('style');
 ntStyle.innerHTML = `
@@ -159,6 +234,20 @@ ntStyle.innerHTML = `
     height: 1px;
     background-color: #333;
     margin: 4px 0;
+}
+/* Page transition overlay */
+#nt-transition {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+}
+.nt-col {
+    flex: 1;
+    background: #0a0a0a;
+    transform: scaleY(0);
+    transform-origin: bottom;
 }
 `;
 document.head.appendChild(ntStyle);
