@@ -50,9 +50,9 @@ async function updateNavUI() {
                 ${avatarHTML}
             </div>
             <div class="nt-profile-dropdown" id="nt-nav-dropdown">
-                <a href="/account.html?tab=profile" class="nt-dropdown-item">Profile Settings</a>
-                <a href="/account.html?tab=purchases" class="nt-dropdown-item">Purchase History</a>
-                <a href="/account.html?tab=payment" class="nt-dropdown-item">Payment Settings</a>
+                <a href="/new-test/account?tab=profile" class="nt-dropdown-item">Profile Settings</a>
+                <a href="/new-test/account?tab=purchases" class="nt-dropdown-item">Purchase History</a>
+                <a href="/new-test/account?tab=payment" class="nt-dropdown-item">Payment Settings</a>
                 <div class="nt-dropdown-divider"></div>
                 <a href="#" id="nt-logout-link" class="nt-dropdown-item">Logout</a>
             </div>
