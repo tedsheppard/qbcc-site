@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interest Calculator | Sopal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-dark: #0a0a0a;
+      --bg-darker: #050505;
+      --bg-card-dark: #141414;
+      --green: #00d47e;
+      --green-dark: #00b368;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #888;
+      --border-light: #e5e5e5;
+      --border-dark: #222;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    button { border: none; cursor: pointer; font-family: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+    /* NAV */
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+    .nav-logo-icon { width: 28px; height: 28px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .nav-logo-icon svg { width: 16px; height: 16px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-links a.active { color: white; font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .btn-signin { background: transparent; color: white; font-size: 13.5px; font-weight: 500; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; }
+    .btn-signin:hover { background: rgba(255,255,255,0.08); }
+
+    /* PAGE HEADER */
+    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 32px 0; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-secondary); }
+
+    /* CALCULATOR LAYOUT */
+    .calc-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 32px 0 64px; }
+
+    /* CARD */
+    .calc-card {
+      background: white; border: 1px solid var(--border-light); border-radius: 14px;
+      overflow: hidden;
+    }
+    .calc-card-header {
+      padding: 20px 24px; border-bottom: 1px solid var(--border-light);
+    }
+    .calc-card-header h2 { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+    .calc-card-header p { font-size: 12px; color: var(--text-muted); }
+    .calc-card-body { padding: 24px; }
+
+    /* TABS */
+    .calc-tabs { display: flex; background: #f0f0f0; border-radius: 10px; padding: 3px; margin-bottom: 24px; }
+    .calc-tab {
+      flex: 1; padding: 8px 14px; font-size: 13px; font-weight: 500; border-radius: 8px;
+      background: transparent; color: var(--text-secondary); text-align: center; transition: all 0.25s;
+    }
+    .calc-tab.active { background: white; color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+    /* FORM */
+    .form-group { margin-bottom: 16px; }
+    .form-group.hidden { display: none; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .form-input {
+      width: 100%; padding: 10px 14px; font-size: 14px; font-family: inherit;
+      border: 1px solid var(--border-light); border-radius: 8px; outline: none; transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--green); }
+    .form-input-group { display: flex; }
+    .form-input-group .prefix {
+      padding: 10px 12px; background: #f7f7f8; border: 1px solid var(--border-light);
+      border-right: none; border-radius: 8px 0 0 8px; font-size: 14px; color: var(--text-muted); font-weight: 500;
+    }
+    .form-input-group .form-input { border-radius: 0 8px 8px 0; }
+    .form-input-group .suffix {
+      padding: 10px 12px; background: #f7f7f8; border: 1px solid var(--border-light);
+      border-left: none; border-radius: 0 8px 8px 0; font-size: 14px; color: var(--text-muted); font-weight: 500;
+    }
+    .form-input-group .suffix ~ .form-input { border-radius: 8px 0 0 8px; }
+    .calc-btn {
+      width: 100%; padding: 11px; font-size: 14px; font-weight: 600; border-radius: 8px;
+      background: var(--green); color: #000; transition: background 0.2s; margin-top: 8px;
+    }
+    .calc-btn:hover { background: var(--green-dark); }
+
+    /* RESULT */
+    .result-placeholder {
+      background: white; border: 1px solid var(--border-light); border-radius: 14px;
+      padding: 48px 24px; text-align: center; color: var(--text-muted); font-size: 14px;
+    }
+    .result-placeholder svg { width: 48px; height: 48px; stroke: #ccc; fill: none; stroke-width: 1.5; margin-bottom: 12px; }
+    .result-card {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px 24px;
+    }
+    .result-card h3 { font-size: 14px; font-weight: 600; color: #166534; margin-bottom: 12px; }
+    .result-table { width: 100%; font-size: 13px; }
+    .result-table tr { border-bottom: 1px solid #d1fae5; }
+    .result-table tr:last-child { border-bottom: none; }
+    .result-table td { padding: 8px 0; }
+    .result-table td:first-child { color: #166534; font-weight: 500; }
+    .result-table td:last-child { text-align: right; font-weight: 600; color: #166534; }
+    .result-total { font-size: 18px; font-weight: 700; color: #166534; margin-top: 12px; padding-top: 12px; border-top: 1px solid #bbf7d0; display: flex; justify-content: space-between; }
+    .result-copy-btn {
+      display: flex; align-items: center; gap: 6px; margin-top: 12px; padding: 8px 14px;
+      background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 8px;
+      font-size: 12px; font-weight: 500; color: #166534; cursor: pointer; transition: background 0.2s;
+    }
+    .result-copy-btn:hover { background: #bbf7d0; }
+    .result-copy-btn svg { width: 14px; height: 14px; stroke: #166534; fill: none; stroke-width: 2; }
+    .result-error {
+      background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px 24px;
+      color: #991b1b; font-size: 14px; font-weight: 500;
+    }
+    .result-loading {
+      background: white; border: 1px solid var(--border-light); border-radius: 14px;
+      padding: 48px 24px; text-align: center; color: var(--text-muted); font-size: 14px;
+    }
+
+    /* BREAKDOWN TABLE */
+    .breakdown-card {
+      background: white; border: 1px solid var(--border-light); border-radius: 14px;
+      overflow: hidden; margin-top: 16px;
+    }
+    .breakdown-card-header {
+      padding: 16px 24px; border-bottom: 1px solid var(--border-light);
+      display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .breakdown-card-header:hover { background: #f9f9f9; }
+    .breakdown-card-header h3 { font-size: 14px; font-weight: 600; }
+    .breakdown-card-header svg { width: 16px; height: 16px; stroke: var(--text-muted); fill: none; stroke-width: 2; transition: transform 0.3s; }
+    .breakdown-card-header.open svg { transform: rotate(180deg); }
+    .breakdown-body { display: none; }
+    .breakdown-body.open { display: block; }
+    .breakdown-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .breakdown-table th { padding: 10px 16px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); background: #f7f7f8; border-bottom: 1px solid var(--border-light); }
+    .breakdown-table td { padding: 8px 16px; border-bottom: 1px solid #f0f0f0; }
+    .breakdown-table tr:last-child td { border-bottom: none; }
+    .breakdown-table td:last-child { text-align: right; font-weight: 500; }
+    .breakdown-table th:last-child { text-align: right; }
+
+    /* PROVISION BOX */
+    .provision-box {
+      margin-top: 24px; border: 1px solid var(--border-light); border-radius: 10px; overflow: hidden;
+    }
+    .provision-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; font-size: 13px; font-weight: 500; background: #f7f7f8;
+      width: 100%; text-align: left; transition: background 0.2s;
+    }
+    .provision-toggle:hover { background: #efefef; }
+    .provision-toggle svg { width: 14px; height: 14px; stroke: var(--text-muted); fill: none; stroke-width: 2; transition: transform 0.3s; }
+    .provision-toggle.open svg { transform: rotate(45deg); }
+    .provision-content { padding: 16px; font-size: 13px; color: var(--text-secondary); line-height: 1.7; border-top: 1px solid var(--border-light); display: none; }
+    .provision-content.open { display: block; }
+
+    /* DISCLAIMER */
+    .disclaimer {
+      background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 16px 20px;
+      margin-top: 24px; font-size: 12px; color: #92400e; line-height: 1.6;
+    }
+    .disclaimer strong { font-weight: 600; }
+
+    /* FOOTER */
+    .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
+    .footer-inner { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); gap: 24px; }
+    .footer-brand { padding-right: 16px; }
+    .footer-brand .footer-logo { display: flex; align-items: center; gap: 7px; color: white; font-weight: 700; font-size: 15px; margin-bottom: 10px; }
+    .footer-logo-icon { width: 20px; height: 20px; background: var(--green); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+    .footer-logo-icon svg { width: 12px; height: 12px; }
+    .footer-brand p { font-size: 12px; color: #555; line-height: 1.5; }
+    .footer-col h4 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+    .footer-col a { display: block; font-size: 13px; color: #666; margin-bottom: 7px; transition: color 0.2s; }
+    .footer-col a:hover { color: white; }
+    .footer-bottom { display: flex; align-items: center; justify-content: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #555; }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .calc-layout { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/new-test/" class="nav-logo">
+          <div class="nav-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9m-9 9a9 9 0 019-9"/></svg></div>
+          Sopal
+        </a>
+        <div class="nav-links">
+          <a href="/new-test/search">Search</a>
+          <a href="/new-test/adjudicators">Adjudicators</a>
+          <a href="/new-test/interest-calculator" class="active">Interest Calculator</a>
+          <a href="/new-test/due-date-calculator">Due Date Calculator</a>
+          <a href="/new-test/how-to">How-To Guide</a>
+          <a href="/new-test/feedback">Feedback</a>
+        </div>
+      </div>
+      <div class="nav-right"><a href="#" class="btn-signin">Sign In</a></div>
+    </div>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="container">
+      <h1>Interest Calculator</h1>
+      <p>Calculate interest on late progress payments under BIF Act section 73</p>
+    </div>
+  </div>
+
+  <!-- CALCULATOR -->
+  <div class="container">
+    <div class="calc-layout">
+
+      <!-- LEFT: INPUT -->
+      <div>
+        <div class="calc-card">
+          <div class="calc-card-header">
+            <h2>Calculate Interest</h2>
+            <p>Choose your rate type below</p>
+          </div>
+          <div class="calc-card-body">
+            <div class="calc-tabs">
+              <button class="calc-tab active" onclick="openTab('contractual')">Contractual Rate</button>
+              <button class="calc-tab" onclick="openTab('qbcc')">QBCC Penalty Rate</button>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Progress Payment Amount</label>
+              <div class="form-input-group">
+                <span class="prefix">$</span>
+                <input type="number" class="form-input" id="principal-amount" placeholder="0.00">
+              </div>
+            </div>
+
+            <div class="form-group" id="rate-group">
+              <label class="form-label">Annual Interest Rate</label>
+              <div class="form-input-group">
+                <input type="number" class="form-input" id="annual-rate" style="border-radius:8px 0 0 8px" placeholder="0">
+                <span class="suffix">%</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Due Date</label>
+              <input type="date" class="form-input" id="start-date">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Calculation Date</label>
+              <input type="date" class="form-input" id="end-date">
+            </div>
+
+            <button class="calc-btn" id="calc-btn" onclick="handleCalculate()">Calculate Interest</button>
+          </div>
+        </div>
+
+        <div class="provision-box">
+          <button class="provision-toggle" onclick="toggleProvision(this)">
+            <span>BIF Act s73 — Interest on overdue progress payments</span>
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="provision-content">
+            <p><strong>73 Due date for payment</strong></p>
+            <p>(1) A progress payment under a construction contract becomes payable &mdash;</p>
+            <p style="padding-left:16px">(a) if the contract provides for the matter &mdash; on the day on which the payment becomes payable under the contract; or</p>
+            <p style="padding-left:16px">(b) if the contract does not provide for the matter &mdash; on the day that is 10 business days after the day a payment claim for the progress payment is made under part 3.</p>
+            <p style="margin-top:10px">(2) Interest for a construction contract is payable on the unpaid amount of a progress payment that has become payable at the greater of the following rates &mdash;</p>
+            <p style="padding-left:16px">(a) the rate stated in the contract;</p>
+            <p style="padding-left:16px">(b) the rate prescribed under the Civil Proceedings Act 2011, section 59(3) for a money order debt.</p>
+            <p style="margin-top:10px">(3) However, for a construction contract to which the Queensland Building and Construction Commission Act 1991, section 67P applies because it is a building contract, interest is payable at the penalty rate under that section.</p>
+          </div>
+        </div>
+
+        <div class="disclaimer">
+          <strong>Important:</strong> This calculator provides estimates only and should not be relied upon as legal advice. Always verify calculations independently and consult a qualified legal professional.
+        </div>
+      </div>
+
+      <!-- RIGHT: RESULT -->
+      <div id="results-container">
+        <div class="result-placeholder" id="result-placeholder">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2" ry="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <p>Enter your details and click calculate<br>to see results here</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo"><div class="footer-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9m-9 9a9 9 0 019-9"/></svg></div>Sopal</div>
+          <p>An intelligent search tool for adjudication decisions under the BIF Act 2017 (Qld)</p>
+        </div>
+        <div class="footer-col">
+          <h4>Tools</h4>
+          <a href="/new-test/search">Decision Search</a>
+          <a href="/new-test/adjudicators">Adjudicators</a>
+          <a href="/new-test/interest-calculator">Interest Calculator</a>
+          <a href="/new-test/due-date-calculator">Due Date Calculator</a>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <a href="/new-test/how-to">How-To Guide</a>
+          <a href="/new-test/feedback">Feedback</a>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <a href="/new-test/privacy">Privacy</a>
+          <a href="/new-test/terms">Terms of Use</a>
+          <a href="/new-test/account-terms">Account Terms</a>
+        </div>
+      </div>
+      <div class="footer-bottom">&copy; 2026 Sopal Australia. All rights reserved.</div>
+    </div>
+  </footer>
+
+<script>
+  // ── State ──
+  let currentTab = 'contractual';
+
+  // Set default calculation date to today
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  document.getElementById('end-date').value = `${yyyy}-${mm}-${dd}`;
+
+  // ── Tab switching ──
+  function openTab(tabName) {
+    currentTab = tabName;
+    const tabs = document.querySelectorAll('.calc-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+
+    if (tabName === 'contractual') {
+      tabs[0].classList.add('active');
+      document.getElementById('rate-group').classList.remove('hidden');
+    } else {
+      tabs[1].classList.add('active');
+      document.getElementById('rate-group').classList.add('hidden');
+    }
+
+    // Clear results on tab switch
+    document.getElementById('results-container').innerHTML = `
+      <div class="result-placeholder" id="result-placeholder">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;stroke:#ccc;fill:none;stroke-width:1.5;margin-bottom:12px"><rect x="2" y="3" width="20" height="18" rx="2" ry="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        <p>Enter your details and click calculate<br>to see results here</p>
+      </div>`;
+  }
+
+  // ── Dispatch calculate ──
+  function handleCalculate() {
+    if (currentTab === 'contractual') {
+      calculateContractualInterest();
+    } else {
+      calculateQbccInterest();
+    }
+  }
+
+  // ── Contractual interest (pure frontend math) ──
+  function calculateContractualInterest() {
+    const principal = parseFloat(document.getElementById('principal-amount').value);
+    const annualRate = parseFloat(document.getElementById('annual-rate').value);
+    const startDate = new Date(document.getElementById('start-date').value);
+    const endDate = new Date(document.getElementById('end-date').value);
+
+    if (isNaN(principal) || isNaN(annualRate) || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      displayError('Please fill in all fields with valid numbers and dates.');
+      return;
+    }
+
+    if (endDate < startDate) {
+      displayError('The "Calculation Date" must be after the "Due Date".');
+      return;
+    }
+
+    const timeDiff = endDate.getTime() - startDate.getTime();
+    const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+    const dailyRate = annualRate / 365;
+    const interest = principal * (dailyRate / 100) * days;
+
+    displayResults({
+      principal,
+      annualRate,
+      startDate,
+      endDate,
+      days,
+      interest,
+      rateType: 'Contractual'
+    });
+  }
+
+  // ── QBCC interest (async, calls backend) ──
+  async function calculateQbccInterest() {
+    const principal = parseFloat(document.getElementById('principal-amount').value);
+    const startDate = new Date(document.getElementById('start-date').value);
+    const endDate = new Date(document.getElementById('end-date').value);
+
+    if (isNaN(principal) || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      displayError('Please fill in all fields with valid numbers and dates.');
+      return;
+    }
+
+    if (endDate < startDate) {
+      displayError('The "Calculation Date" must be after the "Due Date".');
+      return;
+    }
+
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+
+    // Show loading state
+    document.getElementById('results-container').innerHTML = `
+      <div class="result-loading">
+        <p>Fetching latest RBA rates for the period...</p>
+      </div>`;
+
+    try {
+      const response = await fetch(`/get_interest_rate?startDate=${startDateStr}&endDate=${endDateStr}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to fetch interest rates from the server.');
+      }
+      const data = await response.json();
+
+      let totalInterest = 0;
+
+      for (const dailyData of data.dailyRates) {
+        const penaltyRate = 10.0 + dailyData.rate;
+        const dailyInterest = (principal / 365) * (penaltyRate / 100);
+        totalInterest += dailyInterest;
+      }
+
+      const timeDiff = endDate.getTime() - startDate.getTime();
+      const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+      const rates = data.dailyRates.map(r => r.rate);
+      const minRate = Math.min(...rates);
+      const maxRate = Math.max(...rates);
+
+      displayResults({
+        principal,
+        annualRate: { min: 10 + minRate, max: 10 + maxRate },
+        startDate,
+        endDate,
+        days,
+        interest: totalInterest,
+        rateType: 'QBCC Act section 67P',
+        rbaRate: { min: minRate, max: maxRate },
+        dailyRates: data.dailyRates
+      });
+
+    } catch (error) {
+      displayError(`Error: ${error.message}`);
+    }
+  }
+
+  // ── Display error ──
+  function displayError(message) {
+    document.getElementById('results-container').innerHTML = `
+      <div class="result-error">${message}</div>`;
+  }
+
+  // ── Display results ──
+  function displayResults(data) {
+    const { principal, annualRate, startDate, endDate, days, interest, rateType, rbaRate, dailyRates } = data;
+    const total = principal + interest;
+
+    let rateDisplay, rateDetail;
+
+    if (rateType === 'QBCC Act section 67P') {
+      if (rbaRate.min.toFixed(2) === rbaRate.max.toFixed(2)) {
+        rateDisplay = `${annualRate.max.toFixed(2)}%`;
+        rateDetail = `10% + ${rbaRate.max.toFixed(2)}% RBA rate`;
+      } else {
+        rateDisplay = `${annualRate.min.toFixed(2)}% - ${annualRate.max.toFixed(2)}%`;
+        rateDetail = `Variable daily rate (10% + RBA rate)`;
+      }
+    } else {
+      rateDisplay = `${annualRate.toFixed(2)}%`;
+      rateDetail = 'Contractual rate';
+    }
+
+    const formatCurrency = (val) => val.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' });
+    const formatDate = (d) => {
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    };
+
+    let html = `
+      <div class="result-card">
+        <h3>Calculation Result</h3>
+        <table class="result-table">
+          <tr><td>Principal Amount</td><td>${formatCurrency(principal)}</td></tr>
+          <tr><td>Rate Type</td><td>${rateType}</td></tr>
+          <tr><td>Annual Interest Rate</td><td>${rateDisplay}</td></tr>`;
+
+    if (rateDetail) {
+      html += `<tr><td>Rate Detail</td><td>${rateDetail}</td></tr>`;
+    }
+
+    html += `
+          <tr><td>Due Date</td><td>${formatDate(startDate)}</td></tr>
+          <tr><td>Calculation Date</td><td>${formatDate(endDate)}</td></tr>
+          <tr><td>Days</td><td>${days} days</td></tr>
+          <tr><td>Interest Amount</td><td>${formatCurrency(interest)}</td></tr>
+        </table>
+        <div class="result-total">
+          <span>Total Amount</span>
+          <span>${formatCurrency(total)}</span>
+        </div>
+        <button class="result-copy-btn" onclick="copyResultsToClipboard()">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copy Results
+        </button>
+      </div>`;
+
+    // Daily breakdown for QBCC
+    if (dailyRates && dailyRates.length > 0) {
+      html += `
+        <div class="breakdown-card">
+          <div class="breakdown-card-header" onclick="toggleBreakdown(this)">
+            <h3>Daily Interest Breakdown</h3>
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="breakdown-body">
+            <table class="breakdown-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>RBA Rate</th>
+                  <th>Penalty Rate</th>
+                  <th>Interest Accrued</th>
+                </tr>
+              </thead>
+              <tbody>`;
+
+      dailyRates.forEach(item => {
+        const penaltyRate = 10.0 + item.rate;
+        const dailyInterest = (principal / 365) * (penaltyRate / 100);
+        const itemDate = new Date(item.date);
+        const displayDate = new Date(itemDate.getTime() + itemDate.getTimezoneOffset() * 60000);
+
+        html += `
+                <tr>
+                  <td>${displayDate.toLocaleDateString('en-AU')}</td>
+                  <td>${item.rate.toFixed(2)}%</td>
+                  <td>${penaltyRate.toFixed(2)}%</td>
+                  <td>${dailyInterest.toLocaleString('en-AU', { style: 'currency', currency: 'AUD', minimumFractionDigits: 4 })}</td>
+                </tr>`;
+      });
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+
+    document.getElementById('results-container').innerHTML = html;
+  }
+
+  // ── Toggle breakdown ──
+  function toggleBreakdown(header) {
+    header.classList.toggle('open');
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
+  }
+
+  // ── Toggle provision ──
+  function toggleProvision(btn) {
+    btn.classList.toggle('open');
+    const content = btn.nextElementSibling;
+    content.classList.toggle('open');
+  }
+
+  // ── Copy results to clipboard ──
+  function copyResultsToClipboard() {
+    const resultCard = document.querySelector('.result-card');
+    if (!resultCard) return;
+
+    const rows = resultCard.querySelectorAll('.result-table tr');
+    let text = '--- Calculation Summary ---\n';
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('td');
+      if (cells.length === 2) {
+        text += `${cells[0].innerText}\t${cells[1].innerText}\n`;
+      }
+    });
+
+    const total = resultCard.querySelector('.result-total');
+    if (total) {
+      const spans = total.querySelectorAll('span');
+      if (spans.length === 2) {
+        text += `${spans[0].innerText}\t${spans[1].innerText}\n`;
+      }
+    }
+
+    // Include breakdown if present
+    const breakdownTable = document.querySelector('.breakdown-table');
+    if (breakdownTable) {
+      text += '\n--- Daily Interest Breakdown ---\n';
+      const bRows = breakdownTable.querySelectorAll('tr');
+      bRows.forEach(row => {
+        const cells = row.querySelectorAll('th, td');
+        const rowText = Array.from(cells).map(cell => cell.innerText).join('\t');
+        text += rowText + '\n';
+      });
+    }
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.result-copy-btn');
+        if (btn) {
+          const original = btn.innerHTML;
+          btn.innerHTML = '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;stroke:#166534;fill:none;stroke-width:2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+          setTimeout(() => { btn.innerHTML = original; }, 2000);
+        }
+      }).catch(err => {
+        console.error('Failed to copy with navigator.clipboard:', err);
+        copyFallback(text);
+      });
+    } else {
+      copyFallback(text);
+    }
+  }
+
+  function copyFallback(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      alert('Calculation results copied to clipboard!');
+    } catch (err) {
+      alert('Failed to copy text.');
+    }
+    document.body.removeChild(textArea);
+  }
+</script>
+<script src="/new-test/assets/js/main.js"></script>
+</body>
+</html>

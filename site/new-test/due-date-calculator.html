@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Due Date Calculator | Sopal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-dark: #0a0a0a;
+      --bg-darker: #050505;
+      --bg-card-dark: #141414;
+      --green: #00d47e;
+      --green-dark: #00b368;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #888;
+      --border-light: #e5e5e5;
+      --border-dark: #222;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    button { border: none; cursor: pointer; font-family: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+    /* NAV */
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+    .nav-logo-icon { width: 28px; height: 28px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .nav-logo-icon svg { width: 16px; height: 16px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-links a.active { color: white; font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .btn-signin { background: transparent; color: white; font-size: 13.5px; font-weight: 500; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; }
+    .btn-signin:hover { background: rgba(255,255,255,0.08); }
+
+    /* PAGE HEADER */
+    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 32px 0; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-secondary); max-width: 640px; }
+
+    /* LAYOUT */
+    .page-content { padding: 32px 0 64px; }
+    .content-grid { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
+
+    /* SCENARIO CARDS (left) */
+    .scenario-list { display: flex; flex-direction: column; gap: 8px; }
+    .scenario-card {
+      background: white; border: 1px solid var(--border-light); border-radius: 10px;
+      padding: 16px 18px; cursor: pointer; transition: all 0.2s;
+    }
+    .scenario-card:hover { border-color: #ccc; }
+    .scenario-card.active { border-color: var(--green); background: #f0fdf4; }
+    .scenario-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .scenario-card p { font-size: 12px; color: var(--text-muted); }
+    .scenario-card .section-ref { font-size: 11px; color: var(--green-dark); font-weight: 500; margin-top: 4px; }
+
+    /* MAIN CARD */
+    .main-card {
+      background: white; border: 1px solid var(--border-light); border-radius: 14px;
+      overflow: hidden;
+    }
+    .main-card-header {
+      padding: 20px 24px; border-bottom: 1px solid var(--border-light);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .main-card-header h2 { font-size: 18px; font-weight: 700; }
+    .main-card-header .section-badge {
+      font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+      background: #f0fdf4; color: #166534;
+    }
+    .main-card-body { padding: 24px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* FORM */
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .form-input {
+      width: 100%; padding: 10px 14px; font-size: 14px; font-family: inherit;
+      border: 1px solid var(--border-light); border-radius: 8px; outline: none; transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--green); }
+    .form-select {
+      width: 100%; padding: 10px 14px; font-size: 14px; font-family: inherit;
+      border: 1px solid var(--border-light); border-radius: 8px; background: white;
+      cursor: pointer; appearance: none; -webkit-appearance: none; padding-right: 32px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+      outline: none; transition: border-color 0.2s;
+    }
+    .form-select:focus { border-color: var(--green); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* RADIO GROUP */
+    .radio-group { display: flex; gap: 10px; }
+    .radio-option {
+      flex: 1; padding: 10px 14px; border: 1px solid var(--border-light); border-radius: 8px;
+      text-align: center; font-size: 13px; font-weight: 500; color: var(--text-secondary);
+      cursor: pointer; transition: all 0.2s; user-select: none;
+    }
+    .radio-option:hover { border-color: #ccc; }
+    .radio-option.selected { border-color: var(--green); background: #f0fdf4; color: #166534; }
+
+    /* CHECKBOX STYLED */
+    .checkbox-row {
+      display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+      border: 1px solid var(--border-light); border-radius: 8px; cursor: pointer;
+      transition: all 0.2s; user-select: none;
+    }
+    .checkbox-row:hover { border-color: #ccc; }
+    .checkbox-row.checked { border-color: var(--green); background: #f0fdf4; }
+    .checkbox-row input[type="checkbox"] { accent-color: var(--green); width: 16px; height: 16px; cursor: pointer; }
+    .checkbox-row label { font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; }
+    .checkbox-row.checked label { color: #166534; }
+
+    .eot-days-input {
+      display: flex; align-items: center; gap: 10px; margin-top: 10px;
+    }
+    .eot-days-input label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+    .eot-days-input input {
+      width: 80px; padding: 8px 12px; font-size: 14px; font-family: inherit;
+      border: 1px solid var(--border-light); border-radius: 8px; outline: none; transition: border-color 0.2s;
+    }
+    .eot-days-input input:focus { border-color: var(--green); }
+
+    .calc-btn {
+      width: 100%; padding: 11px; font-size: 14px; font-weight: 600; border-radius: 8px;
+      background: var(--green); color: #000; transition: background 0.2s; margin-top: 8px;
+    }
+    .calc-btn:hover { background: var(--green-dark); }
+
+    /* RESULT */
+    .result-box {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px 24px;
+      margin-top: 20px; display: none;
+    }
+    .result-box.visible { display: block; }
+    .result-box h3 { font-size: 13px; font-weight: 600; color: #166534; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .result-date { font-size: 28px; font-weight: 700; color: #166534; letter-spacing: -0.02em; margin-bottom: 8px; }
+    .result-breakdown { font-size: 13px; color: #166534; line-height: 1.7; }
+    .result-breakdown strong { font-weight: 600; }
+
+    /* ERROR */
+    .error-box {
+      background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px 24px;
+      margin-top: 20px; display: none;
+    }
+    .error-box.visible { display: block; }
+    .error-box p { font-size: 13px; font-weight: 500; color: #991b1b; }
+
+    /* PROVISION BOX */
+    .provision-box {
+      margin-bottom: 20px; padding: 14px 18px; background: #f8fafb; border: 1px solid var(--border-light);
+      border-radius: 10px; font-size: 13px; color: var(--text-secondary); line-height: 1.65;
+    }
+    .provision-box summary {
+      font-weight: 600; cursor: pointer; font-size: 13px; color: var(--green-dark);
+      list-style: none; display: flex; align-items: center; gap: 6px;
+    }
+    .provision-box summary::-webkit-details-marker { display: none; }
+    .provision-box summary::before { content: ''; display: inline-block; width: 0; height: 0; border-left: 5px solid var(--green-dark); border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform 0.2s; }
+    .provision-box[open] summary::before { transform: rotate(90deg); }
+    .provision-box[open] summary { margin-bottom: 12px; }
+    .provision-content p { margin: 3px 0; }
+    .provision-content .indent-1 { margin-left: 18px; }
+    .provision-content .indent-2 { margin-left: 36px; }
+    .provision-content .indent-3 { margin-left: 54px; }
+    .provision-content .indent-4 { margin-left: 72px; }
+
+    /* NOTE */
+    .note-text { font-size: 12px; color: var(--text-muted); font-style: italic; margin-bottom: 16px; }
+
+    /* LOCATION SELECT */
+    .location-bar {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+      padding: 10px 14px; background: white; border: 1px solid var(--border-light); border-radius: 8px;
+    }
+    .location-bar svg { width: 16px; height: 16px; stroke: var(--text-muted); fill: none; stroke-width: 2; flex-shrink: 0; }
+    .location-bar label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+    .location-bar select {
+      flex: 1; padding: 4px 8px; font-size: 13px; font-family: inherit; border: none;
+      background: transparent; cursor: pointer; outline: none;
+    }
+
+    /* DISCLAIMER */
+    .disclaimer-bar {
+      margin-top: 24px; padding: 16px 20px; background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: 10px; font-size: 12px; color: #92400e; line-height: 1.6;
+    }
+    .disclaimer-bar strong { font-weight: 600; }
+
+    /* FOOTER */
+    .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
+    .footer-inner { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); gap: 24px; }
+    .footer-brand { padding-right: 16px; }
+    .footer-brand .footer-logo { display: flex; align-items: center; gap: 7px; color: white; font-weight: 700; font-size: 15px; margin-bottom: 10px; }
+    .footer-logo-icon { width: 20px; height: 20px; background: var(--green); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+    .footer-logo-icon svg { width: 12px; height: 12px; }
+    .footer-brand p { font-size: 12px; color: #555; line-height: 1.5; }
+    .footer-col h4 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+    .footer-col a { display: block; font-size: 13px; color: #666; margin-bottom: 7px; transition: color 0.2s; }
+    .footer-col a:hover { color: white; }
+    .footer-bottom { display: flex; align-items: center; justify-content: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #555; }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .content-grid { grid-template-columns: 1fr; }
+      .scenario-list { flex-direction: row; overflow-x: auto; }
+      .scenario-card { min-width: 200px; }
+      .form-row { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/new-test/" class="nav-logo">
+          <div class="nav-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9m-9 9a9 9 0 019-9"/></svg></div>
+          Sopal
+        </a>
+        <div class="nav-links">
+          <a href="/new-test/search">Search</a>
+          <a href="/new-test/adjudicators">Adjudicators</a>
+          <a href="/new-test/interest-calculator">Interest Calculator</a>
+          <a href="/new-test/due-date-calculator" class="active">Due Date Calculator</a>
+          <a href="/new-test/how-to">How-To Guide</a>
+          <a href="/new-test/feedback">Feedback</a>
+        </div>
+      </div>
+      <div class="nav-right"><a href="#" class="btn-signin">Sign In</a></div>
+    </div>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="container">
+      <h1>Due Date Calculator</h1>
+      <p>Calculate key deadlines under the <em>Building Industry Fairness (Security of Payment) Act 2017</em> (Qld) for adjudication timelines.</p>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="page-content">
+    <div class="container">
+
+      <div class="location-bar">
+        <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <label>Location:</label>
+        <select id="location">
+          <option value="bne">Brisbane</option>
+          <option value="gld">Gold Coast</option>
+          <option value="sunshine_coast">Sunshine Coast</option>
+          <option value="tsw">Townsville</option>
+          <option value="cns">Cairns</option>
+          <option value="toowoomba">Toowoomba</option>
+          <option value="mackay">Mackay</option>
+          <option value="rockhampton">Rockhampton</option>
+          <option value="ipswich">Ipswich</option>
+          <option value="qld">Queensland (General)</option>
+        </select>
+      </div>
+
+      <div class="content-grid">
+
+        <!-- LEFT: SCENARIOS -->
+        <div class="scenario-list">
+          <div class="scenario-card active" onclick="openTab('paymentSchedule')">
+            <h3>Payment Schedule</h3>
+            <p>When is the payment schedule due?</p>
+            <div class="section-ref">Section 76</div>
+          </div>
+          <div class="scenario-card" onclick="openTab('adjudicationApp')">
+            <h3>Adjudication Application</h3>
+            <p>Deadline to lodge the application</p>
+            <div class="section-ref">Section 79</div>
+          </div>
+          <div class="scenario-card" onclick="openTab('adjudicationResp')">
+            <h3>Adjudication Response</h3>
+            <p>Deadline for the response</p>
+            <div class="section-ref">Section 83</div>
+          </div>
+          <div class="scenario-card" onclick="openTab('adjudicatorDecision')">
+            <h3>Adjudicator's Decision</h3>
+            <p>Deadline to deliver the decision</p>
+            <div class="section-ref">Section 85</div>
+          </div>
+        </div>
+
+        <!-- RIGHT: FORM + RESULT -->
+        <div>
+          <div class="main-card">
+            <div class="main-card-header">
+              <h2 id="card-title">Payment Schedule Due Date</h2>
+              <span class="section-badge" id="card-badge">s76 BIF Act</span>
+            </div>
+            <div class="main-card-body">
+
+              <!-- TAB 1: Payment Schedule -->
+              <div id="paymentSchedule" class="tab-panel active">
+                <details class="provision-box">
+                  <summary>Relevant Provision: section 76</summary>
+                  <div class="provision-content">
+                    <p><strong>76 Responding to payment claim</strong></p>
+                    <p class="indent-1">(1) If given a payment claim, a respondent must respond to the payment claim by giving the claimant a payment schedule within whichever of the following periods ends first--</p>
+                    <p class="indent-2">(a) the period, if any, within which the respondent must give the payment schedule under the relevant construction contract;</p>
+                    <p class="indent-2">(b) 15 business days after the payment claim is given to the respondent.</p>
+                  </div>
+                </details>
+                <div class="form-group">
+                  <label class="form-label">Date Payment Claim Given</label>
+                  <input type="date" id="ps-claim-given-date" class="form-input">
+                </div>
+                <button class="calc-btn" onclick="calculatePaymentScheduleDueDate()">Calculate Due Date</button>
+              </div>
+
+              <!-- TAB 2: Adjudication Application -->
+              <div id="adjudicationApp" class="tab-panel">
+                <details class="provision-box">
+                  <summary>Relevant Provision: section 79</summary>
+                  <div class="provision-content">
+                    <p><strong>79 Application for adjudication</strong></p>
+                    <p class="indent-1">(2) An adjudication application--</p>
+                    <p class="indent-2">(b) must be made within--</p>
+                    <p class="indent-3">(i) for an application relating to a failure to give a payment schedule and pay the full amount stated in the payment claim--30 business days after the later of the following days--</p>
+                    <p class="indent-4">(A) the day of the due date for the progress payment to which the claim relates;</p>
+                    <p class="indent-4">(B) the last day the respondent could have given the payment schedule under section 76; or</p>
+                    <p class="indent-3">(ii) for an application relating to a failure to pay the full amount stated in the payment schedule--20 business days after the due date for the progress payment to which the claim relates; or</p>
+                    <p class="indent-3">(iii) for an application relating to the amount stated in the payment schedule being less than the amount stated in the payment claim--30 business days after the claimant receives the payment schedule</p>
+                  </div>
+                </details>
+                <div class="form-group">
+                  <label class="form-label">Reason for Application</label>
+                  <select id="aa-scenario" class="form-select" onchange="toggleAdjudicationAppInputs()">
+                    <option value="less" selected>Scheduled amount was less than claimed amount</option>
+                    <option value="no-pay-schedule">Respondent failed to provide a payment schedule</option>
+                    <option value="no-pay-amount">Respondent failed to pay scheduled amount</option>
+                  </select>
+                </div>
+                <div class="form-group" id="aa-group-schedule-received">
+                  <label class="form-label">Date Payment Schedule Received</label>
+                  <input type="date" id="aa-schedule-received-date" class="form-input">
+                </div>
+                <div class="form-group" id="aa-group-payment-due" style="display:none;">
+                  <label class="form-label">Due Date for Progress Payment</label>
+                  <input type="date" id="aa-payment-due-date" class="form-input">
+                </div>
+                <div class="form-group" id="aa-group-schedule-due" style="display:none;">
+                  <label class="form-label">Last Day to Provide Schedule</label>
+                  <input type="date" id="aa-schedule-due-date" class="form-input">
+                </div>
+                <button class="calc-btn" onclick="calculateAdjudicationApplicationDueDate()">Calculate Due Date</button>
+              </div>
+
+              <!-- TAB 3: Adjudication Response -->
+              <div id="adjudicationResp" class="tab-panel">
+                <details class="provision-box">
+                  <summary>Relevant Provision: section 83</summary>
+                  <div class="provision-content">
+                    <p><strong>83 Time for making adjudication response</strong></p>
+                    <p class="indent-1">(1) If responding to a standard payment claim, the respondent must give the adjudicator the adjudication response within the later of the following periods to end--</p>
+                    <p class="indent-2">(a) 10 business days after receiving the documents mentioned in section 79(4);</p>
+                    <p class="indent-2">(b) 7 business days after receiving notice of the adjudicator's acceptance of the adjudication application.</p>
+                    <p class="indent-1">(2) If responding to a complex payment claim, the respondent must give the adjudicator the adjudication response within the later of the following to end--</p>
+                    <p class="indent-2">(a) 15 business days after receiving the documents mentioned in section 79(4);</p>
+                    <p class="indent-2">(b) 12 business days after receiving notice of the adjudicator's acceptance of the adjudication application.</p>
+                    <p class="indent-1">(3) However, if responding to a complex payment claim, the respondent may apply to the adjudicator for an extension of time, of up to 15 additional business days, to give the adjudication response to the adjudicator.</p>
+                  </div>
+                </details>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Date Application Received</label>
+                    <input type="date" id="ar-app-received-date" class="form-input">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Date Acceptance Received</label>
+                    <input type="date" id="ar-acceptance-received-date" class="form-input">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Claim Type</label>
+                  <div class="radio-group">
+                    <div class="radio-option selected" onclick="selectClaimType(this, 'ar', 'standard')">Standard (&le; $750k)</div>
+                    <div class="radio-option" onclick="selectClaimType(this, 'ar', 'complex')">Complex (&gt; $750k)</div>
+                  </div>
+                  <input type="hidden" id="ar-claim-type" value="standard">
+                </div>
+                <div id="ar-eot-group" style="display: none;">
+                  <div class="form-group">
+                    <div class="checkbox-row" id="ar-eot-row" onclick="toggleEotCheckbox()">
+                      <input type="checkbox" id="ar-eot-granted">
+                      <label for="ar-eot-granted">Extension of time granted by adjudicator</label>
+                    </div>
+                    <div id="ar-eot-days-group" style="display: none;">
+                      <div class="eot-days-input">
+                        <label>Additional business days granted (1-15):</label>
+                        <input type="number" id="ar-eot-days" min="1" max="15" value="1" class="form-input" style="width: 80px;">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button class="calc-btn" onclick="calculateAdjudicationResponseDueDate()">Calculate Due Date</button>
+              </div>
+
+              <!-- TAB 4: Adjudicator's Decision -->
+              <div id="adjudicatorDecision" class="tab-panel">
+                <details class="provision-box">
+                  <summary>Relevant Provision: section 85</summary>
+                  <div class="provision-content">
+                    <p><strong>85 Time for deciding adjudication application</strong></p>
+                    <p class="indent-1">(1) Subject to section 86, an adjudicator must decide an adjudication application no later than--</p>
+                    <p class="indent-2">(a) for a standard payment claim--10 business days after the response date; or</p>
+                    <p class="indent-2">(b) for a complex payment claim--15 business days after the response date.</p>
+                    <p class="indent-1">(2) The response date is--</p>
+                    <p class="indent-2">(a) if the adjudicator is given an adjudication response under section 83--the day on which the adjudicator receives the response...</p>
+                  </div>
+                </details>
+                <p class="note-text">Note: This calculation does not account for any extension of time that may be agreed by the parties under section 86 of the BIF Act.</p>
+                <div class="form-group">
+                  <label class="form-label">Date Adjudication Response Given</label>
+                  <input type="date" id="ad-response-given-date" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Claim Type</label>
+                  <div class="radio-group">
+                    <div class="radio-option selected" onclick="selectClaimType(this, 'ad', 'standard')">Standard (&le; $750k)</div>
+                    <div class="radio-option" onclick="selectClaimType(this, 'ad', 'complex')">Complex (&gt; $750k)</div>
+                  </div>
+                  <input type="hidden" id="ad-claim-type" value="standard">
+                </div>
+                <button class="calc-btn" onclick="calculateAdjudicatorDecisionDueDate()">Calculate Due Date</button>
+              </div>
+
+              <!-- SHARED RESULT / ERROR -->
+              <div class="result-box" id="result-box">
+                <h3>Result</h3>
+                <div class="result-date" id="result-date"></div>
+                <div class="result-breakdown" id="result-breakdown"></div>
+              </div>
+              <div class="error-box" id="error-box">
+                <p id="error-message"></p>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="disclaimer-bar">
+            <strong>Disclaimer:</strong> This calculator is a guide only and should not be relied upon as a substitute for professional legal advice. Public holiday data may not account for all regional variations or future changes. Users must independently verify all dates and deadlines.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo"><div class="footer-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9m-9 9a9 9 0 019-9"/></svg></div>Sopal</div>
+          <p>An intelligent search tool for adjudication decisions under the BIF Act 2017 (Qld)</p>
+        </div>
+        <div class="footer-col">
+          <h4>Tools</h4>
+          <a href="/new-test/search">Decision Search</a>
+          <a href="/new-test/adjudicators">Adjudicators</a>
+          <a href="/new-test/interest-calculator">Interest Calculator</a>
+          <a href="/new-test/due-date-calculator">Due Date Calculator</a>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <a href="/new-test/how-to">How-To Guide</a>
+          <a href="/new-test/feedback">Feedback</a>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <a href="#">Privacy</a>
+          <a href="#">Terms of Use</a>
+          <a href="#">Account Terms</a>
+        </div>
+      </div>
+      <div class="footer-bottom">&copy; 2026 Sopal Australia. All rights reserved.</div>
+    </div>
+  </footer>
+
+<script>
+  // ============================================================
+  // HOLIDAY & SHUTDOWN DATA (2025-2028)
+  // ============================================================
+  const holidays = {
+    'qld': [
+      // 2025
+      { date: '2025-01-01', name: 'New Year\'s Day' },
+      { date: '2025-01-27', name: 'Australia Day' },
+      { date: '2025-04-18', name: 'Good Friday' },
+      { date: '2025-04-19', name: 'Day after Good Friday' },
+      { date: '2025-04-21', name: 'Easter Monday' },
+      { date: '2025-04-25', name: 'Anzac Day' },
+      { date: '2025-05-05', name: 'Labour Day' },
+      { date: '2025-10-06', name: 'King\'s Birthday' },
+      { date: '2025-12-25', name: 'Christmas Day' },
+      { date: '2025-12-26', name: 'Boxing Day' },
+      // 2026
+      { date: '2026-01-01', name: 'New Year\'s Day' },
+      { date: '2026-01-26', name: 'Australia Day' },
+      { date: '2026-04-03', name: 'Good Friday' },
+      { date: '2026-04-04', name: 'Day after Good Friday' },
+      { date: '2026-04-06', name: 'Easter Monday' },
+      { date: '2026-04-25', name: 'Anzac Day' },
+      { date: '2026-05-04', name: 'Labour Day' },
+      { date: '2026-10-05', name: 'King\'s Birthday' },
+      { date: '2026-12-25', name: 'Christmas Day' },
+      { date: '2026-12-28', name: 'Boxing Day Holiday' },
+      // 2027
+      { date: '2027-01-01', name: 'New Year\'s Day' },
+      { date: '2027-01-26', name: 'Australia Day' },
+      { date: '2027-03-26', name: 'Good Friday' },
+      { date: '2027-03-27', name: 'Day after Good Friday' },
+      { date: '2027-03-29', name: 'Easter Monday' },
+      { date: '2027-04-26', name: 'Anzac Day Holiday' },
+      { date: '2027-05-03', name: 'Labour Day' },
+      { date: '2027-10-04', name: 'King\'s Birthday' },
+      { date: '2027-12-27', name: 'Christmas Day Holiday' },
+      { date: '2027-12-28', name: 'Boxing Day Holiday' },
+      // 2028
+      { date: '2028-01-03', name: 'New Year\'s Day Holiday' },
+      { date: '2028-01-26', name: 'Australia Day' },
+      { date: '2028-04-14', name: 'Good Friday' },
+      { date: '2028-04-15', name: 'Day after Good Friday' },
+      { date: '2028-04-17', name: 'Easter Monday' },
+      { date: '2028-04-25', name: 'Anzac Day' },
+      { date: '2028-05-01', name: 'Labour Day' },
+      { date: '2028-10-02', name: 'King\'s Birthday' },
+      { date: '2028-12-25', name: 'Christmas Day' },
+      { date: '2028-12-26', name: 'Boxing Day' }
+    ],
+    'bne': [
+      { date: '2025-08-13', name: 'Brisbane EKKA Show Holiday' },
+      { date: '2026-08-12', name: 'Brisbane EKKA Show Holiday' },
+      { date: '2027-08-11', name: 'Brisbane EKKA Show Holiday' },
+      { date: '2028-08-16', name: 'Brisbane EKKA Show Holiday' }
+    ],
+    'gld': [
+      { date: '2025-08-29', name: 'Gold Coast Show Holiday' }
+    ],
+    'cns': [
+      { date: '2025-07-18', name: 'Cairns Show Holiday' }
+    ],
+    'tsw': [
+      { date: '2025-07-07', name: 'Townsville Show Holiday' }
+    ],
+    'ipswich': [
+      { date: '2025-05-16', name: 'Ipswich Show Holiday' }
+    ],
+    'toowoomba': [
+      { date: '2025-03-28', name: 'Toowoomba Show Holiday' }
+    ],
+    'sunshine_coast': [
+      { date: '2025-05-30', name: 'Maleny Show Holiday' },
+      { date: '2025-06-13', name: 'Sunshine Coast Show Holiday' }
+    ],
+    'rockhampton': [
+      { date: '2025-06-12', name: 'Rockhampton Show Holiday' }
+    ],
+    'mackay': [
+      { date: '2025-06-19', name: 'Mackay Show Holiday' }
+    ]
+  };
+
+  // ============================================================
+  // CORE BUSINESS DAY FUNCTIONS
+  // ============================================================
+
+  function isBusinessDay(date, location) {
+    const day = date.getDay();
+    if (day === 0 || day === 6) {
+      return { isBiz: false, reason: 'Weekend' };
+    }
+
+    const month = date.getMonth(); // 0-11
+    const dayOfMonth = date.getDate();
+    // Christmas shutdown: Dec 22-24, Dec 27-31, Jan 2-10
+    if ((month === 11 && (dayOfMonth >= 22 && dayOfMonth <= 24)) ||
+        (month === 11 && (dayOfMonth >= 27 && dayOfMonth <= 31)) ||
+        (month === 0 && (dayOfMonth >= 2 && dayOfMonth <= 10))) {
+      return { isBiz: false, reason: 'Christmas Shutdown' };
+    }
+
+    const dateString = date.toISOString().slice(0, 10);
+    const qldHoliday = holidays.qld.find(h => h.date === dateString);
+    if (qldHoliday) {
+      return { isBiz: false, reason: qldHoliday.name };
+    }
+
+    if (holidays[location]) {
+      const localHoliday = holidays[location].find(h => h.date === dateString);
+      if (localHoliday) {
+        return { isBiz: false, reason: localHoliday.name };
+      }
+    }
+
+    return { isBiz: true, reason: '' };
+  }
+
+  function addBusinessDays(startDate, days, location) {
+    if (!startDate || isNaN(startDate.getTime())) {
+      return null;
+    }
+    let currentDate = new Date(startDate.getTime());
+    let daysAdded = 0;
+    let skippedDays = [];
+
+    currentDate.setDate(currentDate.getDate() + 1); // Start counting from the next day
+
+    while (daysAdded < days) {
+      const bizDayCheck = isBusinessDay(currentDate, location);
+      if (bizDayCheck.isBiz) {
+        daysAdded++;
+      } else {
+        skippedDays.push({ date: new Date(currentDate.getTime()), reason: bizDayCheck.reason });
+      }
+      if (daysAdded < days) {
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    }
+    return { finalDate: currentDate, skipped: skippedDays };
+  }
+
+  // ============================================================
+  // UI TAB / SCENARIO SWITCHING
+  // ============================================================
+
+  const tabConfig = {
+    paymentSchedule:     { title: 'Payment Schedule Due Date',        badge: 's76 BIF Act', cardIndex: 0 },
+    adjudicationApp:     { title: 'Adjudication Application Due Date', badge: 's79 BIF Act', cardIndex: 1 },
+    adjudicationResp:    { title: 'Adjudication Response Due Date',    badge: 's83 BIF Act', cardIndex: 2 },
+    adjudicatorDecision: { title: 'Adjudicator\'s Decision Due Date',  badge: 's85 BIF Act', cardIndex: 3 }
+  };
+
+  function openTab(tabId) {
+    // Hide all tab panels
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    // Show selected
+    document.getElementById(tabId).classList.add('active');
+
+    // Update scenario cards
+    document.querySelectorAll('.scenario-card').forEach((c, i) => {
+      c.classList.toggle('active', i === tabConfig[tabId].cardIndex);
+    });
+
+    // Update card header
+    document.getElementById('card-title').textContent = tabConfig[tabId].title;
+    document.getElementById('card-badge').textContent = tabConfig[tabId].badge;
+
+    // Hide results
+    document.getElementById('result-box').classList.remove('visible');
+    document.getElementById('error-box').classList.remove('visible');
+  }
+
+  // ============================================================
+  // ADJUDICATION APPLICATION: TOGGLE CONDITIONAL FIELDS
+  // ============================================================
+
+  function toggleAdjudicationAppInputs() {
+    const scenario = document.getElementById('aa-scenario').value;
+    document.getElementById('aa-group-schedule-received').style.display = 'none';
+    document.getElementById('aa-group-payment-due').style.display = 'none';
+    document.getElementById('aa-group-schedule-due').style.display = 'none';
+
+    if (scenario === 'less') {
+      document.getElementById('aa-group-schedule-received').style.display = 'block';
+    } else if (scenario === 'no-pay-schedule') {
+      document.getElementById('aa-group-payment-due').style.display = 'block';
+      document.getElementById('aa-group-schedule-due').style.display = 'block';
+    } else if (scenario === 'no-pay-amount') {
+      document.getElementById('aa-group-payment-due').style.display = 'block';
+    }
+  }
+
+  // ============================================================
+  // RADIO OPTION SELECTOR (Cartesia-style cards)
+  // ============================================================
+
+  function selectClaimType(el, prefix, value) {
+    const group = el.parentElement;
+    group.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById(prefix + '-claim-type').value = value;
+
+    // For adjudication response, toggle EOT section
+    if (prefix === 'ar') {
+      toggleArEotSection();
+    }
+  }
+
+  // ============================================================
+  // ADJUDICATION RESPONSE: EOT (EXTENSION OF TIME)
+  // ============================================================
+
+  function toggleArEotSection() {
+    const isComplex = document.getElementById('ar-claim-type').value === 'complex';
+    document.getElementById('ar-eot-group').style.display = isComplex ? 'block' : 'none';
+    if (!isComplex) {
+      document.getElementById('ar-eot-granted').checked = false;
+      document.getElementById('ar-eot-days-group').style.display = 'none';
+      const row = document.getElementById('ar-eot-row');
+      row.classList.remove('checked');
+    }
+  }
+
+  function toggleEotCheckbox() {
+    const cb = document.getElementById('ar-eot-granted');
+    cb.checked = !cb.checked;
+    const row = document.getElementById('ar-eot-row');
+    row.classList.toggle('checked', cb.checked);
+    document.getElementById('ar-eot-days-group').style.display = cb.checked ? 'block' : 'none';
+  }
+
+  // ============================================================
+  // DISPLAY RESULT / ERROR
+  // ============================================================
+
+  function displayResult(title, result, description, startDate, days) {
+    const resultBox = document.getElementById('result-box');
+    const errorBox = document.getElementById('error-box');
+    errorBox.classList.remove('visible');
+
+    if (!result || !result.finalDate) {
+      displayError('Please enter all valid start date(s).');
+      return;
+    }
+
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const dateStr = result.finalDate.toLocaleDateString('en-AU', options);
+
+    // Build breakdown HTML
+    let breakdownHtml = '';
+    breakdownHtml += '<strong>Start date:</strong> ' + startDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) + '<br>';
+    breakdownHtml += '<strong>Period:</strong> ' + days + ' business days<br>';
+
+    // Skipped days summary
+    if (result.skipped.length > 0) {
+      // Group by reason
+      const reasons = {};
+      result.skipped.forEach(d => {
+        if (!reasons[d.reason]) reasons[d.reason] = 0;
+        reasons[d.reason]++;
+      });
+      const reasonList = Object.entries(reasons).map(([r, c]) => c + ' ' + r + (c > 1 ? ' days' : ' day')).join(', ');
+      breakdownHtml += '<strong>Non-business days skipped:</strong> ' + result.skipped.length + ' (' + reasonList + ')<br>';
+    } else {
+      breakdownHtml += '<strong>Non-business days skipped:</strong> None in period<br>';
+    }
+
+    breakdownHtml += '<strong>Due date:</strong> ' + dateStr + '<br>';
+    if (description) {
+      breakdownHtml += '<br><strong>Basis:</strong> ' + description;
+    }
+
+    document.getElementById('result-date').textContent = dateStr;
+    document.getElementById('result-breakdown').innerHTML = breakdownHtml;
+    resultBox.classList.add('visible');
+  }
+
+  function displayError(message) {
+    const resultBox = document.getElementById('result-box');
+    const errorBox = document.getElementById('error-box');
+    resultBox.classList.remove('visible');
+    document.getElementById('error-message').textContent = message;
+    errorBox.classList.add('visible');
+  }
+
+  // ============================================================
+  // CALCULATOR FUNCTIONS
+  // ============================================================
+
+  function calculatePaymentScheduleDueDate() {
+    const location = document.getElementById('location').value;
+    const startDate = new Date(document.getElementById('ps-claim-given-date').value);
+    const days = 15;
+    const result = addBusinessDays(startDate, days, location);
+    displayResult(
+      'Payment Schedule Due Date',
+      result,
+      days + ' business days after the Payment Claim was given (section 76 BIF Act).',
+      startDate, days
+    );
+  }
+
+  function calculateAdjudicationApplicationDueDate() {
+    const location = document.getElementById('location').value;
+    const scenario = document.getElementById('aa-scenario').value;
+    let startDate, days, result, description;
+
+    if (scenario === 'less') {
+      startDate = new Date(document.getElementById('aa-schedule-received-date').value);
+      days = 30;
+      result = addBusinessDays(startDate, days, location);
+      description = days + ' business days after the Payment Schedule was received (section 79(2)(b)(iii)).';
+    } else if (scenario === 'no-pay-amount') {
+      startDate = new Date(document.getElementById('aa-payment-due-date').value);
+      days = 20;
+      result = addBusinessDays(startDate, days, location);
+      description = days + ' business days after the due date for the progress payment (section 79(2)(b)(ii)).';
+    } else if (scenario === 'no-pay-schedule') {
+      const paymentDueDate = new Date(document.getElementById('aa-payment-due-date').value);
+      const scheduleDueDate = new Date(document.getElementById('aa-schedule-due-date').value);
+      if (isNaN(paymentDueDate.getTime()) || isNaN(scheduleDueDate.getTime())) {
+        displayError('Please enter all required dates.');
+        return;
+      }
+      startDate = new Date(Math.max(paymentDueDate, scheduleDueDate));
+      days = 30;
+      result = addBusinessDays(startDate, days, location);
+      description = days + ' business days after the LATER of the payment due date or the schedule due date (section 79(2)(b)(i)).';
+    }
+
+    displayResult('Adjudication Application Due Date', result, description, startDate, days);
+  }
+
+  function calculateAdjudicationResponseDueDate() {
+    const location = document.getElementById('location').value;
+    const appReceivedDate = new Date(document.getElementById('ar-app-received-date').value);
+    const acceptanceReceivedDate = new Date(document.getElementById('ar-acceptance-received-date').value);
+    const claimType = document.getElementById('ar-claim-type').value;
+
+    if (isNaN(appReceivedDate.getTime()) || isNaN(acceptanceReceivedDate.getTime())) {
+      displayError('Please enter all required dates.');
+      return;
+    }
+
+    let days1 = (claimType === 'standard') ? 10 : 15;
+    let days2 = (claimType === 'standard') ? 7 : 12;
+
+    const result1 = addBusinessDays(appReceivedDate, days1, location);
+    const result2 = addBusinessDays(acceptanceReceivedDate, days2, location);
+
+    let finalDate = new Date(Math.max(result1.finalDate, result2.finalDate));
+    const isResult1Later = result1.finalDate.getTime() >= result2.finalDate.getTime();
+    const finalResult = isResult1Later ? result1 : result2;
+    const finalStartDate = isResult1Later ? appReceivedDate : acceptanceReceivedDate;
+    const finalDays = isResult1Later ? days1 : days2;
+
+    // Apply s 83(3) extension of time if complex claim and EOT granted
+    let eotNote = '';
+    if (claimType === 'complex' && document.getElementById('ar-eot-granted').checked) {
+      const eotDays = parseInt(document.getElementById('ar-eot-days').value, 10) || 1;
+      const clampedDays = Math.min(Math.max(eotDays, 1), 15);
+      const eotResult = addBusinessDays(finalDate, clampedDays, location);
+      finalDate = eotResult.finalDate;
+      // Merge skipped days
+      finalResult.skipped = finalResult.skipped.concat(eotResult.skipped);
+      eotNote = ' Plus ' + clampedDays + ' additional business day' + (clampedDays !== 1 ? 's' : '') + ' extension of time granted under s 83(3).';
+    }
+
+    displayResult(
+      'Adjudication Response Due Date',
+      { finalDate: finalDate, skipped: finalResult.skipped },
+      'The LATER of ' + days1 + ' business days after receiving the application, or ' + days2 + ' business days after receiving the adjudicator\'s acceptance (section 83 BIF Act).' + eotNote,
+      finalStartDate, finalDays
+    );
+  }
+
+  function calculateAdjudicatorDecisionDueDate() {
+    const location = document.getElementById('location').value;
+    const startDate = new Date(document.getElementById('ad-response-given-date').value);
+    const claimType = document.getElementById('ad-claim-type').value;
+    const days = claimType === 'standard' ? 10 : 15;
+    const result = addBusinessDays(startDate, days, location);
+    displayResult(
+      'Adjudicator\'s Decision Due Date',
+      result,
+      days + ' business days after the Adjudication Response was given (section 85 BIF Act).',
+      startDate, days
+    );
+  }
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    toggleAdjudicationAppInputs();
+  });
+</script>
+<script src="/new-test/assets/js/main.js"></script>
+</body>
+</html>

@@ -4576,6 +4576,12 @@ async def serve_html_page(path_name: str):
     if os.path.abspath(static_file_path).startswith(os.path.abspath(SITE_DIR)) and os.path.exists(static_file_path) and not os.path.isdir(static_file_path):
         return FileResponse(static_file_path)
 
+    # Check for directory index (e.g. /new-test/ -> site/new-test/index.html)
+    dir_path = os.path.join(SITE_DIR, path_name.rstrip("/"))
+    dir_index = os.path.join(dir_path, "index.html")
+    if os.path.abspath(dir_index).startswith(os.path.abspath(SITE_DIR)) and os.path.exists(dir_index):
+        return FileResponse(dir_index)
+
     # Fallback for SPA-like behavior / non-html pages
     index_path = os.path.join(SITE_DIR, "index.html")
     if os.path.exists(index_path):
