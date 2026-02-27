@@ -1,5 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
-    updateNavUI();
+document.addEventListener('DOMContentLoaded', async () => {
+    await updateNavUI();
+    initMobileMenu();
     initPageTransition();
 });
 
@@ -176,6 +177,78 @@ function initPageTransition() {
     });
 }
 
+/* ── Mobile Hamburger Menu ── */
+function initMobileMenu() {
+    const navRight = document.querySelector('.nav-right');
+    const navLinks = document.querySelector('.nav-links');
+    if (!navRight || !navLinks) return;
+
+    // Create hamburger button and inject before first child of .nav-right
+    const hamburger = document.createElement('button');
+    hamburger.className = 'nt-hamburger';
+    hamburger.setAttribute('aria-label', 'Open menu');
+    hamburger.innerHTML = `
+        <span class="nt-hamburger-line"></span>
+        <span class="nt-hamburger-line"></span>
+        <span class="nt-hamburger-line"></span>
+    `;
+    navRight.insertBefore(hamburger, navRight.firstChild);
+
+    // Create mobile menu overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'nt-mobile-menu';
+    overlay.innerHTML = `
+        <div class="nt-mobile-menu-header">
+            <button class="nt-mobile-close" aria-label="Close menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <nav class="nt-mobile-nav"></nav>
+    `;
+    document.body.appendChild(overlay);
+
+    // Clone nav links into mobile menu
+    const mobileNav = overlay.querySelector('.nt-mobile-nav');
+    const links = navLinks.querySelectorAll('a');
+    links.forEach(link => {
+        const mobileLink = document.createElement('a');
+        mobileLink.href = link.getAttribute('href');
+        mobileLink.textContent = link.textContent;
+        mobileLink.className = 'nt-mobile-link';
+        mobileNav.appendChild(mobileLink);
+    });
+
+    function openMenu() {
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        hamburger.setAttribute('aria-label', 'Close menu');
+    }
+
+    function closeMenu() {
+        overlay.classList.remove('open');
+        document.body.style.overflow = '';
+        hamburger.setAttribute('aria-label', 'Open menu');
+    }
+
+    hamburger.addEventListener('click', () => {
+        if (overlay.classList.contains('open')) {
+            closeMenu();
+        } else {
+            openMenu();
+        }
+    });
+
+    overlay.querySelector('.nt-mobile-close').addEventListener('click', closeMenu);
+
+    // Close on link click
+    mobileNav.querySelectorAll('.nt-mobile-link').forEach(link => {
+        link.addEventListener('click', closeMenu);
+    });
+}
+
 /* Styles for profile avatar/dropdown in dark nav */
 const ntStyle = document.createElement('style');
 ntStyle.innerHTML = `
@@ -250,6 +323,92 @@ ntStyle.innerHTML = `
     background: #0a0a0a;
     transform: scaleY(0);
     transform-origin: bottom;
+}
+/* ── Hamburger Button ── */
+.nt-hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 201;
+}
+.nt-hamburger-line {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: white;
+    border-radius: 1px;
+    transition: all 0.25s ease;
+}
+/* ── Mobile Menu Overlay ── */
+.nt-mobile-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-dark, #0a0a0a);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(-100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.nt-mobile-menu.open {
+    transform: translateY(0);
+}
+.nt-mobile-menu-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    height: 56px;
+    padding: 0 32px;
+    flex-shrink: 0;
+}
+.nt-mobile-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+.nt-mobile-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 0;
+}
+.nt-mobile-link {
+    display: block;
+    padding: 16px 32px;
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    transition: background 0.15s;
+}
+.nt-mobile-link:first-child {
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+.nt-mobile-link:hover,
+.nt-mobile-link:active {
+    background: rgba(255,255,255,0.05);
+}
+@media (max-width: 768px) {
+    .nt-hamburger { display: flex; }
 }
 `;
 document.head.appendChild(ntStyle);

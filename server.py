@@ -387,7 +387,7 @@ purchases_con.commit()
 _gate_row = purchases_con.execute(
     "SELECT value FROM system_settings WHERE key = 'search_gate_enabled'"
 ).fetchone()
-SEARCH_GATE_ENABLED = False  # Subscription paywall disabled
+SEARCH_GATE_ENABLED = bool(_gate_row and _gate_row[0] == "1")  # Read from DB
 
 ADMIN_EMAILS = {
     "edwardsheppard5@gmail.com", 

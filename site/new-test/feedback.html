@@ -19,7 +19,7 @@
       --text-muted: #888;
       --border-light: #e5e5e5;
     }
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100vh; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; }
     a { text-decoration: none; color: inherit; }
     button { border: none; cursor: pointer; font-family: inherit; }
     .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
@@ -35,12 +35,19 @@
     .nav-links a.active { color: white; font-weight: 500; }
     .nav-right { display: flex; align-items: center; gap: 12px; }
 
-    /* PAGE CONTENT */
-    .page-wrap { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 56px 20px 80px; }
+    /* PAGE HEADER */
+    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 32px 0; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-secondary); }
 
-    .feedback-card { background: white; border: 1px solid var(--border-light); border-radius: 14px; width: 100%; max-width: 520px; padding: 40px; }
-    .feedback-card h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 4px; }
-    .feedback-card .subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 32px; line-height: 1.5; }
+    /* PAGE CONTENT */
+    .page-wrap { flex: 1; max-width: 800px; margin: 0 auto; padding: 40px 32px 80px; width: 100%; }
+
+    .feedback-card { background: white; border: 1px solid var(--border-light); border-radius: 14px; width: 100%; padding: 32px; }
+    .feedback-card .card-heading { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
+
+    .contact-info { background: #f7f7f8; border: 1px solid var(--border-light); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .contact-info a { color: var(--green-dark); font-weight: 500; }
 
     /* TYPE PILLS */
     .type-selector { margin-bottom: 28px; }
@@ -94,8 +101,8 @@
       .nav-links { display: none; }
       .form-row { grid-template-columns: 1fr; }
       .footer-inner { grid-template-columns: 1fr; }
-      .feedback-card { padding: 28px 24px; }
-      .page-wrap { padding: 32px 16px 60px; }
+      .feedback-card { padding: 24px 20px; }
+      .page-wrap { padding: 24px 16px 60px; }
     }
 
     @media (max-width: 480px) {
@@ -123,10 +130,20 @@
     </div>
   </nav>
 
+  <div class="page-header">
+    <div class="container">
+      <h1>Feedback</h1>
+      <p>Help us improve Sopal by sharing your thoughts, bug reports, or feature requests.</p>
+    </div>
+  </div>
+
   <div class="page-wrap">
+    <div class="contact-info">
+      You can also reach us directly at <a href="mailto:info@sopal.com.au">info@sopal.com.au</a>
+    </div>
+
     <div class="feedback-card">
-      <h1>Send us feedback</h1>
-      <p class="subtitle">Found a bug, have an idea, or just want to say something? We'd like to hear it.</p>
+      <div class="card-heading">Send us a message</div>
 
       <form id="feedbackForm">
         <input type="hidden" id="feedbackType" name="type" required>

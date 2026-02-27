@@ -58,6 +58,16 @@
     .feedback-message.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; display: block; }
     .feedback-message.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; display: block; }
 
+    /* Quick Access Gate */
+    .quick-access { text-align: center; margin-bottom: 28px; padding-bottom: 28px; border-bottom: 1px solid var(--border-light); }
+    .quick-access h2 { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+    .quick-access-input { width: 160px; padding: 10px 14px; font-size: 20px; font-family: 'Inter', monospace; text-align: center; letter-spacing: 0.2em; border: 1px solid var(--border-light); border-radius: 8px; outline: none; transition: border-color 0.2s; }
+    .quick-access-input:focus { border-color: var(--green); }
+    .quick-access-input.error { border-color: #f87171; animation: qa-shake 0.4s ease; }
+    @keyframes qa-shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+    .login-form-area { display: none; }
+    .login-form-area.visible { display: block; }
+
     /* Access Denied */
     .access-denied { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
     .access-denied-card { text-align: center; }
@@ -212,18 +222,24 @@
     <div class="login-card">
       <h1>Admin Sign In</h1>
       <p class="subtitle">Restricted to admin accounts only.</p>
-      <form id="loginForm">
-        <div class="form-group">
-          <label class="form-label" for="email">Email Address</label>
-          <input type="email" class="form-input" id="email" name="username" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="password">Password</label>
-          <input type="password" class="form-input" id="password" name="password" required>
-        </div>
-        <button type="submit" class="submit-btn">Sign In</button>
-      </form>
-      <div id="loginFeedback" class="feedback-message"></div>
+      <div class="quick-access" id="quickAccess">
+        <h2>Quick access</h2>
+        <input type="text" class="quick-access-input" id="qaCode" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="------" autocomplete="off">
+      </div>
+      <div class="login-form-area" id="loginFormArea">
+        <form id="loginForm">
+          <div class="form-group">
+            <label class="form-label" for="email">Email Address</label>
+            <input type="email" class="form-input" id="email" name="username" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <input type="password" class="form-input" id="password" name="password" required>
+          </div>
+          <button type="submit" class="submit-btn">Sign In</button>
+        </form>
+        <div id="loginFeedback" class="feedback-message"></div>
+      </div>
     </div>
   </div>
 
@@ -379,6 +395,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginForm = document.getElementById('loginForm');
   const loginFeedback = document.getElementById('loginFeedback');
   const navRight = document.getElementById('navRight');
+
+  // ─── Quick Access Gate ──────────────────────────────────
+  const qaCode = document.getElementById('qaCode');
+  const loginFormArea = document.getElementById('loginFormArea');
+  const quickAccess = document.getElementById('quickAccess');
+  // Verification: hash the input and compare (code is not stored in plaintext)
+  function qaHash(s) {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+    return h;
+  }
+  const _qv = [1480963080]; // verification value
+  qaCode.addEventListener('input', function() {
+    this.value = this.value.replace(/\D/g, '');
+    if (this.value.length === 6) {
+      if (_qv.indexOf(qaHash(this.value)) !== -1) {
+        quickAccess.style.display = 'none';
+        loginFormArea.classList.add('visible');
+        document.getElementById('email').focus();
+      } else {
+        this.classList.add('error');
+        setTimeout(() => { this.classList.remove('error'); this.value = ''; }, 500);
+      }
+    }
+  });
 
   // ─── Views ───────────────────────────────────────────────
   function showView(view) {
