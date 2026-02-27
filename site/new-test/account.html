@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account | Sopal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-dark: #0a0a0a;
+      --bg-darker: #050505;
+      --green: #00d47e;
+      --green-dark: #00b368;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #888;
+      --border-light: #e5e5e5;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    button { border: none; cursor: pointer; font-family: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+    /* Nav */
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+    .nav-logo-icon { width: 28px; height: 28px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .nav-logo-icon svg { width: 16px; height: 16px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-links a.active { color: white; font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+
+    /* Page Header */
+    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 32px 0; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-secondary); }
+
+    /* Account Layout */
+    .account-layout { max-width: 1200px; margin: 0 auto; padding: 32px 32px 72px; }
+    .account-container { display: flex; gap: 32px; }
+
+    /* Account Nav (sidebar tabs) */
+    .account-nav { flex: 0 0 200px; }
+    .account-nav .nav-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 10px 14px;
+      border: none;
+      background: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 450;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .account-nav .nav-btn:hover { background: white; color: var(--text-primary); }
+    .account-nav .nav-btn.active { background: white; color: var(--text-primary); font-weight: 600; border: 1px solid var(--border-light); }
+
+    /* Account Content */
+    .account-content { flex: 1; min-width: 0; }
+    .account-section {
+      display: none;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .account-section.active { display: block; }
+    .account-section.visible { opacity: 1; transform: translateY(0); }
+
+    /* Cards */
+    .card {
+      background: white;
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 28px;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .card-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0;
+      border: none;
+      padding: 0;
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+
+    /* Profile Picture */
+    .profile-picture-container {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+    .profile-picture-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background-color: var(--green);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .profile-picture-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    /* Form Styles */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s;
+      background: white;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--green);
+    }
+    .form-group input:disabled, .form-group select:disabled {
+      background-color: #f5f5f5;
+      border-color: var(--border-light);
+      color: var(--text-primary);
+      -webkit-text-fill-color: var(--text-primary);
+      opacity: 1;
+      cursor: not-allowed;
+    }
+    .form-group input[disabled]#email {
+      background-color: #f5f5f5;
+      border-color: var(--border-light);
+      color: var(--text-secondary);
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .form-group small {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .form-group select {
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 32px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    /* Buttons */
+    .form-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      background: var(--green);
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background-color 0.2s;
+      font-family: inherit;
+    }
+    .btn:hover { background: var(--green-dark); }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-secondary {
+      background: #f0f0f0;
+      color: var(--text-primary);
+    }
+    .btn-secondary:hover { background: #e5e5e5; }
+
+    /* Feedback Messages */
+    .feedback-message {
+      margin-top: 16px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+    .feedback-message.success {
+      background-color: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      display: block;
+    }
+    .feedback-message.error {
+      background-color: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      display: block;
+    }
+
+    /* Purchase History Table */
+    .purchase-history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    .purchase-history-table th,
+    .purchase-history-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-light);
+      text-align: left;
+    }
+    .purchase-history-table th {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      background: #fafafa;
+    }
+    .purchase-history-table td { font-size: 14px; }
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Action Buttons */
+    .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+      font-family: inherit;
+    }
+    .btn-receipt { background: var(--green); color: #000; }
+    .btn-receipt:hover { background: var(--green-dark); }
+    .btn-invoice { background: #6b6b6b; color: white; }
+    .btn-invoice:hover { background: #555; }
+    .btn-small:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* Email Verification Banner */
+    .verification-banner {
+      background: #fffbeb;
+      border: 1px solid #fbbf24;
+      border-radius: 10px;
+      padding: 14px 20px;
+      margin-bottom: 20px;
+    }
+    .verification-banner-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .verification-banner strong { font-size: 14px; }
+    .verification-banner p { margin: 4px 0 0; color: #92400e; font-size: 13px; }
+
+    /* Email Verified Badge */
+    .verified-badge {
+      background: #f0fdf4;
+      color: #166534;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Footer */
+    .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
+    .footer-inner { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); gap: 24px; }
+    .footer-brand { padding-right: 16px; }
+    .footer-brand .footer-logo { display: flex; align-items: center; gap: 7px; color: white; font-weight: 700; font-size: 15px; margin-bottom: 10px; }
+    .footer-logo-icon { width: 20px; height: 20px; background: var(--green); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+    .footer-logo-icon svg { width: 12px; height: 12px; }
+    .footer-brand p { font-size: 12px; color: #555; line-height: 1.5; }
+    .footer-col h4 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+    .footer-col a { display: block; font-size: 13px; color: #666; margin-bottom: 7px; transition: color 0.2s; }
+    .footer-col a:hover { color: white; }
+    .footer-bottom { display: flex; align-items: center; justify-content: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #555; }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .account-container { flex-direction: column; }
+      .account-nav { display: flex; flex-wrap: wrap; gap: 4px; }
+      .account-nav .nav-btn { flex-grow: 1; text-align: center; }
+      .form-grid { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr; }
+      .card-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .purchase-history-table { font-size: 12px; }
+      .purchase-history-table th, .purchase-history-table td { padding: 10px 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/new-test/" class="nav-logo">
+          <div class="nav-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9m-9 9a9 9 0 019-9"/></svg></div>
+          Sopal
+        </a>
+        <div class="nav-links">
+          <a href="/new-test/search">Search</a>
+          <a href="/new-test/adjudicators">Adjudicators</a>
+          <a href="/new-test/interest-calculator">Interest Calculator</a>
+          <a href="/new-test/due-date-calculator">Due Date Calculator</a>
+          <a href="/new-test/how-to">How-To Guide</a>
+          <a href="/new-test/feedback">Feedback</a>
+        </div>
+      </div>
+      <div class="nav-right"></div>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div class="container">
+      <h1>My Account</h1>
+      <p>Manage your profile, subscription, and payment settings</p>
+    </div>
+  </div>
+
+  <main class="account-layout">
+
+    <div id="emailVerificationBanner" class="verification-banner" style="display: none;">
+      <div class="verification-banner-inner">
+        <div style="flex: 1;">
+          <strong>Email Not Verified</strong>
+          <p>Please check your email for the verification link we just sent.</p>
+        </div>
+        <button onclick="resendVerificationEmail()" class="btn btn-secondary" id="resendBtn" style="white-space: nowrap;">Send Again</button>
+      </div>
+    </div>
+
+    <div class="account-container">
+      <aside class="account-nav">
+        <button class="nav-btn active" data-target="profile-section">Profile Settings</button>
+        <button class="nav-btn" data-target="subscription-section">Subscription</button>
+        <button class="nav-btn" data-target="purchases-section">Payment History</button>
+        <button class="nav-btn" data-target="payment-section">Payment Settings</button>
+      </aside>
+
+      <div class="account-content">
+
+        <!-- Profile Section -->
+        <section id="profile-section" class="account-section active">
+          <div class="card">
+            <div class="card-header">
+              <h2>Profile Information</h2>
+              <div id="emailVerifiedBadge" style="display: none;">
+                <span class="verified-badge">&#10003; Email Verified</span>
+              </div>
+              <div class="form-actions" id="profile-actions">
+                <button class="btn" id="edit-profile-btn">Edit Profile</button>
+                <button class="btn" id="save-profile-btn" style="display: none;">Save Changes</button>
+                <button class="btn btn-secondary" id="cancel-edit-btn" style="display: none;">Cancel</button>
+              </div>
+            </div>
+
+            <div class="profile-picture-container">
+              <div class="profile-picture-avatar" id="profile-picture-display"></div>
+              <div>
+                <button class="btn btn-secondary" onclick="document.getElementById('profile-picture-input').click();">Upload New Picture</button>
+                <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Recommended: Square image, PNG or JPG.</p>
+              </div>
+            </div>
+
+            <form id="profile-form">
+              <div class="form-grid">
+                <div class="form-group full-width">
+                  <label for="email">Email Address</label>
+                  <input type="email" id="email" name="email" disabled style="cursor: not-allowed;">
+                  <small>Email address cannot be changed</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="firstName">First Name</label>
+                  <input type="text" id="firstName" name="first_name" required disabled>
+                </div>
+                <div class="form-group">
+                  <label for="lastName">Last Name</label>
+                  <input type="text" id="lastName" name="last_name" required disabled>
+                </div>
+                <div class="form-group">
+                  <label for="firmName">Firm / Company Name</label>
+                  <input type="text" id="firmName" name="firm_name" required disabled>
+                </div>
+                <div class="form-group">
+                  <label for="abn">ABN</label>
+                  <input type="text" id="abn" name="abn" required disabled>
+                </div>
+                <div class="form-group">
+                  <label for="phone">Phone</label>
+                  <input type="tel" id="phone" name="phone" disabled>
+                </div>
+                <div class="form-group">
+                  <label for="employeeSize">Firm / Company Size</label>
+                  <select id="employeeSize" name="employee_size" required disabled>
+                    <option value="">Select company size</option>
+                    <option value="1-5">1-5 employees</option>
+                    <option value="6-10">6-10 employees</option>
+                    <option value="11-25">11-25 employees</option>
+                    <option value="26-50">26-50 employees</option>
+                    <option value="51-100">51-100 employees</option>
+                    <option value="101-250">101-250 employees</option>
+                    <option value="251-500">251-500 employees</option>
+                    <option value="500+">500+ employees</option>
+                  </select>
+                </div>
+              </div>
+
+              <h3 style="margin-top: 24px; margin-bottom: 16px; font-size: 16px; font-weight: 700; letter-spacing: -0.02em;">Billing Address</h3>
+              <div class="form-group">
+                <label for="billingAddress">Street Address</label>
+                <input type="text" id="billingAddress" name="billing_address" required disabled>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="billingCity">City</label>
+                  <input type="text" id="billingCity" name="billing_city" required disabled>
+                </div>
+                <div class="form-group">
+                  <label for="billingState">State</label>
+                  <select id="billingState" name="billing_state" required disabled>
+                    <option value="">Select</option>
+                    <option value="QLD">QLD</option>
+                    <option value="NSW">NSW</option>
+                    <option value="VIC">VIC</option>
+                    <option value="SA">SA</option>
+                    <option value="WA">WA</option>
+                    <option value="TAS">TAS</option>
+                    <option value="NT">NT</option>
+                    <option value="ACT">ACT</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="billingPostcode">Postcode</label>
+                  <input type="text" id="billingPostcode" name="billing_postcode" required disabled>
+                </div>
+              </div>
+              <div id="feedback-message" class="feedback-message"></div>
+            </form>
+          </div>
+        </section>
+
+        <!-- Subscription Section -->
+        <section id="subscription-section" class="account-section">
+          <div class="card">
+            <h2>Subscription</h2>
+            <div id="subscription-loading" style="color: var(--text-muted);">Loading subscription details...</div>
+            <div id="subscription-content" style="display:none;"></div>
+          </div>
+        </section>
+
+        <!-- Payment History Section -->
+        <section id="purchases-section" class="account-section">
+          <div class="card">
+            <h2>Payment History</h2>
+            <table class="purchase-history-table">
+              <thead>
+                <tr>
+                  <th>Date &amp; Time</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>Card</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="purchase-history-body">
+              </tbody>
+            </table>
+            <div id="no-purchases" class="empty-state" style="display: none;">No payment history found.</div>
+          </div>
+        </section>
+
+        <!-- Payment Settings Section -->
+        <section id="payment-section" class="account-section">
+          <div class="card">
+            <h2>Payment Settings</h2>
+            <div id="payment-methods-loading" style="color: var(--text-muted); padding: 10px 0;">Loading payment methods...</div>
+            <div id="payment-methods-list" style="display:none;"></div>
+            <div id="add-card-section" style="display:none; margin-top:20px; padding-top:20px; border-top:1px solid var(--border-light);">
+              <h3 style="font-size:16px; font-weight:700; margin-bottom:12px; letter-spacing:-0.02em;">Add New Card</h3>
+              <div id="card-element" style="padding:12px; border:1px solid var(--border-light); border-radius:8px; background:#fafafa;"></div>
+              <div id="card-errors" style="color:#dc3545; font-size:13px; margin-top:8px;"></div>
+              <div style="display:flex; gap:10px; margin-top:12px;">
+                <button class="btn" id="save-card-btn" onclick="saveCard()" style="max-width:160px;">Save Card</button>
+                <button class="btn btn-secondary" onclick="hideAddCard()" style="max-width:120px;">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo"><div class="footer-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9m-9 9a9 9 0 019-9"/></svg></div>Sopal</div>
+          <p>An intelligent search tool for adjudication decisions under the BIF Act 2017 (Qld)</p>
+        </div>
+        <div class="footer-col"><h4>Tools</h4><a href="/new-test/search">Decision Search</a><a href="/new-test/adjudicators">Adjudicators</a><a href="/new-test/interest-calculator">Interest Calculator</a><a href="/new-test/due-date-calculator">Due Date Calculator</a></div>
+        <div class="footer-col"><h4>Resources</h4><a href="/new-test/how-to">How-To Guide</a><a href="/new-test/feedback">Feedback</a></div>
+        <div class="footer-col"><h4>Legal</h4><a href="/new-test/privacy">Privacy</a><a href="/new-test/terms">Terms of Use</a><a href="/new-test/account-terms">Account Terms</a></div>
+      </div>
+      <div class="footer-bottom">&copy; 2026 Sopal Australia. All rights reserved.</div>
+    </div>
+  </footer>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+// --- GLOBALLY ACCESSIBLE HELPER FUNCTIONS ---
+
+// Download Stripe receipt
+async function downloadReceipt(paymentIntentId) {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) {
+        alert('Please log in to download receipt');
+        return;
+    }
+    try {
+        const response = await fetch(`/get-receipt-url/${paymentIntentId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+            throw new Error('Could not get receipt URL');
+        }
+        const data = await response.json();
+        if (data.receiptUrl) {
+            window.open(data.receiptUrl, '_blank');
+        } else {
+            alert('Receipt not available for this purchase');
+        }
+    } catch (error) {
+        console.error('Receipt download error:', error);
+        alert('Failed to download receipt. Please try again later.');
+    }
+}
+
+// Download Stripe invoice PDF
+async function downloadInvoice(button, adjudicatorName, paymentIntentId, existingInvoiceId) {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) {
+        alert('Please log in to download invoice');
+        return;
+    }
+
+    const originalText = button.textContent;
+    button.textContent = 'Loading...';
+    button.disabled = true;
+
+    try {
+        let invoiceId = existingInvoiceId;
+
+        // If no invoice exists, create one
+        if (!invoiceId || invoiceId === 'null' || invoiceId === 'undefined') {
+            const formData = new FormData();
+            formData.append('adjudicator_name', adjudicatorName);
+            formData.append('payment_intent_id', paymentIntentId);
+
+            const createResponse = await fetch('/create-invoice-for-purchase', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!createResponse.ok) {
+                throw new Error('Failed to create invoice');
+            }
+
+            const createData = await createResponse.json();
+            invoiceId = createData.invoiceId;
+        }
+
+        // Download the invoice
+        const response = await fetch(`/download-invoice/${invoiceId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to download invoice');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `Sopal_Invoice_${adjudicatorName.replace(/\s/g, '_')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    } catch (error) {
+        console.error('Invoice download error:', error);
+        alert('Failed to download invoice. Please try again later.');
+    } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+}
+
+// Download subscription invoice PDF
+async function downloadSubscriptionInvoice(button, invoiceId) {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) { alert('Please log in to download invoice'); return; }
+    const originalText = button.textContent;
+    button.textContent = 'Loading...';
+    button.disabled = true;
+    try {
+        const response = await fetch(`/download-invoice/${invoiceId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Failed to download invoice');
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `Sopal_Invoice.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    } catch (error) {
+        console.error('Invoice download error:', error);
+        alert('Failed to download invoice. Please try again later.');
+    } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+}
+
+// --- ACCOUNT PAGE SPECIFIC SCRIPT ---
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.querySelector('.account-container')) {
+        const token = localStorage.getItem('purchase_token');
+        if (!token) {
+            console.warn("[Account] No token found – showing logged-out message.");
+            showLoggedOutMessage();
+            return;
+        }
+
+        const headers = { 'Authorization': `Bearer ${token}` };
+        let originalProfileData = {};
+        let userEmail = '';
+
+        // --- DOM References ---
+        const form = document.getElementById('profile-form');
+        const formElements = form.querySelectorAll('input:not(#email), select');
+        const editBtn = document.getElementById('edit-profile-btn');
+        const saveBtn = document.getElementById('save-profile-btn');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        const pfpDisplay = document.getElementById('profile-picture-display');
+        const pfpInput = document.getElementById('profile-picture-input');
+        const navButtons = document.querySelectorAll('.account-nav .nav-btn');
+        const sections = document.querySelectorAll('.account-section');
+
+        editBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleEditMode(true);
+        });
+
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleEditMode(false);
+            populateProfileForm(originalProfileData);
+        });
+
+        // --- Tab Navigation ---
+        function switchSection(targetId, pushState) {
+            // Fade out current visible section
+            const currentSection = document.querySelector('.account-section.visible');
+            if (currentSection && currentSection.id !== targetId) {
+                currentSection.classList.remove('visible');
+                setTimeout(() => {
+                    currentSection.classList.remove('active');
+                    // Show and fade in new section
+                    const nextSection = document.getElementById(targetId);
+                    if (nextSection) {
+                        nextSection.classList.add('active');
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                nextSection.classList.add('visible');
+                            });
+                        });
+                    }
+                }, 200);
+            } else {
+                // No current section or same section - just show it
+                const nextSection = document.getElementById(targetId);
+                if (nextSection) {
+                    nextSection.classList.add('active');
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            nextSection.classList.add('visible');
+                        });
+                    });
+                }
+            }
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.nav-btn[data-target="${targetId}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+            if (targetId === 'payment-section') loadPaymentMethods();
+            if (pushState !== false) {
+                const url = new URL(window.location);
+                url.searchParams.set('tab', targetId.replace('-section',''));
+                window.history.pushState({}, '', url);
+            }
+        }
+
+        navButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = button.getAttribute('data-target');
+                switchSection(targetId);
+            });
+        });
+
+        // Initialize: make the initially active section visible
+        const initialActive = document.querySelector('.account-section.active');
+        if (initialActive) initialActive.classList.add('visible');
+
+        function toggleEditMode(isEditing) {
+            formElements.forEach(el => {
+                if (el.id === 'email') {
+                    el.disabled = true;
+                } else {
+                    el.disabled = !isEditing;
+                }
+            });
+            editBtn.style.display = isEditing ? 'none' : 'block';
+            saveBtn.style.display = isEditing ? 'block' : 'none';
+            cancelBtn.style.display = isEditing ? 'block' : 'none';
+        }
+
+        // --- Profile Picture ---
+        function loadAndSetProfilePicture(email, user) {
+            const profilePic = localStorage.getItem(`profile_pic_${email}`);
+            const initials = (user.first_name ? user.first_name[0] : '') + (user.last_name ? user.last_name[0] : '');
+            let avatarContent = initials || '?';
+            if (profilePic) avatarContent = `<img src="${profilePic}" alt="Profile Picture">`;
+            pfpDisplay.innerHTML = avatarContent;
+        }
+
+        // --- Form Population ---
+        function populateProfileForm(user) {
+            originalProfileData = user;
+            userEmail = user.email;
+
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('firstName').value = user.first_name || '';
+            document.getElementById('lastName').value = user.last_name || '';
+            document.getElementById('firmName').value = user.firm_name || '';
+            document.getElementById('abn').value = user.abn || '';
+            document.getElementById('phone').value = user.phone || '';
+            document.getElementById('employeeSize').value = user.employee_size || '';
+            document.getElementById('billingAddress').value = user.billing_address || '';
+            document.getElementById('billingCity').value = user.billing_city || '';
+            document.getElementById('billingState').value = user.billing_state || '';
+            document.getElementById('billingPostcode').value = user.billing_postcode || '';
+            loadAndSetProfilePicture(user.email, user);
+        }
+
+        // --- Load Profile Data ---
+        async function loadProfileData() {
+            try {
+                const res = await fetch('/purchase-me', { headers });
+                if (res.status === 401) {
+                    console.warn("[Account] 401 Unauthorized – token invalid or expired.");
+                    localStorage.removeItem('purchase_token');
+                    showLoggedOutMessage();
+                    return;
+                }
+                if (!res.ok) {
+                    console.error("[Account] Unexpected response:", res.status);
+                    showErrorBanner("Could not load your account information. Please try again later.");
+                    return;
+                }
+                const user = await res.json();
+                populateProfileForm(user);
+            } catch (error) {
+                console.error("[Account] Network or parse error:", error);
+                showErrorBanner("Temporary network issue. Try reloading the page.");
+            }
+        }
+
+        // --- Load Payment History ---
+        function loadPurchaseHistory() {
+            fetch('/api/payment-history', { headers })
+                .then(res => res.ok ? res.json() : Promise.reject('Could not fetch payment history.'))
+                .then(payments => {
+                    const historyBody = document.getElementById('purchase-history-body');
+                    const noPurchasesEl = document.getElementById('no-purchases');
+                    if (payments.length === 0) {
+                        historyBody.innerHTML = '';
+                        noPurchasesEl.style.display = 'block';
+                    } else {
+                        noPurchasesEl.style.display = 'none';
+                        historyBody.innerHTML = payments.map(p => {
+                            const date = new Date(p.date * 1000);
+                            const dateStr = date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+                                + ', ' + date.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true });
+                            const cardStr = p.card_brand && p.card_last4
+                                ? `${p.card_brand.charAt(0).toUpperCase() + p.card_brand.slice(1)} \u2022\u2022\u2022\u2022 ${p.card_last4}`
+                                : '\u2014';
+                            const hasPI = p.stripe_payment_intent_id && p.stripe_payment_intent_id !== 'null';
+                            const hasInvoice = p.stripe_invoice_id && p.stripe_invoice_id !== 'null';
+                            const isAdjudicator = p.description && p.description.startsWith('Adjudicator:');
+                            const adjName = isAdjudicator ? p.description.replace('Adjudicator: ', '') : '';
+                            return `
+                            <tr>
+                                <td>${dateStr}</td>
+                                <td>${p.description || '\u2014'}</td>
+                                <td>$${parseFloat(p.amount).toFixed(2)}</td>
+                                <td>${cardStr}</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-receipt"
+                                                onclick="downloadReceipt('${p.stripe_payment_intent_id || ''}')"
+                                                title="Download Receipt"
+                                                ${!hasPI ? 'disabled' : ''}>
+                                            Receipt
+                                        </button>
+                                        ${isAdjudicator ? `
+                                        <button class="btn-small btn-invoice"
+                                                onclick="downloadInvoice(this, '${adjName.replace(/'/g, "\\'")}', '${p.stripe_payment_intent_id || ''}', '${p.stripe_invoice_id || ''}')"
+                                                title="Download Invoice"
+                                                ${!hasPI ? 'disabled' : ''}>
+                                            Invoice
+                                        </button>` : hasInvoice ? `
+                                        <button class="btn-small btn-invoice"
+                                                onclick="downloadSubscriptionInvoice(this, '${p.stripe_invoice_id}')"
+                                                title="Download Invoice">
+                                            Invoice
+                                        </button>` : ''}
+                                    </div>
+                                </td>
+                            </tr>
+                        `}).join('');
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('purchase-history-body').innerHTML =
+                        '<tr><td colspan="5">Could not load payment history.</td></tr>';
+                    console.error("[Account] Error populating payment history:", error);
+                });
+        }
+
+        // --- Subscription Tab ---
+        async function loadSubscription() {
+            try {
+                const res = await fetch('/api/subscription-status', { headers });
+                if (!res.ok) return;
+                const data = await res.json();
+                const container = document.getElementById('subscription-content');
+                const loading = document.getElementById('subscription-loading');
+                loading.style.display = 'none';
+                container.style.display = 'block';
+
+                if (data.has_subscription) {
+                    const sub = data.subscription;
+                    const periodEnd = new Date(sub.current_period_end).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+                    const isCancelled = sub.status === 'cancelled';
+
+                    container.innerHTML = `
+                        <div style="padding:20px; background:${isCancelled ? '#fffbeb' : '#f0fdf4'}; border-radius:10px; border:1px solid ${isCancelled ? '#fbbf24' : 'var(--green)'}; margin-bottom:20px;">
+                            <strong style="font-size:16px;">${isCancelled ? 'Subscription Cancelled' : 'Active Subscription'}</strong>
+                            <p style="margin:8px 0 0; color:var(--text-secondary); font-size:14px;">
+                                Plan: <strong>${sub.plan_type === 'annual' ? 'Annual ($520/year)' : 'Weekly ($12.95/week)'}</strong><br>
+                                Payment: <strong>${sub.payment_method === 'stripe' ? 'Credit Card' : 'Invoice'}</strong><br>
+                                ${isCancelled
+                                    ? 'Access until: <strong>' + periodEnd + '</strong>'
+                                    : 'Next billing date: <strong>' + periodEnd + '</strong>'}
+                            </p>
+                        </div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            ${sub.payment_method === 'stripe' && !isCancelled ? '<button class="btn" onclick="openBillingPortal()" style="max-width:200px;">Manage Billing</button>' : ''}
+                            ${!isCancelled ? '<button class="btn" onclick="cancelSubscription()" style="max-width:200px; background:#dc3545; color:white;">Cancel Subscription</button>' : ''}
+                            ${isCancelled ? '<a href="/new-test/pricing" class="btn" style="max-width:200px; text-decoration:none; display:inline-block; text-align:center;">Re-subscribe</a>' : ''}
+                        </div>
+                    `;
+                } else if (data.pending_invoice_request) {
+                    container.innerHTML = `
+                        <div style="padding:20px; background:#fffbeb; border-radius:10px; border:1px solid #fbbf24;">
+                            <strong>Invoice Request Pending</strong>
+                            <p style="margin:8px 0 0; color:var(--text-secondary); font-size:14px;">
+                                Your invoice subscription request for a <strong>${data.pending_invoice_request.plan_type}</strong> plan is being reviewed.
+                                We'll email you within 1 business day.
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div style="text-align:center; padding:30px;">
+                            <p style="color:var(--text-secondary); margin-bottom:15px;">You're currently on the <strong>Free Plan</strong> (10 searches/month).</p>
+                            <a href="/new-test/pricing" class="btn" style="max-width:250px; margin:0 auto; text-decoration:none; display:block; text-align:center;">Upgrade to Unlimited</a>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('Error loading subscription:', e);
+                document.getElementById('subscription-loading').textContent = 'Could not load subscription details.';
+            }
+        }
+
+        // --- Form Submission ---
+        saveBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const feedbackDiv = document.getElementById('feedback-message');
+            feedbackDiv.className = 'feedback-message';
+            feedbackDiv.textContent = '';
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            try {
+                const response = await fetch('/update-profile', {
+                    method: 'PUT',
+                    headers,
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to update profile.');
+                }
+
+                const data = await response.json();
+                feedbackDiv.textContent = data.msg || 'Profile updated successfully!';
+                feedbackDiv.className = 'feedback-message success';
+                setTimeout(() => { feedbackDiv.style.display = 'none'; }, 3000);
+                toggleEditMode(false);
+                await loadProfileData();
+                if (window.updateNavUI) window.updateNavUI();
+            } catch (error) {
+                feedbackDiv.textContent = error.message;
+                feedbackDiv.className = 'feedback-message error';
+                console.error('[Account] Update profile error:', error);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Changes';
+            }
+        });
+
+        // --- Profile Picture Upload ---
+        pfpInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const base64Image = event.target.result;
+                    localStorage.setItem(`profile_pic_${userEmail}`, base64Image);
+                    pfpDisplay.innerHTML = `<img src="${base64Image}" alt="Profile Preview">`;
+                    if (window.updateNavUI) window.updateNavUI();
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        // --- Helpers for logged-out / error UI ---
+        function showLoggedOutMessage() {
+            document.querySelector('main').innerHTML = `
+                <div style="text-align:center;padding:60px;">
+                    <h2 style="font-size:22px; font-weight:700; letter-spacing:-0.02em; margin-bottom:10px;">You're not signed in.</h2>
+                    <p style="color:var(--text-secondary);">Please <a href="/new-test/login" style="color:var(--green-dark);font-weight:600;">login</a> to access your account.</p>
+                </div>`;
+        }
+
+        function showErrorBanner(msg) {
+            const el = document.createElement('div');
+            el.style.background = '#fef2f2';
+            el.style.color = '#991b1b';
+            el.style.padding = '14px 20px';
+            el.style.borderRadius = '10px';
+            el.style.marginBottom = '20px';
+            el.style.border = '1px solid #fecaca';
+            el.style.fontSize = '14px';
+            el.textContent = msg;
+            document.querySelector('main').prepend(el);
+        }
+
+        // --- Initial Load ---
+        async function initializePage() {
+            await loadProfileData();
+            loadPurchaseHistory();
+            loadSubscription();
+
+            const res = await fetch('/purchase-me', { headers });
+            if (res.ok) {
+                const user = await res.json();
+
+                if (user.email_verified) {
+                    const badge = document.getElementById('emailVerifiedBadge');
+                    if (badge) badge.style.display = 'block';
+                } else {
+                    const banner = document.getElementById('emailVerificationBanner');
+                    if (banner) banner.style.display = 'block';
+                }
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = urlParams.get('tab') || 'profile';
+            const targetButton = document.querySelector(`.nav-btn[data-target="${tab}-section"]`);
+            if (targetButton) setTimeout(() => targetButton.click(), 0);
+
+            const verified = urlParams.get('verified');
+            if (verified === 'success') {
+                showTempBanner('Email verified successfully!', 'success');
+                const newUrl = window.location.pathname + (tab !== 'profile' ? `?tab=${tab}` : '');
+                window.history.replaceState({}, '', newUrl);
+            }
+        }
+
+        initializePage();
+    }
+});
+
+async function openBillingPortal() {
+  const token = localStorage.getItem('purchase_token');
+  if (!token) return;
+  try {
+    const res = await fetch('/create-customer-portal-session', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to open billing portal');
+    const data = await res.json();
+    window.location.href = data.portal_url;
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+async function cancelSubscription() {
+  if (!confirm('Are you sure you want to cancel your subscription? You will retain access until the end of your current billing period.')) return;
+  const token = localStorage.getItem('purchase_token');
+  if (!token) return;
+  try {
+    const res = await fetch('/cancel-subscription', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Failed to cancel');
+    showTempBanner(data.message, 'success');
+    // Reload the subscription tab
+    setTimeout(() => window.location.reload(), 1500);
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+async function resendVerificationEmail() {
+  const btn = document.getElementById('resendBtn');
+  const token = localStorage.getItem('purchase_token');
+
+  if (!token) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  try {
+    const response = await fetch('/send-verification-email', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      const banner = document.getElementById('emailVerificationBanner');
+      const message = banner.querySelector('p');
+      message.textContent = 'Verification email sent! Please check your inbox.';
+      message.style.color = '#155724';
+
+      setTimeout(() => {
+        banner.style.display = 'none';
+      }, 5000);
+    } else {
+      showTempBanner('Failed to send verification email. Please try again later.', 'error');
+    }
+  } catch (e) {
+    showTempBanner('Network error. Please try again later.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send Again';
+  }
+}
+
+function showTempBanner(message, type = 'success') {
+  const banner = document.createElement('div');
+  banner.style.cssText = `
+    position: fixed;
+    top: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${type === 'success' ? '#f0fdf4' : '#fef2f2'};
+    color: ${type === 'success' ? '#166534' : '#991b1b'};
+    border: 1px solid ${type === 'success' ? '#bbf7d0' : '#fecaca'};
+    padding: 14px 28px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 10000;
+    font-size: 14px;
+    font-weight: 500;
+  `;
+  banner.textContent = message;
+  document.body.appendChild(banner);
+
+  setTimeout(() => {
+    banner.style.opacity = '0';
+    banner.style.transition = 'opacity 0.3s';
+    setTimeout(() => banner.remove(), 300);
+  }, 4000);
+}
+
+// --- Payment Methods (embedded) ---
+const stripeInstance = Stripe('pk_live_51SGxeHAIOAykxV504w220IB6SNF8PWmMovA3Vcj7BU34qr4lxSftuuc6vhGtb0CURpjiR2e2OMMNdyMuzVXbH286002Y11rMPE');
+let cardElement = null;
+let setupIntentSecret = null;
+
+function brandIcon(brand) {
+    const icons = { visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex', discover: 'Discover', diners: 'Diners', jcb: 'JCB', unionpay: 'UnionPay' };
+    return icons[brand] || brand.charAt(0).toUpperCase() + brand.slice(1);
+}
+
+async function loadPaymentMethods() {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) return;
+    const loading = document.getElementById('payment-methods-loading');
+    const list = document.getElementById('payment-methods-list');
+    try {
+        const res = await fetch('/payment-methods', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        loading.style.display = 'none';
+        list.style.display = 'block';
+
+        if (data.payment_methods.length === 0) {
+            list.innerHTML = `
+                <p style="color:var(--text-muted); margin-bottom:15px;">No saved payment methods.</p>
+                <button class="btn" onclick="showAddCard()" style="max-width:180px;">Add a Card</button>
+            `;
+        } else {
+            list.innerHTML = data.payment_methods.map(pm => `
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border:1px solid var(--border-light); border-radius:10px; margin-bottom:10px; background:#fafafa;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="font-weight:600; font-size:14px; color:var(--text-primary);">${brandIcon(pm.brand)}</span>
+                        <span style="color:var(--text-secondary); font-size:14px;">\u2022\u2022\u2022\u2022 ${pm.last4}</span>
+                        <span style="color:var(--text-muted); font-size:13px;">Exp ${String(pm.exp_month).padStart(2,'0')}/${pm.exp_year}</span>
+                    </div>
+                    <button onclick="removeCard('${pm.id}')" style="background:none; border:none; color:#dc3545; cursor:pointer; font-size:13px; font-weight:500; font-family:inherit;">Remove</button>
+                </div>
+            `).join('') + `
+                <button class="btn" onclick="showAddCard()" style="max-width:180px; margin-top:10px;">Add a Card</button>
+            `;
+        }
+    } catch (e) {
+        loading.style.display = 'none';
+        list.style.display = 'block';
+        list.innerHTML = '<p style="color:var(--text-muted);">Could not load payment methods.</p><button class="btn" onclick="showAddCard()" style="max-width:180px; margin-top:10px;">Add a Card</button>';
+        console.error('Error loading payment methods:', e);
+    }
+}
+
+async function showAddCard() {
+    const section = document.getElementById('add-card-section');
+    section.style.display = 'block';
+    document.getElementById('card-errors').textContent = '';
+
+    if (!cardElement) {
+        const elements = stripeInstance.elements();
+        cardElement = elements.create('card', {
+            style: {
+                base: { fontSize: '15px', color: '#333', '::placeholder': { color: '#aab7c4' } },
+                invalid: { color: '#dc3545' }
+            }
+        });
+        cardElement.mount('#card-element');
+        cardElement.on('change', (event) => {
+            document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+        });
+    }
+
+    // Get setup intent
+    const token = localStorage.getItem('purchase_token');
+    try {
+        const res = await fetch('/setup-intent', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setupIntentSecret = data.client_secret;
+    } catch (e) {
+        document.getElementById('card-errors').textContent = 'Could not initialize. Please try again.';
+    }
+}
+
+function hideAddCard() {
+    document.getElementById('add-card-section').style.display = 'none';
+}
+
+async function saveCard() {
+    if (!setupIntentSecret || !cardElement) return;
+    const btn = document.getElementById('save-card-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    document.getElementById('card-errors').textContent = '';
+
+    const { error } = await stripeInstance.confirmCardSetup(setupIntentSecret, {
+        payment_method: { card: cardElement }
+    });
+
+    if (error) {
+        document.getElementById('card-errors').textContent = error.message;
+        btn.disabled = false;
+        btn.textContent = 'Save Card';
+    } else {
+        hideAddCard();
+        cardElement.clear();
+        setupIntentSecret = null;
+        btn.disabled = false;
+        btn.textContent = 'Save Card';
+        loadPaymentMethods();
+        showTempBanner('Card saved successfully.');
+    }
+}
+
+async function removeCard(pmId) {
+    if (!confirm('Remove this card?')) return;
+    const token = localStorage.getItem('purchase_token');
+    try {
+        const res = await fetch(`/payment-method/${pmId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            loadPaymentMethods();
+            showTempBanner('Card removed.');
+        } else {
+            alert('Failed to remove card.');
+        }
+    } catch (e) {
+        alert('Failed to remove card.');
+    }
+}
+</script>
+<script src="/new-test/assets/js/main.js"></script>
+</body>
+</html>
