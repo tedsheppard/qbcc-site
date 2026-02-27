@@ -268,6 +268,28 @@
       font-size: 14px;
     }
 
+    /* Usage Stats */
+    .usage-stat-box {
+      flex: 1;
+      background: #fafafa;
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+    }
+    .usage-stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+    }
+    .usage-stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
     /* Action Buttons */
     .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
     .btn-small {
@@ -387,6 +409,7 @@
         <button class="nav-btn" data-target="subscription-section">Subscription</button>
         <button class="nav-btn" data-target="purchases-section">Payment History</button>
         <button class="nav-btn" data-target="payment-section">Payment Settings</button>
+        <button class="nav-btn" data-target="usage-section">Usage</button>
       </aside>
 
       <div class="account-content">
@@ -541,6 +564,50 @@
           </div>
         </section>
 
+        <!-- Usage Section -->
+        <section id="usage-section" class="account-section">
+          <div class="card">
+            <h2>Search Usage</h2>
+            <div id="usage-summary" style="display:flex; gap:20px; margin-top:16px; margin-bottom:24px;">
+              <div class="usage-stat-box">
+                <div class="usage-stat-value" id="usage-count">--</div>
+                <div class="usage-stat-label">Searches this month</div>
+              </div>
+              <div class="usage-stat-box">
+                <div class="usage-stat-value" id="usage-limit">--</div>
+                <div class="usage-stat-label">Monthly limit</div>
+              </div>
+            </div>
+            <div id="usage-bar-container" style="display:none; margin-bottom:24px;">
+              <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-bottom:6px;">
+                <span id="usage-bar-label">0 of 10 used</span>
+                <span id="usage-bar-pct">0%</span>
+              </div>
+              <div style="height:8px; background:#f0f0f0; border-radius:4px; overflow:hidden;">
+                <div id="usage-bar-fill" style="height:100%; background:var(--green); border-radius:4px; transition:width 0.4s ease; width:0%;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px;">
+            <h2>Search History</h2>
+            <div id="search-history-loading" style="color: var(--text-muted); padding: 10px 0;">Loading search history...</div>
+            <table class="purchase-history-table" id="search-history-table" style="display:none;">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Search Query</th>
+                </tr>
+              </thead>
+              <tbody id="search-history-body">
+              </tbody>
+            </table>
+            <div id="no-search-history" class="empty-state" style="display:none;">No search history found.</div>
+            <div id="search-history-pagination" style="display:none; margin-top:16px; text-align:center;">
+              <button class="btn btn-secondary" id="load-more-searches" style="font-size:13px; padding:8px 24px;">Load more</button>
+            </div>
+          </div>
+        </section>
+
       </div>
     </div>
   </main>
@@ -550,13 +617,13 @@
       <div class="footer-inner">
         <div class="footer-brand">
           <div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div>
-          <p>An intelligent search tool for adjudication decisions under the BIF Act 2017 (Qld)</p>
+          <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
         </div>
         <div class="footer-col"><h4>Tools</h4><a href="/new-test/search">Decision Search</a><a href="/new-test/adjudicators">Adjudicators</a><a href="/new-test/interest-calculator">Interest Calculator</a><a href="/new-test/due-date-calculator">Due Date Calculator</a></div>
         <div class="footer-col"><h4>Resources</h4><a href="/new-test/how-to">How-To Guide</a><a href="/new-test/feedback">Feedback</a></div>
-        <div class="footer-col"><h4>Legal</h4><a href="/new-test/privacy">Privacy</a><a href="/new-test/terms">Terms of Use</a><a href="/new-test/account-terms">Account Terms</a></div>
+        <div class="footer-col"><h4>Legal</h4><a href="/new-test/privacy">Privacy</a><a href="/new-test/terms">Terms of Use</a><a href="/new-test/account-terms">Account Terms</a><a href="/new-test/adjudicator-insights-terms">Adjudicator Insights Terms</a></div>
       </div>
-      <div class="footer-bottom">&copy; 2026 Sopal Australia. All rights reserved.</div>
+      <div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/new-test/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div>
     </div>
   </footer>
 
@@ -755,6 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeBtn = document.querySelector(`.nav-btn[data-target="${targetId}"]`);
             if (activeBtn) activeBtn.classList.add('active');
             if (targetId === 'payment-section') loadPaymentMethods();
+            if (targetId === 'usage-section') loadUsageData();
             if (pushState !== false) {
                 const url = new URL(window.location);
                 url.searchParams.set('tab', targetId.replace('-section',''));
@@ -1032,6 +1100,109 @@ document.addEventListener('DOMContentLoaded', () => {
             el.textContent = msg;
             document.querySelector('main').prepend(el);
         }
+
+        // --- Usage / Search History ---
+        let usageLoaded = false;
+        let searchHistoryPage = 1;
+        let searchHistoryTotal = 0;
+
+        async function loadUsageData() {
+            if (usageLoaded) return;
+            usageLoaded = true;
+
+            // Load usage summary
+            try {
+                const res = await fetch('/api/my-search-usage', { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    const countEl = document.getElementById('usage-count');
+                    const limitEl = document.getElementById('usage-limit');
+                    if (data.is_unlimited) {
+                        countEl.textContent = 'Unlimited';
+                        limitEl.textContent = '\u221E';
+                    } else {
+                        countEl.textContent = data.searches_used;
+                        limitEl.textContent = data.search_limit;
+                        // Show progress bar
+                        const barContainer = document.getElementById('usage-bar-container');
+                        const barFill = document.getElementById('usage-bar-fill');
+                        const barLabel = document.getElementById('usage-bar-label');
+                        const barPct = document.getElementById('usage-bar-pct');
+                        barContainer.style.display = 'block';
+                        const pct = Math.min(100, Math.round((data.searches_used / data.search_limit) * 100));
+                        barLabel.textContent = `${data.searches_used} of ${data.search_limit} used`;
+                        barPct.textContent = `${pct}%`;
+                        setTimeout(() => { barFill.style.width = pct + '%'; }, 50);
+                        if (pct >= 90) barFill.style.background = '#dc3545';
+                        else if (pct >= 70) barFill.style.background = '#f59e0b';
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load usage summary:', e);
+            }
+
+            // Load search history (page 1)
+            await loadSearchHistoryPage(1);
+        }
+
+        async function loadSearchHistoryPage(page) {
+            const loading = document.getElementById('search-history-loading');
+            const table = document.getElementById('search-history-table');
+            const tbody = document.getElementById('search-history-body');
+            const noHistory = document.getElementById('no-search-history');
+            const pagination = document.getElementById('search-history-pagination');
+
+            if (page === 1) {
+                loading.style.display = 'block';
+                table.style.display = 'none';
+                noHistory.style.display = 'none';
+            }
+
+            try {
+                const res = await fetch(`/api/my-search-history?page=${page}`, { headers });
+                if (!res.ok) throw new Error('Failed to load search history');
+                const data = await res.json();
+
+                loading.style.display = 'none';
+                searchHistoryPage = data.page;
+                searchHistoryTotal = data.total;
+
+                if (data.total === 0 && page === 1) {
+                    noHistory.style.display = 'block';
+                    return;
+                }
+
+                table.style.display = 'table';
+
+                data.searches.forEach(s => {
+                    const tr = document.createElement('tr');
+                    const dateTd = document.createElement('td');
+                    const queryTd = document.createElement('td');
+                    const d = new Date(s.timestamp + 'Z');
+                    dateTd.textContent = d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) + ' ' + d.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+                    queryTd.textContent = s.search_query;
+                    tr.appendChild(dateTd);
+                    tr.appendChild(queryTd);
+                    tbody.appendChild(tr);
+                });
+
+                // Show/hide load more
+                if (data.page < data.total_pages) {
+                    pagination.style.display = 'block';
+                } else {
+                    pagination.style.display = 'none';
+                }
+            } catch (e) {
+                console.error('Failed to load search history:', e);
+                loading.style.display = 'none';
+                noHistory.style.display = 'block';
+                noHistory.textContent = 'Failed to load search history.';
+            }
+        }
+
+        document.getElementById('load-more-searches').addEventListener('click', () => {
+            loadSearchHistoryPage(searchHistoryPage + 1);
+        });
 
         // --- Initial Load ---
         async function initializePage() {

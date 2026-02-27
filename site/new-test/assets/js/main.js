@@ -235,6 +235,8 @@ ntStyle.innerHTML = `
     background-color: #333;
     margin: 4px 0;
 }
+/* Logo vertical alignment fix */
+.nav-logo img { position: relative; top: -1px; }
 /* Page transition overlay */
 #nt-transition {
     display: none;

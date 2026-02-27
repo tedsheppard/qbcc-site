@@ -182,9 +182,31 @@
       background: linear-gradient(to right, #ccc 30%, #888 50%, #ccc 70%);
       background-size: 200% auto; color: transparent;
       background-clip: text; -webkit-background-clip: text;
-      animation: shimmer 1s linear infinite;
+      animation: shimmer 1.2s linear infinite;
     }
     @keyframes shimmer { to { background-position: -200% center; } }
+
+    /* Skeleton cards */
+    .skeleton-card {
+      background: white; border: 1px solid var(--border-light); border-radius: 12px;
+      padding: 20px 24px; margin-bottom: 12px; overflow: hidden;
+    }
+    .skeleton-line {
+      height: 12px; border-radius: 6px; background: #ebebeb;
+      background: linear-gradient(90deg, #ebebeb 25%, #f5f5f5 50%, #ebebeb 75%);
+      background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
+    }
+    .skeleton-line.w60 { width: 60%; }
+    .skeleton-line.w80 { width: 80%; }
+    .skeleton-line.w40 { width: 40%; }
+    .skeleton-line.w30 { width: 30%; }
+    .skeleton-line.h16 { height: 16px; }
+    .skeleton-meta { display: flex; gap: 16px; margin-bottom: 12px; }
+    .skeleton-meta .skeleton-line { width: 80px; height: 10px; }
+    .skeleton-title { margin-bottom: 10px; }
+    .skeleton-body { display: flex; flex-direction: column; gap: 8px; }
+    .skeleton-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .skeleton-actions .skeleton-line { width: 90px; height: 28px; border-radius: 6px; }
 
     .typing-indicator { font-style: italic; color: var(--text-muted); }
 
@@ -353,7 +375,7 @@
           <a href="/new-test/account-terms">Account Terms</a>
         </div>
       </div>
-      <div class="footer-bottom">&copy; 2026 Sopal Australia. All rights reserved.</div>
+      <div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/new-test/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div>
     </div>
   </footer>
 
@@ -520,8 +542,8 @@ function renderGateUI() {
     banner.innerHTML = `
       <strong>Sign in required.</strong>
       Create a free account to search adjudication decisions (10 searches/month free).
-      <a href="/login?redirect=${redir}">Sign In</a> or
-      <a href="/register?redirect=${redir}">Register</a>
+      <a href="/new-test/login?redirect=${redir}">Sign In</a> or
+      <a href="/new-test/register?redirect=${redir}">Register</a>
     `;
   } else if (searchUsage && !searchUsage.is_unlimited) {
     const remaining = Math.max(0, searchUsage.search_limit - searchUsage.searches_used);
@@ -529,7 +551,7 @@ function renderGateUI() {
     if (remaining === 0) {
       banner.innerHTML = `
         <strong>0</strong> free searches remaining this month.
-        <a href="/pricing">Upgrade to Unlimited</a>
+        <a href="/new-test/pricing">Upgrade to Unlimited</a>
       `;
     } else {
       banner.innerHTML = `<strong>${remaining}</strong> of ${searchUsage.search_limit} free searches remaining this month.`;
@@ -729,8 +751,8 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
           <div class="gate-block">
             <h3>Sign in to search</h3>
             <p>Create a free account to get 10 searches per month.</p>
-            <a href="/login?redirect=${redir}" class="gate-btn">Sign In</a>
-            <a href="/register?redirect=${redir}" class="gate-btn gate-btn-secondary">Create Account</a>
+            <a href="/new-test/login?redirect=${redir}" class="gate-btn">Sign In</a>
+            <a href="/new-test/register?redirect=${redir}" class="gate-btn gate-btn-secondary">Create Account</a>
           </div>
         `;
         return;
@@ -742,7 +764,7 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
           <div class="gate-block">
             <h3>Monthly search limit reached</h3>
             <p>You've used all ${searchUsage.search_limit} of your free searches this month. Your limit resets on the 1st of next month.</p>
-            <a href="/pricing" class="gate-btn">Upgrade to Unlimited</a>
+            <a href="/new-test/pricing" class="gate-btn">Upgrade to Unlimited</a>
           </div>
         `;
         return;
@@ -751,6 +773,18 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
 
     statusEl.innerHTML = '<div class="loading-text-gradient">Searching...</div>';
     startLoadingBar();
+
+    // Show skeleton cards while loading
+    const skeletonHTML = Array(5).fill(`
+      <div class="skeleton-card">
+        <div class="skeleton-meta"><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        <div class="skeleton-title"><div class="skeleton-line h16 w60"></div></div>
+        <div class="skeleton-body"><div class="skeleton-line w80"></div><div class="skeleton-line w60"></div></div>
+        <div class="skeleton-actions"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+      </div>
+    `).join('');
+    $('#results').innerHTML = skeletonHTML;
+    $('#pagination').innerHTML = '';
 
     state.q = inputQuery;
     state.limit = +(limitEl.value || 20);
@@ -782,8 +816,8 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
           <div class="gate-block">
             <h3>Sign in to search</h3>
             <p>Create a free account to get 10 searches per month.</p>
-            <a href="/login?redirect=${redir}" class="gate-btn">Sign In</a>
-            <a href="/register?redirect=${redir}" class="gate-btn gate-btn-secondary">Create Account</a>
+            <a href="/new-test/login?redirect=${redir}" class="gate-btn">Sign In</a>
+            <a href="/new-test/register?redirect=${redir}" class="gate-btn gate-btn-secondary">Create Account</a>
           </div>
         `;
         return;
@@ -800,7 +834,7 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
           <div class="gate-block">
             <h3>Monthly search limit reached</h3>
             <p>You've used all ${errData.search_limit} of your free searches this month. Your limit resets on the 1st of next month.</p>
-            <a href="/pricing" class="gate-btn">Upgrade to Unlimited</a>
+            <a href="/new-test/pricing" class="gate-btn">Upgrade to Unlimited</a>
           </div>
         `;
         if (searchUsage) {
@@ -987,7 +1021,25 @@ function checkUrlParams() {
 
 // --- Init ---
 async function initSearchPage() {
-  gateEnabled = false;
+  try {
+    const gateRes = await fetch('/api/search-gate-status');
+    if (gateRes.ok) {
+      const gateData = await gateRes.json();
+      gateEnabled = gateData.gate_enabled;
+    }
+  } catch (e) { gateEnabled = false; }
+
+  if (gateEnabled) {
+    const token = localStorage.getItem('purchase_token');
+    if (token) {
+      try {
+        const usageRes = await fetch('/api/search-usage', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (usageRes.ok) searchUsage = await usageRes.json();
+      } catch (e) {}
+    }
+    renderGateUI();
+  }
+
   fetchAdjudicators();
   checkUrlParams();
 }

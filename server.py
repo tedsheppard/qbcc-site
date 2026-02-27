@@ -1486,6 +1486,35 @@ def get_my_search_usage(current_user: dict = Depends(get_current_purchase_user))
     searches_used = count_row["cnt"] if count_row else 0
     return {"searches_used": searches_used, "search_limit": 10, "is_unlimited": False}
 
+@app.get("/api/my-search-history")
+def get_my_search_history(page: int = 1, current_user: dict = Depends(get_current_purchase_user)):
+    """Returns the current user's paginated search history."""
+    email = current_user["email"]
+    per_page = 20
+    offset = (page - 1) * per_page
+
+    total_row = purchases_con.execute(
+        "SELECT COUNT(*) as cnt FROM search_logs WHERE user_email = ? AND was_blocked = 0",
+        (email,)
+    ).fetchone()
+    total = total_row["cnt"] if total_row else 0
+
+    rows = purchases_con.execute("""
+        SELECT search_query, timestamp
+        FROM search_logs
+        WHERE user_email = ? AND was_blocked = 0
+        ORDER BY timestamp DESC
+        LIMIT ? OFFSET ?
+    """, (email, per_page, offset)).fetchall()
+
+    return {
+        "searches": [dict(r) for r in rows],
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page if total > 0 else 1
+    }
+
 @app.get("/admin/all-users")
 def get_all_users(admin: dict = Depends(get_admin_user)):
     """Admin endpoint to get all user registration data."""
