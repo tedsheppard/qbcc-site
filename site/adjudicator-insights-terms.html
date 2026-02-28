@@ -1,507 +1,120 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-QEN3X3DQLR');
-  </script>
-  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
-  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
-  <meta charset="utf-8">
-  <title>Sopal – Adjudicator Insights Terms & Conditions</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adjudicator Insights Terms &amp; Conditions | Sopal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: Inter, sans-serif;
-      margin: 0;
-      background: #ffffff;
-      color: #222;
-      font-size: 15px;
-      line-height: 1.6;
-    }
-    .header {
-      background: #fdfdfd;
-      padding: 20px 25px;
-      border-bottom: 1px solid #ddd;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .header-content {
-      display: flex;
-      align-items: center;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    .logo {
-      height: 31px;
-      margin-right: 20px;
-    }
-    .nav-links {
-      margin-left: auto;
-      display: flex;
-      gap: 20px;
-    }
-    .nav-links a {
-      color: black;
-      text-decoration: none;
-      font-size: 14px;
-      transition: color 0.2s;
-    }
-    .nav-links a:hover {
-      color: #00c97c;
-    }
-    .container {
-      max-width: 800px;
-      margin: 60px auto;
-      padding: 0 20px;
-    }
-    .page-title {
-      font-size: 32px;
-      font-weight: 700;
-      color: #000;
-      margin-bottom: 16px;
-    }
-    .last-updated {
-      color: #666;
-      font-size: 14px;
-      margin-bottom: 40px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #eee;
-    }
-    .content-section {
-      margin-bottom: 40px;
-    }
-    .content-section h2 {
-      font-size: 24px;
-      font-weight: 600;
-      color: #000;
-      margin-bottom: 16px;
-      margin-top: 40px;
-    }
-    .content-section h3 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 12px;
-      margin-top: 24px;
-    }
-    .content-section p {
-      margin-bottom: 16px;
-      color: #444;
-    }
-    .content-section ul {
-      margin-bottom: 16px;
-      padding-left: 20px;
-    }
-    .content-section li {
-      margin-bottom: 8px;
-      color: #444;
-    }
-    .highlight-box {
-      background: #fef3c7;
-      border-left: 4px solid #f59e0b;
-      padding: 20px;
-      margin: 24px 0;
-      border-radius: 0 8px 8px 0;
-    }
-    .highlight-box h4 {
-      margin: 0 0 12px 0;
-      color: #92400e;
-      font-weight: 600;
-    }
-    .highlight-box p {
-      margin: 0;
-      color: #92400e;
-    }
-    .legal-box {
-      background: #f0fdf4;
-      border-left: 4px solid #00c97c;
-      padding: 20px;
-      margin: 24px 0;
-      border-radius: 0 8px 8px 0;
-    }
-    .legal-box h4 {
-      margin: 0 0 12px 0;
-      color: #166534;
-      font-weight: 600;
-    }
-    .legal-box p {
-      margin: 0;
-      color: #166534;
-    }
-    .important-notice {
-      background: #fef2f2;
-      border: 1px solid #fca5a5;
-      border-radius: 8px;
-      padding: 20px;
-      margin: 32px 0;
-    }
-    .important-notice h4 {
-      margin: 0 0 12px 0;
-      color: #dc2626;
-      font-weight: 600;
-    }
-    .important-notice p {
-      margin: 8px 0;
-      color: #dc2626;
-    }
-    .toc {
-      background: #f9f9f9;
-      border: 1px solid #e1e1e1;
-      border-radius: 8px;
-      padding: 24px;
-      margin-bottom: 40px;
-    }
-    .toc h3 {
-      margin: 0 0 16px 0;
-      font-size: 18px;
-      color: #333;
-    }
-    .toc ul {
-      margin: 0;
-      padding-left: 20px;
-    }
-    .toc a {
-      color: #00c97c;
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .toc a:hover {
-      color: #00a568;
-      text-decoration: underline;
-    }
-    .footer {
-      background: #fcfcfc;
-      color: #333;
-      padding: 40px 25px 20px;
-      margin-top: 60px;
-      border-top: 1px solid #ddd;
-    }
-    .footer-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      max-width: 1200px;
-      margin: auto;
-    }
-    .footer-left { 
-      max-width: 400px;
-      text-align: left;
-    }
-    .footer-logo { height: 24px; margin-bottom: 10px; }
-    .footer-links {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px 40px;
-      text-align: left;
-    }
-    .footer-links a {
-      font-size: 13px;
-      color: black;
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .footer-links a:hover {
-      color: #00c97c;
-    }
-    .footer-bottom {
-      text-align: center;
-      border-top: 1px solid #eee;
-      margin-top: 30px;
-      padding-top: 20px;
-      width: 100%;
-      font-size: 0.85em;
-      color: #666;
-    }
-    @media (max-width: 768px) {
-      .header-content {
-        flex-direction: column;
-        gap: 16px;
-      }
-      .nav-links {
-        margin: 0;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      .container {
-        margin: 40px auto;
-        padding: 0 16px;
-      }
-    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --bg-dark: #0a0a0a; --bg-darker: #050505; --green: #00d47e; --green-dark: #00b368; --text-primary: #1a1a1a; --text-secondary: #6b6b6b; --text-muted: #888; --border-light: #e5e5e5; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+    .nav-logo-icon { width: 28px; height: 28px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .nav-logo-icon svg { width: 16px; height: 16px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 32px 0; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-secondary); }
+    .content-area { max-width: 800px; margin: 40px auto; padding: 0 32px; }
+    .last-updated { color: var(--text-secondary); font-size: 14px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border-light); }
+    .toc { background: white; border: 1px solid var(--border-light); border-radius: 12px; padding: 24px; margin-bottom: 32px; }
+    .toc h3 { font-size: 16px; font-weight: 700; margin: 0 0 14px 0; }
+    .toc ul { margin: 0; padding-left: 20px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a { color: var(--green-dark); font-size: 14px; }
+    .toc a:hover { text-decoration: underline; }
+    .content-section { margin-bottom: 32px; }
+    .content-section h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 14px; margin-top: 32px; }
+    .content-section h3 { font-size: 17px; font-weight: 600; margin-bottom: 10px; margin-top: 20px; }
+    .content-section p { margin-bottom: 14px; color: #444; font-size: 15px; }
+    .content-section ul { margin-bottom: 14px; padding-left: 20px; }
+    .content-section li { margin-bottom: 6px; color: #444; font-size: 15px; }
+    .content-section a { color: var(--green-dark); }
+    .highlight-box { background: #fefce8; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
+    .highlight-box h4 { margin: 0 0 10px 0; color: #92400e; font-weight: 600; font-size: 14px; }
+    .highlight-box p { margin: 0; color: #92400e; font-size: 14px; }
+    .legal-box { background: #f0fdf4; border-left: 4px solid var(--green); padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
+    .legal-box h4 { margin: 0 0 10px 0; color: #166534; font-weight: 600; font-size: 14px; }
+    .legal-box p { margin: 0; color: #166534; font-size: 14px; }
+    .important-notice { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 20px; margin: 24px 0; }
+    .important-notice h4 { margin: 0 0 10px 0; color: #dc2626; font-weight: 600; font-size: 14px; }
+    .important-notice p { margin: 6px 0; color: #dc2626; font-size: 14px; }
+    .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
+    .footer-inner { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); gap: 24px; }
+    .footer-brand { padding-right: 16px; }
+    .footer-brand .footer-logo { display: flex; align-items: center; gap: 7px; color: white; font-weight: 700; font-size: 15px; margin-bottom: 10px; }
+    .footer-logo-icon { width: 20px; height: 20px; background: var(--green); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+    .footer-logo-icon svg { width: 12px; height: 12px; }
+    .footer-brand p { font-size: 12px; color: #555; line-height: 1.5; }
+    .footer-col h4 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+    .footer-col a { display: block; font-size: 13px; color: #666; margin-bottom: 7px; transition: color 0.2s; }
+    .footer-col a:hover { color: white; }
+    .footer-bottom { display: flex; align-items: center; justify-content: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #555; }
+    @media (max-width: 768px) { .nav-links { display: none; } .footer-inner { grid-template-columns: 1fr; } .content-area { padding: 0 16px; margin: 24px auto; } }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="header-content">
-      <a href="/">
-        <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
-      </a>
-      <div class="nav-links">
-        <a href="decision-search">Search</a>
-        <a href="adjudicators">Adjudicators</a>
-        <a href="interest-calculator">Interest Calculator</a>
-        <a href="due-date-calculator">Due Date Calculator</a>
-        <a href="how-to">How-To Guide</a>
-        <a href="feedback">Feedback</a>
-      </div>
-      <div id="user-profile-nav" style="min-width:36px"></div>
-    </div>
-  </div>
+  <nav class="nav"><div class="nav-inner"><div class="nav-left"><a href="/" class="nav-logo">
+  <img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;">
+</a><div class="nav-links"><a href="/search">Search</a><a href="/adjudicators">Adjudicators</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a><a href="/how-to">How-To Guide</a><a href="/feedback">Feedback</a></div></div><div class="nav-right"></div></div></nav>
 
-  <div class="container">
-    <h1 class="page-title">Adjudicator Insights Terms & Conditions</h1>
+  <div class="page-header"><div class="container"><h1>Adjudicator Insights Terms &amp; Conditions</h1><p>Terms governing the Adjudicator Insights premium feature</p></div></div>
+
+  <div class="content-area">
     <div class="last-updated">Last updated: 12 October 2025</div>
 
-    <div class="toc">
-      <h3>Contents</h3>
-      <ul>
-        <li><a href="#introduction">Introduction</a></li>
-        <li><a href="#incorporation">Incorporation of General Terms</a></li>
-        <li><a href="#service-description">Service Description</a></li>
-        <li><a href="#payment">Payment and Access</a></li>
-        <li><a href="#data-accuracy">Data Accuracy and Completeness</a></li>
-        <li><a href="#disclaimers">Specific Disclaimers</a></li>
-        <li><a href="#no-warranties">No Warranties or Representations</a></li>
-        <li><a href="#attribution">Attribution Requirements</a></li>
-        <li><a href="#refunds">Refunds and Cancellations</a></li>
-        <li><a href="#contact">Contact</a></li>
-      </ul>
-    </div>
+    <div class="toc"><h3>Contents</h3><ul>
+      <li><a href="#introduction">Introduction</a></li>
+      <li><a href="#incorporation">Incorporation of General Terms</a></li>
+      <li><a href="#service-description">Service Description</a></li>
+      <li><a href="#payment">Payment and Access</a></li>
+      <li><a href="#data-accuracy">Data Accuracy and Completeness</a></li>
+      <li><a href="#disclaimers">Specific Disclaimers</a></li>
+      <li><a href="#no-warranties">No Warranties or Representations</a></li>
+      <li><a href="#attribution">Attribution Requirements</a></li>
+      <li><a href="#refunds">Refunds and Cancellations</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul></div>
 
-    <div class="important-notice">
-      <h4>Important Notice</h4>
-      <p>These Adjudicator Insights Terms & Conditions contain specific terms for the paid Adjudicator Insights service. By purchasing access, you acknowledge and agree to these terms in addition to our general Terms of Service.</p>
-    </div>
+    <div class="important-notice"><h4>Important Notice</h4><p>These Adjudicator Insights Terms &amp; Conditions contain specific terms for the paid Adjudicator Insights service. By purchasing access, you acknowledge and agree to these terms in addition to our general Terms of Service.</p></div>
 
-    <div class="content-section" id="introduction">
-      <h2>1. Introduction</h2>
-      <p>These Adjudicator Insights Terms & Conditions ("Insights Terms") govern your purchase and use of the Adjudicator Insights premium feature on Sopal Australia ("Sopal").</p>
-      <p>The Adjudicator Insights service provides enhanced analytics, statistics, and decision history for specific adjudicators who have made determinations under the Building Industry Fairness (Security of Payment) Act 2017 (Qld).</p>
-    </div>
+    <div class="content-section" id="introduction"><h2>1. Introduction</h2><p>These Adjudicator Insights Terms &amp; Conditions ("Insights Terms") govern your purchase and use of the Adjudicator Insights premium feature on Sopal Australia ("Sopal").</p><p>The Adjudicator Insights service provides enhanced analytics, statistics, and decision history for specific adjudicators who have made determinations under the Building Industry Fairness (Security of Payment) Act 2017 (Qld).</p></div>
 
-    <div class="content-section" id="incorporation">
-      <h2>2. Incorporation of General Terms</h2>
-      <p>These Insights Terms supplement and form part of Sopal's general <a href="/terms">Terms of Service</a>. All provisions of the general Terms of Service apply to your purchase and use of Adjudicator Insights, except where expressly modified or superseded by these Insights Terms.</p>
-      <p><strong>In case of conflict:</strong> To the extent of any inconsistency between these Insights Terms and the general Terms of Service, these Insights Terms shall prevail in relation to the Adjudicator Insights service.</p>
-    </div>
+    <div class="content-section" id="incorporation"><h2>2. Incorporation of General Terms</h2><p>These Insights Terms supplement and form part of Sopal's general <a href="/terms">Terms of Service</a>. All provisions of the general Terms of Service apply to your purchase and use of Adjudicator Insights, except where expressly modified or superseded by these Insights Terms.</p><p><strong>In case of conflict:</strong> To the extent of any inconsistency between these Insights Terms and the general Terms of Service, these Insights Terms shall prevail in relation to the Adjudicator Insights service.</p></div>
 
-    <div class="content-section" id="service-description">
-      <h2>3. Service Description</h2>
-      <p>Subject to the balance of these Terms & Conditions, Adjudicator Insights provides access to:</p>
-      <ul>
-        <li>Comprehensive statistics for a specific adjudicator</li>
-        <li>Decision history and patterns analysis</li>
-        <li>Aggregated data including average award rates, claim amounts, and fee allocations</li>
-        <li>Detailed breakdowns of individual decisions by the adjudicator</li>
-        <li>Access to PDF copies of decisions made by that adjudicator</li>
-      </ul>
-      
-      <h3>What Adjudicator Insights Does NOT Include</h3>
-      <ul>
-        <li>Legal advice or interpretation of decisions</li>
-        <li>Predictions about future decision-making patterns</li>
-        <li>Assessment of adjudicator quality or competence</li>
-        <li>Access to decisions by other adjudicators (each adjudicator requires a separate purchase)</li>
-        <li>Real-time notifications of new decisions</li>
-      </ul>
-    </div>
+    <div class="content-section" id="service-description"><h2>3. Service Description</h2><p>Subject to the balance of these Terms &amp; Conditions, Adjudicator Insights provides access to:</p><ul><li>Comprehensive statistics for a specific adjudicator</li><li>Decision history and patterns analysis</li><li>Aggregated data including average award rates, claim amounts, and fee allocations</li><li>Detailed breakdowns of individual decisions by the adjudicator</li><li>Access to PDF copies of decisions made by that adjudicator</li></ul><h3>What Adjudicator Insights Does NOT Include</h3><ul><li>Legal advice or interpretation of decisions</li><li>Predictions about future decision-making patterns</li><li>Assessment of adjudicator quality or competence</li><li>Access to decisions by other adjudicators (each adjudicator requires a separate purchase)</li><li>Real-time notifications of new decisions</li></ul></div>
 
-    <div class="content-section" id="payment">
-      <h2>4. Payment and Access</h2>
-      
-      <h3>Purchase Terms</h3>
-      <ul>
-        <li><strong>Price:</strong> Access to Adjudicator Insights for a single adjudicator costs AUD $54.95 (including GST)</li>
-        <li><strong>Payment:</strong> Payment is processed securely through Stripe. We do not store your credit card information</li>
-        <li><strong>One-time payment:</strong> This is a one-time payment for permanent access to that specific adjudicator's insights</li>
-        <li><strong>Per-adjudicator access:</strong> Each purchase grants access to insights for ONE adjudicator only. Access to other adjudicators requires separate purchases</li>
-        <li><strong>Non-transferable:</strong> Access is tied to your Sopal account and cannot be transferred to another user</li>
-      </ul>
+    <div class="content-section" id="payment"><h2>4. Payment and Access</h2><h3>Purchase Terms</h3><ul><li><strong>Price:</strong> Access to Adjudicator Insights for a single adjudicator costs AUD $54.95 (including GST)</li><li><strong>Payment:</strong> Payment is processed securely through Stripe. We do not store your credit card information</li><li><strong>One-time payment:</strong> This is a one-time payment for permanent access to that specific adjudicator's insights</li><li><strong>Per-adjudicator access:</strong> Each purchase grants access to insights for ONE adjudicator only. Access to other adjudicators requires separate purchases</li><li><strong>Non-transferable:</strong> Access is tied to your Sopal account and cannot be transferred to another user</li></ul><h3>Access and Account Requirements</h3><ul><li>You must create and maintain a Sopal account to purchase and access Adjudicator Insights</li><li>You are responsible for maintaining the confidentiality of your account credentials</li><li>Access is provided immediately upon successful payment verification</li><li>Access remains active as long as your Sopal account is in good standing</li></ul></div>
 
-      <h3>Access and Account Requirements</h3>
-      <ul>
-        <li>You must create and maintain a Sopal account to purchase and access Adjudicator Insights</li>
-        <li>You are responsible for maintaining the confidentiality of your account credentials</li>
-        <li>Access is provided immediately upon successful payment verification</li>
-        <li>Access remains active as long as your Sopal account is in good standing</li>
-      </ul>
-    </div>
+    <div class="content-section" id="data-accuracy"><h2>5. Data Accuracy and Completeness</h2><div class="highlight-box"><h4>Critical Disclaimer: No Guarantee of Completeness</h4><p>While we make reasonable efforts to provide comprehensive data, we make NO guarantee that all decisions by an adjudicator are included in our database or that the data is complete, current, or error-free.</p></div><h3>Known Limitations</h3><p>The Adjudicator Insights data may be incomplete or inaccurate due to:</p><ul><li><strong>Password-protected decisions:</strong> Some decisions published by the QBCC may be password-protected or restricted, preventing automated collection</li><li><strong>Corrupted files:</strong> PDF files may be corrupted, unreadable, or improperly formatted, making data extraction impossible</li><li><strong>Processing errors:</strong> Errors may occur during automated data extraction, parsing, or analysis</li><li><strong>Publication delays:</strong> There may be delays between a decision being made and its publication by the QBCC</li><li><strong>Missing metadata:</strong> Some decisions may lack complete information (such as claim amounts, dates, or party names)</li><li><strong>Historical gaps:</strong> Older decisions may not be available in digital format or may be missing from the QBCC database</li><li><strong>AI extraction errors:</strong> Data extracted using AI tools may contain inaccuracies or misinterpretations</li><li><strong>Name variations:</strong> Decisions may be attributed to adjudicators under different name formats or spellings</li><li><strong>Void or set aside decisions:</strong> Decisions that have been declared void or otherwise set aside by the Supreme Court of Queensland may still form part of the database</li></ul><h3>User Responsibility</h3><p>You acknowledge and agree that:</p><ul><li>You must independently verify any information that is important to your purposes</li><li>The statistics and analytics are provided for general informational purposes only</li><li>Missing decisions or incomplete data may materially affect the accuracy of statistics</li><li>You should not rely solely on Adjudicator Insights data for critical decisions</li></ul></div>
 
-    <div class="content-section" id="data-accuracy">
-      <h2>5. Data Accuracy and Completeness</h2>
+    <div class="content-section" id="disclaimers"><h2>6. Specific Disclaimers</h2><div class="legal-box"><h4>No Assessment of Adjudicators</h4><p>Sopal does not make, and Adjudicator Insights does not constitute, any representation, warranty, or opinion regarding the quality, competence, fairness, or appropriateness of any adjudicator's decisions or decision-making process.</p></div><h3>Interpretation and Use</h3><p>We expressly disclaim any representation that:</p><ul><li>Statistics or patterns indicate future decision-making behavior</li><li>Higher or lower award rates indicate better or worse adjudicator performance</li><li>The data is suitable for determining adjudicator selection or challenges</li><li>Trends or patterns have any predictive value</li><li>The data reflects the full scope of an adjudicator's work or capabilities</li></ul><h3>Legal and Professional Advice</h3><p>Adjudicator Insights:</p><ul><li>Does NOT constitute legal advice or professional opinion</li><li>Should NOT be used as the sole basis for legal strategy or decisions</li><li>Should NOT replace consultation with qualified legal professionals</li><li>Does NOT create any attorney-client or advisory relationship</li></ul></div>
 
-      <div class="highlight-box">
-        <h4>Critical Disclaimer: No Guarantee of Completeness</h4>
-        <p>While we make reasonable efforts to provide comprehensive data, we make NO guarantee that all decisions by an adjudicator are included in our database or that the data is complete, current, or error-free.</p>
-      </div>
+    <div class="content-section" id="no-warranties"><h2>7. No Warranties or Representations</h2><p>In addition to the disclaimers in our general Terms of Service, we specifically disclaim all warranties regarding:</p><h3>Data Quality</h3><ul><li><strong>Accuracy:</strong> We do not warrant that statistics, figures, or analysis are accurate or free from error</li><li><strong>Completeness:</strong> We do not warrant that all decisions are captured or that the dataset is complete</li><li><strong>Timeliness:</strong> We do not warrant that data is current or reflects the most recent decisions</li><li><strong>Consistency:</strong> We do not warrant that data collection or analysis methods are consistent over time</li></ul><h3>Fitness for Purpose</h3><p>We make no representation that Adjudicator Insights is suitable for any particular purpose, including but not limited to:</p><ul><li>Adjudicator selection or nomination processes</li><li>Preparation of legal strategies or submissions</li><li>Assessment of likely outcomes in adjudication proceedings</li><li>Academic or statistical research requiring verified data</li></ul></div>
 
-      <h3>Known Limitations</h3>
-      <p>The Adjudicator Insights data may be incomplete or inaccurate due to:</p>
-      <ul>
-        <li><strong>Password-protected decisions:</strong> Some decisions published by the QBCC may be password-protected or restricted, preventing automated collection</li>
-        <li><strong>Corrupted files:</strong> PDF files may be corrupted, unreadable, or improperly formatted, making data extraction impossible</li>
-        <li><strong>Processing errors:</strong> Errors may occur during automated data extraction, parsing, or analysis</li>
-        <li><strong>Publication delays:</strong> There may be delays between a decision being made and its publication by the QBCC</li>
-        <li><strong>Missing metadata:</strong> Some decisions may lack complete information (such as claim amounts, dates, or party names)</li>
-        <li><strong>Historical gaps:</strong> Older decisions may not be available in digital format or may be missing from the QBCC database</li>
-        <li><strong>AI extraction errors:</strong> Data extracted using AI tools may contain inaccuracies or misinterpretations</li>
-        <li><strong>Name variations:</strong> Decisions may be attributed to adjudicators under different name formats or spellings</li>
-        <li><strong>Void or set aside decisions:</strong> Decisions that have been declared void or otherwise set aside by the Supreme Court of Queensland may still form part of the database</li>
-      </ul>
+    <div class="content-section" id="attribution"><h2>8. Attribution Requirements</h2><p>The underlying adjudication decisions accessible through Adjudicator Insights are public documents originally published by the Queensland Building and Construction Commission (QBCC).</p><p>These materials are made available by the QBCC under the <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">Creative Commons Attribution 4.0 International Licence (CC BY 4.0)</a>.</p><h3>Your Attribution Obligations</h3><p>When using, citing, or sharing information derived from Adjudicator Insights, you must:</p><ul><li>Attribute the original decisions to the Queensland Building and Construction Commission</li><li>Include a link to the CC BY 4.0 licence where practical</li><li>Indicate if you have made any modifications or analysis of the original material</li><li>Not suggest that the QBCC endorses your use of the material</li></ul><p><strong>Recommended attribution format:</strong> "Based on adjudication decisions published by the Queensland Building and Construction Commission under CC BY 4.0. Analysis and statistics provided by Sopal Australia."</p></div>
 
-      <h3>User Responsibility</h3>
-      <p>You acknowledge and agree that:</p>
-      <ul>
-        <li>You must independently verify any information that is important to your purposes</li>
-        <li>The statistics and analytics are provided for general informational purposes only</li>
-        <li>Missing decisions or incomplete data may materially affect the accuracy of statistics</li>
-        <li>You should not rely solely on Adjudicator Insights data for critical decisions</li>
-      </ul>
-    </div>
+    <div class="content-section" id="refunds"><h2>9. Refunds and Cancellations</h2><h3>No Refunds</h3><p>Due to the nature of digital content that is immediately accessible upon purchase:</p><ul><li>All purchases of Adjudicator Insights are <strong>final and non-refundable</strong></li><li>Once payment is processed and access is granted, no refunds will be provided</li><li>This applies even if you change your mind, find the data incomplete, or are dissatisfied with the service</li></ul><h3>Exceptions</h3><p>Refunds may be considered only in the following limited circumstances:</p><ul><li>Technical error resulting in payment being charged without access being granted</li><li>Duplicate charges for the same adjudicator on the same account</li><li>Charges made without authorization (subject to verification)</li></ul><p>To request a refund under these limited circumstances, contact us at info@sopal.com.au within 7 days of the purchase with your transaction details.</p><h3>Access Termination</h3><p>We reserve the right to terminate your access to Adjudicator Insights if:</p><ul><li>You breach these Terms or our general Terms of Service</li><li>We discontinue the Adjudicator Insights service (with reasonable notice)</li><li>Your account is suspended or terminated for any reason</li></ul><p>No refunds will be provided in the event of access termination for breach of terms.</p></div>
 
-    <div class="content-section" id="disclaimers">
-      <h2>6. Specific Disclaimers</h2>
+    <div class="content-section" id="contact"><h2>10. Contact</h2><p>For questions about Adjudicator Insights or these Terms &amp; Conditions:</p><ul><li><strong>Email:</strong> info@sopal.com.au</li><li><strong>Feedback Form:</strong> <a href="/feedback">Submit through our platform</a></li></ul><p>For technical support or access issues with a purchased Adjudicator Insights product, please include your account email and the name of the adjudicator in your inquiry.</p></div>
 
-      <div class="legal-box">
-        <h4>No Assessment of Adjudicators</h4>
-        <p>Sopal does not make, and Adjudicator Insights does not constitute, any representation, warranty, or opinion regarding the quality, competence, fairness, or appropriateness of any adjudicator's decisions or decision-making process.</p>
-      </div>
-
-      <h3>Interpretation and Use</h3>
-      <p>We expressly disclaim any representation that:</p>
-      <ul>
-        <li>Statistics or patterns indicate future decision-making behavior</li>
-        <li>Higher or lower award rates indicate better or worse adjudicator performance</li>
-        <li>The data is suitable for determining adjudicator selection or challenges</li>
-        <li>Trends or patterns have any predictive value</li>
-        <li>The data reflects the full scope of an adjudicator's work or capabilities</li>
-      </ul>
-
-      <h3>Legal and Professional Advice</h3>
-      <p>Adjudicator Insights:</p>
-      <ul>
-        <li>Does NOT constitute legal advice or professional opinion</li>
-        <li>Should NOT be used as the sole basis for legal strategy or decisions</li>
-        <li>Should NOT replace consultation with qualified legal professionals</li>
-        <li>Does NOT create any attorney-client or advisory relationship</li>
-      </ul>
-    </div>
-
-    <div class="content-section" id="no-warranties">
-      <h2>7. No Warranties or Representations</h2>
-      <p>In addition to the disclaimers in our general Terms of Service, we specifically disclaim all warranties regarding:</p>
-
-      <h3>Data Quality</h3>
-      <ul>
-        <li><strong>Accuracy:</strong> We do not warrant that statistics, figures, or analysis are accurate or free from error</li>
-        <li><strong>Completeness:</strong> We do not warrant that all decisions are captured or that the dataset is complete</li>
-        <li><strong>Timeliness:</strong> We do not warrant that data is current or reflects the most recent decisions</li>
-        <li><strong>Consistency:</strong> We do not warrant that data collection or analysis methods are consistent over time</li>
-      </ul>
-
-      <h3>Fitness for Purpose</h3>
-      <p>We make no representation that Adjudicator Insights is suitable for any particular purpose, including but not limited to:</p>
-      <ul>
-        <li>Adjudicator selection or nomination processes</li>
-        <li>Preparation of legal strategies or submissions</li>
-        <li>Assessment of likely outcomes in adjudication proceedings</li>
-        <li>Academic or statistical research requiring verified data</li>
-      </ul>
-    </div>
-
-    <div class="content-section" id="attribution">
-      <h2>8. Attribution Requirements</h2>
-      <p>The underlying adjudication decisions accessible through Adjudicator Insights are public documents originally published by the Queensland Building and Construction Commission (QBCC).</p>
-      
-      <p>These materials are made available by the QBCC under the <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">Creative Commons Attribution 4.0 International Licence (CC BY 4.0)</a>.</p>
-
-      <h3>Your Attribution Obligations</h3>
-      <p>When using, citing, or sharing information derived from Adjudicator Insights, you must:</p>
-      <ul>
-        <li>Attribute the original decisions to the Queensland Building and Construction Commission</li>
-        <li>Include a link to the CC BY 4.0 licence where practical</li>
-        <li>Indicate if you have made any modifications or analysis of the original material</li>
-        <li>Not suggest that the QBCC endorses your use of the material</li>
-      </ul>
-
-      <p><strong>Recommended attribution format:</strong> "Based on adjudication decisions published by the Queensland Building and Construction Commission under CC BY 4.0. Analysis and statistics provided by Sopal Australia."</p>
-    </div>
-
-    <div class="content-section" id="refunds">
-      <h2>9. Refunds and Cancellations</h2>
-
-      <h3>No Refunds</h3>
-      <p>Due to the nature of digital content that is immediately accessible upon purchase:</p>
-      <ul>
-        <li>All purchases of Adjudicator Insights are <strong>final and non-refundable</strong></li>
-        <li>Once payment is processed and access is granted, no refunds will be provided</li>
-        <li>This applies even if you change your mind, find the data incomplete, or are dissatisfied with the service</li>
-      </ul>
-
-      <h3>Exceptions</h3>
-      <p>Refunds may be considered only in the following limited circumstances:</p>
-      <ul>
-        <li>Technical error resulting in payment being charged without access being granted</li>
-        <li>Duplicate charges for the same adjudicator on the same account</li>
-        <li>Charges made without authorization (subject to verification)</li>
-      </ul>
-
-      <p>To request a refund under these limited circumstances, contact us at info@sopal.com.au within 7 days of the purchase with your transaction details.</p>
-
-      <h3>Access Termination</h3>
-      <p>We reserve the right to terminate your access to Adjudicator Insights if:</p>
-      <ul>
-        <li>You breach these Terms or our general Terms of Service</li>
-        <li>We discontinue the Adjudicator Insights service (with reasonable notice)</li>
-        <li>Your account is suspended or terminated for any reason</li>
-      </ul>
-      <p>No refunds will be provided in the event of access termination for breach of terms.</p>
-    </div>
-
-    <div class="content-section" id="contact">
-      <h2>10. Contact</h2>
-      <p>For questions about Adjudicator Insights or these Terms & Conditions:</p>
-      <ul>
-        <li><strong>Email:</strong> info@sopal.com.au</li>
-        <li><strong>Feedback Form:</strong> <a href="/feedback">Submit through our platform</a></li>
-      </ul>
-
-      <p>For technical support or access issues with a purchased Adjudicator Insights product, please include your account email and the name of the adjudicator in your inquiry.</p>
-    </div>
-
-    <div class="legal-box">
-      <h4>Acknowledgment</h4>
-      <p>By purchasing Adjudicator Insights, you acknowledge that you have read, understood, and agree to be bound by these Adjudicator Insights Terms & Conditions and Sopal's general Terms of Service.</p>
-    </div>
+    <div class="legal-box"><h4>Acknowledgment</h4><p>By purchasing Adjudicator Insights, you acknowledge that you have read, understood, and agree to be bound by these Adjudicator Insights Terms &amp; Conditions and Sopal's general Terms of Service.</p></div>
   </div>
 
-  <footer class="footer">
-    <div class="footer-content">
-      <div class="footer-left">
-        <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
-        <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
-      </div>
-      <div class="footer-links">
-  <a href="decision-search">Search</a>
-  <a href="interest-calculator">Interest Calculator</a>
-  <a href="due-date-calculator">Due Date Calculator</a>
-  <a href="how-to">How-To Guide</a>
-  <a href="feedback">Feedback</a>
-  <a href="privacy">Privacy</a>
-  <a href="adjudicator-insights-terms">Adjudicator Insights Terms</a>
-  <a href="terms">General Terms of Use</a>
-  <a href="account-terms">Account Terms</a>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>© 2026 Sopal Australia. All rights reserved.</p>
-    </div>
-  </footer>
-  <script src="/assets/js/main.js"></script>
+  <footer class="footer"><div class="container"><div class="footer-inner"><div class="footer-brand"><div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div><p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p></div><div class="footer-col"><h4>Tools</h4><a href="/search">Decision Search</a><a href="/adjudicators">Adjudicators</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a></div><div class="footer-col"><h4>Resources</h4><a href="/how-to">How-To Guide</a><a href="/feedback">Feedback</a></div><div class="footer-col"><h4>Legal</h4><a href="/privacy">Privacy</a><a href="/terms">Terms of Use</a><a href="/account-terms">Account Terms</a><a href="/adjudicator-insights-terms">Adjudicator Insights Terms</a></div></div><div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div></div></footer>
+
+<script src="/assets/js/main.js"></script>
 </body>
 </html>

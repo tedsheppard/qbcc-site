@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decision Search | Sopal</title>
+  <meta name="description" content="Sopal is an intelligent search tool for finding adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act) in Queensland, Australia.">
+  <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-dark: #0a0a0a;
+      --bg-darker: #050505;
+      --bg-card-dark: #141414;
+      --bg-light: #ffffff;
+      --green: #00d47e;
+      --green-dark: #00b368;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #888;
+      --border-light: #e5e5e5;
+      --border-dark: #222;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    button { border: none; cursor: pointer; font-family: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+    /* NAV */
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+    .nav-logo-icon { width: 28px; height: 28px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .nav-logo-icon svg { width: 16px; height: 16px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-links a.active { color: white; font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .btn-signin { background: transparent; color: white; font-size: 13.5px; font-weight: 500; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; }
+    .btn-signin:hover { background: rgba(255,255,255,0.08); }
+
+    /* LOADING BAR */
+    #loadingBar {
+      position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+      background: linear-gradient(to right, var(--green), #42ffaa);
+      transition: width 0.7s ease; z-index: 9999;
+    }
+
+    /* SEARCH HEADER */
+    .search-header { background: white; border-bottom: 1px solid var(--border-light); padding: 32px 0 24px; }
+    .search-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 16px; }
+    .search-bar-wrap { display: flex; gap: 10px; }
+    .search-input-wrap { flex: 1; position: relative; }
+    .search-input-wrap input {
+      width: 100%; padding: 12px 16px 12px 42px; font-size: 14px; font-family: inherit;
+      border: 1px solid var(--border-light); border-radius: 10px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input-wrap input:focus { border-color: var(--green); }
+    .search-input-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; stroke: var(--text-muted); fill: none; stroke-width: 2; }
+    .search-btn { background: var(--green); color: #000; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 10px; transition: background 0.2s; white-space: nowrap; }
+    .search-btn:hover { background: var(--green-dark); }
+    .search-controls { display: flex; gap: 12px; margin-top: 12px; align-items: center; }
+    .search-controls select {
+      padding: 7px 12px; font-size: 13px; font-family: inherit; border: 1px solid var(--border-light);
+      border-radius: 8px; background: white; color: var(--text-primary); cursor: pointer;
+      appearance: none; -webkit-appearance: none; padding-right: 28px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+    }
+    .search-hint { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+    .search-hint code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+
+    /* GATE UI */
+    .gate-banner {
+      padding: 12px 32px; border-radius: 8px; margin: 0 auto 16px; font-size: 13px; line-height: 1.5;
+      max-width: 1200px;
+    }
+    .gate-banner a { color: var(--green-dark); font-weight: 600; }
+    .gate-banner a:hover { text-decoration: underline; }
+    .gate-info { background: #f0fdf4; border: 1px solid var(--green); color: #166534; }
+    .gate-warning { background: #fffbeb; border: 1px solid #fbbf24; color: #92400e; }
+    .gate-login { background: #f0fdf4; border: 1px solid var(--green); color: #166534; }
+    .gate-block {
+      text-align: center; padding: 60px 20px; max-width: 500px; margin: 40px auto;
+    }
+    .gate-block h3 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+    .gate-block p { color: var(--text-secondary); margin-bottom: 25px; line-height: 1.6; font-size: 14px; }
+    .gate-btn {
+      display: inline-block; padding: 10px 22px; background: var(--green); color: #000;
+      border-radius: 8px; font-weight: 600; font-size: 14px; margin: 0 6px; transition: opacity 0.2s;
+    }
+    .gate-btn:hover { opacity: 0.9; }
+    .gate-btn-secondary { background: #f0f0f0; color: var(--text-primary); }
+
+    /* RESULTS */
+    .results-section { padding: 24px 0 64px; }
+    .results-info { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .results-count { font-size: 13px; color: var(--text-muted); }
+    .results-count strong { color: var(--text-primary); }
+    .results-status { font-size: 13px; color: var(--text-muted); }
+
+    .result-card {
+      background: white; border: 1px solid var(--border-light); border-radius: 12px;
+      padding: 20px 24px; margin-bottom: 12px; transition: box-shadow 0.2s;
+    }
+    .result-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+    .result-meta { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 10px; align-items: center; }
+    .result-meta-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted); }
+    .result-meta-item svg { width: 13px; height: 13px; stroke: var(--text-muted); fill: none; stroke-width: 2; }
+    .result-meta-item.adjudicator { color: var(--green-dark); font-weight: 500; cursor: pointer; }
+    .result-meta-item.adjudicator:hover { text-decoration: underline; }
+    .result-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .result-title .badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; background: #f0fdf4; color: #16a34a; }
+    .result-snippet { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .result-snippet mark { background: #fef9c3; color: var(--text-primary); padding: 1px 2px; border-radius: 2px; }
+    .result-amounts { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 10px; }
+    .result-amounts .amount-item { font-size: 12px; color: var(--text-muted); }
+    .result-amounts .amount-item strong { color: var(--text-primary); font-weight: 600; }
+    .result-actions { display: flex; gap: 10px; margin-top: 12px; }
+    .result-actions button, .result-actions a {
+      font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 6px;
+      background: #f7f7f8; border: 1px solid var(--border-light); color: var(--text-primary);
+      transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+      text-decoration: none;
+    }
+    .result-actions button:hover, .result-actions a:hover { background: #efefef; }
+    .result-actions button svg, .result-actions a svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    /* AI CHAT INLINE */
+    .ai-container {
+      border: 1px solid var(--border-light); border-radius: 10px; margin-top: 14px;
+      overflow: hidden; background: #fafafa;
+    }
+    .chat-messages {
+      max-height: 400px; overflow-y: auto; padding: 14px; display: flex;
+      flex-direction: column; gap: 12px;
+    }
+    .message { display: flex; align-items: flex-start; gap: 10px; max-width: 90%; }
+    .message-avatar {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;
+    }
+    .ai-message .message-avatar { background: var(--green); color: #000; }
+    .user-message .message-avatar { background: #e5e5e5; color: #333; }
+    .message-content {
+      padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6;
+    }
+    .ai-message { align-self: flex-start; }
+    .ai-message .message-content { background: #f0f0f0; color: var(--text-primary); border-top-left-radius: 0; }
+    .user-message { align-self: flex-end; flex-direction: row-reverse; }
+    .user-message .message-content { background: var(--green); color: #000; border-top-right-radius: 0; }
+    .ai-output-content p { margin: 4px 0 6px 0; }
+    .ai-output-content strong { display: block; margin: 10px 0 4px 0; font-size: 14px; font-weight: 600; }
+    .ai-output-content ul { margin: 4px 0 8px 18px; padding: 0; }
+    .ai-output-content li { margin: 2px 0; }
+    .ai-output-content h3, .ai-output-content h4 { font-size: 14px; font-weight: 600; margin: 10px 0 4px 0; }
+
+    .chat-input-area {
+      display: flex; align-items: center; padding: 8px 12px;
+      border-top: 1px solid var(--border-light); background: white;
+    }
+    .chat-input-area input {
+      flex-grow: 1; border: none; background: transparent; padding: 10px;
+      font-size: 13px; font-family: inherit; outline: none; color: var(--text-primary); margin-right: 8px;
+    }
+    .chat-input-area button {
+      background: var(--green); color: #000; border: none; border-radius: 50%;
+      width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+    }
+    .chat-input-area button:hover { background: var(--green-dark); }
+
+    /* Loading shimmer */
+    .loading-text-gradient {
+      font-size: 13px; font-weight: 500; padding: 10px;
+      background: linear-gradient(to right, #ccc 30%, #888 50%, #ccc 70%);
+      background-size: 200% auto; color: transparent;
+      background-clip: text; -webkit-background-clip: text;
+      animation: shimmer 1.2s linear infinite;
+    }
+    @keyframes shimmer { to { background-position: -200% center; } }
+
+    /* Skeleton cards */
+    .skeleton-card {
+      background: white; border: 1px solid var(--border-light); border-radius: 12px;
+      padding: 20px 24px; margin-bottom: 12px; overflow: hidden;
+    }
+    .skeleton-line {
+      height: 12px; border-radius: 6px; background: #ebebeb;
+      background: linear-gradient(90deg, #ebebeb 25%, #f5f5f5 50%, #ebebeb 75%);
+      background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
+    }
+    .skeleton-line.w60 { width: 60%; }
+    .skeleton-line.w80 { width: 80%; }
+    .skeleton-line.w40 { width: 40%; }
+    .skeleton-line.w30 { width: 30%; }
+    .skeleton-line.h16 { height: 16px; }
+    .skeleton-meta { display: flex; gap: 16px; margin-bottom: 12px; }
+    .skeleton-meta .skeleton-line { width: 80px; height: 10px; }
+    .skeleton-title { margin-bottom: 10px; }
+    .skeleton-body { display: flex; flex-direction: column; gap: 8px; }
+    .skeleton-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .skeleton-actions .skeleton-line { width: 90px; height: 28px; border-radius: 6px; }
+
+    .typing-indicator { font-style: italic; color: var(--text-muted); }
+
+    /* PAGINATION */
+    .pagination { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin-top: 28px; }
+    .pagination button {
+      min-width: 36px; height: 36px; padding: 0 10px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      background: white; border: 1px solid var(--border-light); color: var(--text-secondary);
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .pagination button:hover { background: #f5f5f5; }
+    .pagination button.active { background: var(--green); color: #000; border-color: var(--green); font-weight: 600; }
+
+    /* ADJUDICATOR MODAL */
+    .interception-modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000;
+    }
+    .interception-modal-content {
+      background: white; color: var(--text-primary); padding: 30px 35px; border-radius: 12px;
+      max-width: 480px; width: 90%; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    }
+    .interception-modal h2 { font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 8px; }
+    .interception-modal p { margin-bottom: 24px; line-height: 1.6; color: var(--text-secondary); font-size: 14px; }
+    .interception-modal-buttons { display: flex; gap: 12px; justify-content: center; }
+    .interception-modal-buttons button {
+      padding: 10px 20px; border-radius: 8px; border: none; font-size: 14px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-primary-action { background: var(--green); color: #000; }
+    .btn-primary-action:hover { background: var(--green-dark); }
+    .btn-secondary-action { background: #f0f0f0; color: var(--text-primary); }
+    .btn-secondary-action:hover { background: #e5e5e5; }
+    body.modal-open { overflow: hidden; }
+
+    /* FOOTER */
+    .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
+    .footer-inner { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); gap: 24px; }
+    .footer-brand { padding-right: 16px; }
+    .footer-brand .footer-logo { display: flex; align-items: center; gap: 7px; color: white; font-weight: 700; font-size: 15px; margin-bottom: 10px; }
+    .footer-logo-icon { width: 20px; height: 20px; background: var(--green); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+    .footer-logo-icon svg { width: 12px; height: 12px; }
+    .footer-brand p { font-size: 12px; color: #555; line-height: 1.5; }
+    .footer-col h4 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+    .footer-col a { display: block; font-size: 13px; color: #666; margin-bottom: 7px; transition: color 0.2s; }
+    .footer-col a:hover { color: white; }
+    .footer-bottom { display: flex; align-items: center; justify-content: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #555; }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .search-bar-wrap { flex-direction: column; }
+      .search-controls { flex-wrap: wrap; }
+      .result-meta { gap: 8px; }
+      .result-amounts { gap: 8px; }
+      .footer-inner { grid-template-columns: 1fr; }
+      .container { padding: 0 16px; }
+      .results-info { flex-direction: column; align-items: flex-start; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loadingBar"></div>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/" class="nav-logo">
+  <img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;">
+</a>
+        <div class="nav-links">
+          <a href="/search" class="active">Search</a>
+          <a href="/adjudicators">Adjudicators</a>
+          <a href="/interest-calculator">Interest Calculator</a>
+          <a href="/due-date-calculator">Due Date Calculator</a>
+          <a href="/how-to">How-To Guide</a>
+          <a href="/feedback">Feedback</a>
+        </div>
+      </div>
+      <div class="nav-right" id="user-profile-nav">
+        <a href="/login" class="btn-signin">Sign In</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- SEARCH HEADER -->
+  <div class="search-header">
+    <div class="container">
+      <h1>Adjudication Decision Search</h1>
+      <div class="search-bar-wrap">
+        <div class="search-input-wrap">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="q" placeholder="Search decisions... e.g. &quot;payment claim&quot; AND &quot;validity&quot;">
+        </div>
+        <button class="search-btn" onclick="runSearch(1)">Search</button>
+      </div>
+      <div class="search-controls">
+        <select id="limit">
+          <option value="20">20 results</option>
+          <option value="50">50 results</option>
+          <option value="100">100 results</option>
+        </select>
+        <select id="sort">
+          <option value="relevance">Sort: Relevance</option>
+          <option value="newest" selected>Sort: Newest first</option>
+          <option value="oldest">Sort: Oldest first</option>
+          <option value="atoz">Sort: A-Z Claimant</option>
+          <option value="ztoa">Sort: Z-A Claimant</option>
+        </select>
+        <span class="search-hint">Connectors: <code>AND</code> <code>OR</code> <code>NOT</code> <code>w/n</code> <code>!</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-section">
+    <div class="container">
+      <div class="results-info">
+        <div class="results-count" id="total"></div>
+        <div class="results-status" id="status"></div>
+      </div>
+      <div id="results"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+
+  <!-- ADJUDICATOR MODAL -->
+  <div id="adjudicatorSearchModal" class="interception-modal">
+    <div class="interception-modal-content">
+      <h2>Adjudicator Search</h2>
+      <p>
+        To view decisions and statistics for a specific adjudicator, please use our dedicated Adjudicator Insights tool. Direct searches for adjudicators are disabled on this page.
+      </p>
+      <div class="interception-modal-buttons">
+        <button id="closeModalBtn" class="btn-secondary-action">Run a Different Search</button>
+        <button id="viewInsightsBtn" class="btn-primary-action">Go to Adjudicator Insights</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div>
+          <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+        </div>
+        <div class="footer-col">
+          <h4>Tools</h4>
+          <a href="/search">Decision Search</a>
+          <a href="/adjudicators">Adjudicators</a>
+          <a href="/interest-calculator">Interest Calculator</a>
+          <a href="/due-date-calculator">Due Date Calculator</a>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <a href="/how-to">How-To Guide</a>
+          <a href="/feedback">Feedback</a>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms of Use</a>
+          <a href="/account-terms">Account Terms</a>
+        </div>
+      </div>
+      <div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div>
+    </div>
+  </footer>
+
+<script>
+/* ============================================================
+   SOPAL DECISION SEARCH - FULL FUNCTIONAL JS
+   ============================================================ */
+
+// --- Utility selectors ---
+function $(sel) { return document.querySelector(sel); }
+function sanitize(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function getFileName(path) { if (!path) return ''; return path.split('/').pop(); }
+
+function buildPdfLinks(path) {
+  if (!path) return null;
+  const fileName = path.split('/').pop();
+  const open = `https://storage.googleapis.com/sopal-bucket/pdfs/${fileName}`;
+  return { open, download: open };
+}
+
+// --- State ---
+let state = { q: '', claimant: '', respondent: '', limit: 20, offset: 0, total: 0, sort: 'newest' };
+let adjudicatorList = [];
+let chatHistories = {};
+let gateEnabled = false;
+let searchUsage = null;
+
+// --- Adjudicator fetching ---
+async function fetchAdjudicators() {
+  try {
+    const excludedSurnames = new Set([
+      'bond', 'wood', 'court', 'grant', 'king',
+      'dowling', 'wright', 'long', 'green',
+      'white', 'lee', 'smith', 'jones', 'wilson',
+      'taylor', 'roberts', 'williams', 'martin', 'thomas'
+    ]);
+
+    const response = await fetch('/api/adjudicators');
+    if (!response.ok) return;
+    const data = await response.json();
+
+    adjudicatorList = data.map(adj => {
+      const parts = adj.name.toLowerCase().split(' ').filter(p => p.length > 1);
+      let lastName = parts.length > 0 ? parts[parts.length - 1] : null;
+
+      if (lastName && excludedSurnames.has(lastName)) {
+        lastName = null;
+      }
+
+      return {
+        fullName: adj.name.toLowerCase(),
+        lastName: lastName
+      };
+    });
+    console.log(`Loaded ${adjudicatorList.length} adjudicators for surname check.`);
+  } catch (error) {
+    console.error('Could not fetch adjudicator list:', error);
+  }
+}
+
+// --- Adjudicator matching ---
+function findMatchingAdjudicator(query) {
+  if (!query || query.length < 3 || !adjudicatorList.length) return null;
+
+  const cleanedQuery = query
+    .toLowerCase()
+    .replace(/"/g, '')
+    .replace(/\b(and|or|not|w\/\d+|near\/\d+)\b/gi, ' ')
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleanedQuery) return null;
+
+  const queryWords = cleanedQuery.split(/\s+/);
+
+  for (const adjudicator of adjudicatorList) {
+    if (adjudicator.lastName) {
+      if (queryWords.includes(adjudicator.lastName)) {
+        return adjudicator.fullName;
+      }
+    }
+  }
+
+  return null;
+}
+
+// --- Adjudicator modal ---
+function showAdjudicatorModal() {
+  const modal = document.getElementById('adjudicatorSearchModal');
+  document.body.classList.add('modal-open');
+  modal.style.display = 'flex';
+
+  const closeModal = () => {
+    modal.style.display = 'none';
+    document.body.classList.remove('modal-open');
+  };
+
+  document.getElementById('viewInsightsBtn').onclick = () => {
+    document.body.classList.remove('modal-open');
+    window.location.href = '/adjudicators';
+  };
+
+  document.getElementById('closeModalBtn').onclick = () => {
+    closeModal();
+    document.getElementById('q').value = '';
+    runSearch(1);
+  };
+
+  modal.onclick = (e) => {
+    if (e.target === modal) closeModal();
+  };
+}
+
+// --- Normalize input ---
+function normalizeInput(s) {
+  return (s || '')
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u2013\u2014\u2015]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// --- Date formatting ---
+function formatAusDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d)) return null;
+  return d.toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+}
+
+// --- Loading bar ---
+function startLoadingBar() {
+  const bar = document.getElementById('loadingBar');
+  bar.style.width = '0%';
+  setTimeout(() => { bar.style.width = '50%'; }, 50);
+}
+
+function finishLoadingBar() {
+  const bar = document.getElementById('loadingBar');
+  bar.style.width = '100%';
+  setTimeout(() => { bar.style.width = '0%'; }, 400);
+}
+
+// --- Gate UI ---
+function renderGateUI() {
+  const existing = document.getElementById('gate-banner');
+  if (existing) existing.remove();
+
+  if (!gateEnabled) return;
+
+  const token = localStorage.getItem('purchase_token');
+  const banner = document.createElement('div');
+  banner.id = 'gate-banner';
+
+  if (!token) {
+    const redir = encodeURIComponent(window.location.pathname + window.location.search);
+    banner.className = 'gate-banner gate-login';
+    banner.innerHTML = `
+      <strong>Sign in required.</strong>
+      Create a free account to search adjudication decisions (10 searches/month free).
+      <a href="/login?redirect=${redir}">Sign In</a> or
+      <a href="/register?redirect=${redir}">Register</a>
+    `;
+  } else if (searchUsage && !searchUsage.is_unlimited) {
+    const remaining = Math.max(0, searchUsage.search_limit - searchUsage.searches_used);
+    banner.className = 'gate-banner ' + (remaining <= 2 ? 'gate-warning' : 'gate-info');
+    if (remaining === 0) {
+      banner.innerHTML = `
+        <strong>0</strong> free searches remaining this month.
+        <a href="/pricing">Upgrade to Unlimited</a>
+      `;
+    } else {
+      banner.innerHTML = `<strong>${remaining}</strong> of ${searchUsage.search_limit} free searches remaining this month.`;
+    }
+  }
+
+  const searchSection = document.querySelector('.search-header');
+  if (searchSection && banner.innerHTML) {
+    searchSection.parentNode.insertBefore(banner, searchSection.nextSibling);
+  }
+}
+
+// --- Currency / percent formatting ---
+function formatCurrency(val) {
+  if (!val || val === 'N/A' || val === '') return '$0.00';
+  const num = parseFloat(val);
+  return isNaN(num) ? '$0.00' : `$${num.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatPercent(val) {
+  if (!val || val === 'N/A' || val === '') return '0.0%';
+  const num = parseFloat(val);
+  return isNaN(num) ? '0.0%' : `${num.toFixed(1)}%`;
+}
+
+// --- SVG icons for result cards ---
+const ICONS = {
+  calendar: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  person: '<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  dollar: '<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
+  document: '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+  chat: '<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>',
+  send: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'
+};
+
+// --- Render a single result ---
+function renderItem(it, hasQuery) {
+  const pdf = buildPdfLinks(it.pdf_path);
+  const caseName = `${sanitize(it.claimant)} v ${sanitize(it.respondent)}`;
+  const dateStr = it.decision_date_norm ? formatAusDate(it.decision_date_norm) : 'Unknown';
+
+  // Determine if claimant was awarded
+  const claimed = parseFloat(it.claimed_amount) || 0;
+  const adjudicated = parseFloat(it.adjudicated_amount) || 0;
+  const showBadge = adjudicated > 0 && claimed > 0;
+
+  let metaHtml = `
+    <div class="result-meta">
+      <div class="result-meta-item">${ICONS.calendar}${sanitize(dateStr)}</div>
+      ${it.adjudicator ? `<div class="result-meta-item adjudicator">${ICONS.person}${sanitize(it.adjudicator)}</div>` : ''}
+      ${adjudicated > 0 ? `<div class="result-meta-item">${ICONS.dollar}${formatCurrency(it.adjudicated_amount)}</div>` : ''}
+    </div>
+  `;
+
+  let amountsHtml = `
+    <div class="result-amounts">
+      <div class="amount-item"><strong>Claimed:</strong> ${formatCurrency(it.claimed_amount)}</div>
+      <div class="amount-item"><strong>Adjudicated:</strong> ${formatCurrency(it.adjudicated_amount)}</div>
+      ${it.fee_claimant_proportion ? `<div class="amount-item"><strong>Claimant Fee:</strong> ${formatPercent(it.fee_claimant_proportion)}</div>` : ''}
+      ${it.fee_respondent_proportion ? `<div class="amount-item"><strong>Respondent Fee:</strong> ${formatPercent(it.fee_respondent_proportion)}</div>` : ''}
+    </div>
+  `;
+
+  const snippetHtml = hasQuery && it.snippet ? `<div class="result-snippet">${it.snippet}</div>` : '';
+
+  const actionsHtml = `
+    <div class="result-actions">
+      ${pdf ? `<a href="${pdf.open}" target="_blank">${ICONS.document}View Decision</a>` : ''}
+      <button onclick="summariseDecision('${it.id}')">${ICONS.chat}AI Summary</button>
+    </div>
+  `;
+
+  const chatHtml = `
+    <div id="ai-container-${it.id}" class="ai-container" style="display:none;">
+      <div class="chat-messages" id="chat-messages-${it.id}"></div>
+      <div class="chat-input-area" id="chat-input-area-${it.id}" style="display:none;">
+        <input type="text" id="chat-input-${it.id}" placeholder="Ask a follow-up question..." onkeydown="if(event.key==='Enter') sendChatMessage('${it.id}')">
+        <button onclick="sendChatMessage('${it.id}')" aria-label="Send message">${ICONS.send}</button>
+      </div>
+    </div>
+  `;
+
+  return `
+    <div class="result-card">
+      ${metaHtml}
+      <div class="result-title">
+        ${caseName}
+        ${showBadge ? '<span class="badge">Claimant Awarded</span>' : ''}
+      </div>
+      ${amountsHtml}
+      ${snippetHtml}
+      ${actionsHtml}
+      ${chatHtml}
+    </div>
+  `;
+}
+
+// --- Render pagination ---
+function renderPagination(currentPage) {
+  const totalPages = Math.ceil(state.total / state.limit);
+  const container = $('#pagination');
+  if (!container) return;
+
+  container.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const maxVisible = 10;
+  let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let end = start + maxVisible - 1;
+  if (end > totalPages) {
+    end = totalPages;
+    start = Math.max(1, end - maxVisible + 1);
+  }
+
+  if (currentPage > 1) {
+    const prev = document.createElement('button');
+    prev.textContent = '\u2039 Previous';
+    prev.onclick = () => runSearch(currentPage - 1);
+    container.appendChild(prev);
+  }
+
+  if (start > 1) {
+    const first = document.createElement('button');
+    first.textContent = '1';
+    first.onclick = () => runSearch(1);
+    container.appendChild(first);
+    const dots = document.createElement('span');
+    dots.textContent = '...';
+    dots.style.cssText = 'color:#aaa;display:flex;align-items:center;padding:0 4px;font-size:13px;';
+    container.appendChild(dots);
+  }
+
+  for (let i = start; i <= end; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    if (i === currentPage) btn.classList.add('active');
+    btn.onclick = () => runSearch(i);
+    container.appendChild(btn);
+  }
+
+  if (end < totalPages) {
+    const dots = document.createElement('span');
+    dots.textContent = '...';
+    dots.style.cssText = 'color:#aaa;display:flex;align-items:center;padding:0 4px;font-size:13px;';
+    container.appendChild(dots);
+    const last = document.createElement('button');
+    last.textContent = totalPages;
+    last.onclick = () => runSearch(totalPages);
+    container.appendChild(last);
+  }
+
+  if (currentPage < totalPages) {
+    const next = document.createElement('button');
+    next.textContent = 'Next \u203A';
+    next.onclick = () => runSearch(currentPage + 1);
+    container.appendChild(next);
+  }
+
+  const info = document.createElement('div');
+  info.textContent = `Page ${currentPage} of ${totalPages}`;
+  info.style.cssText = 'font-size:13px;color:#aaa;margin-top:6px;text-align:center;width:100%;';
+  container.appendChild(info);
+}
+
+// --- Main search ---
+async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
+  let matchedAdjudicator = null;
+
+  if (!bypassAdjudicatorCheck && adjudicatorList.length > 0) {
+    const query = normalizeInput($('#q').value);
+    matchedAdjudicator = findMatchingAdjudicator(query);
+  }
+
+  try {
+    window.scrollTo(0, 0);
+    const statusEl = $('#status');
+    const totalEl = $('#total');
+    const qEl = $('#q');
+    const limitEl = $('#limit');
+    const sortEl = $('#sort');
+
+    if (!statusEl || !totalEl || !qEl || !limitEl || !sortEl) {
+      console.error('Missing required elements');
+      return;
+    }
+
+    const inputQuery = normalizeInput(qEl.value);
+
+    // Client-side gate check
+    if (inputQuery && gateEnabled) {
+      const token = localStorage.getItem('purchase_token');
+      if (!token) {
+        const redir = encodeURIComponent(window.location.pathname + window.location.search);
+        statusEl.textContent = '';
+        totalEl.textContent = '';
+        $('#results').innerHTML = `
+          <div class="gate-block">
+            <h3>Sign in to search</h3>
+            <p>Create a free account to get 10 searches per month.</p>
+            <a href="/login?redirect=${redir}" class="gate-btn">Sign In</a>
+            <a href="/register?redirect=${redir}" class="gate-btn gate-btn-secondary">Create Account</a>
+          </div>
+        `;
+        return;
+      }
+      if (searchUsage && !searchUsage.is_unlimited && searchUsage.searches_used >= searchUsage.search_limit) {
+        statusEl.textContent = '';
+        totalEl.textContent = '';
+        $('#results').innerHTML = `
+          <div class="gate-block">
+            <h3>Monthly search limit reached</h3>
+            <p>You've used all ${searchUsage.search_limit} of your free searches this month. Your limit resets on the 1st of next month.</p>
+            <a href="/pricing" class="gate-btn">Upgrade to Unlimited</a>
+          </div>
+        `;
+        return;
+      }
+    }
+
+    statusEl.innerHTML = '<div class="loading-text-gradient">Searching...</div>';
+    startLoadingBar();
+
+    // Show skeleton cards while loading
+    const skeletonHTML = Array(5).fill(`
+      <div class="skeleton-card">
+        <div class="skeleton-meta"><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        <div class="skeleton-title"><div class="skeleton-line h16 w60"></div></div>
+        <div class="skeleton-body"><div class="skeleton-line w80"></div><div class="skeleton-line w60"></div></div>
+        <div class="skeleton-actions"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+      </div>
+    `).join('');
+    $('#results').innerHTML = skeletonHTML;
+    $('#pagination').innerHTML = '';
+
+    state.q = inputQuery;
+    state.limit = +(limitEl.value || 20);
+    state.offset = (page - 1) * state.limit;
+    state.sort = sortEl.value || 'newest';
+
+    const params = new URLSearchParams();
+    params.set('sort', state.sort);
+    if (state.q) params.set('q', state.q);
+    params.set('limit', state.limit);
+    params.set('offset', state.offset);
+
+    const fetchHeaders = { 'Accept': 'application/json' };
+    const userToken = localStorage.getItem('purchase_token');
+    if (userToken) {
+      fetchHeaders['Authorization'] = `Bearer ${userToken}`;
+    }
+
+    const res = await fetch(`/search_fast?${params.toString()}`, { headers: fetchHeaders });
+
+    if (res.status === 401) {
+      const errData = await res.json();
+      if (errData.error === 'auth_required') {
+        finishLoadingBar();
+        statusEl.textContent = '';
+        totalEl.textContent = '';
+        const redir = encodeURIComponent(window.location.pathname + window.location.search);
+        $('#results').innerHTML = `
+          <div class="gate-block">
+            <h3>Sign in to search</h3>
+            <p>Create a free account to get 10 searches per month.</p>
+            <a href="/login?redirect=${redir}" class="gate-btn">Sign In</a>
+            <a href="/register?redirect=${redir}" class="gate-btn gate-btn-secondary">Create Account</a>
+          </div>
+        `;
+        return;
+      }
+    }
+
+    if (res.status === 429) {
+      const errData = await res.json();
+      if (errData.error === 'limit_exceeded') {
+        finishLoadingBar();
+        statusEl.textContent = '';
+        totalEl.textContent = '';
+        $('#results').innerHTML = `
+          <div class="gate-block">
+            <h3>Monthly search limit reached</h3>
+            <p>You've used all ${errData.search_limit} of your free searches this month. Your limit resets on the 1st of next month.</p>
+            <a href="/pricing" class="gate-btn">Upgrade to Unlimited</a>
+          </div>
+        `;
+        if (searchUsage) {
+          searchUsage.searches_used = errData.searches_used;
+          renderGateUI();
+        }
+        return;
+      }
+    }
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    finishLoadingBar();
+
+    state.total = data.total || 0;
+
+    // Update results info
+    const startIdx = state.offset + 1;
+    const endIdx = Math.min(state.offset + state.limit, state.total);
+    if (state.total > 0) {
+      let countText = `Showing <strong>${startIdx}-${endIdx}</strong> of <strong>${state.total.toLocaleString()}</strong> results`;
+      if (state.q) countText += ` for <strong>${sanitize(state.q)}</strong>`;
+      totalEl.innerHTML = countText;
+    } else {
+      totalEl.textContent = '';
+    }
+    statusEl.textContent = '';
+
+    const items = data.items || [];
+    $('#results').innerHTML = items.length
+      ? items.map(it => renderItem(it, state.q && state.q.length > 0)).join('')
+      : '<p style="text-align:center;color:var(--text-muted);padding:40px 0;">No results found.</p>';
+
+    renderPagination(page);
+
+    // Update usage counter after successful search
+    if (state.q && gateEnabled && searchUsage && !searchUsage.is_unlimited) {
+      searchUsage.searches_used++;
+      renderGateUI();
+    }
+  } catch (error) {
+    console.error('Search error:', error);
+    $('#status').textContent = 'Error: ' + error.message;
+    finishLoadingBar();
+  }
+
+  // Show adjudicator modal after search completes
+  if (matchedAdjudicator) {
+    setTimeout(() => {
+      showAdjudicatorModal();
+    }, 1000);
+  }
+}
+
+// --- AI Summary ---
+async function summariseDecision(id) {
+  const container = document.getElementById(`ai-container-${id}`);
+  const messagesBox = document.getElementById(`chat-messages-${id}`);
+  const inputBox = document.getElementById(`chat-input-area-${id}`);
+
+  if (container.style.display === 'block') {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  messagesBox.innerHTML = '<div class="loading-text-gradient">Generating summary...</div>';
+  inputBox.style.display = 'none';
+  chatHistories[id] = [];
+
+  try {
+    const res = await fetch(`/summarise/${id}`);
+    const data = await res.json();
+    messagesBox.innerHTML = '';
+
+    if (data.summary) {
+      addAiMessage(id, data.summary);
+      inputBox.style.display = 'flex';
+    } else {
+      addAiMessage(id, 'Failed to generate summary.');
+    }
+  } catch (e) {
+    messagesBox.innerHTML = '';
+    addAiMessage(id, 'Error contacting server.');
+  }
+}
+
+// --- Chat messaging ---
+async function sendChatMessage(id) {
+  const input = document.getElementById(`chat-input-${id}`);
+  const question = input.value.trim();
+  if (!question) return;
+
+  addUserMessage(id, question);
+  input.value = '';
+
+  const typingIndicator = addTypingIndicator(id);
+
+  const history = chatHistories[id] || [];
+
+  try {
+    const res = await fetch(`/ask/${id}`, {
+      method: 'POST',
+      body: new URLSearchParams({ question, history: JSON.stringify(history) }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const data = await res.json();
+
+    typingIndicator.remove();
+
+    if (data.answer) {
+      addAiMessage(id, data.answer);
+      chatHistories[id].push({ role: 'assistant', content: data.answer });
+    } else {
+      addAiMessage(id, `Error: ${data.error || 'Failed to get answer'}`);
+    }
+  } catch (e) {
+    typingIndicator.remove();
+    addAiMessage(id, 'Network or server error.');
+  }
+}
+
+function addAiMessage(id, htmlContent) {
+  const messagesBox = document.getElementById(`chat-messages-${id}`);
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'message ai-message';
+  messageDiv.innerHTML = `
+    <div class="message-avatar">S</div>
+    <div class="message-content">
+      <div class="ai-output-content">${cleanAIText(htmlContent)}</div>
+    </div>
+  `;
+  messagesBox.appendChild(messageDiv);
+  messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+function addUserMessage(id, text) {
+  const messagesBox = document.getElementById(`chat-messages-${id}`);
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'message user-message';
+  messageDiv.innerHTML = `
+    <div class="message-avatar">U</div>
+    <div class="message-content">${sanitize(text)}</div>
+  `;
+  messagesBox.appendChild(messageDiv);
+  chatHistories[id].push({ role: 'user', content: text });
+  messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+function addTypingIndicator(id) {
+  const messagesBox = document.getElementById(`chat-messages-${id}`);
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'message ai-message typing-indicator';
+  typingDiv.innerHTML = `
+    <div class="message-avatar">S</div>
+    <div class="message-content">...</div>
+  `;
+  messagesBox.appendChild(typingDiv);
+  messagesBox.scrollTop = messagesBox.scrollHeight;
+  return typingDiv;
+}
+
+function cleanAIText(text) {
+  if (!text) return '';
+  return text;
+}
+
+// --- URL parameter handling ---
+function checkUrlParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryParam = urlParams.get('q');
+
+  if (queryParam) {
+    document.getElementById('q').value = queryParam;
+    runSearch(1);
+  } else {
+    runSearch();
+  }
+}
+
+// --- Init ---
+async function initSearchPage() {
+  try {
+    const gateRes = await fetch('/api/search-gate-status');
+    if (gateRes.ok) {
+      const gateData = await gateRes.json();
+      gateEnabled = gateData.gate_enabled;
+    }
+  } catch (e) { gateEnabled = false; }
+
+  if (gateEnabled) {
+    const token = localStorage.getItem('purchase_token');
+    if (token) {
+      try {
+        const usageRes = await fetch('/api/search-usage', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (usageRes.ok) searchUsage = await usageRes.json();
+      } catch (e) {}
+    }
+    renderGateUI();
+  }
+
+  fetchAdjudicators();
+  checkUrlParams();
+}
+
+// --- Event listeners ---
+const qInput = document.getElementById('q');
+if (qInput) {
+  qInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      runSearch(1);
+    }
+  });
+}
+
+const limitSel = document.getElementById('limit');
+if (limitSel) {
+  limitSel.addEventListener('change', () => runSearch(1));
+}
+
+const sortSel = document.getElementById('sort');
+if (sortSel) {
+  sortSel.addEventListener('change', () => runSearch(1));
+}
+
+// Kick off
+initSearchPage();
+</script>
+
+<script src="/assets/js/main.js"></script>
+</body>
+</html>

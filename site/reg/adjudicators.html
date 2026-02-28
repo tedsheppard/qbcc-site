@@ -1,0 +1,3684 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <meta charset="utf-8">
+  <title>Sopal — Adjudicators</title>
+  <meta name="description" content="Explore adjudicator insights, decision statistics, and AI-powered insights to understand decision-making patterns under Queensland's BIF Act.">
+  <meta name="keywords" content="adjudicators, BIF Act, Queensland, construction adjudication, decision analysis, legal insights">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+<style>
+  /* Base styles matching main site */
+  body {
+    font-family: "Manrope", sans-serif;
+    margin: 0;
+    background: rgba(33,33,33,255);
+    color: #e4e4e4;
+    font-size: 80%;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Space Grotesk", sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* Light theme overrides */
+  .light {
+    background: #ffffff !important;
+    color: #222 !important;
+  }
+  .light body {
+    background: #ffffff !important;
+    color: #222 !important;
+  }
+
+  /* Header */
+  .header {
+    background: #fdfdfd;
+    padding: 20px 25px;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-content {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .logo {
+    height: 31px;
+    margin-right: 20px;
+  }
+  .nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+  }
+  .nav-links a {
+    color: black;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover {
+    color: #00c97c;
+  }
+  .nav-links a.active {
+    color: #008a5c;
+    font-weight: 600;
+  }
+
+  /* Main content */
+  main {
+    max-width: 1200px;
+    margin: 35px auto 0;
+    padding: 0 25px;
+  }
+
+  h1 {
+    font-size: 28px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 10px;
+  }
+
+  /* Disclaimer */
+  .disclaimer {
+    background: #fffbeb;
+    border-left: 4px solid #fbbf24;
+    padding: 15px 20px;
+    margin-bottom: 30px;
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+    color: #92400e;
+  }
+
+  .disclaimer strong {
+    color: #b45309;
+  }
+
+  /* Split pane layout */
+  .content-container {
+    display: flex;
+    gap: 30px;
+    min-height: 70vh;
+  }
+
+.left-pane {
+  flex: 0 0 400px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 100px); /* Changed from 160px to make it even taller */
+}
+
+.right-pane {
+  flex: 1;
+  background: #fdfdfd;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 100px); /* Changed from 160px to make it even taller */
+}
+
+.adjudicator-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.right-pane.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-style: italic;
+}
+
+.search-section {
+  background: #fdfdfd;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 25px; /* Changed from 20px */
+  margin-bottom: 20px;
+}
+
+.adjudicator-item {
+  background: #fdfdfd;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 20px; /* Changed from 15px */
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 10px 15px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  font-size: 14px;
+  outline: none;
+}
+
+.search-bar button {
+  background: #00c97c;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.search-bar button:hover {
+  background: #00a568;
+}
+
+.sort-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.sort-controls select {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* Adjudicator list */
+.adjudicator-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
+.adjudicator-item:hover {
+  border-color: #00c97c;
+  box-shadow: 0 2px 8px rgba(0,201,124,0.1);
+}
+
+.adjudicator-item.selected {
+  border-color: #00c97c;
+  background: #f0f9f4;
+  box-shadow: 0 2px 8px rgba(0,201,124,0.2);
+}
+
+.adjudicator-name {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.adjudicator-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #666;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-weight: bold;
+  color: #00c97c;
+  display: block;
+}
+
+/* Right pane content */
+.adjudicator-detail {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-header {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.detail-name {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.detail-subtitle {
+  color: #666;
+  font-size: 14px;
+}
+
+.detail-content {
+  position: relative; /* Added for overlay positioning */
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  overflow-x: visible; /* Add this - allows horizontal overflow for tooltips */
+}
+
+.detail-content.blur-stats {
+  overflow-y: hidden;
+}
+
+  .detail-tabs {
+    display: flex;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+  }
+
+  .tab-btn {
+    padding: 10px 15px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    color: #666;
+  }
+
+  .tab-btn.active {
+    color: #00c97c;
+    border-bottom-color: #00c97c;
+    font-weight: 600;
+  }
+
+  .tab-content {
+    display: none;
+    position: relative;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  /* Statistics tab */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+
+ .stat-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  position: relative;
+}
+
+  .stat-number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #00c97c;
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+  }
+
+  /* Chart placeholder */
+  .chart-container {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+  }
+
+  /* Decisions list */
+.decisions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: none; /* Remove any max-height constraint */
+}
+
+  .decision-item {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 15px;
+    border-left: 3px solid #00c97c;
+  }
+
+  .decision-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+  }
+
+  .decision-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 10px;
+  }
+
+  .decision-actions {
+    margin-top: 10px;
+  }
+
+  .decision-link {
+    color: #0066cc;
+    text-decoration: none;
+    font-size: 13px;
+  }
+
+  .decision-link:hover {
+    text-decoration: underline;
+  }
+  
+  .decision-link.disabled {
+    color: #999;
+    cursor: not-allowed;
+    text-decoration: none;
+  }
+
+  /* AI Analysis section */
+  .ai-section {
+    margin-top: 20px;
+  }
+
+  .ai-summary-btn {
+    background: #00c97c;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .ai-summary-btn:hover {
+    background: #00a568;
+  }
+
+  .ai-summary-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+
+  .ai-summary {
+    background: #f8f8f8;
+    border-left: 3px solid #00c97c;
+    padding: 20px;
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    margin-bottom: 20px;
+  }
+
+  .chat-section {
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+  }
+
+  .chat-input-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .chat-input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+  }
+
+  .chat-button {
+    background: #00c97c;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .chat-button:hover {
+    background: #00a568;
+  }
+
+  .chat-response {
+    background: #f0f9f4;
+    border-left: 3px solid #10b981;
+    padding: 15px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 15px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+  }
+
+  /* Loading states */
+  .loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #00c97c;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Dark mode overrides */
+  .dark body {
+    background: #0d0d0d !important;
+    color: #e0e0e0 !important;
+  }
+
+  .dark .header,
+  .dark .search-section,
+  .dark .adjudicator-item,
+  .dark .right-pane,
+  .dark .detail-header,
+  .dark .stat-card,
+  .dark .decision-item,
+  .dark .chart-container {
+    background: #141414 !important;
+    color: #f0f0f0 !important;
+    border-color: #333 !important;
+  }
+
+  .dark .nav-links a,
+  .dark .adjudicator-name,
+  .dark .detail-name,
+  .dark .decision-title {
+    color: #f0f0f0 !important;
+  }
+
+  .dark .search-bar input,
+  .dark .sort-controls select,
+  .dark .chat-input {
+    background: #1c1c1c;
+    color: #fff;
+    border-color: #333;
+  }
+
+  .dark .ai-summary,
+  .dark .chat-response {
+    background: #1a1a1a;
+    border-left: 3px solid #21db87;
+    color: #eee;
+  }
+
+  .dark .disclaimer {
+    background: #2d1b0a;
+    border-left-color: #f59e0b;
+    color: #fbbf24;
+  }
+
+  .dark .adjudicator-item.selected {
+    background: #1a2f1a;
+    border-color: #21db87;
+  }
+
+  /* Footer */
+  .footer {
+    background: #fcfcfc;
+    color: #333;
+    padding: 40px 25px 20px;
+    margin-top: 60px;
+    border-top: 1px solid #ddd;
+  }
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: auto;
+  }
+  .footer-left {
+    max-width: 400px;
+    text-align: left;
+  }
+  .footer-logo { height: 24px; margin-bottom: 10px; }
+
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 40px;
+    text-align: left;
+  }
+  .footer-links a {
+    font-size: 13px;
+    color: black;
+    text-decoration: none;
+  }
+  .footer-links a:hover {
+    color: #00c97c;
+  }
+
+  .footer-bottom {
+    text-align: center;
+    border-top: 1px solid #eee;
+    margin-top: 30px;
+    padding-top: 20px;
+    width: 100%;
+    font-size: 0.85em;
+    color: #666;
+  }
+
+.info-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  background: #2f4c42;
+  color: white;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 16px;
+  text-align: center;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+}
+
+.info-icon:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+
+  .dark .footer {
+    background: #141414 !important;
+    border-color: #333 !important;
+  }
+  .dark .footer-links a {
+    color: #f0f0f0;
+  }
+  .dark .footer-bottom {
+    border-top: 1px solid #333 !important;
+    color: #aaa !important;
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    .header-content {
+      flex-direction: column;
+      gap: 16px;
+    }
+    .nav-links {
+      margin: 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    main {
+      padding: 0 15px;
+    }
+    .content-container {
+      flex-direction: column;
+    }
+    .left-pane {
+      flex: none;
+      max-width: none;
+    }
+    .right-pane {
+      min-height: 500px;
+    }
+  }
+
+.dark .tooltip::after {
+  border-bottom-color: #1a1a1a;
+}
+
+/* For stat cards on the right side, flip tooltip to left */
+.stat-card:nth-child(4n) .tooltip,
+.stat-card:nth-child(4n+4) .tooltip {
+  right: auto;
+  left: 0;
+}
+
+/* Adjust arrow for left-aligned tooltips */
+.stat-card:nth-child(4n) .tooltip::after,
+.stat-card:nth-child(4n+4) .tooltip::after {
+  right: auto;
+  left: 10px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+  overflow: visible; /* Add this */
+}
+
+.stat-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  position: relative;
+  overflow: visible; /* Add this */
+}
+
+.info-icon:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+  display: block; /* Ensure it displays as block */
+}
+
+#stats-tab {
+  overflow: visible !important;
+}
+
+.stats-grid {
+  overflow: visible !important;
+}
+
+.stat-card {
+  overflow: visible !important;
+}
+
+.tooltip {
+  position: absolute;
+  top: 25px;
+  left: -75px;
+  background: #333;
+  color: white;
+  padding: 12px 15px;
+  border-radius: 6px;
+  font-size: 11px;
+  width: 180px;
+  min-height: 60px;
+  height: auto;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  z-index: 1000;
+  line-height: 1.4;
+  font-weight: normal;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 85px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid #333;
+}
+
+.dark .tooltip {
+  background: #1a1a1a;
+  border: 1px solid #333;
+}
+
+.dark .tooltip::after {
+  border-bottom-color: #1a1a1a;
+}
+
+/* Auth Modal */
+.auth-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.auth-modal.active {
+  display: flex;
+}
+
+.auth-modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.dark .auth-modal-content {
+  background: #1a1a1a;
+}
+
+.auth-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.dark .auth-modal-close {
+  color: #aaa;
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #eee;
+}
+
+.dark .auth-tabs {
+  border-bottom-color: #333;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+}
+
+.dark .auth-tab {
+  color: #aaa;
+}
+
+.auth-tab.active {
+  color: #00c97c;
+  border-bottom-color: #00c97c;
+  font-weight: 600;
+}
+
+.auth-form {
+  display: none;
+}
+
+.auth-form.active {
+  display: block;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #333;
+}
+
+.dark .form-group label {
+  color: #f0f0f0;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.dark .form-group input {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #fff;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 12px;
+  background: #00c97c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-submit-btn:hover {
+  background: #00a568;
+}
+
+.auth-submit-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.auth-error {
+  color: #dc3545;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* Payment Modal */
+.payment-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.payment-modal.active {
+  display: flex;
+}
+
+.payment-modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.dark .payment-modal-content {
+  background: #1a1a1a;
+}
+
+.payment-modal-header {
+  margin-bottom: 30px;
+}
+
+.payment-modal-header h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.dark .payment-modal-header h2 {
+  color: #f0f0f0;
+}
+
+.payment-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.dark .payment-modal-close {
+  color: #aaa;
+}
+
+#card-element {
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  background: white;
+}
+
+.dark #card-element {
+  border-color: #444;
+  background: #2a2a2a;
+}
+
+#card-errors {
+  color: #dc3545;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.pay-button {
+  width: 100%;
+  background: #00c97c;
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pay-button:hover {
+  background: #00a568;
+}
+
+.pay-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Replace your existing .locked-overlay rule with this */
+.locked-overlay {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  max-width: 380px; /* Reduced from 420px */
+  width: 90%;
+  box-sizing: border-box;
+  display: none;
+}
+ 
+.blur-stats .locked-overlay {
+    display: flex; /* Shown when parent has blur-stats */
+}
+
+.dark .locked-overlay {
+  background: #1a1a1a;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.locked-content {
+  text-align: center;
+  padding: 30px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.locked-content h3 {
+  font-size: 24px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.dark .locked-content h3 {
+  color: #f0f0f0;
+}
+
+.locked-content p {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.dark .locked-content p {
+  color: #aaa;
+}
+
+.price-tag {
+  font-size: 32px;
+  font-weight: bold;
+  color: #00c97c;
+  margin: 25px 0;
+}
+
+.unlock-btn {
+  background: #00c97c;
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.unlock-btn:hover {
+  background: #00a568;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 201, 124, 0.3);
+}
+
+/* Blur only the data values, not labels */
+.blur-stats .stat-number,
+.blur-value,
+.blur-stats .decision-meta span {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+}
+
+  .form-group small {
+  display: block;
+  margin-top: 4px;
+}
+
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+  background-color: white;
+}
+
+.dark #decisionSearchResults {
+  color: #aaa !important;
+}
+
+.dark .form-group select {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #fff;
+}
+
+.auth-form::-webkit-scrollbar {
+  width: 8px;
+}
+
+.auth-form::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.auth-form::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.auth-form::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.dark #decisionSearchLoadingBar {
+  background: linear-gradient(to right, #21db87, #42ffaa) !important;
+}
+
+/* --- NEW: Payment Success Modal --- */
+.success-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.success-modal.active {
+  display: flex;
+}
+.success-modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  text-align: center;
+  position: relative;
+}
+.dark .success-modal-content {
+  background: #1a1a1a;
+}
+.success-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+}
+.success-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.success-modal-content h2 {
+  font-size: 24px;
+  margin-bottom: 15px;
+  color: #333;
+}
+.dark .success-modal-content h2 {
+  color: #f0f0f0;
+}
+.success-modal-content p {
+  color: #666;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+.dark .success-modal-content p {
+  color: #aaa;
+}
+
+/* New style for the intro text */
+.intro-text {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  padding: 20px 25px;
+  margin-bottom: 30px;
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+}
+.intro-text p {
+  margin: 0 0 10px 0;
+}
+.intro-text p:last-child {
+  margin-bottom: 0;
+}
+.dark .intro-text {
+  background: #1a1a1a;
+  border-color: #333;
+  color: #ccc;
+}
+
+/* AI CHAT INTERFACE STYLES */
+.ai-container {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-top: 15px;
+  max-width: 100%;
+}
+.dark .ai-container {
+  border-color: #444;
+}
+
+.chat-messages {
+  max-height: 450px;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 90%;
+}
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.ai-message .message-avatar {
+  background: #10a37f;
+  color: white;
+}
+.user-message .message-avatar {
+  background: #e0e0e0;
+  color: #333;
+}
+.dark .user-message .message-avatar {
+    background: #555;
+    color: #eee;
+}
+
+.message-content {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ai-message {
+  align-self: flex-start;
+}
+.ai-message .message-content {
+  background: #f0f0f0;
+  color: #222;
+  border-top-left-radius: 0;
+}
+.dark .ai-message .message-content {
+  background: #2a2a2a;
+  color: #eee;
+}
+
+.user-message {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.user-message .message-content {
+  background: #dcf8c6;
+  color: #111;
+  border-top-right-radius: 0;
+}
+.dark .user-message .message-content {
+    background: #056162;
+    color: #e0e0e0;
+}
+
+.chat-input-area {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid #e0e0e0;
+}
+.dark .chat-input-area {
+  border-top-color: #444;
+}
+
+.chat-input-area input {
+  flex-grow: 1;
+  border: none;
+  background: transparent;
+  padding: 10px;
+  font-size: 13px;
+  outline: none;
+  color: #222;
+  margin-right: 8px;
+}
+.dark .chat-input-area input {
+  color: #eee;
+}
+
+.chat-input-area button {
+  background: #10a37f;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.chat-input-area button:hover {
+  background: #0d8a6c;
+}
+.chat-input-area button svg {
+    margin-left: -1px;
+    margin-top: 1px;
+}
+
+.loading-text-gradient {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px;
+  background: linear-gradient(to right, #222 30%, #ccc 50%, #222 70%);
+  background-size: 200% auto;
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: shimmer 1s linear infinite;
+  text-align: left;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% center;
+  }
+}
+
+.dark .loading-text-gradient {
+  background: linear-gradient(to right, #eee 30%, #555 50%, #eee 70%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.ai-output-content p { margin: 4px 0 6px 0; }
+.ai-output-content strong { display: block; margin: 10px 0 4px 0; font-size: 14px; font-weight: 600; }
+.ai-output-content ul { margin: 4px 0 8px 18px; padding: 0; }
+.ai-output-content li { margin: 2px 0; }
+.ai-output-content h3, .ai-output-content h4 { font-size: 15px; font-weight: 600; margin: 10px 0 4px 0; }
+
+.locked-overlay {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  max-width: 320px; /* Reduced from 380px */
+  width: 85%; /* Reduced from 90% */
+  box-sizing: border-box;
+  display: none;
+  max-height: calc(100vh - 200px); /* Ensure it fits in viewport */
+  overflow-y: auto; /* Add scrollbar if content is too tall */
+}
+ 
+.blur-stats .locked-overlay {
+    display: flex; /* Shown when parent has blur-stats */
+}
+
+.dark .locked-overlay {
+  background: #1a1a1a;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.locked-content {
+  text-align: center;
+  padding: 25px 20px; /* Reduced from 30px */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.locked-content h3 {
+  font-size: 20px; /* Reduced from 24px */
+  margin-bottom: 12px; /* Reduced from 15px */
+  color: #333;
+}
+
+.dark .locked-content h3 {
+  color: #f0f0f0;
+}
+
+.locked-content p {
+  color: #666;
+  margin-bottom: 15px; /* Reduced from 20px */
+  line-height: 1.5; /* Reduced from 1.6 */
+  font-size: 13px; /* Reduced from 15px */
+}
+
+.dark .locked-content p {
+  color: #aaa;
+}
+
+.price-tag {
+  font-size: 28px; /* Reduced from 32px */
+  font-weight: bold;
+  color: #00c97c;
+  margin: 20px 0; /* Reduced from 25px 0 */
+}
+
+.unlock-btn {
+  background: #00c97c;
+  color: white;
+  border: none;
+  padding: 12px 30px; /* Reduced from 15px 40px */
+  border-radius: 8px;
+  font-size: 15px; /* Reduced from 16px */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.unlock-btn:hover {
+  background: #00a568;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 201, 124, 0.3);
+}
+
+  /* --- Onboarding Modal Styles --- */
+  .intro-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+  }
+  .intro-modal.active {
+      display: flex;
+      opacity: 1;
+  }
+  body.modal-open {
+      overflow: hidden;
+  }
+
+  .intro-modal-content {
+      background: white;
+      color: #333;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 800px;
+      height: 85vh;
+      max-height: 640px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+      position: relative; /* For arrow positioning */
+  }
+  .intro-modal.active .intro-modal-content {
+      transform: scale(1);
+  }
+  .dark .intro-modal-content {
+      background: #1e1e1e;
+      color: #f0f0f0;
+  }
+
+  .intro-carousel {
+      flex-grow: 1;
+      position: relative;
+      padding: 20px 0;
+  }
+
+  .intro-slide {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(20px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      justify-content: center;
+      padding: 0 50px;
+  }
+  .intro-slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0);
+  }
+
+  .intro-slide h2 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 10px;
+  }
+  .dark .intro-slide h2 { color: #fff; }
+
+  .intro-slide p {
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 550px;
+      color: #666;
+      margin-bottom: 20px;
+  }
+  .dark .intro-slide p { color: #aaa; }
+
+  .intro-slide ol {
+      text-align: left;
+      display: inline-block;
+      font-size: 15px;
+      line-height: 1.8;
+      margin-bottom: 20px;
+  }
+  .dark .intro-slide ol { color: #ccc; }
+  
+  .promo-text {
+      font-size: 14px !important;
+      color: #555 !important;
+      background: #f0f9f4;
+      padding: 8px 12px;
+      border-radius: 6px;
+  }
+  .dark .promo-text {
+      background: #1a2f1a;
+      color: #a7d7b9 !important;
+  }
+
+  /* Carousel Navigation */
+  .carousel-nav {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+      border-top: 1px solid #eee;
+  }
+  .dark .carousel-nav { border-top-color: #333; }
+  
+  .nav-dots { display: flex; gap: 10px; }
+  .nav-dot { width: 10px; height: 10px; background: #ccc; border-radius: 50%; cursor: pointer; transition: background 0.2s; }
+  .nav-dot.active { background: #00c97c; }
+
+  .start-exploring-btn {
+      background: #00c97c; color: white; border: none; padding: 15px;
+      font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+      display: none; /* Hidden by default */
+  }
+  .start-exploring-btn:hover { background: #00a568; }
+
+  /* Side Arrow Styles */
+  .side-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.9); color: #333;
+      border: 1px solid #eee; border-radius: 50%; width: 44px; height: 44px;
+      font-size: 20px; font-weight: bold; cursor: pointer; z-index: 10;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.2s ease;
+  }
+  .side-arrow:hover { background: white; transform: translateY(-50%) scale(1.1); }
+  .prev-arrow { left: 20px; }
+  .next-arrow { right: 20px; }
+  .dark .side-arrow {
+      background: rgba(40, 40, 40, 0.9); color: #f0f0f0; border-color: #444;
+  }
+  .dark .side-arrow:hover { background: #333; }
+
+  /* --- Mockup Styles --- */
+  .feature-mockup {
+      background: #f8f9fa; border: 1px solid #e5e5e5; border-radius: 8px;
+      padding: 12px; width: 100%; max-width: 500px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  .dark .feature-mockup { background: #111; border-color: #444; }
+
+  .mockup-header { display: flex; gap: 6px; margin-bottom: 12px; }
+  .mockup-header .dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; }
+  .dark .mockup-header .dot { background: #555; }
+
+  .mockup-body { background: white; border-radius: 4px; padding: 15px; }
+  .dark .mockup-body { background: #1e1e1e; }
+  
+  /* Stats Mockup */
+  .stats-mockup-title { font-weight: 600; font-size: 16px; color: #333; }
+  .dark .stats-mockup-title { color: #f0f0f0; }
+  .stats-mockup-subtitle { font-size: 12px; color: #888; margin-bottom: 15px; }
+  .stats-mockup-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
+  .stat-box { text-align: center; }
+  .stat-box span { display: block; font-weight: 600; font-size: 16px; color: #00c97c; }
+  .stat-box label { font-size: 9px; color: #888; text-transform: none; }
+  
+  /* Search Mockup */
+  .search-mockup-bar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center;}
+  .search-mockup-input { flex-grow: 1; border: 1px solid #ddd; border-radius: 4px; padding: 8px; font-size: 12px; color: #888; }
+  .dark .search-mockup-input { background: #333; border-color: #555; color: #aaa; }
+  .search-mockup-btn { background: #333; color: white; border: none; border-radius: 4px; padding: 8px 12px; font-size: 12px; }
+  .dark .search-mockup-btn { background: #555; }
+  .search-mockup-result { text-align: left; font-size: 12px; padding: 8px; border-bottom: 1px solid #f0f0f0; }
+  .dark .search-mockup-result { border-bottom-color: #333; }
+  .search-mockup-result strong { color: #333; font-weight: 600; }
+  .dark .search-mockup-result strong { color: #f0f0f0; }
+  .search-mockup-result p { font-size: 11px; color: #777; margin: 4px 0 0; }
+  .dark .search-mockup-result p { color: #999; }
+  .search-mockup-result mark { background-color: #d9f3e9; color: #008a5c; border-radius: 2px; padding: 1px 2px; }
+  .dark .search-mockup-result mark { background-color: #1a422f; color: #a7d7b9; }
+
+  /* AI Mockup */
+  .ai-mockup-chat { display: flex; flex-direction: column; gap: 10px; }
+  .ai-mockup-bubble { padding: 8px 12px; border-radius: 10px; max-width: 80%; font-size: 12px; line-height: 1.5; text-align: left; }
+  .ai-user { background: #e9e9eb; color: #333; align-self: flex-end; border-bottom-right-radius: 2px; }
+  .dark .ai-user { background: #3a3b3c; color: #e4e6eb; }
+  .ai-sopal { background: #d9f3e9; color: #006041; align-self: flex-start; border-bottom-left-radius: 2px; }
+  .dark .ai-sopal { background: #1a422f; color: #d0f0e0; }
+
+  @media (max-width: 768px) {
+      .intro-modal-content { height: 90vh; max-height: 90vh; }
+      .intro-carousel, .intro-slide { padding: 25px 20px; }
+      .intro-slide h2 { font-size: 22px; }
+      .intro-slide p { font-size: 15px; }
+      .side-arrow { width: 38px; height: 38px; font-size: 18px; }
+      .prev-arrow { left: 10px; }
+      .next-arrow { right: 10px; }
+  }
+
+/* --- NEW: Main heading for the intro modal --- */
+.modal-main-heading {
+  font-size: 14px;            /* Smaller, like a subtitle */
+  font-weight: 600;
+  color: #888;                 /* A slightly muted grey color */
+  margin-bottom: 25px;        /* Adds space below the heading */
+  padding-bottom: 15px;       /* Adds space above the separator line */
+  border-bottom: 1px solid #eee; /* A subtle separator line */
+  width: 100%;                /* Ensures the line spans the full width */
+  text-transform: uppercase;  /* Optional: Makes it look more like a title */
+  letter-spacing: 0.5px;      /* Optional: A bit of extra spacing */
+}
+
+/* Reduces the space above the original h2 that is no longer needed */
+.intro-slide h2 {
+  margin-top: 0;
+}
+
+/* Dark mode style for the new heading */
+.dark .modal-main-heading {
+  color: #aaa;
+  border-bottom-color: #444;
+}
+</style>
+</head>
+
+<body class="light">
+
+
+<!-- Header -->
+<div class="header">
+  <div class="header-content">
+    <a href="/">
+      <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+    </a>
+    <div class="nav-links">
+      <a href="decision-search">Search</a>
+      <a href="adjudicators" class="active">Adjudicators</a>
+      <a href="interest-calculator">Interest Calculator</a>
+      <a href="due-date-calculator">Due Date Calculator</a>
+      <a href="how-to">How-To Guide</a>
+      <a href="feedback">Feedback</a>
+    </div>
+    <div id="user-profile-nav" style="min-width:36px"></div>
+  </div>
+</div>
+
+<main>
+  <h1>Adjudicator Insights & Analytics</h1>
+
+<div class="intro-text">
+  <p>
+    Explore comprehensive analytics for adjudicators under Queensland's security of payment legislation. This tool processes publicly available decisions to provide valuable insights into decision-making patterns, award rates, and fee distributions.
+  </p>
+  <p>
+    Use these statistics to better inform your adjudication strategy and understand an adjudicator's complete case history. To unlock the full dataset for an adjudicator, simply select their name from the list.
+  </p>
+</div>
+
+  <div class="content-container">
+    <!-- Left Pane: Search & Results -->
+    <div class="left-pane">
+      <div class="search-section">
+        <div class="search-bar">
+          <input type="text" id="adjudicatorSearch" placeholder="Search adjudicators...">
+          <button onclick="searchAdjudicators()">Search</button>
+        </div>
+        <div class="sort-controls">
+          <select id="sortBy">
+            <option value="decisions">Relevance</option>
+            <option value="name">Name (A-Z)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="adjudicatorsList" class="adjudicator-list">
+        <!-- Results will be populated here -->
+      </div>
+    </div>
+
+    <!-- Right Pane: Detail View -->
+    <div id="rightPane" class="right-pane empty">
+      <p>Select an adjudicator to view detailed statistics and analysis</p>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-left">
+      <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+      <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+    </div>
+    <div class="footer-links">
+  <a href="decision-search">Search</a>
+  <a href="adjudicators.html">Adjudicators</a>
+  <a href="interest-calculator">Interest Calculator</a>
+  <a href="due-date-calculator">Due Date Calculator</a>
+  <a href="feedback">Feedback</a>
+  <a href="how-to">How-To Guide</a>
+  <a href="privacy">Privacy</a>
+  <a href="adjudicator-insights-terms">Adjudicator Insights Terms</a>
+  <a href="terms">General Terms of Use</a>
+  <a href="account-terms">Account Terms</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Sopal Australia. All rights reserved.</p>
+  </div>
+</footer>
+
+  <!-- Add Stripe -->
+<script src="https://js.stripe.com/v3/"></script>
+
+<!-- Enhanced Auth Modal -->
+<div id="authModal" class="auth-modal">
+  <div class="auth-modal-content" style="max-width: 600px;">
+    <button class="auth-modal-close" onclick="closeAuthModal()">×</button>
+    <h2 style="margin-bottom: 10px; text-align: center;">Access Required</h2>
+    <p style="text-align: center; color: #666; margin-bottom: 20px;">Create an account or login to purchase access</p>
+    
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="showAuthTab('login')">Login</button>
+      <button class="auth-tab" onclick="showAuthTab('register')">Register</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="loginForm" class="auth-form active">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" required>
+      </div>
+      <button type="submit" class="auth-submit-btn">Login</button>
+      <div id="loginError" class="auth-error"></div>
+    </form>
+
+    <!-- Enhanced Register Form -->
+    <form id="registerForm" class="auth-form" style="max-height: 500px; overflow-y: auto; padding-right: 10px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label>First Name *</label>
+          <input type="text" id="registerFirstName" required>
+        </div>
+        <div class="form-group">
+          <label>Last Name *</label>
+          <input type="text" id="registerLastName" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email *</label>
+        <input type="email" id="registerEmail" required>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label>Password *</label>
+          <input type="password" id="registerPassword" required minlength="8">
+        </div>
+        <div class="form-group">
+          <label>Confirm Password *</label>
+          <input type="password" id="registerPasswordConfirm" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Firm/Company Name</label>
+        <input type="text" id="registerFirmName">
+      </div>
+      <div class="form-group">
+        <label>ABN</label>
+        <input type="text" id="registerABN" pattern="[0-9\s]{11,14}" placeholder="11 digit ABN (optional)">
+        <small style="color: #666; font-size: 12px;">Optional - Enter 11 digits (spaces optional)</small>
+      </div>
+      <div class="form-group">
+        <label>Billing Address *</label>
+        <input type="text" id="registerBillingAddress" required placeholder="Street address">
+      </div>
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label>City *</label>
+          <input type="text" id="registerBillingCity" required>
+        </div>
+        <div class="form-group">
+          <label>State *</label>
+          <select id="registerBillingState" required>
+            <option value="">Select</option>
+            <option value="QLD">QLD</option>
+            <option value="NSW">NSW</option>
+            <option value="VIC">VIC</option>
+            <option value="SA">SA</option>
+            <option value="WA">WA</option>
+            <option value="TAS">TAS</option>
+            <option value="NT">NT</option>
+            <option value="ACT">ACT</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Postcode *</label>
+          <input type="text" id="registerBillingPostcode" required pattern="[0-9]{4}" placeholder="4000">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="tel" id="registerPhone" placeholder="Optional">
+      </div>
+      <div class="form-group">
+        <label>Company Size</label>
+        <select id="registerEmployeeSize">
+          <option value="">Select company size (optional)</option>
+          <option value="1-5">1-5 employees</option>
+          <option value="6-10">6-10 employees</option>
+          <option value="11-25">11-25 employees</option>
+          <option value="26-50">26-50 employees</option>
+          <option value="51-100">51-100 employees</option>
+          <option value="101-250">101-250 employees</option>
+          <option value="251-500">251-500 employees</option>
+          <option value="500+">500+ employees</option>
+        </select>
+      </div>
+      <button type="submit" class="auth-submit-btn">Create Account</button>
+      <div id="registerError" class="auth-error"></div>
+    </form>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="payment-modal">
+  <div class="payment-modal-content">
+    <button class="payment-modal-close" onclick="closePaymentModal()">×</button>
+    <div class="payment-modal-header">
+      <h2>Unlock Adjudicator Access</h2>
+      <p id="modalAdjudicatorName" style="color: #666; font-size: 16px;"></p>
+<div class="price-tag">$69.95 <sup style="font-size: 16px;">incl GST</sup></div>
+<p style="font-size: 14px; margin-bottom: 25px;">One-time payment • Chargeable disbursement • Receipt/invoice immediately on payment</p>
+      
+      <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 6px; text-align: left;">
+        <label style="display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; line-height: 1.5;">
+          <input type="checkbox" id="terms-checkbox" required style="margin-right: 10px; margin-top: 3px; cursor: pointer;">
+          <span>By purchasing Adjudicator Insights for <span id="terms-adjudicator-name"></span>, you agree to the <a href="/adjudicator-insights-terms" target="_blank" style="color: #00c97c; text-decoration: underline;">Adjudicator Insights Terms & Conditions</a>.</span>
+        </label>
+      </div>
+    </div>
+    
+    <form id="payment-form">
+      <div id="card-element"></div>
+      <div id="card-errors" role="alert"></div>
+     <button type="submit" id="submit-payment" class="pay-button" disabled>
+        <span id="button-text">Complete Purchase</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- NEW: Payment Success Modal -->
+<div id="paymentSuccessModal" class="success-modal">
+  <div class="success-modal-content">
+    <p>You now have permanent access to the insights for <strong id="successModalAdjudicatorName"></strong>.</p>
+    <button id="view-insights-btn" class="unlock-btn">View Insights</button>
+    <button id="download-invoice-btn" class="unlock-btn" style="margin-top: 10px; background-color: #6c757d; display: none;">Download Invoice</button>
+  </div>
+</div>
+
+<!-- START: Onboarding Modal -->
+<div id="introModal" class="intro-modal">
+    <div class="intro-modal-content">
+        <div class="intro-carousel">
+            <!-- Slide 1: Stats -->
+            <div class="intro-slide active">
+                <h3 class="modal-main-heading">Adjudicator Insights & Analytics</h3>
+                <h2>View Key Statistics at a Glance</h2>
+                <p>Unlock an adjudicator's full profile to see comprehensive statistics that reveal their decision-making patterns.</p>
+                <div class="feature-mockup">
+                    <div class="mockup-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    <div class="mockup-body">
+                        <div class="stats-mockup-title">John Doe</div>
+                        <div class="stats-mockup-subtitle">88 decisions analysed</div>
+                        <div class="stats-mockup-grid">
+                            <div class="stat-box"><span>88</span><label>Total Decisions</label></div>
+                            <div class="stat-box"><span>72.1%</span><label>Avg Portion Awarded</label></div>
+                            <div class="stat-box"><span>$172k</span><label>Avg Adjudicated Amount</label></div>
+                            <div class="stat-box"><span>9</span><label>$Nil Decisions</label></div>
+                            <div class="stat-box"><span>$15.2M</span><label>Total Claimed Amount</label></div>
+                            <div class="stat-box"><span>$11.0M</span><label>Total Adjudicated Amount</label></div>
+                            <div class="stat-box"><span>45.5%</span><label>Avg Claimant Fee</label></div>
+                            <div class="stat-box"><span>54.5%</span><label>Avg Respondent Fee</label></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 2: Decision Search -->
+            <div class="intro-slide">
+                <h3 class="modal-main-heading">Adjudicator Insights & Analytics</h3>
+                <h2>Search Within Decisions</h2>
+                <p>Use powerful search operators to instantly find relevant cases within a specific adjudicator's entire history.</p>
+                <div class="feature-mockup">
+                    <div class="mockup-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    <div class="mockup-body">
+                       <div class="search-mockup-bar">
+                            <div class="search-mockup-input">"EOT" AND "delay"</div>
+                            <button class="search-mockup-btn">Search</button>
+                       </div>
+                       <div class="search-mockup-result">
+                            <strong>ABC Pty Ltd v XYZ Pty Ltd</strong>
+                            <p>...the respondent disputed the <mark>"EOT"</mark> claim due to a concurrent <mark>"delay"</mark> caused by the claimant...</p>
+                       </div>
+                       <div class="search-mockup-result">
+                            <strong>DEF Pty Ltd v UVW Pty Ltd</strong>
+                            <p>...the adjudicator assessed the claim for <mark>"delay"</mark> costs and found the entitlement to an <mark>"EOT"</mark> was established...</p>
+                       </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3: Sopal AI -->
+            <div class="intro-slide">
+                <h3 class="modal-main-heading">Adjudicator Insights & Analytics</h3>
+                <h2>Ask SopalAI Anything</h2>
+                <p>Get instant summaries and ask follow-up questions about any decision to understand the core reasoning faster.</p>
+                 <div class="feature-mockup">
+                    <div class="mockup-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    <div class="mockup-body">
+                        <div class="ai-mockup-chat">
+                            <div class="ai-mockup-bubble ai-user">What was the main basis for the adjudicator deciding they had no jurisdiction in this case?</div>
+                            <div class="ai-mockup-bubble ai-sopal">The adjudicator found they lacked jurisdiction because the payment claim failed to request payment of the claimed amount, citing MWB Everton Park Pty Ltd as trustee for MWB Everton Park Unit Trust v Devcon Building Co Pty Ltd [2024] QCA 94</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 4: How It Works -->
+            <div class="intro-slide">
+                <h3 class="modal-main-heading">Adjudicator Insights & Analytics</h3>
+                <h2>Simple & Permanent Access</h2>
+                <p>Get started in seconds. Unlocking an adjudicator is a single, one-time purchase for lifetime access.</p>
+                <ol>
+                    <li><strong>Select an Adjudicator:</strong> Choose any adjudicator from the list.</li>
+                    <li><strong>Unlock Access:</strong> A simple, secure one-time payment of $69.95.</li>
+                    <li><strong>Gain Full Insight:</strong> Immediately view their complete profile and all historical data.</li>
+                </ol>
+                <p class="promo-text">Try it for free! The profile for <strong>Russell Welsh</strong> is fully unlocked as a demo.</p>
+            </div>
+        </div>
+        
+        <button id="prevSlide" class="side-arrow prev-arrow">&lt;</button>
+        <button id="nextSlide" class="side-arrow next-arrow">&gt;</button>
+
+        <div class="carousel-nav">
+            <div class="nav-dots">
+                <span class="nav-dot active" data-slide="0"></span>
+                <span class="nav-dot" data-slide="1"></span>
+                <span class="nav-dot" data-slide="2"></span>
+                <span class="nav-dot" data-slide="3"></span>
+            </div>
+        </div>
+        
+        <button id="startExploringBtn" class="start-exploring-btn">Start Exploring</button>
+    </div>
+</div>
+<!-- END: Onboarding Modal -->
+
+
+<script>
+let allAdjudicators = [];
+let filteredAdjudicators = [];
+let selectedAdjudicator = null;
+let currentAdjudicatorForPurchase = null;
+let userToken = null;
+let isSidebarLocked = true;
+let originalDecisions = [];
+let isDecisionSearchActive = false;
+
+let purchasedAdjudicators = new Set();
+
+// REPLACED this function
+async function loadUserAccessStatus() {
+  const token = localStorage.getItem('purchase_token');
+  if (!token) return;
+  
+  try {
+    const response = await fetch('/purchase-me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (response.ok) {
+      const user = await response.json();
+      
+      // If user has full access, unlock all adjudicators
+      if (user.has_full_access) {
+        console.log('[DEBUG] User has full access. Unlocking all adjudicators.');
+        allAdjudicators.forEach(adj => purchasedAdjudicators.add(adj.name));
+      } else if (user.has_subscription) {
+        console.log('[DEBUG] User has active subscription. Unlocking all adjudicators.');
+        allAdjudicators.forEach(adj => purchasedAdjudicators.add(adj.name));
+      }
+      // Otherwise, load only their individual purchases
+      else {
+        console.log('[DEBUG] User does not have full access. Loading individual purchases.');
+        const purchasesResponse = await fetch('/my-purchases', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (purchasesResponse.ok) {
+          const purchases = await purchasesResponse.json();
+          purchases.forEach(p => purchasedAdjudicators.add(p.adjudicator_name));
+        }
+      }
+      console.log('[DEBUG] Final access list:', Array.from(purchasedAdjudicators));
+    }
+  } catch (e) {
+    console.error('[DEBUG] Failed to load user access status:', e);
+  }
+}
+
+// Stripe will be initialized after DOM loads
+let stripe = null;
+let elements = null;
+let cardElement = null;
+
+
+
+
+// These functions are now outside, making them globally accessible
+function openIntroModal() {
+    const modal = document.getElementById('introModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.classList.add('modal-open');
+    }
+}
+
+function closeIntroModal() {
+    const modal = document.getElementById('introModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.classList.remove('modal-open');
+        localStorage.setItem('hasSeenIntro', 'true');
+    }
+}
+
+function setupIntroModal() {
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.intro-slide');
+    const dots = document.querySelectorAll('.nav-dot');
+    const nextBtn = document.getElementById('nextSlide');
+    const prevBtn = document.getElementById('prevSlide');
+    const startBtn = document.getElementById('startExploringBtn');
+    const carouselNav = document.querySelector('.carousel-nav');
+    const modal = document.getElementById('introModal');
+
+    // This function stays inside because it depends on all the local variables above
+    function showSlide(n) {
+        if (n >= slides.length) n = slides.length - 1;
+        if (n < 0) n = 0;
+        currentSlide = n;
+
+        slides.forEach(slide => slide.classList.remove('active'));
+        dots.forEach(dot => dot.classList.remove('active'));
+
+        slides[currentSlide].classList.add('active');
+        dots[currentSlide].classList.add('active');
+        
+        prevBtn.style.display = currentSlide === 0 ? 'none' : 'flex';
+        nextBtn.style.display = currentSlide === slides.length - 1 ? 'none' : 'flex';
+
+        if (currentSlide === slides.length - 1) {
+            startBtn.style.display = 'block';
+            carouselNav.style.display = 'none';
+        } else {
+            startBtn.style.display = 'none';
+            carouselNav.style.display = 'flex';
+        }
+    }
+
+    // Attach event listeners
+    nextBtn.addEventListener('click', () => showSlide(currentSlide + 1));
+    prevBtn.addEventListener('click', () => showSlide(currentSlide - 1));
+    dots.forEach(dot => {
+        dot.addEventListener('click', (e) => {
+            const slideIndex = parseInt(e.target.getAttribute('data-slide'));
+            showSlide(slideIndex);
+        });
+    });
+    startBtn.addEventListener('click', closeIntroModal); // This calls the global function
+
+    // IMPORTANT: Check if the modal is active when setting up, and if so, show the first slide.
+    if (modal && modal.classList.contains('active')) {
+        showSlide(0);
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize Stripe
+    stripe = Stripe('pk_live_51SGxeHAIOAykxV504w220IB6SNF8PWmMovA3Vcj7BU34qr4lxSftuuc6vhGtb0CURpjiR2e2OMMNdyMuzVXbH286002Y11rMPE');
+    elements = stripe.elements();
+    cardElement = elements.create('card', {
+        style: {
+            base: {
+                fontSize: '16px',
+                color: '#333',
+                '::placeholder': {
+                    color: '#aaa',
+                },
+            },
+        },
+    });
+
+    const termsCheckbox = document.getElementById('terms-checkbox');
+    const paymentButton = document.getElementById('submit-payment');
+    if (termsCheckbox && paymentButton) {
+        termsCheckbox.addEventListener('change', () => {
+            paymentButton.disabled = !termsCheckbox.checked;
+        });
+    }
+    
+    cardElement.mount('#card-element');
+    
+    cardElement.on('change', function(event) {
+        const displayError = document.getElementById('card-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
+    });
+
+    // Setup auth forms
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    document.getElementById('registerForm').addEventListener('submit', handleRegister);
+    
+    // Apply saved theme first
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.remove('light');
+        document.body.classList.add('dark');
+    }
+
+    // Load all adjudicators (needed for the full access check)
+    await loadAdjudicators();
+    
+    // Load the user's specific access status
+    await loadUserAccessStatus();
+
+    // Now that access is known, re-render the list to apply blurring correctly
+    renderAdjudicatorsList();
+
+    checkUrlParams();
+    setupEventListeners();
+
+    // --- Onboarding Modal Logic ---
+    if (!localStorage.getItem('hasSeenIntro')) {
+        openIntroModal(); // This now calls the globally accessible function
+    }
+    setupIntroModal(); // This sets up the listeners and shows the first slide if the modal is open
+});
+
+
+
+function initializeDecisionSearch() {
+  if (selectedAdjudicator && selectedAdjudicator.decisions) {
+    originalDecisions = [...selectedAdjudicator.decisions];
+    console.log('[DEBUG] initializeDecisionSearch - Set originalDecisions to:', originalDecisions.length, 'decisions');
+    console.log('[DEBUG] Decision IDs:', originalDecisions.map(d => d.id));
+  } else {
+    console.log('[DEBUG] initializeDecisionSearch - No decisions found!');
+    originalDecisions = [];
+  }
+  isDecisionSearchActive = false;
+}
+
+function checkUrlParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryParam = urlParams.get('q');
+  
+  if (queryParam) {
+    // Populate the search box
+    const searchInput = document.getElementById('adjudicatorSearch');
+    if (searchInput) {
+      searchInput.value = queryParam;
+    }
+    
+    // Trigger the search
+    filterAdjudicators();
+    
+    // If there's exactly one match, auto-select it
+    if (filteredAdjudicators.length === 1) {
+      selectAdjudicator(filteredAdjudicators[0].id);
+    }
+  }
+}
+
+function setupEventListeners() {
+  document.getElementById('adjudicatorSearch').addEventListener('input', filterAdjudicators);
+  document.getElementById('sortBy').addEventListener('change', filterAdjudicators);
+  document.getElementById('view-insights-btn').addEventListener('click', closeSuccessModal);
+
+}
+
+function searchAdjudicators() {
+  filterAdjudicators();
+}
+
+async function loadAdjudicators() {
+  const container = document.getElementById('adjudicatorsList');
+  container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading adjudicators...</div>';
+  
+  try {
+    const response = await fetch('/api/adjudicators');
+    if (!response.ok) throw new Error('Failed to fetch adjudicators');
+    
+    allAdjudicators = await response.json();
+    filteredAdjudicators = [...allAdjudicators];
+    
+    filterAdjudicators();  // This will sort AND render
+    
+  } catch (error) {
+    console.error('Error loading adjudicators:', error);
+    container.innerHTML = '<div class="loading">Error loading adjudicators. Please try again later.</div>';
+  }
+}
+
+
+
+
+function filterAdjudicators() {
+  const searchTerm = document.getElementById('adjudicatorSearch').value.toLowerCase();
+  const sortBy = document.getElementById('sortBy').value;
+
+  filteredAdjudicators = allAdjudicators.filter(adj =>
+    adj.name.toLowerCase().includes(searchTerm)
+  );
+
+  // Sort
+  filteredAdjudicators.sort((a, b) => {
+    // Always pin Russell Welsh to the top
+    if (a.name === 'Russell Welsh') {
+      console.log('[DEBUG] Pinning Russell Welsh to top');
+      return -1;
+    }
+    if (b.name === 'Russell Welsh') {
+      console.log('[DEBUG] Pinning Russell Welsh to top');
+      return 1;
+    }
+    
+    switch (sortBy) {
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'award_rate':
+        return b.avgAwardRate - a.avgAwardRate;
+      case 'decisions':
+      default:
+        return b.totalDecisions - a.totalDecisions;
+    }
+  });
+
+  console.log('[DEBUG] First adjudicator after sort:', filteredAdjudicators[0]?.name);
+  renderAdjudicatorsList();
+}
+
+function renderAdjudicatorsList() {
+  const container = document.getElementById('adjudicatorsList');
+
+  if (filteredAdjudicators.length === 0) {
+    container.innerHTML = '<div class="loading">No adjudicators found.</div>';
+    return;
+  }
+
+
+  container.innerHTML = filteredAdjudicators.map(adj => {
+    const decisionCount = adj.totalDecisions;
+    const awardRate = adj.avgAwardRate.toFixed(1) + '%';
+
+    // Check if THIS specific adjudicator is purchased OR if it's Russell Welsh (demo)
+    const isPurchased = purchasedAdjudicators.has(adj.name);
+    const isDemo = adj.name === 'Russell Welsh';
+    const shouldBlur = !isPurchased && !isDemo;
+
+    const decisionHtml = shouldBlur ? `<span class="blur-value">${decisionCount}</span>` : decisionCount;
+    const awardHtml = shouldBlur ? `<span class="blur-value">${awardRate}</span>` : awardRate;
+
+    return `
+    <div class="adjudicator-item ${selectedAdjudicator?.id === adj.id ? 'selected' : ''}"
+         onclick="selectAdjudicator('${adj.id.replace(/'/g, "\\'")}')">
+      <div class="adjudicator-name">
+        ${sanitizeHtml(adj.name)}
+        ${adj.name === 'Russell Welsh' ? '<span style="background: #00c97c; color: white; font-size: 10px; padding: 2px 6px; border-radius: 3px; margin-left: 8px; font-weight: 600;">FREE DEMO</span>' : ''}
+      </div>
+      <div class="adjudicator-stats">
+        <div class="stat-item">
+          <span class="stat-value">${decisionHtml}</span>
+          <span>Decisions</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">${awardHtml}</span>
+          <span> Avg Portion Awarded</span>
+        </div>
+      </div>
+    </div>
+  `}).join('');
+}
+
+async function selectAdjudicator(adjudicatorId) {
+    selectedAdjudicator = allAdjudicators.find(adj => adj.id === adjudicatorId);
+    if (!selectedAdjudicator) return;
+
+    const rightPane = document.getElementById('rightPane');
+    rightPane.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading...</div>';
+    
+    console.log(`[DEBUG] Starting process for: ${selectedAdjudicator.name}`);
+
+    try {
+        let hasAccess = false;
+        
+        // Always unlock Russell Welsh as a demo
+        if (selectedAdjudicator.name === 'Russell Welsh') {
+            console.log('[DEBUG] Russell Welsh is demo - always unlocked');
+            hasAccess = true;
+            purchasedAdjudicators.add('Russell Welsh');
+        } else {
+            const token = localStorage.getItem('purchase_token');
+
+            if (token) {
+                console.log('[DEBUG] Token found. Checking if valid...');
+                const isValid = await refreshTokenIfNeeded();
+                
+                if (!isValid) {
+                    console.log('[DEBUG] Token invalid or expired');
+                } else {
+                    console.log('[DEBUG] Token valid. Fetching from /check-adjudicator-access...');
+                    try {
+                        const accessResponse = await fetch(`/check-adjudicator-access/${encodeURIComponent(selectedAdjudicator.name)}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+
+                        if (accessResponse.ok) {
+                            const accessData = await accessResponse.json();
+                            hasAccess = accessData.hasAccess;
+                            
+                            if (hasAccess) {
+                                purchasedAdjudicators.add(selectedAdjudicator.name);
+                            }
+                            
+                            console.log('[DEBUG] Access check successful. Has Access:', hasAccess);
+                        }
+                    } catch (e) {
+                        console.error('[DEBUG] Access check error:', e);
+                    }
+                }
+            }
+        }
+
+        // Re-render sidebar to update blur states
+        renderAdjudicatorsList();
+
+        console.log('[DEBUG] Fetching from /api/adjudicator...');
+        const decisionsResponse = await fetch(`/api/adjudicator/${encodeURIComponent(selectedAdjudicator.name)}`);
+        
+        if (!decisionsResponse.ok) {
+            throw new Error('Failed to fetch decisions');
+        }
+        
+        const decisions = await decisionsResponse.json();
+        selectedAdjudicator.decisions = decisions;
+        initializeDecisionSearch();
+
+        showAdjudicatorDetail(hasAccess);
+
+    } catch (error) {
+        console.error('CRITICAL ERROR in selectAdjudicator:', error);
+        rightPane.innerHTML = '<div class="loading">Error loading decisions. Please try again.</div>';
+    }
+}
+
+
+function showAdjudicatorDetail(hasAccess = false) {
+  const rightPane = document.getElementById('rightPane');
+  rightPane.className = 'right-pane';
+
+  const avgClaimAmount = selectedAdjudicator.totalClaimAmount / selectedAdjudicator.totalDecisions;
+  const avgAwardedAmount = selectedAdjudicator.totalAwardedAmount / selectedAdjudicator.totalDecisions;
+
+  const subtitleHtml = !hasAccess ?
+    `<span class="blur-value">${selectedAdjudicator.totalDecisions}</span> decisions analysed` :
+    `${selectedAdjudicator.totalDecisions} decisions analysed`;
+
+  const lockedOverlay = !hasAccess ? `
+    <div class="locked-overlay">
+      <div class="locked-content">
+        <h3>🔒 Unlock Full Adjudicator Insights for <strong>${sanitizeHtml(selectedAdjudicator.name)}</strong></h3>
+        <p>Get access to detailed statistics, decision patterns, and the complete history of decisions for <strong>${sanitizeHtml(selectedAdjudicator.name)}</strong></p>
+        <div class="price-tag">$69.95 <sup style="font-size: 16px;">incl GST</sup></div>
+        <p style="color: #666; font-size: 14px;">One-time payment • Chargeable disbursement</p>
+        <button class="unlock-btn" onclick="unlockAdjudicator('${selectedAdjudicator.name.replace(/'/g, "\\'")}')">
+          Unlock Access
+        </button>
+      </div>
+    </div>
+  ` : '';
+
+  rightPane.innerHTML = `
+    <div class="adjudicator-detail">
+      <div class="detail-header">
+        <div class="detail-name">${sanitizeHtml(selectedAdjudicator.name)}</div>
+        <div class="detail-subtitle">${subtitleHtml}</div>
+      </div>
+
+      <div class="detail-content ${!hasAccess ? 'blur-stats' : ''}">
+        ${lockedOverlay}
+        <div class="detail-tabs">
+          <button class="tab-btn active" onclick="showTab('stats')">Statistics</button>
+          <button class="tab-btn" onclick="showTab('decisions')">Decisions</button>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div id="stats-tab" class="tab-content active">
+          
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.totalDecisions}</span>
+              <div class="stat-label">Total Decisions</div>
+              <div class="info-icon">i
+                <div class="tooltip">The total number of adjudication decisions made by this adjudicator in the database</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.avgAwardRate.toFixed(1)}%</span>
+              <div class="stat-label">Avg Portion of Claim Awarded Per Decision</div>
+              <div class="info-icon">i
+                <div class="tooltip">The average percentage of the claimed amount that was awarded per decision. Calculated from each individual decision's award rate to prevent unusually large claims from skewing the average.</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${formatCurrency(selectedAdjudicator.totalClaimAmount)}</span>
+              <div class="stat-label">Total Claimed Amount</div>
+              <div class="info-icon">i
+                <div class="tooltip">The sum of all payment claim amounts across all decisions by this adjudicator</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${formatCurrency(selectedAdjudicator.totalAwardedAmount)}</span>
+              <div class="stat-label">Total Adjudicated Amount</div>
+              <div class="info-icon">i
+                <div class="tooltip">The sum of all amounts adjudicated (awarded) across all decisions by this adjudicator</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${formatCurrency(avgClaimAmount)}</span>
+              <div class="stat-label">Avg Claimed Amount</div>
+              <div class="info-icon">i
+                <div class="tooltip">The average payment claim amount per decision</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${formatCurrency(avgAwardedAmount)}</span>
+              <div class="stat-label">Avg Adjudicated Amount</div>
+              <div class="info-icon">i
+                <div class="tooltip">The average adjudicated amount per decision</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.avgClaimantFeeProportion.toFixed(1)}%</span>
+              <div class="stat-label">Avg Claimant Fee Proportion</div>
+              <div class="info-icon">i
+                <div class="tooltip">The average percentage of adjudicator fees paid by the claimant across all decisions</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.avgRespondentFeeProportion.toFixed(1)}%</span>
+              <div class="stat-label">Avg Respondent Fee Proportion</div>
+              <div class="info-icon">i
+                <div class="tooltip">The average percentage of adjudicator fees paid by the respondent across all decisions</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">${selectedAdjudicator.zeroAwardCount || 0}</span>
+              <div class="stat-label">$Nil Decisions</div>
+              <div class="info-icon">i
+                <div class="tooltip">The number of decisions where the adjudicator awarded $0.00 or otherwise found he or she did not have jurisdiction.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Decisions Tab -->
+        <div id="decisions-tab" class="tab-content">
+          <!-- Search Bar with Loading Bar -->
+          <div style="margin-bottom: 15px; position: relative;">
+            <div id="decisionSearchLoadingBar" style="position: absolute; top: 0; left: 0; width: 0%; height: 3px; background: linear-gradient(to right, #00c97c, #00ffa3); transition: width 0.3s ease; z-index: 10; border-radius: 3px;"></div>
+            
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+              <input type="text" id="decisionSearchInput" 
+                     placeholder="Search decisions (e.g., 'defect AND delay' or 'payment w/5 claim')"
+                     style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;"
+                     onkeydown="if(event.key==='Enter') searchDecisions()">
+              <button type="button" onclick="searchDecisions()" 
+                      style="padding: 10px 20px; background: #00c97c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Search
+              </button>
+              <button type="button" onclick="clearDecisionSearch()" 
+                      style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Clear
+              </button>
+            </div>
+            
+            <!-- Search Results Counter -->
+            <div id="decisionSearchResults" style="font-size: 13px; color: #666; margin-bottom: 10px; display: none;">
+              <span id="decisionSearchCount"></span>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0;">All Decisions</h4>
+            <select id="decisionSort" onchange="sortDecisions()" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
+              <option value="date_newest">Date (Newest First)</option>
+              <option value="date_oldest">Date (Oldest First)</option>
+              <option value="az">Claimant (A-Z)</option>
+              <option value="za">Claimant (Z-A)</option>
+              <option value="claim_high">Claim Amount (Highest First)</option>
+              <option value="claim_low">Claim Amount (Lowest First)</option>
+              <option value="award_high">Adjudicated Amount (Highest First)</option>
+              <option value="award_low">Adjudicated Amount (Lowest First)</option>
+            </select>
+          </div>
+          <div id="decisionsListContainer" class="decisions-list">
+            ${renderDecisionItems(selectedAdjudicator.decisions, hasAccess)}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+
+
+function renderDecisionItems(decisions, hasAccess, searchQuery = null) {
+    if (!decisions || decisions.length === 0) {
+        return '<div class="loading">No decisions found</div>';
+    }
+
+    return decisions.map(decision => {
+        const decisionTitleHtml = !hasAccess ?
+            (decision.title || '').split(' v ').map(name => `<span class="blur-value">${sanitizeHtml(name)}</span>`).join(' v ') :
+            sanitizeHtml(decision.title);
+
+        const decisionLinkHtml = decision.pdfPath ?
+            (!hasAccess ?
+                `<span class="decision-link disabled">Open Decision (PDF)</span>` :
+                `<a href="#" class="decision-link" onclick="event.preventDefault(); openDecision('${decision.id}', '${decision.pdfPath}')">Open Decision (PDF)</a>`
+            ) :
+            `<span style="color: #999;">PDF not available</span>`;
+
+        return `
+            <div class="decision-item">
+              <div class="decision-title">${decisionTitleHtml}</div>
+              <div class="decision-meta">
+                <div><strong>Date:</strong> <span>${decision.date || 'Unknown'}</span></div>
+                <div><strong>Claim:</strong> <span>$${Math.round(decision.claimAmount).toLocaleString()}</span></div>
+                <div><strong>Awarded:</strong> <span>$${Math.round(decision.awardedAmount).toLocaleString()}</span></div>
+                ${(decision.claimantFeeProportion > 0 || decision.respondentFeeProportion > 0) ? `
+                  <div><strong>Claimant Fee:</strong> <span>${decision.claimantFeeProportion > 0 ? decision.claimantFeeProportion.toFixed(1) : (100 - decision.respondentFeeProportion).toFixed(1)}%</span></div>
+                  <div><strong>Respondent Fee:</strong> <span>${decision.respondentFeeProportion > 0 ? decision.respondentFeeProportion.toFixed(1) : (100 - decision.claimantFeeProportion).toFixed(1)}%</span></div>
+                ` : ''}
+              </div>
+              <div class="decision-actions">
+  ${decisionLinkHtml}
+  <span style="color:#666; margin:0 6px;">|</span>
+  ${!hasAccess ?
+    `<span class="decision-link disabled">Ask SopalAI</span>` :
+    `<a href="javascript:void(0)" class="decision-link" onclick="summariseDecisionInAdjudicators('${decision.id}')">
+      Ask SopalAI
+    </a>`
+  }
+</div>
+
+              ${searchQuery && decision.matchedText ? `
+                <div class="snippet" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 12px; color: #333;">
+                  ${extractSnippet(decision.matchedText, searchQuery)}
+                </div>
+              ` : ''}
+              
+              <!-- AI Chat Container -->
+              <div id="ai-container-${decision.id}" class="ai-container" style="display:none; margin-top: 15px;">
+                  <div class="chat-messages" id="chat-messages-${decision.id}"></div>
+                  <div class="chat-input-area" id="chat-input-area-${decision.id}" style="display:none;">
+                      <input type="text" id="chat-input-${decision.id}" placeholder="Ask a follow-up question..." onkeydown="if(event.key==='Enter') sendChatMessageInAdjudicators('${decision.id}')">
+                      <button onclick="sendChatMessageInAdjudicators('${decision.id}')" aria-label="Send message">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                      </button>
+                  </div>
+              </div>
+            </div>
+        `;
+    }).join('');
+}
+
+
+
+
+
+function showTab(tabName) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+  event.target.classList.add('active');
+  document.getElementById(`${tabName}-tab`).classList.add('active');
+}
+
+function sortDecisions() {
+  const sortBy = document.getElementById('decisionSort').value;
+  
+  selectedAdjudicator.decisions.sort((a, b) => {
+    switch (sortBy) {
+      case 'date_newest':
+        return (b.date || '').localeCompare(a.date || '');
+      case 'date_oldest':
+        return (a.date || '').localeCompare(b.date || '');
+      case 'az':
+        return (a.claimant || '').localeCompare(b.claimant || '');
+      case 'za':
+        return (b.claimant || '').localeCompare(a.claimant || '');
+      case 'claim_high':
+        return b.claimAmount - a.claimAmount;
+      case 'claim_low':
+        return a.claimAmount - b.claimAmount;
+      case 'award_high':
+        return b.awardedAmount - a.awardedAmount;
+      case 'award_low':
+        return a.awardedAmount - b.awardedAmount;
+      default:
+        return 0;
+    }
+  });
+  
+  const hasAccess = !document.querySelector('.detail-content.blur-stats');
+  const container = document.getElementById('decisionsListContainer');
+  container.innerHTML = renderDecisionItems(selectedAdjudicator.decisions, hasAccess);
+}
+
+async function openDecision(decisionId, pdfPath) {
+  try {
+    const response = await fetch(`/open?p=${encodeURIComponent(pdfPath)}`);
+    const data = await response.json();
+    if (data.url) {
+      window.open(data.url, '_blank');
+    } else {
+      alert('PDF not available');
+    }
+  } catch (error) {
+    console.error('Error opening decision:', error);
+    alert('Error opening decision PDF');
+  }
+}
+
+// Auth Modal Functions
+function showAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+  
+  event.target.classList.add('active');
+  document.getElementById(tab + 'Form').classList.add('active');
+  
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('registerError').textContent = '';
+}
+
+function closeAuthModal() {
+  document.getElementById('authModal').classList.remove('active');
+}
+
+function closePaymentModal() {
+  document.getElementById('paymentModal').classList.remove('active');
+  currentAdjudicatorForPurchase = null;
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const errorDiv = document.getElementById('loginError');
+  
+  try {
+    const formData = new FormData();
+    formData.append('username', email);
+    formData.append('password', password);
+    
+    const response = await fetch('/purchase-login', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Login failed');
+    }
+    
+    const data = await response.json();
+    localStorage.setItem('purchase_token', data.access_token);
+    userToken = data.access_token;
+    
+    closeAuthModal();
+    
+    // Check if they were trying to unlock an adjudicator
+    const adjudicatorToUnlock = sessionStorage.getItem('unlock_adjudicator_after_login');
+    if (adjudicatorToUnlock && currentAdjudicatorForPurchase) {
+      sessionStorage.removeItem('unlock_adjudicator_after_login');
+      showPaymentModal();
+    }
+    
+  } catch (error) {
+    errorDiv.textContent = error.message;
+  }
+}
+
+
+
+async function downloadSummary() {
+  const token = localStorage.getItem('purchase_token');
+  if (!token) {
+    alert("You must be logged in to download a summary.");
+    return;
+  }
+
+  const name = selectedAdjudicator.name;
+  const button = event.target;
+  button.textContent = "Generating...";
+  button.disabled = true;
+
+  // Create FormData to send in the POST body
+  const formData = new FormData();
+  formData.append('adjudicator_name', name);
+
+  try {
+    const res = await fetch('/generate-summary-pdf', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to generate PDF. You may not have access.');
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name}_SopalInsights.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+  } catch (error) {
+    console.error("PDF Download Error:", error);
+    alert(error.message);
+  } finally {
+    button.textContent = "Summary (PDF)";
+    button.disabled = false;
+  }
+}
+
+
+async function handleRegister(e) {
+  e.preventDefault();
+  
+  const email = document.getElementById('registerEmail').value;
+  const password = document.getElementById('registerPassword').value;
+  const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+  const firstName = document.getElementById('registerFirstName').value;
+  const lastName = document.getElementById('registerLastName').value;
+  const firmName = document.getElementById('registerFirmName').value;
+  const abn = document.getElementById('registerABN').value;
+  const billingAddress = document.getElementById('registerBillingAddress').value;
+  const billingCity = document.getElementById('registerBillingCity').value;
+  const billingState = document.getElementById('registerBillingState').value;
+  const billingPostcode = document.getElementById('registerBillingPostcode').value;
+  const employeeSize = document.getElementById('registerEmployeeSize').value;
+  const phone = document.getElementById('registerPhone').value;
+  const errorDiv = document.getElementById('registerError');
+  
+  // Validation
+  const errors = [];
+  
+  if (!email) errors.push('Email is required');
+  if (!password) errors.push('Password is required');
+  if (password !== passwordConfirm) errors.push('Passwords do not match');
+  if (password.length < 8) errors.push('Password must be at least 8 characters');
+  if (!firstName) errors.push('First name is required');
+  if (!lastName) errors.push('Last name is required');
+  if (!billingAddress) errors.push('Billing address is required');
+  if (!billingCity) errors.push('City is required');
+  if (!billingState) errors.push('State is required');
+  if (!billingPostcode) errors.push('Postcode is required');
+  
+  // ABN validation only if provided
+  if (abn && abn.trim()) {
+    const abnCleaned = abn.replace(/\s/g, '');
+    if (abnCleaned.length !== 11 || !/^\d+$/.test(abnCleaned)) {
+      errors.push('ABN must be exactly 11 digits');
+    }
+  }
+  
+  if (errors.length > 0) {
+    errorDiv.innerHTML = errors.map(err => `• ${err}`).join('<br>');
+    errorDiv.className = 'auth-error';
+    errorDiv.style.display = 'block';
+    return;
+  }
+  
+  try {
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('password', password);
+    formData.append('first_name', firstName);
+    formData.append('last_name', lastName);
+    formData.append('firm_name', firmName || '');
+    formData.append('abn', abn ? abn.replace(/\s/g, '') : '');
+    formData.append('billing_address', billingAddress);
+    formData.append('billing_city', billingCity);
+    formData.append('billing_state', billingState);
+    formData.append('billing_postcode', billingPostcode);
+    formData.append('employee_size', employeeSize || '');
+    formData.append('phone', phone || '');
+    
+    const response = await fetch('/purchase-register', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Registration failed');
+    }
+    
+    // Auto-login after successful registration
+    const loginFormData = new FormData();
+    loginFormData.append('username', email);
+    loginFormData.append('password', password);
+    
+    const loginResponse = await fetch('/purchase-login', {
+      method: 'POST',
+      body: loginFormData
+    });
+    
+    const loginData = await loginResponse.json();
+    localStorage.setItem('purchase_token', loginData.access_token);
+    userToken = loginData.access_token;
+    
+    closeAuthModal();
+    
+    // Check if they were trying to unlock an adjudicator
+    const adjudicatorToUnlock = sessionStorage.getItem('unlock_adjudicator_after_login');
+    if (adjudicatorToUnlock && currentAdjudicatorForPurchase) {
+      sessionStorage.removeItem('unlock_adjudicator_after_login');
+      showPaymentModal();
+    }
+    
+  } catch (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.className = 'auth-error';
+    errorDiv.style.display = 'block';
+  }
+}
+
+
+async function checkAuthStatus() {
+  const token = localStorage.getItem('purchase_token');
+  if (token) {
+    userToken = token;
+    try {
+      const response = await fetch('/purchase-me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        return true;
+      }
+    } catch (e) {
+      console.error('Auth check failed:', e);
+    }
+  }
+  return false;
+}
+
+// Add this after the checkAuthStatus function
+async function refreshTokenIfNeeded() {
+  const token = localStorage.getItem('purchase_token');
+  if (!token) return false;
+
+  try {
+    const response = await fetch('/purchase-me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (response.status === 401) {
+      // Token expired, remove it
+      localStorage.removeItem('purchase_token');
+      userToken = null;
+      return false;
+    }
+    
+    return response.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+function showPaymentModal() {
+  document.getElementById('modalAdjudicatorName').textContent = currentAdjudicatorForPurchase;
+  document.getElementById('paymentModal').classList.add('active');
+}
+
+async function unlockAdjudicator(adjudicatorName) {
+    currentAdjudicatorForPurchase = adjudicatorName;
+    document.getElementById('terms-adjudicator-name').textContent = adjudicatorName;
+
+    const token = localStorage.getItem('purchase_token');
+    if (!token) {
+        // Instead of redirecting, show auth modal
+        document.getElementById('authModal').classList.add('active');
+        
+        // Store which adjudicator they want to unlock
+        sessionStorage.setItem('unlock_adjudicator_after_login', adjudicatorName);
+        return;
+    }
+
+    // If user is already logged in, proceed directly to the payment modal
+    showPaymentModal();
+}
+
+
+
+// Handle payment form submission
+document.getElementById('payment-form').addEventListener('submit', async (e) => {
+
+  e.preventDefault();
+
+  const submitButton = document.getElementById('submit-payment');
+  submitButton.disabled = true;
+  submitButton.querySelector('#button-text').textContent = 'Processing...';
+
+  try {
+    const token = localStorage.getItem('purchase_token');
+    if (!token) throw new Error('Not authenticated. Please log in again.');
+
+    // Get the payment intent details
+    const intentResponse = await fetch('/create-payment-intent', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
+    });
+
+    if (!intentResponse.ok) {
+      const error = await intentResponse.json();
+      throw new Error(error.detail || 'Could not initiate payment.');
+    }
+
+    const { clientSecret, paymentIntentId } = await intentResponse.json();
+
+    // Confirm the payment on the frontend
+    const { error } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: { card: cardElement }
+    });
+    if (error) throw new Error(error.message);
+
+    // Confirm the purchase on the backend and get the invoice ID
+    const confirmResponse = await fetch('/confirm-purchase', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `payment_intent_id=${paymentIntentId}&adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
+    });
+    
+    if (!confirmResponse.ok) throw new Error('Failed to confirm purchase on server.');
+    
+    const confirmData = await confirmResponse.json();
+    const adjudicatorName = currentAdjudicatorForPurchase;
+    purchasedAdjudicators.add(adjudicatorName);
+    const paymentModal = document.getElementById('paymentModal');
+    const modalContent = paymentModal.querySelector('.payment-modal-content');
+    modalContent.innerHTML = `
+      <div style="text-align: center; padding: 40px;">
+        <div style="font-size: 64px; color: #00c97c; margin-bottom: 20px;">✓</div>
+        <h2 style="color: #00c97c; margin-bottom: 15px;">Payment Successful!</h2>
+        <p style="margin-bottom: 30px; font-size: 16px;">
+          You now have permanent access to <strong>${adjudicatorName}</strong>'s insights.
+        </p>
+        ${confirmData.receiptUrl ? `
+          <button onclick="window.open('${confirmData.receiptUrl}', '_blank')"
+                  style="background: #00c97c; color: white; border: none; padding: 14px 28px;
+                         border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600;
+                         margin-bottom: 10px; width: 100%;">
+            View Receipt
+          </button>
+        ` : ''}
+        <button onclick="closeSuccessAndRefresh()"
+                style="background: #6c757d; color: white; border: none; padding: 14px 28px;
+                       border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600;
+                       width: 100%;">
+          View Insights
+        </button>
+      </div>
+    `;
+
+  } catch (error) {
+    document.getElementById('card-errors').textContent = error.message;
+  } finally {
+    submitButton.disabled = false;
+    submitButton.querySelector('#button-text').textContent = 'Complete Purchase';
+  }
+});
+
+// Add these helper functions after the payment form handler
+
+function closeSuccessAndRefresh() {
+  closePaymentModal();
+  // Refresh the adjudicator details to show unlocked state
+  if (selectedAdjudicator) {
+    selectAdjudicator(selectedAdjudicator.id);
+  }
+}
+
+// --- NEW: Success Modal Functions ---
+function showSuccessModal(adjudicatorName, invoiceId) {
+  document.getElementById('successModalAdjudicatorName').textContent = adjudicatorName;
+  const downloadBtn = document.getElementById('download-invoice-btn');
+
+  if (invoiceId) {
+    downloadBtn.style.display = 'block';
+    // Use .onclick to easily replace any previous listener
+    downloadBtn.onclick = () => handleInvoiceDownload(invoiceId);
+  } else {
+    downloadBtn.style.display = 'none';
+  }
+
+  document.getElementById('paymentSuccessModal').classList.add('active');
+}
+
+// 4. Add the new download handler function
+async function handleInvoiceDownload(invoiceId) {
+  const downloadBtn = document.getElementById('download-invoice-btn');
+  const originalText = downloadBtn.textContent;
+  downloadBtn.textContent = 'Downloading...';
+  downloadBtn.disabled = true;
+
+  try {
+    const token = localStorage.getItem('purchase_token');
+    const response = await fetch(`/download-invoice/${invoiceId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      throw new Error('Could not download invoice. Please try again later from your account page.');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    // The filename is set by the server's Content-Disposition header
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    downloadBtn.textContent = originalText;
+    downloadBtn.disabled = false;
+  }
+}
+
+function closeSuccessModal() {
+  document.getElementById('paymentSuccessModal').classList.remove('active');
+  // Refresh the adjudicator details to show the unlocked state
+  if (selectedAdjudicator) {
+    selectAdjudicator(selectedAdjudicator.id);
+  }
+}
+
+
+// Utility functions
+function sanitizeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatCurrency(amount) {
+  if (!amount) return '$0';
+  if (amount >= 1000000) {
+    return '$' + (amount / 1000000).toFixed(1) + 'M';
+  }
+  if (amount >= 1000) {
+    return '$' + (amount / 1000).toFixed(0) + 'K';
+  }
+  return '$' + Math.round(amount).toLocaleString();
+}
+
+  // Enhanced registration handler
+async function handleRegister(e) {
+  e.preventDefault();
+  
+  const email = document.getElementById('registerEmail').value;
+  const password = document.getElementById('registerPassword').value;
+  const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+  const firstName = document.getElementById('registerFirstName').value;
+  const lastName = document.getElementById('registerLastName').value;
+  const firmName = document.getElementById('registerFirmName').value;
+  const abn = document.getElementById('registerABN').value;
+  const billingAddress = document.getElementById('registerBillingAddress').value;
+  const billingCity = document.getElementById('registerBillingCity').value;
+  const billingState = document.getElementById('registerBillingState').value;
+  const billingPostcode = document.getElementById('registerBillingPostcode').value;
+  const employeeSize = document.getElementById('registerEmployeeSize').value;
+  const phone = document.getElementById('registerPhone').value;
+  const errorDiv = document.getElementById('registerError');
+  
+  // Validation
+  if (password !== passwordConfirm) {
+    errorDiv.textContent = 'Passwords do not match';
+    return;
+  }
+  
+  if (password.length < 8) {
+    errorDiv.textContent = 'Password must be at least 8 characters';
+    return;
+  }
+  
+  // Clean ABN
+  const abnCleaned = abn.replace(/\s/g, '');
+  if (abnCleaned && (abnCleaned.length !== 11 || !/^\d+$/.test(abnCleaned))) {
+    errorDiv.textContent = 'ABN must be exactly 11 digits';
+    return;
+  }
+  
+  try {
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('password', password);
+    formData.append('first_name', firstName);
+    formData.append('last_name', lastName);
+    formData.append('firm_name', firmName);
+    formData.append('abn', abnCleaned);
+    formData.append('billing_address', billingAddress);
+    formData.append('billing_city', billingCity);
+    formData.append('billing_state', billingState);
+    formData.append('billing_postcode', billingPostcode);
+    formData.append('employee_size', employeeSize);
+    formData.append('phone', phone);
+    
+    const response = await fetch('/purchase-register', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Registration failed');
+    }
+    
+    // Auto-login after successful registration
+    const loginFormData = new FormData();
+    loginFormData.append('username', email);
+    loginFormData.append('password', password);
+    
+    const loginResponse = await fetch('/purchase-login', {
+      method: 'POST',
+      body: loginFormData
+    });
+    
+    const loginData = await loginResponse.json();
+    localStorage.setItem('purchase_token', loginData.access_token);
+    userToken = loginData.access_token;
+    
+    closeAuthModal();
+    showPaymentModal();
+    
+  } catch (error) {
+    errorDiv.textContent = error.message;
+  }
+}
+
+// Update the event listener setup
+document.getElementById('registerForm').addEventListener('submit', handleRegister);
+
+// Store chat histories for each decision
+let chatHistoriesAdjudicators = {};
+
+async function summariseDecisionInAdjudicators(id) {
+    const container = document.getElementById(`ai-container-${id}`);
+    const messagesBox = document.getElementById(`chat-messages-${id}`);
+    const inputBox = document.getElementById(`chat-input-area-${id}`);
+
+    if (container.style.display === 'block') {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+    messagesBox.innerHTML = '<div class="loading-text-gradient">Generating summary...</div>';
+    inputBox.style.display = 'none';
+    chatHistoriesAdjudicators[id] = [];
+
+    try {
+        const res = await fetch(`/summarise/${id}`);
+        const data = await res.json();
+        messagesBox.innerHTML = '';
+
+        if (data.summary) {
+            addAiMessageAdjudicators(id, data.summary);
+            inputBox.style.display = 'flex';
+        } else {
+            addAiMessageAdjudicators(id, '⚠️ Failed to generate summary.');
+        }
+    } catch (e) {
+        messagesBox.innerHTML = '';
+        addAiMessageAdjudicators(id, '⚠️ Error contacting server.');
+    }
+}
+
+async function sendChatMessageInAdjudicators(id) {
+    const input = document.getElementById(`chat-input-${id}`);
+    const question = input.value.trim();
+    if (!question) return;
+
+    addUserMessageAdjudicators(id, question);
+    input.value = '';
+
+    const typingIndicator = addTypingIndicatorAdjudicators(id);
+
+    const history = chatHistoriesAdjudicators[id] || [];
+
+    try {
+        const res = await fetch(`/ask/${id}`, {
+            method: "POST",
+            body: new URLSearchParams({ question, history: JSON.stringify(history) }),
+            headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        });
+        const data = await res.json();
+
+        typingIndicator.remove();
+
+        if (data.answer) {
+            addAiMessageAdjudicators(id, data.answer);
+            chatHistoriesAdjudicators[id].push({ role: 'assistant', content: data.answer });
+        } else {
+            addAiMessageAdjudicators(id, `⚠️ Error: ${data.error || "Failed to get answer"}`);
+        }
+    } catch (e) {
+         typingIndicator.remove();
+         addAiMessageAdjudicators(id, `⚠️ Network or server error.`);
+    }
+}
+
+function addAiMessageAdjudicators(id, htmlContent) {
+    const messagesBox = document.getElementById(`chat-messages-${id}`);
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+    messageDiv.innerHTML = `
+        <div class="message-avatar">S</div>
+        <div class="message-content">
+            <div class="ai-output-content">${htmlContent}</div>
+        </div>
+    `;
+    messagesBox.appendChild(messageDiv);
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+function addUserMessageAdjudicators(id, text) {
+    const messagesBox = document.getElementById(`chat-messages-${id}`);
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message user-message';
+    messageDiv.innerHTML = `
+        <div class="message-avatar">U</div>
+        <div class="message-content">${sanitizeHtml(text)}</div>
+    `;
+    messagesBox.appendChild(messageDiv);
+    chatHistoriesAdjudicators[id].push({ role: 'user', content: text });
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+function addTypingIndicatorAdjudicators(id) {
+    const messagesBox = document.getElementById(`chat-messages-${id}`);
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'message ai-message typing-indicator';
+    typingDiv.innerHTML = `
+        <div class="message-avatar">S</div>
+        <div class="message-content">...</div>
+    `;
+    messagesBox.appendChild(typingDiv);
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+    return typingDiv;
+}
+
+</script>
+
+<script>
+
+function normalizeInput(s) {
+  return (s || '')
+    .replace(/[""]/g, '"')
+    .replace(/['']/g, "'")
+    .replace(/[–—‒―]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+
+
+// Profile nav is handled by main.js
+
+async function searchDecisions() {
+  const searchInput = document.getElementById('decisionSearchInput');
+  const query = searchInput.value.trim();
+  const loadingBar = document.getElementById('decisionSearchLoadingBar');
+  const resultsDiv = document.getElementById('decisionSearchResults');
+  const resultsCount = document.getElementById('decisionSearchCount');
+  
+  console.log('[DEBUG] Search clicked, query:', query);
+  console.log('[DEBUG] originalDecisions count:', originalDecisions.length);
+  
+  if (!query) {
+    clearDecisionSearch();
+    return;
+  }
+  
+  // Start loading bar
+  if (loadingBar) {
+    loadingBar.style.width = '30%';
+  }
+  
+  try {
+    isDecisionSearchActive = true;
+    
+    const processedQuery = normalizeInput(query);
+    console.log('[DEBUG] Processed query:', processedQuery);
+    
+    // Update loading bar
+    if (loadingBar) {
+      loadingBar.style.width = '60%';
+    }
+    
+    const filtered = await filterDecisionsLocally(originalDecisions, processedQuery);
+    console.log('[DEBUG] Filtered results:', filtered.length);
+    console.log('[DEBUG] Filtered decisions:', filtered);
+    
+    // Update loading bar
+    if (loadingBar) {
+      loadingBar.style.width = '90%';
+    }
+    
+    const hasAccess = !document.querySelector('.detail-content.blur-stats');
+    const container = document.getElementById('decisionsListContainer');
+    
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="loading">No matching decisions found. Try different search terms.</div>';
+      // Hide results counter when no results
+      if (resultsDiv) resultsDiv.style.display = 'none';
+    } else {
+      container.innerHTML = renderDecisionItems(filtered, hasAccess, processedQuery);
+      
+      // ADD THIS: Show results counter
+      if (resultsDiv && resultsCount) {
+        resultsCount.textContent = `Found ${filtered.length} matching decision${filtered.length === 1 ? '' : 's'} out of ${originalDecisions.length} total`;
+        resultsDiv.style.display = 'block';
+      }
+    }
+    
+    // Complete loading bar
+    if (loadingBar) {
+      loadingBar.style.width = '100%';
+      setTimeout(() => {
+        loadingBar.style.width = '0%';
+      }, 400);
+    }
+    
+  } catch (error) {
+    console.error('[ERROR] Search failed:', error);
+    alert('Search failed: ' + error.message);
+    
+    // Reset loading bar on error
+    if (loadingBar) {
+      loadingBar.style.width = '0%';
+    }
+  }
+}
+
+
+function clearDecisionSearch() {
+  const searchInput = document.getElementById('decisionSearchInput');
+  const loadingBar = document.getElementById('decisionSearchLoadingBar');
+  const resultsDiv = document.getElementById('decisionSearchResults');
+  
+  if (searchInput) {
+    searchInput.value = '';
+  }
+  
+  if (loadingBar) {
+    loadingBar.style.width = '0%';
+  }
+  
+  // Hide results counter
+  if (resultsDiv) {
+    resultsDiv.style.display = 'none';
+  }
+  
+  isDecisionSearchActive = false;
+  
+  const hasAccess = !document.querySelector('.detail-content.blur-stats');
+  const container = document.getElementById('decisionsListContainer');
+  
+  if (container && originalDecisions) {
+    container.innerHTML = renderDecisionItems(originalDecisions, hasAccess);
+  }
+}
+
+
+async function filterDecisionsLocally(decisions, query) {
+  console.log('[DEBUG] filterDecisionsLocally called with:', decisions.length, 'decisions');
+  
+  try {
+    // Batch fetch all decision texts in ONE request
+    const decisionIds = decisions.map(d => d.id);
+    console.log('[DEBUG] Fetching texts for:', decisionIds);
+    
+    const response = await fetch('/api/adjudicator-decisions-text', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(decisionIds)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch decision texts');
+    }
+    
+    const data = await response.json();
+    const textsMap = data.decisions;
+    
+    console.log('[DEBUG] Received texts for', Object.keys(textsMap).length, 'decisions');
+    
+    // Now filter locally with all the texts
+    const matches = [];
+    for (const decision of decisions) {
+      const fullText = textsMap[decision.id] || '';
+      
+      if (simpleMatchQuery(fullText, query)) {
+        matches.push({...decision, matchedText: fullText});
+        console.log(`[DEBUG] Match found in decision: ${decision.id}`);
+      }
+    }
+    
+    console.log(`[DEBUG] Total matches found: ${matches.length} out of ${decisions.length} decisions`);
+    return matches;
+    
+  } catch (e) {
+    console.error('[ERROR] Batch fetch failed:', e);
+    throw e;
+  }
+}
+
+
+function simpleMatchQuery(text, query) {
+  const lowerText = text.toLowerCase();
+  let lowerQuery = query.toLowerCase();
+  
+  console.log('[DEBUG] Matching query:', lowerQuery, 'against text length:', text.length);
+  
+  // Remove outer quotes if they exist (user typed "word" in search box)
+  lowerQuery = lowerQuery.replace(/^["']|["']$/g, '');
+  
+  // Handle quoted phrases (but not the outer quotes we just removed)
+  const phrases = lowerQuery.match(/"([^"]+)"/g);
+  if (phrases) {
+    console.log('[DEBUG] Found phrases:', phrases);
+    for (const phrase of phrases) {
+      const clean = phrase.replace(/"/g, '');
+      if (!lowerText.includes(clean)) {
+        console.log('[DEBUG] Phrase not found:', clean);
+        return false;
+      }
+      console.log('[DEBUG] Phrase found:', clean);
+    }
+    return true; // All phrases found
+  }
+  
+  // Handle AND operator
+  if (lowerQuery.includes(' and ')) {
+    const terms = lowerQuery.split(' and ').map(t => t.trim().replace(/"/g, ''));
+    console.log('[DEBUG] AND terms:', terms);
+    const result = terms.every(term => lowerText.includes(term));
+    console.log('[DEBUG] AND result:', result);
+    return result;
+  }
+  
+  // Handle OR operator
+  if (lowerQuery.includes(' or ')) {
+    const terms = lowerQuery.split(' or ').map(t => t.trim().replace(/"/g, ''));
+    console.log('[DEBUG] OR terms:', terms);
+    const result = terms.some(term => lowerText.includes(term));
+    console.log('[DEBUG] OR result:', result);
+    return result;
+  }
+  
+  // Handle proximity (w/N)
+  const proximityMatch = lowerQuery.match(/(\w+)\s+w\/(\d+)\s+(\w+)/i);
+  if (proximityMatch) {
+    const [, term1, distance, term2] = proximityMatch;
+    console.log('[DEBUG] Proximity search:', term1, 'w/', distance, term2);
+    const result = checkProximity(lowerText, term1, term2, parseInt(distance));
+    console.log('[DEBUG] Proximity result:', result);
+    return result;
+  }
+  
+  // Simple keyword match (no quotes, no operators)
+  const result = lowerText.includes(lowerQuery);
+  console.log('[DEBUG] Simple match for "' + lowerQuery + '":', result);
+  return result;
+}
+
+
+
+function checkProximity(text, term1, term2, maxDistance) {
+  const words = text.toLowerCase().split(/\s+/);
+  const positions1 = words.map((w, i) => w.includes(term1) ? i : -1).filter(i => i >= 0);
+  const positions2 = words.map((w, i) => w.includes(term2) ? i : -1).filter(i => i >= 0);
+  
+  for (const pos1 of positions1) {
+    for (const pos2 of positions2) {
+      if (Math.abs(pos2 - pos1) <= maxDistance) return true;
+    }
+  }
+  return false;
+}
+
+function extractSnippet(text, query, length = 200) {
+  const lowerText = text.toLowerCase();
+  const firstTerm = query.toLowerCase().split(/\s+and\s+|\s+or\s+|\s+w\/\d+\s+/)[0].replace(/"/g, '');
+  const index = lowerText.indexOf(firstTerm);
+  
+  if (index === -1) return '';
+  
+  const start = Math.max(0, index - 50);
+  const end = Math.min(text.length, index + length);
+  let snippet = text.substring(start, end);
+  
+  if (start > 0) snippet = '...' + snippet;
+  if (end < text.length) snippet = snippet + '...';
+  
+  // Highlight matching terms
+  const terms = query.toLowerCase().match(/\w+/g);
+  if (terms) {
+    terms.forEach(term => {
+      const regex = new RegExp(`(${term})`, 'gi');
+      snippet = snippet.replace(regex, '<mark>$1</mark>');
+    });
+  }
+  
+  return snippet;
+}
+
+// Allow Enter key to trigger search
+document.addEventListener('DOMContentLoaded', function() {
+  // ... your existing DOMContentLoaded code ...
+  
+  // ADD THIS:
+  document.addEventListener('keydown', function(e) {
+    const searchInput = document.getElementById('decisionSearchInput');
+    if (searchInput && document.activeElement === searchInput && e.key === 'Enter') {
+      searchDecisions();
+    }
+  });
+});
+
+</script>
+
+<script src="/assets/js/main.js"></script>
+</body>
+</html>

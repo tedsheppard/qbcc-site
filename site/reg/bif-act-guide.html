@@ -1,138 +1,110 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BIF Act Guide | Sopal</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Sopal — BIF Act Guide</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    :root {
-      --bg-dark: #0a0a0a;
-      --bg-darker: #050505;
-      --green: #00d47e;
-      --green-dark: #00b368;
-      --text-primary: #1a1a1a;
-      --text-secondary: #6b6b6b;
-      --text-muted: #888;
-      --border-light: #e5e5e5;
-      --border-dark: #222;
-    }
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; font-size: 15px; }
-    a { text-decoration: none; color: inherit; }
-    button { border: none; cursor: pointer; font-family: inherit; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
-
-    /* Nav */
-    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
-    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
-    .nav-left { display: flex; align-items: center; gap: 32px; }
-    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
-    .nav-logo-icon { width: 28px; height: 28px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
-    .nav-logo-icon svg { width: 16px; height: 16px; }
-    .nav-links { display: flex; align-items: center; gap: 24px; }
-    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
-    .nav-links a:hover { color: white; }
-    .nav-links a.active { color: white; font-weight: 500; }
-    .nav-right { display: flex; align-items: center; gap: 12px; }
-
-    /* Page Header */
-    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 32px 0; }
-    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
-    .page-header p { font-size: 14px; color: var(--text-secondary); }
-
-    /* Knowledge container layout */
-    .knowledge-container {
-      display: grid;
-      grid-template-columns: 260px 1fr;
-      gap: 40px;
-      align-items: flex-start;
-      padding: 40px 0 72px;
-    }
-
-    /* Sidebar */
-    .knowledge-sidebar {
-      position: sticky;
-      top: 88px;
-      align-self: start;
-      height: calc(100vh - 120px);
-      overflow-y: auto;
-      padding-right: 20px;
-    }
-    .knowledge-sidebar h4 {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin: 0 0 12px 0;
-      padding: 0 8px;
-    }
-    .sidebar-nav { list-style: none; padding: 0; margin: 0; }
-    .sidebar-nav li { margin-bottom: 2px; }
-    .sidebar-nav a {
-      display: block;
-      text-decoration: none;
-      color: var(--text-secondary);
-      font-size: 13px;
-      padding: 6px 12px;
-      border-radius: 6px;
-      transition: background 0.2s, color 0.2s;
-    }
-    .sidebar-nav a:hover { background: #f0f0f0; color: var(--text-primary); }
-    .sidebar-nav a.active { background: #e6f9f2; color: #008a5c; font-weight: 600; }
-    .sidebar-nav ul { list-style: none; padding-left: 12px; margin-top: 4px; margin-bottom: 4px; }
-    .sidebar-nav ul a { font-size: 12px; color: #777; padding-top: 5px; padding-bottom: 5px; }
-    .sidebar-nav ul a.active { background: #e6f9f2; color: #008a5c; font-weight: 500; }
-
-    /* Content area */
-    .knowledge-content {
-      padding-top: 0;
-      min-height: 400px;
-    }
-    .knowledge-content section {
-      display: none;
-      margin-bottom: 48px;
-      scroll-margin-top: 100px;
-    }
-    #welcome-message { color: var(--text-secondary); }
-    #welcome-message h2 { font-weight: 600; color: var(--text-primary); margin-top: 0; }
-
-    .knowledge-content h2 {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-top: 4px;
-      margin-bottom: 14px;
-      letter-spacing: -0.02em;
-    }
-    .knowledge-content h3 {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-top: 36px;
-      margin-bottom: 14px;
-    }
-    .knowledge-content h4 { font-size: 15px; font-weight: 600; color: var(--text-primary); }
-    .breadcrumb-heading {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-muted);
+    /* Base styles matching main site */
+    body {
+      font-family: Inter, sans-serif;
       margin: 0;
+      background: #ffffff;
+      color: #222;
+      font-size: 15px;
+      line-height: 1.6;
     }
-    .knowledge-content p {
-      margin-bottom: 16px;
-      color: var(--text-secondary);
-      font-size: 14px;
-      line-height: 1.7;
-    }
-    .knowledge-content ul, .knowledge-content ol { margin-bottom: 16px; padding-left: 20px; }
-    .knowledge-content li { margin-bottom: 8px; color: var(--text-secondary); font-size: 14px; line-height: 1.7; }
 
-    /* Statute excerpt */
+    /* Header */
+    .header {
+      background: #fdfdfd;
+      padding: 20px 25px;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      height: 31px;
+      margin-right: 20px;
+    }
+
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      color: black;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #00c97c;
+    }
+
+    .nav-links a.active {
+      color: #008a5c;
+      font-weight: 600;
+    }
+
+    /* Footer */
+    .footer {
+      background: #fcfcfc;
+      color: #333;
+      padding: 40px 25px 20px;
+      margin-top: 60px;
+      border-top: 1px solid #ddd;
+    }
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .footer-left { max-width: 400px; text-align: left; }
+    .footer-logo { height: 24px; margin-bottom: 10px; }
+    .footer-links {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px 40px;
+      text-align: left;
+    }
+    .footer-links a { font-size: 13px; color: black; text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: #00c97c; }
+    .footer-bottom {
+      text-align: center;
+      border-top: 1px solid #eee;
+      margin-top: 30px;
+      padding-top: 20px;
+      width: 100%;
+      font-size: 0.85em;
+      color: #666;
+    }
+
     .statute-excerpt {
       margin: 18px 0;
       border: 1px solid #d7e5df;
@@ -140,153 +112,425 @@
       background: #f6fbf9;
       padding: 12px 16px;
     }
-    .statute-excerpt summary { cursor: pointer; font-weight: 600; color: #155d47; font-size: 14px; }
-    .statute-body { margin-top: 12px; color: #1b3a2d; line-height: 1.6; font-size: 14px; }
 
-    /* Analysis */
+    .statute-excerpt summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: #155d47;
+    }
+
+    .statute-body {
+      margin-top: 12px;
+      color: #1b3a2d;
+      line-height: 1.6;
+    }
+
     .analysis {
       margin-top: 24px;
       background: #fafafa;
-      border-left: 4px solid var(--green);
+      border-left: 4px solid #2ea88c;
       padding: 18px 22px;
       border-radius: 8px;
     }
 
-    /* Case excerpt */
+    .authority-list {
+      margin: 16px 0 0 0;
+      padding-left: 20px;
+      color: #333;
+    }
+
     .case-excerpt {
       margin: 16px 0;
       padding: 14px 18px 14px 24px;
-      background: #f7f7f8;
-      border-left: 3px solid #ccc;
+      background: #f8f8f8;
+      border-left: 3px solid #999;
       border-radius: 4px;
-      font-size: 13px;
+      font-size: 14px;
       line-height: 1.65;
-      color: var(--text-secondary);
+      color: #444;
     }
-    .case-excerpt p { margin: 0 0 10px 0; }
-    .case-excerpt p:last-child { margin-bottom: 0; }
-    .para-number { font-weight: 600; color: #888; margin-right: 8px; }
 
-    /* Practice tips */
+    .case-excerpt p {
+      margin: 0 0 10px 0;
+    }
+
+    .case-excerpt p:last-child {
+      margin-bottom: 0;
+    }
+
+    .para-number {
+      font-weight: 600;
+      color: #666;
+      margin-right: 8px;
+    }
+
+
     .practice-tips {
       margin-top: 24px;
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-radius: 10px;
+      background: #fafafa;
+      border-left: 4px solid #2ea88c;
       padding: 18px 22px;
+      border-radius: 8px;
     }
-    .practice-tips h4 { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #166534; }
-    .practice-tips ul { margin: 0; padding-left: 20px; }
-    .practice-tips li { margin-bottom: 10px; color: #166534; line-height: 1.6; font-size: 13px; }
-    .practice-tips li:last-child { margin-bottom: 0; }
 
-    .authority-list { margin: 16px 0 0 0; padding-left: 20px; color: var(--text-secondary); }
+    .practice-tips h4 {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #155d47;
+    }
 
-    /* Footer */
-    .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
-    .footer-inner { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); gap: 24px; }
-    .footer-brand { padding-right: 16px; }
-    .footer-brand .footer-logo { display: flex; align-items: center; gap: 7px; color: white; font-weight: 700; font-size: 15px; margin-bottom: 10px; }
-    .footer-logo-icon { width: 20px; height: 20px; background: var(--green); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
-    .footer-logo-icon svg { width: 12px; height: 12px; }
-    .footer-brand p { font-size: 12px; color: #555; line-height: 1.5; }
-    .footer-col h4 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
-    .footer-col a { display: block; font-size: 13px; color: #666; margin-bottom: 7px; transition: color 0.2s; }
-    .footer-col a:hover { color: white; }
-    .footer-bottom { display: flex; align-items: center; justify-content: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #555; }
+    .practice-tips ul {
+      margin: 0;
+      padding-left: 20px;
+    }
 
-    /* Inline admin editor styles */
+    .practice-tips li {
+      margin-bottom: 10px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .practice-tips li:last-child {
+      margin-bottom: 0;
+    }
+
+    .knowledge-content h3 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #000;
+      margin-top: 36px;
+      margin-bottom: 14px;
+    }
+    /* --- NEW KNOWLEDGE CENTRE STYLES --- */
+    .page-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 16px;
+    }
+
+    .page-subtitle {
+      font-size: 18px;
+      color: #555;
+      margin-top: -10px;
+      margin-bottom: 40px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    .knowledge-container {
+      display: grid;
+      grid-template-columns: 260px 1fr; /* Sidebar width and main content */
+      gap: 40px;
+      align-items: flex-start;
+    }
+
+    /* Sidebar Styles */
+    .knowledge-sidebar {
+      position: sticky;
+      top: 100px; /* Adjust based on your header's height */
+      height: calc(100vh - 120px);
+      overflow-y: auto;
+      padding-right: 20px;
+    }
+
+    .knowledge-sidebar h4 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+      margin: 0 0 10px 0;
+      padding: 0 8px;
+    }
+
+    .sidebar-nav {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .sidebar-nav li {
+      margin-bottom: 2px;
+    }
+
+    .sidebar-nav a {
+      display: block;
+      text-decoration: none;
+      color: #333;
+      font-size: 14px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      transition: background 0.2s, color 0.2s;
+    }
+    
+    .sidebar-nav a:hover {
+      background: #f4f4f4;
+    }
+    
+    .sidebar-nav a.active {
+      background: #e6f9f2;
+      color: #008a5c;
+      font-weight: 600;
+    }
+
+    /* Sub-list for nested items */
+    .sidebar-nav ul {
+        list-style: none;
+        padding-left: 12px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+    }
+    .sidebar-nav ul a {
+        font-size: 13px;
+        color: #555;
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+    .sidebar-nav ul a.active {
+        background: #e6f9f2;
+        color: #008a5c;
+        font-weight: 500;
+    }
+
+    /* Content Area Styles */
+    .knowledge-content {
+      /* This will contain the scrollable content */
+      padding-top: 20px; /* Added padding to align with welcome message */
+      min-height: 400px; /* Ensure it doesn't collapse */
+    }
+
+    /* HIDE ALL CONTENT SECTIONS BY DEFAULT */
+    .knowledge-content section {
+      display: none;
+      margin-bottom: 48px;
+      scroll-margin-top: 100px; /* Offset for sticky header */
+    }
+
+    /* WELCOME MESSAGE */
+    #welcome-message {
+      color: #555;
+    }
+    #welcome-message h2 {
+      font-weight: 600;
+      color: #000;
+      margin-top: 0;
+    }
+
+    /* STYLES FOR NEW CONTENT SECTIONS */
+    .knowledge-content h2 { /* This is now the sub-topic title */
+      font-size: 24px;
+      font-weight: 600;
+      color: #000;
+      margin-top: 4px;
+      margin-bottom: 16px;
+    }
+
+    /* New breadcrumb style */
+    .breadcrumb-heading {
+      font-size: 14px;
+      font-weight: 500;
+      color: #555;
+      margin: 0;
+    }
+    
+    .knowledge-content p {
+      margin-bottom: 16px;
+      color: #444;
+    }
+    
+    .knowledge-content ul {
+      margin-bottom: 16px;
+      padding-left: 20px;
+    }
+
+    .knowledge-content li {
+      margin-bottom: 8px;
+      color: #444;
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 768px) {
+      .knowledge-container {
+        grid-template-columns: 1fr; /* Stack columns */
+      }
+      .knowledge-sidebar {
+        position: static;
+        height: auto;
+        overflow-y: visible;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+      }
+      .knowledge-content section {
+        scroll-margin-top: 80px; /* Adjust for smaller header */
+      }
+    }
+
+    /* --- Inline admin editor styles --- */
     body.admin-editor-editing .knowledge-content[contenteditable="true"] {
-      outline: 2px dashed var(--green);
+      outline: 2px dashed #2ea88c;
       outline-offset: 4px;
       background: #fcfffc;
     }
+
     .admin-editor-toggle {
-      position: fixed; bottom: 26px; right: 26px; z-index: 500;
-      border: none; background: #008a5c; color: white; border-radius: 999px;
-      padding: 12px 18px; font-weight: 600;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.18); cursor: pointer;
-      display: flex; align-items: center; gap: 8px;
+      position: fixed;
+      bottom: 26px;
+      right: 26px;
+      z-index: 500;
+      border: none;
+      background: #008a5c;
+      color: white;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-weight: 600;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       transition: background 0.2s ease, transform 0.2s ease;
     }
-    .admin-editor-toggle:hover { background: #00a76f; transform: translateY(-1px); }
+
+    .admin-editor-toggle:hover {
+      background: #00a76f;
+      transform: translateY(-1px);
+    }
+
     .admin-editor-toolbar {
-      position: fixed; bottom: 96px; right: 26px; z-index: 500;
-      background: #111827; color: white; border-radius: 16px;
-      padding: 14px 16px; box-shadow: 0 18px 45px rgba(0,0,0,0.35);
-      width: min(440px, calc(100% - 32px)); display: none; flex-direction: column; gap: 10px;
+      position: fixed;
+      bottom: 96px;
+      right: 26px;
+      z-index: 500;
+      background: #111827;
+      color: white;
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.35);
+      width: min(440px, calc(100% - 32px));
+      display: none;
+      flex-direction: column;
+      gap: 10px;
     }
-    .admin-editor-toolbar.active { display: flex; }
-    .admin-toolbar-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .admin-editor-toolbar.active {
+      display: flex;
+    }
+
+    .admin-toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
     .admin-toolbar-row button {
-      border: none; border-radius: 8px; padding: 8px 10px; font-size: 13px; font-weight: 600;
-      cursor: pointer; color: #111827; background: white; transition: background 0.15s ease, transform 0.15s ease;
-    }
-    .admin-toolbar-row button:hover { background: #f1f5f9; transform: translateY(-1px); }
-    .admin-toolbar-row button[data-variant="primary"] { background: var(--green); color: white; }
-    .admin-toolbar-row button[data-variant="danger"] { background: #fee2e2; color: #991b1b; }
-    .admin-toolbar-row button[data-variant="ghost"] { background: rgba(255,255,255,0.08); color: white; }
-    .admin-editor-status { font-size: 12px; color: #cbd5f5; text-transform: uppercase; letter-spacing: 0.08em; }
-    .admin-toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(120%);
-      background: #111827; color: white; border-radius: 999px; padding: 10px 20px;
-      font-size: 14px; font-weight: 600; z-index: 700; transition: transform 0.25s ease;
-    }
-    .admin-toast.active { transform: translateX(-50%) translateY(0); }
-
-    /* Table styles for inline tables */
-    .knowledge-content table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 20px 0;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 10px;
       font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #111827;
+      background: white;
+      transition: background 0.15s ease, transform 0.15s ease;
     }
 
-    @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .knowledge-container { grid-template-columns: 1fr; }
-      .knowledge-sidebar { position: static; height: auto; overflow-y: visible; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
-      .knowledge-content section { scroll-margin-top: 80px; }
-      .footer-inner { grid-template-columns: 1fr; }
-      .admin-editor-toggle { width: calc(100% - 40px); right: 20px; bottom: 20px; justify-content: center; }
-      .admin-editor-toolbar { right: 20px; bottom: 100px; }
+    .admin-toolbar-row button:hover {
+      background: #f1f5f9;
+      transform: translateY(-1px);
+    }
+
+    .admin-toolbar-row button[data-variant="primary"] {
+      background: #2ea88c;
+      color: white;
+    }
+
+    .admin-toolbar-row button[data-variant="danger"] {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .admin-toolbar-row button[data-variant="ghost"] {
+      background: rgba(255,255,255,0.08);
+      color: white;
+    }
+
+    .admin-editor-status {
+      font-size: 12px;
+      color: #cbd5f5;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .admin-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      background: #111827;
+      color: white;
+      border-radius: 999px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 700;
+      transition: transform 0.25s ease;
+    }
+
+    .admin-toast.active {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 640px) {
+      .admin-editor-toggle {
+        width: calc(100% - 40px);
+        right: 20px;
+        bottom: 20px;
+        justify-content: center;
+      }
+      .admin-editor-toolbar {
+        right: 20px;
+        bottom: 100px;
+      }
     }
   </style>
 </head>
 <body data-page-path="bif-act-guide.html">
-
-  <nav class="nav">
-    <div class="nav-inner">
-      <div class="nav-left">
-        <a href="/" class="nav-logo">
-  <img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;">
-</a>
-        <div class="nav-links">
-          <a href="/search">Search</a>
-          <a href="/adjudicators">Adjudicators</a>
-          <a href="/interest-calculator">Interest Calculator</a>
-          <a href="/due-date-calculator">Due Date Calculator</a>
-          <a href="/how-to">How-To Guide</a>
-          <a href="/feedback">Feedback</a>
-        </div>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <a href="/">
+        <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+      </a>
+      <div class="nav-links">
+        <a href="decision-search">Search</a>
+        <a href="adjudicators">Adjudicators</a>
+        <a href="interest-calculator">Interest Calculator</a>
+        <a href="due-date-calculator">Due Date Calculator</a>
+        <a href="how-to">How-To Guide</a>
+        <a href="feedback">Feedback</a>
       </div>
-      <div class="nav-right"></div>
-    </div>
-  </nav>
-
-  <div class="page-header">
-    <div class="container">
-      <h1>BIF Act Guide</h1>
-      <p>A practical guide to the requirements of the BIF Act for payment claims, schedules, and adjudication.</p>
+      <div id="user-profile-nav" style="min-width:36px"></div>
     </div>
   </div>
 
+  <!-- Main Content -->
   <div class="container">
-    <div class="knowledge-container">
+    <h1 class="page-title">BIF Act Guide</h1>
+    <p class="page-subtitle">A practical guide to the requirements of the BIF Act for payment claims, schedules, and adjudication.</p>
 
+    <div class="knowledge-container">
+      
       <!-- Sidebar Navigation -->
       <aside class="knowledge-sidebar">
         <h4>Guide</h4>
+        <!-- UPDATED SIDEBAR LINKS: Main links now point to the first sub-item -->
         <ul class="sidebar-nav">
           <li>
             <a href="#pc-construction-contract">Requirements of a payment claim</a>
@@ -1785,22 +2029,34 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
   </div>
 
   <footer class="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <div class="footer-brand">
-          <div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div>
-          <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
-        </div>
-        <div class="footer-col"><h4>Tools</h4><a href="/search">Decision Search</a><a href="/adjudicators">Adjudicators</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a></div>
-        <div class="footer-col"><h4>Resources</h4><a href="/how-to">How-To Guide</a><a href="/bif-act-guide">BIF Act Guide</a><a href="/feedback">Feedback</a></div>
-        <div class="footer-col"><h4>Legal</h4><a href="/privacy">Privacy</a><a href="/terms">Terms of Use</a><a href="/account-terms">Account Terms</a><a href="/adjudicator-insights-terms">Adjudicator Insights Terms</a></div>
+    <div class="footer-content">
+      <div class="footer-left">
+        <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+        <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
       </div>
-      <div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div>
+
+      <div class="footer-links">
+        <a href="adjudicators">Adjudicators</a>
+        <a href="decision-search">Search</a>
+        <a href="knowledge-centre">BIF Act Guide</a>
+        <a href="interest-calculator">Interest Calculator</a>
+        <a href="due-date-calculator">Due Date Calculator</a>
+        <a href="how-to">How-To Guide</a>
+        <a href="feedback">Feedback</a>
+        <a href="privacy">Privacy</a>
+        <a href="adjudicator-insights-terms">Adjudicator Insights Terms</a>
+        <a href="terms">General Terms of Use</a>
+        <a href="account-terms">Account Terms</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Sopal Australia. All rights reserved.</p>
     </div>
   </footer>
 
-<script src="/assets/js/main.js"></script>
+  <script src="/assets/js/main.js"></script>
 
+  <!-- UPDATED SCRIPT for showing/hiding individual sections -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const sidebarNav = document.querySelector('.sidebar-nav');
@@ -1886,6 +2142,7 @@ Note: I noticed a small typo in your provided HTML (`class_name=` instead of `cl
       }
 
     });
+  </script>
   <script>
     (function () {
       const contentArea = document.querySelector('.knowledge-content');
@@ -2327,235 +2584,3 @@ ${clone.outerHTML}`;
   </script>
 </body>
 </html>
-
-        <section id="pc-identify">
-          <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
-          <h2>Identify the construction works</h2>
-          <p>Pursuant to section 68(1)(a) of the BIF Act, a payment claim must identify the construction work or related goods and services to which it relates.</p>
-
-          <details class="statute-excerpt" open>
-            <summary>Section 68(1)(a) BIF Act – Meaning of payment claim</summary>
-            <div class="statute-body">
-              <strong>68 Meaning of payment claim</strong>
-              <p>(1) &nbsp;A payment claim, for a progress payment, is a written document that—</p>
-              <p style="margin-left: 1.5rem;">(a) &nbsp;identifies the construction work or related goods and services to which the progress payment relates; and</p>
-            </div>
-          </details>
-
-          <h3>General principles</h3>
-          <p>The test is not whether the claim explains every calculation, but whether the relevant construction work (and/or related goods and services) is sufficiently identified such that the basis of the claim is reasonably comprehensible to the recipient. In <em>MWB Everton Park Pty Ltd v Devcon Building Co Pty Ltd</em> [2024] QCA 94, Dalton JA (Brown and Kelly JJ agreeing) said (adopting <em>T &amp; M Buckley Pty Ltd v 57 Moss Road Pty Ltd</em> [2010] QCA 381):</p>
-          <div class="case-excerpt">
-            <p><span class="para-number">[24]</span> In determining whether or not a document identifies the work, goods and services to which the claim relates, the Courts take a practical, and not overly technical, attitude. In <em>T &amp; M Buckley Pty Ltd v 57 Moss Road Pty Ltd</em> Philippides J, writing in this Court, said that the issue for determination was, "… not whether the payment claim explained in every respect the means by which a particular claim item had been calculated, but whether the relevant construction work or related goods and services was sufficiently identified … That is, whether the payment claim reasonably identified the construction work to which it related such that the basis of the claim was reasonably comprehensible to the applicant." It has been accepted by the Courts that, in deciding whether or not work has been sufficiently identified, the background of each of the parties "derived from their past dealings and exchanges of documentation" is to be taken into account.</p>
-          </div>
-
-          <p>In ascertaining whether the identification of construction work is reasonably comprehensible to the recipient, the following matters are usually relevant (among others, discussed below):</p>
-          <ul>
-            <li>The fact that payment claims are often "given and received by people experience in the building industry" and that the level of description might reflect that. <em>Vanbeelen v Blackbird Energy Pty Ltd</em> [2006] QDC 285, [37] (Brabazon KC DCJ) citing McDougall J in <em>Isis Projects v Clarence Street</em> [2004] NSWSC 714, [36]–[38].</li>
-            <li>The parties' background knowledge. "It is appropriate to take into account the background knowledge of the parties derived from their past dealings and exchanges of information". <em>Mackie Pty Ltd v Counahan</em> [2013] VSC 694, [46] (Vickery J); <em>Neumann Contractors Pty Ltd v Peet Beachton Syndicate Ltd</em> [2011] 1 Qd R 17, [25].</li>
-            <li>If the payment claim is claiming for items that are mentioned in the construction contract, their identity may be able to be ascertained by reference to the contract. See the observations of McDougall J in <em>Multiplex Construction Pty Ltd v Luikens</em> [2003] NSWSC 1140, [37] approved in <em>Clarence Street Pty Ltd v Isis Projects Pty Ltd</em> (2005) 64 NSWLR 448, 455-6; [2005] NSWCA 391, [33] cited in <em>KDV Sport Pty Ltd v Muggeridge Constructions Pty Ltd</em> [2019] QSC 178, [58] (Brown J):</li>
-          </ul>
-          <div class="case-excerpt">
-            <p><span class="para-number">[37]</span> In principle, I think, the requirement in s 13(2)(a) that a payment claim must identify the construction work to which the progress payment relates is capable of being satisfied where:</p>
-            <p style="margin-left: 1.5rem;">(1) The payment claim gives an item reference which, in the absence of evidence to the contrary, is to be taken as referring to the contractual or other identification of the work;</p>
-            <p style="margin-left: 1.5rem;">(2) That reference is supplemented by a single line item description of the work;</p>
-            <p style="margin-left: 1.5rem;">(3) Particulars are given of the amount previously completed and claimed and the amount now said to be complete;</p>
-            <p style="margin-left: 1.5rem;">(4) There is a summary that pulls all the details together and states the amount claimed.</p>
-          </div>
-
-          <h3>Degree of particularity in identifying construction works</h3>
-          <p>The construction work (or related goods and services) must be identified with some degree of particularity. That is, the specific work the subject of the claim should be identified, rather than simply the general work that is the subject of the construction contract as a whole: <em>Jemzone Pty Ltd v Trytan Pty Ltd</em> (2002) 42 ACSR 42; [2002] NSWSC 395, [43].</p>
-
-          <p>The respondent should be capable of determining whether or not to pay the claim. "There must be sufficient specificity in the payment claim for its recipient actually to be able to identify a payment claim for the purpose of determining whether to pay": <em>Nepean Engineering Pty Ltd v Total Process Services Pty Ltd (in liq)</em> [2005] NSWCA 409, [47]–[48] (Santow JA); see also <em>Protectavale Pty Ltd v K2K Pty Ltd</em> [2008] FCA 1248, [12] (Finkelstein J) cited in <em>KDV Sport Pty Ltd v Muggeridge Constructions Pty Ltd</em> [2019] QSC 178, [52] (Brown J); see alike observations in <em>Richard Kirk Architect Pty Ltd v Australian Broadcasting Corp</em> [2012] QSC 117, [29] (Daubney J).</p>
-
-          <p>However, determining whether the construction work has been sufficiently "identified" should not be approached in an unduly technical manner: <em>Hawkins Construction (Aust) Pty Ltd v Macs Industrial Pipework Pty Ltd</em> [2002] NSWCA 136, [20] (Davies AJA).</p>
-
-          <p>If the payment claim merely consists of a few failures to identify construction work, but by and large the work is properly identified, the payment claim may not necessarily be invalid: <em>Nepean Engineering Pty Ltd v Total Process Services Pty Ltd (in liq)</em> [2005] NSWCA 409, [37] (Santow J).</p>
-
-          <h3>Factual and mathematical errors</h3>
-          <p>Generally, whether the works have been sufficiently "identified" for the purpose of section 68(1)(a) is not to be assessed by reference to whether the payment claim is factually correct or has been calculated strictly in accordance with the contract: <em>Denbrook Constructions Pty Ltd v CBO Developments Pty Ltd</em> [2022] QDC 184, [66] (Porter KC DCJ).</p>
-
-          <p>Additionally, if the payment claim has some mathematical errors, that will not of itself invalidate the payment claim, unless the errors are of a nature which renders or contributes to the payment claim being incomprehensible. <em>KDV Sport Pty Ltd v Muggeridge Constructions Pty Ltd</em> [2019] QSC 178, [43] (Brown J).</p>
-
-          <h3>History of paying similar payment claims may be indicative of sufficient identification</h3>
-          <p>In <em>Isis Projects Pty Ltd v Clarence Street Pty Ltd</em> [2004] NSWSC 714, Clarence Street (Developer) and Isis Projects (Builder) enter into a construction contract to refurbish and fit out a building at 50 Clarence Street, Sydney NSW 2000. The Developer failed to pay in full, or serve payment schedules in response to, payment claims 12 and 13 (PC12 and PC13), which consisted of a cover sheet and a tax invoice describing the work by one line items, and showing for each the original contract value, the amount of previous claims, the value of work to date and the percentage completed. The Developer contended PC12 and PC13 were not valid. The Builder contended the PCs were valid and the Developer's failure to issue payment schedules meant the PCs were payable in full. The Court held that the previous conduct of the Developer in having paid 11 previous payment claims of a similar nature showed that the Developer was capable of finding meaning in the Builder's identification of the works. Thus, that conduct supported the conclusion that PC12 and PC13 sufficiently identified the construction work to which their respective payment claims relate. See the findings of McDougal J at [38]:</p>
-          <div class="case-excerpt">
-            <p><span class="para-number">[38]</span> Where payment claims in that format have been used, apparently without objection, on 11 previous occasions, it is very difficult to understand how the use of the same format on the 12th and 13th occasions could be said not to comply with the requirements of s 13(2)(a). If payments claims in that format had sufficiently identified the construction work to which the progress payment claimed related on 11 previous occasions, I find it hard to understand how they would lose that character on the 12th and 13th occasion.</p>
-          </div>
-
-          <h3>Case examples of what is not sufficient</h3>
-          <h4>MWB Everton Park</h4>
-          <p>Percentages against broad trade headings without tethering to identifiable scopes/locations/activities will usually fail. In <em>MWB Everton Park Pty Ltd v Devcon Building Co Pty Ltd</em> [2024] QCA 94, the Court held a trade-summary/percentage approach did not identify the work for a 56-townhouse project:</p>
-          <div class="case-excerpt">
-            <p><span class="para-number">[25]</span> …The contract was for the construction of 56 townhouses. In those circumstances, it was all but meaningless to say that 5% of concreting or 12% of plumbing had been completed. More description was needed if the document was to sufficiently identify the construction work, related goods and services, for the purpose of s 68(1)(a).</p>
-          </div>
-
-          <p>That approach reflects Brown J's analysis in <em>KDV Sport Pty Ltd v Muggeridge Constructions Pty Ltd</em> [2019] QSC 178, where a one-page "trade breakdown" with only categories and percentages – no particulars of the actual work – failed the identification limb:</p>
-          <div class="case-excerpt">
-            <p><span class="para-number">[64]</span> … Whatever form of claim a claimant chooses to adopt, it must identify in a reasonable way the construction work to which the claim relates. While the purpose of the scheme is to permit the quick resolution of payment claims, the claimant must at least be reasonably comprehensible, to permit the respondent to respond within the time frame provided under the Act. The payment claim in this case has failed to do so.</p>
-          </div>
-
-          <h4>KDV Sport</h4>
-          <p>The judgment in <em>KDV Sport Pty Ltd v Muggeridge Constructions Pty Ltd</em> [2019] QSC 178 helpfully provides an excerpt of the payment claim which, in that case, was found not to have identified the construction work to which it related:</p>
-          <div class="case-excerpt">
-            <p><span class="para-number">[35]</span> … The payment claim submitted by Muggeridge consisted of a one page document.[25] It contained 6 columns. The first was headed "trade breakdown", the second "Total Amount", the third "Total Paid to Date", the fourth "Total Claim % to Date", the fifth "Total Claimed Trade to Date" and the sixth "Progress Claim". An extract of the payment claim submitted, highlighting particular items which have been the subject of submissions, is as follows:</p>
-          </div>
-
-          <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px;">
-            <tr style="background: #f0f0f0; font-weight: 600;">
-              <td colspan="7" style="padding: 8px; border: 1px solid #ddd;">WUC– Site Project Student Accommodation Big 18 Chisholm Road Carrara QLD</td>
-            </tr>
-            <tr style="background: #f8f8f8;">
-              <td style="padding: 6px; border: 1px solid #ddd;"></td>
-              <td style="padding: 6px; border: 1px solid #ddd;"></td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: center;"><strong>Prior Payment</strong></td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: center;"><strong>Total Claim to Date</strong></td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: center;"><strong>This Claim</strong></td>
-            </tr>
-            <tr style="background: #f8f8f8; font-weight: 600;">
-              <td style="padding: 6px; border: 1px solid #ddd;"></td>
-              <td style="padding: 6px; border: 1px solid #ddd;">Trade Breakdown</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">Total Amount</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">Total Paid to Date</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">Total claim % to date</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">Total Claimed Trade to date</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">Progress Claim 13</td>
-            </tr>
-            <tr>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-            </tr>
-            <tr>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">8</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">CONCRETE SUPPLY</td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">$229,454</td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">$217,981</td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">100%</td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">$229,454</td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">$4,589</td>
-            </tr>
-            <tr>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-            </tr>
-            <tr>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">19</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">LANDSCAPING</td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">$25,000</td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">$0</td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">0%</td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">$0</td>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">$0</td>
-            </tr>
-            <tr>
-              <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">…</td>
-            </tr>
-          </table>
-
-          <h3>Practice tips</h3>
-          <ul>
-            <li>As a claimant, use descriptions that tether line items to identifiable scopes, locations, or activities rather than just trade headings with percentages.</li>
-            <li>Include sufficient particulars so the respondent can determine whether or not to pay the claim.</li>
-            <li>Where possible, adopt the format of previous payment claims that have been paid without objection.</li>
-            <li>If claiming for items mentioned in the construction contract, reference the contractual item numbers or descriptions.</li>
-          </ul>
-        </section>
-
-        <section id="pc-amount">
-          <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
-          <h2>State the claimed amount</h2>
-          <p>Pursuant to section 68(1)(b) of the BIF Act, a payment claim must state the amount of the progress payment that the claimant claims to be payable (the "claimed amount").</p>
-
-          <details class="statute-excerpt" open>
-            <summary>Section 68(1)(b) BIF Act – Meaning of payment claim</summary>
-            <div class="statute-body">
-              <strong>68 Meaning of payment claim</strong>
-              <p>(1) &nbsp;A payment claim, for a progress payment, is a written document that—</p>
-              <p>...</p>
-              <p style="margin-left: 1.5rem;">(b) &nbsp;states the amount of the progress payment that the claimant claims to be payable (the <em>claimed amount</em>); and</p>
-            </div>
-          </details>
-
-          <h3>General principles</h3>
-          <p>The payment claim must indicate a specific dollar amount that is claimed. A payment claim that does not state a specific amount, or that states the amount in an ambiguous or unclear way, may not satisfy section 68(1)(b).</p>
-          <p>This requirement is generally straightforward in practice. The claimed amount is typically stated as a total figure, often accompanied by a breakdown of the individual items making up the claim.</p>
-          <p>The requirement to "state" the claimed amount does not mean the amount must be correct or calculated in accordance with the contract. The purpose is to inform the respondent of the amount claimed, so that the respondent can decide whether to pay, dispute, or partially accept the claim.</p>
-        </section>
-
-        <section id="pc-request">
-          <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
-          <h2>Request payment</h2>
-          <p>Pursuant to section 68(1)(c), a payment claim must request payment of the claimed amount. This requirement is that the document, on its face, is a demand or request for payment.</p>
-
-          <details class="statute-excerpt" open>
-            <summary>Section 68(1)(c) BIF Act – Meaning of payment claim</summary>
-            <div class="statute-body">
-              <strong>68 Meaning of payment claim</strong>
-              <p>(1) &nbsp;A payment claim, for a progress payment, is a written document that—</p>
-              <p>...</p>
-              <p style="margin-left: 1.5rem;">(c) &nbsp;requests payment of the claimed amount.</p>
-            </div>
-          </details>
-
-          <p>This requirement is generally satisfied by the inclusion of words such as "please pay", "payment is requested", or by the use of an invoice or tax invoice format that inherently requests payment. In practice, most payment claims in the building industry satisfy this requirement because they are presented as invoices or claims for payment.</p>
-        </section>
-
-        <section id="pc-ref-date">
-          <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
-          <h2>Claim for a valid reference date</h2>
-          <p>Section 75(1) of the BIF Act provides that a person who is or claims to be entitled to a progress payment may give a payment claim to the person who is or may be liable to make the payment. However, a payment claim may only be given for a "reference date" under the construction contract.</p>
-
-          <details class="statute-excerpt" open>
-            <summary>Section 71 BIF Act – Reference dates for payment claims</summary>
-            <div class="statute-body">
-              <strong>71 Reference dates for payment claims</strong>
-              <p>(1) &nbsp;A reference date, under a construction contract, is—</p>
-              <p style="margin-left: 1.5rem;">(a) &nbsp;a date stated in, or worked out under, the contract as the date on which a claim for a progress payment may be made for construction work carried out or related goods and services supplied under the contract; or</p>
-              <p style="margin-left: 1.5rem;">(b) &nbsp;if the contract does not provide for the matter—the last day of the named month in which the construction work was first carried out, or the related goods and services were first supplied, under the contract and the last day of each later named month.</p>
-            </div>
-          </details>
-
-          <h3>What is a reference date?</h3>
-          <p>A "reference date" is the date on which a payment claim may be made. The concept is critical because a payment claim can only be served for a reference date that has arisen. If no reference date has arisen, any payment claim served will be premature and potentially invalid.</p>
-
-          <p>The reference date is determined by the contract. If the contract states that claims may be made on the 25th of each month, then the 25th of each month is a reference date. If the contract is silent, section 71(1)(b) provides default reference dates: the last day of each month.</p>
-
-          <h3>Only one payment claim per reference date</h3>
-          <p>Section 75(4) of the BIF Act provides that only one payment claim may be given for each reference date under the construction contract. If a claimant serves more than one payment claim for the same reference date, the second (and any subsequent) claims may be invalid.</p>
-
-          <details class="statute-excerpt" open>
-            <summary>Section 75(4) BIF Act – Making payment claim</summary>
-            <div class="statute-body">
-              <strong>75 Making payment claim</strong>
-              <p>(4) &nbsp;A claimant can not give more than 1 payment claim for each reference date under the construction contract.</p>
-            </div>
-          </details>
-
-          <p>Whether a payment claim relates to a particular reference date is a question of substance, not form. The Courts will look at the substance of the claim to determine whether it is, in truth, a second claim for the same reference date.</p>
-
-          <h3>Reference dates after termination</h3>
-          <p>There is a question about whether reference dates continue to accrue after a construction contract has been terminated. The weight of authority suggests that reference dates cease to accrue after termination, unless the contract expressly provides otherwise.</p>
-
-          <h3>Practice tips</h3>
-          <ul>
-            <li>Check the contract for the reference date provisions before serving a payment claim. If the contract is silent, the default is the last day of each month.</li>
-            <li>Ensure only one payment claim is served for each reference date.</li>
-            <li>If the contract has been terminated, consider whether reference dates have ceased to accrue and whether a final payment claim (rather than an interim claim) is appropriate.</li>
-            <li>On termination/take-out, confirm whether reference dates survive; if not, treat the termination date as the final reference date and avoid draft-claim preconditions that condition accrual.</li>
-          </ul>
-        </section>

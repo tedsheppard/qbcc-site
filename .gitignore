@@ -34,3 +34,6 @@ __pycache__/
 # Scripts that might contain sensitive data
 *.bak
 *.tmp
+
+# Archived pages
+site/.archive/

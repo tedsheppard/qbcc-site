@@ -1,0 +1,1220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+  
+  <meta charset="utf-8">
+  <title>Sopal – Intelligent Adjudication Search</title>
+  <meta name="description" content="Sopal is an intelligent search tool for finding adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act) in Queensland, Australia.">
+  <meta name="keywords" content="Sopal, adjudication decisions, BIF Act, Building Industry Fairness, Security of Payment Act, Queensland, construction law, payment disputes">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+    overflow-x: hidden;
+    background: white;
+    margin: 0;
+    padding: 0;
+    font-size: 80%;
+  }
+
+  /* Header */
+  .header {
+    background: transparent;
+    backdrop-filter: none;
+    padding: 20px 40px;
+    border-bottom: 1px solid transparent;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    transition: all 0.3s ease;
+  }
+
+  .header.scrolled {
+    position: fixed;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    height: 31px;
+    margin-right: 20px;
+  }
+
+  .nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 32px;
+    align-items: center;
+  }
+
+  .nav-links a {
+    color: rgba(0, 0, 0, 0.85);
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .header.scrolled .nav-links a {
+    color: #425466;
+  }
+
+  .nav-links a:hover {
+    color: #2ea88c;
+  }
+
+  .nav-links a.active {
+    color: #2ea88c;
+    font-weight: 600;
+  }
+
+  /* Theme toggle */
+  #themeToggle {
+    background: none;
+    border: none;
+    font-size: 11px;
+    cursor: pointer;
+    color: rgba(0, 0, 0, 0.85);
+    opacity: 0.8;
+    margin-left: 20px;
+  }
+
+  #themeToggle:hover {
+    opacity: 1;
+  }
+
+  .header.scrolled #themeToggle {
+    color: #000;
+  }
+
+  /* Dark theme overrides */
+  .dark {
+    background: rgba(33,33,33,255) !important;
+    color: #e4e4e4 !important;
+  }
+
+  .dark .header {
+    background: transparent !important;
+    border-bottom-color: transparent !important;
+  }
+
+  .dark .header.scrolled {
+    background: rgba(20, 20, 20, 0.95) !important;
+    border-bottom-color: #333 !important;
+  }
+
+  .dark .nav-links a {
+    color: #f0f0f0 !important;
+  }
+
+  .dark .header.scrolled .nav-links a {
+    color: #f0f0f0 !important;
+  }
+
+  .dark .nav-links a:hover {
+    color: #00c97c !important;
+  }
+
+  .dark .nav-links a.active {
+    color: #00c97c !important;
+  }
+
+  .dark #themeToggle {
+    color: white !important;
+  }
+
+  /* Hero Section with Diagonal Gradient */
+  .hero-section {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    background: linear-gradient(150deg, 
+      #e8f5f1 0%, 
+      #d4f1e8 15%,
+      #a8e6d3 30%,
+      #7dd9bd 45%,
+      #52cca7 60%,
+      #3eb89a 75%,
+      #2ea88c 90%,
+      #1f9a7e 100%
+    );
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 120px), 0 100%);
+    padding-bottom: 120px;
+    margin-bottom: -1px;
+  }
+
+  .dark .hero-section {
+    background: linear-gradient(150deg, 
+      #1a1a1a 0%, 
+      #141414 30%,
+      #0d0d0d 70%,
+      #000000 100%
+    );
+  }
+
+  /* Animated gradient overlay */
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(150deg,
+      rgba(168, 230, 211, 0.3) 0%,
+      rgba(82, 204, 167, 0.2) 50%,
+      rgba(31, 154, 126, 0.4) 100%
+    );
+    animation: gradientShift 15s ease infinite;
+    pointer-events: none;
+  }
+
+  .dark .hero-section::before {
+    background: linear-gradient(150deg,
+      rgba(26, 26, 26, 0.3) 0%,
+      rgba(13, 13, 13, 0.2) 50%,
+      rgba(0, 0, 0, 0.4) 100%
+    );
+  }
+
+  @keyframes gradientShift {
+    0%, 100% {
+      opacity: 1;
+      transform: translateX(0) translateY(0);
+    }
+    50% {
+      opacity: 0.7;
+      transform: translateX(30px) translateY(-30px);
+    }
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 80px 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+
+  .hero-left {
+    padding-right: 40px;
+  }
+
+  .hero-title {
+    font-size: 72px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 24px;
+    color: rgba(0, 0, 0, 0.85);
+    letter-spacing: -2px;
+  }
+
+  .dark .hero-title {
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  .hero-subtitle {
+    font-size: 20px;
+    line-height: 1.6;
+    color: rgba(0, 0, 0, 0.65);
+    margin-bottom: 40px;
+    font-weight: 400;
+  }
+
+  .dark .hero-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .btn-primary {
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 16px 32px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-primary:hover {
+    background: rgba(0, 0, 0, 0.95);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .dark .btn-primary {
+    background: #00c97c;
+    color: white;
+  }
+
+  .dark .btn-primary:hover {
+    background: #00a568;
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.9);
+    color: rgba(0, 0, 0, 0.8);
+    padding: 16px 32px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .dark .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Hero Cards */
+  .hero-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-top: 45px;
+  }
+
+  .hero-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 32px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .dark .hero-card {
+    background: rgba(26, 26, 26, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .hero-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  }
+
+  .dark .hero-card:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .hero-card-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 8px;
+  }
+
+  .dark .hero-card-title {
+    color: #f0f0f0;
+  }
+
+  .hero-card-subtitle {
+    font-size: 15px;
+    color: #666;
+    margin: 0 0 20px;
+    line-height: 1.5;
+  }
+
+  .dark .hero-card-subtitle {
+    color: #aaa;
+  }
+
+  .hero-search-bar {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .hero-search-bar:focus-within {
+    border-color: rgba(46, 168, 140, 0.5);
+    box-shadow: 0 4px 16px rgba(46, 168, 140, 0.15);
+  }
+
+  .dark .hero-search-bar {
+    background: #2a2a2a;
+    border-color: #444;
+  }
+
+  .dark .hero-search-bar:focus-within {
+    border-color: #00c97c;
+  }
+
+  .hero-search-bar input {
+    flex: 1;
+    padding: 14px 16px;
+    font-size: 15px;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: rgba(0, 0, 0, 0.85);
+  }
+
+  .dark .hero-search-bar input {
+    color: #fff;
+  }
+
+  .hero-search-bar input::placeholder {
+    color: rgba(0, 0, 0, 0.4);
+  }
+
+  .dark .hero-search-bar input::placeholder {
+    color: #999;
+  }
+
+  .hero-search-bar button {
+    background: rgba(0, 0, 0, 0.85);
+    border: none;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .hero-search-bar button:hover {
+    background: rgba(0, 0, 0, 0.95);
+  }
+
+  .dark .hero-search-bar button {
+    background: #00c97c;
+  }
+
+  .dark .hero-search-bar button:hover {
+    background: #00a568;
+  }
+
+  /* Features Section */
+  .features-section {
+    padding: 100px 40px;
+    background: white;
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .dark .features-section {
+    background: #141414;
+  }
+
+  .features-title {
+    text-align: center;
+    font-size: 48px;
+    font-weight: 700;
+    margin-bottom: 60px;
+    color: rgba(0, 0, 0, 0.85);
+    letter-spacing: -1px;
+  }
+
+  .dark .features-title {
+    color: #fff;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px;
+  }
+
+  .feature-card {
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid #e5e5e5;
+    transition: all 0.3s;
+  }
+
+  .dark .feature-card {
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+  }
+
+  .feature-card:hover {
+    border-color: #2ea88c;
+    box-shadow: 0 4px 16px rgba(46, 168, 140, 0.15);
+    transform: translateY(-4px);
+  }
+
+  .feature-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+  }
+
+  .feature-card h3 {
+    margin: 0 0 12px;
+    font-size: 22px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.85);
+  }
+
+  .dark .feature-card h3 {
+    color: #fff;
+  }
+
+  .feature-card p {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.6);
+    line-height: 1.6;
+    font-size: 16px;
+  }
+
+  .dark .feature-card p {
+    color: #aaa;
+  }
+
+  /* Stats Section */
+  .stats-section {
+    background: #f8f9fa;
+    padding: 80px 40px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .dark .stats-section {
+    background: #0d0d0d;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .stat-item {
+    padding: 20px;
+  }
+
+  .stat-number {
+    font-size: 48px;
+    font-weight: 700;
+    color: #2ea88c;
+    margin: 0;
+  }
+
+  .dark .stat-number {
+    color: #00c97c;
+  }
+
+  .stat-label {
+    font-size: 16px;
+    color: rgba(0, 0, 0, 0.6);
+    margin: 8px 0 0;
+  }
+
+  .dark .stat-label {
+    color: #aaa;
+  }
+
+  /* Footer */
+  .footer {
+    background: #fcfcfc;
+    color: #333;
+    padding: 60px 40px 30px;
+    border-top: 1px solid #e5e5e5;
+    position: relative;
+    z-index: 1;
+  }
+
+  .dark .footer {
+    background: #141414;
+    color: #f0f0f0;
+    border-top-color: #333;
+  }
+
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    max-width: 1400px;
+    margin: 0 auto;
+    gap: 40px;
+  }
+
+  .footer-left {
+    max-width: 400px;
+    text-align: left;
+  }
+
+  .footer-logo {
+    height: 24px;
+    margin-bottom: 16px;
+  }
+
+  .footer-left p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .dark .footer-left p {
+    color: #aaa;
+  }
+
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 40px;
+    text-align: left;
+  }
+
+  .footer-links a {
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.7);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .dark .footer-links a {
+    color: #f0f0f0;
+  }
+
+  .footer-links a:hover {
+    color: #2ea88c;
+  }
+
+  .dark .footer-links a:hover {
+    color: #00c97c;
+  }
+
+  .footer-bottom {
+    text-align: center;
+    border-top: 1px solid #e5e5e5;
+    margin-top: 40px;
+    padding-top: 30px;
+    width: 100%;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.5);
+  }
+
+  .dark .footer-bottom {
+    border-top-color: #333;
+    color: #aaa;
+  }
+
+  .footer-bottom p {
+    margin: 0;
+  }
+
+  /* Adjudicator Search Interception Modal */
+  .interception-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+
+  .interception-modal.active {
+    display: flex;
+  }
+
+  .interception-modal-content {
+    background: #fff;
+    color: #333;
+    padding: 30px 35px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+  }
+
+  .dark .interception-modal-content {
+    background: #1a1a1a;
+    color: #eee;
+  }
+
+  .interception-modal h2 {
+    font-size: 22px;
+    margin-top: 0;
+  }
+
+  .interception-modal p {
+    margin-bottom: 25px;
+    line-height: 1.6;
+  }
+
+  .interception-modal-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .interception-modal-buttons button {
+    padding: 12px 20px;
+    border-radius: 6px;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary-action {
+    background: #00c97c;
+    color: white;
+  }
+
+  .btn-primary-action:hover {
+    background: #00a568;
+  }
+
+  .btn-secondary-action {
+    background: #e9ecef;
+    color: #333;
+  }
+
+  .dark .btn-secondary-action {
+    background: #333;
+    color: #eee;
+  }
+
+  .btn-secondary-action:hover {
+    background: #dee2e6;
+  }
+
+  .dark .btn-secondary-action:hover {
+    background: #444;
+  }
+
+  .interception-modal p.helper-text {
+    font-size: 14px;
+    color: #999;
+    margin-top: 15px;
+  }
+
+  .dark .interception-modal p.helper-text {
+    color: #666;
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 1024px) {
+    .hero-content {
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+
+    .hero-title {
+      font-size: 56px;
+    }
+
+    .hero-left {
+      padding-right: 0;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .header-content {
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .nav-links {
+      margin: 0;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .hero-title {
+      font-size: 42px;
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+    }
+
+    .hero-cta {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .footer-content {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .footer-left {
+      margin-bottom: 25px;
+    }
+
+    .footer-links {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>
+
+</head>
+<body class="light">
+
+<!-- Header -->
+<header class="header">
+  <div class="header-content">
+    <a href="/">
+      <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+    </a>
+    <nav class="nav-links">
+      <a href="decision-search">Search</a>
+      <a href="adjudicators">Adjudicators</a>
+      <a href="interest-calculator">Interest Calculator</a>
+      <a href="due-date-calculator">Due Date Calculator</a>
+      <a href="how-to">How-To Guide</a>
+      <a href="feedback">Feedback</a>
+    </nav>
+    <div id="user-profile-nav"></div>
+  </div>
+</header>
+
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-content">
+    <div class="hero-left">
+      <h1 class="hero-title">Search adjudication decisions</h1>
+      <p class="hero-subtitle">
+        Analyse adjudication decisions and explore adjudicator insights under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)
+      </p>
+      <div class="hero-cta">
+        <a href="#search" class="btn-primary">Start searching</a>
+        <a href="how-to" class="btn-secondary">Learn more</a>
+      </div>
+    </div>
+
+    <div class="hero-cards">
+      <!-- Decision Search Card -->
+      <div class="hero-card">
+        <h2 class="hero-card-title">In-text Search Qld Decisions</h2>
+        <p class="hero-card-subtitle">Use simple or complex/boolean terms to search over 7,300+ adjudicator's decisions</p>
+        <div class="hero-search-bar">
+          <input 
+            type="text" 
+            id="heroSearchInput" 
+            placeholder='e.g., "payment claim" AND jurisdiction'
+            autocomplete="off"
+            onkeydown="if(event.key==='Enter') { event.preventDefault(); handleHeroSearch(); }"
+          >
+          <button type="button" onclick="handleHeroSearch()">Search</button>
+        </div>
+      </div>
+
+      <!-- Adjudicator Insights Card -->
+      <div class="hero-card">
+        <h2 class="hero-card-title">Search Adjudicator Insights & Analytics</h2>
+        <p class="hero-card-subtitle">Search by Adjudicator's name and view a list of their decisions and summary of decision-making statistics</p>
+        <div class="hero-search-bar">
+          <input 
+            type="text" 
+            id="adjudicatorSearchInput" 
+            placeholder="e.g., insert adjudicator's name"
+            autocomplete="off"
+            onkeydown="if(event.key==='Enter') { event.preventDefault(); handleAdjudicatorSearch(); }"
+          >
+          <button type="button" onclick="handleAdjudicatorSearch()">Search</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+  <div class="features-content">
+    <h2 class="features-title">Sopal's Features</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3>Advanced Search</h3>
+        <p>Boolean operators, proximity search, wildcards, and intelligent filtering to find exactly what you need.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Adjudicator Insights</h3>
+        <p>Comprehensive statistics and analysis for every adjudicator, including award rates and decision history.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3>AI-Powered Summaries</h3>
+        <p>Get instant summaries of decisions with SopalAI, and ask follow-up questions about specific cases.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">💰</div>
+        <h3>Interest Calculator</h3>
+        <p>Calculate interest on adjudicated amounts with up-to-date RBA rates automatically applied.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">📅</div>
+        <h3>Due Date Calculator</h3>
+        <p>Never miss a deadline with our BIF Act compliant due date calculator for critical timeframes.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>Consistently Updated</h3>
+        <p>Our database is continuously updated with the latest adjudication decisions as they're published.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+  <div class="stats-grid">
+    <div class="stat-item">
+      <div class="stat-number" id="totalDecisions">7,300+</div>
+      <div class="stat-label">Decisions Indexed</div>
+    </div>
+    
+    <div class="stat-item">
+      <div class="stat-number" id="totalAdjudicators">180+</div>
+      <div class="stat-label">Adjudicators Tracked</div>
+    </div>
+    
+    <div class="stat-item">
+      <div class="stat-number">$4.5B+</div>
+      <div class="stat-label">In Claimed Amounts</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-number">$2.8B+</div>
+      <div class="stat-label">In Adjudicated Amounts</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-number">21 Years</div>
+      <div class="stat-label">Decision Range (2004-2025)</div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-left">
+      <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+      <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+    </div>
+
+    <div class="footer-links">
+      <a href="adjudicators">Adjudicators</a>
+      <a href="decision-search">Search</a>
+      <a href="interest-calculator">Interest Calculator</a>
+      <a href="due-date-calculator">Due Date Calculator</a>
+      <a href="feedback">Feedback</a>
+      <a href="how-to">How-To Guide</a>
+      <a href="privacy">Privacy</a>
+      <a href="adjudicator-insights-terms.html">Adjudicator Insights Terms</a>
+      <a href="terms">General Terms of Use</a>
+      <a href="account-terms.html">Account Terms</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 Sopal Australia. All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- Adjudicator Search Modal -->
+<div id="adjudicatorSearchModal" class="interception-modal">
+  <div class="interception-modal-content">
+    <h2>Adjudicator Search Detected</h2>
+    <p>
+      It looks like you're searching for an adjudicator. For detailed adjudicator statistics and insights, please use the <strong>Adjudicator Insights & Analytics</strong> tool.
+    </p>
+    <p style="font-size: 14px; color: #666; margin-top: 15px;">
+      To search decisions instead, please modify your search query.
+    </p>
+    <div class="interception-modal-buttons">
+      <button id="closeModalBtn" class="btn-secondary-action">Modify Search</button>
+      <button id="useInsightsBtn" class="btn-primary-action">View Adjudicator Insights</button>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/main.js"></script>
+<script>
+  // This function is kept in case it's needed elsewhere, but it's not actively used by a button.
+  function toggleTheme() {
+    const body = document.body;
+    const isDark = body.classList.contains('dark');
+
+    if (isDark) {
+      body.classList.remove('dark');
+      body.classList.add('light');
+      localStorage.setItem('theme', 'light');
+    } else {
+      body.classList.remove('light');
+      body.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+
+    const logo = document.getElementById('logo');
+    const footerLogo = document.getElementById('footerLogo');
+    if (logo && footerLogo) {
+      logo.src = body.classList.contains('dark')
+        ? "assets/sopal_logo_white_v1.png"
+        : "assets/sopal_logo_v1.png";
+      footerLogo.src = body.classList.contains('dark')
+        ? "assets/sopal_logo_white_v1.png"
+        : "assets/sopal_logo_v1.png";
+    }
+  }
+
+  // Force Light Theme on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    const body = document.body;
+    
+    // Always apply the light theme and remove dark theme classes
+    body.classList.remove('dark');
+    body.classList.add('light');
+    
+    // Set the correct logos for the light theme
+    const logo = document.getElementById('logo');
+    const footerLogo = document.getElementById('footerLogo');
+    if (logo) logo.src = "assets/sopal_logo_v1.png";
+    if (footerLogo) footerLogo.src = "assets/sopal_logo_v1.png";
+  });
+
+  // Navbar scroll behavior - show white background after 200px scroll
+  window.addEventListener('scroll', () => {
+    const header = document.querySelector('.header');
+    if (window.scrollY > 200) {
+      header.classList.add('scrolled');
+    } else {
+      header.classList.remove('scrolled');
+    }
+  });
+
+  // Adjudicator detection
+  let adjudicatorList = [];
+  let currentDecisionQuery = '';
+
+  async function fetchAdjudicators() {
+    try {
+      const excludedSurnames = new Set([
+        'bond', 'wood', 'court', 'grant', 'king', 
+        'dowling', 'wright', 'long', 'green', 
+        'white', 'lee', 'smith', 'jones', 'wilson', 
+        'taylor', 'roberts', 'williams', 'martin', 'thomas'
+      ]);
+
+      const response = await fetch('/api/adjudicators');
+      if (!response.ok) return;
+      const data = await response.json();
+      
+      adjudicatorList = data.map(adj => {
+        const parts = adj.name.toLowerCase().split(' ').filter(p => p.length > 1);
+        let lastName = parts.length > 0 ? parts[parts.length - 1] : null;
+
+        if (lastName && excludedSurnames.has(lastName)) {
+          lastName = null; 
+        }
+
+        return {
+          fullName: adj.name.toLowerCase(),
+          lastName: lastName 
+        };
+      });
+      console.log(`Loaded ${adjudicatorList.length} adjudicators for surname check.`);
+    } catch (error) {
+      console.error('Could not fetch adjudicator list:', error);
+    }
+  }
+
+  function normalizeInput(s) {
+    return (s || '')
+      .replace(/[""]/g, '"')
+      .replace(/['']/g, "'")
+      .replace(/[––—―]/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function findMatchingAdjudicator(query) {
+  if (!query || query.length < 3 || !adjudicatorList.length) return null;
+
+  const cleanedQuery = query
+    .toLowerCase()
+    .replace(/"/g, '')
+    .replace(/\b(and|or|not|w\/\d+|near\/\d+)\b/gi, ' ')
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleanedQuery) return null;
+
+  // Split the cleaned query into individual words
+  const queryWords = cleanedQuery.split(/\s+/);
+
+  for (const adjudicator of adjudicatorList) {
+    if (adjudicator.lastName) {
+      // Check if the adjudicator's last name matches any complete word in the query
+      if (queryWords.includes(adjudicator.lastName)) {
+        return adjudicator.fullName;
+      }
+    }
+  }
+  return null;
+}
+  
+  
+
+  function showAdjudicatorModal() {
+    const modal = document.getElementById('adjudicatorSearchModal');
+    modal.classList.add('active');
+
+    document.getElementById('useInsightsBtn').onclick = () => {
+      modal.classList.remove('active');
+      if (currentDecisionQuery) {
+        window.location.href = `/adjudicators?q=${encodeURIComponent(currentDecisionQuery)}`;
+      }
+    };
+
+    document.getElementById('closeModalBtn').onclick = () => {
+      modal.classList.remove('active');
+    };
+
+    modal.onclick = (e) => {
+      if (e.target === modal) {
+        modal.classList.remove('active');
+      }
+    };
+  }
+
+  // NEW: Search Handler for Decision Search Bar
+  function handleHeroSearch() {
+    const query = document.getElementById('heroSearchInput').value.trim();
+    if (!query) return;
+
+    currentDecisionQuery = query;
+    const normalizedQuery = normalizeInput(query);
+    const matchedAdjudicator = findMatchingAdjudicator(normalizedQuery);
+    
+    if (matchedAdjudicator) {
+      showAdjudicatorModal();
+    } else {
+      window.location.href = `/decision-search?q=${encodeURIComponent(query)}`;
+    }
+  }
+
+  // NEW: Search Handler for Adjudicator Search Bar
+  function handleAdjudicatorSearch() {
+    const query = document.getElementById('adjudicatorSearchInput').value.trim();
+    if (!query) return;
+    
+    window.location.href = `/adjudicators?q=${encodeURIComponent(query)}`;
+  }
+
+
+  // Fetch and display real stats
+  async function loadStats() {
+    try {
+      const searchRes = await fetch('/search_fast?limit=1');
+      const searchData = await searchRes.json();
+      
+      if (searchData.total) {
+        document.getElementById('totalDecisions').textContent = 
+          searchData.total.toLocaleString() + '+';
+      }
+
+      const adjRes = await fetch('/api/adjudicators');
+      const adjData = await adjRes.json();
+      
+      if (adjData.length) {
+        document.getElementById('totalAdjudicators').textContent = 
+          adjData.length + '+';
+      }
+    } catch (e) {
+      console.error('Error loading stats:', e);
+    }
+  }
+
+  // Load adjudicators on page load
+  fetchAdjudicators();
+  loadStats();
+</script>
+
+</body>
+</html>

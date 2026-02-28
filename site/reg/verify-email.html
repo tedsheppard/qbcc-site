@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Sopal – Verifying Email</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+  body {
+    font-family: Inter, sans-serif;
+    margin: 0;
+    background: #f8f9fa;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  
+  .verify-container {
+    background: #fff;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
+  
+  .spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #00c97c;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  h1 {
+    font-size: 24px;
+    margin: 0 0 15px 0;
+    color: #333;
+  }
+  
+  p {
+    color: #666;
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="verify-container">
+  <div class="spinner"></div>
+  <h1>Verifying Your Email</h1>
+  <p>Please wait...</p>
+</div>
+
+<script>
+// Get token from URL
+const urlParams = new URLSearchParams(window.location.search);
+const token = urlParams.get('token');
+
+async function verifyEmail() {
+  if (!token) {
+    console.error('No token provided');
+    window.location.href = '/account.html';
+    return;
+  }
+
+  try {
+    const response = await fetch(`/verify-email?token=${encodeURIComponent(token)}`);
+    
+    if (response.ok) {
+      // Success - redirect to account page with success indicator
+      window.location.href = '/account.html?tab=profile&verified=success';
+    } else {
+      // Failed - still redirect but without success message
+      window.location.href = '/account.html?tab=profile';
+    }
+    
+  } catch (error) {
+    console.error('Verification error:', error);
+    // On error, still redirect to account
+    window.location.href = '/account.html?tab=profile';
+  }
+}
+
+// Start verification immediately
+verifyEmail();
+</script>
+
+</body>
+</html>

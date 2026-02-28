@@ -1,0 +1,1248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+
+  <meta charset="utf-8">
+  <title>Sopal - Intelligent Adjudication Search</title>
+  <meta name="description" content="Sopal is an intelligent search tool for finding adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act) in Queensland, Australia.">
+  <meta name="keywords" content="Sopal, adjudication decisions, BIF Act, Building Industry Fairness, Security of Payment Act, Queensland, construction law, payment disputes">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --ink: #17231d;
+      --ink-strong: #0f1914;
+      --muted: #5b6a62;
+      --accent: #1f8e78;
+      --accent-strong: #136a56;
+      --accent-soft: #a8e2d2;
+      --paper: #f7f8f6;
+      --card: #ffffff;
+      --line: rgba(19, 33, 27, 0.12);
+      --shadow-lg: 0 30px 70px rgba(12, 40, 30, 0.18);
+      --shadow-md: 0 18px 40px rgba(18, 44, 34, 0.12);
+      --shadow-sm: 0 8px 22px rgba(18, 44, 34, 0.1);
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Manrope", sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.5;
+      font-size: 16px;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3 {
+      font-family: "Space Grotesk", sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* Header */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 20px 0;
+      transition: all 0.3s ease;
+      background: transparent;
+    }
+
+    .header.scrolled {
+      background: rgba(247, 248, 246, 0.94);
+      border-bottom: 1px solid rgba(18, 34, 27, 0.08);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 30px rgba(12, 25, 21, 0.08);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo {
+      height: 30px;
+      display: block;
+    }
+
+    .nav-block {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(15, 25, 20, 0.8);
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: var(--accent);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .nav-cta {
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(31, 142, 120, 0.12);
+      color: var(--accent-strong);
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid rgba(31, 142, 120, 0.2);
+      transition: all 0.2s ease;
+    }
+
+    .nav-cta:hover {
+      background: rgba(31, 142, 120, 0.2);
+      border-color: rgba(31, 142, 120, 0.4);
+    }
+
+    /* Hero */
+    .hero {
+      position: relative;
+      padding: 160px 0 120px;
+      background: radial-gradient(circle at top left, #eefbf7 0%, #d9f3ea 35%, #bfe7da 68%, #a3dac9 100%);
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: -120px;
+      right: -120px;
+      width: 420px;
+      height: 420px;
+      background: radial-gradient(circle, rgba(31, 142, 120, 0.28), rgba(31, 142, 120, 0));
+      filter: blur(2px);
+      opacity: 0.8;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      bottom: -180px;
+      left: -180px;
+      width: 520px;
+      height: 520px;
+      background: radial-gradient(circle, rgba(22, 95, 80, 0.22), rgba(22, 95, 80, 0));
+      opacity: 0.7;
+    }
+
+    .hero-grid {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      animation: rise 0.9s ease-out both;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: rgba(15, 25, 20, 0.65);
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 22px;
+      height: 2px;
+      background: var(--accent);
+      display: inline-block;
+    }
+
+    .hero-title {
+      font-size: 60px;
+      line-height: 1.05;
+      color: var(--ink-strong);
+    }
+
+    .hero-lede {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 520px;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: var(--ink-strong);
+      color: #ffffff;
+      padding: 14px 26px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      padding: 12px 22px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--accent-strong);
+      border: 1px solid rgba(19, 106, 86, 0.2);
+      background: rgba(255, 255, 255, 0.7);
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      border-color: rgba(19, 106, 86, 0.4);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      padding-top: 8px;
+    }
+
+    .meta-card {
+      padding: 16px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(22, 51, 40, 0.1);
+      backdrop-filter: blur(6px);
+    }
+
+    .meta-card strong {
+      display: block;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink-strong);
+    }
+
+    .meta-card span {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .hero-panel {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: var(--radius-lg);
+      padding: 30px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(22, 51, 40, 0.12);
+      backdrop-filter: blur(12px);
+      animation: floatIn 0.9s ease-out both;
+      animation-delay: 0.1s;
+    }
+
+    .panel-block {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .panel-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ink-strong);
+    }
+
+    .panel-subtitle {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .search-field {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(18, 44, 34, 0.12);
+      background: #ffffff;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+      transition: all 0.2s ease;
+    }
+
+    .search-field:focus-within {
+      border-color: rgba(31, 142, 120, 0.45);
+      box-shadow: 0 10px 26px rgba(31, 142, 120, 0.15);
+    }
+
+    .search-field input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 12px 10px;
+      font-size: 14px;
+      outline: none;
+      color: var(--ink-strong);
+    }
+
+    .search-field input::placeholder {
+      color: rgba(15, 25, 20, 0.4);
+    }
+
+    .search-field button {
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: none;
+      background: var(--ink-strong);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .search-field button:hover {
+      background: #0b1410;
+    }
+
+    .search-examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(31, 142, 120, 0.2);
+      background: rgba(31, 142, 120, 0.08);
+      color: var(--accent-strong);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .chip:hover {
+      border-color: rgba(31, 142, 120, 0.4);
+      background: rgba(31, 142, 120, 0.15);
+    }
+
+    .panel-divider {
+      height: 1px;
+      background: rgba(18, 44, 34, 0.08);
+      margin: 22px 0;
+    }
+
+    /* Section shared */
+    section {
+      position: relative;
+    }
+
+    .section-head {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .section-head h2 {
+      font-size: 40px;
+      color: var(--ink-strong);
+    }
+
+    .section-head p {
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* Capabilities */
+    .capabilities {
+      padding: 100px 0 70px;
+      background: #ffffff;
+    }
+
+    .cap-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 22px;
+    }
+
+    .cap-card {
+      background: var(--paper);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      border: 1px solid rgba(17, 39, 30, 0.08);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      animation: fadeUp 0.9s ease both;
+      animation-delay: var(--delay);
+    }
+
+    .cap-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .cap-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(31, 142, 120, 0.14);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cap-card h3 {
+      font-size: 20px;
+      color: var(--ink-strong);
+    }
+
+    .cap-card p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* Workflow */
+    .workflow {
+      padding: 70px 0 90px;
+      background: var(--paper);
+    }
+
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
+    .flow-card {
+      background: #ffffff;
+      border-radius: var(--radius-md);
+      padding: 26px;
+      border: 1px solid rgba(17, 39, 30, 0.08);
+    }
+
+    .flow-step {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      color: rgba(31, 142, 120, 0.8);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .flow-card h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      color: var(--ink-strong);
+    }
+
+    .flow-card p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* Stats */
+    .stats {
+      padding: 80px 0;
+      background: #111c16;
+      color: #ffffff;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 22px;
+      text-align: center;
+    }
+
+    .stat-card {
+      padding: 16px;
+    }
+
+    .stat-card strong {
+      display: block;
+      font-size: 34px;
+      font-weight: 700;
+      color: #9de2d0;
+    }
+
+    .stat-card span {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* CTA */
+    .cta-band {
+      padding: 80px 0;
+      background: linear-gradient(130deg, #f4fbf8 0%, #e1f3ec 100%);
+    }
+
+    .cta-card {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      border: 1px solid rgba(17, 39, 30, 0.1);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .cta-card h2 {
+      font-size: 32px;
+      color: var(--ink-strong);
+    }
+
+    .cta-card p {
+      color: var(--muted);
+      max-width: 520px;
+      font-size: 15px;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 60px 0 30px;
+      background: #ffffff;
+      border-top: 1px solid rgba(17, 39, 30, 0.08);
+    }
+
+    .footer-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      justify-content: space-between;
+    }
+
+    .footer-left {
+      max-width: 360px;
+    }
+
+    .footer-logo {
+      height: 24px;
+      margin-bottom: 14px;
+    }
+
+    .footer-left p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer-links {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(140px, 1fr));
+      gap: 12px 36px;
+    }
+
+    .footer-links a {
+      font-size: 14px;
+      color: rgba(15, 25, 20, 0.75);
+      transition: color 0.2s ease;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent);
+    }
+
+    .footer-bottom {
+      text-align: center;
+      margin-top: 36px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(17, 39, 30, 0.08);
+      color: rgba(15, 25, 20, 0.5);
+      font-size: 13px;
+    }
+
+    /* Modal */
+    .interception-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 15, 12, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .interception-modal.active {
+      display: flex;
+    }
+
+    .interception-modal-content {
+      background: #ffffff;
+      color: var(--ink);
+      padding: 30px 34px;
+      border-radius: 16px;
+      max-width: 520px;
+      width: 90%;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .interception-modal-content h2 {
+      font-size: 22px;
+      margin-bottom: 12px;
+    }
+
+    .interception-modal-content p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+
+    .interception-modal-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary-action {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-secondary-action {
+      background: rgba(15, 25, 20, 0.08);
+      color: var(--ink);
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Animations */
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes floatIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 1100px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-title {
+        font-size: 48px;
+      }
+
+      .hero-meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 860px) {
+      .header-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .nav-block {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+
+      .hero {
+        padding: 150px 0 90px;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .hero-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 0 20px;
+      }
+
+      .nav-links {
+        gap: 12px;
+      }
+
+      .hero-title {
+        font-size: 38px;
+      }
+
+      .panel-title {
+        font-size: 20px;
+      }
+
+      .footer-links {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="light">
+  <header class="header">
+    <div class="container header-inner">
+      <a href="/" class="logo-link">
+        <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+      </a>
+      <div class="nav-block">
+        <nav class="nav-links">
+          <a href="decision-search">Search</a>
+          <a href="adjudicators">Adjudicators</a>
+          <a href="interest-calculator">Interest Calculator</a>
+          <a href="due-date-calculator">Due Date Calculator</a>
+          <a href="how-to">How-To Guide</a>
+          <a href="feedback">Feedback</a>
+        </nav>
+        <div class="nav-actions">
+          <div id="user-profile-nav"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="search">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <h1 class="hero-title">Find the decisions that move your claim forward.</h1>
+          <p class="hero-lede">
+            Sopal turns adjudication decisions into a clear, searchable dataset with intelligent filters, adjudicator analytics, and AI summaries when you need speed.
+          </p>
+          <div class="hero-actions">
+            <a href="decision-search" class="btn-primary">Open decision search</a>
+            <a href="how-to" class="btn-secondary">See how it works</a>
+          </div>
+          <div class="hero-meta">
+            <div class="meta-card">
+              <strong class="js-total-decisions">7,300+</strong>
+              <span>Decisions indexed</span>
+            </div>
+            <div class="meta-card">
+              <strong class="js-total-adjudicators">180+</strong>
+              <span>Adjudicators tracked</span>
+            </div>
+            <div class="meta-card">
+              <strong>2004-2026</strong>
+              <span>Decision range</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-panel" id="search-panel">
+          <div class="panel-block">
+            <div>
+              <h2 class="panel-title">In-text decision search</h2>
+              <p class="panel-subtitle">Use boolean and proximity terms across 7,300+ decisions.</p>
+            </div>
+            <div class="search-field">
+              <input
+                type="text"
+                id="heroSearchInput"
+                placeholder='e.g., "payment claim" AND jurisdiction'
+                autocomplete="off"
+                onkeydown="if(event.key==='Enter') { event.preventDefault(); handleHeroSearch(); }"
+              >
+              <button type="button" onclick="handleHeroSearch()">Search</button>
+            </div>
+            <div class="search-examples">
+              <button class="chip" type="button" data-target="heroSearchInput" data-value="&quot;payment claim&quot; AND &quot;jurisdiction&quot;">"payment claim" AND "jurisdiction"</button>
+              <button class="chip" type="button" data-target="heroSearchInput" data-value="&quot;section 67&quot; w/5 &quot;reference date&quot;">"section 67" w/5 "reference date"</button>
+              <button class="chip" type="button" data-target="heroSearchInput" data-value="&quot;variation&quot; OR &quot;delay costs&quot;">"variation" OR "delay costs"</button>
+            </div>
+          </div>
+
+          <div class="panel-divider"></div>
+
+          <div class="panel-block">
+            <div>
+              <h2 class="panel-title">Adjudicator insights</h2>
+              <p class="panel-subtitle">Search adjudicators by name and compare decision patterns.</p>
+            </div>
+            <div class="search-field">
+              <input
+                type="text"
+                id="adjudicatorSearchInput"
+                placeholder="e.g., insert adjudicator name"
+                autocomplete="off"
+                onkeydown="if(event.key==='Enter') { event.preventDefault(); handleAdjudicatorSearch(); }"
+              >
+              <button type="button" onclick="handleAdjudicatorSearch()">Search</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="capabilities">
+      <div class="container">
+        <div class="section-head">
+          <h2>Everything you need to navigate the BIF Act</h2>
+          <p>Focus on the decisions that matter, compare adjudicators, and answer client questions in minutes instead of hours.</p>
+        </div>
+        <div class="cap-grid">
+          <article class="cap-card" style="--delay: 0.05s;">
+            <div class="cap-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8e78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+            <h3>Precision search</h3>
+            <p>Boolean operators, proximity search, and filters help you isolate the exact decision language you need.</p>
+          </article>
+          <article class="cap-card" style="--delay: 0.12s;">
+            <div class="cap-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8e78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 3h18v14H3z"></path>
+                <path d="M7 21h10"></path>
+                <path d="M12 17v4"></path>
+              </svg>
+            </div>
+            <h3>Decision analytics</h3>
+            <p>Track award rates, common outcomes, and decision history for every adjudicator in one view.</p>
+          </article>
+          <article class="cap-card" style="--delay: 0.19s;">
+            <div class="cap-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8e78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v18"></path>
+                <path d="M5 12h14"></path>
+              </svg>
+            </div>
+            <h3>AI summaries</h3>
+            <p>Surface the key facts and reasoning quickly, then drill into the full decision when required.</p>
+          </article>
+          <article class="cap-card" style="--delay: 0.26s;">
+            <div class="cap-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8e78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 1v22"></path>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            <h3>Interest calculator</h3>
+            <p>Calculate interest with current RBA rates in seconds and include the results in your advice.</p>
+          </article>
+          <article class="cap-card" style="--delay: 0.33s;">
+            <div class="cap-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8e78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </div>
+            <h3>Due date tracking</h3>
+            <p>Stay compliant with BIF Act timelines using deadline tools built for payment claims.</p>
+          </article>
+          <article class="cap-card" style="--delay: 0.4s;">
+            <div class="cap-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8e78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 20l9-5-9-5-9 5 9 5z"></path>
+                <path d="M12 12l9-5-9-5-9 5 9 5z"></path>
+              </svg>
+            </div>
+            <h3>Fresh updates</h3>
+            <p>Decisions are added continuously so your research stays current as new outcomes are published.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="workflow">
+      <div class="container">
+        <div class="section-head">
+          <h2>From question to answer in three steps</h2>
+          <p>Keep the heavy lifting in Sopal so your time goes into strategy, client advice, and negotiation.</p>
+        </div>
+        <div class="flow-grid">
+          <div class="flow-card">
+            <div class="flow-step">Step 1</div>
+            <h3>Search the decision corpus</h3>
+            <p>Run precision queries across thousands of decisions with boolean operators and exact phrases.</p>
+          </div>
+          <div class="flow-card">
+            <div class="flow-step">Step 2</div>
+            <h3>Compare adjudicators</h3>
+            <p>Review patterns in how adjudicators handle key issues, including jurisdiction and valuation.</p>
+          </div>
+          <div class="flow-card">
+            <div class="flow-step">Step 3</div>
+            <h3>Package your advice</h3>
+            <p>Pull summaries, link to decisions, and share clear findings with clients and stakeholders.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div class="container stats-grid">
+        <div class="stat-card">
+          <strong class="js-total-decisions">7,300+</strong>
+          <span>Decisions indexed</span>
+        </div>
+        <div class="stat-card">
+          <strong class="js-total-adjudicators">180+</strong>
+          <span>Adjudicators tracked</span>
+        </div>
+        <div class="stat-card">
+          <strong>$4.5B+</strong>
+          <span>In claimed amounts</span>
+        </div>
+        <div class="stat-card">
+          <strong>$2.8B+</strong>
+          <span>In adjudicated amounts</span>
+        </div>
+        <div class="stat-card">
+          <strong>21 years</strong>
+          <span>Decision range (2004-2026)</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-band">
+      <div class="container">
+        <div class="cta-card">
+          <div>
+            <h2>Ready to start your search?</h2>
+            <p>Access every adjudication decision in Queensland with tools that surface the right evidence fast.</p>
+          </div>
+          <div class="hero-actions">
+            <a href="decision-search" class="btn-primary">Start a search</a>
+            <a href="adjudicators" class="btn-secondary">View adjudicators</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-left">
+          <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+          <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+        </div>
+        <div class="footer-links">
+          <a href="adjudicators">Adjudicators</a>
+          <a href="decision-search">Search</a>
+          <a href="interest-calculator">Interest Calculator</a>
+          <a href="due-date-calculator">Due Date Calculator</a>
+          <a href="feedback">Feedback</a>
+          <a href="how-to">How-To Guide</a>
+          <a href="privacy">Privacy</a>
+          <a href="adjudicator-insights-terms">Adjudicator Insights Terms</a>
+          <a href="terms">General Terms of Use</a>
+          <a href="account-terms">Account Terms</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>Copyright 2025 Sopal Australia. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <div id="adjudicatorSearchModal" class="interception-modal">
+    <div class="interception-modal-content">
+      <h2>Adjudicator Search Detected</h2>
+      <p>
+        It looks like you are searching for an adjudicator. For detailed adjudicator statistics and insights, please use the Adjudicator Insights and Analytics tool.
+      </p>
+      <p>
+        To search decisions instead, please modify your search query.
+      </p>
+      <div class="interception-modal-buttons">
+        <button id="closeModalBtn" class="btn-secondary-action">Modify Search</button>
+        <button id="useInsightsBtn" class="btn-primary-action">View Adjudicator Insights</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/main.js"></script>
+  <script>
+    // Force Light Theme on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      const body = document.body;
+      body.classList.remove('dark');
+      body.classList.add('light');
+
+      const logo = document.getElementById('logo');
+      const footerLogo = document.getElementById('footerLogo');
+      if (logo) logo.src = "assets/sopal_logo_v1.png";
+      if (footerLogo) footerLogo.src = "assets/sopal_logo_v1.png";
+
+      document.querySelectorAll('.chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          const targetId = chip.getAttribute('data-target');
+          const value = chip.getAttribute('data-value') || '';
+          const input = document.getElementById(targetId);
+          if (input) {
+            input.value = value;
+            input.focus();
+          }
+        });
+      });
+    });
+
+    // Navbar scroll behavior
+    window.addEventListener('scroll', () => {
+      const header = document.querySelector('.header');
+      if (window.scrollY > 160) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    });
+
+    // Adjudicator detection
+    let adjudicatorList = [];
+    let currentDecisionQuery = '';
+
+    async function fetchAdjudicators() {
+      try {
+        const excludedSurnames = new Set([
+          'bond', 'wood', 'court', 'grant', 'king',
+          'dowling', 'wright', 'long', 'green',
+          'white', 'lee', 'smith', 'jones', 'wilson',
+          'taylor', 'roberts', 'williams', 'martin', 'thomas'
+        ]);
+
+        const response = await fetch('/api/adjudicators');
+        if (!response.ok) return;
+        const data = await response.json();
+
+        adjudicatorList = data.map(adj => {
+          const parts = adj.name.toLowerCase().split(' ').filter(p => p.length > 1);
+          let lastName = parts.length > 0 ? parts[parts.length - 1] : null;
+
+          if (lastName && excludedSurnames.has(lastName)) {
+            lastName = null;
+          }
+
+          return {
+            fullName: adj.name.toLowerCase(),
+            lastName: lastName
+          };
+        });
+        console.log(`Loaded ${adjudicatorList.length} adjudicators for surname check.`);
+      } catch (error) {
+        console.error('Could not fetch adjudicator list:', error);
+      }
+    }
+
+    function normalizeInput(s) {
+      return (s || '')
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/[\u2013\u2014\u2015]/g, '-')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function findMatchingAdjudicator(query) {
+      if (!query || query.length < 3 || !adjudicatorList.length) return null;
+
+      const cleanedQuery = query
+        .toLowerCase()
+        .replace(/"/g, '')
+        .replace(/\b(and|or|not|w\/\d+|near\/\d+)\b/gi, ' ')
+        .replace(/[^\w\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (!cleanedQuery) return null;
+
+      const queryWords = cleanedQuery.split(/\s+/);
+
+      for (const adjudicator of adjudicatorList) {
+        if (adjudicator.lastName) {
+          if (queryWords.includes(adjudicator.lastName)) {
+            return adjudicator.fullName;
+          }
+        }
+      }
+      return null;
+    }
+
+    function showAdjudicatorModal() {
+      const modal = document.getElementById('adjudicatorSearchModal');
+      modal.classList.add('active');
+
+      document.getElementById('useInsightsBtn').onclick = () => {
+        modal.classList.remove('active');
+        if (currentDecisionQuery) {
+          window.location.href = `/adjudicators?q=${encodeURIComponent(currentDecisionQuery)}`;
+        }
+      };
+
+      document.getElementById('closeModalBtn').onclick = () => {
+        modal.classList.remove('active');
+      };
+
+      modal.onclick = (e) => {
+        if (e.target === modal) {
+          modal.classList.remove('active');
+        }
+      };
+    }
+
+    function handleHeroSearch() {
+      const query = document.getElementById('heroSearchInput').value.trim();
+      if (!query) return;
+
+      currentDecisionQuery = query;
+      const normalizedQuery = normalizeInput(query);
+      const matchedAdjudicator = findMatchingAdjudicator(normalizedQuery);
+
+      if (matchedAdjudicator) {
+        showAdjudicatorModal();
+      } else {
+        window.location.href = `/decision-search?q=${encodeURIComponent(query)}`;
+      }
+    }
+
+    function handleAdjudicatorSearch() {
+      const query = document.getElementById('adjudicatorSearchInput').value.trim();
+      if (!query) return;
+
+      window.location.href = `/adjudicators?q=${encodeURIComponent(query)}`;
+    }
+
+    async function loadStats() {
+      try {
+        const searchRes = await fetch('/search_fast?limit=1');
+        const searchData = await searchRes.json();
+
+        if (searchData.total) {
+          document.querySelectorAll('.js-total-decisions').forEach((el) => {
+            el.textContent = searchData.total.toLocaleString() + '+';
+          });
+        }
+
+        const adjRes = await fetch('/api/adjudicators');
+        const adjData = await adjRes.json();
+
+        if (adjData.length) {
+          document.querySelectorAll('.js-total-adjudicators').forEach((el) => {
+            el.textContent = adjData.length + '+';
+          });
+        }
+      } catch (e) {
+        console.error('Error loading stats:', e);
+      }
+    }
+
+    fetchAdjudicators();
+    loadStats();
+  </script>
+</body>
+</html>

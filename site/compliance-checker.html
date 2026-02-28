@@ -1,368 +1,396 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-QEN3X3DQLR');
-  </script>
-  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
-  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
-  <meta charset="utf-8">
-  <title>Sopal – Compliance Checker</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-  /* Base styles from other tools */
-  body {
-    font-family: Inter, sans-serif;
-    margin: 0;
-    background: #ffffff;
-    color: #222;
-    font-size: 15px;
-    line-height: 1.6;
-  }
-  main {
-    max-width: 900px;
-    margin: 40px auto;
-    padding: 0 25px;
-  }
-  h1 {
-    font-size: 28px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 15px;
-    margin-bottom: 20px;
-  }
-  .calculate-btn {
-    margin-top: 25px;
-    padding: 12px 20px;
-    background: #00c97c;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
-    transition: background 0.2s;
-  }
-  .calculate-btn:hover {
-    background: #00a568;
-  }
-  .calculate-btn:disabled {
-    background: #a5d6a7;
-    cursor: not-allowed;
-  }
+  <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compliance Checker | Sopal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-dark: #0a0a0a;
+      --bg-darker: #050505;
+      --green: #00d47e;
+      --green-dark: #00b368;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #888;
+      --border-light: #e5e5e5;
+      --border-dark: #222;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    button { border: none; cursor: pointer; font-family: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
 
-  /* Header */
-  .header {
-    background: #fdfdfd;
-    padding: 20px 25px;
-    border-bottom: 1px solid #ddd;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  .header-content {
-    display: flex;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  .logo {
-    height: 31px;
-    margin-right: 20px;
-  }
-  .nav-links {
-    margin-left: auto;
-    display: flex;
-    gap: 20px;
-  }
-  .nav-links a {
-    color: black;
-    text-decoration: none;
-    font-size: 14px;
-    transition: color 0.2s;
-  }
-  .nav-links a:hover {
-    color: #00c97c;
-  }
-  .nav-links a.active {
-    color: #008a5c;
-    font-weight: 600;
-  }
+    /* Nav */
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+    .nav-logo-icon { width: 28px; height: 28px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .nav-logo-icon svg { width: 16px; height: 16px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-links a.active { color: white; font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
 
-  /* Footer */
-  .footer {
-    background: #fcfcfc;
-    color: #333;
-    padding: 40px 25px 20px;
-    margin-top: 60px;
-    border-top: 1px solid #ddd;
-  }
-  .footer-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    max-width: 1200px;
-    margin: auto;
-  }
-  .footer-left { 
-    max-width: 400px;
-    text-align: left;
-  }
-  .footer-logo { height: 24px; margin-bottom: 10px; }
-  .footer-links {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px 40px;
-    text-align: left;
-  }
-  .footer-links a {
-    font-size: 13px;
-  }
-  .footer-bottom {
-    text-align: center;
-    border-top: 1px solid #eee;
-    margin-top: 30px;
-    padding-top: 20px;
-    width: 100%;
-    font-size: 0.85em;
-    color: #666;
-  }
+    /* Page Header */
+    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 32px 0; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; max-width: 720px; }
 
-  /* Tool Specific Styles */
-  .checker-container {
-    background: #fdfdfd;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 25px;
-    margin-top: 30px;
-  }
-  .form-group {
-    margin-bottom: 20px;
-  }
-  .form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    font-size: 14px;
-  }
-  .doc-type-selector {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .doc-type-selector input[type="radio"] {
-    display: none;
-  }
-  .doc-type-selector label {
-    padding: 10px 15px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s;
-  }
-  .doc-type-selector input[type="radio"]:checked + label {
-    background-color: #e6f7ff;
-    border-color: #00c97c;
-    font-weight: 600;
-  }
+    /* Main Content */
+    .content-area { padding: 40px 0 72px; }
 
-  /* File Upload Area */
-  #drop-zone {
-    border: 2px dashed #ccc;
-    border-radius: 8px;
-    padding: 40px;
-    text-align: center;
-    cursor: pointer;
-    background-color: #fafafa;
-    transition: background-color 0.2s, border-color 0.2s;
-  }
-  #drop-zone.dragover {
-    background-color: #f0f0f0;
-    border-color: #00c97c;
-  }
-  #file-list {
-    margin-top: 15px;
-    font-size: 14px;
-  }
+    /* Checker Container */
+    .checker-container {
+      background: white;
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 28px;
+      max-width: 780px;
+    }
+    .form-group {
+      margin-bottom: 24px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-primary);
+    }
 
-  /* Results Area */
-  #results {
-    margin-top: 30px;
-  }
-  .analysis-report {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 20px;
-  }
-  .analysis-report h3 {
-    margin-top: 0;
-  }
-  .check-item {
-    display: flex;
-    align-items: flex-start;
-    padding: 15px;
-    margin-top: 15px;
-    border-radius: 6px;
-    border: 1px solid transparent;
-  }
-  .check-item.pass { background-color: #e8f5e9; border-color: #a5d6a7; }
-  .check-item.warning { background-color: #fff8e1; border-color: #ffe082; }
-  .check-item.fail { background-color: #ffebee; border-color: #ef9a9a; }
-  
-  .check-icon {
-    font-size: 24px;
-    margin-right: 15px;
-  }
-  .check-details h4 {
-    margin: 0 0 5px 0;
-  }
-  .check-details p {
-    margin: 0;
-    font-size: 14px;
-  }
-  .check-details a {
-    color: #0056b3;
-    text-decoration: underline;
-  }
+    /* Document Type Selector */
+    .doc-type-selector {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .doc-type-selector input[type="radio"] {
+      display: none;
+    }
+    .doc-type-selector label {
+      padding: 10px 18px;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 450;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+    .doc-type-selector label:hover {
+      border-color: #ccc;
+      color: var(--text-primary);
+    }
+    .doc-type-selector input[type="radio"]:checked + label {
+      background-color: #f0fdf4;
+      border-color: var(--green);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
 
+    /* File Upload Area */
+    #drop-zone {
+      border: 2px dashed var(--border-light);
+      border-radius: 10px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      background-color: #fafafa;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+    #drop-zone:hover {
+      border-color: #ccc;
+    }
+    #drop-zone.dragover {
+      background-color: #f0fdf4;
+      border-color: var(--green);
+    }
+    #drop-zone p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin: 0 0 6px;
+    }
+    #drop-zone p:last-child {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 0;
+    }
+    #file-list {
+      margin-top: 15px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    #file-list strong {
+      color: var(--text-primary);
+    }
+    #file-list ul {
+      margin: 6px 0 0 18px;
+      padding: 0;
+    }
+    #file-list li {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
 
-  /* Terms Modal */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  .modal-content {
-    background: white;
-    padding: 30px;
-    border-radius: 8px;
-    max-width: 600px;
-    width: 90%;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-  }
-  .modal-content h2 {
-    margin-top: 0;
-  }
-  .terms-box {
-    height: 300px;
-    overflow-y: auto;
-    border: 1px solid #ccc;
-    padding: 15px;
-    margin: 20px 0;
-    font-size: 14px;
-    background: #f9f9f9;
-  }
-  .modal-actions {
-    text-align: right;
-  }
-</style>
+    /* Analyse Button */
+    .analyse-btn {
+      margin-top: 8px;
+      padding: 12px 24px;
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .analyse-btn:hover {
+      background: var(--green-dark);
+    }
+    .analyse-btn:disabled {
+      background: #ccc;
+      color: #888;
+      cursor: not-allowed;
+    }
+
+    /* Results Area */
+    #results {
+      margin-top: 32px;
+      max-width: 780px;
+    }
+    #results > p {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .analysis-report {
+      background: white;
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 24px;
+    }
+    .analysis-report h3 {
+      margin-top: 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      padding: 16px;
+      margin-top: 14px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+    }
+    .check-item.pass { background-color: #f0fdf4; border-color: #bbf7d0; }
+    .check-item.warning { background-color: #fffbeb; border-color: #fde68a; }
+    .check-item.fail { background-color: #fef2f2; border-color: #fecaca; }
+
+    .check-icon {
+      font-size: 22px;
+      margin-right: 14px;
+      flex-shrink: 0;
+      line-height: 1;
+      margin-top: 1px;
+    }
+    .check-details h4 {
+      margin: 0 0 4px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .check-details p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .check-details a {
+      color: #0056b3;
+      text-decoration: underline;
+    }
+
+    /* Terms Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: white;
+      padding: 32px;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    }
+    .modal-content h2 {
+      margin-top: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .modal-content > p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 0;
+    }
+    .terms-box {
+      height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--border-light);
+      padding: 18px;
+      margin: 20px 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+      background: #fafafa;
+      border-radius: 8px;
+      line-height: 1.7;
+    }
+    .terms-box p {
+      margin-bottom: 12px;
+    }
+    .terms-box p:last-child {
+      margin-bottom: 0;
+    }
+    .terms-box strong {
+      color: var(--text-primary);
+    }
+    .modal-actions {
+      text-align: right;
+    }
+
+    /* Footer */
+    .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
+    .footer-inner { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); gap: 24px; }
+    .footer-brand { padding-right: 16px; }
+    .footer-brand .footer-logo { display: flex; align-items: center; gap: 7px; color: white; font-weight: 700; font-size: 15px; margin-bottom: 10px; }
+    .footer-logo-icon { width: 20px; height: 20px; background: var(--green); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+    .footer-logo-icon svg { width: 12px; height: 12px; }
+    .footer-brand p { font-size: 12px; color: #555; line-height: 1.5; }
+    .footer-col h4 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+    .footer-col a { display: block; font-size: 13px; color: #666; margin-bottom: 7px; transition: color 0.2s; }
+    .footer-col a:hover { color: white; }
+    .footer-bottom { display: flex; align-items: center; justify-content: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #555; }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .footer-inner { grid-template-columns: 1fr; }
+      .checker-container { padding: 20px; }
+      #drop-zone { padding: 28px 16px; }
+    }
+  </style>
 </head>
 <body>
 
-<!-- Header -->
-<div class="header">
-  <div class="header-content">
-    <a href="/">
-      <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
-    </a>
-    <div class="nav-links">
-      <a href="decision-search">Search</a>
-      <a href="adjudicators">Adjudicators</a>
-      <a href="interest-calculator">Interest Calculator</a>
-      <a href="due-date-calculator">Due Date Calculator</a>
-      <a href="how-to">How-To Guide</a>
-      <a href="feedback">Feedback</a>
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/" class="nav-logo">
+  <img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;">
+</a>
+        <div class="nav-links">
+          <a href="/search">Search</a>
+          <a href="/adjudicators">Adjudicators</a>
+          <a href="/interest-calculator">Interest Calculator</a>
+          <a href="/due-date-calculator">Due Date Calculator</a>
+          <a href="/how-to">How-To Guide</a>
+          <a href="/feedback">Feedback</a>
+        </div>
+      </div>
+      <div class="nav-right"></div>
     </div>
-    <div id="user-profile-nav" style="min-width:36px"></div>
-  </div>
-</div>
+  </nav>
 
-<main>
-  <h1>Compliance Checker</h1>
-  <p>This tool uses AI to perform a preliminary compliance check of your draft documents against the requirements of the BIF Act and common issues identified in case law. Upload your document below to begin.</p>
-  
-  <div class="checker-container">
-    <div class="form-group">
-      <label>1. Select Document Type</label>
-      <div class="doc-type-selector">
-        <input type="radio" id="doc-pc" name="docType" value="pc" checked>
-        <label for="doc-pc">Payment Claim</label>
-        
-        <input type="radio" id="doc-ps" name="docType" value="ps">
-        <label for="doc-ps">Payment Schedule</label>
+  <div class="page-header">
+    <div class="container">
+      <h1>Compliance Checker</h1>
+      <p>This tool uses AI to perform a preliminary compliance check of your draft documents against the requirements of the BIF Act and common issues identified in case law. Upload your document below to begin.</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="content-area">
+      <div class="checker-container">
+        <div class="form-group">
+          <label>1. Select Document Type</label>
+          <div class="doc-type-selector">
+            <input type="radio" id="doc-pc" name="docType" value="pc" checked>
+            <label for="doc-pc">Payment Claim</label>
+
+            <input type="radio" id="doc-ps" name="docType" value="ps">
+            <label for="doc-ps">Payment Schedule</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>2. Upload Document(s)</label>
+          <div id="drop-zone">
+            <p>Drag & drop files here, or click to select.</p>
+            <p>Max total size: 10MB. Accepted formats: PDF, DOCX, TXT.</p>
+            <input type="file" id="file-input" multiple hidden>
+          </div>
+          <div id="file-list"></div>
+        </div>
+
+        <button id="analyse-btn" class="analyse-btn">Analyse Documents</button>
+      </div>
+
+      <div id="results"></div>
+    </div>
+  </div>
+
+  <!-- Terms and Conditions Modal -->
+  <div id="terms-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2>Terms of Use & Disclaimer</h2>
+      <p>Before using the Compliance Checker, you must read and agree to the following terms:</p>
+      <div class="terms-box">
+        <p><strong>1. Not Legal Advice:</strong> This tool provides automated, preliminary feedback based on programmed rules and AI analysis. It is an informational tool only and does not constitute legal advice. The information generated does not create a solicitor-client relationship.</p>
+        <p><strong>2. No Guarantee of Accuracy:</strong> While this tool is designed to identify common compliance issues, it cannot and does not guarantee the legal validity or compliance of your documents. The BIF Act and its interpretation are complex and subject to change. This tool may not identify all potential errors or risks.</p>
+        <p><strong>3. Limitation of Liability:</strong> Sopal, its developers, and affiliates accept no liability for any loss, damage, or adverse outcomes resulting from the use of or reliance on this tool. You are solely responsible for the content, accuracy, and legal sufficiency of your documents. You agree to indemnify and hold harmless Sopal from any claims arising out of your use of this service.</p>
+        <p><strong>4. AI and Data Use:</strong> By uploading documents, you consent to them being processed by a third-party neural network / large language model. We do not store your documents after the analysis is complete. Do not upload documents containing sensitive personal information beyond what is necessary for the analysis.</p>
+        <p><strong>5. Independent Verification Required:</strong> All results and suggestions provided by this tool must be independently verified by a qualified legal professional before you submit or rely on your documents in any formal capacity.</p>
+        <p>By clicking "I Agree", you acknowledge that you have read, understood, and accepted these terms and conditions in full.</p>
+      </div>
+      <div class="modal-actions">
+        <button id="agree-btn" class="analyse-btn">I Agree</button>
       </div>
     </div>
+  </div>
 
-    <div class="form-group">
-      <label>2. Upload Document(s)</label>
-      <div id="drop-zone">
-        <p>Drag & drop files here, or click to select.</p>
-        <p style="font-size: 12px; color: #666;">Max total size: 10MB. Accepted formats: PDF, DOCX, TXT.</p>
-        <input type="file" id="file-input" multiple hidden>
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div>
+          <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+        </div>
+        <div class="footer-col"><h4>Tools</h4><a href="/search">Decision Search</a><a href="/adjudicators">Adjudicators</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a></div>
+        <div class="footer-col"><h4>Resources</h4><a href="/how-to">How-To Guide</a><a href="/feedback">Feedback</a></div>
+        <div class="footer-col"><h4>Legal</h4><a href="/privacy">Privacy</a><a href="/terms">Terms of Use</a><a href="/account-terms">Account Terms</a><a href="/adjudicator-insights-terms">Adjudicator Insights Terms</a></div>
       </div>
-      <div id="file-list"></div>
+      <div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div>
     </div>
-
-    <button id="analyse-btn" class="calculate-btn">Analyse Documents</button>
-  </div>
-
-  <div id="results"></div>
-</main>
-
-<footer class="footer">
-  <div class="footer-content">
-    <div class="footer-left">
-      <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
-      <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
-    </div>
-    <div class="footer-links">
-  <a href="adjudicators">Adjudicators</a>
-  <a href="decision-search">Search</a>
-  <a href="interest-calculator">Interest Calculator</a>
-  <a href="due-date-calculator">Due Date Calculator</a>
-  <a href="feedback">Feedback</a>
-  <a href="how-to">How-To Guide</a>
-  <a href="privacy.html">Privacy</a>
-  <a href="adjudicator-insights-terms">Adjudicator Insights Terms</a>
-  <a href="terms.html">General Terms of Use</a>
-  <a href="account-terms">Account Terms</a>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <p>© 2026 Sopal Australia. All rights reserved.</p>
-  </div>
-</footer>
-
-<!-- Terms and Conditions Modal -->
-<div id="terms-modal" class="modal-overlay">
-  <div class="modal-content">
-    <h2>Terms of Use & Disclaimer</h2>
-    <p>Before using the Compliance Checker, you must read and agree to the following terms:</p>
-    <div class="terms-box">
-      <p><strong>1. Not Legal Advice:</strong> This tool provides automated, preliminary feedback based on programmed rules and AI analysis. It is an informational tool only and does not constitute legal advice. The information generated does not create a solicitor-client relationship.</p>
-      <p><strong>2. No Guarantee of Accuracy:</strong> While this tool is designed to identify common compliance issues, it cannot and does not guarantee the legal validity or compliance of your documents. The BIF Act and its interpretation are complex and subject to change. This tool may not identify all potential errors or risks.</p>
-      <p><strong>3. Limitation of Liability:</strong> Sopal, its developers, and affiliates accept no liability for any loss, damage, or adverse outcomes resulting from the use of or reliance on this tool. You are solely responsible for the content, accuracy, and legal sufficiency of your documents. You agree to indemnify and hold harmless Sopal from any claims arising out of your use of this service.</p>
-      <p><strong>4. AI and Data Use:</strong> By uploading documents, you consent to them being processed by a third-party neural network / large language model. We do not store your documents after the analysis is complete. Do not upload documents containing sensitive personal information beyond what is necessary for the analysis.</p>
-      <p><strong>5. Independent Verification Required:</strong> All results and suggestions provided by this tool must be independently verified by a qualified legal professional before you submit or rely on your documents in any formal capacity.</p>
-      <p>By clicking "I Agree", you acknowledge that you have read, understood, and accepted these terms and conditions in full.</p>
-    </div>
-    <div class="modal-actions">
-      <button id="agree-btn" class="calculate-btn">I Agree</button>
-    </div>
-  </div>
-</div>
+  </footer>
 
 <script>
   // DOM Elements
@@ -395,7 +423,7 @@
   // --- File Handling Logic ---
   dropZone.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-  
+
   ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
     dropZone.addEventListener(eventName, preventDefaults, false);
   });
@@ -446,9 +474,9 @@
     }
 
     resultsDiv.innerHTML = `<p>Analysing document... This may take a moment.</p>`;
-    
+
     const docType = document.querySelector('input[name="docType"]:checked').value;
-    
+
     // Use FormData to send the file and docType to the server
     const formData = new FormData();
     formData.append('file', uploadedFiles[0]);
@@ -479,14 +507,14 @@
 
   function displayResults(result) {
     let reportHtml = `<div class="analysis-report"><h3>Compliance Analysis</h3>`;
-    
+
     if (result && result.checks) {
         result.checks.forEach(check => {
           let icon = '';
           switch (check.status) {
-            case 'pass': icon = '✅'; break;
-            case 'warning': icon = '⚠️'; break;
-            case 'fail': icon = '❌'; break;
+            case 'pass': icon = '\u2705'; break;
+            case 'warning': icon = '\u26a0\ufe0f'; break;
+            case 'fail': icon = '\u274c'; break;
           }
 
           reportHtml += `

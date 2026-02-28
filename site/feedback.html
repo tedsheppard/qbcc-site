@@ -1,505 +1,238 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
-  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
-
+  <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feedback | Sopal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <meta charset="utf-8">
-  <title>Sopal – Send Feedback</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    /* Base styles matching main site */
-    body {
-      font-family: "Manrope", sans-serif;
-      margin: 0;
-      background: #ffffff;
-      color: #222;
-      font-size: 15px;
-      line-height: 1.6;
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-dark: #0a0a0a;
+      --bg-darker: #050505;
+      --green: #00d47e;
+      --green-dark: #00b368;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #888;
+      --border-light: #e5e5e5;
     }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    button { border: none; cursor: pointer; font-family: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
 
-    h1, h2, h3, h4, h5, h6 {
-      font-family: "Space Grotesk", sans-serif;
-      letter-spacing: -0.02em;
-    }
+    /* NAV */
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-links a.active { color: white; font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
 
-    /* Header */
-    .header {
-      background: #fdfdfd;
-      padding: 20px 25px;
-      border-bottom: 1px solid #ddd;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
+    /* PAGE HEADER */
+    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 32px 0; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-secondary); }
 
-    .header-content {
-      display: flex;
-      align-items: center;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
+    /* PAGE CONTENT */
+    .page-wrap { flex: 1; max-width: 800px; margin: 0 auto; padding: 40px 32px 80px; width: 100%; }
 
-    .logo {
-      height: 31px;
-      margin-right: 20px;
-    }
+    .feedback-card { background: white; border: 1px solid var(--border-light); border-radius: 14px; width: 100%; padding: 32px; }
+    .feedback-card .card-heading { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
 
-    .nav-links {
-      margin-left: auto;
-      display: flex;
-      gap: 20px;
-    }
+    .contact-info { background: #f7f7f8; border: 1px solid var(--border-light); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .contact-info a { color: var(--green-dark); font-weight: 500; }
 
-    .nav-links a {
-      color: #333;
-      text-decoration: none;
-      font-size: 14px;
-      transition: color 0.2s;
-    }
+    /* TYPE PILLS */
+    .type-selector { margin-bottom: 28px; }
+    .type-selector-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px; }
+    .type-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .type-pill { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: #fafafa; border: 1px solid var(--border-light); border-radius: 100px; cursor: pointer; transition: all 0.15s ease; user-select: none; }
+    .type-pill:hover { border-color: #ccc; color: var(--text-primary); }
+    .type-pill.selected { background: #f0faf5; border-color: var(--green); color: #0a6e42; }
+    .type-pill svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .type-pill.selected svg { stroke: #0a6e42; }
 
-    .nav-links a:hover {
-      color: #00c97c;
-    }
+    /* FORM */
+    .form-divider { height: 1px; background: var(--border-light); margin-bottom: 24px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: 18px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 6px; }
+    .form-label .optional { font-weight: 400; color: var(--text-muted); font-size: 12px; }
+    .form-input { width: 100%; padding: 9px 13px; font-size: 14px; font-family: inherit; border: 1px solid var(--border-light); border-radius: 8px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; background: white; color: var(--text-primary); }
+    .form-input::placeholder { color: #bbb; }
+    .form-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0, 212, 126, 0.08); }
+    .form-textarea { width: 100%; padding: 10px 13px; font-size: 14px; font-family: inherit; border: 1px solid var(--border-light); border-radius: 8px; outline: none; resize: vertical; min-height: 110px; transition: border-color 0.2s, box-shadow 0.2s; background: white; color: var(--text-primary); line-height: 1.5; }
+    .form-textarea::placeholder { color: #bbb; }
+    .form-textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0, 212, 126, 0.08); }
 
-    /* Main content */
-    .container {
-      max-width: 800px;
-      margin: 60px auto;
-      padding: 0 20px;
-    }
+    .submit-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 600; border-radius: 8px; background: var(--green); color: #000; transition: background 0.2s; margin-top: 8px; }
+    .submit-btn:hover { background: var(--green-dark); }
+    .submit-btn:active { transform: scale(0.995); }
 
-    .page-title {
-      font-size: 32px;
-      font-weight: 700;
-      color: #000;
-      margin-bottom: 16px;
-      text-align: center;
-    }
+    /* SUCCESS */
+    .success-state { display: none; text-align: center; padding: 20px 0; }
+    .success-icon { width: 48px; height: 48px; border-radius: 50%; background: #f0faf5; border: 1.5px solid #c6f0da; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+    .success-icon svg { width: 22px; height: 22px; stroke: var(--green-dark); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .success-state h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; color: var(--text-primary); }
+    .success-state p { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+    .success-state .back-link { display: inline-block; margin-top: 20px; font-size: 13px; font-weight: 500; color: var(--green-dark); }
+    .success-state .back-link:hover { text-decoration: underline; }
 
-    .page-subtitle {
-      font-size: 18px;
-      color: #666;
-      text-align: center;
-      margin-bottom: 50px;
-    }
+    /* FOOTER */
+    .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
+    .footer-inner { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); gap: 24px; }
+    .footer-brand { padding-right: 16px; }
+    .footer-brand .footer-logo { display: flex; align-items: center; gap: 7px; color: white; font-weight: 700; font-size: 15px; margin-bottom: 10px; }
+    .footer-brand p { font-size: 12px; color: #555; line-height: 1.5; }
+    .footer-col h4 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+    .footer-col a { display: block; font-size: 13px; color: #666; margin-bottom: 7px; transition: color 0.2s; }
+    .footer-col a:hover { color: white; }
+    .footer-bottom { display: flex; align-items: center; justify-content: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #555; }
 
-    .feedback-form {
-      background: #f9f9f9;
-      border: 1px solid #e1e1e1;
-      border-radius: 12px;
-      padding: 40px;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.08);
-    }
-
-    .form-group {
-      margin-bottom: 24px;
-    }
-
-    .form-group label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: #333;
-    }
-
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-      width: 100%;
-      padding: 12px 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 15px;
-      font-family: inherit;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      box-sizing: border-box;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: #00c97c;
-      box-shadow: 0 0 0 3px rgba(0, 201, 124, 0.1);
-    }
-
-    .form-group textarea {
-      resize: vertical;
-      min-height: 120px;
-    }
-
-    .form-row {
-      display: flex;
-      gap: 20px;
-    }
-
-    .form-row .form-group {
-      flex: 1;
-    }
-
-    .submit-btn {
-      background: #00c97c;
-      color: white;
-      padding: 14px 32px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      width: 100%;
-    }
-
-    .submit-btn:hover {
-      background: #00a568;
-      transform: translateY(-1px);
-    }
-
-    .submit-btn:active {
-      transform: translateY(0);
-    }
-
-    .feedback-types {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 30px;
-    }
-
-    .feedback-type {
-      background: white;
-      border: 2px solid #e1e1e1;
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .feedback-type:hover {
-      border-color: #00c97c;
-      background: #f0fdf4;
-    }
-
-    .feedback-type.selected {
-      border-color: #00c97c;
-      background: #f0fdf4;
-    }
-
-    .feedback-type .icon {
-      font-size: 24px;
-      margin-bottom: 8px;
-    }
-
-    .feedback-type .title {
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 4px;
-    }
-
-    .feedback-type .desc {
-      font-size: 13px;
-      color: #666;
-    }
-
-    /* Footer */
-    .footer {
-      background: #fcfcfc;
-      color: #333;
-      padding: 40px 20px 20px;
-      margin-top: 80px;
-      border-top: 1px solid #ddd;
-    }
-
-    .footer-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      max-width: 1200px;
-      margin: auto;
-    }
-
-    .footer-left {
-      max-width: 400px;
-    }
-
-    .footer-logo {
-      height: 24px;
-      margin-bottom: 10px;
-    }
-
-    .footer-links {
-      display: flex;
-      gap: 20px;
-    }
-
-    .footer-links a {
-      color: #333;
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-
-.footer-links a {
-  font-size: 13px;
-  color: black;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.footer-links a:hover {
-  color: #00c97c;
-}
-
-    .footer-bottom {
-      text-align: center;
-      border-top: 1px solid #eee;
-      margin-top: 20px;
-      padding-top: 15px;
-      font-size: 0.85em;
-      color: #666;
-    }
-
-    /* Mobile responsiveness */
     @media (max-width: 768px) {
-      .container {
-        margin: 40px auto;
-        padding: 0 16px;
-      }
-
-      .page-title {
-        font-size: 28px;
-      }
-
-      .feedback-form {
-        padding: 24px;
-      }
-
-      .form-row {
-        flex-direction: column;
-        gap: 0;
-      }
-
-      .feedback-types {
-        grid-template-columns: 1fr;
-      }
-
-      .header-content {
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .nav-links {
-        margin: 0;
-      }
-
-      .footer-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-      }
+      .nav-links { display: none; }
+      .form-row { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr; }
+      .feedback-card { padding: 24px 20px; }
+      .page-wrap { padding: 24px 16px 60px; }
     }
 
-    .success-message {
-      background: #f0fdf4;
-      border: 1px solid #86efac;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 20px;
-      color: #166534;
-      text-align: center;
-      font-weight: 500;
-      display: none;
+    @media (max-width: 480px) {
+      .type-pills { gap: 6px; }
+      .type-pill { padding: 6px 12px; font-size: 12px; }
     }
-    /* Mobile responsiveness */
-@media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    gap: 16px;
-  }
-  .nav-links {
-    margin: 0;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .footer-content {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-  .footer-left {
-    margin-bottom: 25px;
-  }
-  .footer-links {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-  }
-  main {
-    padding: 0 13px;
-  }
-}
   </style>
 </head>
 <body>
-  <!-- Header -->
-  <div class="header">
-    <div class="header-content">
-      <a href="/">
-        <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
-      </a>
-<div class="nav-links">
-  <a href="decision-search">Search</a>
-  <a href="adjudicators">Adjudicators</a>
-  <a href="interest-calculator">Interest Calculator</a>
-  <a href="due-date-calculator">Due Date Calculator</a>
-  <a href="how-to">How-To Guide</a>
-  <a href="feedback" class="active">Feedback</a>
-</div>
-<div id="user-profile-nav" style="min-width:36px"></div>
-    </div>
-  </div>
 
-  <!-- Main Content -->
-  <div class="container">
-    <h1 class="page-title">Send Feedback</h1>
-    <p class="page-subtitle">Help us improve Sopal by sharing your thoughts and suggestions</p>
-
-    <div class="success-message" id="successMessage">
-      Thank you for your feedback! We appreciate you taking the time to help us improve Sopal.
-    </div>
-
-<form id="feedbackForm" class="feedback-form" action="/send-feedback" method="POST">
-  <!-- Hidden honeypot for spam bots -->
-  <input type="text" name="_honey" style="display:none">
-
-  <!-- Disable Captcha -->
-  <input type="hidden" name="_captcha" value="false">
-
-  <!-- Redirect after successful submission -->
-  <input type="hidden" name="_next" value="https://yourdomain.com/thankyou.html">
-
-  <!-- Feedback Type Selection -->
-  <div class="form-group">
-    <label>What type of feedback would you like to share?</label>
-    <div class="feedback-types">
-      <div class="feedback-type" data-type="bug">
-        <div class="icon">🐛</div>
-        <div class="title">Bug Report</div>
-        <div class="desc">Something isn't working correctly</div>
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/" class="nav-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;"></a>
+        <div class="nav-links">
+          <a href="/search">Search</a>
+          <a href="/adjudicators">Adjudicators</a>
+          <a href="/interest-calculator">Interest Calculator</a>
+          <a href="/due-date-calculator">Due Date Calculator</a>
+          <a href="/how-to">How-To Guide</a>
+          <a href="/feedback" class="active">Feedback</a>
+        </div>
       </div>
-      <div class="feedback-type" data-type="feature">
-        <div class="icon">💡</div>
-        <div class="title">Feature Request</div>
-        <div class="desc">Suggest a new feature or improvement</div>
+      <div class="nav-right"></div>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div class="container">
+      <h1>Feedback</h1>
+      <p>Help us improve Sopal by sharing your thoughts, bug reports, or feature requests.</p>
+    </div>
+  </div>
+
+  <div class="page-wrap">
+    <div class="contact-info">
+      You can also reach us directly at <a href="mailto:info@sopal.com.au">info@sopal.com.au</a>
+    </div>
+
+    <div class="feedback-card">
+      <div class="card-heading">Send us a message</div>
+
+      <form id="feedbackForm">
+        <input type="hidden" id="feedbackType" name="type" required>
+        <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+
+        <div class="type-selector">
+          <span class="type-selector-label">What is this about?</span>
+          <div class="type-pills">
+            <div class="type-pill" data-type="bug">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Bug report
+            </div>
+            <div class="type-pill" data-type="feature">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Feature request
+            </div>
+            <div class="type-pill" data-type="content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Content issue
+            </div>
+            <div class="type-pill" data-type="general">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              General
+            </div>
+          </div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Name <span class="optional">(optional)</span></label>
+            <input type="text" class="form-input" name="name" placeholder="Your name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email <span class="optional">(optional)</span></label>
+            <input type="email" class="form-input" name="email" placeholder="you@example.com">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subject</label>
+          <input type="text" class="form-input" name="subject" required placeholder="What's this about?">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Details</label>
+          <textarea class="form-textarea" name="details" required placeholder="Tell us more..."></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn">Send feedback</button>
+      </form>
+
+      <div class="success-state" id="successMessage">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2>Feedback sent</h2>
+        <p>Thanks for taking the time. We'll review this shortly.</p>
+        <a href="/feedback" class="back-link">Send another</a>
       </div>
-      <div class="feedback-type" data-type="content">
-        <div class="icon">📄</div>
-        <div class="title">Content Issue</div>
-        <div class="desc">Report incorrect or missing information</div>
-      </div>
-      <div class="feedback-type" data-type="general">
-        <div class="icon">💬</div>
-        <div class="title">General Feedback</div>
-        <div class="desc">Share your overall experience</div>
-      </div>
-    </div>
-    <input type="hidden" id="feedbackType" name="type" required>
-  </div>
-
-  <!-- Contact Information -->
-  <div class="form-row">
-    <div class="form-group">
-      <label for="name">Name (Optional)</label>
-      <input type="text" id="name" name="name" placeholder="Your name">
-    </div>
-    <div class="form-group">
-      <label for="email">Email (Optional)</label>
-      <input type="email" id="email" name="email" placeholder="your@email.com">
     </div>
   </div>
 
-  <!-- Subject -->
-  <div class="form-group">
-    <label for="subject">Subject *</label>
-    <input type="text" id="subject" name="subject" required placeholder="Brief description of your feedback">
-  </div>
-
-  <!-- Priority -->
-  <div class="form-group">
-    <label for="priority">Priority</label>
-    <select id="priority" name="priority">
-      <option value="low">Low - General suggestion</option>
-      <option value="medium" selected>Medium - Would be helpful</option>
-      <option value="high">High - Important issue</option>
-      <option value="urgent">Urgent - Critical problem</option>
-    </select>
-  </div>
-
-  <!-- Detailed Feedback -->
-  <div class="form-group">
-    <label for="details">Detailed Description *</label>
-    <textarea id="details" name="details" required placeholder="Please provide as much detail as possible. If reporting a bug, include steps to reproduce it."></textarea>
-  </div>
-
-  <!-- Browser Info -->
-  <div class="form-row">
-    <div class="form-group">
-      <label for="browser">Browser (Optional)</label>
-      <input type="text" id="browser" name="browser" placeholder="e.g., Chrome 120, Safari 17">
-    </div>
-    <div class="form-group">
-      <label for="device">Device (Optional)</label>
-      <input type="text" id="device" name="device" placeholder="e.g., iPhone, Windows PC">
-    </div>
-  </div>
-
-  <button type="submit" class="submit-btn">Send Feedback</button>
-</form>
-
-  </div>
-
-  <!-- Footer -->
   <footer class="footer">
-    <div class="footer-content">
-      <div class="footer-left">
-        <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
-        <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div>
+          <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+        </div>
+        <div class="footer-col"><h4>Tools</h4><a href="/search">Decision Search</a><a href="/adjudicators">Adjudicators</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a></div>
+        <div class="footer-col"><h4>Resources</h4><a href="/how-to">How-To Guide</a><a href="/feedback">Feedback</a></div>
+        <div class="footer-col"><h4>Legal</h4><a href="/privacy">Privacy</a><a href="/terms">Terms of Use</a><a href="/account-terms">Account Terms</a><a href="/adjudicator-insights-terms">Adjudicator Insights Terms</a></div>
       </div>
-<div class="footer-links">
-  <a href="decision-search">Search</a>
-  <a href="interest-calculator">Interest Calculator</a>
-  <a href="due-date-calculator">Due Date Calculator</a>
-  <a href="how-to">How-To Guide</a>
-  <a href="feedback">Feedback</a>
-  <a href="privacy">Privacy</a>
-  <a href="adjudicator-insights-terms">Adjudicator Insights Terms</a>
-  <a href="terms">General Terms of Use</a>
-  <a href="account-terms">Account Terms</a>
-</div>
-    </div>
-    <div class="footer-bottom">
-      <p>© 2026 Sopal. All rights reserved.</p>
+      <div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div>
     </div>
   </footer>
 
 <script>
-// --- Feedback type selection ---
-document.querySelectorAll('.feedback-type').forEach(type => {
-  type.addEventListener('click', function() {
-    // remove 'selected' class from all
-    document.querySelectorAll('.feedback-type').forEach(t => t.classList.remove('selected'));
-    // add to clicked
+// Feedback type selection
+document.querySelectorAll('.type-pill').forEach(pill => {
+  pill.addEventListener('click', function() {
+    document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('selected'));
     this.classList.add('selected');
-    // update hidden input
     document.getElementById('feedbackType').value = this.dataset.type;
   });
 });
 
-// --- Form submission ---
+// Form submission
 document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
   e.preventDefault();
 
@@ -511,8 +244,8 @@ document.getElementById('feedbackForm').addEventListener('submit', async functio
   const formData = new FormData(this);
 
   try {
-    const res = await fetch("/send-feedback", {
-      method: "POST",
+    const res = await fetch('/send-feedback', {
+      method: 'POST',
       body: formData
     });
 
@@ -521,20 +254,15 @@ document.getElementById('feedbackForm').addEventListener('submit', async functio
     if (data.ok) {
       document.getElementById('successMessage').style.display = 'block';
       this.style.display = 'none';
-      document.getElementById('successMessage').scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
-      });
+      document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
-      alert("Error sending feedback: " + data.error);
+      alert('Error sending feedback: ' + data.error);
     }
   } catch (err) {
-    alert("Network error: " + err);
+    alert('Network error: ' + err);
   }
 });
 </script>
-
-
 <script src="/assets/js/main.js"></script>
 </body>
 </html>

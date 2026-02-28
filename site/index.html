@@ -1,1248 +1,378 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-QEN3X3DQLR');
-  </script>
-
-  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
-  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
-
-  <meta charset="utf-8">
-  <title>Sopal - Intelligent Adjudication Search</title>
-  <meta name="description" content="Sopal is an intelligent search tool for finding adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (BIF Act) in Queensland, Australia.">
-  <meta name="keywords" content="Sopal, adjudication decisions, BIF Act, Building Industry Fairness, Security of Payment Act, Queensland, construction law, payment disputes">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
+  <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sopal — Adjudication Decision Intelligence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
-      --ink: #17231d;
-      --ink-strong: #0f1914;
-      --muted: #5b6a62;
-      --accent: #1f8e78;
-      --accent-strong: #136a56;
-      --accent-soft: #a8e2d2;
-      --paper: #f7f8f6;
-      --card: #ffffff;
-      --line: rgba(19, 33, 27, 0.12);
-      --shadow-lg: 0 30px 70px rgba(12, 40, 30, 0.18);
-      --shadow-md: 0 18px 40px rgba(18, 44, 34, 0.12);
-      --shadow-sm: 0 8px 22px rgba(18, 44, 34, 0.1);
-      --radius-lg: 20px;
-      --radius-md: 14px;
-      --radius-sm: 10px;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: "Manrope", sans-serif;
-      background: var(--paper);
-      color: var(--ink);
-      line-height: 1.5;
-      font-size: 16px;
-      overflow-x: hidden;
-    }
-
-    h1, h2, h3 {
-      font-family: "Space Grotesk", sans-serif;
-      letter-spacing: -0.02em;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 32px;
-    }
-
-    /* Header */
-    .header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-      padding: 20px 0;
-      transition: all 0.3s ease;
-      background: transparent;
-    }
-
-    .header.scrolled {
-      background: rgba(247, 248, 246, 0.94);
-      border-bottom: 1px solid rgba(18, 34, 27, 0.08);
-      backdrop-filter: blur(16px);
-      box-shadow: 0 8px 30px rgba(12, 25, 21, 0.08);
-    }
-
-    .header-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-    }
-
-    .logo {
-      height: 30px;
-      display: block;
-    }
-
-    .nav-block {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      flex: 1;
-      justify-content: flex-end;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 22px;
-      flex-wrap: wrap;
-    }
-
-    .nav-links a {
-      font-size: 14px;
-      font-weight: 600;
-      color: rgba(15, 25, 20, 0.8);
-      transition: color 0.2s ease;
-    }
-
-    .nav-links a:hover,
-    .nav-links a.active {
-      color: var(--accent);
-    }
-
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .nav-cta {
-      padding: 10px 16px;
-      border-radius: 999px;
-      background: rgba(31, 142, 120, 0.12);
-      color: var(--accent-strong);
-      font-size: 13px;
-      font-weight: 700;
-      border: 1px solid rgba(31, 142, 120, 0.2);
-      transition: all 0.2s ease;
-    }
-
-    .nav-cta:hover {
-      background: rgba(31, 142, 120, 0.2);
-      border-color: rgba(31, 142, 120, 0.4);
-    }
-
-    /* Hero */
-    .hero {
-      position: relative;
-      padding: 160px 0 120px;
-      background: radial-gradient(circle at top left, #eefbf7 0%, #d9f3ea 35%, #bfe7da 68%, #a3dac9 100%);
-      overflow: hidden;
-    }
-
-    .hero::before {
-      content: "";
-      position: absolute;
-      top: -120px;
-      right: -120px;
-      width: 420px;
-      height: 420px;
-      background: radial-gradient(circle, rgba(31, 142, 120, 0.28), rgba(31, 142, 120, 0));
-      filter: blur(2px);
-      opacity: 0.8;
-    }
-
-    .hero::after {
-      content: "";
-      position: absolute;
-      bottom: -180px;
-      left: -180px;
-      width: 520px;
-      height: 520px;
-      background: radial-gradient(circle, rgba(22, 95, 80, 0.22), rgba(22, 95, 80, 0));
-      opacity: 0.7;
-    }
-
-    .hero-grid {
-      position: relative;
-      z-index: 2;
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 60px;
-      align-items: center;
-    }
-
-    .hero-copy {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-      animation: rise 0.9s ease-out both;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.2em;
-      color: rgba(15, 25, 20, 0.65);
-    }
-
-    .eyebrow::before {
-      content: "";
-      width: 22px;
-      height: 2px;
-      background: var(--accent);
-      display: inline-block;
-    }
-
-    .hero-title {
-      font-size: 60px;
-      line-height: 1.05;
-      color: var(--ink-strong);
-    }
-
-    .hero-lede {
-      font-size: 18px;
-      color: var(--muted);
-      max-width: 520px;
-    }
-
-    .hero-actions {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .btn-primary {
-      background: var(--ink-strong);
-      color: #ffffff;
-      padding: 14px 26px;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 15px;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .btn-secondary {
-      padding: 12px 22px;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 15px;
-      color: var(--accent-strong);
-      border: 1px solid rgba(19, 106, 86, 0.2);
-      background: rgba(255, 255, 255, 0.7);
-      transition: all 0.2s ease;
-    }
-
-    .btn-secondary:hover {
-      border-color: rgba(19, 106, 86, 0.4);
-      background: rgba(255, 255, 255, 0.95);
-    }
-
-    .hero-meta {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-      padding-top: 8px;
-    }
-
-    .meta-card {
-      padding: 16px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.75);
-      border: 1px solid rgba(22, 51, 40, 0.1);
-      backdrop-filter: blur(6px);
-    }
-
-    .meta-card strong {
-      display: block;
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--ink-strong);
-    }
-
-    .meta-card span {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .hero-panel {
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: var(--radius-lg);
-      padding: 30px;
-      box-shadow: var(--shadow-lg);
-      border: 1px solid rgba(22, 51, 40, 0.12);
-      backdrop-filter: blur(12px);
-      animation: floatIn 0.9s ease-out both;
-      animation-delay: 0.1s;
-    }
-
-    .panel-block {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .panel-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--ink-strong);
-    }
-
-    .panel-subtitle {
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    .search-field {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px;
-      border-radius: 12px;
-      border: 1px solid rgba(18, 44, 34, 0.12);
-      background: #ffffff;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-      transition: all 0.2s ease;
-    }
-
-    .search-field:focus-within {
-      border-color: rgba(31, 142, 120, 0.45);
-      box-shadow: 0 10px 26px rgba(31, 142, 120, 0.15);
-    }
-
-    .search-field input {
-      flex: 1;
-      border: none;
-      background: transparent;
-      padding: 12px 10px;
-      font-size: 14px;
-      outline: none;
-      color: var(--ink-strong);
-    }
-
-    .search-field input::placeholder {
-      color: rgba(15, 25, 20, 0.4);
-    }
-
-    .search-field button {
-      padding: 12px 20px;
-      border-radius: 10px;
-      border: none;
-      background: var(--ink-strong);
-      color: #ffffff;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .search-field button:hover {
-      background: #0b1410;
-    }
-
-    .search-examples {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .chip {
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(31, 142, 120, 0.2);
-      background: rgba(31, 142, 120, 0.08);
-      color: var(--accent-strong);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .chip:hover {
-      border-color: rgba(31, 142, 120, 0.4);
-      background: rgba(31, 142, 120, 0.15);
-    }
-
-    .panel-divider {
-      height: 1px;
-      background: rgba(18, 44, 34, 0.08);
-      margin: 22px 0;
-    }
-
-    /* Section shared */
-    section {
-      position: relative;
-    }
-
-    .section-head {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      text-align: center;
-      margin-bottom: 50px;
-    }
-
-    .section-head h2 {
-      font-size: 40px;
-      color: var(--ink-strong);
-    }
-
-    .section-head p {
-      color: var(--muted);
-      font-size: 16px;
-      max-width: 680px;
-      margin: 0 auto;
-    }
-
-    /* Capabilities */
-    .capabilities {
-      padding: 100px 0 70px;
-      background: #ffffff;
-    }
-
-    .cap-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 22px;
-    }
-
-    .cap-card {
-      background: var(--paper);
-      border-radius: var(--radius-md);
-      padding: 24px;
-      border: 1px solid rgba(17, 39, 30, 0.08);
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      animation: fadeUp 0.9s ease both;
-      animation-delay: var(--delay);
-    }
-
-    .cap-card:hover {
-      transform: translateY(-6px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .cap-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: rgba(31, 142, 120, 0.14);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .cap-card h3 {
-      font-size: 20px;
-      color: var(--ink-strong);
-    }
-
-    .cap-card p {
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    /* Workflow */
-    .workflow {
-      padding: 70px 0 90px;
-      background: var(--paper);
-    }
-
-    .flow-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
-    }
-
-    .flow-card {
-      background: #ffffff;
-      border-radius: var(--radius-md);
-      padding: 26px;
-      border: 1px solid rgba(17, 39, 30, 0.08);
-    }
-
-    .flow-step {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.16em;
-      color: rgba(31, 142, 120, 0.8);
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
-
-    .flow-card h3 {
-      font-size: 20px;
-      margin-bottom: 10px;
-      color: var(--ink-strong);
-    }
-
-    .flow-card p {
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    /* Stats */
-    .stats {
-      padding: 80px 0;
-      background: #111c16;
-      color: #ffffff;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 22px;
-      text-align: center;
-    }
-
-    .stat-card {
-      padding: 16px;
-    }
-
-    .stat-card strong {
-      display: block;
-      font-size: 34px;
-      font-weight: 700;
-      color: #9de2d0;
-    }
-
-    .stat-card span {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    /* CTA */
-    .cta-band {
-      padding: 80px 0;
-      background: linear-gradient(130deg, #f4fbf8 0%, #e1f3ec 100%);
-    }
-
-    .cta-card {
-      background: #ffffff;
-      border-radius: var(--radius-lg);
-      padding: 40px;
-      border: 1px solid rgba(17, 39, 30, 0.1);
-      box-shadow: var(--shadow-md);
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-
-    .cta-card h2 {
-      font-size: 32px;
-      color: var(--ink-strong);
-    }
-
-    .cta-card p {
-      color: var(--muted);
-      max-width: 520px;
-      font-size: 15px;
-    }
-
-    /* Footer */
-    .footer {
-      padding: 60px 0 30px;
-      background: #ffffff;
-      border-top: 1px solid rgba(17, 39, 30, 0.08);
-    }
-
-    .footer-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 40px;
-      justify-content: space-between;
-    }
-
-    .footer-left {
-      max-width: 360px;
-    }
-
-    .footer-logo {
-      height: 24px;
-      margin-bottom: 14px;
-    }
-
-    .footer-left p {
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .footer-links {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(140px, 1fr));
-      gap: 12px 36px;
-    }
-
-    .footer-links a {
-      font-size: 14px;
-      color: rgba(15, 25, 20, 0.75);
-      transition: color 0.2s ease;
-    }
-
-    .footer-links a:hover {
-      color: var(--accent);
-    }
-
-    .footer-bottom {
-      text-align: center;
-      margin-top: 36px;
-      padding-top: 24px;
-      border-top: 1px solid rgba(17, 39, 30, 0.08);
-      color: rgba(15, 25, 20, 0.5);
-      font-size: 13px;
-    }
-
-    /* Modal */
-    .interception-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(8, 15, 12, 0.65);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-
-    .interception-modal.active {
-      display: flex;
-    }
-
-    .interception-modal-content {
-      background: #ffffff;
-      color: var(--ink);
-      padding: 30px 34px;
-      border-radius: 16px;
-      max-width: 520px;
-      width: 90%;
-      text-align: center;
-      box-shadow: var(--shadow-lg);
-    }
-
-    .interception-modal-content h2 {
-      font-size: 22px;
-      margin-bottom: 12px;
-    }
-
-    .interception-modal-content p {
-      color: var(--muted);
-      font-size: 14px;
-      margin-bottom: 18px;
-    }
-
-    .interception-modal-buttons {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .btn-primary-action {
-      background: var(--accent);
-      color: #ffffff;
-      border: none;
-      padding: 12px 18px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .btn-secondary-action {
-      background: rgba(15, 25, 20, 0.08);
-      color: var(--ink);
-      border: none;
-      padding: 12px 18px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    /* Animations */
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes floatIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(18px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 1100px) {
-      .hero-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .hero-title {
-        font-size: 48px;
-      }
-
-      .hero-meta {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 860px) {
-      .header-inner {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-      }
-
-      .nav-block {
-        width: 100%;
-        justify-content: space-between;
-        flex-wrap: wrap;
-      }
-
-      .hero {
-        padding: 150px 0 90px;
-      }
-
-      .hero-actions {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .hero-meta {
-        grid-template-columns: 1fr;
-      }
-
-      .cta-card {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-    }
-
-    @media (max-width: 640px) {
-      .container {
-        padding: 0 20px;
-      }
-
-      .nav-links {
-        gap: 12px;
-      }
-
-      .hero-title {
-        font-size: 38px;
-      }
-
-      .panel-title {
-        font-size: 20px;
-      }
-
-      .footer-links {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation: none !important;
-        transition: none !important;
-      }
+      --bg-dark: #0a0a0a;
+      --bg-darker: #050505;
+      --bg-card-dark: #141414;
+      --bg-light: #ffffff;
+      --green: #00d47e;
+      --green-dark: #00b368;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #888;
+      --border-light: #e5e5e5;
+      --border-dark: #222;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: var(--bg-light); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    button { border: none; cursor: pointer; font-family: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+    /* NAV */
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+    .nav-logo-icon { width: 28px; height: 28px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .nav-logo-icon svg { width: 16px; height: 16px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-links a.active { color: white; font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .btn-signin { background: transparent; color: white; font-size: 13.5px; font-weight: 500; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; }
+    .btn-signin:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.3); }
+    .btn-cta { background: var(--green); color: #000; font-size: 13.5px; font-weight: 600; padding: 7px 16px; border-radius: 8px; border: 1px solid var(--green); transition: background 0.2s; }
+    .btn-cta:hover { background: var(--green-dark); border-color: var(--green-dark); }
+
+    /* HERO */
+    .hero { padding: 80px 0 64px; background: linear-gradient(135deg, #1a3a2a 0%, #0d2d22 30%, #143d2e 60%, #1a4a35 100%); position: relative; overflow: hidden; }
+    .hero-bg-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.6s ease; z-index: 0; }
+    .hero-bg-img.loaded { opacity: 1; }
+    .hero .container { position: relative; z-index: 1; }
+    .hero h1 { font-size: 52px; font-weight: 800; line-height: 1.05; letter-spacing: -0.035em; color: #ffffff; margin-bottom: 20px; max-width: 560px; }
+    .hero p { font-size: 17px; color: rgba(255,255,255,0.7); max-width: 460px; line-height: 1.6; margin-bottom: 32px; }
+    .hero-actions { display: flex; gap: 12px; margin-bottom: 48px; }
+    .hero-actions .btn-primary { background: var(--green); color: #000; font-size: 14px; font-weight: 600; padding: 11px 22px; border-radius: 8px; transition: background 0.2s; }
+    .hero-actions .btn-primary:hover { background: var(--green-dark); }
+    .hero-actions .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; font-size: 14px; font-weight: 500; padding: 11px 22px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.25); transition: all 0.2s; backdrop-filter: blur(4px); }
+    .hero-actions .btn-secondary:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.4); }
+
+    /* HERO BLOCKS — hidden, replaced by background image */
+    .hero-blocks { display: none; position: absolute; right: -20px; bottom: -30px; width: 580px; height: 340px; z-index: 1; }
+    .block-group { position: absolute; bottom: 0; }
+    .block-group .block { position: absolute; border-radius: 4px; }
+    .block-group .block::after { content: ''; position: absolute; top: -8px; left: 4px; right: -4px; height: 8px; border-radius: 3px 4px 0 0; transform: skewX(-30deg); transform-origin: bottom left; }
+    .block-group .block::before { content: ''; position: absolute; top: -5px; right: -7px; width: 7px; bottom: 0; border-radius: 0 4px 4px 0; transform: skewY(-30deg); transform-origin: top left; }
+    .block-g1 { left: 0; bottom: 0; }
+    .block-g1 .block:nth-child(1) { bottom: 0; left: 0; width: 110px; height: 18px; background: #0d9488; }
+    .block-g1 .block:nth-child(1)::after { background: #14b8a6; } .block-g1 .block:nth-child(1)::before { background: #0f766e; }
+    .block-g1 .block:nth-child(2) { bottom: 22px; left: 8px; width: 90px; height: 18px; background: #10b981; }
+    .block-g1 .block:nth-child(2)::after { background: #34d399; } .block-g1 .block:nth-child(2)::before { background: #059669; }
+    .block-g1 .block:nth-child(3) { bottom: 44px; left: 0; width: 100px; height: 18px; background: #22c55e; }
+    .block-g1 .block:nth-child(3)::after { background: #4ade80; } .block-g1 .block:nth-child(3)::before { background: #16a34a; }
+    .block-g1 .block:nth-child(4) { bottom: 66px; left: 12px; width: 75px; height: 18px; background: #34d399; }
+    .block-g1 .block:nth-child(4)::after { background: #6ee7b7; } .block-g1 .block:nth-child(4)::before { background: #10b981; }
+    .block-g2 { left: 140px; bottom: 30px; }
+    .block-g2 .block:nth-child(1) { bottom: 0; left: 0; width: 120px; height: 18px; background: #059669; }
+    .block-g2 .block:nth-child(1)::after { background: #10b981; } .block-g2 .block:nth-child(1)::before { background: #047857; }
+    .block-g2 .block:nth-child(2) { bottom: 22px; left: 5px; width: 100px; height: 18px; background: #00d47e; }
+    .block-g2 .block:nth-child(2)::after { background: #34d399; } .block-g2 .block:nth-child(2)::before { background: #00b368; }
+    .block-g2 .block:nth-child(3) { bottom: 44px; left: 0; width: 110px; height: 18px; background: #4ade80; }
+    .block-g2 .block:nth-child(3)::after { background: #86efac; } .block-g2 .block:nth-child(3)::before { background: #22c55e; }
+    .block-g2 .block:nth-child(4) { bottom: 66px; left: 10px; width: 85px; height: 18px; background: #86efac; }
+    .block-g2 .block:nth-child(4)::after { background: #bbf7d0; } .block-g2 .block:nth-child(4)::before { background: #4ade80; }
+    .block-g2 .block:nth-child(5) { bottom: 88px; left: 0; width: 95px; height: 18px; background: #bbf7d0; }
+    .block-g2 .block:nth-child(5)::after { background: #dcfce7; } .block-g2 .block:nth-child(5)::before { background: #86efac; }
+    .block-g3 { left: 300px; bottom: 70px; }
+    .block-g3 .block:nth-child(1) { bottom: 0; left: 0; width: 130px; height: 18px; background: #047857; }
+    .block-g3 .block:nth-child(1)::after { background: #059669; } .block-g3 .block:nth-child(1)::before { background: #065f46; }
+    .block-g3 .block:nth-child(2) { bottom: 22px; left: 10px; width: 100px; height: 18px; background: #0d9488; }
+    .block-g3 .block:nth-child(2)::after { background: #14b8a6; } .block-g3 .block:nth-child(2)::before { background: #0f766e; }
+    .block-g3 .block:nth-child(3) { bottom: 44px; left: 0; width: 120px; height: 18px; background: #10b981; }
+    .block-g3 .block:nth-child(3)::after { background: #34d399; } .block-g3 .block:nth-child(3)::before { background: #059669; }
+    .block-g3 .block:nth-child(4) { bottom: 66px; left: 8px; width: 95px; height: 18px; background: #22c55e; }
+    .block-g3 .block:nth-child(4)::after { background: #4ade80; } .block-g3 .block:nth-child(4)::before { background: #16a34a; }
+    .block-g3 .block:nth-child(5) { bottom: 88px; left: 0; width: 110px; height: 18px; background: #4ade80; }
+    .block-g3 .block:nth-child(5)::after { background: #86efac; } .block-g3 .block:nth-child(5)::before { background: #22c55e; }
+    .block-g3 .block:nth-child(6) { bottom: 110px; left: 5px; width: 80px; height: 18px; background: #86efac; }
+    .block-g3 .block:nth-child(6)::after { background: #bbf7d0; } .block-g3 .block:nth-child(6)::before { background: #4ade80; }
+    .block-g4 { left: 460px; bottom: 110px; }
+    .block-g4 .block:nth-child(1) { bottom: 0; left: 0; width: 120px; height: 18px; background: #065f46; }
+    .block-g4 .block:nth-child(1)::after { background: #047857; } .block-g4 .block:nth-child(1)::before { background: #064e3b; }
+    .block-g4 .block:nth-child(2) { bottom: 22px; left: 10px; width: 95px; height: 18px; background: #047857; }
+    .block-g4 .block:nth-child(2)::after { background: #059669; } .block-g4 .block:nth-child(2)::before { background: #065f46; }
+    .block-g4 .block:nth-child(3) { bottom: 44px; left: 0; width: 110px; height: 18px; background: #059669; }
+    .block-g4 .block:nth-child(3)::after { background: #10b981; } .block-g4 .block:nth-child(3)::before { background: #047857; }
+    .block-g4 .block:nth-child(4) { bottom: 66px; left: 5px; width: 90px; height: 18px; background: #10b981; }
+    .block-g4 .block:nth-child(4)::after { background: #34d399; } .block-g4 .block:nth-child(4)::before { background: #059669; }
+    .block-g4 .block:nth-child(5) { bottom: 88px; left: 0; width: 105px; height: 18px; background: #34d399; }
+    .block-g4 .block:nth-child(5)::after { background: #6ee7b7; } .block-g4 .block:nth-child(5)::before { background: #10b981; }
+    .block-g4 .block:nth-child(6) { bottom: 110px; left: 8px; width: 80px; height: 18px; background: #6ee7b7; }
+    .block-g4 .block:nth-child(6)::after { background: #a7f3d0; } .block-g4 .block:nth-child(6)::before { background: #34d399; }
+    .block-g4 .block:nth-child(7) { bottom: 132px; left: 0; width: 95px; height: 18px; background: #a7f3d0; }
+    .block-g4 .block:nth-child(7)::after { background: #d1fae5; } .block-g4 .block:nth-child(7)::before { background: #6ee7b7; }
+
+    /* META STATS ROW */
+    .meta-stats { display: flex; gap: 32px; position: relative; z-index: 2; }
+    .meta-stat { display: flex; align-items: center; gap: 10px; }
+    .meta-stat-icon { width: 36px; height: 36px; border-radius: 8px; background: rgba(0,212,126,0.15); display: flex; align-items: center; justify-content: center; }
+    .meta-stat-icon svg { width: 18px; height: 18px; stroke: var(--green); fill: none; stroke-width: 2; }
+    .meta-stat-text .num { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: #fff; }
+    .meta-stat-text .label { font-size: 12px; color: rgba(255,255,255,0.5); }
+
+    /* FEATURES */
+    .features-section { padding: 72px 0; border-top: 1px solid var(--border-light); }
+    .features-section h2 { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; text-align: center; margin-bottom: 12px; }
+    .features-section .subtitle { text-align: center; color: var(--text-secondary); font-size: 16px; margin-bottom: 48px; }
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .feature-card { background: white; border: 1px solid var(--border-light); border-radius: 12px; padding: 24px; }
+    .feature-card-icon { width: 20px; height: 20px; margin-bottom: 14px; }
+    .feature-card-icon svg { width: 20px; height: 20px; stroke: var(--green); stroke-width: 2; fill: none; }
+    .feature-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.01em; }
+    .feature-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+    /* STATS SECTION */
+    .stats-section { background: var(--bg-dark); padding: 72px 0; }
+    .stats-section h2 { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; color: white; text-align: center; margin-bottom: 48px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+    .stat-card { background: var(--bg-card-dark); border: 1px solid var(--border-dark); border-radius: 12px; padding: 24px; text-align: center; }
+    .stat-card .stat-value { font-size: 28px; font-weight: 700; color: white; letter-spacing: -0.02em; margin-bottom: 4px; }
+    .stat-card .stat-label { font-size: 13px; color: #777; }
+
+    /* WORKFLOW */
+    .workflow-section { padding: 72px 0; border-top: 1px solid var(--border-light); }
+    .workflow-section h2 { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; text-align: center; margin-bottom: 48px; }
+    .workflow-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .workflow-card { text-align: center; padding: 24px; }
+    .workflow-num { width: 40px; height: 40px; border-radius: 50%; background: var(--green); color: #000; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .workflow-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .workflow-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.55; }
+
+    /* CTA BAND */
+    .cta-section { background: var(--bg-dark); padding: 64px 0; text-align: center; }
+    .cta-section h2 { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; color: white; margin-bottom: 16px; }
+    .cta-section p { color: #777; font-size: 15px; margin-bottom: 28px; }
+    .cta-buttons { display: flex; gap: 12px; justify-content: center; }
+
+    /* FOOTER */
+    .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
+    .footer-inner { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); gap: 24px; }
+    .footer-brand { padding-right: 16px; }
+    .footer-brand .footer-logo { display: flex; align-items: center; gap: 7px; color: white; font-weight: 700; font-size: 15px; margin-bottom: 10px; }
+    .footer-logo-icon { width: 20px; height: 20px; background: var(--green); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+    .footer-logo-icon svg { width: 12px; height: 12px; }
+    .footer-brand p { font-size: 12px; color: #555; line-height: 1.5; }
+    .footer-col h4 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+    .footer-col a { display: block; font-size: 13px; color: #666; margin-bottom: 7px; transition: color 0.2s; }
+    .footer-col a:hover { color: white; }
+    .footer-bottom { display: flex; align-items: center; justify-content: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #555; }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero h1 { font-size: 36px; }
+      .hero-blocks { display: none; }
+      .features-grid, .stats-grid { grid-template-columns: 1fr; }
+      .workflow-grid { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr; }
     }
   </style>
 </head>
-<body class="light">
-  <header class="header">
-    <div class="container header-inner">
-      <a href="/" class="logo-link">
-        <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
-      </a>
-      <div class="nav-block">
-        <nav class="nav-links">
-          <a href="decision-search">Search</a>
-          <a href="adjudicators">Adjudicators</a>
-          <a href="interest-calculator">Interest Calculator</a>
-          <a href="due-date-calculator">Due Date Calculator</a>
-          <a href="how-to">How-To Guide</a>
-          <a href="feedback">Feedback</a>
-        </nav>
-        <div class="nav-actions">
-          <div id="user-profile-nav"></div>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/" class="nav-logo">
+          <img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;">
+        </a>
+        <div class="nav-links">
+          <a href="/search">Search</a>
+          <a href="/adjudicators">Adjudicators</a>
+          <a href="/interest-calculator">Interest Calculator</a>
+          <a href="/due-date-calculator">Due Date Calculator</a>
+          <a href="/how-to">How-To Guide</a>
+          <a href="/feedback">Feedback</a>
+        </div>
+      </div>
+      <div class="nav-right">
+        <a href="/search" class="btn-cta">Open Search</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <img src="/assets/hero-bg.jpg" alt="" class="hero-bg-img" loading="lazy" onload="this.classList.add('loaded')">
+    <div class="container">
+      <h1>Find the decisions that move your claim forward</h1>
+      <p>Search 7,300+ adjudication decisions under the BIF Act. Compare adjudicators, calculate interest, and track deadlines — all in one place.</p>
+      <div class="hero-actions">
+        <a href="/search" class="btn-primary">Open decision search</a>
+        <a href="/how-to" class="btn-secondary">See how it works</a>
+      </div>
+      <div class="meta-stats">
+        <div class="meta-stat">
+          <div class="meta-stat-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="meta-stat-text"><div class="num">7,300+</div><div class="label">Decisions</div></div>
+        </div>
+        <div class="meta-stat">
+          <div class="meta-stat-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div class="meta-stat-text"><div class="num">180+</div><div class="label">Adjudicators</div></div>
+        </div>
+        <div class="meta-stat">
+          <div class="meta-stat-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div class="meta-stat-text"><div class="num">2004–2026</div><div class="label">Date Range</div></div>
         </div>
       </div>
     </div>
-  </header>
+    <div class="hero-blocks">
+      <div class="block-group block-g1"><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div></div>
+      <div class="block-group block-g2"><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div></div>
+      <div class="block-group block-g3"><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div></div>
+      <div class="block-group block-g4"><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div></div>
+    </div>
+  </section>
 
-  <main>
-    <section class="hero" id="search">
-      <div class="container hero-grid">
-        <div class="hero-copy">
-          <h1 class="hero-title">Find the decisions that move your claim forward.</h1>
-          <p class="hero-lede">
-            Sopal turns adjudication decisions into a clear, searchable dataset with intelligent filters, adjudicator analytics, and AI summaries when you need speed.
-          </p>
-          <div class="hero-actions">
-            <a href="decision-search" class="btn-primary">Open decision search</a>
-            <a href="how-to" class="btn-secondary">See how it works</a>
-          </div>
-          <div class="hero-meta">
-            <div class="meta-card">
-              <strong class="js-total-decisions">7,300+</strong>
-              <span>Decisions indexed</span>
-            </div>
-            <div class="meta-card">
-              <strong class="js-total-adjudicators">180+</strong>
-              <span>Adjudicators tracked</span>
-            </div>
-            <div class="meta-card">
-              <strong>2004-2026</strong>
-              <span>Decision range</span>
-            </div>
-          </div>
+  <!-- FEATURES -->
+  <section class="features-section">
+    <div class="container">
+      <h2>Everything you need for<br>adjudication research</h2>
+      <p class="subtitle">Six tools for construction law professionals in Queensland</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-card-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+          <h3>Decision search</h3>
+          <p>Full-text search across 7,300+ adjudication decisions with boolean operators and filters.</p>
         </div>
-
-        <div class="hero-panel" id="search-panel">
-          <div class="panel-block">
-            <div>
-              <h2 class="panel-title">In-text decision search</h2>
-              <p class="panel-subtitle">Use boolean and proximity terms across 7,300+ decisions.</p>
-            </div>
-            <div class="search-field">
-              <input
-                type="text"
-                id="heroSearchInput"
-                placeholder='e.g., "payment claim" AND jurisdiction'
-                autocomplete="off"
-                onkeydown="if(event.key==='Enter') { event.preventDefault(); handleHeroSearch(); }"
-              >
-              <button type="button" onclick="handleHeroSearch()">Search</button>
-            </div>
-            <div class="search-examples">
-              <button class="chip" type="button" data-target="heroSearchInput" data-value="&quot;payment claim&quot; AND &quot;jurisdiction&quot;">"payment claim" AND "jurisdiction"</button>
-              <button class="chip" type="button" data-target="heroSearchInput" data-value="&quot;section 67&quot; w/5 &quot;reference date&quot;">"section 67" w/5 "reference date"</button>
-              <button class="chip" type="button" data-target="heroSearchInput" data-value="&quot;variation&quot; OR &quot;delay costs&quot;">"variation" OR "delay costs"</button>
-            </div>
-          </div>
-
-          <div class="panel-divider"></div>
-
-          <div class="panel-block">
-            <div>
-              <h2 class="panel-title">Adjudicator insights</h2>
-              <p class="panel-subtitle">Search adjudicators by name and compare decision patterns.</p>
-            </div>
-            <div class="search-field">
-              <input
-                type="text"
-                id="adjudicatorSearchInput"
-                placeholder="e.g., insert adjudicator name"
-                autocomplete="off"
-                onkeydown="if(event.key==='Enter') { event.preventDefault(); handleAdjudicatorSearch(); }"
-              >
-              <button type="button" onclick="handleAdjudicatorSearch()">Search</button>
-            </div>
-          </div>
+        <div class="feature-card">
+          <div class="feature-card-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>
+          <h3>Adjudicator profiles</h3>
+          <p>Award rates, decision counts, and claim-size patterns for every adjudicator.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+          <h3>AI summaries</h3>
+          <p>One-click plain-English summaries of decisions and adjudicator track records.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+          <h3>Interest calculator</h3>
+          <p>BIF Act s73 interest at contractual or penalty rates.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <h3>Due date calculator</h3>
+          <p>Payment claim, response, and adjudication deadlines.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <h3>Weekly updates</h3>
+          <p>New decisions added as they are published by QBCC.</p>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="capabilities">
-      <div class="container">
-        <div class="section-head">
-          <h2>Everything you need to navigate the BIF Act</h2>
-          <p>Focus on the decisions that matter, compare adjudicators, and answer client questions in minutes instead of hours.</p>
+  <!-- WORKFLOW -->
+  <section class="workflow-section">
+    <div class="container">
+      <h2>Research in three steps</h2>
+      <div class="workflow-grid">
+        <div class="workflow-card">
+          <div class="workflow-num">1</div>
+          <h3>Search decisions</h3>
+          <p>Use advanced search connectors to find relevant adjudication decisions across the full database.</p>
         </div>
-        <div class="cap-grid">
-          <article class="cap-card" style="--delay: 0.05s;">
-            <div class="cap-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8e78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </div>
-            <h3>Precision search</h3>
-            <p>Boolean operators, proximity search, and filters help you isolate the exact decision language you need.</p>
-          </article>
-          <article class="cap-card" style="--delay: 0.12s;">
-            <div class="cap-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8e78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3 3h18v14H3z"></path>
-                <path d="M7 21h10"></path>
-                <path d="M12 17v4"></path>
-              </svg>
-            </div>
-            <h3>Decision analytics</h3>
-            <p>Track award rates, common outcomes, and decision history for every adjudicator in one view.</p>
-          </article>
-          <article class="cap-card" style="--delay: 0.19s;">
-            <div class="cap-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8e78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 3v18"></path>
-                <path d="M5 12h14"></path>
-              </svg>
-            </div>
-            <h3>AI summaries</h3>
-            <p>Surface the key facts and reasoning quickly, then drill into the full decision when required.</p>
-          </article>
-          <article class="cap-card" style="--delay: 0.26s;">
-            <div class="cap-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8e78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 1v22"></path>
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"></path>
-              </svg>
-            </div>
-            <h3>Interest calculator</h3>
-            <p>Calculate interest with current RBA rates in seconds and include the results in your advice.</p>
-          </article>
-          <article class="cap-card" style="--delay: 0.33s;">
-            <div class="cap-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8e78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
-            </div>
-            <h3>Due date tracking</h3>
-            <p>Stay compliant with BIF Act timelines using deadline tools built for payment claims.</p>
-          </article>
-          <article class="cap-card" style="--delay: 0.4s;">
-            <div class="cap-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8e78" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 20l9-5-9-5-9 5 9 5z"></path>
-                <path d="M12 12l9-5-9-5-9 5 9 5z"></path>
-              </svg>
-            </div>
-            <h3>Fresh updates</h3>
-            <p>Decisions are added continuously so your research stays current as new outcomes are published.</p>
-          </article>
+        <div class="workflow-card">
+          <div class="workflow-num">2</div>
+          <h3>Compare adjudicators</h3>
+          <p>Analyse adjudicator statistics, award rates, and decision patterns to build your case strategy.</p>
+        </div>
+        <div class="workflow-card">
+          <div class="workflow-num">3</div>
+          <h3>Package your advice</h3>
+          <p>Calculate interest and deadlines, then compile your findings into actionable legal advice.</p>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="workflow">
-      <div class="container">
-        <div class="section-head">
-          <h2>From question to answer in three steps</h2>
-          <p>Keep the heavy lifting in Sopal so your time goes into strategy, client advice, and negotiation.</p>
+  <!-- STATS -->
+  <section class="stats-section">
+    <div class="container">
+      <h2>The numbers behind<br>Queensland adjudication</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">$4.5B+</div>
+          <div class="stat-label">Total amounts claimed</div>
         </div>
-        <div class="flow-grid">
-          <div class="flow-card">
-            <div class="flow-step">Step 1</div>
-            <h3>Search the decision corpus</h3>
-            <p>Run precision queries across thousands of decisions with boolean operators and exact phrases.</p>
-          </div>
-          <div class="flow-card">
-            <div class="flow-step">Step 2</div>
-            <h3>Compare adjudicators</h3>
-            <p>Review patterns in how adjudicators handle key issues, including jurisdiction and valuation.</p>
-          </div>
-          <div class="flow-card">
-            <div class="flow-step">Step 3</div>
-            <h3>Package your advice</h3>
-            <p>Pull summaries, link to decisions, and share clear findings with clients and stakeholders.</p>
-          </div>
+        <div class="stat-card">
+          <div class="stat-value">$2.8B+</div>
+          <div class="stat-label">Total amounts adjudicated</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">7,300+</div>
+          <div class="stat-label">Decisions indexed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">180+</div>
+          <div class="stat-label">Adjudicators tracked</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">21 yrs</div>
+          <div class="stat-label">Historical coverage</div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="stats">
-      <div class="container stats-grid">
-        <div class="stat-card">
-          <strong class="js-total-decisions">7,300+</strong>
-          <span>Decisions indexed</span>
-        </div>
-        <div class="stat-card">
-          <strong class="js-total-adjudicators">180+</strong>
-          <span>Adjudicators tracked</span>
-        </div>
-        <div class="stat-card">
-          <strong>$4.5B+</strong>
-          <span>In claimed amounts</span>
-        </div>
-        <div class="stat-card">
-          <strong>$2.8B+</strong>
-          <span>In adjudicated amounts</span>
-        </div>
-        <div class="stat-card">
-          <strong>21 years</strong>
-          <span>Decision range (2004-2026)</span>
-        </div>
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="container">
+      <h2>Ready to start<br>your research?</h2>
+      <p>Search thousands of adjudication decisions in seconds.</p>
+      <div class="cta-buttons">
+        <a href="/search" class="btn-cta" style="padding:12px 28px; font-size:15px;">Open Decision Search</a>
+        <a href="/how-to" class="btn-signin" style="padding:12px 28px; font-size:15px;">Learn more</a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="cta-band">
-      <div class="container">
-        <div class="cta-card">
-          <div>
-            <h2>Ready to start your search?</h2>
-            <p>Access every adjudication decision in Queensland with tools that surface the right evidence fast.</p>
-          </div>
-          <div class="hero-actions">
-            <a href="decision-search" class="btn-primary">Start a search</a>
-            <a href="adjudicators" class="btn-secondary">View adjudicators</a>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
+  <!-- FOOTER -->
   <footer class="footer">
     <div class="container">
-      <div class="footer-grid">
-        <div class="footer-left">
-          <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div>
           <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
         </div>
-        <div class="footer-links">
-          <a href="adjudicators">Adjudicators</a>
-          <a href="decision-search">Search</a>
-          <a href="interest-calculator">Interest Calculator</a>
-          <a href="due-date-calculator">Due Date Calculator</a>
-          <a href="feedback">Feedback</a>
-          <a href="how-to">How-To Guide</a>
-          <a href="privacy">Privacy</a>
-          <a href="adjudicator-insights-terms">Adjudicator Insights Terms</a>
-          <a href="terms">General Terms of Use</a>
-          <a href="account-terms">Account Terms</a>
+        <div class="footer-col">
+          <h4>Tools</h4>
+          <a href="/search">Decision Search</a>
+          <a href="/adjudicators">Adjudicators</a>
+          <a href="/interest-calculator">Interest Calculator</a>
+          <a href="/due-date-calculator">Due Date Calculator</a>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <a href="/how-to">How-To Guide</a>
+          <a href="/feedback">Feedback</a>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms of Use</a>
+          <a href="/account-terms">Account Terms</a>
+          <a href="/adjudicator-insights-terms">Adjudicator Insights Terms</a>
         </div>
       </div>
-      <div class="footer-bottom">
-        <p>Copyright 2025 Sopal Australia. All rights reserved.</p>
-      </div>
+      <div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div>
     </div>
   </footer>
 
-  <div id="adjudicatorSearchModal" class="interception-modal">
-    <div class="interception-modal-content">
-      <h2>Adjudicator Search Detected</h2>
-      <p>
-        It looks like you are searching for an adjudicator. For detailed adjudicator statistics and insights, please use the Adjudicator Insights and Analytics tool.
-      </p>
-      <p>
-        To search decisions instead, please modify your search query.
-      </p>
-      <div class="interception-modal-buttons">
-        <button id="closeModalBtn" class="btn-secondary-action">Modify Search</button>
-        <button id="useInsightsBtn" class="btn-primary-action">View Adjudicator Insights</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="/assets/js/main.js"></script>
-  <script>
-    // Force Light Theme on page load
-    document.addEventListener('DOMContentLoaded', () => {
-      const body = document.body;
-      body.classList.remove('dark');
-      body.classList.add('light');
-
-      const logo = document.getElementById('logo');
-      const footerLogo = document.getElementById('footerLogo');
-      if (logo) logo.src = "assets/sopal_logo_v1.png";
-      if (footerLogo) footerLogo.src = "assets/sopal_logo_v1.png";
-
-      document.querySelectorAll('.chip').forEach((chip) => {
-        chip.addEventListener('click', () => {
-          const targetId = chip.getAttribute('data-target');
-          const value = chip.getAttribute('data-value') || '';
-          const input = document.getElementById(targetId);
-          if (input) {
-            input.value = value;
-            input.focus();
-          }
-        });
-      });
-    });
-
-    // Navbar scroll behavior
-    window.addEventListener('scroll', () => {
-      const header = document.querySelector('.header');
-      if (window.scrollY > 160) {
-        header.classList.add('scrolled');
-      } else {
-        header.classList.remove('scrolled');
-      }
-    });
-
-    // Adjudicator detection
-    let adjudicatorList = [];
-    let currentDecisionQuery = '';
-
-    async function fetchAdjudicators() {
-      try {
-        const excludedSurnames = new Set([
-          'bond', 'wood', 'court', 'grant', 'king',
-          'dowling', 'wright', 'long', 'green',
-          'white', 'lee', 'smith', 'jones', 'wilson',
-          'taylor', 'roberts', 'williams', 'martin', 'thomas'
-        ]);
-
-        const response = await fetch('/api/adjudicators');
-        if (!response.ok) return;
-        const data = await response.json();
-
-        adjudicatorList = data.map(adj => {
-          const parts = adj.name.toLowerCase().split(' ').filter(p => p.length > 1);
-          let lastName = parts.length > 0 ? parts[parts.length - 1] : null;
-
-          if (lastName && excludedSurnames.has(lastName)) {
-            lastName = null;
-          }
-
-          return {
-            fullName: adj.name.toLowerCase(),
-            lastName: lastName
-          };
-        });
-        console.log(`Loaded ${adjudicatorList.length} adjudicators for surname check.`);
-      } catch (error) {
-        console.error('Could not fetch adjudicator list:', error);
-      }
-    }
-
-    function normalizeInput(s) {
-      return (s || '')
-        .replace(/[\u201C\u201D]/g, '"')
-        .replace(/[\u2018\u2019]/g, "'")
-        .replace(/[\u2013\u2014\u2015]/g, '-')
-        .replace(/\s+/g, ' ')
-        .trim();
-    }
-
-    function findMatchingAdjudicator(query) {
-      if (!query || query.length < 3 || !adjudicatorList.length) return null;
-
-      const cleanedQuery = query
-        .toLowerCase()
-        .replace(/"/g, '')
-        .replace(/\b(and|or|not|w\/\d+|near\/\d+)\b/gi, ' ')
-        .replace(/[^\w\s]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      if (!cleanedQuery) return null;
-
-      const queryWords = cleanedQuery.split(/\s+/);
-
-      for (const adjudicator of adjudicatorList) {
-        if (adjudicator.lastName) {
-          if (queryWords.includes(adjudicator.lastName)) {
-            return adjudicator.fullName;
-          }
-        }
-      }
-      return null;
-    }
-
-    function showAdjudicatorModal() {
-      const modal = document.getElementById('adjudicatorSearchModal');
-      modal.classList.add('active');
-
-      document.getElementById('useInsightsBtn').onclick = () => {
-        modal.classList.remove('active');
-        if (currentDecisionQuery) {
-          window.location.href = `/adjudicators?q=${encodeURIComponent(currentDecisionQuery)}`;
-        }
-      };
-
-      document.getElementById('closeModalBtn').onclick = () => {
-        modal.classList.remove('active');
-      };
-
-      modal.onclick = (e) => {
-        if (e.target === modal) {
-          modal.classList.remove('active');
-        }
-      };
-    }
-
-    function handleHeroSearch() {
-      const query = document.getElementById('heroSearchInput').value.trim();
-      if (!query) return;
-
-      currentDecisionQuery = query;
-      const normalizedQuery = normalizeInput(query);
-      const matchedAdjudicator = findMatchingAdjudicator(normalizedQuery);
-
-      if (matchedAdjudicator) {
-        showAdjudicatorModal();
-      } else {
-        window.location.href = `/decision-search?q=${encodeURIComponent(query)}`;
-      }
-    }
-
-    function handleAdjudicatorSearch() {
-      const query = document.getElementById('adjudicatorSearchInput').value.trim();
-      if (!query) return;
-
-      window.location.href = `/adjudicators?q=${encodeURIComponent(query)}`;
-    }
-
-    async function loadStats() {
-      try {
-        const searchRes = await fetch('/search_fast?limit=1');
-        const searchData = await searchRes.json();
-
-        if (searchData.total) {
-          document.querySelectorAll('.js-total-decisions').forEach((el) => {
-            el.textContent = searchData.total.toLocaleString() + '+';
-          });
-        }
-
-        const adjRes = await fetch('/api/adjudicators');
-        const adjData = await adjRes.json();
-
-        if (adjData.length) {
-          document.querySelectorAll('.js-total-adjudicators').forEach((el) => {
-            el.textContent = adjData.length + '+';
-          });
-        }
-      } catch (e) {
-        console.error('Error loading stats:', e);
-      }
-    }
-
-    fetchAdjudicators();
-    loadStats();
-  </script>
+<script src="/assets/js/main.js"></script>
 </body>
 </html>

@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <meta charset="utf-8">
+  <title>Sopal – Send Feedback</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Base styles matching main site */
+    body {
+      font-family: "Manrope", sans-serif;
+      margin: 0;
+      background: #ffffff;
+      color: #222;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: "Space Grotesk", sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    /* Header */
+    .header {
+      background: #fdfdfd;
+      padding: 20px 25px;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      height: 31px;
+      margin-right: 20px;
+    }
+
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      color: #333;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #00c97c;
+    }
+
+    /* Main content */
+    .container {
+      max-width: 800px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .page-subtitle {
+      font-size: 18px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .feedback-form {
+      background: #f9f9f9;
+      border: 1px solid #e1e1e1;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #00c97c;
+      box-shadow: 0 0 0 3px rgba(0, 201, 124, 0.1);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 20px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    .submit-btn {
+      background: #00c97c;
+      color: white;
+      padding: 14px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      width: 100%;
+    }
+
+    .submit-btn:hover {
+      background: #00a568;
+      transform: translateY(-1px);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .feedback-types {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .feedback-type {
+      background: white;
+      border: 2px solid #e1e1e1;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .feedback-type:hover {
+      border-color: #00c97c;
+      background: #f0fdf4;
+    }
+
+    .feedback-type.selected {
+      border-color: #00c97c;
+      background: #f0fdf4;
+    }
+
+    .feedback-type .icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .feedback-type .title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .feedback-type .desc {
+      font-size: 13px;
+      color: #666;
+    }
+
+    /* Footer */
+    .footer {
+      background: #fcfcfc;
+      color: #333;
+      padding: 40px 20px 20px;
+      margin-top: 80px;
+      border-top: 1px solid #ddd;
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .footer-left {
+      max-width: 400px;
+    }
+
+    .footer-logo {
+      height: 24px;
+      margin-bottom: 10px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-links a {
+      color: #333;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+.footer-links a {
+  font-size: 13px;
+  color: black;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-links a:hover {
+  color: #00c97c;
+}
+
+    .footer-bottom {
+      text-align: center;
+      border-top: 1px solid #eee;
+      margin-top: 20px;
+      padding-top: 15px;
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .container {
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+
+      .page-title {
+        font-size: 28px;
+      }
+
+      .feedback-form {
+        padding: 24px;
+      }
+
+      .form-row {
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .feedback-types {
+        grid-template-columns: 1fr;
+      }
+
+      .header-content {
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .nav-links {
+        margin: 0;
+      }
+
+      .footer-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+    }
+
+    .success-message {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      color: #166534;
+      text-align: center;
+      font-weight: 500;
+      display: none;
+    }
+    /* Mobile responsiveness */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .nav-links {
+    margin: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .footer-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .footer-left {
+    margin-bottom: 25px;
+  }
+  .footer-links {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+  main {
+    padding: 0 13px;
+  }
+}
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <a href="/">
+        <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+      </a>
+<div class="nav-links">
+  <a href="decision-search">Search</a>
+  <a href="adjudicators">Adjudicators</a>
+  <a href="interest-calculator">Interest Calculator</a>
+  <a href="due-date-calculator">Due Date Calculator</a>
+  <a href="how-to">How-To Guide</a>
+  <a href="feedback" class="active">Feedback</a>
+</div>
+<div id="user-profile-nav" style="min-width:36px"></div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <h1 class="page-title">Send Feedback</h1>
+    <p class="page-subtitle">Help us improve Sopal by sharing your thoughts and suggestions</p>
+
+    <div class="success-message" id="successMessage">
+      Thank you for your feedback! We appreciate you taking the time to help us improve Sopal.
+    </div>
+
+<form id="feedbackForm" class="feedback-form" action="/send-feedback" method="POST">
+  <!-- Hidden honeypot for spam bots -->
+  <input type="text" name="_honey" style="display:none">
+
+  <!-- Disable Captcha -->
+  <input type="hidden" name="_captcha" value="false">
+
+  <!-- Redirect after successful submission -->
+  <input type="hidden" name="_next" value="https://yourdomain.com/thankyou.html">
+
+  <!-- Feedback Type Selection -->
+  <div class="form-group">
+    <label>What type of feedback would you like to share?</label>
+    <div class="feedback-types">
+      <div class="feedback-type" data-type="bug">
+        <div class="icon">🐛</div>
+        <div class="title">Bug Report</div>
+        <div class="desc">Something isn't working correctly</div>
+      </div>
+      <div class="feedback-type" data-type="feature">
+        <div class="icon">💡</div>
+        <div class="title">Feature Request</div>
+        <div class="desc">Suggest a new feature or improvement</div>
+      </div>
+      <div class="feedback-type" data-type="content">
+        <div class="icon">📄</div>
+        <div class="title">Content Issue</div>
+        <div class="desc">Report incorrect or missing information</div>
+      </div>
+      <div class="feedback-type" data-type="general">
+        <div class="icon">💬</div>
+        <div class="title">General Feedback</div>
+        <div class="desc">Share your overall experience</div>
+      </div>
+    </div>
+    <input type="hidden" id="feedbackType" name="type" required>
+  </div>
+
+  <!-- Contact Information -->
+  <div class="form-row">
+    <div class="form-group">
+      <label for="name">Name (Optional)</label>
+      <input type="text" id="name" name="name" placeholder="Your name">
+    </div>
+    <div class="form-group">
+      <label for="email">Email (Optional)</label>
+      <input type="email" id="email" name="email" placeholder="your@email.com">
+    </div>
+  </div>
+
+  <!-- Subject -->
+  <div class="form-group">
+    <label for="subject">Subject *</label>
+    <input type="text" id="subject" name="subject" required placeholder="Brief description of your feedback">
+  </div>
+
+  <!-- Priority -->
+  <div class="form-group">
+    <label for="priority">Priority</label>
+    <select id="priority" name="priority">
+      <option value="low">Low - General suggestion</option>
+      <option value="medium" selected>Medium - Would be helpful</option>
+      <option value="high">High - Important issue</option>
+      <option value="urgent">Urgent - Critical problem</option>
+    </select>
+  </div>
+
+  <!-- Detailed Feedback -->
+  <div class="form-group">
+    <label for="details">Detailed Description *</label>
+    <textarea id="details" name="details" required placeholder="Please provide as much detail as possible. If reporting a bug, include steps to reproduce it."></textarea>
+  </div>
+
+  <!-- Browser Info -->
+  <div class="form-row">
+    <div class="form-group">
+      <label for="browser">Browser (Optional)</label>
+      <input type="text" id="browser" name="browser" placeholder="e.g., Chrome 120, Safari 17">
+    </div>
+    <div class="form-group">
+      <label for="device">Device (Optional)</label>
+      <input type="text" id="device" name="device" placeholder="e.g., iPhone, Windows PC">
+    </div>
+  </div>
+
+  <button type="submit" class="submit-btn">Send Feedback</button>
+</form>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+        <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+      </div>
+<div class="footer-links">
+  <a href="decision-search">Search</a>
+  <a href="interest-calculator">Interest Calculator</a>
+  <a href="due-date-calculator">Due Date Calculator</a>
+  <a href="how-to">How-To Guide</a>
+  <a href="feedback">Feedback</a>
+  <a href="privacy">Privacy</a>
+  <a href="adjudicator-insights-terms">Adjudicator Insights Terms</a>
+  <a href="terms">General Terms of Use</a>
+  <a href="account-terms">Account Terms</a>
+</div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Sopal. All rights reserved.</p>
+    </div>
+  </footer>
+
+<script>
+// --- Feedback type selection ---
+document.querySelectorAll('.feedback-type').forEach(type => {
+  type.addEventListener('click', function() {
+    // remove 'selected' class from all
+    document.querySelectorAll('.feedback-type').forEach(t => t.classList.remove('selected'));
+    // add to clicked
+    this.classList.add('selected');
+    // update hidden input
+    document.getElementById('feedbackType').value = this.dataset.type;
+  });
+});
+
+// --- Form submission ---
+document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  if (!document.getElementById('feedbackType').value) {
+    alert('Please select a feedback type.');
+    return;
+  }
+
+  const formData = new FormData(this);
+
+  try {
+    const res = await fetch("/send-feedback", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (data.ok) {
+      document.getElementById('successMessage').style.display = 'block';
+      this.style.display = 'none';
+      document.getElementById('successMessage').scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    } else {
+      alert("Error sending feedback: " + data.error);
+    }
+  } catch (err) {
+    alert("Network error: " + err);
+  }
+});
+</script>
+
+
+<script src="/assets/js/main.js"></script>
+</body>
+</html>

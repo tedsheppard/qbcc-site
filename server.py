@@ -681,12 +681,12 @@ async def verify_email(token: str = Query(...)):
         
         if not token_record:
             # Redirect to account page without success message
-            return RedirectResponse(url="/account.html?tab=profile", status_code=303)
+            return RedirectResponse(url="/account?tab=profile", status_code=303)
         
         expires_at = datetime.fromisoformat(token_record['expires_at'])
         if datetime.utcnow() > expires_at:
             # Redirect to account page without success message
-            return RedirectResponse(url="/account.html?tab=profile", status_code=303)
+            return RedirectResponse(url="/account?tab=profile", status_code=303)
         
         purchases_con.execute("""
             UPDATE purchase_users 
@@ -702,12 +702,12 @@ async def verify_email(token: str = Query(...)):
         purchases_con.commit()
         
         # Redirect to account page with success indicator
-        return RedirectResponse(url="/account.html?tab=profile&verified=success", status_code=303)
+        return RedirectResponse(url="/account?tab=profile&verified=success", status_code=303)
         
     except Exception as e:
         print(f"Email verification error: {e}")
         # Redirect to account page on error
-        return RedirectResponse(url="/account.html?tab=profile", status_code=303)
+        return RedirectResponse(url="/account?tab=profile", status_code=303)
 
 
 

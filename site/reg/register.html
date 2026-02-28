@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <meta charset="utf-8">
+  <title>Sopal – Register</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+  body {
+    font-family: "Manrope", sans-serif;
+    margin: 0;
+    background: #f8f9fa;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Space Grotesk", sans-serif;
+    letter-spacing: -0.02em;
+  }
+  .header {
+    background: #fdfdfd;
+    padding: 20px 25px;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logo {
+    height: 31px;
+  }
+  .nav-links a {
+    text-decoration: none;
+    color: #555;
+    margin-left: 20px;
+    transition: color 0.3s;
+  }
+  .nav-links a:hover {
+    color: #007bff;
+  }
+  .main-content {
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  .register-container {
+    background: #fff;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    width: 100%;
+    max-width: 800px;
+  }
+  .register-container h1 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 28px;
+  }
+  .register-container p {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #666;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .form-group {
+    margin-bottom: 15px;
+  }
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .form-group label .required {
+    color: #dc3545;
+  }
+  .form-group label .optional {
+    color: #6c757d;
+    font-weight: normal;
+    font-size: 12px;
+  }
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 14px;
+    background-color: #fff;
+  }
+  .form-group small {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #666;
+  }
+  .btn-submit {
+    width: 100%;
+    padding: 14px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 15px;
+    transition: background-color 0.3s;
+  }
+  .btn-submit:hover {
+    background-color: #218838;
+  }
+  .extra-links {
+    margin-top: 25px;
+    text-align: center;
+    font-size: 14px;
+  }
+  .extra-links a {
+    color: #007bff;
+    text-decoration: none;
+  }
+  .extra-links a:hover {
+    text-decoration: underline;
+  }
+  .feedback-message {
+      padding: 12px;
+      margin-top: 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+      grid-column: 1 / -1;
+      line-height: 1.6;
+  }
+  .feedback-message.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+  }
+  @media (max-width: 768px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-content">
+    <a href="/">
+      <img src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+    </a>
+    <div class="nav-links">
+      <a href="decision-search">Search</a>
+      <a href="adjudicators">Adjudicators</a>
+      <a href="interest-calculator">Interest Calculator</a>
+      <a href="due-date-calculator">Due Date Calculator</a>
+      <a href="how-to">How-To Guide</a>
+      <a href="feedback">Feedback</a>
+    </div>
+    <div id="user-profile-nav" style="min-width:36px"></div>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+  <div class="register-container">
+    <h1>Create an Account</h1>
+    <p>Join Sopal to access exclusive features and insights.</p>
+    <form id="registerForm">
+      <div class="form-grid">
+        <!-- Account Credentials -->
+        <div class="form-group full-width">
+          <label for="email">Email Address <span class="required">*</span></label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password <span class="required">*</span></label>
+          <input type="password" id="password" name="password" required minlength="8">
+          <small>Minimum 8 characters</small>
+        </div>
+        <div class="form-group">
+          <label for="password_confirm">Confirm Password <span class="required">*</span></label>
+          <input type="password" id="password_confirm" name="password_confirm" required minlength="8">
+        </div>
+
+        <!-- Personal & Firm Details -->
+        <div class="form-group">
+          <label for="first_name">First Name <span class="required">*</span></label>
+          <input type="text" id="first_name" name="first_name" required>
+        </div>
+        <div class="form-group">
+          <label for="last_name">Last Name <span class="required">*</span></label>
+          <input type="text" id="last_name" name="last_name" required>
+        </div>
+        <div class="form-group">
+          <label for="firm_name">Firm/Company Name <span class="optional">(optional)</span></label>
+          <input type="text" id="firm_name" name="firm_name">
+        </div>
+        <div class="form-group">
+          <label for="abn">ABN <span class="optional">(optional)</span></label>
+          <input type="text" id="abn" name="abn" pattern="[0-9\s]{11,14}" placeholder="11 digit ABN">
+          <small>Enter 11 digits (spaces optional)</small>
+        </div>
+
+        <!-- Address -->
+        <div class="form-group full-width">
+          <label for="billing_address">Address <span class="required">*</span></label>
+          <input type="text" id="billing_address" name="billing_address" required>
+        </div>
+        <div class="form-group">
+          <label for="billing_city">City <span class="required">*</span></label>
+          <input type="text" id="billing_city" name="billing_city" required>
+        </div>
+        <div class="form-group">
+          <label for="billing_state">State <span class="required">*</span></label>
+          <select id="billing_state" name="billing_state" required>
+            <option value="">Select</option>
+            <option value="QLD">QLD</option>
+            <option value="NSW">NSW</option>
+            <option value="VIC">VIC</option>
+            <option value="SA">SA</option>
+            <option value="WA">WA</option>
+            <option value="TAS">TAS</option>
+            <option value="NT">NT</option>
+            <option value="ACT">ACT</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="billing_postcode">Postcode <span class="required">*</span></label>
+          <input type="text" id="billing_postcode" name="billing_postcode" required pattern="[0-9]{4}" placeholder="4000">
+        </div>
+
+        <!-- Other Details -->
+        <div class="form-group">
+          <label for="employee_size">Number of Employees <span class="optional">(optional)</span></label>
+          <select id="employee_size" name="employee_size">
+            <option value="">Select size...</option>
+            <option value="1-10">1-10</option>
+            <option value="11-50">11-50</option>
+            <option value="51-200">51-200</option>
+            <option value="201+">201+</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone Number <span class="optional">(optional)</span></label>
+          <input type="tel" id="phone" name="phone">
+        </div>
+
+        <div id="feedbackDiv" class="feedback-message"></div>
+
+<div class="form-group full-width">
+  <label style="display: flex; align-items: center;">
+    <input type="checkbox" required style="margin-right: 8px; width: auto;">
+    I agree to the <a href="/account-terms" target="_blank"> Account Terms & Conditions</a>
+  </label>
+</div>
+
+        <div class="form-group full-width">
+          <button type="submit" class="btn-submit">Create Account</button>
+        </div>
+      </div>
+    </form>
+    <div class="extra-links">
+      <p>Already have an account? <a href="/login">Login here</a></p>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const registerForm = document.getElementById('registerForm');
+    const feedbackDiv = document.getElementById('feedbackDiv');
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get('redirect');
+
+    // If a redirect URL is present, update the "Login here" link to carry it over.
+    const loginLink = document.querySelector('.extra-links a[href="/login"]');
+    if (redirectUrl) {
+        loginLink.href = `/login?redirect=${encodeURIComponent(redirectUrl)}`;
+    }
+
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        feedbackDiv.className = 'feedback-message';
+        feedbackDiv.innerHTML = '';
+
+        const formData = new FormData(registerForm);
+        const password = formData.get('password');
+        const passwordConfirm = formData.get('password_confirm');
+        const email = formData.get('email');
+        const firstName = formData.get('first_name');
+        const lastName = formData.get('last_name');
+        const billingAddress = formData.get('billing_address');
+        const billingCity = formData.get('billing_city');
+        const billingState = formData.get('billing_state');
+        const billingPostcode = formData.get('billing_postcode');
+        const abn = formData.get('abn');
+        const employeeSize = formData.get('employee_size'); // ADD THIS
+
+        // Client-side validation
+        const errors = [];
+        
+        if (!email) errors.push('Email is required');
+        if (!password) errors.push('Password is required');
+        if (password !== passwordConfirm) errors.push('Passwords do not match');
+        if (password.length < 8) errors.push('Password must be at least 8 characters');
+        if (!firstName) errors.push('First name is required');
+        if (!lastName) errors.push('Last name is required');
+        if (!billingAddress) errors.push('Billing address is required');
+        if (!billingCity) errors.push('City is required');
+        if (!billingState) errors.push('State is required');
+        if (!billingPostcode) errors.push('Postcode is required');
+        
+       
+                // ABN validation only if provided
+        if (abn && abn.trim()) {
+            const abnCleaned = abn.replace(/\s/g, '');
+            if (!/^\d{11}$/.test(abnCleaned)) { // Use a regex for 11 digits
+                errors.push('ABN must be exactly 11 digits');
+            }
+        }
+
+        if (errors.length > 0) {
+            feedbackDiv.innerHTML = errors.map(err => `• ${err}`).join('<br>');
+            feedbackDiv.className = 'feedback-message error';
+            return;
+        }
+
+        try {
+            // Step 1: Register the user
+            const registerResponse = await fetch('/purchase-register', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!registerResponse.ok) {
+                const errorData = await registerResponse.json();
+                throw new Error(errorData.detail || 'Registration failed.');
+            }
+
+            // Step 2: Automatically log the user in
+            const loginFormData = new FormData();
+            loginFormData.append('username', email);
+            loginFormData.append('password', password);
+            
+            const loginResponse = await fetch('/purchase-login', {
+                method: 'POST',
+                body: loginFormData
+            });
+
+            if (!loginResponse.ok) {
+                throw new Error('Registration successful, but auto-login failed. Please try logging in manually.');
+            }
+
+            const loginData = await loginResponse.json();
+            localStorage.setItem('purchase_token', loginData.access_token);
+            
+            // Redirect to the saved URL, or the account page as a fallback.
+            window.location.href = redirectUrl || '/account.html';
+
+        } catch (error) {
+            console.error('Registration error:', error);
+            feedbackDiv.textContent = error.message;
+            feedbackDiv.className = 'feedback-message error';
+        }
+    });
+});
+</script>
+<script src="/assets/js/main.js"></script>
+</body>
+</html>

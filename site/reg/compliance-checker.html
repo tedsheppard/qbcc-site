@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googagmanager.com/gtag/js?id=G-QEN3X3DQLR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QEN3X3DQLR');
+  </script>
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+  <meta charset="utf-8">
+  <title>Sopal – Compliance Checker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* Base styles from other tools */
+  body {
+    font-family: Inter, sans-serif;
+    margin: 0;
+    background: #ffffff;
+    color: #222;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  main {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 25px;
+  }
+  h1 {
+    font-size: 28px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+  }
+  .calculate-btn {
+    margin-top: 25px;
+    padding: 12px 20px;
+    background: #00c97c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  .calculate-btn:hover {
+    background: #00a568;
+  }
+  .calculate-btn:disabled {
+    background: #a5d6a7;
+    cursor: not-allowed;
+  }
+
+  /* Header */
+  .header {
+    background: #fdfdfd;
+    padding: 20px 25px;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-content {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .logo {
+    height: 31px;
+    margin-right: 20px;
+  }
+  .nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+  }
+  .nav-links a {
+    color: black;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover {
+    color: #00c97c;
+  }
+  .nav-links a.active {
+    color: #008a5c;
+    font-weight: 600;
+  }
+
+  /* Footer */
+  .footer {
+    background: #fcfcfc;
+    color: #333;
+    padding: 40px 25px 20px;
+    margin-top: 60px;
+    border-top: 1px solid #ddd;
+  }
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: auto;
+  }
+  .footer-left { 
+    max-width: 400px;
+    text-align: left;
+  }
+  .footer-logo { height: 24px; margin-bottom: 10px; }
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 40px;
+    text-align: left;
+  }
+  .footer-links a {
+    font-size: 13px;
+  }
+  .footer-bottom {
+    text-align: center;
+    border-top: 1px solid #eee;
+    margin-top: 30px;
+    padding-top: 20px;
+    width: 100%;
+    font-size: 0.85em;
+    color: #666;
+  }
+
+  /* Tool Specific Styles */
+  .checker-container {
+    background: #fdfdfd;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 25px;
+    margin-top: 30px;
+  }
+  .form-group {
+    margin-bottom: 20px;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 14px;
+  }
+  .doc-type-selector {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .doc-type-selector input[type="radio"] {
+    display: none;
+  }
+  .doc-type-selector label {
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  .doc-type-selector input[type="radio"]:checked + label {
+    background-color: #e6f7ff;
+    border-color: #00c97c;
+    font-weight: 600;
+  }
+
+  /* File Upload Area */
+  #drop-zone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #fafafa;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  #drop-zone.dragover {
+    background-color: #f0f0f0;
+    border-color: #00c97c;
+  }
+  #file-list {
+    margin-top: 15px;
+    font-size: 14px;
+  }
+
+  /* Results Area */
+  #results {
+    margin-top: 30px;
+  }
+  .analysis-report {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .analysis-report h3 {
+    margin-top: 0;
+  }
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+  }
+  .check-item.pass { background-color: #e8f5e9; border-color: #a5d6a7; }
+  .check-item.warning { background-color: #fff8e1; border-color: #ffe082; }
+  .check-item.fail { background-color: #ffebee; border-color: #ef9a9a; }
+  
+  .check-icon {
+    font-size: 24px;
+    margin-right: 15px;
+  }
+  .check-details h4 {
+    margin: 0 0 5px 0;
+  }
+  .check-details p {
+    margin: 0;
+    font-size: 14px;
+  }
+  .check-details a {
+    color: #0056b3;
+    text-decoration: underline;
+  }
+
+
+  /* Terms Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  .modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  }
+  .modal-content h2 {
+    margin-top: 0;
+  }
+  .terms-box {
+    height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin: 20px 0;
+    font-size: 14px;
+    background: #f9f9f9;
+  }
+  .modal-actions {
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-content">
+    <a href="/">
+      <img id="logo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo">
+    </a>
+    <div class="nav-links">
+      <a href="decision-search">Search</a>
+      <a href="adjudicators">Adjudicators</a>
+      <a href="interest-calculator">Interest Calculator</a>
+      <a href="due-date-calculator">Due Date Calculator</a>
+      <a href="how-to">How-To Guide</a>
+      <a href="feedback">Feedback</a>
+    </div>
+    <div id="user-profile-nav" style="min-width:36px"></div>
+  </div>
+</div>
+
+<main>
+  <h1>Compliance Checker</h1>
+  <p>This tool uses AI to perform a preliminary compliance check of your draft documents against the requirements of the BIF Act and common issues identified in case law. Upload your document below to begin.</p>
+  
+  <div class="checker-container">
+    <div class="form-group">
+      <label>1. Select Document Type</label>
+      <div class="doc-type-selector">
+        <input type="radio" id="doc-pc" name="docType" value="pc" checked>
+        <label for="doc-pc">Payment Claim</label>
+        
+        <input type="radio" id="doc-ps" name="docType" value="ps">
+        <label for="doc-ps">Payment Schedule</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>2. Upload Document(s)</label>
+      <div id="drop-zone">
+        <p>Drag & drop files here, or click to select.</p>
+        <p style="font-size: 12px; color: #666;">Max total size: 10MB. Accepted formats: PDF, DOCX, TXT.</p>
+        <input type="file" id="file-input" multiple hidden>
+      </div>
+      <div id="file-list"></div>
+    </div>
+
+    <button id="analyse-btn" class="calculate-btn">Analyse Documents</button>
+  </div>
+
+  <div id="results"></div>
+</main>
+
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-left">
+      <img id="footerLogo" src="assets/sopal_logo_v1.png" alt="SOPAL" class="footer-logo">
+      <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
+    </div>
+    <div class="footer-links">
+  <a href="adjudicators">Adjudicators</a>
+  <a href="decision-search">Search</a>
+  <a href="interest-calculator">Interest Calculator</a>
+  <a href="due-date-calculator">Due Date Calculator</a>
+  <a href="feedback">Feedback</a>
+  <a href="how-to">How-To Guide</a>
+  <a href="privacy.html">Privacy</a>
+  <a href="adjudicator-insights-terms">Adjudicator Insights Terms</a>
+  <a href="terms.html">General Terms of Use</a>
+  <a href="account-terms">Account Terms</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Sopal Australia. All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- Terms and Conditions Modal -->
+<div id="terms-modal" class="modal-overlay">
+  <div class="modal-content">
+    <h2>Terms of Use & Disclaimer</h2>
+    <p>Before using the Compliance Checker, you must read and agree to the following terms:</p>
+    <div class="terms-box">
+      <p><strong>1. Not Legal Advice:</strong> This tool provides automated, preliminary feedback based on programmed rules and AI analysis. It is an informational tool only and does not constitute legal advice. The information generated does not create a solicitor-client relationship.</p>
+      <p><strong>2. No Guarantee of Accuracy:</strong> While this tool is designed to identify common compliance issues, it cannot and does not guarantee the legal validity or compliance of your documents. The BIF Act and its interpretation are complex and subject to change. This tool may not identify all potential errors or risks.</p>
+      <p><strong>3. Limitation of Liability:</strong> Sopal, its developers, and affiliates accept no liability for any loss, damage, or adverse outcomes resulting from the use of or reliance on this tool. You are solely responsible for the content, accuracy, and legal sufficiency of your documents. You agree to indemnify and hold harmless Sopal from any claims arising out of your use of this service.</p>
+      <p><strong>4. AI and Data Use:</strong> By uploading documents, you consent to them being processed by a third-party neural network / large language model. We do not store your documents after the analysis is complete. Do not upload documents containing sensitive personal information beyond what is necessary for the analysis.</p>
+      <p><strong>5. Independent Verification Required:</strong> All results and suggestions provided by this tool must be independently verified by a qualified legal professional before you submit or rely on your documents in any formal capacity.</p>
+      <p>By clicking "I Agree", you acknowledge that you have read, understood, and accepted these terms and conditions in full.</p>
+    </div>
+    <div class="modal-actions">
+      <button id="agree-btn" class="calculate-btn">I Agree</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // DOM Elements
+  const analyseBtn = document.getElementById('analyse-btn');
+  const termsModal = document.getElementById('terms-modal');
+  const agreeBtn = document.getElementById('agree-btn');
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  const fileList = document.getElementById('file-list');
+  const resultsDiv = document.getElementById('results');
+
+  let uploadedFiles = [];
+  let hasAgreed = false;
+
+  // --- Modal Logic ---
+  analyseBtn.addEventListener('click', () => {
+    if (!hasAgreed) {
+      termsModal.style.display = 'flex';
+    } else {
+      runAnalysis();
+    }
+  });
+
+  agreeBtn.addEventListener('click', () => {
+    hasAgreed = true;
+    termsModal.style.display = 'none';
+    runAnalysis(); // Proceed to analysis after agreement
+  });
+
+  // --- File Handling Logic ---
+  dropZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+  
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+  });
+
+  dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files), false);
+
+  function handleFiles(files) {
+    let currentFiles = Array.from(files);
+    let totalSize = uploadedFiles.reduce((acc, file) => acc + file.size, 0) + currentFiles.reduce((acc, file) => acc + file.size, 0);
+
+    if (totalSize > 10 * 1024 * 1024) { // 10MB limit
+        alert("Total file size cannot exceed 10MB.");
+        return;
+    }
+    // For this tool, we only allow one file at a time.
+    uploadedFiles = [currentFiles[0]];
+    updateFileList();
+  }
+
+  function updateFileList() {
+    if (uploadedFiles.length > 0) {
+        fileList.innerHTML = '<strong>Uploaded file:</strong><ul>' +
+        uploadedFiles.map(f => `<li>${f.name} (${(f.size / 1024).toFixed(1)} KB)</li>`).join('') +
+        '</ul>';
+    } else {
+        fileList.innerHTML = '';
+    }
+  }
+
+  // --- Main Analysis Logic ---
+  function runAnalysis() {
+    if (uploadedFiles.length === 0) {
+      alert("Please upload a document to analyse.");
+      return;
+    }
+
+    resultsDiv.innerHTML = `<p>Analysing document... This may take a moment.</p>`;
+    
+    const docType = document.querySelector('input[name="docType"]:checked').value;
+    
+    // Use FormData to send the file and docType to the server
+    const formData = new FormData();
+    formData.append('file', uploadedFiles[0]);
+    formData.append('doc_type', docType);
+
+    fetch('/analyse-document', {
+      method: 'POST',
+      body: formData,
+    })
+    .then(response => {
+      if (!response.ok) {
+        // Try to get a more specific error message from the server response
+        return response.json().then(err => {
+            throw new Error(err.detail || `Server responded with status: ${response.status}`);
+        });
+      }
+      // The OpenAI response is a JSON string within the main response, so we need to parse twice.
+      return response.json().then(data => JSON.parse(data));
+    })
+    .then(analysisResult => {
+      displayResults(analysisResult);
+    })
+    .catch(error => {
+      resultsDiv.innerHTML = `<p style="color: red;">An error occurred during analysis: ${error.message}</p>`;
+      console.error('Analysis error:', error);
+    });
+  }
+
+  function displayResults(result) {
+    let reportHtml = `<div class="analysis-report"><h3>Compliance Analysis</h3>`;
+    
+    if (result && result.checks) {
+        result.checks.forEach(check => {
+          let icon = '';
+          switch (check.status) {
+            case 'pass': icon = '✅'; break;
+            case 'warning': icon = '⚠️'; break;
+            case 'fail': icon = '❌'; break;
+          }
+
+          reportHtml += `
+            <div class="check-item ${check.status}">
+              <div class="check-icon">${icon}</div>
+              <div class="check-details">
+                <h4>${check.title}</h4>
+                <p>${check.feedback}</p>
+              </div>
+            </div>
+          `;
+        });
+    } else {
+        reportHtml += `<p style="color: red;">The AI returned an unexpected format. Please try again.</p>`;
+    }
+
+    reportHtml += `</div>`;
+    resultsDiv.innerHTML = reportHtml;
+  }
+
+</script>
+<script src="/assets/js/main.js"></script>
+</body>
+</html>

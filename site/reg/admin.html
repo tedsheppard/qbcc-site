@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sopal – Admin Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <style>
+    body { font-family: Inter, sans-serif; margin: 0; background: #f8f9fa; color: #333; font-size: 14px; }
+    .header { background: #fdfdfd; padding: 20px 25px; border-bottom: 1px solid #ddd; }
+    .header-content { display: flex; align-items: center; max-width: 1400px; margin: 0 auto; }
+    .logo { height: 31px; }
+    main { max-width: 1400px; margin: 40px auto; padding: 0 25px; }
+    h1 { font-size: 28px; margin-bottom: 30px; }
+    h2 { font-size: 22px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 25px; }
+    h3 { font-size: 16px; margin-top: 25px; margin-bottom: 15px; color: #008a5c; }
+    .admin-container { display: flex; gap: 30px; }
+    .admin-nav { flex: 0 0 200px; }
+    .admin-nav .nav-btn { display: block; width: 100%; text-align: left; padding: 12px 15px; border: none; background: none; border-radius: 6px; cursor: pointer; font-size: 15px; margin-bottom: 5px; }
+    .admin-nav .nav-btn.active { background-color: #e8f8f1; color: #008a5c; font-weight: 600; }
+    .admin-content { flex: 1; }
+    .admin-section { display: none; }
+    .admin-section.active { display: block; }
+    .card { background: #fdfdfd; border: 1px solid #ddd; border-radius: 8px; padding: 30px; margin-bottom: 30px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+    th { background-color: #f8f9fa; font-weight: 600; white-space: nowrap; }
+    .error-message { color: #dc3545; font-weight: bold; }
+    .loading-message { color: #666; }
+    .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; color: white; }
+    .status-true { background-color: #dc3545; }
+    .status-false { background-color: #28a745; }
+    .form-inline { display: flex; gap: 10px; margin-bottom: 20px; }
+    .form-inline input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    .form-inline button, .btn-primary { background: #00c97c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 14px; }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    
+    /* New styles for drag-and-drop and metadata table */
+    #drop-zone { border: 2px dashed #ccc; border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; background-color: #f8f9fa; }
+    #drop-zone.dragover { background-color: #e8f8f1; border-color: #00c97c; }
+    #metadata-table input, #metadata-table select { width: 95%; min-width: 120px; padding: 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; }
+    #metadata-table .status-cell { font-weight: bold; text-align: center; }
+    .status-pending { color: #6c757d; }
+    .status-saving { color: #ffc107; }
+    .status-success { color: #28a745; }
+    .status-error { color: #dc3545; }
+    .btn-small { padding: 5px 10px; font-size: 12px; }
+    .btn-danger { background-color: #dc3545; }
+    .table-responsive { overflow-x: auto; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-content">
+    <a href="/"><img src="assets/sopal_logo_v1.png" alt="SOPAL" class="logo"></a>
+  </div>
+</div>
+
+<main>
+  <h1>Admin Hub</h1>
+  <div class="admin-container">
+    <aside class="admin-nav">
+      <button class="nav-btn" data-hash="gate">Search Gate</button>
+      <button class="nav-btn" data-hash="users">User Accounts</button>
+      <button class="nav-btn" data-hash="searches">Search Activity</button>
+      <button class="nav-btn" data-hash="adjudicators">Adjudicator Activity</button>
+      <button class="nav-btn" data-hash="fullaccess">Full Access Privileges</button>
+      <button class="nav-btn" data-hash="invoicerequests">Invoice Requests</button>
+      <button class="nav-btn" data-hash="subscriptions">Subscriptions</button>
+      <button class="nav-btn" data-hash="upload">Upload New Decisions</button>
+      <button class="nav-btn" data-hash="backup">Backups</button>
+    </aside>
+    <div class="admin-content">
+        <section id="gate-section" class="admin-section"></section>
+        <section id="users-section" class="admin-section"></section>
+        <section id="searches-section" class="admin-section"></section>
+        <section id="adjudicators-section" class="admin-section"></section>
+        <section id="fullaccess-section" class="admin-section"></section>
+
+        <section id="invoicerequests-section" class="admin-section"></section>
+        <section id="subscriptions-section" class="admin-section"></section>
+
+        <section id="upload-section" class="admin-section">
+            <div class="card">
+              <h2>Batch Upload Decisions</h2>
+              <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">
+                Drag and drop multiple PDF files into the area below. Metadata can be added in the table before finalizing the upload.
+              </p>
+        
+              <div id="drop-zone">
+                <p><strong>Drag & Drop PDF files here</strong><br>or click to select files</p>
+                <input type="file" id="file-input" multiple accept=".pdf" style="display: none;">
+              </div>
+              
+              <div id="metadata-table-container" style="display: none; margin-top: 25px;">
+                <h3>Enter Metadata</h3>
+                <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">
+                  Review and edit the details for each document below. Click "Save" on each row or use "Save All Pending" at the bottom.
+                </p>
+                <div class="table-responsive">
+                  <table id="metadata-table">
+                    <thead>
+                      <tr>
+                        <th>Filename</th>
+                        <th>Status</th>
+                        <th>EJS ID *</th>
+                        <th>Reference ID *</th>
+                        <th>Decision Date (Text) *</th>
+                        <th>Decision Date (YYYY-MM-DD) *</th>
+                        <th>Adjudicator *</th>
+                        <th>Claimant *</th>
+                        <th>Respondent *</th>
+                        <th>Claimed $*</th>
+                        <th>Adjudicated $*</th>
+                        <th>Fee Claimant %</th>
+                        <th>Fee Respondent %</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="metadata-table-body">
+                      </tbody>
+                  </table>
+                </div>
+                <div id="batch-actions" style="margin-top: 20px;">
+                   <button id="save-all-btn" class="btn-primary">Save All Pending</button>
+                   <div id="save-feedback" style="margin-top: 15px; font-weight: bold;"></div>
+                </div>
+              </div>
+            </div>
+        </section>
+
+        <section id="backup-section" class="admin-section">
+            <div class="card">
+                <h2>Save Database to Cloud</h2>
+                <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">
+                    After uploading new decisions, click this button to save the updated database to Google Cloud Storage.
+                </p>
+                <button id="save-db-btn" class="btn-primary">Save Database</button>
+                <div id="save-db-feedback" style="margin-top: 20px; padding: 10px; border-radius: 4px; display: none;"></div>
+            </div>
+
+            <div class="card">
+                <h2>Meilisearch Backup</h2>
+                <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">
+                    Create a point-in-time snapshot of the Meilisearch database and upload it to Google Cloud Storage.
+                </p>
+                <button id="backup-btn" class="btn-primary">Create New Backup</button>
+                <div id="backup-feedback" style="margin-top: 20px; padding: 10px; border-radius: 4px; display: none;"></div>
+            </div>
+        </section>
+    </div>
+  </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('purchase_token');
+
+    // --- DOM References ---
+    const navButtons = document.querySelectorAll('.admin-nav .nav-btn');
+    const sections = document.querySelectorAll('.admin-section');
+    const loadedTabs = new Set();
+    
+    // --- Upload Tab Specific DOM elements ---
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const metadataTableContainer = document.getElementById('metadata-table-container');
+    const metadataTableBody = document.getElementById('metadata-table-body');
+    const saveAllBtn = document.getElementById('save-all-btn');
+    const filesStore = new Map();
+
+
+    // --- AUTHENTICATION CHECK ---
+    if (!token) {
+        document.querySelector('main').innerHTML = '<p class="error-message">Access Denied. Please log in as an admin.</p>';
+        return;
+    }
+
+    // --- HELPER FUNCTIONS ---
+    function formatAEST(isoString) {
+        if (!isoString) return 'N/A';
+        try {
+            const utcDateString = isoString.replace(' ', 'T') + 'Z';
+            const date = new Date(utcDateString);
+            return date.toLocaleString('en-AU', {
+                timeZone: 'Australia/Sydney',
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+        } catch (e) {
+            return isoString;
+        }
+    }
+
+    // --- NAVIGATION ---
+    function showTab(hash) {
+        const targetHash = (hash || '#users').substring(1);
+        navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.hash === targetHash));
+        sections.forEach(section => section.classList.toggle('active', section.id.replace('-section', '') === targetHash));
+
+        if (!loadedTabs.has(targetHash)) {
+            loadSectionContent(targetHash);
+        }
+    }
+
+    function loadSectionContent(targetHash) {
+        const section = document.getElementById(`${targetHash}-section`);
+        if (!section) return;
+
+        if (targetHash === 'upload' || targetHash === 'backup' || loadedTabs.has(targetHash)) {
+            return;
+        }
+
+        loadedTabs.add(targetHash);
+        switch (targetHash) {
+            case 'gate':
+                loadGateSection();
+                break;
+            case 'users':
+                fetchData('/admin/all-users', section, renderUsersTable, 'Account Creation Activity');
+                break;
+            case 'searches':
+                fetchData('/admin/search-activity', section, renderSearchesTable, 'Latest 1000 Searches');
+                break;
+            case 'adjudicators':
+                fetchData('/admin/adjudicator-activity', section, renderAdjudicatorActivityTable, 'Latest 1000 Adjudicator Page Views');
+                break;
+            case 'fullaccess':
+                fetchData('/admin/full-access-users', section, renderFullAccessUsers, 'Manage Full Access Privileges');
+                break;
+            case 'invoicerequests':
+                loadInvoiceRequestsSection();
+                break;
+            case 'subscriptions':
+                fetchData('/admin/all-subscriptions', section, renderSubscriptionsTable, 'All Subscriptions');
+                break;
+        }
+    }
+
+    // --- DATA FETCHING ---
+    async function fetchData(url, sectionElement, renderer, title) {
+        sectionElement.innerHTML = `<div class="card"><h2>${title}</h2><p class="loading-message">Loading data...</p></div>`;
+        try {
+            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!response.ok) throw new Error(`Failed to fetch data (status: ${response.status})`);
+            const data = await response.json();
+            renderer(data, sectionElement);
+        } catch (error) {
+            sectionElement.innerHTML = `<div class="card"><h2>${title}</h2><p class="error-message">${error.message}</p></div>`;
+        }
+    }
+
+    // --- SEARCH GATE SECTION ---
+    async function loadGateSection() {
+        const section = document.getElementById('gate-section');
+        try {
+            const res = await fetch('/admin/search-gate', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error(`Failed to fetch gate status (${res.status})`);
+            const data = await res.json();
+            const isEnabled = data.gate_enabled;
+
+            section.innerHTML = `
+                <div class="card">
+                    <h2>Search Gate Control</h2>
+                    <p style="color: #666; margin-top: -15px; margin-bottom: 25px;">
+                        Master switch for the search gating system. When enabled, users must be logged in
+                        and are limited to 10 free searches per month. Full-access users and admins are exempt.
+                    </p>
+                    <div id="gate-status-box" style="display: flex; align-items: center; gap: 20px; padding: 20px; background: ${isEnabled ? '#fff3cd' : '#e8f8f1'}; border-radius: 8px; border: 1px solid ${isEnabled ? '#ffc107' : '#00c97c'};">
+                        <div style="flex: 1;">
+                            <strong style="font-size: 16px;">Search Gate is currently ${isEnabled ? 'ON' : 'OFF'}</strong>
+                            <p style="margin: 5px 0 0; color: #666; font-size: 13px;">
+                                ${isEnabled
+                                    ? 'Users must log in to search. Free tier limited to 10 searches/month.'
+                                    : 'Search is open to everyone with no limits.'}
+                            </p>
+                        </div>
+                        <button id="gate-toggle-btn" style="padding: 10px 24px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; color: white; background: ${isEnabled ? '#dc3545' : '#00c97c'}; min-width: 130px; font-size: 14px;">
+                            ${isEnabled ? 'Disable Gate' : 'Enable Gate'}
+                        </button>
+                    </div>
+                    <div id="gate-feedback" style="margin-top: 15px; font-size: 14px; color: #008a5c;"></div>
+                </div>
+            `;
+
+            document.getElementById('gate-toggle-btn').addEventListener('click', async () => {
+                const newState = !isEnabled;
+                const confirmMsg = newState
+                    ? 'ENABLE the search gate? All users will need to log in to search.'
+                    : 'DISABLE the search gate? Search will be open to everyone.';
+                if (!confirm(confirmMsg)) return;
+
+                const formData = new FormData();
+                formData.append('enabled', newState);
+                const toggleRes = await fetch('/admin/search-gate', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const result = await toggleRes.json();
+                document.getElementById('gate-feedback').textContent = result.message;
+
+                // Refresh the section
+                loadedTabs.delete('gate');
+                setTimeout(() => loadGateSection(), 500);
+            });
+        } catch (err) {
+            section.innerHTML = `<div class="card"><h2>Search Gate Control</h2><p class="error-message">Error: ${err.message}</p></div>`;
+        }
+    }
+
+    // --- TABLE RENDERERS ---
+    function renderUsersTable(users, sectionElement) {
+        let content = '<h2>Account Creation Activity</h2>';
+        if (!users || users.length === 0) {
+            content += '<p>No user accounts created yet.</p>';
+        } else {
+            content += `<div style="overflow-x: auto;"><table><thead><tr><th>ID</th><th>Email</th><th>Name</th><th>Firm</th><th>Created (AEST)</th><th>Last Login (AEST)</th></tr></thead><tbody>`;
+            users.forEach(user => {
+                content += `<tr><td>${user.id}</td><td>${user.email||''}</td><td>${user.first_name||''} ${user.last_name||''}</td><td>${user.firm_name||''}</td><td>${formatAEST(user.created_at)}</td><td>${user.last_login ? formatAEST(user.last_login) : 'Never'}</td></tr>`;
+            });
+            content += '</tbody></table></div>';
+        }
+        sectionElement.innerHTML = `<div class="card">${content}</div>`;
+    }
+
+    function renderSearchesTable(searches, sectionElement) {
+        let content = '<h2>Latest 1000 Searches</h2>';
+        if (!searches || searches.length === 0) {
+            content += '<p>No search activity logged yet.</p>';
+        } else {
+            content += `<div style="overflow-x: auto;"><table><thead><tr><th>Timestamp (AEST)</th><th>User Email</th><th>Search Query</th><th>Blocked</th></tr></thead><tbody>`;
+            searches.forEach(search => {
+                const blockedStatus = search.was_blocked ? '<span class="status-badge status-true">Yes</span>' : '<span class="status-badge status-false">No</span>';
+                content += `<tr><td>${formatAEST(search.timestamp)}</td><td>${search.user_email || 'Anonymous'}</td><td>${search.search_query}</td><td>${blockedStatus}</td></tr>`;
+            });
+            content += '</tbody></table></div>';
+        }
+        sectionElement.innerHTML = `<div class="card">${content}</div>`;
+    }
+    
+    function renderAdjudicatorActivityTable(views, sectionElement) {
+        let content = '<h2>Latest 1000 Adjudicator Page Views</h2>';
+        if (!views || views.length === 0) {
+            content += '<p>No adjudicator page views logged yet.</p>';
+        } else {
+            content += `<div style="overflow-x: auto;"><table><thead><tr><th>Timestamp (AEST)</th><th>User Email</th><th>Adjudicator Viewed</th></tr></thead><tbody>`;
+            views.forEach(view => {
+                content += `<tr><td>${formatAEST(view.timestamp)}</td><td>${view.user_email || 'Anonymous'}</td><td>${view.adjudicator_name}</td></tr>`;
+            });
+            content += '</tbody></table></div>';
+        }
+        sectionElement.innerHTML = `<div class="card">${content}</div>`;
+    }
+
+    function renderFullAccessUsers(users, sectionElement) {
+        let content = `
+            <h2>Manage Full Access Users</h2>
+            <p style="color: #666; margin-top: -15px; margin-bottom: 20px;">Users added here will have free access to all adjudicator insights.</p>
+            <div id="fullaccess-feedback" style="margin-bottom: 15px;"></div>
+            <div class="form-inline">
+                <input type="email" id="add-email-input" placeholder="Enter user's email address">
+                <button id="add-email-btn" class="btn-primary">Add User</button>
+            </div>
+            <table>
+                <thead><tr><th>Email Address</th><th>Date Added (AEST)</th><th>Action</th></tr></thead>
+                <tbody>
+        `;
+        if (users && users.length > 0) {
+            users.forEach(user => {
+                content += `
+                    <tr>
+                        <td>${user.email}</td>
+                        <td>${formatAEST(user.added_at)}</td>
+                        <td><button class="remove-btn" data-email="${user.email}" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Remove</button></td>
+                    </tr>
+                `;
+            });
+        } else {
+            content += `<tr><td colspan="3" style="text-align:center; padding: 20px; color: #666;">No users currently have full access.</td></tr>`;
+        }
+        content += '</tbody></table>';
+        sectionElement.innerHTML = `<div class="card">${content}</div>`;
+
+        document.getElementById('add-email-btn').addEventListener('click', handleAddFullAccess);
+        document.querySelectorAll('.remove-btn').forEach(btn => btn.addEventListener('click', handleRemoveFullAccess));
+    }
+
+    // --- Invoice Requests Section ---
+    async function loadInvoiceRequestsSection() {
+        const section = document.getElementById('invoicerequests-section');
+        section.innerHTML = '<div class="card"><h2>Invoice Requests</h2><p class="loading-message">Loading...</p></div>';
+
+        try {
+            const [pendingRes, allRes] = await Promise.all([
+                fetch('/admin/invoice-requests?status_filter=pending', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/admin/invoice-requests?status_filter=all', { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+
+            if (!pendingRes.ok || !allRes.ok) throw new Error('Failed to fetch invoice requests');
+            const pending = await pendingRes.json();
+            const all = await allRes.json();
+
+            let content = '<h2>Pending Invoice Requests</h2>';
+            if (pending.length === 0) {
+                content += '<p style="color:#666;">No pending requests.</p>';
+            } else {
+                content += '<div style="overflow-x:auto;"><table><thead><tr><th>ID</th><th>Email</th><th>Firm</th><th>ABN</th><th>Plan</th><th>Accounts Email</th><th>Notes</th><th>Submitted</th><th>Actions</th></tr></thead><tbody>';
+                pending.forEach(r => {
+                    content += `<tr>
+                        <td>${r.id}</td><td>${r.user_email}</td><td>${r.firm_name||''}</td>
+                        <td>${r.abn||''}</td><td>${r.plan_type}</td><td>${r.accounts_email||''}</td>
+                        <td>${r.notes||''}</td><td>${formatAEST(r.created_at)}</td>
+                        <td>
+                            <button class="btn-primary btn-small" onclick="handleApproveInvoice(${r.id})" style="margin-bottom:4px;">Approve</button>
+                            <button class="btn-primary btn-small btn-danger" onclick="handleRejectInvoice(${r.id})">Reject</button>
+                        </td>
+                    </tr>`;
+                });
+                content += '</tbody></table></div>';
+            }
+
+            content += '<h3 style="margin-top:30px;">All Requests</h3>';
+            if (all.length === 0) {
+                content += '<p style="color:#666;">No requests yet.</p>';
+            } else {
+                content += '<div style="overflow-x:auto;"><table><thead><tr><th>ID</th><th>Email</th><th>Plan</th><th>Status</th><th>Reviewed By</th><th>Reviewed At</th><th>Submitted</th></tr></thead><tbody>';
+                all.forEach(r => {
+                    const statusColor = r.status === 'approved' ? '#28a745' : r.status === 'rejected' ? '#dc3545' : '#ffc107';
+                    content += `<tr>
+                        <td>${r.id}</td><td>${r.user_email}</td><td>${r.plan_type}</td>
+                        <td><span class="status-badge" style="background:${statusColor};">${r.status}</span></td>
+                        <td>${r.reviewed_by||''}</td><td>${r.reviewed_at ? formatAEST(r.reviewed_at) : ''}</td>
+                        <td>${formatAEST(r.created_at)}</td>
+                    </tr>`;
+                });
+                content += '</tbody></table></div>';
+            }
+
+            section.innerHTML = `<div class="card">${content}</div>`;
+        } catch (err) {
+            section.innerHTML = `<div class="card"><h2>Invoice Requests</h2><p class="error-message">${err.message}</p></div>`;
+        }
+    }
+
+    function renderSubscriptionsTable(subs, sectionElement) {
+        let content = '<h2>All Subscriptions</h2>';
+        if (!subs || subs.length === 0) {
+            content += '<p style="color:#666;">No subscriptions yet.</p>';
+        } else {
+            content += '<div style="overflow-x:auto;"><table><thead><tr><th>ID</th><th>Email</th><th>Plan</th><th>Payment</th><th>Status</th><th>Period End</th><th>Created</th></tr></thead><tbody>';
+            subs.forEach(s => {
+                const statusColors = { active: '#28a745', cancelled: '#ffc107', past_due: '#dc3545', expired: '#6c757d' };
+                content += `<tr>
+                    <td>${s.id}</td><td>${s.user_email}</td><td>${s.plan_type}</td>
+                    <td>${s.payment_method}</td>
+                    <td><span class="status-badge" style="background:${statusColors[s.status]||'#6c757d'};">${s.status}</span></td>
+                    <td>${s.current_period_end ? formatAEST(s.current_period_end) : ''}</td>
+                    <td>${formatAEST(s.created_at)}</td>
+                </tr>`;
+            });
+            content += '</tbody></table></div>';
+        }
+        sectionElement.innerHTML = `<div class="card">${content}</div>`;
+    }
+
+    // --- EVENT HANDLERS ---
+    window.handleApproveInvoice = async function(id) {
+        if (!confirm('Approve this invoice request? This will create an active subscription for the user.')) return;
+        try {
+            const res = await fetch(`/admin/approve-invoice-request/${id}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Approval failed');
+            alert(data.message);
+            loadedTabs.delete('invoicerequests');
+            loadSectionContent('invoicerequests');
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    };
+
+    window.handleRejectInvoice = async function(id) {
+        const notes = prompt('Rejection reason (optional):');
+        if (notes === null) return; // cancelled
+        try {
+            const formData = new FormData();
+            formData.append('admin_notes', notes);
+            const res = await fetch(`/admin/reject-invoice-request/${id}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Rejection failed');
+            alert(data.message);
+            loadedTabs.delete('invoicerequests');
+            loadSectionContent('invoicerequests');
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    };
+
+    async function handleAddFullAccess() {
+        const emailInput = document.getElementById('add-email-input');
+        const email = emailInput.value.trim();
+        if (!email) return;
+        const formData = new FormData();
+        formData.append('email', email);
+        const response = await fetch('/admin/add-full-access', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+        const data = await response.json();
+        const feedbackDiv = document.getElementById('fullaccess-feedback');
+        if (response.ok) {
+            feedbackDiv.style.color = '#155724';
+            emailInput.value = '';
+            loadedTabs.delete('fullaccess'); 
+            loadSectionContent('fullaccess');
+        } else {
+            feedbackDiv.style.color = '#721c24';
+        }
+        feedbackDiv.textContent = data.detail || data.message;
+    }
+
+    async function handleRemoveFullAccess(event) {
+        const email = event.target.dataset.email;
+        if (!confirm(`Are you sure you want to revoke full access for ${email}?`)) return;
+        const formData = new FormData();
+        formData.append('email', email);
+        await fetch('/admin/remove-full-access', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+        loadedTabs.delete('fullaccess');
+        loadSectionContent('fullaccess');
+    }
+    
+    async function handleCreateBackup() {
+        const backupBtn = document.getElementById('backup-btn');
+        const feedbackDiv = document.getElementById('backup-feedback');
+        if (!confirm('Are you sure you want to create a new Meilisearch backup?')) return;
+
+        backupBtn.disabled = true;
+        backupBtn.textContent = 'Backup in Progress...';
+        feedbackDiv.style.display = 'block';
+        feedbackDiv.style.color = '#333';
+        feedbackDiv.textContent = 'Starting snapshot... This may take several minutes.';
+
+        try {
+            const response = await fetch('/admin/create-meilisearch-backup', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.detail || 'An unknown error occurred.');
+            
+            feedbackDiv.textContent = result.message;
+            feedbackDiv.style.background = '#e8f8f1';
+            feedbackDiv.style.color = '#008a5c';
+        } catch (error) {
+            feedbackDiv.textContent = `Error: ${error.message}`;
+            feedbackDiv.style.background = '#f8d7da';
+            feedbackDiv.style.color = '#721c24';
+        } finally {
+            backupBtn.disabled = false;
+            backupBtn.textContent = 'Create New Backup';
+        }
+    }
+    
+    async function handleSaveDatabase() {
+        const saveDbBtn = document.getElementById('save-db-btn');
+        const feedbackDiv = document.getElementById('save-db-feedback');
+        if (!confirm('Are you sure you want to save the current database to the cloud? This will overwrite the existing file.')) return;
+
+        saveDbBtn.disabled = true;
+        saveDbBtn.textContent = 'Saving...';
+        feedbackDiv.style.display = 'block';
+        feedbackDiv.style.color = '#333';
+        feedbackDiv.textContent = 'Uploading database to Google Cloud Storage...';
+
+        try {
+            const response = await fetch('/admin/save-database', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.detail || 'An unknown error occurred.');
+            
+            feedbackDiv.textContent = result.message;
+            feedbackDiv.style.background = '#e8f8f1';
+            feedbackDiv.style.color = '#008a5c';
+        } catch (error) {
+            feedbackDiv.textContent = `Error: ${error.message}`;
+            feedbackDiv.style.background = '#f8d7da';
+            feedbackDiv.style.color = '#721c24';
+        } finally {
+            saveDbBtn.disabled = false;
+            saveDbBtn.textContent = 'Save Database';
+        }
+    }
+    
+    // --- BATCH UPLOAD LOGIC ---
+    function setupUploadTab() {
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files), false);
+        saveAllBtn.addEventListener('click', handleSaveAll);
+    }
+    
+    function handleFiles(files) {
+        if (!files) return;
+        metadataTableContainer.style.display = 'block';
+        
+        [...files].forEach(file => {
+            if (file.type === "application/pdf") {
+                const rowId = `row-${Date.now()}-${Math.random()}`;
+                filesStore.set(rowId, file);
+                addFileToTable(file, rowId);
+            }
+        });
+    }
+
+    function addFileToTable(file, rowId) {
+        const row = document.createElement('tr');
+        row.id = rowId;
+        row.innerHTML = `
+            <td>${file.name}</td>
+            <td class="status-cell status-pending">Pending</td>
+            <td><input type="text" name="ejs_id" required></td>
+            <td><input type="text" name="reference" required></td>
+            <td><input type="text" name="decision_date" required></td>
+            <td><input type="date" name="decision_date_norm" required></td>
+            <td><input type="text" name="adjudicator" required></td>
+            <td><input type="text" name="claimant" required></td>
+            <td><input type="text" name="respondent" required></td>
+            <td><input type="number" step="0.01" name="claimed_amount" required></td>
+            <td><input type="number" step="0.01" name="adjudicated_amount" required></td>
+            <td><input type="number" step="0.01" name="fee_claimant_proportion" placeholder="e.g., 50"></td>
+            <td><input type="number" step="0.01" name="fee_respondent_proportion" placeholder="e.g., 50"></td>
+            <td>
+                <button class="btn-primary btn-small save-row-btn">Save</button>
+                <button class="btn-danger btn-small remove-row-btn" style="margin-top: 4px;">Remove</button>
+            </td>
+        `;
+        metadataTableBody.appendChild(row);
+
+        row.querySelector('.save-row-btn').addEventListener('click', () => handleSaveRow(rowId));
+        row.querySelector('.remove-row-btn').addEventListener('click', () => handleRemoveRow(rowId));
+    }
+
+    function handleRemoveRow(rowId) {
+        document.getElementById(rowId)?.remove();
+        filesStore.delete(rowId);
+    }
+
+    async function handleSaveRow(rowId) {
+        const row = document.getElementById(rowId);
+        if (!row) return;
+
+        const statusCell = row.querySelector('.status-cell');
+        const saveBtn = row.querySelector('.save-row-btn');
+        const inputs = row.querySelectorAll('input');
+
+        // Basic validation
+        let isValid = true;
+        inputs.forEach(input => {
+            if (input.required && !input.value) {
+                input.style.borderColor = 'red';
+                isValid = false;
+            } else {
+                input.style.borderColor = '#ccc';
+            }
+        });
+
+        if (!isValid) {
+            statusCell.className = 'status-cell status-error';
+            statusCell.textContent = 'Missing required fields';
+            return;
+        }
+
+        statusCell.className = 'status-cell status-saving';
+        statusCell.textContent = 'Saving...';
+        saveBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('pdf_file', filesStore.get(rowId));
+        
+        // Append all required fields from the original form logic
+        const fields = [
+            'ejs_id', 'reference', 'decision_date', 'decision_date_norm', 'act', 'adjudicator', 
+            'claimant', 'respondent', 'claimed_amount', 'adjudicated_amount', 
+            'payment_schedule_amount', 'fee_claimant_proportion', 'fee_respondent_proportion', 
+            'project_type', 'contract_type', 'outcome'
+        ];
+        
+        fields.forEach(field => {
+            const input = row.querySelector(`[name="${field}"]`);
+            // Set default for non-rendered fields
+            if (field === 'act') {
+                 formData.append(field, 'BIF Act');
+            } else if (input) {
+                formData.append(field, input.value);
+            } else {
+                formData.append(field, ''); // Send empty for optional fields not in table
+            }
+        });
+
+        try {
+            const response = await fetch('/admin/upload-decision', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.detail || 'Upload failed');
+            
+            statusCell.className = 'status-cell status-success';
+            statusCell.textContent = 'Success';
+            inputs.forEach(input => input.disabled = true);
+            row.querySelector('.remove-row-btn').style.display = 'none';
+            saveBtn.style.display = 'none';
+
+        } catch (error) {
+            statusCell.className = 'status-cell status-error';
+            statusCell.textContent = `Error: ${error.message}`;
+            saveBtn.disabled = false;
+        }
+    }
+    
+    function handleSaveAll() {
+        const pendingRows = document.querySelectorAll('.status-pending');
+        if (pendingRows.length === 0) {
+            document.getElementById('save-feedback').textContent = "No pending uploads to save.";
+            return;
+        }
+        
+        pendingRows.forEach(cell => {
+           const row = cell.closest('tr');
+           row.querySelector('.save-row-btn')?.click();
+        });
+    }
+
+
+    // --- INITIALIZATION ---
+    setupUploadTab();
+    
+    const backupBtn = document.getElementById('backup-btn');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', handleCreateBackup);
+    }
+    
+    const saveDbBtn = document.getElementById('save-db-btn');
+    if (saveDbBtn) {
+        saveDbBtn.addEventListener('click', handleSaveDatabase);
+    }
+    
+    navButtons.forEach(button => button.addEventListener('click', () => window.location.hash = button.dataset.hash));
+    window.addEventListener('hashchange', () => showTab(window.location.hash));
+    
+    showTab(window.location.hash || '#users');
+});
+</script>
+</body>
+</html>
