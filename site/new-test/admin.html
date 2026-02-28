@@ -406,30 +406,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const navRight = document.getElementById('navRight');
 
   // ─── Quick Access Gate ──────────────────────────────────
-  function qaHash(s) {
-    let h = 0;
-    for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
-    return h;
-  }
-  const _qv = [1480963080]; // verification value
-
-  function handleQAInput(input) {
+  async function handleQAInput(input) {
     input.value = input.value.replace(/\D/g, '');
     if (input.value.length === 6) {
-      if (_qv.indexOf(qaHash(input.value)) !== -1) {
-        // Code accepted — if already on login view with credentials filled, auto-submit
-        const emailField = document.getElementById('email');
-        const passField = document.getElementById('password');
-        if (emailField.value && passField.value) {
-          loginForm.requestSubmit();
-        } else {
-          // Clear old token and show login form
-          localStorage.removeItem('purchase_token');
-          token = null;
-          showView(viewLogin);
-          emailField.focus();
-        }
-      } else {
+      try {
+        const fd = new FormData();
+        fd.append('code', input.value);
+        const res = await fetch('/admin/code-auth', { method: 'POST', body: fd });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        token = data.access_token;
+        localStorage.setItem('purchase_token', token);
+        init(); // re-run auth flow — will now see admin token
+      } catch {
         input.classList.add('error');
         setTimeout(() => { input.classList.remove('error'); input.value = ''; }, 500);
       }

