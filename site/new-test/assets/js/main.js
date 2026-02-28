@@ -1,3 +1,40 @@
+/* ── Page transition reveal ──
+   Works with the inline <script> in each page's <head> that adds
+   #nt-precover style (body hidden) when nt-transitioning flag is set.
+   This IIFE runs at the bottom of <body>, so document.body exists. */
+(function() {
+    if (!sessionStorage.getItem('nt-transitioning')) return;
+    sessionStorage.removeItem('nt-transitioning');
+
+    var COLS = 5, STAGGER = 50, COL_DURATION = 280;
+    var overlay = document.createElement('div');
+    overlay.id = 'nt-transition-reveal';
+    overlay.style.cssText = 'display:flex;position:fixed;inset:0;z-index:9999;pointer-events:none;';
+    for (var i = 0; i < COLS; i++) {
+        var col = document.createElement('div');
+        col.style.cssText = 'flex:1;background:#0a0a0a;transform:scaleY(1);transform-origin:top;';
+        overlay.appendChild(col);
+    }
+
+    // Overlay covers the page (z-index 9999), then we can safely show body
+    document.body.appendChild(overlay);
+    var pc = document.getElementById('nt-precover');
+    if (pc) pc.remove();
+
+    // Double rAF ensures the browser has committed the overlay to the render tree
+    requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+            for (var j = 0; j < COLS; j++) {
+                overlay.children[j].style.transition = 'transform ' + COL_DURATION + 'ms cubic-bezier(0.76, 0, 0.24, 1) ' + (j * STAGGER) + 'ms';
+                overlay.children[j].style.transform = 'scaleY(0)';
+            }
+            setTimeout(function() { overlay.remove(); }, COL_DURATION + COLS * STAGGER + 100);
+        });
+    });
+
+    window.__ntRevealDone = true;
+})();
+
 document.addEventListener('DOMContentLoaded', async () => {
     await updateNavUI();
     initMobileMenu();
@@ -123,20 +160,9 @@ function initPageTransition() {
 
     const cols = overlay.querySelectorAll('.nt-col');
 
-    // On page load: if we came from a transition, play reveal (bars sweep up)
-    if (sessionStorage.getItem('nt-transitioning')) {
-        sessionStorage.removeItem('nt-transitioning');
-        cols.forEach(c => { c.style.transform = 'scaleY(1)'; c.style.transformOrigin = 'top'; });
-        overlay.style.display = 'flex';
-        requestAnimationFrame(() => {
-            cols.forEach((c, i) => {
-                c.style.transition = `transform ${COL_DURATION}ms cubic-bezier(0.76, 0, 0.24, 1) ${i * STAGGER}ms`;
-                c.style.transformOrigin = 'top';
-                c.style.transform = 'scaleY(0)';
-            });
-            setTimeout(() => { overlay.style.display = 'none'; }, COL_DURATION + COLS * STAGGER + 50);
-        });
-    }
+    // Reveal is now handled by the immediate IIFE at the top of this file.
+    // Clean up the early overlay if it exists (the IIFE removes it after animation).
+    // The overlay created here is for the EXIT animation only.
 
     // Intercept link clicks
     document.addEventListener('click', (e) => {

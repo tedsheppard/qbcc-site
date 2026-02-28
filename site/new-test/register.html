@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Account | Sopal</title>
@@ -97,7 +98,7 @@
     <div class="register-card">
       <h1>Create an Account</h1>
       <p class="subtitle">Join Sopal to access exclusive features and insights.</p>
-      <form id="registerForm">
+      <form id="registerForm" autocomplete="on">
         <div class="form-grid">
           <div class="section-title">Account</div>
           <div class="form-group full-width">
@@ -135,18 +136,17 @@
           </div>
 
           <div class="section-divider"></div>
-          <div class="section-title">Address</div>
           <div class="form-group full-width">
-            <label class="form-label" for="billing_address">Address <span class="required">*</span></label>
-            <input type="text" class="form-input" id="billing_address" name="billing_address" required>
+            <label class="form-label" for="billing_address">Street Address <span class="required">*</span></label>
+            <input type="text" class="form-input" id="billing_address" name="billing_address" required autocomplete="street-address" placeholder="Start typing your address...">
           </div>
           <div class="form-group">
             <label class="form-label" for="billing_city">City <span class="required">*</span></label>
-            <input type="text" class="form-input" id="billing_city" name="billing_city" required>
+            <input type="text" class="form-input" id="billing_city" name="billing_city" required autocomplete="address-level2">
           </div>
           <div class="form-group">
             <label class="form-label" for="billing_state">State <span class="required">*</span></label>
-            <select class="form-select" id="billing_state" name="billing_state" required>
+            <select class="form-select" id="billing_state" name="billing_state" required autocomplete="address-level1">
               <option value="">Select</option>
               <option value="QLD">QLD</option>
               <option value="NSW">NSW</option>
@@ -160,7 +160,7 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="billing_postcode">Postcode <span class="required">*</span></label>
-            <input type="text" class="form-input" id="billing_postcode" name="billing_postcode" required pattern="[0-9]{4}" placeholder="4000">
+            <input type="text" class="form-input" id="billing_postcode" name="billing_postcode" required pattern="[0-9]{4}" placeholder="4000" autocomplete="postal-code">
           </div>
 
           <div class="section-divider"></div>
@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const loginData = await loginResponse.json();
             localStorage.setItem('purchase_token', loginData.access_token);
-            window.location.href = redirectUrl || '/account.html';
+            window.location.href = redirectUrl || '/new-test/account';
 
         } catch (error) {
             feedbackDiv.textContent = error.message;
