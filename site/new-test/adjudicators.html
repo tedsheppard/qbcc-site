@@ -296,6 +296,13 @@
       .sidebar { max-height: 400px; }
       .stat-cards { grid-template-columns: repeat(2, 1fr); }
     }
+
+    .adj-pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 20px 0; flex-wrap: wrap; }
+    .adj-pagination button { padding: 6px 12px; border: 1px solid var(--border-light); border-radius: 6px; background: white; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.15s; color: var(--text-secondary); }
+    .adj-pagination button:hover { background: #f5f5f5; color: var(--text-primary); }
+    .adj-pagination button.active { background: var(--green); color: #000; border-color: var(--green); font-weight: 600; }
+    .adj-pagination button:disabled { opacity: 0.4; cursor: default; }
+    .adj-pagination .page-info { width: 100%; text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -518,6 +525,10 @@ let userToken = null;
 let originalDecisions = [];
 let isDecisionSearchActive = false;
 let chatHistoriesAdjudicators = {};
+let adjDecisionPage = 1;
+const ADJ_DECISIONS_PER_PAGE = 100;
+let lastFilteredDecisions = null;
+let lastSearchQuery = null;
 
 // Stripe globals
 let stripe = null;
@@ -781,6 +792,10 @@ function showAdjudicatorDetail(hasAccess) {
       </div>
     ` : '';
 
+    adjDecisionPage = 1;
+    lastFilteredDecisions = null;
+    lastSearchQuery = null;
+
     rightPane.innerHTML = `
       <div class="detail-header">
         <h1>${sanitizeHtml(selectedAdjudicator.name)}</h1>
@@ -897,7 +912,7 @@ function showAdjudicatorDetail(hasAccess) {
             </select>
           </div>
           <div id="decisionsListContainer">
-            ${renderDecisionItems(selectedAdjudicator.decisions, hasAccess)}
+            ${renderDecisionsPaginated(selectedAdjudicator.decisions, hasAccess)}
           </div>
         </div>
       </div>
@@ -965,6 +980,100 @@ function renderDecisionItems(decisions, hasAccess, searchQuery = null) {
 }
 
 // ============================================================
+// PAGINATED DECISIONS RENDERING
+// ============================================================
+function renderDecisionsPaginated(decisions, hasAccess, searchQuery = null) {
+    if (!decisions || decisions.length === 0) {
+        return '<div class="loading">No decisions found</div>';
+    }
+
+    const totalPages = Math.ceil(decisions.length / ADJ_DECISIONS_PER_PAGE);
+    if (adjDecisionPage > totalPages) adjDecisionPage = totalPages;
+    if (adjDecisionPage < 1) adjDecisionPage = 1;
+
+    const startIdx = (adjDecisionPage - 1) * ADJ_DECISIONS_PER_PAGE;
+    const endIdx = Math.min(startIdx + ADJ_DECISIONS_PER_PAGE, decisions.length);
+    const sliced = decisions.slice(startIdx, endIdx);
+
+    let html = renderDecisionItems(sliced, hasAccess, searchQuery);
+
+    if (totalPages > 1) {
+        html += '<div class="adj-pagination">';
+
+        // Previous button
+        html += `<button ${adjDecisionPage === 1 ? 'disabled' : ''} onclick="goAdjDecisionPage(${adjDecisionPage - 1})">&#8592; Prev</button>`;
+
+        // Page number buttons with windowing (max ~7 visible)
+        let startPage, endPage;
+        if (totalPages <= 7) {
+            startPage = 1;
+            endPage = totalPages;
+        } else {
+            if (adjDecisionPage <= 4) {
+                startPage = 1;
+                endPage = 7;
+            } else if (adjDecisionPage >= totalPages - 3) {
+                startPage = totalPages - 6;
+                endPage = totalPages;
+            } else {
+                startPage = adjDecisionPage - 3;
+                endPage = adjDecisionPage + 3;
+            }
+        }
+
+        if (startPage > 1) {
+            html += `<button onclick="goAdjDecisionPage(1)">1</button>`;
+            if (startPage > 2) html += `<span style="color:var(--text-muted);font-size:13px;padding:0 2px;">...</span>`;
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<button class="${i === adjDecisionPage ? 'active' : ''}" onclick="goAdjDecisionPage(${i})">${i}</button>`;
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += `<span style="color:var(--text-muted);font-size:13px;padding:0 2px;">...</span>`;
+            html += `<button onclick="goAdjDecisionPage(${totalPages})">${totalPages}</button>`;
+        }
+
+        // Next button
+        html += `<button ${adjDecisionPage === totalPages ? 'disabled' : ''} onclick="goAdjDecisionPage(${adjDecisionPage + 1})">Next &#8594;</button>`;
+
+        // Page info
+        html += `<div class="page-info">Showing ${startIdx + 1}\u2013${endIdx} of ${decisions.length}</div>`;
+
+        html += '</div>';
+    }
+
+    return html;
+}
+
+function goAdjDecisionPage(page) {
+    adjDecisionPage = page;
+    const hasAccess = !document.querySelector('.detail-content-wrap.blur-stats');
+    const container = document.getElementById('decisionsListContainer');
+    if (!container) return;
+
+    let decisions, searchQuery;
+    if (lastFilteredDecisions) {
+        decisions = lastFilteredDecisions;
+        searchQuery = lastSearchQuery;
+    } else if (selectedAdjudicator) {
+        decisions = selectedAdjudicator.decisions;
+        searchQuery = null;
+    } else {
+        return;
+    }
+
+    container.innerHTML = renderDecisionsPaginated(decisions, hasAccess, searchQuery);
+
+    // Scroll to top of decisions section
+    const decisionsHeader = container.previousElementSibling;
+    if (decisionsHeader) {
+        decisionsHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+// ============================================================
 // TABS
 // ============================================================
 function showTab(tabName, btnEl) {
@@ -996,9 +1105,26 @@ function sortDecisions() {
         }
     });
 
+    adjDecisionPage = 1;
     const hasAccess = !document.querySelector('.detail-content-wrap.blur-stats');
+    const decisions = lastFilteredDecisions || selectedAdjudicator.decisions;
+    if (lastFilteredDecisions) {
+        lastFilteredDecisions.sort((a, b) => {
+            switch (document.getElementById('decisionSort').value) {
+                case 'date_newest': return (b.date || '').localeCompare(a.date || '');
+                case 'date_oldest': return (a.date || '').localeCompare(b.date || '');
+                case 'az': return (a.claimant || '').localeCompare(b.claimant || '');
+                case 'za': return (b.claimant || '').localeCompare(a.claimant || '');
+                case 'claim_high': return b.claimAmount - a.claimAmount;
+                case 'claim_low': return a.claimAmount - b.claimAmount;
+                case 'award_high': return b.awardedAmount - a.awardedAmount;
+                case 'award_low': return a.awardedAmount - b.awardedAmount;
+                default: return 0;
+            }
+        });
+    }
     const container = document.getElementById('decisionsListContainer');
-    container.innerHTML = renderDecisionItems(selectedAdjudicator.decisions, hasAccess);
+    container.innerHTML = renderDecisionsPaginated(decisions, hasAccess, lastSearchQuery);
 }
 
 // ============================================================
@@ -1427,7 +1553,10 @@ async function searchDecisions() {
             container.innerHTML = '<div class="loading">No matching decisions found. Try different search terms.</div>';
             if (resultsDiv) resultsDiv.style.display = 'none';
         } else {
-            container.innerHTML = renderDecisionItems(filtered, hasAccess, processedQuery);
+            adjDecisionPage = 1;
+            lastFilteredDecisions = filtered;
+            lastSearchQuery = processedQuery;
+            container.innerHTML = renderDecisionsPaginated(filtered, hasAccess, processedQuery);
             if (resultsDiv && resultsCount) {
                 resultsCount.textContent = `Found ${filtered.length} matching decision${filtered.length === 1 ? '' : 's'} out of ${originalDecisions.length} total`;
                 resultsDiv.style.display = 'block';
@@ -1455,12 +1584,15 @@ function clearDecisionSearch() {
     if (resultsDiv) resultsDiv.style.display = 'none';
 
     isDecisionSearchActive = false;
+    adjDecisionPage = 1;
+    lastFilteredDecisions = null;
+    lastSearchQuery = null;
 
     const hasAccess = !document.querySelector('.detail-content-wrap.blur-stats');
     const container = document.getElementById('decisionsListContainer');
 
     if (container && originalDecisions) {
-        container.innerHTML = renderDecisionItems(originalDecisions, hasAccess);
+        container.innerHTML = renderDecisionsPaginated(originalDecisions, hasAccess);
     }
 }
 

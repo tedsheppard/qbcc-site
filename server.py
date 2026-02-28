@@ -1571,6 +1571,88 @@ def get_adjudicator_activity(admin: dict = Depends(get_admin_user)):
     """).fetchall()
     return [dict(row) for row in logs]
 
+@app.get("/admin/stats")
+def get_admin_stats(period: str = Query("30d"), admin: dict = Depends(get_admin_user)):
+    """Admin endpoint to get dashboard stats with time-series data."""
+    # Map period to SQLite date offset
+    period_map = {
+        "7d": "-7 days",
+        "14d": "-14 days",
+        "30d": "-30 days",
+        "90d": "-90 days",
+        "365d": "-365 days",
+    }
+    date_offset = period_map.get(period)  # None for 'all'
+
+    # Summary stats (always full totals, not filtered by period)
+    total_users = purchases_con.execute("SELECT COUNT(*) FROM purchase_users").fetchone()[0]
+    total_searches = purchases_con.execute("SELECT COUNT(*) FROM search_logs WHERE was_blocked = 0").fetchone()[0]
+    total_adjudicator_views = purchases_con.execute("SELECT COUNT(*) FROM adjudicator_page_views").fetchone()[0]
+    users_this_month = purchases_con.execute(
+        "SELECT COUNT(*) FROM purchase_users WHERE created_at >= date('now', 'start of month')"
+    ).fetchone()[0]
+    searches_today = purchases_con.execute(
+        "SELECT COUNT(*) FROM search_logs WHERE was_blocked = 0 AND date(timestamp) = date('now')"
+    ).fetchone()[0]
+
+    summary = {
+        "total_users": total_users,
+        "total_searches": total_searches,
+        "total_adjudicator_views": total_adjudicator_views,
+        "users_this_month": users_this_month,
+        "searches_today": searches_today,
+    }
+
+    # Time-series: search volume (filtered by period)
+    if date_offset:
+        search_volume = purchases_con.execute(
+            "SELECT date(timestamp) AS day, COUNT(*) AS count FROM search_logs "
+            "WHERE was_blocked = 0 AND timestamp >= datetime('now', ?) "
+            "GROUP BY date(timestamp) ORDER BY day ASC",
+            (date_offset,)
+        ).fetchall()
+    else:
+        search_volume = purchases_con.execute(
+            "SELECT date(timestamp) AS day, COUNT(*) AS count FROM search_logs "
+            "WHERE was_blocked = 0 "
+            "GROUP BY date(timestamp) ORDER BY day ASC"
+        ).fetchall()
+
+    # Time-series: registrations (filtered by period)
+    if date_offset:
+        registrations = purchases_con.execute(
+            "SELECT date(created_at) AS day, COUNT(*) AS count FROM purchase_users "
+            "WHERE created_at >= datetime('now', ?) "
+            "GROUP BY date(created_at) ORDER BY day ASC",
+            (date_offset,)
+        ).fetchall()
+    else:
+        registrations = purchases_con.execute(
+            "SELECT date(created_at) AS day, COUNT(*) AS count FROM purchase_users "
+            "GROUP BY date(created_at) ORDER BY day ASC"
+        ).fetchall()
+
+    # Time-series: adjudicator page views (filtered by period)
+    if date_offset:
+        adjudicator_views = purchases_con.execute(
+            "SELECT date(timestamp) AS day, COUNT(*) AS count FROM adjudicator_page_views "
+            "WHERE timestamp >= datetime('now', ?) "
+            "GROUP BY date(timestamp) ORDER BY day ASC",
+            (date_offset,)
+        ).fetchall()
+    else:
+        adjudicator_views = purchases_con.execute(
+            "SELECT date(timestamp) AS day, COUNT(*) AS count FROM adjudicator_page_views "
+            "GROUP BY date(timestamp) ORDER BY day ASC"
+        ).fetchall()
+
+    return {
+        "summary": summary,
+        "search_volume": [dict(row) for row in search_volume],
+        "registrations": [dict(row) for row in registrations],
+        "adjudicator_views": [dict(row) for row in adjudicator_views],
+    }
+
 # In server.py, add this new endpoint with your other admin routes
 @app.post("/admin/upload-decision")
 async def upload_decision(

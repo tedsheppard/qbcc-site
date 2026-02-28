@@ -107,6 +107,13 @@
     .stat-card { background: white; border: 1px solid var(--border-light); border-radius: 10px; padding: 20px; }
     .stat-card .stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
     .stat-card .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
+    .chart-card { background: white; border: 1px solid var(--border-light); border-radius: 14px; padding: 28px; margin-bottom: 24px; }
+    .chart-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+    .chart-card canvas { width: 100% !important; max-height: 300px; }
+    .period-selector { display: flex; gap: 6px; margin-bottom: 20px; }
+    .period-btn { padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 6px; background: #f5f5f5; color: var(--text-secondary); border: 1px solid var(--border-light); transition: all 0.2s; font-family: inherit; cursor: pointer; }
+    .period-btn:hover { background: #eee; }
+    .period-btn.active { background: var(--green); color: #000; border-color: var(--green); }
 
     /* Tables */
     .table-wrap { overflow-x: auto; }
@@ -199,6 +206,7 @@
       .stats-grid { grid-template-columns: 1fr 1fr; }
     }
   </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -586,63 +594,132 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadStats() {
     const section = document.getElementById('tab-stats');
     section.innerHTML = '<div class="card"><p class="loading">Loading overview...</p></div>';
+    let currentPeriod = '30d';
 
-    try {
-      // Fetch stats and users in parallel
-      const [statsRes, usersRes] = await Promise.all([
-        fetch('/admin/stats', { headers: authHeaders() }).catch(() => null),
-        fetch('/admin/all-users', { headers: authHeaders() })
-      ]);
+    async function fetchAndRender(period) {
+        currentPeriod = period;
+        try {
+            const [statsRes, usersRes] = await Promise.all([
+                fetch(`/admin/stats?period=${period}`, { headers: authHeaders() }),
+                fetch('/admin/all-users', { headers: authHeaders() })
+            ]);
+            let statsData = statsRes.ok ? await statsRes.json() : null;
+            let users = usersRes.ok ? await usersRes.json() : [];
 
-      let statsData = null;
-      if (statsRes && statsRes.ok) {
-        statsData = await statsRes.json();
-      }
+            let html = '';
 
-      let users = [];
-      if (usersRes.ok) {
-        users = await usersRes.json();
-      }
+            // Period selector
+            const labels = {'7d':'7 Days','14d':'14 Days','30d':'1 Month','90d':'3 Months','365d':'1 Year','all':'All Time'};
+            html += '<div class="period-selector">';
+            Object.entries(labels).forEach(([p, label]) => {
+                html += `<button class="period-btn ${p === period ? 'active' : ''}" data-period="${p}">${label}</button>`;
+            });
+            html += '</div>';
 
-      // Build stats from whatever is available
-      let html = '<div class="stats-grid">';
+            // Stat cards
+            if (statsData && statsData.summary) {
+                const s = statsData.summary;
+                html += `<div class="stats-grid">
+                    <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value">${s.total_users.toLocaleString()}</div></div>
+                    <div class="stat-card"><div class="stat-label">Total Searches</div><div class="stat-value">${s.total_searches.toLocaleString()}</div></div>
+                    <div class="stat-card"><div class="stat-label">Searches Today</div><div class="stat-value">${s.searches_today.toLocaleString()}</div></div>
+                    <div class="stat-card"><div class="stat-label">Users This Month</div><div class="stat-value">${s.users_this_month}</div></div>
+                    <div class="stat-card"><div class="stat-label">Adjudicator Views</div><div class="stat-value">${s.total_adjudicator_views.toLocaleString()}</div></div>
+                </div>`;
+            } else {
+                html += `<div class="stats-grid"><div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value">${users.length}</div></div></div>`;
+            }
 
-      if (statsData) {
-        // Use the stats endpoint data
-        const entries = Object.entries(statsData);
-        entries.forEach(([key, value]) => {
-          const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-          html += `<div class="stat-card"><div class="stat-label">${esc(label)}</div><div class="stat-value">${esc(String(value))}</div></div>`;
-        });
-      } else {
-        // Fallback: derive stats from users list
-        html += `<div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value">${users.length}</div></div>`;
-      }
+            // Charts
+            if (statsData) {
+                html += '<div class="chart-card"><h3>Search Volume</h3><div style="position:relative;height:280px"><canvas id="searchChart"></canvas></div></div>';
+                html += '<div class="chart-card"><h3>New Registrations</h3><div style="position:relative;height:280px"><canvas id="regChart"></canvas></div></div>';
+                html += '<div class="chart-card"><h3>Adjudicator Page Views</h3><div style="position:relative;height:280px"><canvas id="adjViewChart"></canvas></div></div>';
+            }
 
-      html += '</div>';
+            // Recent registrations table
+            const recent = users.slice(0, 10);
+            if (recent.length > 0) {
+                html += `<div class="card"><h2>Recent Registrations</h2><div class="table-wrap"><table>
+                    <thead><tr><th>Email</th><th>Name</th><th>Firm</th><th>Registered</th></tr></thead>
+                    <tbody>${recent.map(u => `<tr>
+                        <td>${esc(u.email)}</td>
+                        <td>${esc((u.first_name||'')+' '+(u.last_name||''))}</td>
+                        <td>${esc(u.firm_name)}</td>
+                        <td>${formatAEST(u.created_at)}</td>
+                    </tr>`).join('')}</tbody>
+                </table></div></div>`;
+            }
 
-      // Recent users table
-      const recent = users.slice(0, 10);
-      if (recent.length > 0) {
-        html += `
-          <div class="card" style="margin-top: 8px;">
-            <h2>Recent Registrations</h2>
-            <div class="table-wrap"><table>
-              <thead><tr><th>Email</th><th>Name</th><th>Firm</th><th>Registered</th></tr></thead>
-              <tbody>${recent.map(u => `<tr>
-                <td>${esc(u.email)}</td>
-                <td>${esc((u.first_name || '') + ' ' + (u.last_name || ''))}</td>
-                <td>${esc(u.firm_name)}</td>
-                <td>${formatAEST(u.created_at)}</td>
-              </tr>`).join('')}</tbody>
-            </table></div>
-          </div>`;
-      }
+            section.innerHTML = html;
 
-      section.innerHTML = html;
-    } catch (err) {
-      section.innerHTML = `<div class="card"><p class="error-text">Error loading overview: ${esc(err.message)}</p></div>`;
+            // Bind period buttons
+            section.querySelectorAll('.period-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    loadedTabs.delete('stats');
+                    fetchAndRender(btn.dataset.period);
+                });
+            });
+
+            // Render charts
+            if (statsData) {
+                renderLineChart('searchChart', statsData.search_volume, 'Searches', 'rgba(0,212,126,0.8)', 'rgba(0,212,126,0.1)');
+                renderLineChart('regChart', statsData.registrations, 'Registrations', 'rgba(59,130,246,0.8)', 'rgba(59,130,246,0.1)');
+                renderLineChart('adjViewChart', statsData.adjudicator_views, 'Views', 'rgba(168,85,247,0.8)', 'rgba(168,85,247,0.1)');
+            }
+        } catch (err) {
+            section.innerHTML = `<div class="card"><p class="error-text">Error loading overview: ${esc(err.message)}</p></div>`;
+        }
     }
+
+    fetchAndRender(currentPeriod);
+  }
+
+  function renderLineChart(canvasId, data, label, borderColor, bgColor) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !data || data.length === 0) {
+        if (canvas) canvas.parentElement.innerHTML = '<p style="color:#888;font-size:13px;text-align:center;padding:40px 0;">No data for this period</p>';
+        return;
+    }
+    new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: data.map(d => {
+                const date = new Date(d.day + 'T00:00:00');
+                return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+            }),
+            datasets: [{
+                label,
+                data: data.map(d => d.count),
+                borderColor,
+                backgroundColor: bgColor,
+                fill: true,
+                tension: 0.3,
+                pointRadius: data.length > 60 ? 0 : 3,
+                pointHoverRadius: 5,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1a1a1a',
+                    titleFont: { family: 'Inter', size: 12 },
+                    bodyFont: { family: 'Inter', size: 12 },
+                    padding: 10,
+                    cornerRadius: 8
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 }, color: '#888', maxTicksLimit: 12 } },
+                y: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { font: { family: 'Inter', size: 11 }, color: '#888', precision: 0 } }
+            },
+            interaction: { mode: 'nearest', axis: 'x', intersect: false }
+        }
+    });
   }
 
   // ─── Search Gate ─────────────────────────────────────────
