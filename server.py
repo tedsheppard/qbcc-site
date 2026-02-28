@@ -3641,7 +3641,8 @@ def read_purchase_user_me(current_user: dict = Depends(get_current_purchase_user
         "last_login": current_user.get("last_login"),
         "email_verified": current_user.get("email_verified", 0),
         "has_full_access": has_full_access,
-        "has_subscription": has_active_subscription(current_user["email"])
+        "has_subscription": has_active_subscription(current_user["email"]),
+        "is_admin": current_user["email"] in ADMIN_EMAILS
     }
     return user_data
 
