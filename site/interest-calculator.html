@@ -237,8 +237,8 @@
           </div>
           <div class="calc-card-body">
             <div class="calc-tabs">
-              <button class="calc-tab active" onclick="openTab('contractual')">Contractual Rate</button>
-              <button class="calc-tab" onclick="openTab('qbcc')">QBCC Penalty Rate</button>
+              <button class="calc-tab active" onclick="openTab('qbcc')">QBCC Section 67P Rate</button>
+              <button class="calc-tab" onclick="openTab('contractual')">Contractual Rate</button>
             </div>
 
             <div class="form-group">
@@ -249,7 +249,7 @@
               </div>
             </div>
 
-            <div class="form-group" id="rate-group">
+            <div class="form-group hidden" id="rate-group">
               <label class="form-label">Annual Interest Rate</label>
               <div class="form-input-group">
                 <input type="number" class="form-input" id="annual-rate" style="border-radius:8px 0 0 8px" placeholder="0">
@@ -337,7 +337,7 @@
 
 <script>
   // ── State ──
-  let currentTab = 'contractual';
+  let currentTab = 'qbcc';
 
   // Set default calculation date to today
   const today = new Date();
@@ -352,12 +352,12 @@
     const tabs = document.querySelectorAll('.calc-tab');
     tabs.forEach(t => t.classList.remove('active'));
 
-    if (tabName === 'contractual') {
+    if (tabName === 'qbcc') {
       tabs[0].classList.add('active');
-      document.getElementById('rate-group').classList.remove('hidden');
+      document.getElementById('rate-group').classList.add('hidden');
     } else {
       tabs[1].classList.add('active');
-      document.getElementById('rate-group').classList.add('hidden');
+      document.getElementById('rate-group').classList.remove('hidden');
     }
 
     // Clear results on tab switch
@@ -549,7 +549,7 @@
                 <tr>
                   <th>Date</th>
                   <th>RBA Rate</th>
-                  <th>Penalty Rate</th>
+                  <th>Section 67P Rate</th>
                   <th>Interest Accrued</th>
                 </tr>
               </thead>

@@ -426,7 +426,6 @@
                     <p class="indent-2">(a) if the adjudicator is given an adjudication response under section 83--the day on which the adjudicator receives the response...</p>
                   </div>
                 </details>
-                <p class="note-text">Note: This calculation does not account for any extension of time that may be agreed by the parties under section 86 of the BIF Act.</p>
                 <div class="form-group">
                   <label class="form-label">Date Adjudication Response Given</label>
                   <input type="date" id="ad-response-given-date" class="form-input">
@@ -438,6 +437,26 @@
                     <div class="radio-option" onclick="selectClaimType(this, 'ad', 'complex')">Complex (&gt; $750k)</div>
                   </div>
                   <input type="hidden" id="ad-claim-type" value="standard">
+                </div>
+                <div class="form-group">
+                  <div class="checkbox-row" id="ad-eot-row" onclick="toggleAdEotCheckbox()">
+                    <input type="checkbox" id="ad-eot-granted">
+                    <label for="ad-eot-granted">Extension of time agreed by parties (section 86)</label>
+                  </div>
+                  <div id="ad-eot-fields" style="display: none;">
+                    <div class="eot-days-input">
+                      <label>Extension days:</label>
+                      <input type="number" id="ad-eot-days" min="1" value="1" class="form-input" style="width: 80px;">
+                    </div>
+                    <div class="eot-days-input" style="margin-top: 8px;">
+                      <label>Day type:</label>
+                      <div class="radio-group" style="margin: 0;">
+                        <div class="radio-option selected" onclick="selectAdEotDayType(this, 'business')">Business days</div>
+                        <div class="radio-option" onclick="selectAdEotDayType(this, 'calendar')">Calendar days</div>
+                      </div>
+                      <input type="hidden" id="ad-eot-day-type" value="business">
+                    </div>
+                  </div>
                 </div>
                 <button class="calc-btn" onclick="calculateAdjudicatorDecisionDueDate()">Calculate Due Date</button>
               </div>
@@ -728,6 +747,31 @@
   }
 
   // ============================================================
+  // ADJUDICATOR'S DECISION: EOT (EXTENSION OF TIME) — s86
+  // ============================================================
+
+  function toggleAdEotCheckbox() {
+    const cb = document.getElementById('ad-eot-granted');
+    cb.checked = !cb.checked;
+    const row = document.getElementById('ad-eot-row');
+    row.classList.toggle('checked', cb.checked);
+    document.getElementById('ad-eot-fields').style.display = cb.checked ? 'block' : 'none';
+  }
+
+  function selectAdEotDayType(el, type) {
+    const group = el.parentElement;
+    group.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('ad-eot-day-type').value = type;
+  }
+
+  function addCalendarDays(startDate, days) {
+    const d = new Date(startDate.getTime());
+    d.setDate(d.getDate() + days);
+    return { finalDate: d, skipped: [] };
+  }
+
+  // ============================================================
   // DISPLAY RESULT / ERROR
   // ============================================================
 
@@ -878,10 +922,28 @@
     const claimType = document.getElementById('ad-claim-type').value;
     const days = claimType === 'standard' ? 10 : 15;
     const result = addBusinessDays(startDate, days, location);
+
+    let finalDate = result.finalDate;
+    let eotNote = '';
+
+    if (document.getElementById('ad-eot-granted').checked) {
+      const eotDays = parseInt(document.getElementById('ad-eot-days').value, 10) || 1;
+      const dayType = document.getElementById('ad-eot-day-type').value;
+      if (dayType === 'business') {
+        const eotResult = addBusinessDays(finalDate, eotDays, location);
+        finalDate = eotResult.finalDate;
+        result.skipped = result.skipped.concat(eotResult.skipped);
+      } else {
+        const eotResult = addCalendarDays(finalDate, eotDays);
+        finalDate = eotResult.finalDate;
+      }
+      eotNote = ' Plus ' + eotDays + ' ' + dayType + ' day' + (eotDays !== 1 ? 's' : '') + ' extension agreed by parties under section 86.';
+    }
+
     displayResult(
       'Adjudicator\'s Decision Due Date',
-      result,
-      days + ' business days after the Adjudication Response was given (section 85 BIF Act).',
+      { finalDate: finalDate, skipped: result.skipped },
+      days + ' business days after the Adjudication Response was given (section 85 BIF Act).' + eotNote,
       startDate, days
     );
   }

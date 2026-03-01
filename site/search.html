@@ -514,6 +514,12 @@ function formatAusDate(iso) {
   });
 }
 
+function getResetDate() {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 // --- Loading bar ---
 function startLoadingBar() {
   const bar = document.getElementById('loadingBar');
@@ -553,7 +559,7 @@ function renderGateUI() {
     if (remaining === 0) {
       banner.innerHTML = `
         <strong>0</strong> free searches remaining this month.
-        <a href="/pricing">Upgrade to Unlimited</a>
+        <a href="/pricing">Upgrade to Unlimited Searches</a>
       `;
     } else {
       banner.innerHTML = `<strong>${remaining}</strong> of ${searchUsage.search_limit} free searches remaining this month.`;
@@ -765,8 +771,8 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
         $('#results').innerHTML = `
           <div class="gate-block">
             <h3>Monthly search limit reached</h3>
-            <p>You've used all ${searchUsage.search_limit} of your free searches this month. Your limit resets on the 1st of next month.</p>
-            <a href="/pricing" class="gate-btn">Upgrade to Unlimited</a>
+            <p>You've used all ${searchUsage.search_limit} of your free searches this month. Your limit resets on ${getResetDate()}.</p>
+            <a href="/pricing" class="gate-btn">Upgrade to Unlimited Searches</a>
           </div>
         `;
         return;
@@ -835,8 +841,8 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
         $('#results').innerHTML = `
           <div class="gate-block">
             <h3>Monthly search limit reached</h3>
-            <p>You've used all ${errData.search_limit} of your free searches this month. Your limit resets on the 1st of next month.</p>
-            <a href="/pricing" class="gate-btn">Upgrade to Unlimited</a>
+            <p>You've used all ${errData.search_limit} of your free searches this month. Your limit resets on ${getResetDate()}.</p>
+            <a href="/pricing" class="gate-btn">Upgrade to Unlimited Searches</a>
           </div>
         `;
         if (searchUsage) {

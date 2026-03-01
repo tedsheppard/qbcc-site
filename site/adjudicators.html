@@ -178,8 +178,6 @@
     .locked-content { text-align: center; padding: 30px; width: 100%; }
     .locked-content h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.02em; }
     .locked-content p { color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; font-size: 14px; }
-    .price-tag { font-size: 28px; font-weight: 800; color: var(--green); margin: 20px 0; letter-spacing: -0.02em; }
-    .price-tag sup { font-size: 14px; font-weight: 600; }
     .unlock-btn {
       background: var(--green); color: white; border: none; padding: 13px 30px; border-radius: 10px;
       font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%;
@@ -218,40 +216,6 @@
     .auth-submit-btn:hover { background: var(--green-dark); }
     .auth-submit-btn:disabled { background: #ccc; cursor: not-allowed; }
     .auth-error { color: #dc3545; font-size: 13px; margin-top: 10px; }
-
-    /* PAYMENT MODAL */
-    .payment-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000; }
-    .payment-modal.active { display: flex; }
-    .payment-modal-content {
-      background: white; padding: 36px; border-radius: 14px; max-width: 480px; width: 92%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative;
-    }
-    .payment-modal-close { position: absolute; top: 14px; right: 14px; background: none; border: none; font-size: 22px; cursor: pointer; color: #999; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
-    .payment-modal-close:hover { background: #f0f0f0; color: #333; }
-    .payment-modal-header { margin-bottom: 24px; }
-    .payment-modal-header h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
-    #card-element { padding: 14px; border: 1px solid var(--border-light); border-radius: 8px; margin-bottom: 16px; background: white; }
-    #card-errors { color: #dc3545; margin-top: 8px; font-size: 13px; }
-    .pay-button {
-      width: 100%; background: var(--green); color: white; border: none; padding: 14px; border-radius: 10px;
-      font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s;
-    }
-    .pay-button:hover { background: var(--green-dark); }
-    .pay-button:disabled { background: #ccc; cursor: not-allowed; }
-    .terms-wrapper { margin-top: 16px; padding: 14px; background: #f9fafb; border-radius: 8px; border: 1px solid var(--border-light); }
-    .terms-wrapper label { display: flex; align-items: flex-start; cursor: pointer; font-size: 13px; line-height: 1.5; gap: 10px; }
-    .terms-wrapper input[type="checkbox"] { margin-top: 3px; cursor: pointer; accent-color: var(--green); }
-    .terms-wrapper a { color: var(--green); text-decoration: underline; }
-
-    /* SUCCESS MODAL */
-    .success-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 2000; }
-    .success-modal.active { display: flex; }
-    .success-modal-content {
-      background: white; padding: 40px; border-radius: 14px; max-width: 440px; width: 92%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.2); text-align: center; position: relative;
-    }
-    .success-modal-content h2 { font-size: 22px; font-weight: 700; margin-bottom: 12px; color: var(--green); }
-    .success-modal-content p { color: var(--text-secondary); font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
 
     /* AI CHAT */
     .ai-container { border: 1px solid var(--border-light); border-radius: 10px; margin-top: 14px; overflow: hidden; }
@@ -470,47 +434,8 @@
     </div>
   </div>
 
-  <!-- PAYMENT MODAL -->
-  <div id="paymentModal" class="payment-modal">
-    <div class="payment-modal-content">
-      <button class="payment-modal-close" onclick="closePaymentModal()">&times;</button>
-      <div class="payment-modal-header">
-        <h2>Unlock Adjudicator Access</h2>
-        <p id="modalAdjudicatorName" style="color: var(--text-secondary); font-size: 15px;"></p>
-        <div class="price-tag">$69.95 <sup>incl GST</sup></div>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">One-time payment &middot; Chargeable disbursement &middot; Receipt/invoice immediately on payment</p>
 
-        <div class="terms-wrapper">
-          <label>
-            <input type="checkbox" id="terms-checkbox" required>
-            <span>By purchasing Adjudicator Insights for <span id="terms-adjudicator-name"></span>, you agree to the <a href="/adjudicator-insights-terms" target="_blank">Adjudicator Insights Terms &amp; Conditions</a>.</span>
-          </label>
-        </div>
-      </div>
 
-      <form id="payment-form">
-        <div id="card-element"></div>
-        <div id="card-errors" role="alert"></div>
-        <button type="submit" id="submit-payment" class="pay-button" disabled>
-          <span id="button-text">Complete Purchase</span>
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- SUCCESS MODAL -->
-  <div id="paymentSuccessModal" class="success-modal">
-    <div class="success-modal-content">
-      <div style="font-size: 56px; color: var(--green); margin-bottom: 16px;">&#10003;</div>
-      <h2>Payment Successful!</h2>
-      <p>You now have permanent access to the insights for <strong id="successModalAdjudicatorName"></strong>.</p>
-      <button id="view-insights-btn" class="unlock-btn">View Insights</button>
-      <button id="download-invoice-btn" class="unlock-btn" style="margin-top: 10px; background-color: #6c757d; display: none;">Download Invoice</button>
-    </div>
-  </div>
-
-  <!-- STRIPE -->
-  <script src="https://js.stripe.com/v3/"></script>
 
   <script>
 // ============================================================
@@ -519,7 +444,6 @@
 let allAdjudicators = [];
 let filteredAdjudicators = [];
 let selectedAdjudicator = null;
-let currentAdjudicatorForPurchase = null;
 let purchasedAdjudicators = new Set();
 let userToken = null;
 let originalDecisions = [];
@@ -530,48 +454,10 @@ const ADJ_DECISIONS_PER_PAGE = 100;
 let lastFilteredDecisions = null;
 let lastSearchQuery = null;
 
-// Stripe globals
-let stripe = null;
-let elements = null;
-let cardElement = null;
-
 // ============================================================
 // INITIALIZATION
 // ============================================================
 document.addEventListener('DOMContentLoaded', async function() {
-    // Initialize Stripe
-    stripe = Stripe('pk_live_51SGxeHAIOAykxV504w220IB6SNF8PWmMovA3Vcj7BU34qr4lxSftuuc6vhGtb0CURpjiR2e2OMMNdyMuzVXbH286002Y11rMPE');
-    elements = stripe.elements();
-    cardElement = elements.create('card', {
-        style: {
-            base: {
-                fontSize: '16px',
-                color: '#333',
-                '::placeholder': { color: '#aaa' },
-            },
-        },
-    });
-
-    // Terms checkbox controls pay button
-    const termsCheckbox = document.getElementById('terms-checkbox');
-    const paymentButton = document.getElementById('submit-payment');
-    if (termsCheckbox && paymentButton) {
-        termsCheckbox.addEventListener('change', () => {
-            paymentButton.disabled = !termsCheckbox.checked;
-        });
-    }
-
-    cardElement.mount('#card-element');
-
-    cardElement.on('change', function(event) {
-        const displayError = document.getElementById('card-errors');
-        if (event.error) {
-            displayError.textContent = event.error.message;
-        } else {
-            displayError.textContent = '';
-        }
-    });
-
     // Setup auth forms
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
@@ -606,19 +492,8 @@ async function loadUserAccessStatus() {
 
         if (response.ok) {
             const user = await response.json();
-
-            if (user.has_full_access) {
+            if (user.has_full_access || user.has_subscription) {
                 allAdjudicators.forEach(adj => purchasedAdjudicators.add(adj.name));
-            } else if (user.has_subscription) {
-                allAdjudicators.forEach(adj => purchasedAdjudicators.add(adj.name));
-            } else {
-                const purchasesResponse = await fetch('/my-purchases', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (purchasesResponse.ok) {
-                    const purchases = await purchasesResponse.json();
-                    purchases.forEach(p => purchasedAdjudicators.add(p.adjudicator_name));
-                }
             }
         }
     } catch (e) {
@@ -781,13 +656,9 @@ function showAdjudicatorDetail(hasAccess) {
     const lockedOverlay = !hasAccess ? `
       <div class="locked-overlay">
         <div class="locked-content">
-          <h3>Unlock Full Insights for ${sanitizeHtml(selectedAdjudicator.name)}</h3>
-          <p>Get access to detailed statistics, decision patterns, and the complete history of decisions.</p>
-          <div class="price-tag">$69.95 <sup>incl GST</sup></div>
-          <p style="color: var(--text-muted); font-size: 13px;">One-time payment &middot; Chargeable disbursement</p>
-          <button class="unlock-btn" onclick="unlockAdjudicator('${selectedAdjudicator.name.replace(/'/g, "\\'")}')">
-            Unlock Access
-          </button>
+          <h3>Subscription Required</h3>
+          <p>Get access to detailed statistics, decision patterns, and the complete history of decisions for all adjudicators.</p>
+          <a href="/pricing" class="unlock-btn" style="display:inline-block;text-align:center;color:white;text-decoration:none;">Upgrade to Unlimited Searches</a>
         </div>
       </div>
     ` : '';
@@ -1190,12 +1061,9 @@ async function handleLogin(e) {
         userToken = data.access_token;
 
         closeAuthModal();
-
-        const adjudicatorToUnlock = sessionStorage.getItem('unlock_adjudicator_after_login');
-        if (adjudicatorToUnlock && currentAdjudicatorForPurchase) {
-            sessionStorage.removeItem('unlock_adjudicator_after_login');
-            showPaymentModal();
-        }
+        await loadUserAccessStatus();
+        renderAdjudicatorsList();
+        if (selectedAdjudicator) selectAdjudicator(selectedAdjudicator.id);
     } catch (error) {
         errorDiv.textContent = error.message;
     }
@@ -1285,12 +1153,9 @@ async function handleRegister(e) {
         userToken = loginData.access_token;
 
         closeAuthModal();
-
-        const adjudicatorToUnlock = sessionStorage.getItem('unlock_adjudicator_after_login');
-        if (adjudicatorToUnlock && currentAdjudicatorForPurchase) {
-            sessionStorage.removeItem('unlock_adjudicator_after_login');
-            showPaymentModal();
-        }
+        await loadUserAccessStatus();
+        renderAdjudicatorsList();
+        if (selectedAdjudicator) selectAdjudicator(selectedAdjudicator.id);
     } catch (error) {
         errorDiv.textContent = error.message;
         errorDiv.style.display = 'block';
@@ -1332,181 +1197,6 @@ async function refreshTokenIfNeeded() {
         return response.ok;
     } catch (e) {
         return false;
-    }
-}
-
-// ============================================================
-// PAYMENT MODAL
-// ============================================================
-function showPaymentModal() {
-    document.getElementById('modalAdjudicatorName').textContent = currentAdjudicatorForPurchase;
-    document.getElementById('paymentModal').classList.add('active');
-}
-
-function closePaymentModal() {
-    document.getElementById('paymentModal').classList.remove('active');
-    currentAdjudicatorForPurchase = null;
-}
-
-async function unlockAdjudicator(adjudicatorName) {
-    currentAdjudicatorForPurchase = adjudicatorName;
-    document.getElementById('terms-adjudicator-name').textContent = adjudicatorName;
-
-    const token = localStorage.getItem('purchase_token');
-    if (!token) {
-        document.getElementById('authModal').classList.add('active');
-        sessionStorage.setItem('unlock_adjudicator_after_login', adjudicatorName);
-        return;
-    }
-
-    showPaymentModal();
-}
-
-// Payment form submit handler
-document.getElementById('payment-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const submitButton = document.getElementById('submit-payment');
-    submitButton.disabled = true;
-    submitButton.querySelector('#button-text').textContent = 'Processing...';
-
-    try {
-        const token = localStorage.getItem('purchase_token');
-        if (!token) throw new Error('Not authenticated. Please log in again.');
-
-        const intentResponse = await fetch('/create-payment-intent', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
-        });
-
-        if (!intentResponse.ok) {
-            const error = await intentResponse.json();
-            throw new Error(error.detail || 'Could not initiate payment.');
-        }
-
-        const { clientSecret, paymentIntentId } = await intentResponse.json();
-
-        const { error } = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: { card: cardElement }
-        });
-        if (error) throw new Error(error.message);
-
-        const confirmResponse = await fetch('/confirm-purchase', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `payment_intent_id=${paymentIntentId}&adjudicator_name=${encodeURIComponent(currentAdjudicatorForPurchase)}`
-        });
-
-        if (!confirmResponse.ok) throw new Error('Failed to confirm purchase on server.');
-
-        const confirmData = await confirmResponse.json();
-        const adjudicatorName = currentAdjudicatorForPurchase;
-        purchasedAdjudicators.add(adjudicatorName);
-
-        const paymentModal = document.getElementById('paymentModal');
-        const modalContent = paymentModal.querySelector('.payment-modal-content');
-        modalContent.innerHTML = `
-          <div style="text-align: center; padding: 40px 20px;">
-            <div style="width: 64px; height: 64px; background: var(--green); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            </div>
-            <h2 style="font-size: 22px; font-weight: 700; color: var(--green); margin-bottom: 12px; letter-spacing: -0.02em;">Payment Successful!</h2>
-            <p style="margin-bottom: 28px; font-size: 15px; color: var(--text-secondary); line-height: 1.6;">
-              You now have permanent access to <strong>${sanitizeHtml(adjudicatorName)}</strong>'s insights.
-            </p>
-            ${confirmData.receiptUrl ? `
-              <button onclick="window.open('${confirmData.receiptUrl}', '_blank')"
-                      style="background: var(--green); color: white; border: none; padding: 13px 28px;
-                             border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 600;
-                             margin-bottom: 10px; width: 100%; font-family: inherit;">
-                View Receipt
-              </button>
-            ` : ''}
-            <button onclick="closeSuccessAndRefresh()"
-                    style="background: #6c757d; color: white; border: none; padding: 13px 28px;
-                           border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 600;
-                           width: 100%; font-family: inherit;">
-              View Insights
-            </button>
-          </div>
-        `;
-    } catch (error) {
-        document.getElementById('card-errors').textContent = error.message;
-    } finally {
-        submitButton.disabled = false;
-        submitButton.querySelector('#button-text').textContent = 'Complete Purchase';
-    }
-});
-
-// ============================================================
-// SUCCESS MODAL
-// ============================================================
-function closeSuccessAndRefresh() {
-    closePaymentModal();
-    if (selectedAdjudicator) {
-        selectAdjudicator(selectedAdjudicator.id);
-    }
-}
-
-function showSuccessModal(adjudicatorName, invoiceId) {
-    document.getElementById('successModalAdjudicatorName').textContent = adjudicatorName;
-    const downloadBtn = document.getElementById('download-invoice-btn');
-
-    if (invoiceId) {
-        downloadBtn.style.display = 'block';
-        downloadBtn.onclick = () => handleInvoiceDownload(invoiceId);
-    } else {
-        downloadBtn.style.display = 'none';
-    }
-
-    document.getElementById('paymentSuccessModal').classList.add('active');
-}
-
-async function handleInvoiceDownload(invoiceId) {
-    const downloadBtn = document.getElementById('download-invoice-btn');
-    const originalText = downloadBtn.textContent;
-    downloadBtn.textContent = 'Downloading...';
-    downloadBtn.disabled = true;
-
-    try {
-        const token = localStorage.getItem('purchase_token');
-        const response = await fetch(`/download-invoice/${invoiceId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-            throw new Error('Could not download invoice. Please try again later from your account page.');
-        }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = '';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        a.remove();
-    } catch (error) {
-        alert(error.message);
-    } finally {
-        downloadBtn.textContent = originalText;
-        downloadBtn.disabled = false;
-    }
-}
-
-function closeSuccessModal() {
-    document.getElementById('paymentSuccessModal').classList.remove('active');
-    if (selectedAdjudicator) {
-        selectAdjudicator(selectedAdjudicator.id);
     }
 }
 
