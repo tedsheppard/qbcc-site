@@ -3164,6 +3164,9 @@ async def stripe_webhook(request: Request):
         status = data.get("status", "active")
         status_map = {"active": "active", "past_due": "past_due", "canceled": "cancelled", "unpaid": "past_due"}
         db_status = status_map.get(status, "active")
+        # If Stripe says cancel_at_period_end, keep our 'cancelled' status
+        if data.get("cancel_at_period_end") and db_status == "active":
+            db_status = "cancelled"
         ps, pe = _get_sub_period(data)
         period_start = datetime.utcfromtimestamp(ps).isoformat() if ps else datetime.utcnow().isoformat()
         period_end = datetime.utcfromtimestamp(pe).isoformat() if pe else datetime.utcnow().isoformat()
