@@ -1271,7 +1271,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const fd = new FormData();
       fd.append('pdf_file', filesStore.get(rowId));
 
-      // Gather all field values
+      // Gather all field values (skip empty optional numeric fields)
+      const optionalNumeric = new Set([
+        'payment_schedule_amount', 'fee_claimant_proportion', 'fee_respondent_proportion'
+      ]);
       const fields = [
         'ejs_id', 'reference', 'decision_date_norm', 'act_category',
         'adjudicator', 'claimant', 'respondent',
@@ -1281,7 +1284,10 @@ document.addEventListener('DOMContentLoaded', () => {
       ];
       fields.forEach(f => {
         const el = row.querySelector(`[name="${f}"]`);
-        if (el) fd.append(f, el.value);
+        if (!el) return;
+        // Don't send empty strings for optional numeric fields (FastAPI can't parse "" as float)
+        if (optionalNumeric.has(f) && el.value === '') return;
+        fd.append(f, el.value);
       });
 
       // Legacy fields the endpoint still expects
