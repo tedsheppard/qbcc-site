@@ -1939,11 +1939,12 @@ async def upload_decision(
         )
         con.commit()
 
-        # 8. Update the FTS index
+        # 8. Update the FTS index (delete first to avoid duplicates)
         new_doc_row = con.execute("SELECT rowid FROM docs_fresh WHERE ejs_id = ?", (ejs_id,)).fetchone()
         if new_doc_row:
             new_rowid = new_doc_row['rowid']
-            con.execute("INSERT OR REPLACE INTO fts (rowid, full_text) VALUES (?, ?)", (new_rowid, full_text))
+            con.execute("DELETE FROM fts WHERE rowid = ?", (new_rowid,))
+            con.execute("INSERT INTO fts (rowid, full_text) VALUES (?, ?)", (new_rowid, full_text))
             con.commit()
             print(f"INFO: FTS index updated for {ejs_id}")
 
@@ -2211,6 +2212,15 @@ def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
         raise HTTPException(status_code=500, detail=str(e))
     
 # In server.py, add this with your other admin endpoints
+
+@app.post("/admin/rebuild-fts")
+def rebuild_fts_index(admin: dict = Depends(get_admin_user)):
+    """Rebuild the FTS index from docs_fresh to fix duplicates."""
+    try:
+        ensure_fts()
+        return {"status": "success", "message": "FTS index rebuilt successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/admin/save-database")
 def save_database_to_gcs(admin: dict = Depends(get_admin_user)):
