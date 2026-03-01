@@ -614,12 +614,18 @@ function renderItem(it, hasQuery) {
     </div>
   `;
 
+  // Compute fee proportions — derive the complement if only one is stored
+  let claimantFee = it.fee_claimant_proportion != null && it.fee_claimant_proportion !== '' && it.fee_claimant_proportion !== 'N/A' ? parseFloat(it.fee_claimant_proportion) : null;
+  let respondentFee = it.fee_respondent_proportion != null && it.fee_respondent_proportion !== '' && it.fee_respondent_proportion !== 'N/A' ? parseFloat(it.fee_respondent_proportion) : null;
+  if (claimantFee != null && respondentFee == null) respondentFee = 100 - claimantFee;
+  if (respondentFee != null && claimantFee == null) claimantFee = 100 - respondentFee;
+
   let amountsHtml = `
     <div class="result-amounts">
       <div class="amount-item"><strong>Claimed:</strong> ${formatCurrency(it.claimed_amount)}</div>
       <div class="amount-item"><strong>Adjudicated:</strong> ${formatCurrency(it.adjudicated_amount)}</div>
-      ${it.fee_claimant_proportion ? `<div class="amount-item"><strong>Claimant Fee:</strong> ${formatPercent(it.fee_claimant_proportion)}</div>` : ''}
-      ${it.fee_respondent_proportion ? `<div class="amount-item"><strong>Respondent Fee:</strong> ${formatPercent(it.fee_respondent_proportion)}</div>` : ''}
+      ${claimantFee != null ? `<div class="amount-item"><strong>Claimant Fee:</strong> ${formatPercent(claimantFee)}</div>` : ''}
+      ${respondentFee != null ? `<div class="amount-item"><strong>Respondent Fee:</strong> ${formatPercent(respondentFee)}</div>` : ''}
     </div>
   `;
 
