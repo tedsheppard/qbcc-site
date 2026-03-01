@@ -1961,8 +1961,11 @@ async def upload_decision(
             "content": full_text
         }
         meili_headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
-        res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=meili_headers, json=[meili_doc])
-        res.raise_for_status()
+        try:
+            meili_res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=meili_headers, json=[meili_doc], timeout=5)
+            meili_res.raise_for_status()
+        except Exception as meili_err:
+            print(f"WARNING: Meilisearch update failed for {ejs_id} (non-fatal): {meili_err}")
 
         return {"status": "success", "ejs_id": ejs_id, "message": f"Decision {ejs_id} ({reference}) uploaded and indexed successfully."}
 
