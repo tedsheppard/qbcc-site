@@ -362,6 +362,24 @@
       .purchase-history-table { font-size: 12px; }
       .purchase-history-table th, .purchase-history-table td { padding: 10px 8px; }
     }
+
+    /* CUSTOM MODAL */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transition: opacity 0.15s; }
+    .modal-overlay.visible { opacity: 1; }
+    .modal-box { background: white; border-radius: 14px; max-width: 420px; width: 90%; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.18); transform: scale(0.95); transition: transform 0.15s; }
+    .modal-overlay.visible .modal-box { transform: scale(1); }
+    .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.02em; }
+    .modal-message { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all 0.15s; }
+    .modal-btn-cancel { background: #f0f0f0; color: #555; }
+    .modal-btn-cancel:hover { background: #e0e0e0; }
+    .modal-btn-confirm { background: var(--green); color: white; }
+    .modal-btn-confirm:hover { background: var(--green-dark); }
+    .modal-btn-danger { background: #ef4444; color: white; }
+    .modal-btn-danger:hover { background: #dc2626; }
+    .modal-btn-ok { background: var(--green); color: white; }
+    .modal-btn-ok:hover { background: var(--green-dark); }
   </style>
 </head>
 <body>
@@ -630,13 +648,57 @@
 
 <script src="https://js.stripe.com/v3/"></script>
 <script>
+// --- MODAL HELPERS ---
+function showModal(title, message, buttons) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal-box">
+      <div class="modal-title">${title}</div>
+      <div class="modal-message">${message}</div>
+      <div class="modal-actions">${buttons.map(b =>
+        `<button class="modal-btn ${b.cls}" data-val="${b.value}">${b.label}</button>`
+      ).join('')}</div>
+    </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('visible'));
+    overlay.querySelectorAll('.modal-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        overlay.classList.remove('visible');
+        setTimeout(() => overlay.remove(), 150);
+        resolve(btn.dataset.val === 'true');
+      });
+    });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.classList.remove('visible');
+        setTimeout(() => overlay.remove(), 150);
+        resolve(false);
+      }
+    });
+  });
+}
+
+function showConfirm(title, message, confirmLabel = 'Confirm', danger = false) {
+  return showModal(title, message, [
+    { label: 'Cancel', cls: 'modal-btn-cancel', value: 'false' },
+    { label: confirmLabel, cls: danger ? 'modal-btn-danger' : 'modal-btn-confirm', value: 'true' }
+  ]);
+}
+
+function showAlert(title, message) {
+  return showModal(title, message, [
+    { label: 'OK', cls: 'modal-btn-ok', value: 'true' }
+  ]);
+}
+
 // --- GLOBALLY ACCESSIBLE HELPER FUNCTIONS ---
 
 // Download Stripe receipt
 async function downloadReceipt(paymentIntentId) {
     const token = localStorage.getItem('purchase_token');
     if (!token) {
-        alert('Please log in to download receipt');
+        showAlert('Login Required', 'Please log in to download receipt.');
         return;
     }
     try {
@@ -650,11 +712,11 @@ async function downloadReceipt(paymentIntentId) {
         if (data.receiptUrl) {
             window.open(data.receiptUrl, '_blank');
         } else {
-            alert('Receipt not available for this purchase');
+            showAlert('Unavailable', 'Receipt not available for this purchase.');
         }
     } catch (error) {
         console.error('Receipt download error:', error);
-        alert('Failed to download receipt. Please try again later.');
+        showAlert('Error', 'Failed to download receipt. Please try again later.');
     }
 }
 
@@ -662,7 +724,7 @@ async function downloadReceipt(paymentIntentId) {
 async function downloadInvoice(button, adjudicatorName, paymentIntentId, existingInvoiceId) {
     const token = localStorage.getItem('purchase_token');
     if (!token) {
-        alert('Please log in to download invoice');
+        showAlert('Login Required', 'Please log in to download invoice.');
         return;
     }
 
@@ -714,7 +776,7 @@ async function downloadInvoice(button, adjudicatorName, paymentIntentId, existin
         a.remove();
     } catch (error) {
         console.error('Invoice download error:', error);
-        alert('Failed to download invoice. Please try again later.');
+        showAlert('Error', 'Failed to download invoice. Please try again later.');
     } finally {
         button.textContent = originalText;
         button.disabled = false;
@@ -724,7 +786,7 @@ async function downloadInvoice(button, adjudicatorName, paymentIntentId, existin
 // Download subscription invoice PDF
 async function downloadSubscriptionInvoice(button, invoiceId) {
     const token = localStorage.getItem('purchase_token');
-    if (!token) { alert('Please log in to download invoice'); return; }
+    if (!token) { showAlert('Login Required', 'Please log in to download invoice.'); return; }
     const originalText = button.textContent;
     button.textContent = 'Loading...';
     button.disabled = true;
@@ -745,7 +807,7 @@ async function downloadSubscriptionInvoice(button, invoiceId) {
         a.remove();
     } catch (error) {
         console.error('Invoice download error:', error);
-        alert('Failed to download invoice. Please try again later.');
+        showAlert('Error', 'Failed to download invoice. Please try again later.');
     } finally {
         button.textContent = originalText;
         button.disabled = false;
@@ -1253,12 +1315,13 @@ async function openBillingPortal() {
     const data = await res.json();
     window.location.href = data.portal_url;
   } catch (e) {
-    alert('Error: ' + e.message);
+    showAlert('Error', e.message);
   }
 }
 
 async function cancelSubscription() {
-  if (!confirm('Are you sure you want to cancel your subscription? You will retain access until the end of your current billing period.')) return;
+  const ok = await showConfirm('Cancel Subscription', 'Are you sure you want to cancel your subscription? You will retain access until the end of your current billing period.', 'Cancel Subscription', true);
+  if (!ok) return;
   const token = localStorage.getItem('purchase_token');
   if (!token) return;
   try {
@@ -1272,7 +1335,7 @@ async function cancelSubscription() {
     // Reload the subscription tab
     setTimeout(() => window.location.reload(), 1500);
   } catch (e) {
-    alert('Error: ' + e.message);
+    showAlert('Error', e.message);
   }
 }
 
@@ -1451,7 +1514,8 @@ async function saveCard() {
 }
 
 async function removeCard(pmId) {
-    if (!confirm('Remove this card?')) return;
+    const ok = await showConfirm('Remove Card', 'Are you sure you want to remove this card?', 'Remove', true);
+    if (!ok) return;
     const token = localStorage.getItem('purchase_token');
     try {
         const res = await fetch(`/payment-method/${pmId}`, {
@@ -1462,10 +1526,10 @@ async function removeCard(pmId) {
             loadPaymentMethods();
             showTempBanner('Card removed.');
         } else {
-            alert('Failed to remove card.');
+            showAlert('Error', 'Failed to remove card.');
         }
     } catch (e) {
-        alert('Failed to remove card.');
+        showAlert('Error', 'Failed to remove card.');
     }
 }
 </script>
