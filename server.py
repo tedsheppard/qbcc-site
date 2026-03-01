@@ -8,6 +8,12 @@ from email.message import EmailMessage
 import aiosmtplib
 from openai import OpenAI
 from google.cloud import storage
+try:
+    from google.cloud import vision as gcloud_vision
+    VISION_AVAILABLE = True
+except ImportError:
+    VISION_AVAILABLE = False
+    print("WARNING: google-cloud-vision not installed. OCR fallback disabled.")
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, date
 from jose import JWTError, jwt
@@ -793,6 +799,46 @@ CREATE TABLE IF NOT EXISTS ai_summaries (
 )
 """)
 con.commit()
+
+DECISION_EXTRACTION_PROMPT = """
+You are extracting structured data from Queensland adjudication decisions.
+
+Rules:
+- All monetary figures must be GST inclusive.
+  - If only GST exclusive is shown, multiply by 1.1.
+  - If unclear, assume GST inclusive.
+- Percentages must be numeric only (0-100). No "%" signs.
+  - fee_respondent_proportion = 100 - fee_claimant_proportion.
+- Claimant/respondent names -> Title Case, not ALL CAPS.
+- Outcome -> classify as: "Claimant Fully Successful", "Partly Successful", or "Unsuccessful".
+- Sections Referenced -> list BIF/BCIPA Act sections (e.g. "s 75, s 69"), or blank if none.
+- Keywords -> 10 short legal/technical tags that help summarise the decision.
+- Project Type -> classify if obvious (e.g. civil, residential, mining, commercial, industrial).
+- Contract Type -> classify as "head contract (principal / main contractor)",
+  "subcontract (main contractor / subcontractor)", "residential (owner / builder)", or "other".
+- Document length -> number of pages provided separately.
+- Act Category -> classify as either "BCIPA 2004 (Qld)" or "BIF Act 2017 (Qld)".
+- jurisdiction_upheld -> 1 if jurisdictional objection upheld, else 0.
+- decision_date must be in YYYY-MM-DD format.
+
+Extract as JSON with fields:
+- adjudicator_name
+- claimant_name
+- respondent_name
+- claimed_amount
+- payment_schedule_amount
+- adjudicated_amount
+- jurisdiction_upheld
+- fee_claimant_proportion
+- fee_respondent_proportion
+- decision_date (YYYY-MM-DD format)
+- keywords (array of 10 strings)
+- outcome
+- sections_referenced
+- project_type
+- contract_type
+- act_category
+"""
 
 
 
@@ -1653,20 +1699,132 @@ def get_admin_stats(period: str = Query("30d"), admin: dict = Depends(get_admin_
         "adjudicator_views": [dict(row) for row in adjudicator_views],
     }
 
-# In server.py, add this new endpoint with your other admin routes
+@app.post("/admin/extract-decision-metadata")
+async def extract_decision_metadata(
+    admin: dict = Depends(get_admin_user),
+    pdf_file: UploadFile = File(...)
+):
+    """Extract text from a PDF (with OCR fallback) and use AI to propose metadata."""
+    import time as _time
+    try:
+        pdf_content = await pdf_file.read()
+        filename = pdf_file.filename or "unknown.pdf"
+
+        # 1. Extract text with PyPDF2
+        full_text = ""
+        doc_length_pages = 0
+        try:
+            with io.BytesIO(pdf_content) as f:
+                reader = PyPDF2.PdfReader(f)
+                doc_length_pages = len(reader.pages)
+                for page in reader.pages:
+                    full_text += page.extract_text() or ""
+        except Exception as e:
+            print(f"WARNING: PyPDF2 failed for {filename}: {e}")
+
+        # 2. OCR fallback if text too short
+        ocr_used = False
+        if len(full_text.strip()) < 100 and VISION_AVAILABLE:
+            try:
+                temp_credentials_path = "/tmp/gcs_credentials.json"
+                if os.path.exists(temp_credentials_path):
+                    vision_client = gcloud_vision.ImageAnnotatorClient.from_service_account_json(temp_credentials_path)
+                    input_config = gcloud_vision.InputConfig(content=pdf_content, mime_type='application/pdf')
+                    feature = gcloud_vision.Feature(type_=gcloud_vision.Feature.Type.DOCUMENT_TEXT_DETECTION)
+                    request_obj = gcloud_vision.AnnotateFileRequest(input_config=input_config, features=[feature])
+                    response = vision_client.batch_annotate_files(requests=[request_obj])
+                    ocr_text = ""
+                    ocr_page_count = 0
+                    for file_response in response.responses:
+                        for page_response in file_response.responses:
+                            if page_response.full_text_annotation:
+                                ocr_text += page_response.full_text_annotation.text + "\n"
+                                ocr_page_count += 1
+                    if ocr_text.strip():
+                        full_text = ocr_text.strip()
+                        doc_length_pages = ocr_page_count or doc_length_pages
+                        ocr_used = True
+                        print(f"INFO: OCR fallback succeeded for {filename}")
+            except Exception as e:
+                print(f"WARNING: OCR fallback failed for {filename}: {e}")
+
+        # 3. Check we have enough text
+        if len(full_text.strip()) < 50:
+            return JSONResponse({
+                "status": "error",
+                "message": "Could not extract text from PDF. The document may be image-only and OCR is unavailable.",
+                "filename": filename
+            }, status_code=422)
+
+        # 4. Extract reference from filename
+        filename_ref = None
+        match = re.search(r'(\d{8,14})', filename)
+        if match:
+            filename_ref = match.group(1).lstrip('0')
+
+        # 5. Call GPT-4o-mini for metadata extraction
+        metadata = None
+        last_error = None
+        for attempt in range(3):
+            try:
+                resp = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    temperature=0,
+                    response_format={"type": "json_object"},
+                    messages=[
+                        {"role": "system", "content": "You are a careful legal data extraction assistant. Return valid JSON only."},
+                        {"role": "user", "content": DECISION_EXTRACTION_PROMPT + f"\nDocument Pages: {doc_length_pages}\n\n---\n\n" + full_text[:50000]}
+                    ]
+                )
+                content = resp.choices[0].message.content
+                metadata = json.loads(content)
+                metadata["doc_length_pages"] = doc_length_pages
+                break
+            except Exception as e:
+                last_error = str(e)
+                if attempt < 2:
+                    _time.sleep(1)
+
+        if not metadata:
+            return JSONResponse({
+                "status": "error",
+                "message": f"AI metadata extraction failed after 3 attempts: {last_error}",
+                "filename": filename
+            }, status_code=500)
+
+        # 6. Merge filename reference
+        if filename_ref:
+            metadata["reference"] = filename_ref
+
+        # 7. Convert keywords array to comma-separated string
+        if isinstance(metadata.get("keywords"), list):
+            metadata["keywords"] = ", ".join(metadata["keywords"])
+
+        return {
+            "status": "success",
+            "filename": filename,
+            "metadata": metadata,
+            "ocr_used": ocr_used
+        }
+
+    except Exception as e:
+        print(f"ERROR in /admin/extract-decision-metadata: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Extraction error: {e}")
+
 @app.post("/admin/upload-decision")
 async def upload_decision(
     admin: dict = Depends(get_admin_user),
-    # File
     pdf_file: UploadFile = File(...),
-    # IDs
-    ejs_id: str = Form(...),
+    # IDs — ejs_id is optional; if empty or "AUTO", auto-assign next available
+    ejs_id: Optional[str] = Form(None),
     reference: str = Form(...),
     # Dates
-    decision_date: str = Form(...),
+    decision_date: Optional[str] = Form(None),
     decision_date_norm: str = Form(...),
     # Meta
-    act: str = Form(...),
+    act: Optional[str] = Form(None),
     adjudicator: str = Form(...),
     claimant: str = Form(...),
     respondent: str = Form(...),
@@ -1679,40 +1837,54 @@ async def upload_decision(
     # Classification
     project_type: Optional[str] = Form(None),
     contract_type: Optional[str] = Form(None),
-    outcome: Optional[str] = Form(None)
+    outcome: Optional[str] = Form(None),
+    # New AI-extracted fields
+    jurisdiction_upheld: Optional[int] = Form(0),
+    keywords: Optional[str] = Form(None),
+    sections_referenced: Optional[str] = Form(None),
+    act_category: Optional[str] = Form(None),
 ):
-    """
-    Admin endpoint to upload a new decision, process it, and add to all databases.
-    """
+    """Admin endpoint to upload a new decision, process it, and add to all databases."""
     try:
-        # 1. Handle the PDF file
-        pdf_content = await pdf_file.read()
-        pdf_filename = pdf_file.filename
+        # 1. Auto-assign EJS ID if not provided
+        if not ejs_id or ejs_id.upper() == "AUTO":
+            row = con.execute("SELECT ejs_id FROM docs_fresh ORDER BY ejs_id DESC LIMIT 1").fetchone()
+            if row:
+                last_num = int(row['ejs_id'][3:])
+                ejs_id = f"EJS{last_num + 1:05d}"
+            else:
+                ejs_id = "EJS00001"
 
-        # 2. Upload PDF to Google Cloud Storage
+        # Resolve act_category (prefer act_category, fall back to act)
+        resolved_act = act_category or act or "BIF Act 2017 (Qld)"
+
+        # 2. Handle the PDF file
+        pdf_content = await pdf_file.read()
+
+        # 3. Upload PDF to Google Cloud Storage (use ejs_id.pdf as filename)
         storage_client = get_gcs_client()
         gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
         if not storage_client or not gcs_bucket_name:
             raise HTTPException(status_code=500, detail="GCS not configured on server.")
-            
         bucket = storage_client.bucket(gcs_bucket_name)
-        blob = bucket.blob(f"pdfs/{pdf_filename}")
+        gcs_filename = f"{ejs_id}.pdf"
+        blob = bucket.blob(f"pdfs/{gcs_filename}")
         blob.upload_from_string(pdf_content, content_type='application/pdf')
-        pdf_path = f"/gcs/{gcs_bucket_name}/pdfs/{pdf_filename}" # Storing path in this format
+        pdf_path = f"/gcs/{gcs_bucket_name}/pdfs/{gcs_filename}"
 
-        # 3. Extract text and page count from the PDF
+        # 4. Extract text and page count from the PDF
         full_text = ""
         doc_length_pages = 0
-        with io.BytesIO(pdf_content) as f:
-            reader = PyPDF2.PdfReader(f)
-            doc_length_pages = len(reader.pages)
-            for page in reader.pages:
-                full_text += page.extract_text() or ""
-        
-        if not full_text:
-            print(f"WARNING: No text could be extracted from {pdf_filename} for ejs_id {ejs_id}")
+        try:
+            with io.BytesIO(pdf_content) as f:
+                reader = PyPDF2.PdfReader(f)
+                doc_length_pages = len(reader.pages)
+                for page in reader.pages:
+                    full_text += page.extract_text() or ""
+        except Exception as e:
+            print(f"WARNING: Text extraction failed for {ejs_id}: {e}")
 
-        # 4. Construct raw_json object
+        # 5. Construct raw_json object
         raw_json_data = {
             "ejs_id": ejs_id,
             "adjudicator_name": adjudicator,
@@ -1721,79 +1893,63 @@ async def upload_decision(
             "claimed_amount": claimed_amount,
             "payment_schedule_amount": payment_schedule_amount,
             "adjudicated_amount": adjudicated_amount,
-            "jurisdiction_upheld": 0, # Default value
+            "jurisdiction_upheld": jurisdiction_upheld or 0,
             "fee_claimant_proportion": fee_claimant_proportion,
             "fee_respondent_proportion": fee_respondent_proportion,
             "decision_date": decision_date_norm,
-            "keywords": [], # Default value
+            "keywords": keywords.split(", ") if keywords else [],
             "outcome": outcome,
-            "sections_referenced": None, # Default value
+            "sections_referenced": sections_referenced,
             "project_type": project_type,
             "contract_type": contract_type,
             "doc_length_pages": doc_length_pages,
-            "act_category": act 
+            "act_category": resolved_act
         }
         raw_json_string = json.dumps(raw_json_data)
 
-        # 5. Insert data into SQLite database tables
-        # Table: docs_fresh
+        # 6. Insert into docs_fresh
         con.execute(
-            "INSERT INTO docs_fresh (ejs_id, reference, pdf_path, full_text) VALUES (?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO docs_fresh (ejs_id, reference, pdf_path, full_text) VALUES (?, ?, ?, ?)",
             (ejs_id, reference, pdf_path, full_text)
         )
 
-        # Table: decision_details
-        # NOTE: Assuming 'application_no' and 'decision_date' columns exist.
-        try:
-            con.execute(
-                "INSERT INTO decision_details (ejs_id, claimant, respondent, adjudicator, decision_date, decision_date_norm, act, application_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (ejs_id, claimant, respondent, adjudicator, decision_date, decision_date_norm, act, reference)
-            )
-        except sqlite3.OperationalError as e:
-            print(f"Warning: Could not insert into decision_details with extended columns: {e}. Trying basic insert.")
-            con.execute(
-                "INSERT INTO decision_details (ejs_id, claimant, respondent, adjudicator, decision_date_norm, act) VALUES (?, ?, ?, ?, ?, ?)",
-                (ejs_id, claimant, respondent, adjudicator, decision_date_norm, act)
-            )
-
-
-        # Table: decision_details
+        # 7. Insert into decision_details (single INSERT OR REPLACE with all fields)
         con.execute(
             """
-            INSERT INTO decision_details (
+            INSERT OR REPLACE INTO decision_details (
                 ejs_id, adjudicator_name, claimant_name, respondent_name, claimed_amount,
-                payment_schedule_amount, adjudicated_amount, fee_claimant_proportion,
-                fee_respondent_proportion, decision_date, outcome, project_type, contract_type,
-                doc_length_pages, raw_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                payment_schedule_amount, adjudicated_amount, jurisdiction_upheld,
+                fee_claimant_proportion, fee_respondent_proportion, decision_date,
+                keywords, outcome, sections_referenced, project_type, contract_type,
+                doc_length_pages, act_category, raw_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 ejs_id, adjudicator, claimant, respondent, str(claimed_amount),
                 str(payment_schedule_amount) if payment_schedule_amount is not None else None,
                 str(adjudicated_amount),
+                jurisdiction_upheld or 0,
                 str(fee_claimant_proportion) if fee_claimant_proportion is not None else None,
                 str(fee_respondent_proportion) if fee_respondent_proportion is not None else None,
-                decision_date_norm, # Using the YYYY-MM-DD date
-                outcome, project_type, contract_type,
-                doc_length_pages,
-                raw_json_string
+                decision_date_norm,
+                keywords,
+                outcome, sections_referenced, project_type, contract_type,
+                doc_length_pages, resolved_act, raw_json_string
             )
         )
         con.commit()
 
-        # 6. Update the FTS index for the newly inserted document
+        # 8. Update the FTS index
         new_doc_row = con.execute("SELECT rowid FROM docs_fresh WHERE ejs_id = ?", (ejs_id,)).fetchone()
         if new_doc_row:
             new_rowid = new_doc_row['rowid']
-            con.execute("INSERT INTO fts (rowid, full_text) VALUES (?, ?)", (new_rowid, full_text))
+            con.execute("INSERT OR REPLACE INTO fts (rowid, full_text) VALUES (?, ?)", (new_rowid, full_text))
             con.commit()
-            print(f"INFO: Successfully updated FTS index for new document ejs_id {ejs_id}")
-        else:
-            print(f"WARN: Could not find new document {ejs_id} to update FTS index.")
+            print(f"INFO: FTS index updated for {ejs_id}")
 
-        # 7. Update Meilisearch index
+        # 9. Update Meilisearch index
         meili_doc = {
-            "id": ejs_id,
+            "ejs_id": ejs_id,
             "reference": reference,
             "pdf_path": pdf_path,
             "claimant": claimant,
@@ -1801,17 +1957,16 @@ async def upload_decision(
             "adjudicator": adjudicator,
             "date": decision_date_norm,
             "sortable_date": int(time.mktime(datetime.strptime(decision_date_norm, "%Y-%m-%d").timetuple())),
-            "act": act,
+            "act": resolved_act,
             "content": full_text
         }
-        headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
-        res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=headers, json=[meili_doc])
-        res.raise_for_status() # Raise an exception if Meilisearch update fails
+        meili_headers = {"Authorization": f"Bearer {MEILI_KEY}"} if MEILI_KEY else {}
+        res = requests.post(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents", headers=meili_headers, json=[meili_doc])
+        res.raise_for_status()
 
-        return {"status": "success", "message": f"Decision '{reference}' uploaded and indexed successfully."}
+        return {"status": "success", "ejs_id": ejs_id, "message": f"Decision {ejs_id} ({reference}) uploaded and indexed successfully."}
 
     except Exception as e:
-        # Rollback DB changes if anything fails
         con.rollback()
         print(f"ERROR in /admin/upload-decision: {e}")
         import traceback

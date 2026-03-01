@@ -5,6 +5,7 @@ python-multipart==0.0.9
 openai>=1.40.0
 aiosmtplib
 google-cloud-storage
+google-cloud-vision
 pandas
 openpyxl
 APScheduler

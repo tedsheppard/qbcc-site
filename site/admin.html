@@ -178,6 +178,13 @@
     .status-saving { color: #92400e; font-weight: 600; }
     .status-success { color: #065f46; font-weight: 600; }
     .status-error { color: #991b1b; font-weight: 600; }
+    .status-extracting { color: #0284c7; font-weight: 600; }
+    .status-ready { color: #059669; font-weight: 600; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .meta-table td { max-width: 160px; vertical-align: top; }
+    .meta-table input[name="keywords"],
+    .meta-table input[name="sections_referenced"] { min-width: 160px; }
+    .meta-table select { min-width: 100px; }
 
     /* Backup feedback */
     .action-feedback { margin-top: 16px; padding: 12px 16px; border-radius: 8px; font-size: 13px; display: none; }
@@ -322,13 +329,19 @@
           <section id="tab-upload" class="admin-section">
             <div class="card">
               <h2>Batch Upload Decisions</h2>
-              <p class="card-desc">Drag and drop PDF files below. Edit metadata in the table before saving.</p>
+              <p class="card-desc">Drop PDFs below. AI will extract metadata automatically. Review and edit before saving.</p>
               <div class="drop-zone" id="dropZone">
                 <p><strong>Drag &amp; Drop PDF files here</strong><br>or click to select files</p>
                 <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
               </div>
+              <div id="extractionProgress" style="display: none; margin-top: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px;">
+                  <div style="width: 18px; height: 18px; border: 2px solid #bae6fd; border-top-color: #0284c7; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                  <span id="extractionProgressText" style="font-size: 13px; color: #075985; font-weight: 500;">Processing...</span>
+                </div>
+              </div>
               <div id="metaContainer" style="display: none; margin-top: 24px;">
-                <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 12px;">File Metadata</h3>
+                <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 12px;">Extracted Metadata <span id="metaSummary" style="font-weight: 400; font-size: 13px; color: var(--text-muted);"></span></h3>
                 <div class="table-wrap">
                   <table class="meta-table" id="metaTable">
                     <thead>
@@ -336,25 +349,32 @@
                         <th>Filename</th>
                         <th>Status</th>
                         <th>EJS ID</th>
-                        <th>Reference ID</th>
-                        <th>Date (Text)</th>
-                        <th>Date (YYYY-MM-DD)</th>
+                        <th>Reference</th>
+                        <th>Date</th>
+                        <th>Act</th>
                         <th>Adjudicator</th>
                         <th>Claimant</th>
                         <th>Respondent</th>
                         <th>Claimed $</th>
-                        <th>Adjudicated $</th>
-                        <th>Fee Claimant %</th>
-                        <th>Fee Respondent %</th>
+                        <th>Sched $</th>
+                        <th>Adjud $</th>
+                        <th>Juris</th>
+                        <th>Fee C%</th>
+                        <th>Fee R%</th>
+                        <th>Outcome</th>
+                        <th>Project</th>
+                        <th>Contract</th>
+                        <th>Keywords</th>
+                        <th>Sections</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody id="metaBody"></tbody>
                   </table>
                 </div>
-                <div style="margin-top: 16px;">
-                  <button class="btn btn-primary" id="saveAllBtn">Save All Pending</button>
-                  <span id="saveAllFeedback" class="inline-feedback" style="margin-left: 12px;"></span>
+                <div style="margin-top: 16px; display: flex; gap: 10px; align-items: center;">
+                  <button class="btn btn-primary" id="saveAllBtn">Save All</button>
+                  <span id="saveAllFeedback" class="inline-feedback" style="margin-left: 4px;"></span>
                 </div>
               </div>
             </div>
@@ -1089,6 +1109,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const metaContainer = document.getElementById('metaContainer');
     const metaBody = document.getElementById('metaBody');
     const saveAllBtn = document.getElementById('saveAllBtn');
+    const progressDiv = document.getElementById('extractionProgress');
+    const progressText = document.getElementById('extractionProgressText');
 
     dropZone.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
@@ -1105,36 +1127,108 @@ document.addEventListener('DOMContentLoaded', () => {
     dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files), false);
     saveAllBtn.addEventListener('click', handleSaveAll);
 
-    function handleFiles(files) {
-      if (!files) return;
+    async function handleFiles(files) {
+      if (!files || files.length === 0) return;
+      const pdfFiles = [...files].filter(f => f.type === 'application/pdf' || f.name.endsWith('.pdf'));
+      if (pdfFiles.length === 0) return;
+
       metaContainer.style.display = '';
-      [...files].forEach(file => {
-        if (file.type === 'application/pdf') {
-          const rowId = `row-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-          filesStore.set(rowId, file);
-          addRow(file, rowId);
+      progressDiv.style.display = '';
+
+      for (let i = 0; i < pdfFiles.length; i++) {
+        const file = pdfFiles[i];
+        const rowId = `row-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        filesStore.set(rowId, file);
+
+        progressText.textContent = `Extracting metadata from file ${i + 1} of ${pdfFiles.length}: ${file.name}...`;
+
+        // Placeholder row while extracting
+        const placeholderTr = document.createElement('tr');
+        placeholderTr.id = rowId;
+        placeholderTr.innerHTML = `
+          <td>${esc(file.name)}</td>
+          <td class="status-cell status-extracting">Extracting...</td>
+          <td colspan="19" style="color: #0284c7; font-size: 12px;">AI is reading the document...</td>`;
+        metaBody.appendChild(placeholderTr);
+
+        try {
+          const fd = new FormData();
+          fd.append('pdf_file', file);
+          const res = await fetch('/admin/extract-decision-metadata', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: fd
+          });
+          const result = await res.json();
+
+          placeholderTr.remove();
+          if (!res.ok || result.status === 'error') {
+            addRow(file, rowId, null, result.message || 'Extraction failed');
+          } else {
+            addRow(file, rowId, result.metadata, null);
+          }
+        } catch (err) {
+          placeholderTr.remove();
+          addRow(file, rowId, null, err.message);
         }
-      });
+      }
+
+      progressDiv.style.display = 'none';
+      document.getElementById('metaSummary').textContent =
+        `(${metaBody.querySelectorAll('tr').length} decisions ready for review)`;
     }
 
-    function addRow(file, rowId) {
+    function addRow(file, rowId, metadata, errorMsg) {
+      const m = metadata || {};
       const tr = document.createElement('tr');
       tr.id = rowId;
+
+      let statusClass = 'status-ready';
+      let statusText = 'Ready';
+      if (errorMsg) {
+        statusClass = 'status-error';
+        statusText = 'Manual';
+      }
+
       tr.innerHTML = `
-        <td>${esc(file.name)}</td>
-        <td class="status-cell status-pending">Pending</td>
-        <td><input type="text" name="ejs_id" required></td>
-        <td><input type="text" name="reference" required></td>
-        <td><input type="text" name="decision_date" required></td>
-        <td><input type="date" name="decision_date_norm" required></td>
-        <td><input type="text" name="adjudicator" required></td>
-        <td><input type="text" name="claimant" required></td>
-        <td><input type="text" name="respondent" required></td>
-        <td><input type="number" step="0.01" name="claimed_amount" required></td>
-        <td><input type="number" step="0.01" name="adjudicated_amount" required></td>
-        <td><input type="number" step="0.01" name="fee_claimant_proportion" placeholder="e.g. 50"></td>
-        <td><input type="number" step="0.01" name="fee_respondent_proportion" placeholder="e.g. 50"></td>
+        <td title="${esc(file.name)}" style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px;">${esc(file.name)}</td>
+        <td class="status-cell ${statusClass}">${statusText}${errorMsg ? '<br><small style="font-weight:400;color:#666;font-size:10px;">' + esc(errorMsg).slice(0, 60) + '</small>' : ''}</td>
+        <td><input type="text" name="ejs_id" value="AUTO" readonly style="width:60px; background:#f5f5f5; color:#888;"></td>
+        <td><input type="text" name="reference" value="${esc(m.reference || '')}" required style="width:80px;"></td>
+        <td><input type="date" name="decision_date_norm" value="${esc(m.decision_date || '')}" required></td>
         <td>
+          <select name="act_category">
+            <option value="BIF Act 2017 (Qld)" ${(m.act_category || '').includes('2017') ? 'selected' : ''}>BIF 2017</option>
+            <option value="BCIPA 2004 (Qld)" ${(m.act_category || '').includes('2004') ? 'selected' : ''}>BCIPA 2004</option>
+          </select>
+        </td>
+        <td><input type="text" name="adjudicator" value="${esc(m.adjudicator_name || '')}" required></td>
+        <td><input type="text" name="claimant" value="${esc(m.claimant_name || '')}" required></td>
+        <td><input type="text" name="respondent" value="${esc(m.respondent_name || '')}" required></td>
+        <td><input type="number" step="0.01" name="claimed_amount" value="${m.claimed_amount ?? ''}" required style="width:90px;"></td>
+        <td><input type="number" step="0.01" name="payment_schedule_amount" value="${m.payment_schedule_amount ?? ''}" style="width:90px;"></td>
+        <td><input type="number" step="0.01" name="adjudicated_amount" value="${m.adjudicated_amount ?? ''}" required style="width:90px;"></td>
+        <td>
+          <select name="jurisdiction_upheld" style="width:55px;">
+            <option value="0" ${m.jurisdiction_upheld != 1 ? 'selected' : ''}>No</option>
+            <option value="1" ${m.jurisdiction_upheld == 1 ? 'selected' : ''}>Yes</option>
+          </select>
+        </td>
+        <td><input type="number" step="0.01" name="fee_claimant_proportion" value="${m.fee_claimant_proportion ?? ''}" style="width:55px;"></td>
+        <td><input type="number" step="0.01" name="fee_respondent_proportion" value="${m.fee_respondent_proportion ?? ''}" style="width:55px;"></td>
+        <td>
+          <select name="outcome">
+            <option value="">--</option>
+            <option value="Claimant Fully Successful" ${m.outcome === 'Claimant Fully Successful' ? 'selected' : ''}>Fully Successful</option>
+            <option value="Partly Successful" ${m.outcome === 'Partly Successful' ? 'selected' : ''}>Partly Successful</option>
+            <option value="Unsuccessful" ${m.outcome === 'Unsuccessful' ? 'selected' : ''}>Unsuccessful</option>
+          </select>
+        </td>
+        <td><input type="text" name="project_type" value="${esc(m.project_type || '')}" style="width:80px;"></td>
+        <td><input type="text" name="contract_type" value="${esc(m.contract_type || '')}" style="width:80px;"></td>
+        <td><input type="text" name="keywords" value="${esc(typeof m.keywords === 'string' ? m.keywords : (m.keywords || []).join(', '))}" style="min-width:140px;"></td>
+        <td><input type="text" name="sections_referenced" value="${esc(m.sections_referenced || '')}" style="min-width:100px;"></td>
+        <td style="white-space: nowrap;">
           <button class="btn btn-primary btn-sm save-row-btn" style="margin-bottom:4px;">Save</button>
           <button class="btn btn-danger btn-sm remove-row-btn">Remove</button>
         </td>`;
@@ -1152,11 +1246,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!row) return;
       const statusCell = row.querySelector('.status-cell');
       const saveBtn = row.querySelector('.save-row-btn');
-      const inputs = row.querySelectorAll('input');
+      const allInputs = row.querySelectorAll('input, select');
 
+      // Validate required fields
       let valid = true;
-      inputs.forEach(inp => {
-        if (inp.required && !inp.value) {
+      row.querySelectorAll('input[required]').forEach(inp => {
+        if (!inp.value) {
           inp.style.borderColor = '#ef4444';
           valid = false;
         } else {
@@ -1175,25 +1270,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const fd = new FormData();
       fd.append('pdf_file', filesStore.get(rowId));
+
+      // Gather all field values
       const fields = [
-        'ejs_id', 'reference', 'decision_date', 'decision_date_norm', 'act',
-        'adjudicator', 'claimant', 'respondent', 'claimed_amount', 'adjudicated_amount',
-        'payment_schedule_amount', 'fee_claimant_proportion', 'fee_respondent_proportion',
-        'project_type', 'contract_type', 'outcome'
+        'ejs_id', 'reference', 'decision_date_norm', 'act_category',
+        'adjudicator', 'claimant', 'respondent',
+        'claimed_amount', 'payment_schedule_amount', 'adjudicated_amount',
+        'jurisdiction_upheld', 'fee_claimant_proportion', 'fee_respondent_proportion',
+        'outcome', 'project_type', 'contract_type', 'keywords', 'sections_referenced'
       ];
       fields.forEach(f => {
-        if (f === 'act') { fd.append(f, 'BIF Act'); return; }
-        const inp = row.querySelector(`[name="${f}"]`);
-        fd.append(f, inp ? inp.value : '');
+        const el = row.querySelector(`[name="${f}"]`);
+        if (el) fd.append(f, el.value);
       });
+
+      // Legacy fields the endpoint still expects
+      const dateNorm = row.querySelector('[name="decision_date_norm"]').value;
+      fd.append('decision_date', dateNorm);
+      const actVal = row.querySelector('[name="act_category"]').value;
+      fd.append('act', actVal);
 
       try {
         const res = await fetch('/admin/upload-decision', { method: 'POST', headers: authHeaders(), body: fd });
         const result = await res.json();
         if (!res.ok) throw new Error(result.detail || 'Upload failed');
         statusCell.className = 'status-cell status-success';
-        statusCell.textContent = 'Success';
-        inputs.forEach(inp => inp.disabled = true);
+        statusCell.textContent = result.ejs_id || 'Saved';
+        allInputs.forEach(inp => inp.disabled = true);
         row.querySelector('.remove-row-btn').style.display = 'none';
         saveBtn.style.display = 'none';
       } catch (err) {
@@ -1204,15 +1307,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleSaveAll() {
-      const pending = document.querySelectorAll('.status-pending');
+      const readyCells = metaBody.querySelectorAll('.status-ready, .status-error:not(.status-success)');
       const fb = document.getElementById('saveAllFeedback');
-      if (pending.length === 0) {
+      const saveable = [...readyCells].filter(cell => {
+        const row = cell.closest('tr');
+        return row && row.querySelector('.save-row-btn') && !row.querySelector('.save-row-btn').disabled;
+      });
+      if (saveable.length === 0) {
         fb.textContent = 'No pending uploads.';
         fb.className = 'inline-feedback err';
         return;
       }
-      fb.textContent = '';
-      pending.forEach(cell => {
+      fb.textContent = `Saving ${saveable.length} decisions...`;
+      fb.className = 'inline-feedback ok';
+      saveable.forEach(cell => {
         const row = cell.closest('tr');
         row?.querySelector('.save-row-btn')?.click();
       });
