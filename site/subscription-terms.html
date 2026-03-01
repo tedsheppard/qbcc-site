@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscription Terms | Sopal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --bg-dark: #0a0a0a; --bg-darker: #050505; --green: #00d47e; --green-dark: #00b368; --text-primary: #1a1a1a; --text-secondary: #6b6b6b; --text-muted: #888; --border-light: #e5e5e5; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 32px 0; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--text-secondary); }
+    .content-area { max-width: 800px; margin: 40px auto; padding: 0 32px; }
+    .last-updated { color: var(--text-secondary); font-size: 14px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border-light); }
+    .toc { background: white; border: 1px solid var(--border-light); border-radius: 12px; padding: 24px; margin-bottom: 32px; }
+    .toc h3 { font-size: 16px; font-weight: 700; margin: 0 0 14px 0; }
+    .toc ul { margin: 0; padding-left: 20px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a { color: var(--green-dark); font-size: 14px; }
+    .toc a:hover { text-decoration: underline; }
+    .content-section { margin-bottom: 32px; }
+    .content-section h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 14px; margin-top: 32px; }
+    .content-section h3 { font-size: 17px; font-weight: 600; margin-bottom: 10px; margin-top: 20px; }
+    .content-section p { margin-bottom: 14px; color: #444; font-size: 15px; }
+    .content-section ul { margin-bottom: 14px; padding-left: 20px; }
+    .content-section li { margin-bottom: 6px; color: #444; font-size: 15px; }
+    .content-section a { color: var(--green-dark); }
+    .highlight-box { background: #fefce8; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
+    .highlight-box h4 { margin: 0 0 10px 0; color: #92400e; font-weight: 600; font-size: 14px; }
+    .highlight-box p { margin: 0; color: #92400e; font-size: 14px; }
+    .legal-box { background: #f0fdf4; border-left: 4px solid var(--green); padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
+    .legal-box h4 { margin: 0 0 10px 0; color: #166534; font-weight: 600; font-size: 14px; }
+    .legal-box p { margin: 0; color: #166534; font-size: 14px; }
+    .important-notice { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 20px; margin: 24px 0; }
+    .important-notice h4 { margin: 0 0 10px 0; color: #dc2626; font-weight: 600; font-size: 14px; }
+    .important-notice p { margin: 6px 0; color: #dc2626; font-size: 14px; }
+    .pricing-table { width: 100%; border-collapse: collapse; margin: 16px 0 20px; }
+    .pricing-table th, .pricing-table td { text-align: left; padding: 12px 16px; font-size: 14px; border-bottom: 1px solid var(--border-light); }
+    .pricing-table th { font-weight: 600; color: var(--text-primary); background: #f9fafb; }
+    .pricing-table td { color: #444; }
+    .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
+    .footer-inner { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); gap: 24px; }
+    .footer-brand { padding-right: 16px; }
+    .footer-brand .footer-logo { display: flex; align-items: center; gap: 7px; color: white; font-weight: 700; font-size: 15px; margin-bottom: 10px; }
+    .footer-brand p { font-size: 12px; color: #555; line-height: 1.5; }
+    .footer-col h4 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+    .footer-col a { display: block; font-size: 13px; color: #666; margin-bottom: 7px; transition: color 0.2s; }
+    .footer-col a:hover { color: white; }
+    .footer-bottom { display: flex; align-items: center; justify-content: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #555; }
+    @media (max-width: 768px) { .nav-links { display: none; } .footer-inner { grid-template-columns: 1fr; } .content-area { padding: 0 16px; margin: 24px auto; } }
+  </style>
+</head>
+<body>
+  <nav class="nav"><div class="nav-inner"><div class="nav-left"><a href="/" class="nav-logo">
+  <img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;">
+</a><div class="nav-links"><a href="/search">Search</a><a href="/adjudicators">Adjudicators</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a><a href="/how-to">How-To Guide</a><a href="/feedback">Feedback</a></div></div><div class="nav-right"></div></div></nav>
+
+  <div class="page-header"><div class="container"><h1>Subscription Terms &amp; Conditions</h1><p>Terms governing paid subscriptions to Sopal</p></div></div>
+
+  <div class="content-area">
+    <div class="last-updated">Last updated: 1 March 2026</div>
+
+    <div class="toc"><h3>Contents</h3><ul>
+      <li><a href="#introduction">Introduction</a></li>
+      <li><a href="#plans">Subscription Plans and Pricing</a></li>
+      <li><a href="#credit-card">Credit Card Payments</a></li>
+      <li><a href="#invoicing">Invoice Payments</a></li>
+      <li><a href="#subscription-features">What Your Subscription Includes</a></li>
+      <li><a href="#billing">Billing Cycle and Renewals</a></li>
+      <li><a href="#cancellation">Cancellation</a></li>
+      <li><a href="#refunds">Refunds</a></li>
+      <li><a href="#price-changes">Price Changes</a></li>
+      <li><a href="#account">Account Requirements</a></li>
+      <li><a href="#termination">Suspension and Termination</a></li>
+      <li><a href="#general">General Terms</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul></div>
+
+    <div class="important-notice"><h4>Important Notice</h4><p>These Subscription Terms &amp; Conditions govern your paid subscription to Sopal. By subscribing, you acknowledge and agree to these terms in addition to our general <a href="/terms" style="color:#dc2626;text-decoration:underline;">Terms of Service</a> and <a href="/account-terms" style="color:#dc2626;text-decoration:underline;">Account Terms</a>.</p></div>
+
+    <div class="content-section" id="introduction">
+      <h2>1. Introduction</h2>
+      <p>These Subscription Terms &amp; Conditions ("Subscription Terms") govern your purchase and use of a paid subscription to Sopal Australia ("Sopal", "we", "us", "our"). A subscription provides unlimited access to Sopal's premium features, including unlimited decision searches, full adjudicator insights, and AI-powered decision summaries.</p>
+      <p>These Subscription Terms supplement and form part of Sopal's general <a href="/terms">Terms of Service</a>. In the event of any inconsistency, these Subscription Terms prevail in relation to subscription-related matters.</p>
+    </div>
+
+    <div class="content-section" id="plans">
+      <h2>2. Subscription Plans and Pricing</h2>
+      <p>Sopal offers the following subscription plans. All prices are in Australian Dollars (AUD) and include GST:</p>
+      <table class="pricing-table">
+        <tr><th>Plan</th><th>Price</th><th>Billing Frequency</th><th>Effective Weekly Rate</th></tr>
+        <tr><td>Weekly</td><td>$12.95 per week</td><td>Weekly or monthly</td><td>$12.95/week</td></tr>
+        <tr><td>Annual</td><td>$520.00 per year</td><td>Annually</td><td>$9.95/week (save 23%)</td></tr>
+      </table>
+      <p>All prices include GST. Tax invoices are issued automatically upon each payment.</p>
+    </div>
+
+    <div class="content-section" id="credit-card">
+      <h2>3. Credit Card Payments</h2>
+      <h3>How It Works</h3>
+      <ul>
+        <li>Credit and debit card payments are processed securely through <strong>Stripe</strong>, a PCI-DSS Level 1 certified payment processor</li>
+        <li>We accept Visa, Mastercard, and American Express</li>
+        <li>Your card will be charged automatically at the start of each billing cycle</li>
+        <li>Your subscription is activated immediately upon successful payment</li>
+      </ul>
+      <h3>Card Storage</h3>
+      <ul>
+        <li>Sopal does not store your full credit card details. Card information is securely tokenised and held by Stripe</li>
+        <li>You can update your payment method at any time from your <a href="/account?tab=payment">account settings</a></li>
+      </ul>
+      <h3>Failed Payments</h3>
+      <ul>
+        <li>If a recurring payment fails, Stripe may reattempt the charge in accordance with its retry schedule</li>
+        <li>If payment cannot be collected after multiple attempts, your subscription may be suspended or cancelled</li>
+        <li>You will be notified by email if a payment fails</li>
+      </ul>
+    </div>
+
+    <div class="content-section" id="invoicing">
+      <h2>4. Invoice Payments</h2>
+      <h3>How It Works</h3>
+      <ul>
+        <li>Firms and organisations may request to pay by invoice instead of credit card</li>
+        <li>To request invoice billing, select "Pay by Invoice" during the checkout process and provide your firm's billing details (ABN, billing contact, and address)</li>
+        <li>Invoice requests are reviewed by our team, typically within 1 business day</li>
+      </ul>
+      <h3>Approval at Our Discretion</h3>
+      <div class="highlight-box">
+        <h4>Important: Approval Not Guaranteed</h4>
+        <p>Sopal reserves the absolute right to accept or decline any request for invoice billing at its sole discretion and without providing reasons. Invoice billing is a privilege, not an entitlement, and may be withdrawn at any time.</p>
+      </div>
+      <ul>
+        <li>Invoice accounts are generally available to established firms, law practices, and organisations with a valid ABN</li>
+        <li>Individual users may be required to pay by credit card</li>
+        <li>We may request additional information to assess an invoice billing request</li>
+        <li>If an invoice request is declined, you may still subscribe using a credit or debit card</li>
+      </ul>
+      <h3>Invoice Payment Terms</h3>
+      <ul>
+        <li>Invoices are issued at the start of each billing cycle and are payable within <strong>14 days</strong> of the invoice date</li>
+        <li>Invoices are sent to the billing email address provided during setup</li>
+        <li>Payment may be made by bank transfer (EFT) to the account details specified on the invoice</li>
+        <li>If an invoice is not paid within the payment terms, we may suspend access until payment is received</li>
+        <li>Persistent late payment may result in your invoice billing privileges being revoked and your account being switched to credit card billing or cancelled</li>
+      </ul>
+    </div>
+
+    <div class="content-section" id="subscription-features">
+      <h2>5. What Your Subscription Includes</h2>
+      <p>An active Sopal subscription grants you access to the following features:</p>
+      <ul>
+        <li><strong>Unlimited decision searches</strong> &mdash; search the full database of adjudication decisions without the 10 search/month free limit</li>
+        <li><strong>Full adjudicator insights</strong> &mdash; access detailed statistics, decision patterns, and complete decision histories for all adjudicators</li>
+        <li><strong>AI-powered decision summaries</strong> &mdash; generate and view AI summaries of individual adjudication decisions</li>
+        <li><strong>PDF access</strong> &mdash; view and download full-text PDF copies of adjudication decisions</li>
+      </ul>
+      <p>Free users retain access to limited search functionality (10 searches per calendar month) and the Russell Welsh adjudicator profile as a free demo.</p>
+    </div>
+
+    <div class="content-section" id="billing">
+      <h2>6. Billing Cycle and Renewals</h2>
+      <ul>
+        <li>Your subscription automatically renews at the end of each billing period (weekly or annually, depending on your plan) unless cancelled before the renewal date</li>
+        <li>Your billing cycle begins on the date of your first payment</li>
+        <li>You can view your current billing cycle and next renewal date in your <a href="/account?tab=subscription">account settings</a></li>
+        <li>Renewal charges are processed at the then-current subscription rate (see <a href="#price-changes">Section 9: Price Changes</a>)</li>
+      </ul>
+    </div>
+
+    <div class="content-section" id="cancellation">
+      <h2>7. Cancellation</h2>
+      <h3>How to Cancel</h3>
+      <ul>
+        <li>You can cancel your subscription at any time from your <a href="/account?tab=subscription">account settings</a></li>
+        <li>Cancellation takes effect at the end of your current billing period &mdash; you retain access to all premium features until then</li>
+        <li>No partial billing period refunds are provided upon cancellation</li>
+      </ul>
+      <h3>Effect of Cancellation</h3>
+      <ul>
+        <li>After your current billing period ends, your account reverts to the free tier (10 searches per month, no adjudicator insights access)</li>
+        <li>Your account and search history are retained &mdash; you can resubscribe at any time to restore access</li>
+      </ul>
+    </div>
+
+    <div class="content-section" id="refunds">
+      <h2>8. Refunds</h2>
+      <h3>General Policy</h3>
+      <p>Subscription fees are generally <strong>non-refundable</strong>. Because premium features are made available immediately upon payment, we do not offer refunds for:</p>
+      <ul>
+        <li>Change of mind</li>
+        <li>Failure to cancel before a renewal date</li>
+        <li>Underutilisation of the service during a billing period</li>
+      </ul>
+      <h3>Exceptions</h3>
+      <p>Refunds may be considered at our discretion in the following limited circumstances:</p>
+      <ul>
+        <li>A technical error caused a duplicate charge or prevented access to the service</li>
+        <li>An unauthorised charge was made on your account (subject to verification)</li>
+      </ul>
+      <p>To request a refund, contact us at <strong>info@sopal.com.au</strong> within 7 days of the charge, including your account email and transaction details.</p>
+    </div>
+
+    <div class="content-section" id="price-changes">
+      <h2>9. Price Changes</h2>
+      <ul>
+        <li>We reserve the right to change subscription pricing at any time</li>
+        <li>Existing subscribers will be given at least <strong>30 days' notice</strong> before any price increase takes effect on their account</li>
+        <li>Price changes apply from the next billing cycle after the notice period expires</li>
+        <li>If you do not agree with a price change, you may cancel your subscription before the new pricing takes effect</li>
+      </ul>
+    </div>
+
+    <div class="content-section" id="account">
+      <h2>10. Account Requirements</h2>
+      <ul>
+        <li>You must create and maintain a Sopal account to hold a subscription</li>
+        <li>You are responsible for maintaining the confidentiality of your account credentials</li>
+        <li>Subscriptions are tied to a single user account and are non-transferable</li>
+        <li>Sharing account credentials to allow multiple individuals to use a single subscription is prohibited and may result in account suspension</li>
+      </ul>
+    </div>
+
+    <div class="content-section" id="termination">
+      <h2>11. Suspension and Termination</h2>
+      <p>We reserve the right to suspend or terminate your subscription if:</p>
+      <ul>
+        <li>You breach these Subscription Terms or our general <a href="/terms">Terms of Service</a></li>
+        <li>Payment cannot be collected after reasonable attempts</li>
+        <li>We reasonably suspect fraudulent or abusive use of the service</li>
+        <li>Account credentials are being shared with third parties</li>
+      </ul>
+      <p>We will endeavour to provide notice before suspension or termination except where immediate action is required (e.g., fraud or security concerns). No refunds will be provided for subscriptions terminated due to breach of terms.</p>
+    </div>
+
+    <div class="content-section" id="general">
+      <h2>12. General Terms</h2>
+      <h3>Governing Law</h3>
+      <p>These Subscription Terms are governed by and construed in accordance with the laws of Queensland, Australia. Any disputes arising under these terms are subject to the exclusive jurisdiction of the courts of Queensland.</p>
+      <h3>Entire Agreement</h3>
+      <p>These Subscription Terms, together with the <a href="/terms">Terms of Service</a>, <a href="/account-terms">Account Terms</a>, and <a href="/privacy">Privacy Policy</a>, constitute the entire agreement between you and Sopal in relation to your subscription.</p>
+      <h3>Amendments</h3>
+      <p>We may update these Subscription Terms from time to time. Material changes will be communicated via email or a notice on the platform. Continued use of the subscription after changes take effect constitutes acceptance of the updated terms.</p>
+      <h3>Severability</h3>
+      <p>If any provision of these Subscription Terms is found to be invalid or unenforceable, the remaining provisions continue in full force and effect.</p>
+    </div>
+
+    <div class="content-section" id="contact">
+      <h2>13. Contact</h2>
+      <p>For questions about your subscription or these terms:</p>
+      <ul>
+        <li><strong>Email:</strong> info@sopal.com.au</li>
+        <li><strong>Feedback Form:</strong> <a href="/feedback">Submit through our platform</a></li>
+      </ul>
+      <p>For billing enquiries, please include your account email address and a description of the issue.</p>
+    </div>
+
+    <div class="legal-box"><h4>Acknowledgment</h4><p>By subscribing to Sopal, you acknowledge that you have read, understood, and agree to be bound by these Subscription Terms &amp; Conditions, our Terms of Service, Account Terms, and Privacy Policy.</p></div>
+  </div>
+
+  <footer class="footer"><div class="container"><div class="footer-inner"><div class="footer-brand"><div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div><p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p></div><div class="footer-col"><h4>Tools</h4><a href="/search">Decision Search</a><a href="/adjudicators">Adjudicators</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a></div><div class="footer-col"><h4>Resources</h4><a href="/how-to">How-To Guide</a><a href="/feedback">Feedback</a></div><div class="footer-col"><h4>Legal</h4><a href="/privacy">Privacy</a><a href="/terms">Terms of Use</a><a href="/account-terms">Account Terms</a><a href="/subscription-terms">Subscription Terms</a></div></div><div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div></div></footer>
+
+<script src="/assets/js/main.js"></script>
+</body>
+</html>
