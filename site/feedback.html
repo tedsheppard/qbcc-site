@@ -77,6 +77,9 @@
     .submit-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 600; border-radius: 8px; background: var(--green); color: #000; transition: background 0.2s; margin-top: 8px; }
     .submit-btn:hover { background: var(--green-dark); }
     .submit-btn:active { transform: scale(0.995); }
+    .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .form-error { color: #dc2626; font-size: 13px; margin-top: 12px; margin-bottom: 4px; }
 
     /* SUCCESS */
     .success-state { display: none; text-align: center; padding: 20px 0; }
@@ -176,12 +179,12 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Name <span class="optional">(optional)</span></label>
-            <input type="text" class="form-input" name="name" placeholder="Your name">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-input" name="name" required placeholder="Your name">
           </div>
           <div class="form-group">
-            <label class="form-label">Email <span class="optional">(optional)</span></label>
-            <input type="email" class="form-input" name="email" placeholder="you@example.com">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" name="email" required placeholder="you@example.com">
           </div>
         </div>
         <div class="form-group">
@@ -193,7 +196,8 @@
           <textarea class="form-textarea" name="details" required placeholder="Tell us more..."></textarea>
         </div>
 
-        <button type="submit" class="submit-btn">Send feedback</button>
+        <div id="formError" class="form-error" style="display:none;"></div>
+        <button type="submit" class="submit-btn" id="submitBtn">Send feedback</button>
       </form>
 
       <div class="success-state" id="successMessage">
@@ -235,12 +239,18 @@ document.querySelectorAll('.type-pill').forEach(pill => {
 // Form submission
 document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
   e.preventDefault();
+  const errorEl = document.getElementById('formError');
+  const submitBtn = document.getElementById('submitBtn');
+  errorEl.style.display = 'none';
 
   if (!document.getElementById('feedbackType').value) {
-    alert('Please select a feedback type.');
+    errorEl.textContent = 'Please select a feedback type.';
+    errorEl.style.display = 'block';
     return;
   }
 
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending...';
   const formData = new FormData(this);
 
   try {
@@ -249,17 +259,26 @@ document.getElementById('feedbackForm').addEventListener('submit', async functio
       body: formData
     });
 
-    const data = await res.json();
-
-    if (data.ok) {
-      document.getElementById('successMessage').style.display = 'block';
-      this.style.display = 'none';
-      document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById('successMessage').style.display = 'block';
+        this.style.display = 'none';
+        document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      errorEl.textContent = data.error || data.detail || 'Something went wrong. Please try again.';
     } else {
-      alert('Error sending feedback: ' + data.error);
+      const errData = await res.json().catch(() => null);
+      errorEl.textContent = errData?.detail || errData?.error || `Server error (${res.status}). Please try again.`;
     }
+    errorEl.style.display = 'block';
   } catch (err) {
-    alert('Network error: ' + err);
+    errorEl.textContent = 'Network error. Please check your connection and try again.';
+    errorEl.style.display = 'block';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send feedback';
   }
 });
 </script>

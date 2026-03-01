@@ -2651,7 +2651,7 @@ async def send_feedback(
     name: str = Form(""),
     email: str = Form(""),
     subject: str = Form(...),
-    priority: str = Form(...),
+    priority: str = Form("normal"),
     details: str = Form(...),
     browser: str = Form(""),
     device: str = Form("")
