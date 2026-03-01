@@ -162,7 +162,7 @@ async function initPricingPage() {
         const subRes = await fetch('/api/subscription-status', { headers });
         if (subRes.ok) {
             const subData = await subRes.json();
-            if (subData.has_subscription) {
+            if (subData.has_subscription && subData.subscription.status !== 'cancelled') {
                 document.getElementById('already-subscribed').style.display = 'block';
                 document.getElementById('pricing-cards').style.display = 'none';
                 return;
