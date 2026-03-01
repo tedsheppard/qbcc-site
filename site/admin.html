@@ -1310,6 +1310,19 @@ document.addEventListener('DOMContentLoaded', () => {
         statusCell.textContent = `Error: ${err.message}`;
         saveBtn.disabled = false;
       }
+      updateSaveAllFeedback();
+    }
+
+    function updateSaveAllFeedback() {
+      const fb = document.getElementById('saveAllFeedback');
+      const remaining = metaBody.querySelectorAll('.status-saving');
+      if (remaining.length > 0) return;
+      const succeeded = metaBody.querySelectorAll('.status-success').length;
+      const failed = metaBody.querySelectorAll('.status-error').length;
+      if (succeeded > 0 || failed > 0) {
+        fb.textContent = `Done. ${succeeded} saved${failed ? `, ${failed} failed` : ''}.`;
+        fb.className = 'inline-feedback ok';
+      }
     }
 
     function handleSaveAll() {
