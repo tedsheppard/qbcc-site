@@ -1299,6 +1299,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Show banner persisted from previous action (e.g. cancel subscription)
+        const pendingBanner = sessionStorage.getItem('account_banner');
+        if (pendingBanner) {
+            sessionStorage.removeItem('account_banner');
+            setTimeout(() => showTempBanner(pendingBanner, 'success'), 300);
+        }
+
         initializePage();
     }
 });
@@ -1331,9 +1338,9 @@ async function cancelSubscription() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Failed to cancel');
-    showTempBanner(data.message, 'success');
-    // Reload the subscription tab
-    setTimeout(() => window.location.reload(), 1500);
+    // Persist banner message across reload
+    sessionStorage.setItem('account_banner', 'Your subscription has been cancelled. You will retain access until the end of your current billing period.');
+    window.location.reload();
   } catch (e) {
     showAlert('Error', e.message);
   }
