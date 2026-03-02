@@ -38,7 +38,7 @@
     .status-card p { font-size: 14px; color: #166534; margin: 0; }
     .status-card a { color: var(--green-dark); font-weight: 600; }
 
-    .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 48px; }
+    .pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 48px; }
     .pricing-card { background: white; border: 2px solid var(--border-light); border-radius: 14px; padding: 32px; position: relative; transition: border-color 0.2s; }
     .pricing-card:hover { border-color: #ccc; }
     .pricing-card.highlighted { border-color: var(--green); box-shadow: 0 4px 24px rgba(0,212,126,0.12); }
@@ -127,6 +127,18 @@
         </ul>
         <a href="/checkout?plan=annual" class="plan-btn" id="btn-annual">Select Annual Plan</a>
       </div>
+      <div class="pricing-card">
+        <div class="plan-name">Disbursement Option</div>
+        <div class="plan-price">$39.95<span> once</span></div>
+        <div class="plan-billing">7 days unlimited access</div>
+        <ul class="plan-features">
+          <li>Unlimited decision searches</li>
+          <li>Full adjudicator insights access</li>
+          <li>AI-powered decision summaries</li>
+          <li>Chargeable to client as disbursement</li>
+        </ul>
+        <a href="/checkout?plan=disbursement" class="plan-btn" id="btn-disbursement">Select Disbursement Option</a>
+      </div>
     </div>
 
     <div class="faq-section">
@@ -142,6 +154,10 @@
       <div class="faq-item">
         <h4>How does the invoice process work?</h4>
         <p>Select your plan, choose "Pay by Invoice" on the payment page, and fill in your firm's billing details. An admin will review it within 1 business day. Once approved, your access is activated immediately.</p>
+      </div>
+      <div class="faq-item">
+        <h4>What is the Disbursement Option?</h4>
+        <p>The Disbursement Option is a one-time $39.95 payment that gives you 7 days of unlimited access. It's designed for practitioners who need short-term access for a specific matter and can charge the cost to their client as a disbursement.</p>
       </div>
       <div class="faq-item">
         <h4>Do I need an account to subscribe?</h4>

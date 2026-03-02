@@ -1038,20 +1038,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const container = document.getElementById('subscription-content');
             const periodEnd = new Date(sub.current_period_end).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
             const isCancelled = sub.status === 'cancelled';
+            const isDisbursement = sub.plan_type === 'disbursement';
+            const periodLabel = isCancelled || isDisbursement ? 'Access until' : 'Next billing date';
+            const titleText = isCancelled ? 'Subscription Cancelled' : isDisbursement ? 'Disbursement Access' : 'Active Subscription';
             container.innerHTML = `
                 <div style="padding:20px; background:${isCancelled ? '#fffbeb' : '#f0fdf4'}; border-radius:10px; border:1px solid ${isCancelled ? '#fbbf24' : 'var(--green)'}; margin-bottom:20px;">
-                    <strong style="font-size:16px;">${isCancelled ? 'Subscription Cancelled' : 'Active Subscription'}</strong>
+                    <strong style="font-size:16px;">${titleText}</strong>
                     <p style="margin:8px 0 0; color:var(--text-secondary); font-size:14px;">
-                        Plan: <strong>${sub.plan_type === 'annual' ? 'Annual ($520/year)' : 'Weekly ($12.95/week)'}</strong><br>
+                        Plan: <strong>${isDisbursement ? 'Disbursement (7-day access)' : sub.plan_type === 'annual' ? 'Annual ($520/year)' : 'Weekly ($12.95/week)'}</strong><br>
                         Payment: <strong>${sub.payment_method === 'stripe' ? 'Credit Card' : 'Invoice'}</strong><br>
-                        ${isCancelled
-                            ? 'Access until: <strong>' + periodEnd + '</strong>'
-                            : 'Next billing date: <strong>' + periodEnd + '</strong>'}
+                        ${periodLabel}: <strong>${periodEnd}</strong>
                     </p>
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    ${sub.payment_method === 'stripe' && !isCancelled ? '<button class="btn" onclick="openBillingPortal()" style="max-width:200px;">Manage Billing</button>' : ''}
-                    ${!isCancelled ? '<button class="btn" onclick="cancelSubscription()" style="max-width:200px; background:#dc3545; color:white;">Cancel Subscription</button>' : ''}
+                    ${sub.payment_method === 'stripe' && !isCancelled && !isDisbursement ? '<button class="btn" onclick="openBillingPortal()" style="max-width:200px;">Manage Billing</button>' : ''}
+                    ${!isCancelled && !isDisbursement ? '<button class="btn" onclick="cancelSubscription()" style="max-width:200px; background:#dc3545; color:white;">Cancel Subscription</button>' : ''}
                     ${isCancelled ? '<a href="/pricing" class="btn" style="max-width:200px; text-decoration:none; display:inline-block; text-align:center;">Re-subscribe</a>' : ''}
                 </div>
             `;

@@ -386,6 +386,39 @@ CREATE INDEX IF NOT EXISTS idx_invoice_requests_email
 ON invoice_requests (user_email)
 """)
 
+# --- Migration: allow 'disbursement' plan_type in subscriptions ---
+try:
+    purchases_con.execute("INSERT INTO subscriptions (user_email, plan_type, payment_method, status, current_period_end) VALUES ('__migration_test__', 'disbursement', 'stripe', 'expired', '2000-01-01')")
+    purchases_con.execute("DELETE FROM subscriptions WHERE user_email = '__migration_test__'")
+except Exception:
+    purchases_con.rollback()
+    try:
+        purchases_con.execute("ALTER TABLE subscriptions RENAME TO subscriptions_old")
+        purchases_con.execute("""
+        CREATE TABLE subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_email TEXT NOT NULL,
+            plan_type TEXT NOT NULL CHECK(plan_type IN ('monthly','annual','disbursement')),
+            payment_method TEXT NOT NULL CHECK(payment_method IN ('stripe','invoice')),
+            status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','cancelled','past_due','expired')),
+            stripe_subscription_id TEXT,
+            stripe_customer_id TEXT,
+            current_period_start TIMESTAMP,
+            current_period_end TIMESTAMP,
+            cancelled_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        purchases_con.execute("INSERT INTO subscriptions SELECT * FROM subscriptions_old")
+        purchases_con.execute("DROP TABLE subscriptions_old")
+        purchases_con.execute("""CREATE INDEX IF NOT EXISTS idx_subscriptions_email_status ON subscriptions (user_email, status, current_period_end)""")
+        purchases_con.execute("""CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_id ON subscriptions (stripe_subscription_id)""")
+        print("INFO: Migrated subscriptions table to support disbursement plan type")
+    except Exception as mig_err:
+        print(f"WARNING: Subscriptions migration failed: {mig_err}")
+        purchases_con.rollback()
+
 # --- Commit all changes ---
 purchases_con.commit()
 
@@ -3175,6 +3208,7 @@ async def download_db():
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_MONTHLY_PRICE_ID = os.getenv("STRIPE_MONTHLY_PRICE_ID", "")
 STRIPE_ANNUAL_PRICE_ID = os.getenv("STRIPE_ANNUAL_PRICE_ID", "")
+STRIPE_DISBURSEMENT_PRICE_ID = os.getenv("STRIPE_DISBURSEMENT_PRICE_ID", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
 # --- Subscription helpers ---
@@ -3473,6 +3507,73 @@ async def cancel_subscription(current_user: dict = Depends(get_current_purchase_
 
     return {"message": "Subscription cancelled. You'll retain access until the end of your billing period.",
             "access_until": sub["current_period_end"]}
+
+# --- Disbursement: one-time 7-day access ---
+
+@app.post("/create-disbursement-intent")
+async def create_disbursement_intent(
+    current_user: dict = Depends(get_current_purchase_user)
+):
+    """Creates a Stripe PaymentIntent for $39.95 one-time disbursement access."""
+    if not STRIPE_DISBURSEMENT_PRICE_ID:
+        raise HTTPException(status_code=500, detail="Disbursement price not configured.")
+
+    try:
+        customer = get_or_create_stripe_customer(current_user)
+        intent = stripe.PaymentIntent.create(
+            amount=3995,  # $39.95 in cents
+            currency="aud",
+            customer=customer.id,
+            metadata={
+                "user_email": current_user["email"],
+                "plan_type": "disbursement"
+            }
+        )
+        return {"client_secret": intent.client_secret, "payment_intent_id": intent.id}
+    except stripe.error.StripeError as e:
+        print(f"Stripe disbursement intent error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/activate-disbursement")
+async def activate_disbursement(
+    payment_intent_id: str = Form(...),
+    current_user: dict = Depends(get_current_purchase_user)
+):
+    """Verify payment and activate 7-day disbursement access."""
+    try:
+        intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if intent.status != "succeeded":
+        raise HTTPException(status_code=400, detail="Payment not completed.")
+
+    # Verify the payment belongs to this user
+    if intent.metadata.get("user_email") != current_user["email"]:
+        raise HTTPException(status_code=403, detail="Payment does not belong to this user.")
+
+    # Check if already activated (idempotency)
+    existing = purchases_con.execute(
+        "SELECT id FROM subscriptions WHERE stripe_subscription_id = ?", (payment_intent_id,)
+    ).fetchone()
+    if existing:
+        return {"message": "Disbursement access already activated.", "already_active": True}
+
+    now = datetime.utcnow()
+    period_end = now + timedelta(days=7)
+
+    purchases_con.execute("""
+        INSERT INTO subscriptions
+        (user_email, plan_type, payment_method, status, stripe_subscription_id, stripe_customer_id,
+         current_period_start, current_period_end)
+        VALUES (?, 'disbursement', 'stripe', 'active', ?, ?, ?, ?)
+    """, (current_user["email"], payment_intent_id, intent.customer, now.isoformat(), period_end.isoformat()))
+    purchases_con.commit()
+
+    print(f"[Disbursement] 7-day access activated for {current_user['email']}")
+    return {"message": "7-day access activated.", "access_until": period_end.isoformat()}
+
 
 # --- Invoice subscription request ---
 
@@ -4860,7 +4961,7 @@ async def serve_html_page(path_name: str):
         "purchase-register", "purchase-login", "purchase-me", "update-profile",
         "my-purchases", "api/chat", "stripe-webhook", "create-checkout-session",
         "cancel-subscription", "request-invoice-subscription", "create-customer-portal-session",
-        "create-subscription-intent"
+        "create-subscription-intent", "create-disbursement-intent", "activate-disbursement"
     ]
     if any(path_name.startswith(prefix) for prefix in api_prefixes):
         raise HTTPException(status_code=404, detail="API endpoint not found")

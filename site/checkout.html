@@ -248,22 +248,31 @@ if (!token) {
 }
 
 // Redirect if no valid plan
-if (planParam !== 'weekly' && planParam !== 'annual') {
+if (planParam !== 'weekly' && planParam !== 'annual' && planParam !== 'disbursement') {
     window.location.href = '/pricing';
 }
 
+const isDisbursement = planParam === 'disbursement';
+
 // Map display plan to backend plan
-const backendPlan = planParam === 'weekly' ? 'monthly' : 'annual';
+const backendPlan = isDisbursement ? 'disbursement' : (planParam === 'weekly' ? 'monthly' : 'annual');
 
 // Populate plan summary
 const planConfig = {
     weekly: { name: 'Weekly Plan', detail: '$12.95/week — billed weekly or monthly', price: '$12.95/wk' },
-    annual: { name: 'Annual Plan', detail: '$520/year — just $9.95/week, save 23%', price: '$520/yr' }
+    annual: { name: 'Annual Plan', detail: '$520/year — just $9.95/week, save 23%', price: '$520/yr' },
+    disbursement: { name: 'Disbursement Option', detail: '$39.95 one-time — 7 days unlimited access', price: '$39.95' }
 };
 const cfg = planConfig[planParam];
 document.getElementById('summary-plan-name').textContent = cfg.name;
 document.getElementById('summary-plan-detail').textContent = cfg.detail;
 document.getElementById('summary-price').textContent = cfg.price;
+
+// Hide invoice option for disbursement (one-time payment only)
+if (isDisbursement) {
+    const invoiceOpt = document.getElementById('opt-invoice');
+    if (invoiceOpt) invoiceOpt.style.display = 'none';
+}
 
 // ACN field: required + enabled only for Pty Ltd or Ltd
 const firmTypeSelect = document.getElementById('inv-firm-type');
@@ -361,33 +370,74 @@ document.getElementById('stripe-form').addEventListener('submit', async (e) => {
     btn.textContent = 'Processing...';
 
     try {
-        const formData = new FormData();
-        formData.append('plan', backendPlan);
+        if (isDisbursement) {
+            // One-time payment flow
+            const res = await fetch('/create-disbursement-intent', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-        const res = await fetch('/create-subscription-intent', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
-        });
+            if (!res.ok) {
+                let errMsg = 'Failed to create payment';
+                try { const err = await res.json(); errMsg = err.detail || errMsg; } catch (parseErr) { errMsg = `Server error (${res.status})`; }
+                throw new Error(errMsg);
+            }
 
-        if (!res.ok) {
-            let errMsg = 'Failed to create subscription';
-            try { const err = await res.json(); errMsg = err.detail || errMsg; } catch (parseErr) { errMsg = `Server error (${res.status})`; }
-            throw new Error(errMsg);
-        }
+            const data = await res.json();
+            const { error, paymentIntent } = await stripe.confirmCardPayment(data.client_secret, {
+                payment_method: { card: cardElement }
+            });
 
-        const data = await res.json();
-        const { error, paymentIntent } = await stripe.confirmCardPayment(data.client_secret, {
-            payment_method: { card: cardElement }
-        });
+            if (error) throw new Error(error.message);
 
-        if (error) throw new Error(error.message);
+            if (paymentIntent.status === 'succeeded') {
+                // Activate 7-day access
+                const activateData = new FormData();
+                activateData.append('payment_intent_id', data.payment_intent_id);
+                const activateRes = await fetch('/activate-disbursement', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: activateData
+                });
+                if (!activateRes.ok) {
+                    const err = await activateRes.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to activate access');
+                }
+                feedback.textContent = 'Payment successful! Your 7-day access is now active. Redirecting...';
+                feedback.className = 'feedback-msg success';
+                btn.style.display = 'none';
+                setTimeout(() => { window.location.href = '/account?tab=subscription'; }, 2500);
+            }
+        } else {
+            // Subscription flow
+            const formData = new FormData();
+            formData.append('plan', backendPlan);
 
-        if (paymentIntent.status === 'succeeded') {
-            feedback.textContent = 'Payment successful! Your subscription is now active. Redirecting to your account...';
-            feedback.className = 'feedback-msg success';
-            btn.style.display = 'none';
-            setTimeout(() => { window.location.href = '/account?tab=subscription'; }, 2500);
+            const res = await fetch('/create-subscription-intent', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!res.ok) {
+                let errMsg = 'Failed to create subscription';
+                try { const err = await res.json(); errMsg = err.detail || errMsg; } catch (parseErr) { errMsg = `Server error (${res.status})`; }
+                throw new Error(errMsg);
+            }
+
+            const data = await res.json();
+            const { error, paymentIntent } = await stripe.confirmCardPayment(data.client_secret, {
+                payment_method: { card: cardElement }
+            });
+
+            if (error) throw new Error(error.message);
+
+            if (paymentIntent.status === 'succeeded') {
+                feedback.textContent = 'Payment successful! Your subscription is now active. Redirecting to your account...';
+                feedback.className = 'feedback-msg success';
+                btn.style.display = 'none';
+                setTimeout(() => { window.location.href = '/account?tab=subscription'; }, 2500);
+            }
         }
     } catch (err) {
         feedback.textContent = err.message;
