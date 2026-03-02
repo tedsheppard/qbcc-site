@@ -358,7 +358,7 @@ purchases_cur.execute("""
 CREATE TABLE IF NOT EXISTS invoice_requests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_email TEXT NOT NULL,
-    plan_type TEXT NOT NULL CHECK(plan_type IN ('monthly','annual')),
+    plan_type TEXT NOT NULL CHECK(plan_type IN ('monthly','annual','disbursement')),
     status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
     firm_name TEXT,
     abn TEXT,
@@ -417,6 +417,35 @@ except Exception:
         print("INFO: Migrated subscriptions table to support disbursement plan type")
     except Exception as mig_err:
         print(f"WARNING: Subscriptions migration failed: {mig_err}")
+        purchases_con.rollback()
+
+# --- Migration: allow 'disbursement' plan_type in invoice_requests ---
+try:
+    purchases_con.execute("INSERT INTO invoice_requests (user_email, plan_type) VALUES ('__migration_test__', 'disbursement')")
+    purchases_con.execute("DELETE FROM invoice_requests WHERE user_email = '__migration_test__'")
+except Exception:
+    purchases_con.rollback()
+    try:
+        purchases_con.execute("ALTER TABLE invoice_requests RENAME TO invoice_requests_old")
+        purchases_con.execute("""
+        CREATE TABLE invoice_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_email TEXT NOT NULL,
+            plan_type TEXT NOT NULL CHECK(plan_type IN ('monthly','annual','disbursement')),
+            status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
+            firm_name TEXT, abn TEXT, billing_address TEXT, billing_city TEXT,
+            billing_state TEXT, billing_postcode TEXT, accounts_email TEXT,
+            notes TEXT, admin_notes TEXT, reviewed_by TEXT, reviewed_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        purchases_con.execute("INSERT INTO invoice_requests SELECT * FROM invoice_requests_old")
+        purchases_con.execute("DROP TABLE invoice_requests_old")
+        purchases_con.execute("""CREATE INDEX IF NOT EXISTS idx_invoice_requests_status ON invoice_requests (status)""")
+        purchases_con.execute("""CREATE INDEX IF NOT EXISTS idx_invoice_requests_email ON invoice_requests (user_email)""")
+        print("INFO: Migrated invoice_requests table to support disbursement plan type")
+    except Exception as mig_err:
+        print(f"WARNING: Invoice requests migration failed: {mig_err}")
         purchases_con.rollback()
 
 # --- Commit all changes ---
@@ -3585,7 +3614,7 @@ async def request_invoice_subscription(
     current_user: dict = Depends(get_current_purchase_user)
 ):
     """Submit an invoice-based subscription request for admin approval."""
-    if plan not in ("monthly", "annual"):
+    if plan not in ("monthly", "annual", "disbursement"):
         raise HTTPException(status_code=400, detail="Invalid plan.")
 
     existing = purchases_con.execute("""
@@ -3662,6 +3691,8 @@ async def approve_invoice_request(request_id: int, admin: dict = Depends(get_adm
     now = datetime.utcnow()
     if plan == "annual":
         period_end = now + timedelta(days=365)
+    elif plan == "disbursement":
+        period_end = now + timedelta(days=7)
     else:
         period_end = now + timedelta(days=30)
 

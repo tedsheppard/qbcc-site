@@ -268,11 +268,6 @@ document.getElementById('summary-plan-name').textContent = cfg.name;
 document.getElementById('summary-plan-detail').textContent = cfg.detail;
 document.getElementById('summary-price').textContent = cfg.price;
 
-// Hide invoice option for disbursement (one-time payment only)
-if (isDisbursement) {
-    const invoiceOpt = document.getElementById('opt-invoice');
-    if (invoiceOpt) invoiceOpt.style.display = 'none';
-}
 
 // ACN field: required + enabled only for Pty Ltd or Ltd
 const firmTypeSelect = document.getElementById('inv-firm-type');

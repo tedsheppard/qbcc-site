@@ -559,11 +559,6 @@ const planConfig = {
   disbursement: { name: 'Disbursement Option', detail: '$39.95 one-time — 7 days unlimited access', price: '$39.95' }
 };
 
-// Hide invoice option for disbursement
-if (isDisbursement) {
-  const invoiceOpt = document.getElementById('opt-invoice');
-  if (invoiceOpt) invoiceOpt.style.display = 'none';
-}
 
 const cfg = planConfig[planParam];
 document.getElementById('summary-plan-name').textContent = cfg.name;
