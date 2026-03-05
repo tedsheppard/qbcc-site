@@ -118,27 +118,37 @@ def resolve_site_page_path(page_path: str, create_dirs: bool = False) -> Tuple[s
 
 
 # Download DB from GCS on startup if it doesn't exist in /tmp
+import time as _time
 if not os.path.exists(DB_PATH):
-    try:
-        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
-        gcs_db_object_name = os.getenv("GCS_DB_OBJECT_NAME", "qbcc.db")
-        
-        if gcs_bucket_name:
-            print(f"Database not found at {DB_PATH}. Downloading from GCS bucket '{gcs_bucket_name}'...")
-            storage_client = get_gcs_client()
-            bucket = storage_client.bucket(gcs_bucket_name)
-            blob = bucket.blob(gcs_db_object_name)
-            blob.download_to_filename(DB_PATH)
-            print("Database downloaded successfully.")
-        else:
-            # Fallback for local development if GCS env var isn't set
-            print("GCS_BUCKET_NAME not set. Trying to copy local 'qbcc.db'.")
-            if os.path.exists("qbcc.db"):
-                shutil.copy("qbcc.db", DB_PATH)
+    _db_downloaded = False
+    for _attempt in range(5):
+        try:
+            gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
+            gcs_db_object_name = os.getenv("GCS_DB_OBJECT_NAME", "qbcc.db")
+
+            if gcs_bucket_name:
+                print(f"Database not found at {DB_PATH}. Downloading from GCS bucket '{gcs_bucket_name}'...")
+                storage_client = get_gcs_client()
+                bucket = storage_client.bucket(gcs_bucket_name)
+                blob = bucket.blob(gcs_db_object_name)
+                blob.download_to_filename(DB_PATH)
+                print("Database downloaded successfully.")
+                _db_downloaded = True
+                break
             else:
-                print("FATAL: No local 'qbcc.db' found and GCS bucket not configured.")
-    except Exception as e:
-        print(f"FATAL: Failed to download database from GCS. Error: {e}")
+                if os.path.exists("qbcc.db"):
+                    print("GCS_BUCKET_NAME not set. Copying local 'qbcc.db'.")
+                    shutil.copy("qbcc.db", DB_PATH)
+                    _db_downloaded = True
+                    break
+                else:
+                    print(f"GCS_BUCKET_NAME not set (attempt {_attempt+1}/5). Retrying in 3s...")
+                    _time.sleep(3)
+        except Exception as e:
+            print(f"Failed to download database (attempt {_attempt+1}/5): {e}. Retrying in 3s...")
+            _time.sleep(3)
+    if not _db_downloaded:
+        print("FATAL: Could not load database after 5 attempts.")
 
 # sqlite connection
 con = sqlite3.connect(DB_PATH, check_same_thread=False)
