@@ -123,7 +123,7 @@ if not os.path.exists(DB_PATH):
     _db_downloaded = False
     for _attempt in range(5):
         try:
-            gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
+            gcs_bucket_name = os.getenv("GCS_BUCKET_NAME", "sopal-bucket")
             gcs_db_object_name = os.getenv("GCS_DB_OBJECT_NAME", "qbcc.db")
 
             if gcs_bucket_name:
@@ -1936,7 +1936,7 @@ async def upload_decision(
 
         # 3. Upload PDF to Google Cloud Storage (use ejs_id.pdf as filename)
         storage_client = get_gcs_client()
-        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
+        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME", "sopal-bucket")
         if not storage_client or not gcs_bucket_name:
             raise HTTPException(status_code=500, detail="GCS not configured on server.")
         bucket = storage_client.bucket(gcs_bucket_name)
@@ -2261,7 +2261,7 @@ def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
         # Step 4: Upload the snapshot from the shared disk to GCS
         print(f"INFO: Uploading '{latest_snapshot_filename}' to GCS...")
         storage_client = get_gcs_client()
-        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
+        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME", "sopal-bucket")
         if not storage_client or not gcs_bucket_name:
             raise HTTPException(status_code=500, detail="GCS not configured on the server.")
 
@@ -2311,7 +2311,7 @@ def save_database_to_gcs(admin: dict = Depends(get_admin_user)):
             raise HTTPException(status_code=404, detail="Local database file not found.")
 
         storage_client = get_gcs_client()
-        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME")
+        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME", "sopal-bucket")
         gcs_db_object_name = os.getenv("GCS_DB_OBJECT_NAME", "qbcc.db") # The filename in the bucket
 
         if not storage_client or not gcs_bucket_name:
