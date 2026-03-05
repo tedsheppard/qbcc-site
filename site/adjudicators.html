@@ -596,6 +596,7 @@ async function selectAdjudicator(adjudicatorId) {
 
     try {
         let hasAccess = false;
+        let pendingInvoice = false;
 
         if (selectedAdjudicator.name === 'Russell Welsh') {
             hasAccess = true;
@@ -612,6 +613,7 @@ async function selectAdjudicator(adjudicatorId) {
                         if (accessResponse.ok) {
                             const accessData = await accessResponse.json();
                             hasAccess = accessData.hasAccess;
+                            pendingInvoice = accessData.pendingInvoice || false;
                             if (hasAccess) {
                                 purchasedAdjudicators.add(selectedAdjudicator.name);
                             }
@@ -632,7 +634,7 @@ async function selectAdjudicator(adjudicatorId) {
         selectedAdjudicator.decisions = decisions;
         initializeDecisionSearch();
 
-        showAdjudicatorDetail(hasAccess);
+        showAdjudicatorDetail(hasAccess, pendingInvoice);
     } catch (error) {
         console.error('Error in selectAdjudicator:', error);
         rightPane.innerHTML = '<div class="loading">Error loading decisions. Please try again.</div>';
@@ -642,7 +644,7 @@ async function selectAdjudicator(adjudicatorId) {
 // ============================================================
 // SHOW DETAIL
 // ============================================================
-function showAdjudicatorDetail(hasAccess) {
+function showAdjudicatorDetail(hasAccess, pendingInvoice) {
     const rightPane = document.getElementById('rightPane');
     rightPane.className = 'detail-panel';
 
@@ -654,22 +656,31 @@ function showAdjudicatorDetail(hasAccess) {
         `${selectedAdjudicator.totalDecisions} decisions analysed`;
 
     const isLoggedIn = !!localStorage.getItem('purchase_token');
-    const lockedOverlay = !hasAccess ? `
-      <div class="locked-overlay">
-        <div class="locked-content">
-          ${isLoggedIn ? `
+    let lockedOverlay = '';
+    if (!hasAccess) {
+      let overlayContent;
+      if (pendingInvoice) {
+        overlayContent = `
+            <h3>Invoice Request Pending</h3>
+            <p>Your invoice subscription request is being reviewed. We'll review within 1 business day.</p>
+            <a href="/account?tab=subscription" class="unlock-btn" style="display:inline-block;text-align:center;color:white;text-decoration:none;">View Account</a>
+        `;
+      } else if (isLoggedIn) {
+        overlayContent = `
             <h3>Subscription Required</h3>
             <p>Subscribe for unlimited access to detailed statistics, decision patterns, and the complete history of decisions for all adjudicators.</p>
             <a href="/pricing" class="unlock-btn" style="display:inline-block;text-align:center;color:white;text-decoration:none;">View Subscription Plans</a>
-          ` : `
+        `;
+      } else {
+        overlayContent = `
             <h3>Sign In Required</h3>
             <p>Create an account or sign in to access detailed statistics, decision patterns, and the complete history of decisions.</p>
             <a href="/register" class="unlock-btn" style="display:inline-block;text-align:center;color:white;text-decoration:none;">Create an Account</a>
             <a href="/login" class="unlock-btn" style="display:inline-block;text-align:center;color:white;text-decoration:none;background:#6b6b6b;margin-top:10px;">Sign In to Existing Account</a>
-          `}
-        </div>
-      </div>
-    ` : '';
+        `;
+      }
+      lockedOverlay = `<div class="locked-overlay"><div class="locked-content">${overlayContent}</div></div>`;
+    }
 
     adjDecisionPage = 1;
     lastFilteredDecisions = null;

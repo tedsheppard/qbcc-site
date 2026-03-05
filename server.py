@@ -3833,6 +3833,13 @@ def check_adjudicator_access(
         if has_active_subscription(current_user["email"]):
             return {"hasAccess": True}
 
+        # Check for pending invoice request
+        pending_request = purchases_con.execute("""
+            SELECT 1 FROM invoice_requests WHERE user_email = ? AND status = 'pending' LIMIT 1
+        """, (current_user["email"],)).fetchone()
+        if pending_request:
+            return {"hasAccess": False, "pendingInvoice": True}
+
         decoded_name = unquote_plus(adjudicator_name)
 
         # Check for a specific purchase record
