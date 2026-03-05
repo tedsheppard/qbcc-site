@@ -853,7 +853,8 @@ fetch_and_update_rba_rates()
 
 
 # OpenAI
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_openai_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=_openai_key) if _openai_key else None
 con.execute("""
 CREATE TABLE IF NOT EXISTS ai_summaries (
     decision_id TEXT PRIMARY KEY,
