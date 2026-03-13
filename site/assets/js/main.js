@@ -334,6 +334,8 @@ ntStyle.innerHTML = `
     background-color: #333;
     margin: 4px 0;
 }
+/* Ensure dropdown anchors to nav-right */
+.nav-right { position: relative; }
 /* Logo vertical alignment fix */
 .nav-logo img { position: relative; top: -1px; }
 /* Page transition overlay */
