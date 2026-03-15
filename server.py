@@ -2298,13 +2298,22 @@ def update_decision_field(
     field: str = Body(...),
     value: str = Body(...)
 ):
-    """Update a single field on a decision in docs_fresh and decision_details."""
-    allowed = {"adjudicator", "claimant", "respondent", "outcome", "project_type", "contract_type", "act"}
-    if field not in allowed:
-        raise HTTPException(status_code=400, detail=f"Field '{field}' not allowed. Allowed: {allowed}")
+    """Update a single field on a decision in decision_details."""
+    # Map friendly names to actual DB column names
+    field_map = {
+        "adjudicator": "adjudicator_name",
+        "claimant": "claimant_name",
+        "respondent": "respondent_name",
+        "outcome": "outcome",
+        "project_type": "project_type",
+        "contract_type": "contract_type",
+        "act": "act_category",
+    }
+    if field not in field_map:
+        raise HTTPException(status_code=400, detail=f"Field '{field}' not allowed. Allowed: {list(field_map.keys())}")
+    col = field_map[field]
     try:
-        con.execute(f"UPDATE docs_fresh SET {field} = ? WHERE ejs_id = ?", (value, ejs_id))
-        con.execute(f"UPDATE decision_details SET {field} = ? WHERE ejs_id = ?", (value, ejs_id))
+        con.execute(f"UPDATE decision_details SET {col} = ? WHERE ejs_id = ?", (value, ejs_id))
         con.commit()
         return {"status": "success", "message": f"Updated {field} to '{value}' for {ejs_id}"}
     except Exception as e:
