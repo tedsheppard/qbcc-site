@@ -883,6 +883,7 @@ Rules:
   - If unclear, assume GST inclusive.
 - Percentages must be numeric only (0-100). No "%" signs.
   - fee_respondent_proportion = 100 - fee_claimant_proportion.
+- Adjudicator names: first name + last name only. Remove middle names, middle initials, and post-nominals (KC, QC, AM, OAM, etc.).
 - Claimant/respondent names -> Title Case, not ALL CAPS.
 - Outcome -> classify as: "Claimant Fully Successful", "Partly Successful", or "Unsuccessful".
 - Sections Referenced -> list BIF/BCIPA Act sections (e.g. "s 75, s 69"), or blank if none.
@@ -2289,6 +2290,25 @@ def create_meilisearch_backup(admin: dict = Depends(get_admin_user)):
         raise HTTPException(status_code=500, detail=str(e))
     
 # In server.py, add this with your other admin endpoints
+
+@app.post("/admin/update-decision-field")
+def update_decision_field(
+    admin: dict = Depends(get_admin_user),
+    ejs_id: str = Body(...),
+    field: str = Body(...),
+    value: str = Body(...)
+):
+    """Update a single field on a decision in docs_fresh and decision_details."""
+    allowed = {"adjudicator", "claimant", "respondent", "outcome", "project_type", "contract_type", "act"}
+    if field not in allowed:
+        raise HTTPException(status_code=400, detail=f"Field '{field}' not allowed. Allowed: {allowed}")
+    try:
+        con.execute(f"UPDATE docs_fresh SET {field} = ? WHERE ejs_id = ?", (value, ejs_id))
+        con.execute(f"UPDATE decision_details SET {field} = ? WHERE ejs_id = ?", (value, ejs_id))
+        con.commit()
+        return {"status": "success", "message": f"Updated {field} to '{value}' for {ejs_id}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/admin/rebuild-fts")
 def rebuild_fts_index(admin: dict = Depends(get_admin_user)):
