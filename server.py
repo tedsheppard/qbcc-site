@@ -1,4 +1,4 @@
-import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io, json, sys
+import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io, json, sys, threading
 from urllib.parse import unquote_plus
 from fastapi import FastAPI, Query, Form, Path, HTTPException, UploadFile, File, Body
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse
@@ -86,7 +86,8 @@ SITE_DIR = os.path.join(ROOT, "site")
 os.makedirs(SITE_DIR, exist_ok=True)
 PAGE_BACKUP_DIR = os.path.join(SITE_DIR, ".page_backups")
 os.makedirs(PAGE_BACKUP_DIR, exist_ok=True)
-DB_PATH = "/tmp/qbcc.db"
+_use_persistent = os.getenv("USE_PERSISTENT_DB", "true").lower() == "true"
+DB_PATH = "/var/data/qbcc.db" if _use_persistent else "/tmp/qbcc.db"
 LEXIFILE_STORAGE = "/tmp/lexifile_storage"
 os.makedirs(LEXIFILE_STORAGE, exist_ok=True)
 
@@ -2041,6 +2042,9 @@ async def upload_decision(
         except Exception as meili_err:
             print(f"WARNING: Meilisearch update failed for {ejs_id} (non-fatal): {meili_err}")
 
+        # 10. Auto-save to GCS in background so uploads persist as backup
+        threading.Thread(target=_background_gcs_backup, daemon=True).start()
+
         return {"status": "success", "ejs_id": ejs_id, "message": f"Decision {ejs_id} ({reference}) uploaded and indexed successfully."}
 
     except Exception as e:
@@ -2330,7 +2334,25 @@ def save_database_to_gcs(admin: dict = Depends(get_admin_user)):
         print(f"ERROR in /admin/save-database: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-    
+
+
+def _background_gcs_backup():
+    """Checkpoint WAL and upload qbcc.db to GCS in a background thread."""
+    try:
+        con.execute("PRAGMA wal_checkpoint(FULL);")
+        storage_client = get_gcs_client()
+        if not storage_client:
+            print("WARNING: GCS client not available, skipping background backup.")
+            return
+        gcs_bucket_name = os.getenv("GCS_BUCKET_NAME", "sopal-bucket")
+        gcs_db_object_name = os.getenv("GCS_DB_OBJECT_NAME", "qbcc.db")
+        bucket = storage_client.bucket(gcs_bucket_name)
+        blob = bucket.blob(gcs_db_object_name)
+        blob.upload_from_filename(DB_PATH)
+        print("INFO: Background GCS backup complete.")
+    except Exception as e:
+        print(f"WARNING: Background GCS backup failed (non-fatal): {e}")
+
 # ---------- AI Summarise ----------
 @app.get("/summarise/{decision_id}")
 def summarise(decision_id: str = Path(...)):
