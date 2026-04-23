@@ -1,203 +1,393 @@
 """BIF Act rule engine for /claim-check.
 
-Current implementation:
-  - LLM-based holistic compliance check per mode, using the model's
-    knowledge of the BIF Act (Qld). Returns a structured list of checks.
-  - Matches the four modes defined on the frontend.
+Reads rules from rules/bif_act_rules.md (via rules_parser). For each rule
+applicable to the selected mode, runs the appropriate check:
 
-Future (stage 5+):
-  - Parse rules/bif_act_rules.md and execute deterministic / semantic /
-    user-input checks per the authored rule set. The run_checks entry
-    point will remain the same so the frontend does not change.
+  - `deterministic`  — evaluated in Python (e.g. date arithmetic)
+  - `user_input`     — presence/shape check on user-provided answers
+  - `semantic`       — LLM call using the document text + rule criteria
+  - `qbcc_lookup`    — consume a licensee record selected by the user
+
+A single rule can combine multiple implementations (e.g. `semantic +
+user_input` for the reference-date rule); the engine merges sub-results.
+
+Hedged result language (spec Section 7) is applied here — the engine
+returns status plus a short plain-English summary line the frontend uses
+verbatim above the rule explanation.
+
+The engine also supports running a single rule (for streaming / parallel
+execution under Section 4); see ``run_single_rule``.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import os
+from datetime import date, datetime
 from typing import Any
+
+from . import llm_config, rules_parser
 
 log = logging.getLogger("claim_check.rule_engine")
 
-MODEL = "gpt-4o"
-MAX_DOC_CHARS_FOR_PROMPT = 18_000  # ~12K tokens; leaves headroom for the system prompt + output
-MAX_OUTPUT_TOKENS = 2200
-
-
 MODE_LABELS = {
-    "payment_claim_outgoing": "A payment claim the user is about to serve under the BIF Act (Qld)",
-    "payment_claim_incoming": "A payment claim the user has received under the BIF Act (Qld)",
-    "payment_schedule_outgoing": "A payment schedule the user is about to give under the BIF Act (Qld)",
-    "payment_schedule_incoming": "A payment schedule the user has received under the BIF Act (Qld)",
+    "payment_claim_serving":    "a payment claim the user is about to serve",
+    "payment_claim_received":   "a payment claim the user has received",
+    "payment_schedule_giving":  "a payment schedule the user is about to give",
+    "payment_schedule_received": "a payment schedule the user has received",
 }
 
-
-CHECKLIST_BY_MODE = {
-    "payment_claim_outgoing": """Check ALL of the following requirements for a valid payment claim:
-1. s 68(1)(a) — Identifies the construction work (or related goods/services) to which the claim relates.
-2. s 68(1)(b) — States the amount claimed.
-3. s 68(1)(c) — Requests payment of the claimed amount.
-4. s 75 — Served under the right contract and within the statutory timeframe (needs contract date from user).
-5. s 75(4) — Only one payment claim per reference date (ask user if earlier claims have been served).
-6. s 67 — Reference date is valid under the contract (ask user when the contract was entered into).
-7. QBCC Act s 42 — Claimant appears to be properly licensed for the work described. If nothing in the document indicates licensing, flag as needing user confirmation.
-8. Correct form of claim — the document is identifiable as a "payment claim" (need not use those exact words post-2018 amendments but must substantively request payment under the Act).
-
-For this mode, identify DRAFTING WEAKNESSES that the user should fix before serving.""",
-
-    "payment_claim_incoming": """Check ALL of the following requirements and also identify any defences / knockout arguments:
-1. s 68(1)(a) — Identifies the construction work. Flag vague or missing identification.
-2. s 68(1)(b) — States the amount claimed (unambiguously).
-3. s 68(1)(c) — Requests payment.
-4. s 75 — Served under the correct contract, within timeframe (needs contract date + service date from user).
-5. s 75(4) — Only one claim per reference date (ask user if earlier claims were received).
-6. s 67 — Reference date is valid (ask user when the contract was entered into).
-7. QBCC Act s 42 / unlicensed work — if the claim is for building work and the claimant does not appear licensed, this can invalidate the claim.
-8. Service requirements under s 102 and the contract.
-
-For each check, if failed or warning, state the specific KNOCKOUT ARGUMENT the respondent could make.""",
-
-    "payment_schedule_outgoing": """Check ALL of the following requirements for a valid payment schedule:
-1. s 76(2)(a) — Identifies the payment claim to which it responds.
-2. s 76(2)(b) — States the amount of the payment the respondent proposes to make ("scheduled amount").
-3. s 76(3) — If the scheduled amount is less than the claimed amount, states the respondent's reasons for the difference AND the reasons for withholding payment.
-4. s 76(1) — Served within the required timeframe (ask user when the payment claim was received and whether the contract prescribes a shorter period).
-5. Completeness — every reason for withholding payment is stated; later adjudication is limited to reasons in the schedule (s 82(4)).
-
-For this mode, identify GAPS that would limit the respondent's adjudication defence.""",
-
-    "payment_schedule_incoming": """Check ALL of the following requirements AND assess whether the schedule is VALID AT ALL:
-1. s 76(2)(a) — Identifies the payment claim it responds to.
-2. s 76(2)(b) — States a scheduled amount. If missing, the schedule is likely invalid and the respondent defaults to owing the full claimed amount (see s 77).
-3. s 76(3) — Reasons for any withholding are stated. Vague / boilerplate reasons may be insufficient.
-4. s 76(1) — Given within the statutory timeframe (ask user when the payment claim was served).
-5. Reasons scope — reasons outside the schedule cannot be relied on at adjudication (s 82(4)).
-
-Explicitly state in the explanation of check #2 whether the schedule appears VALID or INVALID.""",
+# Hedged status summary lines per spec Section 7.
+STATUS_SUMMARY = {
+    "pass":    "No issues detected based on the information provided",
+    "warning": "Potential issue identified — review recommended",
+    "fail":    "Likely non-compliant — this requires attention",
+    "input":   "Additional information required to complete this check",
 }
 
+MAX_DOC_CHARS_FOR_PROMPT = 18_000
 
-SYSTEM_PREFIX = """You are an expert in Queensland's Building Industry Fairness (Security of Payment) Act 2017 ("BIF Act") and the QBCC Act 1991. You analyse payment-claim-related documents for compliance.
 
-Australian legal terminology and spelling. Cite BIF Act sections as "s 68(1)(a) BIF Act" and QBCC Act sections as "s 42 QBCC Act".
+SEMANTIC_SYSTEM_PROMPT = """You are a compliance checker for Queensland's Building Industry Fairness (Security of Payment) Act 2017 ("BIF Act") and the QBCC Act 1991. You assess ONE rule at a time against the document text provided.
 
-Output MUST be valid JSON matching this schema exactly:
+Australian legal terminology and spelling. Cite BIF Act sections as "s 68(1)(a)" and QBCC Act sections as "s 42 QBCC Act".
+
+You MUST return a JSON object with this schema:
 
 {
-  "summary": "<one-sentence summary of the document's nature and apparent claimed/scheduled amount if stated>",
-  "checks": [
-    {
-      "id": "<short stable id like 'pc-68-1-a'>",
-      "status": "pass" | "warning" | "fail" | "input",
-      "title": "<one-line plain-English check title>",
-      "section": "<Act reference, e.g. 's 68(1)(a)'>",
-      "explanation": "<plain-English reason for the status, 1-3 sentences>",
-      "quote": "<optional: a short exact quote from the document supporting the status; leave empty string if none>",
-      "query": "<Meilisearch-friendly keyword query to find relevant adjudication decisions for this check>",
-      "prompt": "<only if status='input': the question to ask the user>",
-      "input_type": "date" | "yes-no" | "text"
-    }
-  ]
+  "status": "pass" | "warning" | "fail",
+  "explanation": "<plain-English reasoning, 1-3 sentences. HEDGED language — do not speak in guarantees. Use phrases like 'appears to', 'on its face', 'likely satisfies' rather than absolutes>",
+  "quote": "<verbatim short quote from the document supporting the finding, OR empty string if none>"
 }
 
-Rules for statuses:
-- "pass"   — clearly satisfied on the face of the document.
-- "warning"— arguable, vague, or technically satisfied but drafting-weak.
-- "fail"   — clearly not satisfied, or missing entirely.
-- "input"  — cannot be determined from the document alone; needs a fact from the user. The "prompt" field must contain a concise question.
-
-Rules for output:
-- Include EVERY check listed below, even if the answer is "input".
-- Do not invent sections the Act does not contain.
-- If you are unsure, return "warning" with a clear explanation, rather than inventing facts.
-- The "quote" must be verbatim text from the document or an empty string. Never paraphrase inside quote.
-- Return JSON only — no prose before or after.
-"""
+Rules:
+- Evaluate ONLY against the pass/warning/fail criteria provided for this rule.
+- If the document text is silent on the point, prefer "warning" over guessing "pass".
+- The quote must be verbatim text from the document or empty string. Do not paraphrase.
+- Return JSON only. No prose before or after."""
 
 
-def run_checks(mode: str, document_text: str, user_answers: dict | None = None) -> dict[str, Any]:
-    """Run the compliance checks for the given mode and document text.
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 
-    Returns: {"summary": str, "checks": [ {id, status, title, section, explanation, quote, query, prompt?, input_type?}, ... ]}
+def run_checks(mode: str, document_text: str, user_answers: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Run every applicable rule for the mode and return a structured result.
+
+    Kept synchronous for backwards-compat with the existing /analyse endpoint.
+    The SSE streaming endpoint (Section 4) calls ``run_single_rule`` per rule
+    in parallel; this function is the sequential equivalent for non-streaming
+    callers.
     """
-    if mode not in CHECKLIST_BY_MODE:
-        raise ValueError(f"Unknown mode: {mode!r}")
+    rules = rules_parser.rules_for_mode(mode)
+    if not rules:
+        return {"summary": "", "checks": []}
 
-    from openai import OpenAI  # deferred
+    user_answers = user_answers or {}
+    checks: list[dict[str, Any]] = []
+    for rule in rules:
+        checks.append(run_single_rule(mode, rule, document_text, user_answers))
 
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is not configured on the server.")
+    # A lightweight summary line. Rule engine doesn't need its own model call for this;
+    # we derive from the document text if we can find a claimed/scheduled amount.
+    summary = _derive_summary(mode, document_text)
 
-    client = OpenAI(api_key=api_key)
+    return {"summary": summary, "checks": checks}
 
-    doc_for_prompt = (document_text or "")[:MAX_DOC_CHARS_FOR_PROMPT]
-    mode_label = MODE_LABELS[mode]
-    checklist = CHECKLIST_BY_MODE[mode]
 
-    answers_block = ""
-    if user_answers:
-        # User answers feed back into the analysis so previously-'input' checks can resolve.
-        answer_lines = [f"- {k}: {v}" for k, v in user_answers.items() if v not in (None, "")]
-        if answer_lines:
-            answers_block = "\n\nPREVIOUS USER ANSWERS (apply to the relevant checks):\n" + "\n".join(answer_lines)
+def run_single_rule(
+    mode: str,
+    rule: dict[str, Any],
+    document_text: str,
+    user_answers: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Execute one rule and return a structured check result."""
+    user_answers = user_answers or {}
+    impl = rule.get("implementation") or []
 
-    user_content = (
-        f"Mode: {mode_label}\n\n"
-        f"{checklist}"
-        f"{answers_block}\n\n"
-        f"DOCUMENT TEXT:\n---\n{doc_for_prompt}\n---\n\n"
-        "Return the JSON per the schema."
-    )
+    # Start with a neutral result; the strongest component wins.
+    components: list[tuple[str, str, str]] = []  # (status, explanation, quote)
 
-    try:
-        resp = client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": SYSTEM_PREFIX},
-                {"role": "user", "content": user_content},
-            ],
-            temperature=0.2,
-            max_tokens=MAX_OUTPUT_TOKENS,
-            response_format={"type": "json_object"},
-        )
-    except Exception as e:
-        log.exception("OpenAI call failed in run_checks")
-        raise RuntimeError(f"Analysis failed: {e}") from e
+    if "user_input" in impl or "qbcc_lookup" in impl:
+        comp = _evaluate_user_input(rule, user_answers)
+        if comp:
+            components.append(comp)
 
-    raw = resp.choices[0].message.content or "{}"
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        log.error("Model returned invalid JSON: %s", raw[:500])
-        raise RuntimeError("Analysis returned invalid JSON. Please retry.")
+    if "deterministic" in impl:
+        comp = _evaluate_deterministic(rule, user_answers)
+        if comp:
+            components.append(comp)
 
-    checks = data.get("checks") or []
-    # Normalise/guardrail the output so the frontend never has to defensively parse.
-    normalised = []
-    for i, c in enumerate(checks):
-        if not isinstance(c, dict):
-            continue
-        status = c.get("status")
-        if status not in ("pass", "warning", "fail", "input"):
-            status = "warning"
-        item = {
-            "id": str(c.get("id") or f"check-{i+1}"),
-            "status": status,
-            "title": str(c.get("title") or "").strip() or "Untitled check",
-            "section": str(c.get("section") or "").strip(),
-            "explanation": str(c.get("explanation") or "").strip(),
-            "quote": str(c.get("quote") or "").strip(),
-            "query": str(c.get("query") or c.get("title") or "").strip(),
-        }
-        if status == "input":
-            item["prompt"] = str(c.get("prompt") or "Please provide more information.").strip()
-            it = c.get("input_type") or "text"
-            item["input_type"] = it if it in ("date", "yes-no", "text") else "text"
-        normalised.append(item)
+    semantic_result: dict[str, Any] | None = None
+    if "semantic" in impl and document_text.strip():
+        semantic_result = _evaluate_semantic(rule, document_text)
+        if semantic_result:
+            components.append(
+                (semantic_result["status"], semantic_result["explanation"], semantic_result.get("quote", ""))
+            )
+
+    if not components:
+        # No implementation ran — treat as input-needed so the UI prompts the user.
+        status = "input"
+        explanation = rule.get("pass_criteria") or "Awaiting document and inputs."
+        quote = ""
+    else:
+        status, explanation, quote = _combine_components(components)
+
+    # Hedge the explanation if it reads like a guarantee.
+    explanation = _hedge(explanation)
 
     return {
-        "summary": str(data.get("summary") or "").strip(),
-        "checks": normalised,
+        "id": rule["id"],
+        "status": status,
+        "status_summary": STATUS_SUMMARY[status],
+        "title": rule["title"],
+        "section": rule.get("act_reference", ""),
+        "explanation": explanation,
+        "quote": quote or "",
+        "query": rule.get("search_query") or rule["title"],
+        "escalated": (rule.get("escalate") or "").lower() == "high-reasoning",
+        "model": semantic_result.get("model") if semantic_result else None,
+        "reasoning": semantic_result.get("reasoning") if semantic_result else None,
     }
+
+
+# ---------------------------------------------------------------------------
+# Component evaluators
+# ---------------------------------------------------------------------------
+
+def _evaluate_user_input(rule: dict[str, Any], answers: dict[str, Any]) -> tuple[str, str, str] | None:
+    """Check whether required user inputs are present. Evaluates conditional visibility."""
+    inputs = rule.get("inputs") or []
+    if not inputs:
+        return None
+
+    missing: list[str] = []
+    for q in inputs:
+        if not q.get("required"):
+            continue
+        if not _show_if_satisfied(q.get("show_if"), answers):
+            continue
+        val = answers.get(q["id"])
+        if val in (None, "", []):
+            missing.append(q.get("question") or q["id"])
+
+    if missing:
+        q_list = "; ".join(missing[:3])
+        more = f" (+{len(missing) - 3} more)" if len(missing) > 3 else ""
+        return ("input", f"Answer required: {q_list}{more}", "")
+
+    return None
+
+
+def _evaluate_deterministic(rule: dict[str, Any], answers: dict[str, Any]) -> tuple[str, str, str] | None:
+    """A couple of built-in deterministic checks for rules that rely on date arithmetic.
+
+    We keep these targeted — only PC-004 (6-month window) and PS-004 (15 business days).
+    Everything else falls through to the semantic engine.
+    """
+    rid = rule["id"]
+    if rid == "PC-004":
+        last_work = _parse_date(answers.get("last_work_date"))
+        served = _parse_date(answers.get("served_date"))
+        if not last_work or not served:
+            return None
+        delta_days = (served - last_work).days
+        is_final = (answers.get("is_final_claim") or "").lower().startswith("yes")
+        if delta_days <= 180:
+            return ("pass", f"Served {delta_days} days after the last day of work — within the 6-month window in s 75(4)(a).", "")
+        elif is_final:
+            return ("warning", f"Served {delta_days} days after the last day of work. Longer final-claim windows in s 75(4)(b)–(d) may apply — verify against the contract.", "")
+        else:
+            return ("fail", f"Served {delta_days} days after the last day of work — more than the 6 months permitted by s 75(4)(a).", "")
+
+    if rid == "PS-004":
+        claim_received = _parse_date(answers.get("claim_received_date"))
+        schedule_served = _parse_date(answers.get("schedule_served_date"))
+        contract_days = answers.get("contract_timeframe_days")
+        try:
+            contract_days = int(contract_days) if contract_days not in (None, "") else None
+        except (TypeError, ValueError):
+            contract_days = None
+        if not claim_received:
+            return None
+        deadline_days = min(contract_days, 15) if contract_days else 15
+        if not schedule_served:
+            return ("warning", f"Deadline to give the payment schedule is {deadline_days} business day(s) after receipt of the claim (s 76(1)). Confirm scheduled service date.", "")
+        # Approximate business days between dates.
+        business_days = _business_days_between(claim_received, schedule_served)
+        if business_days <= deadline_days:
+            return ("pass", f"Given {business_days} business day(s) after receipt of the payment claim — within the {deadline_days}-day period.", "")
+        return ("fail", f"Given {business_days} business day(s) after receipt of the payment claim — outside the {deadline_days}-day period in s 76(1). Respondent may be liable for the full claimed amount under s 77.", "")
+
+    return None
+
+
+def _evaluate_semantic(rule: dict[str, Any], document_text: str) -> dict[str, Any] | None:
+    """Send the rule criteria + document text to the LLM for adjudication."""
+    reasoning = llm_config.reasoning_for_rule(rule, default="medium")
+    doc = (document_text or "")[:MAX_DOC_CHARS_FOR_PROMPT]
+
+    criteria_block = _format_criteria(rule)
+
+    user = (
+        f"RULE: {rule['id']} — {rule['title']}\n"
+        f"ACT REFERENCE: {rule.get('act_reference', '')}\n\n"
+        f"CRITERIA:\n{criteria_block}\n\n"
+    )
+    if rule.get("quote_requirement"):
+        user += f"QUOTE GUIDANCE: {rule['quote_requirement']}\n\n"
+    user += f"DOCUMENT TEXT:\n---\n{doc}\n---\n\nReturn JSON per the schema."
+
+    try:
+        resp = llm_config.complete(
+            messages=[
+                {"role": "system", "content": SEMANTIC_SYSTEM_PROMPT},
+                {"role": "user", "content": user},
+            ],
+            reasoning_effort=reasoning,
+            tier="default",
+            response_format={"type": "json_object"},
+            max_output_tokens=700,
+        )
+    except llm_config.CostCapExceededError:
+        raise
+    except Exception as e:
+        log.exception("semantic check failed for %s", rule["id"])
+        return {
+            "status": "warning",
+            "explanation": f"Automated check could not run ({e}). Review manually.",
+            "quote": "",
+            "model": None,
+            "reasoning": None,
+        }
+
+    try:
+        data = json.loads(resp["content"] or "{}")
+    except json.JSONDecodeError:
+        return {
+            "status": "warning",
+            "explanation": "Automated check returned an unparseable response. Review manually.",
+            "quote": "",
+            "model": resp.get("model"),
+            "reasoning": resp.get("reasoning"),
+        }
+
+    status = data.get("status")
+    if status not in ("pass", "warning", "fail"):
+        status = "warning"
+
+    return {
+        "status": status,
+        "explanation": str(data.get("explanation") or "").strip(),
+        "quote": str(data.get("quote") or "").strip(),
+        "model": resp.get("model"),
+        "reasoning": resp.get("reasoning"),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _show_if_satisfied(show_if: str | None, answers: dict[str, Any]) -> bool:
+    if not show_if:
+        return True
+    m = rules_parser._SHOW_IF_RE.match(show_if) if isinstance(show_if, str) else None
+    if not m:
+        return True
+    target_id, target_val = m.group(1), m.group(2)
+    return str(answers.get(target_id, "")) == target_val
+
+
+def _combine_components(components: list[tuple[str, str, str]]) -> tuple[str, str, str]:
+    """Combine multiple component results into one. Priority: input > fail > warning > pass."""
+    priority = {"input": 4, "fail": 3, "warning": 2, "pass": 1}
+    winner = max(components, key=lambda c: priority.get(c[0], 0))
+    status = winner[0]
+    explanations = [c[1] for c in components if c[1]]
+    quote = next((c[2] for c in components if c[2]), "")
+    # Deduplicate while preserving order.
+    seen: set[str] = set()
+    uniq = []
+    for e in explanations:
+        if e in seen:
+            continue
+        seen.add(e)
+        uniq.append(e)
+    return status, " ".join(uniq), quote
+
+
+def _format_criteria(rule: dict[str, Any]) -> str:
+    parts: list[str] = []
+    if rule.get("pass_criteria"):
+        parts.append(f"PASS if: {rule['pass_criteria']}")
+    if rule.get("warning_criteria"):
+        parts.append(f"WARNING if: {rule['warning_criteria']}")
+    if rule.get("fail_criteria"):
+        parts.append(f"FAIL if: {rule['fail_criteria']}")
+    return "\n\n".join(parts)
+
+
+_GUARANTEE_PATTERNS = [
+    ("passes the requirement", "appears to satisfy the requirement"),
+    ("passes the requirements", "appears to satisfy the requirements"),
+    ("this passes", "this appears to satisfy the check"),
+    ("the claim passes", "the claim appears to satisfy the check"),
+    ("the schedule passes", "the schedule appears to satisfy the check"),
+    ("is compliant", "appears to be compliant"),
+    ("is valid", "appears to be valid"),
+    ("will succeed", "is likely to succeed"),
+    ("will fail", "is likely to fail"),
+    ("guarantees", "suggests"),
+]
+
+
+def _hedge(text: str) -> str:
+    t = text or ""
+    low = t.lower()
+    for needle, replacement in _GUARANTEE_PATTERNS:
+        if needle in low:
+            i = low.find(needle)
+            t = t[:i] + replacement + t[i + len(needle):]
+            low = t.lower()
+    return t
+
+
+def _parse_date(v: Any) -> date | None:
+    if not v:
+        return None
+    s = str(v).strip()
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _business_days_between(start: date, end: date) -> int:
+    if end < start:
+        return 0
+    days = 0
+    cur = start
+    while cur < end:
+        cur = cur.fromordinal(cur.toordinal() + 1)
+        if cur.weekday() < 5:
+            days += 1
+    return days
+
+
+def _derive_summary(mode: str, text: str) -> str:
+    """Cheap summary line without an LLM call. The frontend displays it at the top of the checklist."""
+    label = {
+        "payment_claim_serving": "Draft payment claim",
+        "payment_claim_received": "Received payment claim",
+        "payment_schedule_giving": "Draft payment schedule",
+        "payment_schedule_received": "Received payment schedule",
+    }.get(mode, "Document")
+    import re
+    m = re.search(r"\$\s*[\d,]+(?:\.\d{2})?", text or "")
+    if m:
+        return f"{label} — amount referenced: {m.group(0).strip()}"
+    return label
