@@ -235,25 +235,6 @@ No matching entity found on the register, the matched entity's licence is Cancel
 
 ---
 
-## PC-008: Document is endorsed as a payment claim under the Act
-
-**Applies to:** payment_claim_serving, payment_claim_received
-**Act reference:** s 68 BIF Act (post-2018 — no magic words required, but substantive character matters)
-**Search query:** endorsement payment claim under the act BIF
-**Implementation:** semantic
-**Quote requirement:** quote any endorsement language present.
-
-**Pass criteria:**
-On its face the document is identifiable as a payment claim under the BIF Act (whether by endorsement or by substantive compliance with s 68(1)).
-
-**Warning criteria:**
-The document is substantively a payment claim but lacks any clear endorsement or statement that it is made under the Act. Not legally fatal since the 2018 amendments, but best practice.
-
-**Fail criteria:**
-The document is not substantively a payment claim and no endorsement or equivalent language appears.
-
----
-
 ## PS-001: Identifies the payment claim it responds to
 
 **Applies to:** payment_schedule_giving, payment_schedule_received
