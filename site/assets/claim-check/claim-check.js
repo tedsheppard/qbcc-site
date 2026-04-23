@@ -39,9 +39,10 @@
     documentText: '',
     summary: '',
     checks: [],            // [{id, title, section_ref, search_query, input_required, input_questions}]
-    results: {},           // { [check_id]: { status, status_summary, explanation, quote, decisions } }
+    results: {},           // { [check_id]: { status, status_summary, explanation, quote, decisions, reasoning_trace, model, confidence } }
     states: {},            // { [check_id]: 'pending' | 'running' | 'pass' | 'warning' | 'fail' | 'input' }
     expanded: {},          // { [check_id]: boolean } — overrides auto-expand rule
+    reasoningOpen: {},     // { [check_id]: boolean } — "See full reasoning" toggle (Section 10)
     userAnswers: {},       // { [input_id]: value }  for input questions
     licenseeRecords: {},   // { [input_id]: { ...record } } for licensee_lookup
     history: [],
@@ -107,6 +108,8 @@
         checks: state.checks,
         results: state.results,
         states: state.states,
+        expanded: state.expanded,
+        reasoningOpen: state.reasoningOpen,
         userAnswers: state.userAnswers,
         licenseeRecords: state.licenseeRecords,
         history: state.history,
@@ -126,6 +129,8 @@
         checks: s.checks || [],
         results: s.results || {},
         states: s.states || {},
+        expanded: s.expanded || {},
+        reasoningOpen: s.reasoningOpen || {},
         userAnswers: s.userAnswers || {},
         licenseeRecords: s.licenseeRecords || {},
         history: s.history || [],
@@ -351,6 +356,21 @@
       ? `<div class="check-decisions">Related decisions: ${result.decisions.map(d => `<a href="${escapeAttr(d.url || searchHref)}" target="_blank" rel="noopener">${escapeHtml(d.title || 'decision')}</a>`).join(' · ')}</div>`
       : '';
 
+    const hasReasoning = result && (result.reasoning_trace || result.model);
+    const reasoningOpen = !!state.reasoningOpen && state.reasoningOpen[check.id];
+    const modelBadge = (result && result.model)
+      ? `<span class="reasoning-model">${escapeHtml(result.model)}${result.reasoning ? ' · reasoning=' + escapeHtml(result.reasoning) : ''}${result.confidence ? ' · confidence=' + escapeHtml(result.confidence) : ''}</span>`
+      : '';
+    const reasoningHtml = hasReasoning
+      ? `<div class="check-reasoning" ${reasoningOpen ? '' : 'hidden'}>
+          ${result.reasoning_trace ? `<div class="reasoning-body">${escapeHtml(result.reasoning_trace).replace(/\n/g, '<br>')}</div>` : ''}
+          ${modelBadge}
+        </div>`
+      : '';
+    const reasoningBtnHtml = hasReasoning
+      ? `<button type="button" class="check-action-link check-reasoning-btn" data-for-check="${escapeAttr(check.id)}" aria-expanded="${reasoningOpen ? 'true' : 'false'}">See full reasoning ${reasoningOpen ? '▲' : '▼'}</button>`
+      : '';
+
     return `<li class="analysis-item" data-check-id="${escapeAttr(check.id)}" data-state="${escapeAttr(st)}" data-expanded="${expanded ? 'true' : 'false'}">
       <button type="button" class="check-summary-row" data-toggle-for="${escapeAttr(check.id)}" aria-expanded="${expanded ? 'true' : 'false'}">
         <span class="check-icon" data-status="${escapeAttr(st)}">${iconHtml}</span>
@@ -370,8 +390,10 @@
         ${quoteHtml}
         ${decisionsHtml}
         ${inputsHtml}
+        ${reasoningHtml}
         <div class="check-actions">
           <a class="check-action-link" href="${searchHref}" target="_blank" rel="noopener">See relevant decisions →</a>
+          ${reasoningBtnHtml}
         </div>
       </div>
     </li>`;
@@ -389,6 +411,17 @@
         btn.setAttribute('aria-expanded', next ? 'true' : 'false');
         state.expanded[id] = next;
         saveSession();
+      });
+    });
+    // Section 10 — See full reasoning toggle
+    analysisList.querySelectorAll('.check-reasoning-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.forCheck;
+        if (!state.reasoningOpen) state.reasoningOpen = {};
+        state.reasoningOpen[id] = !state.reasoningOpen[id];
+        saveSession();
+        renderChecklist();
       });
     });
   }
@@ -599,7 +632,19 @@
           const idx = parseInt(btn.dataset.idx, 10);
           const record = results[idx];
           state.licenseeRecords[qid] = record;
-          state.userAnswers[qid] = record.display || record.entity_name || '';
+          // Store the full record as the answer so the rule engine can
+          // run the automated licence-scope assessment (Section 3).
+          state.userAnswers[qid] = {
+            display: record.display || record.entity_name || '',
+            entity_name: record.entity_name,
+            trading_name: record.trading_name,
+            licence_number: record.licence_number,
+            licence_status: record.licence_status,
+            licence_classes: record.licence_classes || [],
+            expiry: record.expiry,
+            abn: record.abn,
+            postcode: record.postcode,
+          };
           saveSession();
           renderChecklist();
         });

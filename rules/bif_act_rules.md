@@ -229,17 +229,12 @@ An earlier payment claim was served for the same reference date. A second claim 
   question: "Select the claimant's entry on the QBCC Licensed Contractors Register"
   type: licensee_lookup
   required: true
-- id: licence_covers_work
-  question: "Do the selected licence class(es) cover the scope of work in this claim?"
-  type: radio
-  options: ["Yes", "No", "Unsure"]
-  required: false
 
 **Pass criteria:**
-A matching entity is found on the QBCC register, the licence status is Active, and at least one current licence class plausibly covers the work described.
+A matching entity is found on the QBCC register, the licence status is Active, and — as assessed automatically against the work described in the claim — at least one current licence class plausibly covers the work.
 
 **Warning criteria:**
-A matching entity is found but the user is unsure whether the licence classes cover the work; OR the licensee's class coverage is marginal. Note that the register reflects current status as at the dataset's last update, not historical status at the time the work was performed.
+A matching entity is found but scope coverage cannot be determined automatically (e.g. ambiguous work description, marginal class match). The automated assessment flags low confidence. Note that the register reflects current status as at the dataset's last update, not historical status at the time the work was performed.
 
 **Fail criteria:**
 No matching entity found on the register, the matched entity's licence is Cancelled / Surrendered / Suspended, or the licence classes plainly do not cover the work described. Unlicensed building work is barred from recovery under s 42(4) QBCC Act and s 75(2) BIF Act.
