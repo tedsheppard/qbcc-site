@@ -18,7 +18,7 @@ from typing import Any
 
 log = logging.getLogger("claim_check.chatbot")
 
-MODEL = "gpt-4-turbo-preview"
+MODEL = "gpt-4o"
 MAX_DOC_CHARS = 12_000
 MAX_HISTORY_TURNS = 8
 MAX_OUTPUT_TOKENS = 700

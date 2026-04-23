@@ -20,7 +20,7 @@ from typing import Any
 
 log = logging.getLogger("claim_check.rule_engine")
 
-MODEL = "gpt-4-turbo-preview"
+MODEL = "gpt-4o"
 MAX_DOC_CHARS_FOR_PROMPT = 18_000  # ~12K tokens; leaves headroom for the system prompt + output
 MAX_OUTPUT_TOKENS = 2200
 
