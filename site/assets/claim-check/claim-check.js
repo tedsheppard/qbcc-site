@@ -65,6 +65,7 @@
   const previewFilename = el('preview-filename');
   const previewSize = el('preview-size');
   const previewText = el('preview-text');
+  const viewerMount = el('viewer-mount');
   const btnChangeDoc = el('btn-change-doc');
 
   const analysisPane = document.querySelector('.pane-analysis');
@@ -227,12 +228,33 @@
   function showPreviewShell() {
     previewFilename.textContent = state.doc.filename;
     previewSize.textContent = state.doc.size ? `— ${formatBytes(state.doc.size)}` : '';
-    previewText.textContent = state.doc.kind === 'paste' ? (state.doc.text || '') : 'Extracting text…';
     uploadZone.hidden = true;
     pasteZone.hidden = true;
     previewZone.hidden = false;
     analysisPane.hidden = false;
     chatbotInput.placeholder = 'Ask a question about this document…';
+
+    // Route to the right viewer.
+    if (state.doc.kind === 'paste') {
+      if (viewerMount) {
+        viewerMount.innerHTML = '';
+        viewerMount.hidden = true;
+      }
+      previewText.hidden = false;
+      previewText.textContent = state.doc.text || '';
+    } else if (state.doc._file && window.ClaimCheckViewers) {
+      previewText.hidden = true;
+      viewerMount.hidden = false;
+      // Fire and forget — viewer handles its own error UI.
+      window.ClaimCheckViewers.render(viewerMount, state.doc._file).catch((e) => {
+        console.error('viewer dispatch failed', e);
+      });
+    } else {
+      // Restored-session case: no File object. Show extracted text if we have it.
+      if (viewerMount) { viewerMount.innerHTML = ''; viewerMount.hidden = true; }
+      previewText.hidden = false;
+      previewText.textContent = state.documentText || '(session restored — re-upload to see preview)';
+    }
   }
 
   btnChangeDoc.addEventListener('click', () => resetDocState());
@@ -554,10 +576,6 @@
     } else if (event === 'meta') {
       state.summary = data.summary || '';
       state.documentText = data.document_text || state.documentText;
-      if (state.doc && state.doc.kind === 'file' && data.chars) {
-        // Preview text will be replaced by viewers in Section 1; for now show a brief notice.
-        previewText.textContent = `${data.source_name || 'Document'} — ${data.chars.toLocaleString()} characters extracted`;
-      }
     } else if (event === 'check_result') {
       const id = data.id;
       state.states[id] = data.status || 'warning';

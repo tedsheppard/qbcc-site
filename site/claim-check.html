@@ -221,8 +221,8 @@
                 <button class="preview-change" id="btn-change-doc" type="button">Change document</button>
               </div>
               <div class="preview-body" id="preview-body">
-                <!-- stage 3: plain text fallback; pdf.js preview wired in stage 4 -->
-                <pre class="preview-text" id="preview-text"></pre>
+                <div class="viewer-mount" id="viewer-mount"></div>
+                <pre class="preview-text" id="preview-text" hidden></pre>
               </div>
             </div>
 
@@ -322,6 +322,12 @@
     </div>
     <div class="copy">© 2026 Sopal Australia</div>
   </div>
+
+  <!-- Document viewers (pdf.js / SheetJS loaded on demand from CDN by viewer-loader) -->
+  <script src="/assets/claim-check/viewers/viewer-loader.js" defer></script>
+  <script src="/assets/claim-check/viewers/pdf-viewer.js" defer></script>
+  <script src="/assets/claim-check/viewers/xlsx-viewer.js" defer></script>
+  <script src="/assets/claim-check/viewers/docx-viewer.js" defer></script>
 
   <script src="/assets/claim-check/claim-check.js" defer></script>
 </body>

@@ -210,8 +210,10 @@
   transition: background 0.15s, color 0.15s;
 }
 .preview-change:hover { background: #f3f4f6; color: var(--text-primary); }
-.preview-body { max-height: 360px; overflow: auto; }
+.preview-body { /* nested viewers manage their own scroll */ }
 .preview-text {
+  max-height: 460px;
+  overflow: auto;
   font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
   font-size: 12.5px;
   line-height: 1.6;
@@ -456,6 +458,164 @@
   border-color: var(--red-mid);
   color: var(--red);
 }
+
+/* ---------- Document viewers (Section 1) ---------- */
+.viewer-mount { width: 100%; min-height: 260px; }
+.viewer-unavailable {
+  padding: 24px 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.5;
+  border: 1px dashed var(--border-light);
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+/* PDF viewer */
+.pdfv { display: flex; flex-direction: column; gap: 8px; }
+.pdfv-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; flex-wrap: wrap;
+  padding: 6px 8px;
+  background: #f9fafb;
+  border: 1px solid var(--border-lighter);
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+.pdfv-nav, .pdfv-zoom { display: inline-flex; align-items: center; gap: 4px; }
+.pdfv-btn {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s;
+  font-family: inherit;
+}
+.pdfv-btn:hover { border-color: #ccc; color: var(--text-primary); }
+.pdfv-page-input {
+  width: 44px;
+  padding: 2px 6px;
+  border: 1px solid var(--border-light);
+  border-radius: 5px;
+  font-size: 12.5px;
+  font-family: inherit;
+  text-align: right;
+  outline: none;
+}
+.pdfv-page-input:focus { border-color: var(--green); }
+.pdfv-zoom-label { min-width: 44px; text-align: center; color: var(--text-muted); font-size: 12px; }
+.pdfv-label { color: var(--text-muted); font-size: 11.5px; margin-left: 8px; }
+.pdfv-scroll {
+  max-height: 640px;
+  overflow: auto;
+  padding: 12px 8px;
+  background: #f4f4f5;
+  border: 1px solid var(--border-lighter);
+  border-radius: 10px;
+}
+.pdfv-pages { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.pdfv-page-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pdfv-page-num { font-size: 11px; color: var(--text-muted); }
+.pdfv-canvas-wrap {
+  position: relative;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.pdfv-canvas { display: block; }
+.pdfv-textlayer {
+  position: absolute;
+  left: 0; top: 0;
+  overflow: hidden;
+  opacity: 1;
+  line-height: 1.0;
+}
+.pdfv-textlayer > span {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+.pdfv-textlayer ::selection { background: rgba(0, 212, 126, 0.3); }
+
+/* XLSX viewer */
+.xlsxv { display: flex; flex-direction: column; gap: 8px; height: 100%; }
+.xlsxv-tabs {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  padding: 4px 0 6px;
+  border-bottom: 1px solid var(--border-lighter);
+}
+.xlsxv-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  border-radius: 6px 6px 0 0;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.xlsxv-tab:hover { color: var(--text-primary); background: #f3f4f6; }
+.xlsxv-tab.active {
+  background: white;
+  border-color: var(--border-light) var(--border-light) white;
+  color: var(--text-primary);
+  box-shadow: 0 2px 0 0 var(--green);
+}
+.xlsxv-scroll { max-height: 640px; overflow: auto; background: white; border: 1px solid var(--border-lighter); border-radius: 0 8px 8px 8px; }
+.xlsxv-status, .xlsxv-empty { padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.xlsxv-expand {
+  display: block; margin: 8px auto; padding: 7px 14px;
+  background: white; border: 1px solid var(--border-light); border-radius: 7px;
+  font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  cursor: pointer;
+}
+.xlsxv-expand:hover { border-color: var(--green); color: var(--green-deep); }
+.xlsxv-table-wrap { padding: 4px; }
+.xlsxv-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+}
+.xlsxv-th, .xlsxv-row-num {
+  background: #f9fafb;
+  padding: 4px 8px;
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  font-weight: 600;
+  text-align: center;
+  position: sticky;
+  z-index: 1;
+}
+.xlsxv-th { top: 0; }
+.xlsxv-row-num { left: 0; }
+.xlsxv-th-corner { top: 0; left: 0; z-index: 2; }
+.xlsxv-td {
+  padding: 4px 8px;
+  border: 1px solid var(--border-lighter);
+  background: white;
+  color: var(--text-primary);
+  min-width: 60px;
+  max-width: 380px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
+.xlsxv-td-num { text-align: right; font-variant-numeric: tabular-nums; }
+.xlsxv-td-bold { font-weight: 700; }
+
+/* DOCX preview (wraps pdf-viewer via docx-viewer.js) */
+.docxv-status { padding: 32px 16px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
 .analysis-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .analysis-item {
