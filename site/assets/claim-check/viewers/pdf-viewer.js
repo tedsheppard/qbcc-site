@@ -28,6 +28,7 @@
             <span class="pdfv-zoom-label">100%</span>
             <button class="pdfv-btn" data-act="zin" title="Zoom in">+</button>
             <button class="pdfv-btn" data-act="actual" title="100%">100%</button>
+            <button class="pdfv-btn" data-act="rotate" title="Rotate current page 90°">↻</button>
           </div>
         </div>
         <div class="pdfv-scroll">
@@ -54,6 +55,36 @@
     pageTotal.textContent = String(numPages);
     pageInput.max = String(numPages);
 
+    // Detect per-page rotation so we can auto-correct an outlier first page.
+    // pdf.js exposes a .rotate property on each page (degrees: 0, 90, 180, 270).
+    const rotationCounts = new Map();
+    const pageRotations = [];
+    for (let i = 1; i <= numPages; i++) {
+      try {
+        const pg = await pdf.getPage(i);
+        const rot = ((pg.rotate % 360) + 360) % 360;
+        pageRotations.push(rot);
+        rotationCounts.set(rot, (rotationCounts.get(rot) || 0) + 1);
+      } catch (_) {
+        pageRotations.push(0);
+      }
+    }
+    // Majority rotation across pages (prefer the mode; ties broken by 0).
+    let majorityRot = 0, bestCount = -1;
+    rotationCounts.forEach((n, r) => {
+      if (n > bestCount || (n === bestCount && r === 0)) { bestCount = n; majorityRot = r; }
+    });
+
+    // If the first page's rotation differs from the majority by 90/180/270,
+    // we auto-correct it (add rotation delta so page 1 displays upright).
+    const manualRot = new Array(numPages).fill(0);
+    if (numPages > 1 && pageRotations[0] !== majorityRot) {
+      const delta = ((majorityRot - pageRotations[0]) % 360 + 360) % 360;
+      if (delta !== 0) {
+        manualRot[0] = delta;
+      }
+    }
+
     // State
     const state = {
       pdf,
@@ -63,6 +94,8 @@
       pageWrappers: [],
       rendered: new Set(),
       currentPage: 1,
+      pageRotations,
+      manualRot,
     };
 
     // Build page placeholders; lazy-render when scrolled in.
@@ -95,22 +128,15 @@
       // Size each page wrapper to the expected dimensions so the scroll container has the right height.
       for (let i = 1; i <= numPages; i++) {
         const wrap = state.pageWrappers[i - 1];
-        const cacheKey = `size_${i}`;
-        let vp = wrap[cacheKey];
-        if (!vp) {
-          const p = await pdf.getPage(i);
-          vp = p.getViewport({ scale: 1.0 });
-          wrap[cacheKey] = vp;
-        }
+        const p = await pdf.getPage(i);
+        const rotation = ((p.rotate + (state.manualRot[i - 1] || 0)) % 360 + 360) % 360;
+        const vp = p.getViewport({ scale: 1.0, rotation });
+        wrap.__vp = vp;
         const canvasWrap = wrap.querySelector('.pdfv-canvas-wrap');
         canvasWrap.style.width = `${Math.floor(vp.width * state.zoom)}px`;
         canvasWrap.style.height = `${Math.floor(vp.height * state.zoom)}px`;
-        // Any already-rendered canvas should be re-rendered at the new zoom.
-        if (state.rendered.has(i)) {
-          state.rendered.delete(i);
-        }
+        if (state.rendered.has(i)) state.rendered.delete(i);
       }
-      // Trigger lazy-render pass for visible pages.
       lazyRenderVisible();
     }
 
@@ -120,7 +146,8 @@
       const canvas = wrap.querySelector('.pdfv-canvas');
       const textLayer = wrap.querySelector('.pdfv-textlayer');
       const page = await pdf.getPage(i);
-      const viewport = page.getViewport({ scale: state.zoom });
+      const rotation = ((page.rotate + (state.manualRot[i - 1] || 0)) % 360 + 360) % 360;
+      const viewport = page.getViewport({ scale: state.zoom, rotation });
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.floor(viewport.width * dpr);
       canvas.height = Math.floor(viewport.height * dpr);
@@ -184,6 +211,12 @@
         else if (act === 'actual') { state.fitMode = 'custom'; state.zoom = 1.0; await layoutPages(); }
         else if (act === 'zin') { state.fitMode = 'custom'; state.zoom = Math.min(3, state.zoom + 0.15); await layoutPages(); }
         else if (act === 'zout') { state.fitMode = 'custom'; state.zoom = Math.max(0.4, state.zoom - 0.15); await layoutPages(); }
+        else if (act === 'rotate') {
+          const p = state.currentPage - 1;
+          state.manualRot[p] = (state.manualRot[p] + 90) % 360;
+          await layoutPages();
+          goToPage(state.currentPage);
+        }
       });
     });
     pageInput.addEventListener('change', () => {

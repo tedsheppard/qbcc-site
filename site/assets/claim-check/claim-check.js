@@ -41,9 +41,11 @@
     checks: [],            // [{id, title, section_ref, search_query, input_required, input_questions}]
     results: {},           // { [check_id]: { status, status_summary, explanation, quote, decisions } }
     states: {},            // { [check_id]: 'pending' | 'running' | 'pass' | 'warning' | 'fail' | 'input' }
+    expanded: {},          // { [check_id]: boolean } — overrides auto-expand rule
     userAnswers: {},       // { [input_id]: value }  for input questions
     licenseeRecords: {},   // { [input_id]: { ...record } } for licensee_lookup
     history: [],
+    scanned: false,
   };
 
   // ---------- element refs ----------
@@ -75,6 +77,17 @@
   const analysisDisclaimer = el('analysis-disclaimer');
   const thinkingBar = el('thinking-bar');
   const thinkingText = el('thinking-text');
+
+  const summaryBar = el('analysis-summary-bar');
+  const scTotal = el('sc-total');
+  const scFail = el('sc-fail');
+  const scWarn = el('sc-warn');
+  const scPass = el('sc-pass');
+  const scInput = el('sc-input');
+  const btnJumpIssues = el('btn-jump-issues');
+  const btnExpandAll = el('btn-expand-all');
+  const btnCollapseAll = el('btn-collapse-all');
+  const scannedBanner = el('scanned-banner');
 
   const btnReport = el('btn-report');
   const chatbotMessages = el('chatbot-messages');
@@ -289,6 +302,7 @@
       analysisEmpty.hidden = false;
       analysisList.hidden = true;
       analysisDisclaimer.hidden = true;
+      summaryBar.hidden = true;
       return;
     }
     analysisEmpty.hidden = true;
@@ -296,9 +310,24 @@
     analysisList.hidden = false;
     analysisCount.hidden = false;
     analysisCount.textContent = `${state.checks.length} checks`;
+    summaryBar.hidden = false;
 
     analysisList.innerHTML = state.checks.map((c) => renderCheckRow(c)).join('');
     wireCheckInputs();
+    wireRowToggles();
+    updateSummaryCounts();
+  }
+
+  function defaultExpanded(status) {
+    // Section 9 auto-expand rules:
+    return status === 'fail' || status === 'warning' || status === 'input';
+  }
+
+  function isExpanded(checkId, status) {
+    if (Object.prototype.hasOwnProperty.call(state.expanded, checkId)) {
+      return !!state.expanded[checkId];
+    }
+    return defaultExpanded(status);
   }
 
   function renderCheckRow(check) {
@@ -307,6 +336,8 @@
     const iconHtml = statusIconSvg(st, check);
     const searchHref = `/search?q=${encodeURIComponent(check.search_query || check.title)}`;
     const summaryLine = (result && result.status_summary) || STATUS_SUMMARY[st] || '';
+    const expanded = isExpanded(check.id, st);
+
     const explanationHtml = (result && result.explanation)
       ? `<div class="check-explanation">${escapeHtml(result.explanation)}</div>`
       : '';
@@ -320,24 +351,86 @@
       ? `<div class="check-decisions">Related decisions: ${result.decisions.map(d => `<a href="${escapeAttr(d.url || searchHref)}" target="_blank" rel="noopener">${escapeHtml(d.title || 'decision')}</a>`).join(' · ')}</div>`
       : '';
 
-    return `<li class="analysis-item" data-check-id="${escapeAttr(check.id)}" data-state="${escapeAttr(st)}">
-      <div class="check-row">
+    return `<li class="analysis-item" data-check-id="${escapeAttr(check.id)}" data-state="${escapeAttr(st)}" data-expanded="${expanded ? 'true' : 'false'}">
+      <button type="button" class="check-summary-row" data-toggle-for="${escapeAttr(check.id)}" aria-expanded="${expanded ? 'true' : 'false'}">
         <span class="check-icon" data-status="${escapeAttr(st)}">${iconHtml}</span>
-        <div class="check-body">
-          <div class="check-title">${escapeHtml(check.title)}</div>
-          <div class="check-meta">
+        <span class="check-summary-body">
+          <span class="check-title">${escapeHtml(check.title)}</span>
+          <span class="check-summary-meta">
             ${check.section_ref ? `<span class="check-section">${escapeHtml(check.section_ref)}</span>` : ''}
-            <a class="check-link" href="${searchHref}" target="_blank" rel="noopener">See relevant decisions →</a>
-          </div>
-          <div class="check-summary">${escapeHtml(summaryLine)}</div>
-          ${explanationHtml}
-          ${quoteHtml}
-          ${decisionsHtml}
-          ${inputsHtml}
+            <span class="check-summary-text">${escapeHtml(summaryLine)}</span>
+          </span>
+        </span>
+        <span class="check-chevron" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+      </button>
+      <div class="check-details">
+        ${explanationHtml}
+        ${quoteHtml}
+        ${decisionsHtml}
+        ${inputsHtml}
+        <div class="check-actions">
+          <a class="check-action-link" href="${searchHref}" target="_blank" rel="noopener">See relevant decisions →</a>
         </div>
       </div>
     </li>`;
   }
+
+  function wireRowToggles() {
+    analysisList.querySelectorAll('.check-summary-row').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.toggleFor;
+        const item = btn.closest('.analysis-item');
+        if (!item) return;
+        const now = item.getAttribute('data-expanded') === 'true';
+        const next = !now;
+        item.setAttribute('data-expanded', next ? 'true' : 'false');
+        btn.setAttribute('aria-expanded', next ? 'true' : 'false');
+        state.expanded[id] = next;
+        saveSession();
+      });
+    });
+  }
+
+  function updateSummaryCounts() {
+    let pass = 0, warn = 0, fail = 0, inp = 0;
+    state.checks.forEach((c) => {
+      const s = state.states[c.id] || 'pending';
+      if (s === 'pass') pass++;
+      else if (s === 'warning') warn++;
+      else if (s === 'fail') fail++;
+      else if (s === 'input' || s === 'pending') inp++;
+    });
+    scTotal.textContent = String(state.checks.length);
+    scFail.textContent = String(fail);
+    scWarn.textContent = String(warn);
+    scPass.textContent = String(pass);
+    scInput.textContent = String(inp);
+    const hasIssues = fail > 0 || warn > 0;
+    btnJumpIssues.disabled = !hasIssues;
+    btnJumpIssues.style.opacity = hasIssues ? '1' : '0.4';
+  }
+
+  btnExpandAll.addEventListener('click', () => {
+    state.checks.forEach((c) => { state.expanded[c.id] = true; });
+    renderChecklist();
+  });
+  btnCollapseAll.addEventListener('click', () => {
+    state.checks.forEach((c) => { state.expanded[c.id] = false; });
+    renderChecklist();
+  });
+  btnJumpIssues.addEventListener('click', () => {
+    const issue = state.checks.find((c) => {
+      const s = state.states[c.id];
+      return s === 'fail' || s === 'warning';
+    });
+    if (!issue) return;
+    state.expanded[issue.id] = true;
+    renderChecklist();
+    const row = analysisList.querySelector(`.analysis-item[data-check-id="${CSS.escape(issue.id)}"]`);
+    if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
 
   // ---------- structured inputs ----------
   function renderInputsBlock(check) {
@@ -576,6 +669,10 @@
     } else if (event === 'meta') {
       state.summary = data.summary || '';
       state.documentText = data.document_text || state.documentText;
+      // Section 8: scanned-PDF banner if chars/page ratio is very low.
+      const scanned = !!data.scanned || (state.doc && state.doc.kind === 'file' && data.chars != null && data.pages != null && data.pages > 0 && (data.chars / data.pages) < 60);
+      state.scanned = scanned;
+      if (scannedBanner) scannedBanner.hidden = !scanned;
     } else if (event === 'check_result') {
       const id = data.id;
       state.states[id] = data.status || 'warning';
@@ -613,7 +710,14 @@
   }
 
   function setThinking(msg) {
-    thinkingText.textContent = msg || '';
+    const cur = thinkingText.textContent || '';
+    if (cur === (msg || '')) return;
+    // 150ms fade-out, swap text, 150ms fade-in.
+    thinkingText.classList.add('fading');
+    setTimeout(() => {
+      thinkingText.textContent = msg || '';
+      thinkingText.classList.remove('fading');
+    }, 150);
   }
 
   async function consumeSSE(stream, onEvent) {

@@ -239,9 +239,31 @@
           </div>
           <div class="pane-body">
 
+            <!-- Summary bar: counts + action buttons -->
+            <div class="analysis-summary-bar" id="analysis-summary-bar" hidden>
+              <div class="summary-counts" id="summary-counts">
+                <span class="sc-item sc-total"><strong id="sc-total">0</strong> checks</span>
+                <span class="sc-item sc-fail"><strong id="sc-fail">0</strong> issues</span>
+                <span class="sc-item sc-warn"><strong id="sc-warn">0</strong> warnings</span>
+                <span class="sc-item sc-pass"><strong id="sc-pass">0</strong> passed</span>
+                <span class="sc-item sc-input"><strong id="sc-input">0</strong> need input</span>
+              </div>
+              <div class="summary-actions">
+                <button type="button" class="summary-action-btn" id="btn-jump-issues">Jump to issues</button>
+                <button type="button" class="summary-action-btn" id="btn-expand-all">Expand all</button>
+                <button type="button" class="summary-action-btn" id="btn-collapse-all">Collapse all</button>
+              </div>
+            </div>
+
             <!-- Thinking-text shimmer bar — visible while any check is in-flight -->
             <div class="thinking-bar" id="thinking-bar" hidden>
               <span class="thinking-text" id="thinking-text">Starting analysis…</span>
+            </div>
+
+            <!-- Scanned-PDF banner (Section 8) -->
+            <div class="scanned-banner" id="scanned-banner" hidden>
+              This appears to be a scanned document. Analysis accuracy may be reduced.
+              Consider uploading a text-based PDF or the original file format.
             </div>
 
             <!-- Empty state (pre-mode) -->

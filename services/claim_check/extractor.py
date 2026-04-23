@@ -44,7 +44,8 @@ def extract_rich(filename: str, content: bytes) -> tuple[str, dict[str, Any]]:
     extras: dict[str, Any] = {}
 
     if name.endswith(".pdf"):
-        text = _extract_pdf(content)
+        text, pdf_meta = _extract_pdf_rich(content)
+        extras.update(pdf_meta)
     elif name.endswith(".docx"):
         text = _extract_docx(content)
     elif name.endswith((".xlsx", ".xlsm")):
@@ -69,27 +70,56 @@ def extract_rich(filename: str, content: bytes) -> tuple[str, dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 def _extract_pdf(content: bytes) -> str:
+    text, _extras = _extract_pdf_rich(content)
+    return text
+
+
+def _extract_pdf_rich(content: bytes) -> tuple[str, dict[str, Any]]:
+    """Extract and also return per-file metadata (page count, scanned hint).
+
+    Pages with rotation metadata different to the majority are normalised
+    by pdfplumber when extracting text — the downstream LLM therefore sees
+    reading-order text regardless of /Rotate. A scanned PDF (very little
+    extractable text) is flagged in the returned metadata so the frontend
+    can surface a caveat banner.
+    """
+    meta: dict[str, Any] = {"pages": 0, "scanned": False}
     try:
         import pdfplumber
     except Exception as e:
         log.warning("pdfplumber import failed, falling back to PyPDF2: %s", e)
-        return _extract_pdf_pypdf2(content)
+        text = _extract_pdf_pypdf2(content)
+        # Can't know pages cheaply without the lib; PyPDF2 can — cheap-count.
+        try:
+            import PyPDF2
+            r = PyPDF2.PdfReader(io.BytesIO(content))
+            meta["pages"] = len(r.pages)
+        except Exception:
+            pass
+        return text, meta
 
     parts: list[str] = []
     try:
         with pdfplumber.open(io.BytesIO(content)) as pdf:
+            meta["pages"] = len(pdf.pages)
             for page in pdf.pages:
                 t = page.extract_text() or ""
                 if t:
                     parts.append(t)
     except Exception as e:
         log.warning("pdfplumber extraction failed (%s), falling back to PyPDF2", e)
-        return _extract_pdf_pypdf2(content)
+        text = _extract_pdf_pypdf2(content)
+        return text, meta
 
     text = "\n\n".join(parts).strip()
     if not text:
-        return _extract_pdf_pypdf2(content)
-    return text
+        text = _extract_pdf_pypdf2(content)
+
+    # Scanned-PDF heuristic: chars-per-page very low.
+    if meta["pages"] and len(text) / max(1, meta["pages"]) < 60:
+        meta["scanned"] = True
+
+    return text, meta
 
 
 def _extract_pdf_pypdf2(content: bytes) -> str:

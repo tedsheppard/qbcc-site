@@ -220,7 +220,7 @@ async def analyse_stream(
     ip = _client_ip(request)
     _rate_limit("analyse", ip, MAX_ANALYSES_PER_DAY)
 
-    document_text, source_name, source_size, _extras = await _ingest_document(file, pasted_text)
+    document_text, source_name, source_size, extras = await _ingest_document(file, pasted_text)
 
     answers: dict[str, Any] = {}
     if user_answers:
@@ -235,12 +235,17 @@ async def analyse_stream(
 
     rules = rules_parser.rules_for_mode(mode)
 
+    pages = extras.get("pages") or None
+    scanned_flag = bool(extras.get("scanned"))
+
     async def event_stream() -> AsyncIterator[str]:
         yield _sse("status", {"message": "Reading the document…"})
         yield _sse("meta", {
             "source_name": source_name,
             "source_size": source_size,
             "chars": len(document_text),
+            "pages": pages,
+            "scanned": scanned_flag,
             "summary": rule_engine._derive_summary(mode, document_text),
         })
 

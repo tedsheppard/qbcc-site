@@ -321,7 +321,7 @@
   text-decoration: underline;
 }
 
-/* ---------- Shimmer thinking-text bar (Section 4) ---------- */
+/* ---------- Shimmer thinking-text bar (Sections 4/5) ---------- */
 .thinking-bar {
   display: flex;
   align-items: center;
@@ -341,12 +341,133 @@
   font-size: 13px;
   font-weight: 500;
   letter-spacing: -0.005em;
+  opacity: 1;
+  transition: opacity 150ms ease;
 }
+.thinking-text.fading { opacity: 0; }
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 .spin-svg { animation: spin 1s linear infinite; transform-origin: 50% 50%; }
+
+/* ---------- Scanned-PDF banner (Section 8) ---------- */
+.scanned-banner {
+  background: var(--amber-soft);
+  border: 1px solid var(--amber-mid);
+  color: #92400e;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+/* ---------- Analysis summary bar (Section 9) ---------- */
+.analysis-summary-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  padding: 10px 12px;
+  background: #fafafa;
+  border: 1px solid var(--border-lighter);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  position: sticky;
+  top: 56px;
+  z-index: 3;
+  font-size: 12.5px;
+}
+.summary-counts { display: flex; gap: 14px; flex-wrap: wrap; align-items: baseline; }
+.sc-item { color: var(--text-secondary); font-weight: 500; white-space: nowrap; }
+.sc-item strong { font-weight: 700; color: var(--text-primary); }
+.sc-item.sc-fail strong { color: var(--red); }
+.sc-item.sc-warn strong { color: #b45309; }
+.sc-item.sc-pass strong { color: var(--green-deep); }
+.sc-item.sc-input strong { color: #374151; }
+.summary-actions { display: flex; gap: 6px; }
+.summary-action-btn {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s;
+  font-family: inherit;
+}
+.summary-action-btn:hover:not(:disabled) { border-color: var(--green); color: var(--green-deep); }
+
+/* ---------- Collapsible check row (Section 9) ---------- */
+.analysis-item { padding: 0; }
+.check-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  transition: background 0.12s;
+}
+.check-summary-row:hover { background: #fcfcfd; }
+.check-summary-body {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.check-summary-body .check-title {
+  font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.check-summary-meta {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 11.5px;
+}
+.check-summary-text { color: var(--text-secondary); }
+.check-chevron {
+  flex: 0 0 auto;
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+.analysis-item[data-expanded="true"] .check-chevron { transform: rotate(180deg); }
+.check-details {
+  padding: 0 12px 12px 12px;
+  display: none;
+  animation: expand-in 0.2s ease;
+}
+.analysis-item[data-expanded="true"] .check-details { display: block; }
+@keyframes expand-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.check-actions {
+  margin-top: 10px;
+  display: flex; gap: 12px; flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-lighter);
+}
+.check-action-link {
+  font-size: 12px;
+  color: var(--green-deep);
+  font-weight: 600;
+  text-decoration: none;
+}
+.check-action-link:hover { text-decoration: underline; }
+
+/* Status-based accent on the collapsible row */
+.analysis-item[data-state="fail"] { border-color: var(--red-mid); }
+.analysis-item[data-state="warning"] { border-color: var(--amber-mid); }
+.analysis-item[data-state="pass"] .check-summary-text { color: var(--green-deep); }
+.analysis-item[data-state="fail"] .check-summary-text { color: var(--red); }
+.analysis-item[data-state="warning"] .check-summary-text { color: #b45309; }
 
 /* ---------- Check row state variants ---------- */
 .analysis-item[data-state="pending"] { opacity: 0.85; }
