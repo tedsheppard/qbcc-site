@@ -604,7 +604,9 @@
 
   // ---------- Section 4: More ways to clarify (PC-005 reference date) ----------
   function renderMoreWaysToClarify(check) {
-    const open = !!state.moreWaysOpen && state.moreWaysOpen[check.id];
+    // Default to OPEN so the upload affordance is discoverable.
+    // Only collapse if the user explicitly collapsed it during this session.
+    const open = state.moreWaysOpen && state.moreWaysOpen[check.id] === false ? false : true;
     const contract = state.contractScan || null;
     const confirmed = state.userAnswers.contract_clause_text || '';
     const clausesHtml = contract && contract.clauses && contract.clauses.length
@@ -625,14 +627,19 @@
            <button type="button" class="contract-clause-clear" id="btn-clear-contract-clause">Remove clause</button>
          </div>`
       : '';
-    return `<details class="more-ways" ${open ? 'open' : ''} data-for-check="${escapeAttr(check.id)}">
-      <summary>More ways to clarify (optional)</summary>
+    return `<details class="more-ways more-ways-prominent" ${open ? 'open' : ''} data-for-check="${escapeAttr(check.id)}">
+      <summary>
+        <span class="more-ways-summary-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </span>
+        Upload your contract to auto-extract the reference-date clause
+      </summary>
       <div class="more-ways-body">
         <div class="more-ways-row">
-          <div class="more-ways-label">Upload the contract so we can extract the reference-date clause:</div>
+          <div class="more-ways-label">Drop in a PDF or DOCX of the construction contract. The tool will scan for reference-date / progress-claim language (clause 37/38/42/45 of AS 4000, AS 4902, AS 2124 etc.) and show any clauses it finds for you to confirm. Contract is held in memory for this request only — never stored.</div>
           <label class="contract-upload-btn">
             <input type="file" accept=".pdf,.docx,.txt" id="contract-file-input" hidden>
-            <span>Choose a file…</span>
+            <span>Choose a contract file…</span>
           </label>
           <span class="contract-upload-status" id="contract-upload-status"></span>
           ${confirmedHtml}

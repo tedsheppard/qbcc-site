@@ -669,6 +669,29 @@
 .more-ways > summary::before { content: '+ '; font-weight: 700; }
 .more-ways[open] > summary::before { content: '– '; }
 .more-ways[open] > summary:hover { color: var(--text-primary); }
+.more-ways-prominent {
+  border: 1px solid var(--green-mid);
+  background: var(--green-soft);
+  padding: 10px 14px;
+}
+.more-ways-prominent > summary {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--green-deep);
+  padding: 2px 0;
+}
+.more-ways-prominent > summary::before { content: none; }
+.more-ways-prominent[open] > summary::before { content: none; }
+.more-ways-summary-icon {
+  display: inline-flex;
+  width: 22px; height: 22px;
+  align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: white;
+  color: var(--green-deep);
+  flex: 0 0 auto;
+}
 .more-ways-body { padding: 8px 0 4px; display: flex; flex-direction: column; gap: 10px; }
 .more-ways-label { font-size: 12px; color: var(--text-secondary); }
 .contract-upload-btn {

@@ -52,17 +52,18 @@ SEMANTIC_SYSTEM_PROMPT = """You are a compliance checker for Queensland's Buildi
 
 Australian legal terminology and spelling. Cite BIF Act sections as "s 68(1)(a)" and QBCC Act sections as "s 42 QBCC Act".
 
-You MUST return a JSON object with this exact schema:
+You MUST return a JSON object with this exact schema. ALL FIELDS ARE MANDATORY — especially "reasoning", which is shown to the user when they click "See full reasoning". Never return an empty "reasoning" string.
 
 {
+  "reasoning": "<REQUIRED. 3–6 sentences walking the reader through your chain-of-reasoning. MUST include: (1) what specific passages or features of the document you examined; (2) which BIF Act section(s) and, where relevant, which cases from the annotation provided you applied (cite by name, e.g. 'KDV Sport v Muggeridge', 'Luikens', 'Bridgeman Agencies'); (3) how the document measures up against each pass/warning/fail criterion; (4) the residual uncertainty or caveats that took you to 'high' / 'medium' / 'low' confidence. Write this as if you were explaining to a junior solicitor.>",
+  "confidence": "high" | "medium" | "low",
   "status": "pass" | "warning" | "fail",
-  "explanation": "<1–3 sentence plain-English conclusion shown in the main results panel. HEDGED language — 'appears to', 'on its face', 'likely satisfies' rather than absolutes>",
-  "quote": "<verbatim short quote from the document supporting the finding, OR empty string if none>",
-  "reasoning": "<2–6 sentence chain-of-reasoning the user can expand via 'See full reasoning'. Walk through: (1) what you examined in the document, (2) what BIF Act / case law you applied (cite the sections or cases from the annotation provided, e.g. KDV Sport, Luikens), (3) why you concluded what you did, (4) any uncertainty or caveats>",
-  "confidence": "high" | "medium" | "low"
+  "explanation": "<REQUIRED. 1–3 sentence plain-English conclusion shown in the main results panel. HEDGED language — 'appears to', 'on its face', 'likely satisfies' rather than absolutes.>",
+  "quote": "<verbatim short quote from the document supporting the finding, OR empty string if none>"
 }
 
 Rules:
+- The "reasoning" field is MANDATORY and non-empty. A summary result without reasoning is useless to the user.
 - Evaluate ONLY against the pass/warning/fail criteria provided for this rule.
 - If the document text is silent on the point, prefer "warning" with "confidence":"low" over guessing "pass".
 - The quote must be verbatim text from the document or empty string. Do not paraphrase.
@@ -476,11 +477,29 @@ def _evaluate_semantic(rule: dict[str, Any], document_text: str) -> dict[str, An
     if confidence not in ("high", "medium", "low"):
         confidence = "medium"
 
+    explanation = str(data.get("explanation") or "").strip()
+    quote = str(data.get("quote") or "").strip()
+    reasoning_trace = str(data.get("reasoning") or "").strip()
+
+    # Belt-and-braces: if the model skipped the reasoning field (some reasoning
+    # models minimise structured output), synthesise a minimal trace from the
+    # explanation plus the rule's criteria so the panel always has content.
+    if not reasoning_trace:
+        parts = []
+        if quote:
+            parts.append(f'Evidence examined: "{quote}"')
+        if explanation:
+            parts.append(f"Conclusion: {explanation}")
+        criteria_note = _format_criteria(rule)
+        if criteria_note:
+            parts.append(f"Criteria applied:\n{criteria_note}")
+        reasoning_trace = "\n\n".join(parts) or "(Model did not emit a chain-of-reasoning for this check. Conclusion is shown above.)"
+
     return {
         "status": status,
-        "explanation": str(data.get("explanation") or "").strip(),
-        "quote": str(data.get("quote") or "").strip(),
-        "reasoning_trace": str(data.get("reasoning") or "").strip(),
+        "explanation": explanation,
+        "quote": quote,
+        "reasoning_trace": reasoning_trace,
         "confidence": confidence,
         "model": resp.get("model"),
         "reasoning_effort": resp.get("reasoning"),
