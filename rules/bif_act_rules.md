@@ -49,18 +49,29 @@ Anything else between rules is treated as comments and ignored by the parser.
 
 **Applies to:** payment_claim_serving, payment_claim_received
 **Act reference:** s 68(1)(a) BIF Act
-**Search query:** identify construction work payment claim s 68
+**Search query:** identify construction work payment claim KDV Multiplex Luikens Bridgeman
 **Implementation:** semantic
-**Quote requirement:** quote the passage that identifies the works or related goods and services.
+**Escalate:** high-reasoning
+**Annotation hint:** KDV Sport
+**Quote requirement:** quote the specific passage(s) that purport to identify the works or related goods and services. If the claim is expressed as percentages alone, quote the percentage line.
+
+**Governing authority (apply this standard):**
+
+- *KDV Sport Pty Ltd v Muggeridge Constructions Pty Ltd* [2019] QSC 178 (Brown J): a payment claim must be "reasonably comprehensible to the reasonable principal" — the respondent must be able to identify what is being claimed from the claim itself, without having to reach for external documents the claimant hasn't attached. Bare percentages against line items whose underlying scope is not described in the claim were held insufficient.
+- *Multiplex Constructions Pty Ltd v Luikens & Anor* [2003] NSWSC 1140 (Palmer J): the foundational NSW authority on the identification standard, later approved in Queensland. A payment claim must identify the work with sufficient particularity that the respondent can meaningfully respond to each item.
+- *Bridgeman Agencies Pty Ltd v S.E QLD Plumbing & Drainage Pty Ltd* [2025] QSC 167 (Kelly J): reiterates the KDV Sport standard in Queensland, confirming scope particularity as the controlling test under s 68(1)(a).
 
 **Pass criteria:**
-The document identifies, with enough particularity that the respondent can understand what is being claimed for, the construction work (or related goods and services) to which the claim relates.
+The document identifies the construction work (or related goods/services) to a level of particularity that would satisfy the Luikens / KDV standard — the respondent can, from the claim itself, understand what is being claimed for. Output pass message: "No issues detected based on the information provided — the description has sufficient particularity under the Luikens/KDV standard."
 
 **Warning criteria:**
-Identification is present but vague, highly generic, or lumps together distinct items in a way that would make it hard for the respondent to respond line-by-line.
+Identification is present but expressed primarily as percentages of completion (e.g. "80% complete", "Item 4 — 65%") without enough underlying scope detail in the claim to make each percentage intelligible on its face. Also warn where identification is boilerplate or highly generic, or lumps distinct items together in a way that would force the respondent to dig into external records. Output warning message: "Potential issue — claim expresses progress in percentages without sufficient scope detail. Under the Luikens/KDV/Bridgeman authority, the respondent must be able to identify what is being claimed from the claim itself. Consider adding itemised scope references."
 
 **Fail criteria:**
-No identification of the work or goods/services is apparent, or the "description" is so bare that s 68(1)(a) is not met on its face.
+No meaningful identification of the work or related goods/services is apparent, OR the claim consists of bare percentage-only line items with NO accompanying scope particularity (the pattern KDV Sport and Bridgeman Agencies treat as fatal under s 68(1)(a)). Output fail message: "Potential issue — claim expresses progress in percentages without sufficient scope detail. Under the Luikens/KDV/Bridgeman authority, the respondent must be able to identify what is being claimed from the claim itself. Consider adding itemised scope references. This claim appears to rely on percentages alone without adequate scope identification."
+
+**Specific flag — percentage-only claims:**
+Actively look for line items shaped like "Item N — X% complete", "Building work — XX%", "Value $Y,YYY for ZZ% of Item Q", or similar. If such items appear AND the underlying scope of those items is not identified in the document itself, flag under the warning or fail criteria above depending on pervasiveness.
 
 ---
 

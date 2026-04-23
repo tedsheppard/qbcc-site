@@ -26,7 +26,7 @@ import logging
 from datetime import date, datetime
 from typing import Any
 
-from . import llm_config, rules_parser
+from . import annotations, llm_config, rules_parser
 
 log = logging.getLogger("claim_check.rule_engine")
 
@@ -237,6 +237,25 @@ def _evaluate_semantic(rule: dict[str, Any], document_text: str) -> dict[str, An
     )
     if rule.get("quote_requirement"):
         user += f"QUOTE GUIDANCE: {rule['quote_requirement']}\n\n"
+
+    # Inject the user's v29 annotation for the relevant section so the LLM
+    # reasons against the user's own authority rather than its prior training.
+    try:
+        annotation = annotations.annotation_excerpt_for_act_reference(
+            rule.get("act_reference"),
+            max_chars=3500,
+            keyword_hint=rule.get("annotation_hint"),
+        )
+    except Exception:
+        annotation = None
+    if annotation:
+        user += (
+            "ANNOTATED COMMENTARY (from the user's v29 annotated BIF Act — treat as authority ranked BELOW the legislation itself but ABOVE your prior training):\n"
+            "---\n"
+            f"{annotation}\n"
+            "---\n\n"
+        )
+
     user += f"DOCUMENT TEXT:\n---\n{doc}\n---\n\nReturn JSON per the schema."
 
     try:

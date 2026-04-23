@@ -118,6 +118,7 @@ def _parse_rule_block(rule_id: str, title: str, body: str) -> dict[str, Any] | N
 
     escalate = field("Escalate") or None
     quote_requirement = field("Quote requirement") or None
+    annotation_hint = field("Annotation hint") or None
 
     # Extract the multi-line criteria blocks.
     def criteria(label: str) -> str | None:
@@ -146,6 +147,7 @@ def _parse_rule_block(rule_id: str, title: str, body: str) -> dict[str, Any] | N
         "implementation": impl,
         "escalate": escalate,
         "quote_requirement": quote_requirement,
+        "annotation_hint": annotation_hint,
         "pass_criteria": pass_criteria,
         "warning_criteria": warning_criteria,
         "fail_criteria": fail_criteria,
