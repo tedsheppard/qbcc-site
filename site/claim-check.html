@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claim Check | Sopal</title>
+  <meta name="description" content="Check BIF Act compliance of a payment claim or payment schedule — before you serve it, or after you receive it.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Shared Sopal base (inline to avoid FOUC, matches other pages) -->
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-dark: #0a0a0a;
+      --bg-darker: #050505;
+      --bg-card-dark: #141414;
+      --green: #00d47e;
+      --green-dark: #00b368;
+      --green-soft: #f0fdf4;
+      --green-deep: #166534;
+      --green-mid: #bbf7d0;
+      --amber: #f59e0b;
+      --amber-soft: #fffbeb;
+      --amber-mid: #fde68a;
+      --red: #dc2626;
+      --red-soft: #fef2f2;
+      --red-mid: #fecaca;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #888;
+      --border-light: #e5e5e5;
+      --border-lighter: #eee;
+      --border-dark: #222;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; font-size: 15px; padding-bottom: 56px; }
+    a { text-decoration: none; color: inherit; }
+    button { border: none; cursor: pointer; font-family: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+    /* NAV (shared) */
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-links a.active { color: white; font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .btn-signin { background: transparent; color: white; font-size: 13.5px; font-weight: 500; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; }
+    .btn-signin:hover { background: rgba(255,255,255,0.08); }
+
+    /* PAGE HEADER (shared pattern) */
+    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 32px 0 28px; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+    .page-header .lede { font-size: 14px; color: var(--text-secondary); max-width: 720px; }
+
+    /* Sticky disclaimer bar (replaces full footer on this page) */
+    .disclaimer-bar {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+      background: #111; color: #aaa; font-size: 12px; line-height: 1.5;
+      padding: 10px 32px; border-top: 1px solid #222;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .disclaimer-bar strong { color: #ddd; font-weight: 600; }
+    .disclaimer-bar .copy { color: #777; white-space: nowrap; }
+    @media (max-width: 700px) {
+      .disclaimer-bar { font-size: 11px; padding: 8px 16px; flex-wrap: wrap; }
+      .disclaimer-bar .copy { display: none; }
+      body { padding-bottom: 80px; }
+    }
+  </style>
+
+  <link rel="stylesheet" href="/assets/claim-check/claim-check.css">
+</head>
+<body>
+
+  <!-- NAV (no claim-check link per spec; user will link from emails) -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/" class="nav-logo">
+          <img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;">
+        </a>
+        <div class="nav-links">
+          <a href="/search">Search</a>
+          <a href="/adjudicators">Adjudicators</a>
+          <a href="/interest-calculator">Interest Calculator</a>
+          <a href="/due-date-calculator">Due Date Calculator</a>
+          <a href="/how-to">How-To Guide</a>
+          <a href="/feedback">Feedback</a>
+        </div>
+      </div>
+      <div class="nav-right"><a href="/login" class="btn-signin">Sign In</a></div>
+    </div>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="container">
+      <h1>Claim Check</h1>
+      <p class="lede">Check BIF Act compliance of a payment claim or payment schedule — before you serve it, or after you receive it. Upload a document (or paste text), pick the context, and get a structured check with references to the <em>Building Industry Fairness (Security of Payment) Act 2017</em> (Qld).</p>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- MODE PICKER -->
+    <section class="mode-picker" aria-label="What are you checking?">
+      <h2 class="section-title">What are you checking?</h2>
+      <div class="mode-grid" role="radiogroup" aria-label="Mode">
+
+        <button class="mode-tile" type="button" role="radio" aria-checked="false" data-mode="payment_claim_outgoing">
+          <span class="mode-tile-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+          </span>
+          <span class="mode-tile-body">
+            <span class="mode-tile-title">Payment claim I'm about to serve</span>
+            <span class="mode-tile-sub">Pre-service compliance check against s 68</span>
+          </span>
+        </button>
+
+        <button class="mode-tile" type="button" role="radio" aria-checked="false" data-mode="payment_claim_incoming">
+          <span class="mode-tile-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </span>
+          <span class="mode-tile-body">
+            <span class="mode-tile-title">Payment claim I've received</span>
+            <span class="mode-tile-sub">s 68 compliance + defences and knockout arguments</span>
+          </span>
+        </button>
+
+        <button class="mode-tile" type="button" role="radio" aria-checked="false" data-mode="payment_schedule_outgoing">
+          <span class="mode-tile-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </span>
+          <span class="mode-tile-body">
+            <span class="mode-tile-title">Payment schedule I'm about to give</span>
+            <span class="mode-tile-sub">Pre-service compliance check against s 76</span>
+          </span>
+        </button>
+
+        <button class="mode-tile" type="button" role="radio" aria-checked="false" data-mode="payment_schedule_incoming">
+          <span class="mode-tile-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </span>
+          <span class="mode-tile-body">
+            <span class="mode-tile-title">Payment schedule I've received</span>
+            <span class="mode-tile-sub">s 76 compliance + analysis of whether it's valid at all</span>
+          </span>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- WORKSPACE (revealed once a mode is picked) -->
+    <section class="workspace" id="workspace" hidden>
+
+      <div class="workspace-header">
+        <div class="workspace-header-meta">
+          <span class="workspace-mode-label">Mode:</span>
+          <span class="workspace-mode-value" id="workspace-mode-value">—</span>
+        </div>
+        <button class="btn-report" id="btn-report" type="button" disabled title="Available once a document has been analysed">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download analysis report
+        </button>
+      </div>
+
+      <!-- Mobile tab toggle (hidden on desktop) -->
+      <div class="mobile-tabs" aria-hidden="true">
+        <button class="mobile-tab active" data-pane="document" type="button">Document</button>
+        <button class="mobile-tab" data-pane="analysis" type="button">Analysis</button>
+      </div>
+
+      <div class="workspace-grid">
+
+        <!-- LEFT: document pane -->
+        <div class="pane pane-document" data-pane="document">
+          <div class="pane-header">
+            <h3 class="pane-title">Document</h3>
+            <div class="pane-actions">
+              <button class="pane-action" id="btn-paste-toggle" type="button">
+                <span data-paste-label="toggle-to-paste">Paste text instead</span>
+                <span data-paste-label="toggle-to-upload" hidden>Upload file instead</span>
+              </button>
+            </div>
+          </div>
+          <div class="pane-body">
+
+            <!-- Upload dropzone -->
+            <div class="upload-zone" id="upload-zone" tabindex="0" role="button" aria-label="Upload PDF or DOCX">
+              <input type="file" id="file-input" accept=".pdf,.docx" hidden>
+              <div class="upload-zone-inner">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <p class="upload-primary">Drop a PDF or DOCX here, or <span class="upload-browse">browse</span></p>
+                <p class="upload-sub">Max 10MB. Documents are held in memory only and never stored.</p>
+              </div>
+            </div>
+
+            <!-- Paste-text view (hidden by default) -->
+            <div class="paste-zone" id="paste-zone" hidden>
+              <textarea id="paste-input" placeholder="Paste the payment claim or payment schedule text here — including email body if that's where it lives."></textarea>
+              <div class="paste-actions">
+                <span class="paste-meta" id="paste-meta">0 characters</span>
+                <button class="btn-primary" id="btn-paste-submit" type="button" disabled>Use this text</button>
+              </div>
+            </div>
+
+            <!-- Document preview (after upload/paste) -->
+            <div class="preview-zone" id="preview-zone" hidden>
+              <div class="preview-header">
+                <div class="preview-meta">
+                  <span class="preview-filename" id="preview-filename">document.pdf</span>
+                  <span class="preview-size" id="preview-size">— 0 KB</span>
+                </div>
+                <button class="preview-change" id="btn-change-doc" type="button">Change document</button>
+              </div>
+              <div class="preview-body" id="preview-body">
+                <!-- stage 3: plain text fallback; pdf.js preview wired in stage 4 -->
+                <pre class="preview-text" id="preview-text"></pre>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- RIGHT: analysis pane -->
+        <div class="pane pane-analysis" data-pane="analysis" hidden>
+          <div class="pane-header">
+            <h3 class="pane-title">Analysis</h3>
+            <div class="pane-actions">
+              <span class="analysis-count" id="analysis-count" hidden>0 checks</span>
+            </div>
+          </div>
+          <div class="pane-body">
+
+            <!-- Empty state -->
+            <div class="analysis-empty" id="analysis-empty">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <p>Upload a document to run checks.</p>
+            </div>
+
+            <!-- Loading state -->
+            <div class="analysis-loading" id="analysis-loading" hidden>
+              <div class="spinner" aria-hidden="true"></div>
+              <p>Running checks…</p>
+            </div>
+
+            <!-- Results list (populated from stage 6) -->
+            <ol class="analysis-list" id="analysis-list" hidden></ol>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CHATBOT -->
+      <div class="chatbot" id="chatbot" aria-label="Contextual chatbot">
+        <div class="chatbot-header">
+          <div class="chatbot-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>Ask about this document</span>
+          </div>
+          <span class="chatbot-scope" title="The chatbot only answers BIF Act / payment claim / payment schedule questions.">BIF Act scope only</span>
+        </div>
+        <div class="chatbot-messages" id="chatbot-messages">
+          <div class="chatbot-empty">
+            <p>Upload a document above, then ask questions like <em>"why did you flag the reference date?"</em> or <em>"what defences could I raise under s 69?"</em></p>
+          </div>
+        </div>
+        <form class="chatbot-input-row" id="chatbot-form">
+          <input type="text" id="chatbot-input" placeholder="Upload a document to start the conversation…" autocomplete="off" disabled>
+          <button type="submit" id="chatbot-send" disabled aria-label="Send">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </form>
+        <p class="chatbot-disclaimer">General information only — not legal advice. For your specific situation, consult a construction lawyer.</p>
+      </div>
+
+    </section>
+
+    <!-- Intro / explainer (shown before a mode is picked) -->
+    <section class="explainer" id="explainer">
+      <div class="explainer-grid">
+        <div class="explainer-card">
+          <h4>1. Pick a context</h4>
+          <p>Serving or receiving? Payment claim or payment schedule? The rules that apply depend on which side of the transaction you're on.</p>
+        </div>
+        <div class="explainer-card">
+          <h4>2. Upload or paste</h4>
+          <p>PDF, DOCX, or just pasted email text — many real-world claims arrive by email, so pasted text is fully supported.</p>
+        </div>
+        <div class="explainer-card">
+          <h4>3. Review the checks</h4>
+          <p>Each check cites the relevant section of the BIF Act, links to on-point adjudication decisions, and asks for your input where the Act needs facts the document doesn't contain.</p>
+        </div>
+        <div class="explainer-card">
+          <h4>4. Ask follow-ups</h4>
+          <p>A chatbot grounded in your specific document, your answers, and the BIF Act can answer the "why" behind each flag.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- STICKY DISCLAIMER BAR (replaces full site footer on this page) -->
+  <div class="disclaimer-bar" role="contentinfo">
+    <div>
+      <strong>General information only — not legal advice.</strong> For your specific situation, consult a qualified construction lawyer.
+    </div>
+    <div class="copy">© 2026 Sopal Australia</div>
+  </div>
+
+  <script src="/assets/claim-check/claim-check.js" defer></script>
+</body>
+</html>

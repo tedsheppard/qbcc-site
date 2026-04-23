@@ -185,6 +185,11 @@ except Exception as e:
 
 app = FastAPI()
 
+# >>> claim-check feature — isolated in routes/claim_check.py (f703011+)
+from routes.claim_check import router as _claim_check_router
+app.include_router(_claim_check_router)
+# <<< claim-check feature
+
 # --- UNIFIED USERS DATABASE CONNECTION ---
 PURCHASES_DB_PATH = "/var/data/adjudicator_purchases.db"
 purchases_con = sqlite3.connect(PURCHASES_DB_PATH, check_same_thread=False)

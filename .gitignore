@@ -37,3 +37,4 @@ __pycache__/
 
 # Archived pages
 site/.archive/
+*.docx
