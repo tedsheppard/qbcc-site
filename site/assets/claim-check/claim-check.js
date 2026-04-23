@@ -43,10 +43,13 @@
     states: {},            // { [check_id]: 'pending' | 'running' | 'pass' | 'warning' | 'fail' | 'input' }
     expanded: {},          // { [check_id]: boolean } — overrides auto-expand rule
     reasoningOpen: {},     // { [check_id]: boolean } — "See full reasoning" toggle (Section 10)
-    userAnswers: {},       // { [input_id]: value }  for input questions
+    moreWaysOpen: {},      // { [check_id]: boolean } — "More ways to clarify" (Section 4)
+    userAnswers: {},       // { [input_id]: value }
     licenseeRecords: {},   // { [input_id]: { ...record } } for licensee_lookup
+    contractScan: null,    // Section 4: latest contract scan result
     history: [],
     scanned: false,
+    sessionId: null,       // stable id for the current session (used by localStorage)
   };
 
   // ---------- element refs ----------
@@ -101,7 +104,7 @@
   // ---------- session persistence ----------
   function saveSession() {
     try {
-      sessionStorage.setItem(SS_KEY, JSON.stringify({
+      const snap = {
         mode: state.mode,
         documentText: state.documentText,
         summary: state.summary,
@@ -110,13 +113,210 @@
         states: state.states,
         expanded: state.expanded,
         reasoningOpen: state.reasoningOpen,
+        moreWaysOpen: state.moreWaysOpen,
         userAnswers: state.userAnswers,
         licenseeRecords: state.licenseeRecords,
+        contractScan: state.contractScan,
         history: state.history,
         docMeta: state.doc ? { filename: state.doc.filename, size: state.doc.size, kind: state.doc.kind } : null,
-      }));
+      };
+      sessionStorage.setItem(SS_KEY, JSON.stringify(snap));
+      saveToLocalStorage(snap);
     } catch (_) {}
   }
+  // ---------- Section 12: per-browser localStorage session history ----------
+  const LS_PREFIX = 'sopal-claim-check-session-';
+  const LS_MAX_SESSIONS = 10;
+  const LS_DOC_TEXT_MAX_BYTES = 500 * 1024; // 500KB per spec
+
+  function currentSessionId() {
+    if (!state.sessionId) {
+      state.sessionId = 's' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+    }
+    return state.sessionId;
+  }
+
+  function lsIsAvailable() {
+    try {
+      const k = '__sopal_ls_probe';
+      localStorage.setItem(k, '1');
+      localStorage.removeItem(k);
+      return true;
+    } catch (_) { return false; }
+  }
+
+  function saveToLocalStorage(snap) {
+    if (!snap.mode) return;
+    if (!lsIsAvailable()) return;
+    try {
+      const id = currentSessionId();
+      // Trim documentText if too large.
+      let docText = snap.documentText || '';
+      if (new Blob([docText]).size > LS_DOC_TEXT_MAX_BYTES) {
+        docText = '';  // privacy-friendly: don't persist large docs
+      }
+      const entry = {
+        id,
+        savedAt: Date.now(),
+        mode: snap.mode,
+        docMeta: snap.docMeta,
+        summary: snap.summary,
+        checks: snap.checks,
+        results: snap.results,
+        states: snap.states,
+        expanded: snap.expanded,
+        reasoningOpen: snap.reasoningOpen,
+        userAnswers: snap.userAnswers,
+        licenseeRecords: snap.licenseeRecords,
+        history: snap.history,
+        documentText: docText,
+      };
+      localStorage.setItem(LS_PREFIX + id, JSON.stringify(entry));
+      enforceLSCap();
+    } catch (_) {
+      // Quota or serialisation error — silently ignore.
+    }
+  }
+
+  function listStoredSessions() {
+    if (!lsIsAvailable()) return [];
+    const out = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(LS_PREFIX)) continue;
+      try {
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        const obj = JSON.parse(raw);
+        out.push({ key: k, ...obj });
+      } catch (_) {}
+    }
+    out.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+    return out;
+  }
+
+  function enforceLSCap() {
+    const sessions = listStoredSessions();
+    if (sessions.length <= LS_MAX_SESSIONS) return;
+    // Drop oldest beyond the cap.
+    for (let i = LS_MAX_SESSIONS; i < sessions.length; i++) {
+      try { localStorage.removeItem(sessions[i].key); } catch (_) {}
+    }
+  }
+
+  function deleteStoredSession(key) {
+    try { localStorage.removeItem(key); } catch (_) {}
+    renderPrevSessions();
+  }
+
+  function clearAllStoredSessions() {
+    if (!lsIsAvailable()) return;
+    listStoredSessions().forEach((s) => { try { localStorage.removeItem(s.key); } catch (_) {} });
+    renderPrevSessions();
+  }
+
+  function renderPrevSessions() {
+    const wrap = document.getElementById('prev-sessions');
+    const listEl = document.getElementById('prev-sessions-list');
+    if (!wrap || !listEl) return;
+    const sessions = listStoredSessions();
+    // Don't show the session currently in progress.
+    const shown = sessions.filter((s) => s.id !== state.sessionId);
+    if (!shown.length) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    listEl.innerHTML = shown.map((s) => {
+      const when = new Date(s.savedAt || 0).toLocaleString();
+      const docName = (s.docMeta && s.docMeta.filename) || 'Pasted text';
+      const modeLabel = MODE_LABELS[s.mode] || s.mode || 'Unknown mode';
+      return `<li class="prev-session-row" data-key="${escapeAttr(s.key)}">
+        <div class="ps-left">
+          <div class="ps-mode">${escapeHtml(modeLabel)}</div>
+          <div class="ps-doc">${escapeHtml(docName)}</div>
+          <div class="ps-when">${escapeHtml(when)}</div>
+        </div>
+        <div class="ps-right">
+          <button type="button" class="ps-btn ps-resume" data-key="${escapeAttr(s.key)}">Resume</button>
+          <button type="button" class="ps-btn ps-delete" data-key="${escapeAttr(s.key)}">Delete</button>
+        </div>
+      </li>`;
+    }).join('');
+    listEl.querySelectorAll('.ps-resume').forEach((b) => b.addEventListener('click', () => resumeStoredSession(b.dataset.key)));
+    listEl.querySelectorAll('.ps-delete').forEach((b) => b.addEventListener('click', () => deleteStoredSession(b.dataset.key)));
+  }
+
+  function resumeStoredSession(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      Object.assign(state, {
+        sessionId: s.id,
+        mode: s.mode,
+        documentText: s.documentText || '',
+        summary: s.summary || '',
+        checks: s.checks || [],
+        results: s.results || {},
+        states: s.states || {},
+        expanded: s.expanded || {},
+        reasoningOpen: s.reasoningOpen || {},
+        userAnswers: s.userAnswers || {},
+        licenseeRecords: s.licenseeRecords || {},
+        history: s.history || [],
+        doc: s.docMeta ? { ...s.docMeta } : null,
+      });
+      // Rebuild the UI.
+      if (state.mode) setMode(state.mode);
+      if (state.doc) {
+        workspace.hidden = false;
+        explainer.hidden = true;
+        previewFilename.textContent = state.doc.filename || '';
+        previewSize.textContent = state.doc.size ? `— ${formatBytes(state.doc.size)}` : '';
+        previewText.hidden = false;
+        previewText.textContent = state.documentText || '(document file not stored — upload again to re-run analysis)';
+        if (viewerMount) { viewerMount.innerHTML = ''; viewerMount.hidden = true; }
+        uploadZone.hidden = true;
+        pasteZone.hidden = true;
+        previewZone.hidden = false;
+        analysisPane.hidden = false;
+        analysisDisclaimer.hidden = false;
+        btnReport.disabled = Object.keys(state.results).length === 0;
+        chatbotInput.disabled = false;
+        chatbotSend.disabled = false;
+      }
+      if (state.history && state.history.length) {
+        chatbotMessages.innerHTML = '';
+        state.history.forEach((m) => {
+          const node = document.createElement('div');
+          node.className = `chatbot-msg ${m.role}`;
+          if (m.role === 'assistant') renderMarkdownInto(node, m.content);
+          else node.textContent = m.content;
+          chatbotMessages.appendChild(node);
+        });
+      }
+      if (window.ClaimCheckModal) {
+        window.ClaimCheckModal.info(
+          'Session resumed',
+          'Your document file is not stored in the browser — upload it again to re-run analysis, or chat about the previous results.',
+        );
+      }
+      renderPrevSessions();
+    } catch (e) {
+      if (window.ClaimCheckModal) window.ClaimCheckModal.error('Could not resume session', e.message || 'The saved session may be corrupt.');
+    }
+  }
+
+  // Wire the Clear all button if present.
+  const btnClearAll = document.getElementById('btn-clear-all-sessions');
+  if (btnClearAll) btnClearAll.addEventListener('click', async () => {
+    if (!window.ClaimCheckModal) return;
+    const ok = await window.ClaimCheckModal.confirm(
+      'Clear all previous sessions?',
+      "This removes every saved session from this browser. It can't be undone.",
+      { confirmLabel: 'Clear all', confirmVariant: 'danger' }
+    );
+    if (ok) clearAllStoredSessions();
+  });
+
   function loadSession() {
     try {
       const raw = sessionStorage.getItem(SS_KEY);
@@ -131,8 +331,10 @@
         states: s.states || {},
         expanded: s.expanded || {},
         reasoningOpen: s.reasoningOpen || {},
+        moreWaysOpen: s.moreWaysOpen || {},
         userAnswers: s.userAnswers || {},
         licenseeRecords: s.licenseeRecords || {},
+        contractScan: s.contractScan || null,
         history: s.history || [],
         doc: s.docMeta ? { ...s.docMeta } : null,
       });
@@ -390,6 +592,7 @@
         ${quoteHtml}
         ${decisionsHtml}
         ${inputsHtml}
+        ${check.id === 'PC-005' ? renderMoreWaysToClarify(check) : ''}
         ${reasoningHtml}
         <div class="check-actions">
           <a class="check-action-link" href="${searchHref}" target="_blank" rel="noopener">See relevant decisions →</a>
@@ -397,6 +600,47 @@
         </div>
       </div>
     </li>`;
+  }
+
+  // ---------- Section 4: More ways to clarify (PC-005 reference date) ----------
+  function renderMoreWaysToClarify(check) {
+    const open = !!state.moreWaysOpen && state.moreWaysOpen[check.id];
+    const contract = state.contractScan || null;
+    const confirmed = state.userAnswers.contract_clause_text || '';
+    const clausesHtml = contract && contract.clauses && contract.clauses.length
+      ? contract.clauses.map((c, i) => `
+          <div class="contract-clause" data-idx="${i}">
+            ${c.clause_ref ? `<div class="contract-clause-ref">${escapeHtml(c.clause_ref)}</div>` : ''}
+            <div class="contract-clause-text">${escapeHtml(c.text)}</div>
+            <button type="button" class="contract-clause-accept" data-idx="${i}">That's my reference-date clause</button>
+          </div>`).join('')
+      : '';
+    const notesHtml = contract && contract.notes
+      ? `<div class="contract-scan-notes">${escapeHtml(contract.notes)}</div>`
+      : '';
+    const confirmedHtml = confirmed
+      ? `<div class="contract-scan-confirmed">
+           <div class="cc-confirmed-label">Using this clause for the reference-date check:</div>
+           <div class="contract-clause-text">${escapeHtml(confirmed)}</div>
+           <button type="button" class="contract-clause-clear" id="btn-clear-contract-clause">Remove clause</button>
+         </div>`
+      : '';
+    return `<details class="more-ways" ${open ? 'open' : ''} data-for-check="${escapeAttr(check.id)}">
+      <summary>More ways to clarify (optional)</summary>
+      <div class="more-ways-body">
+        <div class="more-ways-row">
+          <div class="more-ways-label">Upload the contract so we can extract the reference-date clause:</div>
+          <label class="contract-upload-btn">
+            <input type="file" accept=".pdf,.docx,.txt" id="contract-file-input" hidden>
+            <span>Choose a file…</span>
+          </label>
+          <span class="contract-upload-status" id="contract-upload-status"></span>
+          ${confirmedHtml}
+          ${clausesHtml ? `<div class="contract-clauses">${clausesHtml}</div>` : ''}
+          ${notesHtml}
+        </div>
+      </div>
+    </details>`;
   }
 
   function wireRowToggles() {
@@ -555,6 +799,63 @@
         renderChecklist();
       });
     });
+    // Section 4 — More ways to clarify: persist open/close state + contract upload
+    analysisList.querySelectorAll('details.more-ways').forEach((d) => {
+      d.addEventListener('toggle', () => {
+        const id = d.dataset.forCheck;
+        if (!state.moreWaysOpen) state.moreWaysOpen = {};
+        state.moreWaysOpen[id] = d.open;
+        saveSession();
+      });
+    });
+    const ci = document.getElementById('contract-file-input');
+    if (ci) ci.addEventListener('change', handleContractUpload);
+    analysisList.querySelectorAll('.contract-clause-accept').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx, 10);
+        const c = state.contractScan && state.contractScan.clauses && state.contractScan.clauses[idx];
+        if (!c) return;
+        state.userAnswers.contract_clause_text = c.text;
+        if (c.clause_ref) state.userAnswers.contract_clause_ref = c.clause_ref;
+        saveSession();
+        renderChecklist();
+      });
+    });
+    const clearBtn = document.getElementById('btn-clear-contract-clause');
+    if (clearBtn) clearBtn.addEventListener('click', () => {
+      delete state.userAnswers.contract_clause_text;
+      delete state.userAnswers.contract_clause_ref;
+      saveSession();
+      renderChecklist();
+    });
+  }
+
+  async function handleContractUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const MAX_CONTRACT_BYTES = 20 * 1024 * 1024;
+    if (file.size > MAX_CONTRACT_BYTES) {
+      if (window.ClaimCheckModal) window.ClaimCheckModal.error('Contract too large', 'Max 20 MB.');
+      return;
+    }
+    const status = document.getElementById('contract-upload-status');
+    if (status) status.textContent = 'Scanning contract for reference-date clauses…';
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const resp = await fetch('/api/claim-check/contract-scan', { method: 'POST', body: fd });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+        throw new Error(err.detail || `Contract scan failed (${resp.status})`);
+      }
+      const data = await resp.json();
+      state.contractScan = data;
+      saveSession();
+      renderChecklist();
+    } catch (err) {
+      if (status) status.textContent = '';
+      if (window.ClaimCheckModal) window.ClaimCheckModal.error('Contract scan failed', err.message || 'Please try again.');
+    }
   }
 
   function recordAnswer(qid, value) {
@@ -1102,6 +1403,7 @@
   }
 
   // ---------- boot ----------
+  try { renderPrevSessions(); } catch (_) {}
   if (loadSession()) {
     if (state.mode) {
       setMode(state.mode);

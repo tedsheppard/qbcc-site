@@ -109,6 +109,18 @@
 
   <div class="container">
 
+    <!-- PREVIOUS SESSIONS (localStorage — per-browser/device) -->
+    <section class="prev-sessions" id="prev-sessions" hidden>
+      <div class="prev-sessions-header">
+        <h3 class="prev-sessions-title">Previous sessions</h3>
+        <div class="prev-sessions-meta">
+          <span class="prev-sessions-note">Saved to this browser only</span>
+          <button type="button" class="prev-sessions-clear" id="btn-clear-all-sessions">Clear all</button>
+        </div>
+      </div>
+      <ul class="prev-sessions-list" id="prev-sessions-list"></ul>
+    </section>
+
     <!-- MODE PICKER -->
     <section class="mode-picker" aria-label="What are you checking?">
       <h2 class="section-title">What are you checking?</h2>

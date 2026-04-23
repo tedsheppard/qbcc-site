@@ -357,6 +357,51 @@ async def qbcc_search(request: Request, q: str = Query(..., min_length=2, max_le
 
 
 # ---------------------------------------------------------------------------
+# Contract scan (Section 4) — upload a contract, return reference-date clauses
+# ---------------------------------------------------------------------------
+
+MAX_CONTRACT_BYTES = 20 * 1024 * 1024  # 20 MB per spec Section 4
+
+
+@router.post("/contract-scan")
+async def contract_scan(
+    request: Request,
+    file: UploadFile = File(...),
+) -> dict:
+    ip = _client_ip(request)
+    _rate_limit("analyse", ip, MAX_ANALYSES_PER_DAY)
+
+    raw = await file.read()
+    if len(raw) > MAX_CONTRACT_BYTES:
+        raise HTTPException(status_code=413, detail="Contract is too large. Max 20 MB.")
+    name = (file.filename or "").lower()
+    if not any(name.endswith(ext) for ext in (".pdf", ".docx", ".txt")):
+        raise HTTPException(status_code=400, detail="Upload the contract as PDF, DOCX, or TXT.")
+
+    from services.claim_check import contract_scanner, extractor
+    try:
+        text, _extras = extractor.extract_rich(file.filename, raw)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        log.exception("Contract extraction failed for %s", file.filename)
+        raise HTTPException(status_code=500, detail=f"Could not read contract: {e}")
+
+    try:
+        result = contract_scanner.find_reference_date_clauses(text)
+    except Exception as e:
+        log.exception("Contract scan failed")
+        raise HTTPException(status_code=502, detail=f"Contract scan failed: {e}")
+
+    return {
+        "filename": file.filename,
+        "size": len(raw),
+        "chars": len(text),
+        **result,
+    }
+
+
+# ---------------------------------------------------------------------------
 # DOCX preview (server-side conversion)
 # ---------------------------------------------------------------------------
 

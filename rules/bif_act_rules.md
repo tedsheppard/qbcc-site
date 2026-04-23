@@ -172,6 +172,11 @@ The claim is served more than 6 months after the last day of work and no final-c
   type: text
   show_if: contract_mechanism == "Yes — specific mechanism"
   required: false
+- id: most_recent_claim_date_any
+  question: "When did you serve your most recent payment claim under this contract (regardless of reference date)?"
+  type: date
+  required: false
+  no_future: true
 
 **Pass criteria:**
 If the contract specifies a reference date mechanism and the claimed reference date matches it, the check passes. If the contract is silent, the default in s 67(2) applies (last day of the named month, unless the Act specifies otherwise) and the claimed reference date is a month-end date that has not been the subject of an earlier claim.
