@@ -814,13 +814,23 @@
   .explainer-grid { grid-template-columns: 1fr 1fr; }
   .workspace-grid { grid-template-columns: 1fr; }
   .mobile-tabs { display: flex; margin-bottom: 12px; }
-  .pane { min-height: 400px; }
   .pane[data-pane].hidden-mobile { display: none; }
   .btn-report { padding: 7px 10px; font-size: 12.5px; }
   .btn-report span.label-full { display: none; }
+  .pdfv-scroll { max-height: 460px; }
+  .xlsxv-scroll { max-height: 460px; }
+  .pdfv-toolbar { font-size: 12px; }
+  .pdfv-zoom-label { min-width: 36px; }
 }
 @media (max-width: 600px) {
   .explainer-grid { grid-template-columns: 1fr; }
   .mode-tile { padding: 14px 16px; }
   .mode-tile-title { font-size: 14px; }
+  .pdfv-scroll { max-height: 380px; }
+  .xlsxv-scroll { max-height: 380px; }
+  .check-input-row input[type="date"],
+  .check-input-row input[type="text"],
+  .check-input-row input[type="number"],
+  .licensee-input { max-width: 100%; }
+  .licensee-results { max-width: 100%; }
 }
