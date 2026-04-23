@@ -311,7 +311,7 @@
       ? `<div class="check-explanation">${escapeHtml(result.explanation)}</div>`
       : '';
     const quoteHtml = (result && result.quote)
-      ? `<div class="check-quote">“${escapeHtml(result.quote)}”</div>`
+      ? `<div class="check-quote-group"><div class="check-quote-label">From your document:</div><div class="check-quote">“${escapeHtml(result.quote)}”</div></div>`
       : '';
     const inputsHtml = (check.input_questions && check.input_questions.length)
       ? renderInputsBlock(check)
@@ -674,8 +674,11 @@
     chatbotInput.value = '';
     chatbotInput.disabled = true;
     chatbotSend.disabled = true;
-    const thinkingNode = appendMsg('assistant', '…');
+    const thinkingNode = appendMsg('assistant', '');
     thinkingNode.classList.add('thinking');
+    thinkingNode.innerHTML = '<span class="thinking-text">Reading your question…</span>';
+    rotateChatThinking(thinkingNode);
+
     try {
       const resp = await fetch('/api/claim-check/chat', {
         method: 'POST',
@@ -699,18 +702,66 @@
       });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ detail: resp.statusText }));
-        throw new Error(err.detail || `Chat failed (${resp.status})`);
+        const msg = err.detail || `Chat failed (${resp.status})`;
+        const err2 = new Error(msg);
+        err2.status = resp.status;
+        throw err2;
       }
       const data = await resp.json();
-      const reply = (data.reply || '').trim() || '(no reply)';
-      thinkingNode.textContent = reply;
+      const reply = (data.reply || '').trim();
+      stopRotateChatThinking(thinkingNode);
       thinkingNode.classList.remove('thinking');
+
+      if (!reply) {
+        // Treat an empty reply as an error — never show "(no reply)".
+        thinkingNode.remove();
+        state.history.pop(); // drop the just-added user message from history so retry doesn't duplicate
+        if (window.ClaimCheckModal) {
+          window.ClaimCheckModal.open({
+            title: "I couldn't generate a response",
+            body: "The assistant didn't return anything that time. Please try again.",
+            kind: 'error',
+            actions: [
+              { label: 'Close', variant: 'default' },
+              { label: 'Try again', variant: 'primary', onClick: () => { chatbotInput.value = msg; sendChat(); } },
+            ],
+          });
+        }
+        return;
+      }
+
+      renderMarkdownInto(thinkingNode, reply);
       state.history.push({ role: 'assistant', content: reply });
       saveSession();
     } catch (e) {
-      thinkingNode.textContent = 'Error: ' + (e.message || 'Chat failed.');
-      thinkingNode.classList.remove('thinking');
-      thinkingNode.classList.add('error');
+      stopRotateChatThinking(thinkingNode);
+      thinkingNode.remove();
+      // Keep the user's message in history so it's still visible in the log.
+      const detail = (e && e.message) || 'Chat failed.';
+      let title = "I couldn't generate a response just then.";
+      let body = 'Please try again.';
+      if (e && e.status === 429) {
+        title = 'Rate limit reached';
+        body = detail;
+      } else if (/out.*scope|BIF Act scope/i.test(detail)) {
+        title = 'Out of scope';
+        body = "Your question is outside what this tool covers. Try asking about payment claims, schedules, reference dates, licensing, or the document you uploaded.";
+      } else if (e && e.status >= 500) {
+        title = "Couldn't reach the assistant";
+        body = "The server had trouble responding. Please try again.";
+      }
+      if (window.ClaimCheckModal) {
+        window.ClaimCheckModal.open({
+          title,
+          body,
+          kind: 'error',
+          actions: [
+            { label: 'Close', variant: 'default' },
+            { label: 'Try again', variant: 'primary', onClick: () => { chatbotInput.value = msg; sendChat(); } },
+          ],
+        });
+      }
+      console.error('chat error', e);
     } finally {
       chatbotInput.disabled = false;
       chatbotSend.disabled = false;
@@ -719,12 +770,61 @@
     }
   }
 
+  const CHAT_THINKING_STEPS = [
+    'Reading your question…',
+    'Considering the document context…',
+    'Reviewing the check results…',
+    'Consulting the BIF Act…',
+    'Drafting response…',
+  ];
+  function rotateChatThinking(node) {
+    if (!node) return;
+    let i = 0;
+    node._rotTimer = setInterval(() => {
+      i = (i + 1) % CHAT_THINKING_STEPS.length;
+      const span = node.querySelector('.thinking-text');
+      if (span) span.textContent = CHAT_THINKING_STEPS[i];
+    }, 1400);
+  }
+  function stopRotateChatThinking(node) {
+    if (node && node._rotTimer) {
+      clearInterval(node._rotTimer);
+      node._rotTimer = null;
+    }
+  }
+
+  function renderMarkdownInto(node, md) {
+    if (window.marked && window.DOMPurify) {
+      try {
+        window.marked.setOptions({ breaks: true, gfm: true });
+        const html = window.marked.parse(md);
+        const clean = window.DOMPurify.sanitize(html, {
+          ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'h3', 'h4'],
+          ALLOWED_ATTR: ['href', 'target', 'rel'],
+        });
+        node.innerHTML = clean;
+        // Make any anchor tags safe.
+        node.querySelectorAll('a').forEach((a) => {
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+        });
+        return;
+      } catch (_) {}
+    }
+    // Fallback: plain text with linebreaks preserved.
+    node.textContent = md;
+  }
+
   function appendMsg(role, content) {
     const empty = chatbotMessages.querySelector('.chatbot-empty');
     if (empty) empty.remove();
     const node = document.createElement('div');
     node.className = `chatbot-msg ${role}`;
-    node.textContent = content;
+    if (role === 'assistant' && content) {
+      renderMarkdownInto(node, content);
+    } else {
+      node.textContent = content;
+    }
     chatbotMessages.appendChild(node);
     chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
     return node;
@@ -738,9 +838,90 @@
   }));
 
   // ---------- report ----------
-  btnReport.addEventListener('click', () => {
-    alert("PDF report will be wired up in a follow-up. Your analysis results and answers are preserved in this tab's session.");
-  });
+  btnReport.addEventListener('click', () => downloadReport());
+
+  async function downloadReport() {
+    if (!state.checks.length || !Object.keys(state.results).length) {
+      if (window.ClaimCheckModal) {
+        window.ClaimCheckModal.info('Nothing to report on yet', 'Run an analysis first, then download the report.');
+      }
+      return;
+    }
+
+    const progress = window.ClaimCheckModal
+      ? window.ClaimCheckModal.progress('Generating your report…', 'Building a PDF with every check, your answers, and the relevant disclaimers.')
+      : null;
+
+    try {
+      // Build the payload. Merge the checks metadata (titles/sections) with the live results.
+      const checksPayload = state.checks.map((c) => {
+        const r = state.results[c.id] || {};
+        return {
+          id: c.id,
+          title: c.title,
+          section: c.section_ref,
+          status: r.status || state.states[c.id] || 'pending',
+          status_summary: r.status_summary || '',
+          explanation: r.explanation || '',
+          quote: r.quote || '',
+          decisions: r.decisions || [],
+        };
+      });
+
+      // Build a question-id -> label map so the answers appendix shows
+      // full questions instead of ids.
+      const labels = {};
+      state.checks.forEach((c) => {
+        (c.input_questions || []).forEach((q) => {
+          labels[c.id] = labels[c.id] || {};
+          labels[c.id][q.id] = q.question || q.id;
+        });
+      });
+
+      const resp = await fetch('/api/claim-check/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: state.mode,
+          source_name: state.doc ? state.doc.filename : null,
+          summary: state.summary,
+          checks: checksPayload,
+          user_answers: state.userAnswers,
+          check_input_labels: labels,
+        }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+        throw new Error(err.detail || `Report failed (${resp.status})`);
+      }
+
+      const blob = await resp.blob();
+      const cd = resp.headers.get('content-disposition') || '';
+      const nameMatch = /filename="([^"]+)"/.exec(cd);
+      const filename = nameMatch ? nameMatch[1] : `Sopal Claim Check — ${new Date().toISOString().slice(0, 10)}.pdf`;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+
+      if (progress) progress.close();
+    } catch (e) {
+      if (progress) progress.close();
+      if (window.ClaimCheckModal) {
+        window.ClaimCheckModal.open({
+          title: 'Report failed',
+          body: e.message || 'The report could not be generated. Please try again.',
+          kind: 'error',
+          actions: [
+            { label: 'Close', variant: 'default' },
+            { label: 'Try again', variant: 'primary', onClick: () => downloadReport() },
+          ],
+        });
+      }
+    }
+  }
 
   // ---------- utilities ----------
   function formatBytes(bytes) {
@@ -799,7 +980,11 @@
         state.history.forEach((m) => {
           const node = document.createElement('div');
           node.className = `chatbot-msg ${m.role}`;
-          node.textContent = m.content;
+          if (m.role === 'assistant') {
+            renderMarkdownInto(node, m.content);
+          } else {
+            node.textContent = m.content;
+          }
           chatbotMessages.appendChild(node);
         });
         chatbotMessages.scrollTop = chatbotMessages.scrollHeight;

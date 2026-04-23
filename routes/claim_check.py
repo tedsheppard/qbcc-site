@@ -383,9 +383,55 @@ async def preview(
 
 
 # ---------------------------------------------------------------------------
-# PDF report (deferred — still unimplemented)
+# PDF report — streamed, never persisted
 # ---------------------------------------------------------------------------
 
+from fastapi.responses import Response
+
 @router.post("/report")
-async def report() -> dict:
-    raise HTTPException(status_code=501, detail="PDF report coming in a later stage.")
+async def report(request: Request, payload: dict = Body(...)) -> Response:
+    ip = _client_ip(request)
+    _rate_limit("analyse", ip, MAX_ANALYSES_PER_DAY)  # same bucket as analysis
+
+    mode = payload.get("mode")
+    if mode not in VALID_MODES:
+        raise HTTPException(status_code=400, detail=f"Invalid mode: {mode!r}")
+
+    source_name = payload.get("source_name") or payload.get("document_name") or "document"
+    summary = payload.get("summary") or ""
+    checks = payload.get("checks") or []
+    user_answers = payload.get("user_answers") or {}
+    check_input_labels = payload.get("check_input_labels") or {}
+
+    if not isinstance(checks, list):
+        raise HTTPException(status_code=400, detail="checks must be a list")
+    if not checks:
+        raise HTTPException(status_code=400, detail="Nothing to report on yet — run an analysis first.")
+
+    from services.claim_check import report_generator
+
+    try:
+        pdf_bytes = report_generator.build_report_pdf(
+            mode=mode,
+            source_name=source_name,
+            summary=summary,
+            checks=checks,
+            user_answers=user_answers,
+            check_input_labels=check_input_labels,
+        )
+    except Exception as e:
+        log.exception("PDF report build failed")
+        raise HTTPException(status_code=500, detail=f"Could not build PDF report: {e}")
+
+    date_str = time.strftime("%Y-%m-%d")
+    safe_name = (source_name or "document").rsplit(".", 1)[0][:60].replace('"', "")
+    filename = f"Sopal Claim Check — {safe_name} — {date_str}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-store",
+        },
+    )

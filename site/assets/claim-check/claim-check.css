@@ -252,16 +252,24 @@
   border-radius: 8px;
   margin-bottom: 10px;
 }
+.check-quote-group { margin-top: 8px; }
+.check-quote-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
 .check-quote {
   font-size: 12px;
   color: var(--text-secondary);
   background: #f9fafb;
-  border-left: 2px solid var(--border-light);
-  padding: 6px 10px;
-  margin-top: 6px;
+  border-left: 3px solid var(--border-light);
+  padding: 7px 11px;
   border-radius: 0 6px 6px 0;
   font-style: italic;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 .btn-apply-answer {
   margin-top: 4px;
@@ -275,8 +283,43 @@
   transition: background 0.15s;
 }
 .btn-apply-answer:hover { background: var(--green-dark); }
-.chatbot-msg.thinking { opacity: 0.7; font-style: italic; }
+.chatbot-msg.thinking { padding: 10px 14px; min-height: 0; }
+.chatbot-msg.thinking .thinking-text { font-size: 13px; }
 .chatbot-msg.error { background: var(--red-soft); border-color: var(--red-mid); color: var(--red); }
+
+/* Markdown inside assistant chat bubbles */
+.chatbot-msg.assistant p { margin: 0 0 8px; }
+.chatbot-msg.assistant p:last-child { margin-bottom: 0; }
+.chatbot-msg.assistant ul, .chatbot-msg.assistant ol { margin: 4px 0 8px 20px; padding: 0; }
+.chatbot-msg.assistant li { margin: 2px 0; }
+.chatbot-msg.assistant strong { font-weight: 700; }
+.chatbot-msg.assistant em { font-style: italic; }
+.chatbot-msg.assistant code {
+  background: #f3f4f6;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+.chatbot-msg.assistant pre {
+  background: #f3f4f6;
+  padding: 8px 10px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  margin: 6px 0;
+}
+.chatbot-msg.assistant blockquote {
+  border-left: 3px solid var(--border-light);
+  padding: 2px 10px;
+  color: var(--text-secondary);
+  margin: 6px 0;
+  font-style: italic;
+}
+.chatbot-msg.assistant a {
+  color: var(--green-deep);
+  text-decoration: underline;
+}
 
 /* ---------- Shimmer thinking-text bar (Section 4) ---------- */
 .thinking-bar {
@@ -616,6 +659,126 @@
 
 /* DOCX preview (wraps pdf-viewer via docx-viewer.js) */
 .docxv-status { padding: 32px 16px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+/* ---------- Modal (components/modal.js) ---------- */
+body.cc-modal-open { overflow: hidden; }
+.cc-modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  animation: cc-modal-fade 0.18s ease;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+@keyframes cc-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.cc-modal {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.25), 0 4px 12px rgba(0,0,0,0.08);
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 80px);
+  display: flex; flex-direction: column;
+  animation: cc-modal-rise 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+@keyframes cc-modal-rise {
+  from { transform: translateY(12px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+.cc-modal-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border-lighter);
+}
+.cc-modal-header-icon {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.cc-modal-header-icon svg { width: 18px; height: 18px; }
+.cc-modal-header-icon[data-kind="info"]    { background: #eef2ff; color: #4338ca; }
+.cc-modal-header-icon[data-kind="error"]   { background: var(--red-soft); color: var(--red); }
+.cc-modal-header-icon[data-kind="warning"] { background: var(--amber-soft); color: #92400e; }
+.cc-modal-header-icon[data-kind="confirm"] { background: #f3f4f6; color: var(--text-secondary); }
+.cc-modal-header-icon[data-kind="progress"]{ background: var(--green-soft); color: var(--green-deep); }
+.cc-modal-title {
+  flex: 1;
+  font-size: 16px; font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  margin: 0;
+}
+.cc-modal-close {
+  background: transparent; border: none;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.12s;
+}
+.cc-modal-close:hover { background: #f3f4f6; color: var(--text-primary); }
+.cc-modal-close svg { width: 16px; height: 16px; }
+.cc-modal-body {
+  padding: 18px 22px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  overflow-y: auto;
+}
+.cc-modal-body p { margin: 0 0 10px; }
+.cc-modal-body p:last-child { margin-bottom: 0; }
+.cc-modal-body .muted { color: var(--text-muted); font-size: 13px; }
+.cc-modal-footer {
+  display: flex; gap: 8px; justify-content: flex-end;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--border-lighter);
+}
+.cc-modal-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+  border: 1px solid transparent;
+}
+.cc-modal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.cc-modal-btn-default {
+  background: white;
+  color: var(--text-secondary);
+  border-color: var(--border-light);
+}
+.cc-modal-btn-default:hover:not(:disabled) { border-color: #ccc; color: var(--text-primary); }
+.cc-modal-btn-primary {
+  background: var(--green);
+  color: #000;
+}
+.cc-modal-btn-primary:hover:not(:disabled) { background: var(--green-dark); }
+.cc-modal-btn-danger {
+  background: var(--red);
+  color: white;
+}
+.cc-modal-btn-danger:hover:not(:disabled) { filter: brightness(1.1); }
+
+.cc-modal-spin { width: 18px; height: 18px; animation: spin 1s linear infinite; }
+
+/* Progress modal gets a shimmer line under the body too */
+.cc-modal-progress .cc-modal-body { padding-bottom: 22px; }
+.cc-modal-progress .cc-modal-footer { display: none; }
+
+@media (max-width: 600px) {
+  .cc-modal { max-width: 100%; border-radius: 12px; }
+  .cc-modal-backdrop { padding: 12px; }
+}
 
 .analysis-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .analysis-item {
