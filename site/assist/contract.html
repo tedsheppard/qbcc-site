@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contract Assist | Sopal</title>
+  <meta name="description" content="Ask questions about your construction contract — grounded in your uploaded document and the BIF Act 2017 (Qld).">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-dark: #0a0a0a;
+      --green: #00d47e;
+      --green-deep: #166534;
+      --green-soft: #f0fdf4;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #888;
+      --border-light: #e5e5e5;
+      --border-lighter: #eee;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; font-size: 15px; padding-bottom: 56px; }
+    a { text-decoration: none; color: inherit; }
+    button { border: none; cursor: pointer; font-family: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-links a.active { color: white; font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .btn-signin { background: transparent; color: white; font-size: 13.5px; font-weight: 500; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); }
+
+    .placeholder {
+      max-width: 720px;
+      margin: 80px auto;
+      padding: 32px 32px;
+      text-align: center;
+    }
+    .placeholder .pulse {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--green);
+      margin: 0 auto 18px;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.4); opacity: 1; }
+    }
+    .placeholder h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 10px; }
+    .placeholder p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 8px; }
+    .placeholder a { color: var(--green-deep); font-weight: 600; }
+
+    .disclaimer-bar {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+      background: #111; color: #aaa; font-size: 12px;
+      padding: 10px 32px; border-top: 1px solid #222;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .disclaimer-bar strong { color: #ddd; font-weight: 600; }
+    .disclaimer-bar .copy { color: #777; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/" class="nav-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;"></a>
+        <div class="nav-links">
+          <a href="/search">Search</a>
+          <a href="/adjudicators">Adjudicators</a>
+          <a href="/interest-calculator">Interest Calculator</a>
+          <a href="/due-date-calculator">Due Date Calculator</a>
+          <a href="/assist" class="active">Assist</a>
+          <a href="/how-to">How-To Guide</a>
+          <a href="/feedback">Feedback</a>
+        </div>
+      </div>
+      <div class="nav-right"><a href="/login" class="btn-signin">Sign In</a></div>
+    </div>
+  </nav>
+
+  <div class="placeholder">
+    <div class="pulse" aria-hidden="true"></div>
+    <h1>Contract Assist — coming online</h1>
+    <p>This is the placeholder shown while the Contract Assist build lands. The chat interface, contract viewer, retrieval pipeline, and BIF Act grounding are being wired up tonight.</p>
+    <p>If you arrived here from the landing page, you can either head back to <a href="/assist">Sopal Assist</a> or use the existing <a href="/assist/claim">Claim Assist</a> tool in the meantime.</p>
+  </div>
+
+  <div class="disclaimer-bar" role="contentinfo">
+    <div><strong>General information only — not legal advice.</strong> Sopal is a research tool, not a legal adviser.</div>
+    <div class="copy">© 2026 Sopal Australia</div>
+  </div>
+
+</body>
+</html>

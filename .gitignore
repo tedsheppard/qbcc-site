@@ -38,3 +38,6 @@ __pycache__/
 # Archived pages
 site/.archive/
 *.docx
+
+# Astruct reference codebase — pattern source only, never deployed
+astruct/

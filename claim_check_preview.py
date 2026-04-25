@@ -19,13 +19,14 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
-from routes.claim_check import router as claim_check_router
+from routes.claim_check import router as claim_check_router, redirect_router as claim_check_redirect
 
 ROOT = Path(__file__).parent.resolve()
 SITE_DIR = ROOT / "site"
 
 app = FastAPI(title="Sopal claim-check preview")
 app.include_router(claim_check_router)
+app.include_router(claim_check_redirect)
 
 
 @app.get("/")

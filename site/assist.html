@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sopal Assist | Sopal</title>
+  <meta name="description" content="Practical AI tools for Queensland construction contracts — Claim Assist for payment-claim and payment-schedule compliance, Contract Assist for grounded Q&A and draft generation against your contract.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-dark: #0a0a0a;
+      --bg-darker: #050505;
+      --bg-card-dark: #141414;
+      --green: #00d47e;
+      --green-dark: #00b368;
+      --green-soft: #f0fdf4;
+      --green-mid: #bbf7d0;
+      --green-deep: #166534;
+      --amber-soft: #fffbeb;
+      --amber-mid: #fde68a;
+      --red: #dc2626;
+      --red-soft: #fef2f2;
+      --red-mid: #fecaca;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #888;
+      --border-light: #e5e5e5;
+      --border-lighter: #eee;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; font-size: 15px; }
+    a { text-decoration: none; color: inherit; }
+    button { border: none; cursor: pointer; font-family: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+    /* NAV (shared) */
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-links a.active { color: white; font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .btn-signin { background: transparent; color: white; font-size: 13.5px; font-weight: 500; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; }
+    .btn-signin:hover { background: rgba(255,255,255,0.08); }
+
+    /* PAGE HEADER */
+    .hero {
+      background: linear-gradient(135deg, #1a3a2a 0%, #0d2d22 30%, #143d2e 60%, #1a4a35 100%);
+      color: white;
+      padding: 56px 0 48px;
+    }
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin-bottom: 8px;
+    }
+    .hero .tag {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      font-weight: 500;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .hero .subtitle {
+      font-size: 17px;
+      color: rgba(255,255,255,0.78);
+      max-width: 720px;
+      line-height: 1.55;
+    }
+
+    /* CARDS GRID */
+    .cards-section { padding: 32px 0 8px; }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .product-card {
+      background: white;
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      padding: 28px 28px 22px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+      display: flex; flex-direction: column;
+      transition: border-color 0.18s, box-shadow 0.18s, transform 0.05s;
+    }
+    .product-card:hover {
+      border-color: var(--green-mid);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .product-icon {
+      width: 44px; height: 44px;
+      border-radius: 11px;
+      background: var(--green-soft);
+      color: var(--green-deep);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px;
+    }
+    .product-icon svg { width: 22px; height: 22px; }
+    .product-card h2 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    .product-card .blurb {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin-bottom: 6px;
+    }
+    .product-card .blurb-sub {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+    .product-card hr {
+      border: none;
+      border-top: 1px solid var(--border-lighter);
+      margin: 4px 0 16px;
+    }
+
+    /* INLINE DROPZONE */
+    .inline-dropzone {
+      border: 1.5px dashed #d4d4d8;
+      border-radius: 11px;
+      padding: 22px 16px;
+      text-align: center;
+      color: var(--text-secondary);
+      background: #fafafa;
+      transition: border-color 0.18s, background 0.18s;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+    .inline-dropzone:hover, .inline-dropzone:focus-visible {
+      border-color: var(--green);
+      background: var(--green-soft);
+      color: var(--green-deep);
+      outline: none;
+    }
+    .inline-dropzone.dragging {
+      border-color: var(--green);
+      background: var(--green-soft);
+      color: var(--green-deep);
+    }
+    .inline-dropzone-inner {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .inline-dropzone svg { width: 22px; height: 22px; }
+    .inline-dropzone-primary { font-size: 13.5px; font-weight: 500; }
+    .inline-dropzone-sub { font-size: 12px; color: var(--text-muted); }
+
+    /* OPEN BUTTON */
+    .open-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--green-deep);
+      font-size: 13.5px;
+      font-weight: 600;
+      transition: gap 0.18s;
+      margin-top: auto;
+    }
+    .open-link:hover { gap: 10px; }
+    .open-link::after { content: "→"; }
+
+    .or-line {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    /* RECENTLY USED */
+    .recent-section {
+      padding: 24px 0 16px;
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+    .recent-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .recent-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: white;
+      border: 1px solid var(--border-lighter);
+      border-radius: 10px;
+    }
+    .recent-row .left { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; font-size: 13px; }
+    .recent-pill {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: var(--green-soft);
+      color: var(--green-deep);
+    }
+    .recent-pill.contract { background: #eef2ff; color: #4338ca; }
+    .recent-mode { font-weight: 600; color: var(--text-primary); }
+    .recent-doc { color: var(--text-secondary); }
+    .recent-when { color: var(--text-muted); font-size: 11.5px; }
+    .recent-actions { display: flex; gap: 6px; }
+    .recent-btn {
+      background: white;
+      border: 1px solid var(--border-light);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .recent-btn:hover { border-color: var(--green); color: var(--green-deep); }
+    .recent-btn.delete:hover { border-color: var(--red-mid); color: var(--red); }
+    .recent-clear-row { margin-top: 8px; text-align: right; }
+    .recent-clear-all {
+      background: transparent;
+      color: var(--red);
+      border: 1px solid var(--red-mid);
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .recent-clear-all:hover { background: var(--red-soft); }
+
+    /* SHARED INFO */
+    .shared-section {
+      background: white;
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 24px 28px;
+      margin: 24px 0 48px;
+    }
+    .shared-section h3 {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.005em;
+      margin-bottom: 12px;
+    }
+    .shared-list { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+    .shared-list li {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      display: flex; gap: 8px; align-items: flex-start;
+    }
+    .shared-list li::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      margin-top: 7px;
+      flex-shrink: 0;
+    }
+
+    /* DISCLAIMER BAR */
+    .disclaimer-bar {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+      background: #111; color: #aaa; font-size: 12px; line-height: 1.5;
+      padding: 10px 32px; border-top: 1px solid #222;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .disclaimer-bar strong { color: #ddd; font-weight: 600; }
+    .disclaimer-bar .copy { color: #777; white-space: nowrap; }
+    body { padding-bottom: 56px; }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .cards-grid { grid-template-columns: 1fr; }
+      .shared-list { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 30px; }
+    }
+    @media (max-width: 700px) {
+      .disclaimer-bar { font-size: 11px; padding: 8px 16px; flex-wrap: wrap; }
+      .disclaimer-bar .copy { display: none; }
+      body { padding-bottom: 80px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV (Assist link present and active) -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/" class="nav-logo">
+          <img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;">
+        </a>
+        <div class="nav-links">
+          <a href="/search">Search</a>
+          <a href="/adjudicators">Adjudicators</a>
+          <a href="/interest-calculator">Interest Calculator</a>
+          <a href="/due-date-calculator">Due Date Calculator</a>
+          <a href="/assist" class="active">Assist</a>
+          <a href="/how-to">How-To Guide</a>
+          <a href="/feedback">Feedback</a>
+        </div>
+      </div>
+      <div class="nav-right"><a href="/login" class="btn-signin">Sign In</a></div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="tag">Sopal Assist</div>
+      <h1>Practical tools for Queensland construction contracts</h1>
+      <p class="subtitle">Two products, both grounded in the BIF Act and Queensland construction law. No login. No accounts. Documents stay in your browser.</p>
+    </div>
+  </section>
+
+  <!-- PRODUCT CARDS -->
+  <section class="cards-section">
+    <div class="container">
+      <div class="cards-grid">
+
+        <article class="product-card">
+          <div class="product-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+          </div>
+          <h2>Claim Assist</h2>
+          <p class="blurb">Check BIF Act compliance of payment claims and payment schedules.</p>
+          <p class="blurb-sub">Upload a document, run a structured analysis with section references and case citations, and download a compliance report.</p>
+          <hr>
+
+          <div class="inline-dropzone" id="dropzone-claim" tabindex="0" role="button" aria-label="Upload a payment claim or schedule for Claim Assist">
+            <input type="file" id="file-claim" accept=".pdf,.docx,.xlsx,.xlsm" hidden>
+            <div class="inline-dropzone-inner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span class="inline-dropzone-primary">Drop a payment claim or schedule here</span>
+              <span class="inline-dropzone-sub">PDF, DOCX, or XLSX. Up to 50 MB. Routes you straight to Claim Assist.</span>
+            </div>
+          </div>
+
+          <div class="or-line">or</div>
+          <a href="/assist/claim" class="open-link">Open Claim Assist</a>
+        </article>
+
+        <article class="product-card">
+          <div class="product-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </div>
+          <h2>Contract Assist</h2>
+          <p class="blurb">Ask questions about your construction contract — grounded in the uploaded document.</p>
+          <p class="blurb-sub">Upload your contract and ask anything about its clauses, requirements, and timing. Optional draft generation for permitted notices.</p>
+          <hr>
+
+          <div class="inline-dropzone" id="dropzone-contract" tabindex="0" role="button" aria-label="Upload a contract for Contract Assist">
+            <input type="file" id="file-contract" accept=".pdf,.docx" hidden>
+            <div class="inline-dropzone-inner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span class="inline-dropzone-primary">Drop a construction contract here</span>
+              <span class="inline-dropzone-sub">PDF or DOCX. Up to 25 MB. Routes you straight to Contract Assist.</span>
+            </div>
+          </div>
+
+          <div class="or-line">or</div>
+          <a href="/assist/contract" class="open-link">Open Contract Assist</a>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- RECENTLY USED -->
+  <section class="recent-section" id="recent-section" hidden>
+    <div class="container">
+      <h3 class="section-title">Recently used</h3>
+      <ul class="recent-list" id="recent-list"></ul>
+      <div class="recent-clear-row">
+        <button class="recent-clear-all" id="btn-clear-all-sessions" type="button">Clear all previous sessions</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHARED INFO -->
+  <section>
+    <div class="container">
+      <div class="shared-section">
+        <h3>What both products share</h3>
+        <ul class="shared-list">
+          <li>Grounded in the BIF Act 2017 (Qld) and Queensland case law</li>
+          <li>No login required, no accounts, no saved documents on our servers</li>
+          <li>QBCC licensee verification where relevant</li>
+          <li>Analysis runs in your browser session and is never retained</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer-bar" role="contentinfo">
+    <div>
+      <strong>General information only — not legal advice.</strong> Sopal is a research tool, not a legal adviser. For your specific situation, consult a qualified construction lawyer.
+    </div>
+    <div class="copy">© 2026 Sopal Australia</div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ---------- inline dropzone routing ----------
+      function wireDropzone(zoneId, inputId, target, accept) {
+        const zone = document.getElementById(zoneId);
+        const input = document.getElementById(inputId);
+        if (!zone || !input) return;
+        zone.addEventListener('click', () => input.click());
+        zone.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+        });
+        ['dragenter', 'dragover'].forEach((evt) =>
+          zone.addEventListener(evt, (e) => { e.preventDefault(); zone.classList.add('dragging'); })
+        );
+        ['dragleave', 'drop'].forEach((evt) =>
+          zone.addEventListener(evt, (e) => { e.preventDefault(); zone.classList.remove('dragging'); })
+        );
+        zone.addEventListener('drop', (e) => {
+          const f = e.dataTransfer.files && e.dataTransfer.files[0];
+          if (f) handoff(f, target, accept);
+        });
+        input.addEventListener('change', () => {
+          const f = input.files && input.files[0];
+          if (f) handoff(f, target, accept);
+        });
+      }
+
+      function handoff(file, target, accept) {
+        const name = (file.name || '').toLowerCase();
+        const ok = accept.split(',').some((ext) => name.endsWith(ext.trim().replace('.', '.').replace(/^\./, '.')));
+        if (!ok) { alert('Please upload one of: ' + accept); return; }
+        // Store the file in a brief sessionStorage handoff so the destination
+        // page can pick it up. We can't pass File objects directly — read as ArrayBuffer
+        // and base64 it.
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const arr = new Uint8Array(reader.result);
+            const chunk = 0x8000;
+            let bin = '';
+            for (let i = 0; i < arr.length; i += chunk) {
+              bin += String.fromCharCode.apply(null, arr.subarray(i, i + chunk));
+            }
+            const b64 = btoa(bin);
+            sessionStorage.setItem('sopal.assistHandoff', JSON.stringify({
+              filename: file.name,
+              size: file.size,
+              type: file.type || '',
+              b64: b64,
+              target: target,
+              ts: Date.now(),
+            }));
+            window.location.href = target;
+          } catch (e) {
+            console.error('handoff failed', e);
+            window.location.href = target;
+          }
+        };
+        reader.onerror = () => { window.location.href = target; };
+        reader.readAsArrayBuffer(file);
+      }
+
+      wireDropzone('dropzone-claim', 'file-claim', '/assist/claim', '.pdf,.docx,.xlsx,.xlsm');
+      wireDropzone('dropzone-contract', 'file-contract', '/assist/contract', '.pdf,.docx');
+
+      // ---------- recently used (pulls from localStorage) ----------
+      const LS_PREFIX = 'sopal-claim-check-session-';
+      const CONTRACT_LS_PREFIX = 'sopal-contract-assist-session-';
+      const MODE_LABELS = {
+        payment_claim_serving:     "Payment claim I'm about to serve",
+        payment_claim_received:    "Payment claim I've received",
+        payment_schedule_giving:   "Payment schedule I'm about to give",
+        payment_schedule_received: "Payment schedule I've received",
+      };
+
+      function readSessions() {
+        const out = [];
+        if (typeof localStorage === 'undefined') return out;
+        try {
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (!k) continue;
+            if (k.startsWith(LS_PREFIX)) {
+              try {
+                const raw = localStorage.getItem(k);
+                if (!raw) continue;
+                const obj = JSON.parse(raw);
+                out.push({ ...obj, _key: k, _kind: 'claim_assist', _href: '/assist/claim' });
+              } catch (_) {}
+            } else if (k.startsWith(CONTRACT_LS_PREFIX)) {
+              try {
+                const raw = localStorage.getItem(k);
+                if (!raw) continue;
+                const obj = JSON.parse(raw);
+                out.push({ ...obj, _key: k, _kind: 'contract_assist', _href: '/assist/contract' });
+              } catch (_) {}
+            }
+          }
+        } catch (_) {}
+        out.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+        return out;
+      }
+
+      function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      }
+
+      function paintRecent() {
+        const wrap = document.getElementById('recent-section');
+        const list = document.getElementById('recent-list');
+        if (!wrap || !list) return;
+        const sessions = readSessions().slice(0, 10);
+        if (!sessions.length) { wrap.hidden = true; return; }
+        wrap.hidden = false;
+        list.innerHTML = sessions.map((s) => {
+          const when = new Date(s.savedAt || 0).toLocaleString();
+          const docName = (s.docMeta && s.docMeta.filename) || (s.contractFilename) || 'Pasted text';
+          const isContract = s._kind === 'contract_assist';
+          const pill = isContract ? '<span class="recent-pill contract">Contract Assist</span>' : '<span class="recent-pill">Claim Assist</span>';
+          const mode = isContract ? '' : `<span class="recent-mode">${escapeHtml(MODE_LABELS[s.mode] || s.mode || '')}</span>`;
+          return `<li class="recent-row">
+            <div class="left">
+              ${pill}
+              ${mode}
+              <span class="recent-doc">${escapeHtml(docName)}</span>
+              <span class="recent-when">${escapeHtml(when)}</span>
+            </div>
+            <div class="recent-actions">
+              <button class="recent-btn resume" type="button" data-key="${escapeHtml(s._key)}" data-href="${escapeHtml(s._href)}">Resume</button>
+              <button class="recent-btn delete" type="button" data-key="${escapeHtml(s._key)}">Delete</button>
+            </div>
+          </li>`;
+        }).join('');
+        list.querySelectorAll('.resume').forEach((b) => b.addEventListener('click', () => {
+          // Tag the session as the one to resume on the destination page.
+          try { sessionStorage.setItem('sopal.resumeKey', b.dataset.key); } catch (_) {}
+          window.location.href = b.dataset.href;
+        }));
+        list.querySelectorAll('.delete').forEach((b) => b.addEventListener('click', () => {
+          try { localStorage.removeItem(b.dataset.key); } catch (_) {}
+          paintRecent();
+        }));
+      }
+
+      const clearAll = document.getElementById('btn-clear-all-sessions');
+      if (clearAll) clearAll.addEventListener('click', () => {
+        const all = readSessions();
+        if (!all.length) return;
+        all.forEach((s) => { try { localStorage.removeItem(s._key); } catch (_) {} });
+        paintRecent();
+      });
+
+      paintRecent();
+    })();
+  </script>
+</body>
+</html>

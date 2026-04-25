@@ -24,11 +24,21 @@ from collections import defaultdict
 from typing import Any, AsyncIterator, Optional
 
 from fastapi import APIRouter, Body, File, Form, HTTPException, Query, Request, UploadFile
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 
 log = logging.getLogger("claim_check.routes")
 
 router = APIRouter(prefix="/api/claim-check", tags=["claim-check"])
+
+# Legacy URL redirect: /claim-check → /assist/claim (301).
+# Lives in this module so server.py only needs the existing one-line include
+# pattern — no extra wiring.
+redirect_router = APIRouter()
+
+
+@redirect_router.get("/claim-check")
+async def _redirect_legacy_claim_check() -> RedirectResponse:
+    return RedirectResponse(url="/assist/claim", status_code=301)
 
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB per spec Section 1
 MAX_PASTE_CHARS = 200_000

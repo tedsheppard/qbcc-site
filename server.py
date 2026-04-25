@@ -186,8 +186,9 @@ except Exception as e:
 app = FastAPI()
 
 # >>> claim-check feature — isolated in routes/claim_check.py (f703011+)
-from routes.claim_check import router as _claim_check_router
+from routes.claim_check import router as _claim_check_router, redirect_router as _claim_check_redirect_router
 app.include_router(_claim_check_router)
+app.include_router(_claim_check_redirect_router)
 # <<< claim-check feature
 
 # --- UNIFIED USERS DATABASE CONNECTION ---
