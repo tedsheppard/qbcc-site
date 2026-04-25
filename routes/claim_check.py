@@ -533,14 +533,24 @@ async def report(request: Request, payload: dict = Body(...)) -> Response:
         raise HTTPException(status_code=500, detail=f"Could not build PDF report: {e}")
 
     date_str = time.strftime("%Y-%m-%d")
-    safe_name = (source_name or "document").rsplit(".", 1)[0][:60].replace('"', "")
-    filename = f"Sopal Claim Check — {safe_name} — {date_str}.pdf"
+    raw_stem = (source_name or "document").rsplit(".", 1)[0][:60]
+    # HTTP headers must be ASCII per RFC 7230. Strip non-ASCII for the
+    # Content-Disposition header value while keeping a friendly filename.
+    safe_ascii = "".join(ch if ord(ch) < 128 and ch not in '"\\\r\n' else "_" for ch in raw_stem).strip() or "document"
+    ascii_filename = f"Sopal Claim Check - {safe_ascii} - {date_str}.pdf"
+    # Also offer a Unicode filename via the RFC 5987 filename* extension so
+    # the original characters survive when the browser supports it.
+    from urllib.parse import quote as _urlquote
+    pretty_filename = f"Sopal Claim Check — {raw_stem} — {date_str}.pdf"
 
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Disposition": (
+                f'attachment; filename="{ascii_filename}"; '
+                f"filename*=UTF-8''{_urlquote(pretty_filename)}"
+            ),
             "Cache-Control": "no-store",
         },
     )
