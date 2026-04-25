@@ -826,6 +826,7 @@
         if (c.clause_ref) state.userAnswers.contract_clause_ref = c.clause_ref;
         saveSession();
         renderChecklist();
+        queueRecheckForAnswer('contract_clause_text');
       });
     });
     const clearBtn = document.getElementById('btn-clear-contract-clause');
@@ -868,9 +869,93 @@
   function recordAnswer(qid, value) {
     if (!qid) return;
     state.userAnswers[qid] = value;
-    // Conditional visibility may now change — re-evaluate.
     updateConditionalVisibility();
     saveSession();
+    queueRecheckForAnswer(qid);
+  }
+
+  // ---------- Auto-recheck on answer change ----------
+  // Build an inverse map: answer-id -> [check-id(s) that depend on it].
+  function buildAnswerToCheckMap() {
+    const m = {};
+    state.checks.forEach((c) => {
+      (c.input_questions || []).forEach((q) => {
+        if (!m[q.id]) m[q.id] = [];
+        if (!m[q.id].includes(c.id)) m[q.id].push(c.id);
+      });
+    });
+    // Special-case answers that don't have a declared input question
+    // but which the rule engine consumes (contract-clause confirm).
+    if (!m.contract_clause_text) m.contract_clause_text = ['PC-005'];
+    if (!m.contract_clause_ref) m.contract_clause_ref = ['PC-005'];
+    return m;
+  }
+
+  let recheckTimer = null;
+  let pendingCheckIds = new Set();
+
+  function queueRecheckForAnswer(qid) {
+    const map = buildAnswerToCheckMap();
+    const ids = map[qid] || [];
+    ids.forEach((id) => pendingCheckIds.add(id));
+    if (!ids.length || !state.documentText) return;
+    if (recheckTimer) clearTimeout(recheckTimer);
+    recheckTimer = setTimeout(runRecheck, 1500);
+  }
+
+  async function runRecheck() {
+    if (!pendingCheckIds.size || !state.mode || !state.documentText) {
+      pendingCheckIds.clear();
+      return;
+    }
+    const ids = Array.from(pendingCheckIds);
+    pendingCheckIds.clear();
+
+    // Mark affected rows as running and show shimmer.
+    ids.forEach((id) => { state.states[id] = 'running'; });
+    renderChecklist();
+    thinkingBar.hidden = false;
+    setThinking(`Updating ${ids.length === 1 ? 'check' : 'checks'} with your new answers…`);
+
+    try {
+      const resp = await fetch('/api/claim-check/recheck', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: state.mode,
+          document_text: state.documentText,
+          user_answers: state.userAnswers,
+          check_ids: ids,
+        }),
+      });
+      if (!resp.ok) {
+        let detail = '';
+        try { const j = await resp.clone().json(); detail = j && j.detail ? j.detail : ''; }
+        catch (_) { try { detail = await resp.text(); } catch (_) {} }
+        throw new Error(detail || `Recheck failed (${resp.status})`);
+      }
+      const data = await resp.json();
+      (data.checks || []).forEach((res) => {
+        if (!res || !res.id) return;
+        state.states[res.id] = res.status || 'warning';
+        state.results[res.id] = res;
+      });
+      renderChecklist();
+      saveSession();
+    } catch (e) {
+      // Roll affected rows back to a sane state.
+      ids.forEach((id) => {
+        if (state.states[id] === 'running') {
+          state.states[id] = state.results[id] ? (state.results[id].status || 'warning') : 'pending';
+        }
+      });
+      renderChecklist();
+      if (window.ClaimCheckModal) {
+        window.ClaimCheckModal.error("Couldn't update the check", e.message || 'Please try again.');
+      }
+    } finally {
+      thinkingBar.hidden = true;
+    }
   }
 
   function updateConditionalVisibility() {
@@ -955,6 +1040,7 @@
           };
           saveSession();
           renderChecklist();
+          queueRecheckForAnswer(qid);
         });
       });
     } catch (e) {
@@ -1348,8 +1434,14 @@
         }),
       });
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ detail: resp.statusText }));
-        throw new Error(err.detail || `Report failed (${resp.status})`);
+        let detail = '';
+        try {
+          const j = await resp.clone().json();
+          detail = j && j.detail ? j.detail : '';
+        } catch (_) {
+          try { detail = await resp.text(); } catch (_) {}
+        }
+        throw new Error(detail || resp.statusText || `Report failed (${resp.status})`);
       }
 
       const blob = await resp.blob();

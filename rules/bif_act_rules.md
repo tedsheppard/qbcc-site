@@ -97,19 +97,25 @@ No dollar figure is stated as "the amount claimed".
 ## PC-003: Requests payment of the claimed amount
 
 **Applies to:** payment_claim_serving, payment_claim_received
-**Act reference:** s 68(1)(c) BIF Act
-**Search query:** request payment payment claim s 68
+**Act reference:** s 68(1)(c) BIF Act (with the s 68(3) deeming provision for invoices)
+**Search query:** request payment payment claim invoice s 68(1)(c) s 68(3)
 **Implementation:** semantic
-**Quote requirement:** quote the sentence that requests payment.
+**Annotation hint:** invoice
+**Quote requirement:** quote the sentence (or invoice line) that requests payment, or the word "invoice" / "tax invoice" appearing on the face of the document.
+
+**Statutory context — apply this in your reasoning:**
+- s 68(1)(c) BIF Act requires the document to "request payment of the claimed amount".
+- s 68(3) BIF Act deems a written document bearing the word "invoice" to satisfy s 68(1)(c). On its face, a tax invoice or document headed "invoice" is therefore taken to request payment without anything more.
+- Authority confirms a non-strict approach: *Camporeale Holdings v Mortimer Construction* [2015] QSC 211 (Henry J — claim should not be assessed "from an unduly critical viewpoint"); *Iris Broadbeach Business v Descon Group* [2024] QSC 16 (Wilson J — substantive request for payment can be objectively present without express words where the document is titled "progress claim", states it is made under the BIF, and includes a "Total Progress Claim Value" figure); *A-Tech Australia v Top Pacific Construction* [2019] NSWSC 404 (invoices with brief narratives held to be valid payment claims).
 
 **Pass criteria:**
-The document requests that the respondent pay the claimed amount (post-2018 amendments do not require magic words, but substantive request for payment must appear).
+EITHER (a) the document bears the word "invoice" or "tax invoice" — in which case s 68(3) deems s 68(1)(c) satisfied, OR (b) the document substantively requests payment of the claimed amount (express words not required post-2018, but a recipient must be able to objectively read the document as asking for payment, e.g. a "Total Progress Claim Value", "Amount Due", "Please pay $X by …", or similar).
 
 **Warning criteria:**
-Request for payment is implied rather than express, or is buried in a way that a reasonable recipient might miss.
+Request for payment is implied rather than express AND the document does not bear "invoice" / "tax invoice" wording AND the recipient might reasonably miss it. Drafting tightening recommended.
 
 **Fail criteria:**
-No request for payment appears; document reads as a progress report, estimate, or invoice-in-draft.
+No "invoice" wording AND no substantive request for payment apparent. Document reads as a progress report, valuation, or estimate without asking for payment.
 
 ---
 

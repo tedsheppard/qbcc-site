@@ -164,10 +164,14 @@ def build_report_pdf(
     # --- Header (logo + title) ---
     try:
         if LOGO_PATH.exists():
-            img = Image(str(LOGO_PATH), width=32 * mm, height=10 * mm, kind="proportional")
+            try:
+                img = Image(str(LOGO_PATH), width=32 * mm, height=10 * mm, kind="proportional")
+            except TypeError:
+                # Older reportlab signatures don't accept kind="proportional" — fall back.
+                img = Image(str(LOGO_PATH), width=32 * mm, height=10 * mm)
             story.append(img)
     except Exception as e:
-        log.warning("logo load failed: %s", e)
+        log.warning("logo load failed (continuing without logo): %s", e)
     story.append(Paragraph("Claim Check — Analysis report", h1))
     story.append(HRFlowable(width="100%", color=colors.HexColor("#e5e5e5"), thickness=0.6, spaceBefore=6, spaceAfter=10))
 
@@ -227,7 +231,20 @@ def build_report_pdf(
     # --- Check results ---
     story.append(Paragraph("Check results", h2))
     for c in checks:
-        story.append(_check_block(c, strong_body, body_style, quote_label, quote_style, section_badge_style, frame_width, colors, Table, TableStyle, Paragraph, Spacer, KeepTogether))
+        try:
+            story.append(_check_block(c, strong_body, body_style, quote_label, quote_style, section_badge_style, frame_width, colors, Table, TableStyle, Paragraph, Spacer, KeepTogether))
+        except Exception as e:
+            log.warning("check block failed for %s: %s — rendering minimal fallback", (c or {}).get("id"), e)
+            try:
+                story.append(Spacer(1, 6))
+                story.append(Paragraph(
+                    f"<b>{_escape((c or {}).get('id', ''))} — {_escape((c or {}).get('title', ''))}</b><br/>"
+                    f"<font color='#6b6b6b' size='9'>{_escape((c or {}).get('section', ''))}</font><br/>"
+                    f"{_escape((c or {}).get('explanation', ''))}",
+                    body_style,
+                ))
+            except Exception:
+                pass
 
     # --- Appendix: user answers ---
     if user_answers:

@@ -481,19 +481,17 @@ def _evaluate_semantic(rule: dict[str, Any], document_text: str) -> dict[str, An
     quote = str(data.get("quote") or "").strip()
     reasoning_trace = str(data.get("reasoning") or "").strip()
 
-    # Belt-and-braces: if the model skipped the reasoning field (some reasoning
-    # models minimise structured output), synthesise a minimal trace from the
-    # explanation plus the rule's criteria so the panel always has content.
+    # Belt-and-braces: if the model skipped the reasoning field, synthesise a
+    # minimal trace from quote + explanation only. Do NOT include the rule's
+    # internal pass/warning/fail criteria — those are configuration, not
+    # user-facing reasons.
     if not reasoning_trace:
         parts = []
         if quote:
-            parts.append(f'Evidence examined: "{quote}"')
+            parts.append(f'Evidence in the document: "{quote}"')
         if explanation:
-            parts.append(f"Conclusion: {explanation}")
-        criteria_note = _format_criteria(rule)
-        if criteria_note:
-            parts.append(f"Criteria applied:\n{criteria_note}")
-        reasoning_trace = "\n\n".join(parts) or "(Model did not emit a chain-of-reasoning for this check. Conclusion is shown above.)"
+            parts.append(explanation)
+        reasoning_trace = "\n\n".join(parts) or "The model did not return a reasoning trace for this check. Try re-running the analysis."
 
     return {
         "status": status,

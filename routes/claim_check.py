@@ -301,6 +301,65 @@ async def analyse_stream(
 
 
 # ---------------------------------------------------------------------------
+# Recheck — re-run a subset of checks against new answers (no re-extraction)
+# ---------------------------------------------------------------------------
+
+@router.post("/recheck")
+async def recheck(request: Request, payload: dict = Body(...)) -> dict:
+    ip = _client_ip(request)
+    _rate_limit("analyse", ip, MAX_ANALYSES_PER_DAY)
+
+    mode = payload.get("mode")
+    if mode not in VALID_MODES:
+        raise HTTPException(status_code=400, detail=f"Invalid mode: {mode!r}")
+    document_text = str(payload.get("document_text") or "")
+    user_answers = payload.get("user_answers") or {}
+    if not isinstance(user_answers, dict):
+        user_answers = {}
+    raw_ids = payload.get("check_ids") or []
+    if not isinstance(raw_ids, list):
+        raw_ids = []
+    check_ids = {str(x) for x in raw_ids if x}
+
+    from services.claim_check import case_law, llm_config, rule_engine, rules_parser
+    rules = rules_parser.rules_for_mode(mode)
+    if check_ids:
+        rules = [r for r in rules if r["id"] in check_ids]
+    if not rules:
+        return {"checks": []}
+
+    results: list[dict[str, Any]] = []
+    for rule in rules:
+        try:
+            res = rule_engine.run_single_rule(mode, rule, document_text, user_answers)
+        except llm_config.CostCapExceededError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        except Exception as e:
+            log.exception("recheck failed for %s", rule.get("id"))
+            res = {
+                "id": rule["id"],
+                "status": "warning",
+                "status_summary": rule_engine.STATUS_SUMMARY["warning"],
+                "title": rule["title"],
+                "section": rule.get("act_reference", ""),
+                "explanation": f"Recheck failed: {e}",
+                "quote": "",
+                "reasoning_trace": "",
+                "query": rule.get("search_query") or rule["title"],
+            }
+        # Best-effort citations.
+        try:
+            q = res.get("query") or res.get("title") or ""
+            if q:
+                res["decisions"] = case_law.relevant_decisions(q, limit=3)
+        except Exception:
+            pass
+        results.append(res)
+
+    return {"checks": results}
+
+
+# ---------------------------------------------------------------------------
 # Chat
 # ---------------------------------------------------------------------------
 
