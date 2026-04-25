@@ -186,17 +186,12 @@ except Exception as e:
 app = FastAPI()
 
 # >>> claim-check feature — isolated in routes/claim_check.py (f703011+)
+# The redirect_router carries 301 redirects from the legacy /assist URLs
+# (Sopal Assist suite, archived 2026-04-25; see _archive/contract-assist-2026-04-25/).
 from routes.claim_check import router as _claim_check_router, redirect_router as _claim_check_redirect_router
 app.include_router(_claim_check_router)
 app.include_router(_claim_check_redirect_router)
 # <<< claim-check feature
-
-# >>> contract-assist feature — isolated in routes/contract_assist.py + services/contract_assist/
-from routes.contract_assist import router as _contract_assist_router
-app.include_router(_contract_assist_router)
-from services.contract_assist.bif_act_index import register_startup as _ca_bif_register_startup
-_ca_bif_register_startup(app)
-# <<< contract-assist feature
 
 # --- UNIFIED USERS DATABASE CONNECTION ---
 PURCHASES_DB_PATH = "/var/data/adjudicator_purchases.db"

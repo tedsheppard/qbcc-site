@@ -126,8 +126,13 @@
   }
   // ---------- Section 12: per-browser localStorage session history ----------
   const LS_PREFIX = 'sopal-claim-check-session-';
-  const LS_CONTRACT_PREFIX = 'sopal-contract-assist-session-';
-  const LS_MAX_SESSIONS = 20; // Phase 9: combined cap across both products
+  const LS_MAX_SESSIONS = 10;
+  // Note: Contract Assist sessions (key prefix sopal-contract-assist-session-)
+  // may exist in localStorage from the brief Sopal Assist period. They are
+  // silently ignored by listStoredSessions/enforceLSCap below — neither
+  // displayed in the Previous Sessions panel nor counted toward the cap nor
+  // deleted on save. If Contract Assist is ever resurrected, those sessions
+  // remain available.
   const LS_DOC_TEXT_MAX_BYTES = 500 * 1024; // 500KB per spec
 
   function currentSessionId() {
@@ -196,26 +201,14 @@
     return out;
   }
 
-  // Phase 9: combined cap counts BOTH product prefixes so the global
-  // 20-session limit is enforced no matter which product saved last.
   function enforceLSCap() {
-    if (!lsIsAvailable()) return;
-    const all = [];
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k) continue;
-        if (k.startsWith(LS_PREFIX) || k.startsWith(LS_CONTRACT_PREFIX)) {
-          try {
-            const obj = JSON.parse(localStorage.getItem(k));
-            all.push({ key: k, ts: obj.savedAt || 0 });
-          } catch (_) {}
-        }
-      }
-    } catch (_) { return; }
-    all.sort((a, b) => b.ts - a.ts);
-    for (let i = LS_MAX_SESSIONS; i < all.length; i++) {
-      try { localStorage.removeItem(all[i].key); } catch (_) {}
+    const sessions = listStoredSessions();
+    if (sessions.length <= LS_MAX_SESSIONS) return;
+    // Drop oldest beyond the cap. Only Claim Assist sessions are touched —
+    // listStoredSessions filters by LS_PREFIX so Contract Assist entries are
+    // never counted nor purged.
+    for (let i = LS_MAX_SESSIONS; i < sessions.length; i++) {
+      try { localStorage.removeItem(sessions[i].key); } catch (_) {}
     }
   }
 

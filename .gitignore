@@ -41,4 +41,7 @@ site/.archive/
 
 # Astruct reference codebase — pattern source only, never deployed
 astruct/
-services/contract_assist/bif_act_index/chroma/
+
+# _archive/ contains parked features. Code here is committed for posterity
+# but must NOT be imported by live application code. Treat as documentation.
+# (Intentionally NOT gitignored — we want it tracked.)

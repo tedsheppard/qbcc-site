@@ -30,15 +30,25 @@ log = logging.getLogger("claim_check.routes")
 
 router = APIRouter(prefix="/api/claim-check", tags=["claim-check"])
 
-# Legacy URL redirect: /claim-check → /assist/claim (301).
-# Lives in this module so server.py only needs the existing one-line include
-# pattern — no extra wiring.
+# Legacy URL redirects after the 2026-04-25 Sopal Assist pivot.
+# /claim-check is the canonical URL again; bookmarks created during the brief
+# Sopal Assist period are funnelled back to it.
 redirect_router = APIRouter()
 
 
-@redirect_router.get("/claim-check")
-async def _redirect_legacy_claim_check() -> RedirectResponse:
-    return RedirectResponse(url="/assist/claim", status_code=301)
+@redirect_router.get("/assist")
+async def _redirect_legacy_assist_landing() -> RedirectResponse:
+    return RedirectResponse(url="/claim-check", status_code=301)
+
+
+@redirect_router.get("/assist/claim")
+async def _redirect_legacy_assist_claim() -> RedirectResponse:
+    return RedirectResponse(url="/claim-check", status_code=301)
+
+
+@redirect_router.get("/assist/contract")
+async def _redirect_legacy_assist_contract() -> RedirectResponse:
+    return RedirectResponse(url="/claim-check", status_code=301)
 
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB per spec Section 1
 MAX_PASTE_CHARS = 200_000
