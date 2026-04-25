@@ -49,7 +49,10 @@ MAX_ANNOTATION_PER_SECTION = 18_000  # ≈ 4.5K tokens per relevant section
 MAX_DOC_HEAD_CHARS = 30_000
 MAX_DOC_TAIL_CHARS = 20_000
 MAX_HISTORY_TURNS = 8
-MAX_OUTPUT_TOKENS = 1500
+# Bumped from 1500: with reasoning_effort > none, max_completion_tokens caps
+# the SUM of reasoning + visible-output tokens. On a 25K-token grounded prompt,
+# 1500 was getting eaten by reasoning and leaving nothing for the answer.
+MAX_OUTPUT_TOKENS = 4000
 
 MODE_LABELS = {
     "payment_claim_serving":    "a payment claim the user is about to serve",

@@ -198,6 +198,25 @@ def complete(
 
         # Success.
         content = (resp.choices[0].message.content or "").strip()
+        finish_reason = getattr(resp.choices[0], "finish_reason", None)
+
+        # Defensive: gpt-5.x reasoning models can return empty content with
+        # finish_reason="length" when reasoning tokens consume the whole
+        # budget before any visible output is emitted. Retry once with double
+        # the budget — gives the model headroom to actually answer.
+        if (not content) and finish_reason == "length":
+            log.info("model %s returned empty content with finish_reason=length; retrying with doubled budget", model)
+            retry_kwargs = dict(kwargs)
+            for key in ("max_completion_tokens", "max_tokens"):
+                if key in retry_kwargs:
+                    retry_kwargs[key] = retry_kwargs[key] * 2
+            try:
+                resp = client.chat.completions.create(**retry_kwargs)
+                content = (resp.choices[0].message.content or "").strip()
+                finish_reason = getattr(resp.choices[0], "finish_reason", None)
+            except Exception as e_retry:
+                log.warning("budget-doubled retry failed for %s: %s", model, e_retry)
+
         usage = getattr(resp, "usage", None)
         in_tokens = getattr(usage, "prompt_tokens", 0) if usage else 0
         out_tokens = getattr(usage, "completion_tokens", 0) if usage else 0
