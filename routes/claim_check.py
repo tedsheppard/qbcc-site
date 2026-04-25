@@ -399,11 +399,14 @@ async def chat(request: Request, payload: dict = Body(...)) -> dict:
     document_text = str(payload.get("document_text") or "")
     history = payload.get("history") or []
     check_results = payload.get("checks") or []
+    user_answers = payload.get("user_answers") or {}
+    if not isinstance(user_answers, dict):
+        user_answers = {}
 
     from services.claim_check import chatbot as chatbot_mod, llm_config
 
     try:
-        reply = chatbot_mod.chat(mode, document_text, check_results, history, message)
+        reply = chatbot_mod.chat(mode, document_text, check_results, history, message, user_answers=user_answers)
     except llm_config.CostCapExceededError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except RuntimeError as e:

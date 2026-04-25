@@ -1239,16 +1239,28 @@
           message: msg,
           history: state.history.slice(0, -1),
           document_text: state.documentText,
+          // Full check state — the chatbot must be grounded in the engine's
+          // findings to avoid contradicting them. Send everything the engine
+          // produced for each check, plus the user's answers to interactive
+          // inputs.
           checks: state.checks.map((c) => {
             const r = state.results[c.id] || {};
             return {
               id: c.id,
               title: c.title,
               section: c.section_ref,
+              search_query: c.search_query,
               status: state.states[c.id] || 'pending',
+              status_summary: r.status_summary || '',
               explanation: r.explanation || '',
+              reasoning_trace: r.reasoning_trace || '',
+              quote: r.quote || '',
+              decisions: r.decisions || [],
+              confidence: r.confidence || null,
+              input_questions: c.input_questions || [],
             };
           }),
+          user_answers: state.userAnswers || {},
         }),
       });
       if (!resp.ok) {
