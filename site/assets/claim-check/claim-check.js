@@ -126,7 +126,8 @@
   }
   // ---------- Section 12: per-browser localStorage session history ----------
   const LS_PREFIX = 'sopal-claim-check-session-';
-  const LS_MAX_SESSIONS = 10;
+  const LS_CONTRACT_PREFIX = 'sopal-contract-assist-session-';
+  const LS_MAX_SESSIONS = 20; // Phase 9: combined cap across both products
   const LS_DOC_TEXT_MAX_BYTES = 500 * 1024; // 500KB per spec
 
   function currentSessionId() {
@@ -195,12 +196,26 @@
     return out;
   }
 
+  // Phase 9: combined cap counts BOTH product prefixes so the global
+  // 20-session limit is enforced no matter which product saved last.
   function enforceLSCap() {
-    const sessions = listStoredSessions();
-    if (sessions.length <= LS_MAX_SESSIONS) return;
-    // Drop oldest beyond the cap.
-    for (let i = LS_MAX_SESSIONS; i < sessions.length; i++) {
-      try { localStorage.removeItem(sessions[i].key); } catch (_) {}
+    if (!lsIsAvailable()) return;
+    const all = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k) continue;
+        if (k.startsWith(LS_PREFIX) || k.startsWith(LS_CONTRACT_PREFIX)) {
+          try {
+            const obj = JSON.parse(localStorage.getItem(k));
+            all.push({ key: k, ts: obj.savedAt || 0 });
+          } catch (_) {}
+        }
+      }
+    } catch (_) { return; }
+    all.sort((a, b) => b.ts - a.ts);
+    for (let i = LS_MAX_SESSIONS; i < all.length; i++) {
+      try { localStorage.removeItem(all[i].key); } catch (_) {}
     }
   }
 
@@ -410,11 +425,11 @@
   });
 
   function handleFile(file) {
-    if (!state.mode) { alert('Pick a mode first.'); return; }
-    if (file.size > MAX_BYTES) { alert('File is too large. Max 50 MB.'); return; }
+    if (!state.mode) { showModalError('Pick a mode first', 'Choose what you are checking before uploading a document.'); return; }
+    if (file.size > MAX_BYTES) { showModalError('File too large', 'The maximum upload size is 50 MB.'); return; }
     const name = (file.name || '').toLowerCase();
     if (!/\.(pdf|docx|xlsx|xlsm)$/i.test(name)) {
-      alert('Please upload a PDF, DOCX, or XLSX file.');
+      showModalError('Unsupported file type', 'Please upload a PDF, DOCX, or XLSX file.');
       return;
     }
     state.doc = { kind: 'file', filename: file.name, size: file.size, _file: file };
@@ -437,7 +452,7 @@
     pasteSubmit.disabled = text.trim().length < 40;
   });
   pasteSubmit.addEventListener('click', () => {
-    if (!state.mode) { alert('Pick a mode first.'); return; }
+    if (!state.mode) { showModalError('Pick a mode first', 'Choose what you are checking before submitting pasted text.'); return; }
     const text = pasteInput.value;
     state.doc = { kind: 'paste', filename: 'Pasted text', size: new Blob([text]).size, text };
     state.documentText = text;
@@ -1483,6 +1498,10 @@
   }
   function escapeAttr(s) { return escapeHtml(s); }
   function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+  function showModalError(title, body) {
+    if (window.ClaimCheckModal) window.ClaimCheckModal.error(title, body);
+    else console.error(title, body);
+  }
 
   function statusIconSvg(st, check) {
     switch (st) {

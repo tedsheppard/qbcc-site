@@ -447,7 +447,10 @@
       function handoff(file, target, accept) {
         const name = (file.name || '').toLowerCase();
         const ok = accept.split(',').some((ext) => name.endsWith(ext.trim().replace('.', '.').replace(/^\./, '.')));
-        if (!ok) { alert('Please upload one of: ' + accept); return; }
+        if (!ok) {
+          showInlineError(target, 'Please upload one of: ' + accept);
+          return;
+        }
         // Store the file in a brief sessionStorage handoff so the destination
         // page can pick it up. We can't pass File objects directly — read as ArrayBuffer
         // and base64 it.
@@ -477,6 +480,23 @@
         };
         reader.onerror = () => { window.location.href = target; };
         reader.readAsArrayBuffer(file);
+      }
+
+      function showInlineError(target, msg) {
+        // Append a one-off error line under the dropzone (not a native alert).
+        const zoneId = target.endsWith('contract') ? 'dropzone-contract' : 'dropzone-claim';
+        const zone = document.getElementById(zoneId);
+        if (!zone) { console.error(msg); return; }
+        let err = zone.parentElement.querySelector('.inline-error');
+        if (!err) {
+          err = document.createElement('div');
+          err.className = 'inline-error';
+          err.style.cssText = 'background:#fef2f2;border:1px solid #fecaca;color:#dc2626;font-size:12px;padding:6px 10px;border-radius:8px;margin-top:8px;';
+          zone.parentElement.insertBefore(err, zone.nextSibling);
+        }
+        err.textContent = msg;
+        clearTimeout(err._t);
+        err._t = setTimeout(() => { try { err.remove(); } catch (_) {} }, 5000);
       }
 
       wireDropzone('dropzone-claim', 'file-claim', '/assist/claim', '.pdf,.docx,.xlsx,.xlsm');

@@ -59,6 +59,41 @@
     .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
     .page-header .lede { font-size: 14px; color: var(--text-secondary); max-width: 720px; }
 
+    /* CROSS-PRODUCT BREADCRUMB (Phase 8) */
+    .crumb-bar {
+      background: white;
+      border-bottom: 1px solid var(--border-light);
+      padding: 10px 0;
+    }
+    .crumb-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap;
+      max-width: 1200px; margin: 0 auto; padding: 0 32px;
+    }
+    .crumb-trail {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex; gap: 6px; align-items: center;
+    }
+    .crumb-trail a { color: var(--text-secondary); transition: color 0.15s; text-decoration: none; }
+    .crumb-trail a:hover { color: var(--text-primary); }
+    .crumb-trail .sep { color: var(--text-muted); }
+    .crumb-trail .current { color: var(--text-primary); font-weight: 600; }
+    .crumb-switch {
+      font-size: 13px;
+      color: var(--green-deep);
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.15s;
+      font-family: inherit;
+    }
+    .crumb-switch:hover { background: var(--green-soft); }
+    .crumb-switch::after { content: ' →'; }
+
     /* Sticky disclaimer bar (replaces full footer on this page) */
     .disclaimer-bar {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
@@ -99,6 +134,18 @@
       <div class="nav-right"><a href="/login" class="btn-signin">Sign In</a></div>
     </div>
   </nav>
+
+  <!-- CROSS-PRODUCT BREADCRUMB / SWITCHER (Phase 8) -->
+  <div class="crumb-bar">
+    <div class="crumb-inner">
+      <div class="crumb-trail">
+        <a href="/assist">Sopal Assist</a>
+        <span class="sep">›</span>
+        <span class="current">Claim Assist</span>
+      </div>
+      <button type="button" class="crumb-switch" id="btn-switch-product" data-target="/assist/contract" data-target-name="Contract Assist">Switch to Contract Assist</button>
+    </div>
+  </div>
 
   <!-- PAGE HEADER -->
   <div class="page-header">
@@ -372,5 +419,40 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js" defer></script>
 
   <script src="/assets/claim-check/claim-check.js" defer></script>
+
+  <!-- Cross-product switcher handler (Phase 8) — intentionally tiny to avoid
+       restructuring claim-check.js. Reads tab-scoped session state to decide
+       whether to confirm before navigating. -->
+  <script defer>
+    (function () {
+      function hasActiveClaimSession() {
+        try {
+          const raw = sessionStorage.getItem('sopal.claimCheck.v2');
+          if (!raw) return false;
+          const s = JSON.parse(raw);
+          return !!(s && (s.mode || s.checks?.length || s.history?.length));
+        } catch (_) { return false; }
+      }
+      function init() {
+        const btn = document.getElementById('btn-switch-product');
+        if (!btn) return;
+        btn.addEventListener('click', async () => {
+          const target = btn.dataset.target || '/assist/contract';
+          const name = btn.dataset.targetName || 'Contract Assist';
+          if (hasActiveClaimSession() && window.ClaimCheckModal) {
+            const ok = await window.ClaimCheckModal.confirm(
+              'Switch products?',
+              `You have an active session in Claim Assist. Continue to ${name}? Your work will be saved and you can return any time.`,
+              { confirmLabel: `Open ${name}`, confirmVariant: 'primary' }
+            );
+            if (!ok) return;
+          }
+          window.location.href = target;
+        });
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+      else init();
+    })();
+  </script>
 </body>
 </html>
