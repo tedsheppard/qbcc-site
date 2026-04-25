@@ -191,6 +191,13 @@ app.include_router(_claim_check_router)
 app.include_router(_claim_check_redirect_router)
 # <<< claim-check feature
 
+# >>> contract-assist feature — isolated in routes/contract_assist.py + services/contract_assist/
+from routes.contract_assist import router as _contract_assist_router
+app.include_router(_contract_assist_router)
+from services.contract_assist.bif_act_index import register_startup as _ca_bif_register_startup
+_ca_bif_register_startup(app)
+# <<< contract-assist feature
+
 # --- UNIFIED USERS DATABASE CONNECTION ---
 PURCHASES_DB_PATH = "/var/data/adjudicator_purchases.db"
 purchases_con = sqlite3.connect(PURCHASES_DB_PATH, check_same_thread=False)
