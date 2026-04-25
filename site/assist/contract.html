@@ -5,75 +5,117 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contract Assist | Sopal</title>
-  <meta name="description" content="Ask questions about your construction contract — grounded in your uploaded document and the BIF Act 2017 (Qld).">
+  <meta name="description" content="Ask questions about your construction contract — grounded in your uploaded document and the BIF Act 2017 (Qld). Optional draft generation for permitted notices.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Shared Sopal base inline -->
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
       --bg-dark: #0a0a0a;
+      --bg-darker: #050505;
+      --bg-card-dark: #141414;
       --green: #00d47e;
-      --green-deep: #166534;
+      --green-dark: #00b368;
       --green-soft: #f0fdf4;
+      --green-mid: #bbf7d0;
+      --green-deep: #166534;
+      --amber-soft: #fffbeb;
+      --amber-mid: #fde68a;
+      --red: #dc2626;
+      --red-soft: #fef2f2;
+      --red-mid: #fecaca;
+      --indigo: #4338ca;
+      --indigo-soft: #eef2ff;
       --text-primary: #1a1a1a;
       --text-secondary: #6b6b6b;
       --text-muted: #888;
       --border-light: #e5e5e5;
       --border-lighter: #eee;
+      --border-dark: #222;
     }
+    html { scroll-behavior: smooth; }
     body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; font-size: 15px; padding-bottom: 56px; }
     a { text-decoration: none; color: inherit; }
     button { border: none; cursor: pointer; font-family: inherit; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+
+    /* NAV (shared) */
     .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
-    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1280px; margin: 0 auto; padding: 0 24px; }
     .nav-left { display: flex; align-items: center; gap: 32px; }
-    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
     .nav-links { display: flex; align-items: center; gap: 24px; }
     .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
     .nav-links a:hover { color: white; }
     .nav-links a.active { color: white; font-weight: 500; }
     .nav-right { display: flex; align-items: center; gap: 12px; }
-    .btn-signin { background: transparent; color: white; font-size: 13.5px; font-weight: 500; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); }
+    .btn-signin { background: transparent; color: white; font-size: 13.5px; font-weight: 500; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; }
+    .btn-signin:hover { background: rgba(255,255,255,0.08); }
 
-    .placeholder {
-      max-width: 720px;
-      margin: 80px auto;
-      padding: 32px 32px;
-      text-align: center;
+    /* CROSS-PRODUCT BREADCRUMB */
+    .crumb-bar {
+      background: white;
+      border-bottom: 1px solid var(--border-light);
+      padding: 10px 0;
     }
-    .placeholder .pulse {
-      width: 18px; height: 18px;
-      border-radius: 50%;
-      background: var(--green);
-      margin: 0 auto 18px;
-      animation: pulse 1.6s ease-in-out infinite;
+    .crumb-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap;
+      max-width: 1280px; margin: 0 auto; padding: 0 24px;
     }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.6; }
-      50% { transform: scale(1.4); opacity: 1; }
+    .crumb-trail {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex; gap: 6px; align-items: center;
     }
-    .placeholder h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 10px; }
-    .placeholder p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 8px; }
-    .placeholder a { color: var(--green-deep); font-weight: 600; }
+    .crumb-trail a { color: var(--text-secondary); transition: color 0.15s; }
+    .crumb-trail a:hover { color: var(--text-primary); }
+    .crumb-trail .sep { color: var(--text-muted); }
+    .crumb-trail .current { color: var(--text-primary); font-weight: 600; }
+    .crumb-switch {
+      font-size: 13px;
+      color: var(--green-deep);
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .crumb-switch:hover { background: var(--green-soft); }
+    .crumb-switch::after { content: ' →'; }
 
+    /* DISCLAIMER BAR */
     .disclaimer-bar {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
-      background: #111; color: #aaa; font-size: 12px;
-      padding: 10px 32px; border-top: 1px solid #222;
+      background: #111; color: #aaa; font-size: 12px; line-height: 1.5;
+      padding: 10px 24px; border-top: 1px solid #222;
       display: flex; align-items: center; justify-content: space-between; gap: 16px;
     }
     .disclaimer-bar strong { color: #ddd; font-weight: 600; }
-    .disclaimer-bar .copy { color: #777; }
+    .disclaimer-bar .copy { color: #777; white-space: nowrap; }
+    @media (max-width: 700px) {
+      .disclaimer-bar { font-size: 11px; padding: 8px 16px; flex-wrap: wrap; }
+      .disclaimer-bar .copy { display: none; }
+      body { padding-bottom: 80px; }
+    }
   </style>
+
+  <link rel="stylesheet" href="/assets/contract-assist/contract-assist.css">
 </head>
 <body>
 
+  <!-- NAV -->
   <nav class="nav">
     <div class="nav-inner">
       <div class="nav-left">
-        <a href="/" class="nav-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;"></a>
+        <a href="/" class="nav-logo">
+          <img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;">
+        </a>
         <div class="nav-links">
           <a href="/search">Search</a>
           <a href="/adjudicators">Adjudicators</a>
@@ -88,17 +130,131 @@
     </div>
   </nav>
 
-  <div class="placeholder">
-    <div class="pulse" aria-hidden="true"></div>
-    <h1>Contract Assist — coming online</h1>
-    <p>This is the placeholder shown while the Contract Assist build lands. The chat interface, contract viewer, retrieval pipeline, and BIF Act grounding are being wired up tonight.</p>
-    <p>If you arrived here from the landing page, you can either head back to <a href="/assist">Sopal Assist</a> or use the existing <a href="/assist/claim">Claim Assist</a> tool in the meantime.</p>
+  <!-- CROSS-PRODUCT BREADCRUMB / SWITCHER -->
+  <div class="crumb-bar">
+    <div class="crumb-inner">
+      <div class="crumb-trail">
+        <a href="/assist">Sopal Assist</a>
+        <span class="sep">›</span>
+        <span class="current">Contract Assist</span>
+      </div>
+      <button type="button" class="crumb-switch" id="btn-switch-product" data-target="/assist/claim" data-target-name="Claim Assist">Switch to Claim Assist</button>
+    </div>
   </div>
 
+  <!-- WORKSPACE — two-column desktop, tab-switched mobile -->
+  <main class="ca-workspace" id="ca-workspace">
+
+    <!-- Mobile tabs (hidden on desktop) -->
+    <div class="ca-mobile-tabs" id="ca-mobile-tabs" aria-hidden="true">
+      <button class="ca-mobile-tab" data-pane="document" type="button">Contract</button>
+      <button class="ca-mobile-tab active" data-pane="chat" type="button">Chat</button>
+    </div>
+
+    <!-- LEFT: contract document pane -->
+    <section class="ca-pane ca-pane-document hidden-mobile" data-pane="document" aria-label="Contract document">
+      <div class="ca-pane-header">
+        <div class="ca-pane-title-group">
+          <h2 class="ca-pane-title" id="contract-title">Contract</h2>
+          <span class="ca-pane-meta" id="contract-meta"></span>
+        </div>
+        <button type="button" class="ca-btn-secondary" id="btn-change-contract" hidden>Change contract</button>
+      </div>
+      <div class="ca-pane-body" id="contract-body">
+        <!-- Empty state — replaced when a contract is loaded -->
+        <div class="ca-empty" id="contract-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="42" height="42"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <p class="ca-empty-title">No contract loaded yet</p>
+          <p class="ca-empty-sub">Drop a PDF or DOCX in the chat panel and your contract will render here, page by page.</p>
+        </div>
+        <!-- Viewer mounts here when a contract is loaded -->
+        <div class="viewer-mount" id="contract-viewer" hidden></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: chat pane -->
+    <section class="ca-pane ca-pane-chat" data-pane="chat" aria-label="Contract chat">
+
+      <!-- Persistent banner -->
+      <div class="ca-banner" role="note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
+        <div>
+          <strong>Tip:</strong> Ask anything about your contract — clause meanings, timing requirements, notice requirements, payment obligations. This tool is grounded in your specific uploaded contract and the BIF Act.
+          <div class="ca-banner-sub">Sopal Assist can also draft notices (variation notices, NODs, EOT claims) at your request, marked as drafts — but always have a construction lawyer review before serving.</div>
+        </div>
+      </div>
+
+      <!-- Contract summary card (appears after upload) -->
+      <div class="ca-contract-card" id="contract-card" hidden>
+        <div class="ca-contract-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="ca-contract-card-body">
+          <div class="ca-contract-card-name" id="contract-card-name">contract.pdf</div>
+          <div class="ca-contract-card-meta" id="contract-card-meta">— pages</div>
+          <div class="ca-contract-card-form" id="contract-card-form" hidden></div>
+        </div>
+        <div class="ca-contract-card-status">
+          <span class="ca-status-dot"></span>
+          <span>Loaded</span>
+        </div>
+      </div>
+
+      <!-- Pre-upload empty state -->
+      <div class="ca-chat-empty" id="ca-chat-empty">
+        <h3>Upload your construction contract to start.</h3>
+        <p>PDF or DOCX, up to 25 MB. Held in memory for this session — never stored on our servers.</p>
+        <div class="ca-upload-zone" id="ca-upload-zone" tabindex="0" role="button" aria-label="Upload your contract">
+          <input type="file" id="ca-upload-input" accept=".pdf,.docx" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span class="ca-upload-primary">Drop a contract PDF or DOCX here, or <span class="ca-upload-link">browse</span></span>
+          <span class="ca-upload-sub">Up to 25 MB. Documents are held in memory only and never stored.</span>
+        </div>
+      </div>
+
+      <!-- Chat thread -->
+      <div class="ca-thread" id="ca-thread" hidden role="log" aria-live="polite"></div>
+
+      <!-- Composer -->
+      <form class="ca-composer" id="ca-composer" autocomplete="off">
+        <button type="button" class="ca-composer-attach" id="ca-attach-btn" aria-label="Attach a file to this message" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <input type="file" id="ca-attach-input" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg" hidden>
+        <textarea id="ca-input" rows="1" placeholder="Upload a contract above to start asking questions…" disabled></textarea>
+        <div class="ca-composer-meta">
+          <span class="ca-composer-count" id="ca-count">0 / 4000</span>
+          <button type="submit" class="ca-composer-send" id="ca-send" aria-label="Send" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="ca-attach-tray" id="ca-attach-tray" hidden></div>
+      </form>
+
+      <p class="ca-composer-disclaimer">General information only — not legal advice. Drafts are AI-generated and must be reviewed by a construction lawyer before serving.</p>
+
+    </section>
+
+  </main>
+
+  <!-- DISCLAIMER BAR -->
   <div class="disclaimer-bar" role="contentinfo">
     <div><strong>General information only — not legal advice.</strong> Sopal is a research tool, not a legal adviser.</div>
     <div class="copy">© 2026 Sopal Australia</div>
   </div>
 
+  <!-- Document viewer (reusing Claim Assist's pattern; pdf.js + DOCX→PDF) -->
+  <script src="/assets/claim-check/viewers/viewer-loader.js" defer></script>
+  <script src="/assets/claim-check/viewers/pdf-viewer.js" defer></script>
+  <script src="/assets/claim-check/viewers/docx-viewer.js" defer></script>
+
+  <!-- Bespoke modal (shared) -->
+  <script src="/assets/claim-check/components/modal.js" defer></script>
+
+  <!-- Markdown rendering for chat -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js" defer></script>
+
+  <script src="/assets/contract-assist/contract-assist.js" defer></script>
 </body>
 </html>
