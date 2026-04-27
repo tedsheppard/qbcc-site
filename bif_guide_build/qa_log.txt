@@ -1,0 +1,118 @@
+BIF Act Guide v2 — Stage 4 QA Log
+Started: 2026-04-25
+
+
+--------------------------------------------------------------------------------
+CHUNK 01 — page_01_application.html (s61, s62, s63)
+Status: PASS
+- Statutory text reproduced verbatim (s61, s62, s63) including resident-owner def.
+- 13+ judicial extracts cross-checked against source — all verbatim (only curly→straight quote substitution, which is correct for HTML).
+- All cited cases present in source chunk; no hallucinations.
+- <details class="statute-excerpt" open> matches existing convention (20/20 in current guide).
+- Tone: PM-appropriate. "You" framing, plain English, no "pursuant to" / "notwithstanding".
+- Practice tips (6) all source-grounded.
+Notes:
+- Agent's source-list mention of cases like Beckhaus, Falgat, Tailored Projects, Vis Constructions, BWAY, Sheppard Homes, Walton, South City Plaster, Lendlease, Heavy Plant Leasing — all present in source chunk (verified).
+
+--------------------------------------------------------------------------------
+CHUNK 02 — page_02_construction_contract.html (s64 — construction contract def only)
+Status: PASS
+- Statute excerpt scoped correctly: only "construction contract" definition. Other s64 terms (claimant, respondent, payment claim, complex payment claim, progress payment, reference date, RGS, due date) deliberately excluded — will live on their own pages.
+- Cases verified in source: Okaroo, Machkevitch, Class Electrical, Capricorn Quarries, Coastivity, Thiess, APN DF2, EnerMech, Bezzina, Crown Green Square, Bettar Holdings, Justar, Ratcliffe, GCB, Bloc Constructions, Lendlease Engineering v Timecon, Crown Green Square v TfNSW, Matrix Projects, Trinco, Rail Corporation of NSW v Nebax, HM Australia.
+- Agent's tool-result short-named two cases (Lendlease v Timecon, Rail Corp v Nebax) — full names appear correctly in the HTML body.
+- Tone: PM-appropriate. Clear active voice.
+
+--------------------------------------------------------------------------------
+CHUNK 03 — page_03_construction_work.html (s65, s66)
+Status: PASS (with manual fix)
+- Statute text for s65 and s66 reproduced verbatim incl. (1)(a)-(e) sub-paras and s65(3) mining exclusion.
+- Cases verified in source: Capricorn Quarries, Walter Construction, Patrick Stevedores, Theiss (QSC + QCA), J&D Rigging, BCS Infrastructure, Wiggins Island, Cadia Holdings, HM Mire, Sheppard Homes, Peter's of Kensington, Biseja.
+- Manual fix: Cadia Holdings paragraph — agent had paraphrased s 5(2)(b) → s 5(2) and changed s 65(1)(e) → s 65(3). Restored verbatim source ("equivalent of s 65(1)(e) of BIFSOPA" and "s 5(2)(b) of the SOP Act"). Source author appears to have a typo (s 65(1)(e) is preparatory ops; s 65(3) is the mining exclusion) but Rule 1 = reproduce verbatim, not correct.
+- Going forward, subagent prompts will explicitly forbid correcting perceived source errors.
+
+--------------------------------------------------------------------------------
+CHUNK 04 — page_04_reference_date.html (s67, s70)
+Status: PASS
+- Statute text reproduced verbatim for s67 + s70.
+- Cases verified (sample): Southern Han, Lean Field, Reed Constructions, Tenix, CKP Constructions, McConnell Dowell, John Holland, BRB Modular, Wärtsilä, Walton, Patrick Stevedores, Spankie, Hanson Construction Materials v Brolton, Façade, Tantallon, Seymour Whyte, T&M Buckley.
+- Agent's tool-result short-named "Hanson v Brolton" — full name appears in HTML body.
+- Tone: PM-friendly. Concrete framing.
+
+--------------------------------------------------------------------------------
+CHUNK 05 — page_05_payment_claim.html (s68, s75(1)-(5))
+Status: PASS
+- Statute scope respected: s68 in full, s75 cuts off at sub-section (5). s75(6)+ not reproduced.
+- Cases verified: Camporeale, Minimax, Hawkins Construction, Estate Property Holdings, Protectavale, KDV Sport, T&M Buckley, Tailored Projects, Sought After Investments, Kitchen Xchange, Mansouri, Grave v Blazevic, Metacorp, Lewence Construction, VK Property, Doolan, Neumann, EnerMech, Bridgeman Agencies, Ausipile, MWB Everton, Iris Broadbeach.
+- 416 lines, well-organised by H3 sub-topic.
+
+--------------------------------------------------------------------------------
+CHUNK 06 — page_06_payment_schedule.html (s69, s76)
+Status: PASS
+- Statute s69 + s76 verbatim including 100-penalty-unit max.
+- Cases verified: Minimax (both citations), Heavy Plant Leasing, McConnell Dowell, Multiplex Constructions v Luikens, Falgat, Emag, Theiss, Allencon, Roberts Co (NSW) v Sharvain, Turnkey, Roberts Construction Group, Actif Concrete, CPB Contractors v MSS Projects, Gisley, Denham, Springs Golf, Linke, T&T Building, Joye Group, NewGrow, Vannella, Cornerstone Danks Street.
+- Agent's tool-result short-named 3 cases — full names verified in HTML body.
+- 314 lines.
+
+--------------------------------------------------------------------------------
+CHUNK 07 — page_07_no_payment_schedule.html (s77, s78)
+Status: PASS
+- Statute s77 + s78 verbatim.
+- Cases verified: Fyntray, K2M Investments, Re Douglas Aerospace, Nicolas Criniti, Kyle Bay Removals, Northside Roofing, Canterbury-Bankstown Council v Payce, Marques Group v Parkview, Seymour Whyte Constructions v Ostwald Bros.
+- Agent correctly refused to invent a "second-chance notice" topic I (incorrectly) cued — that mechanism lives in s99, not s77/s78. No-hallucination rule respected.
+- 107 lines.
+
+--------------------------------------------------------------------------------
+CHUNK 08 — page_08_adjudication_application.html (s79)
+Status: PASS
+- Statute s79 verbatim incl. all timing windows.
+- Cases verified: Nebmas, De Neefe Signs, Gisley Investments, Iris Broadbeach, National Management Group, Parkview Constructions, Kangaroo Point Developments, Kuatro Build, Austruc Constructions, Syntech Resources, Abacus Funds Management, John Holland v Cardno, Minister for Commerce v Contrax Plumbing, Probuild v Shade Systems, Niclin (QSC + QCA), McCarthy v TKM Builders, Equinox Construction, Equa Building Services.
+- 219 lines.
+
+--------------------------------------------------------------------------------
+CHUNK 09 — page_09_adjudicator_appointment.html (s80, s81)
+Status: PASS
+- Statute s80 + s81 verbatim. Tight 66-line page (source is small; agent did not pad).
+- Cases verified: Peekhrst v Wallace, Randhawa v Serrato, Project Blue Sky (cf. cite preserved), Fancourt v Mercantile Credits (cited inside Randhawa).
+
+--------------------------------------------------------------------------------
+CHUNK 10 — page_10_adjudication_response.html (s82, s83)
+Status: PASS
+- Statute s82 + s83 verbatim incl. complex-claim 15-day extension and 2-business-day copy obligation.
+- Cases verified: TQM v Dasein, Syntech, Trysams, Wiggins Island, Stratabuild, John Holland v Walz Marine, Thiess v Civil Works, GW Enterprises v Xentex, State Water v Civil Team, Brambles v Davenport, BuiltCom Construction v VSD, EnerMech v Acciona, John Holland v RTA, WICET v Monadelphous, Baguley Build v Olcon, Civmec v Southern Cross, Niclin v Robotic Steel Fab, Rail Corp v Nebax, Olympia v Hansen Yuncken, Watkins v Hyatt, Bega Valley v Kenpass, Acciona Agua v Monadelphous, Total Lifestyle Windows v Aniko (Nos 1+2), Castle v Napoli, CMF Projects v Masic, Rise v El-Hajj.
+- 184 lines.
+
+--------------------------------------------------------------------------------
+CHUNK 11 — page_11_adjudication_procedures.html (s84, s85, s86)
+Status: PASS
+- Statute s84 + s85 + s86 verbatim incl. natural justice / no-lawyer / extension rules.
+- Cases verified across the 35-case set (Pacific General, Hargreaves, Thiess, Ceerose, Bega Valley, Probuild, Laing O'Rourke, SSC Plenty Road, BM Alliance, Ingeteam, Kirk, Multiplex, Parliament Square, John Holland v Cardno MBK, State Water, Minesco, Ku-Ring-Gai, Ausenco, 12 Bridge Street, Brookhollow, J Hutchinson, Bezzina, South East Civil, John Holland v Walz, Allpro, Heavy Plant, MPM, Cranbrook, MT Lewis, Ian Street VSC + VSCA, Galaxy QSC + QCA, Demex, Karam, Minimax, Emag).
+- 335 lines.
+
+--------------------------------------------------------------------------------
+CHUNK 12 — page_12_adjudicators_decision.html (s87, s88, s89)
+Status: PASS
+- Agent hit usage cap right after Write but file is complete: 533 lines, single section opens/closes cleanly, 3 statute excerpts (s88 first per page-structure note, then s87, then s89), 29 H3 sub-headings, 1 practice tips block.
+- Major doctrinal canon present: Brodyn, Chase Oyster Bar, Probuild, Niclin, Kirk, Coordinated Construction, Watpac, John Goss Projects, Rothnere, Trysams, Multiplex.
+- Second-tier nested authorities trimmed (Procorp Civil, Holmwood Holdings, Project Blue Sky cf cites, Plaza West) — all source mentions are inside larger quoted passages from primary cases, not standalone treatments.
+- Source for this chunk is 864 lines / 327KB; output is appropriately curated.
+
+--------------------------------------------------------------------------------
+CHUNK 13 — page_13_enforcement.html (s90, s91, s92, s93)
+Status: PASS
+- Statute s90-s93 verbatim incl. s93(4)(a) bar on counterclaims/defences/decision challenges.
+- Cases verified: ABC v O'Neill, RJ Neller, Parkview v Total Lifestyle Windows, Low v MCC, Wiggins Island, Sunshine Coast RC v Earthpro, BRB Modular, Filadelfia, Nazero, Milburn Lake, Hakea, Superb Build, Richard Crookes, Bellerive Homes, Paul Kennedy McCullough, Kuatro, Fitz Jersey, Kennedy Civil v Linx (NSWSC + NSWCA), Re Douglas Aerospace, Re J Group, Rockwall Homes, CGI Information Systems v APRA, Re Roberts Construction, Re Three Pillars, CM Luxury, Amasya v Asta, Infinity Formwork, Marques v Parkview, Bitannia, Harlech v Beno, Brodyn, BRP Industries v Hynash, Hynash v BRP NSWCA, Martinus Rail v Qube.
+- 251 lines.
+
+--------------------------------------------------------------------------------
+CHUNK 14 — page_14_suspension.html (s94, s95, s96, s97, s98)
+Status: PASS
+- Statute s94-s98 verbatim (statute body keeps source's "Claimaint's" typo unchanged in s98 heading; agent rewrote H3 to "Claimant's right to suspend" per Rule 2).
+- Cases verified: Spankie (QCA + QSC), Hansen Yuncken, Cardinal Project Services, Galaxy Developments, Sun Engineering, Alucity, Civil Contractors v Galaxy, Karam Group, Downer EDI Rail, Coordinated Construction, Beckhaus Civil No 2, On Forbes Developments.
+- 182 lines.
+
+--------------------------------------------------------------------------------
+CHUNK 15 — page_15_civil_proceedings.html (s99, s100, s101, s102)
+Status: PASS
+- Statute s99-s102 verbatim incl. s102's source-typo "Services of notices" (preserved per Rule 1).
+- Cases verified across the 50+ case set (Vinson, Forte Sydney, Rojo, Neumann, Aalborg, Somerset Civil, EnerMech, Dart Holdings, Gambaro QSC+QCA, Lindvest, McDonald v MAK, Harlech, Pico Play, Sunshine Coast, Ceerose v BPA + A-Civil trio, MGW Engineering v CMOC, Lucas Stuart, Conveyor & General, Penfold, Pelligra, etc.).
+- 492 lines.

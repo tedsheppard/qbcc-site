@@ -1,0 +1,567 @@
+================================================================================
+BIF ACT GUIDE - STRUCTURAL REFERENCE DOCUMENT FOR CONTENT WRITERS
+Last updated: 2026-04-25
+================================================================================
+
+This document provides exhaustive technical specification of the HTML/CSS/JS
+conventions used in site/bif-act-guide.html. New sections must adhere to these
+patterns exactly. All line numbers refer to the original HTML file.
+
+================================================================================
+1. SIDEBAR NAVIGATION STRUCTURE
+================================================================================
+
+Container: <ul class="sidebar-nav"> (line 74, defined as list-style: none)
+Location: <aside class="knowledge-sidebar"> (lines 289-345)
+
+MARKUP PATTERN (lines 291-344):
+
+  <ul class="sidebar-nav">
+    <li>
+      <a href="#SECTION-ID">Top-level category name</a>
+      <ul>
+        <li><a href="#SUB-SECTION-ID">Sub-item 1</a></li>
+        <li><a href="#SUB-SECTION-ID">Sub-item 2</a></li>
+        <li><a href="#SUB-SECTION-ID">Sub-item 3</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#NEXT-CATEGORY">Next category</a>
+      <ul>
+        <li><a href="#SUB-ID">Sub-item</a></li>
+      </ul>
+    </li>
+  </ul>
+
+KEY RULES:
+- Top-level <a> href points to a category section OR to the first subsection
+- Nested <ul> contains ONLY <li><a href="#...">text</a></li> (no nested lists)
+- All hrefs must start with # (CSS selector: a[href^="#"], line 1810)
+- No nested categories deeper than 2 levels
+
+STYLING (lines 74-89):
+  .sidebar-nav a                    : font-size: 13px, padding: 6px 12px
+  .sidebar-nav a:hover             : background: #f0f0f0
+  .sidebar-nav a.active            : background: #e6f9f2, color: #008a5c, font-weight: 600
+  .sidebar-nav ul                  : padding-left: 12px
+  .sidebar-nav ul a                : font-size: 12px, color: #777
+  .sidebar-nav ul a.active         : font-weight: 500
+
+================================================================================
+2. SECTION ID CONVENTION (ANCHOR NAMING)
+================================================================================
+
+All section IDs follow KEBAB-CASE with semantic prefixes.
+
+EXISTING SECTION IDs AND TOPICS:
+
+PAYMENT CLAIM REQUIREMENTS (category root: #pc-construction-contract):
+  Line 356:  id="pc-construction-contract"   → Construction contract
+  Line 562:  id="pc-identify"                 → Identify the construction works
+  Line 935:  id="pc-amount"                   → State the claimed amount
+  Line 964:  id="pc-request"                  → Request payment
+  Line 1033: id="pc-ref-date"                 → Claim for a valid reference date
+  Line 1160: id="pc-license"                  → Not be for unlicensed work
+  Line 1214: id="pc-timing"                   → Within six months of work
+
+PAYMENT SCHEDULE REQUIREMENTS (category root: #ps-identify):
+  Line 1342: id="ps-identify"                 → Identify the payment claim
+  Line 1429: id="ps-amount"                   → State the scheduled amount
+  Line 1511: id="ps-reasons"                  → Reasons for withholding
+  Line 1637: id="ps-validity"                 → What constitutes a payment schedule
+
+ADJUDICATION APPLICATION REQUIREMENTS (category root: #aa-form):
+  Line 1717: id="aa-form"                     → Form S79
+  Line 1722: id="aa-identify"                 → Identify the claim/schedule
+  Line 1727: id="aa-fee"                      → Pay prescribed fee
+  Line 1732: id="aa-corners"                  → [Incomplete/stub section]
+
+ADJUDICATION RESPONSE REQUIREMENTS (category root: #ar-reasons):
+  Line 1739: id="ar-reasons"                  → Not exceed reasons for withholding
+
+SERVICE (category root: #s-pc):
+  Line 1746: id="s-pc"                        → Service of payment claim
+  Line 1751: id="s-ps"                        → Service of payment schedule
+  Line 1756: id="s-aa"                        → Service of adjudication app
+  Line 1761: id="s-ar"                        → Service of adjudication response
+
+ADJUDICATOR'S DECISION (category root: #d-consider):
+  Line 1768: id="d-consider"                  → What the Adjudicator must consider
+  Line 1773: id="d-not-consider"              → What the Adjudicator must not consider
+  Line 1778: id="d-timing"                    → Timing of decision
+
+NAMING CONVENTION:
+  Format: [prefix]-[semantic-slug]
+  Prefixes: pc (payment claim), ps (payment schedule), aa (adjudication app),
+            ar (adjudication response), s (service), d (decision)
+  Slugs: kebab-case, descriptive, max 20 chars
+  Examples: pc-construction-contract, ps-identify, d-timing
+
+================================================================================
+3. REPEATING SECTION TEMPLATE - CANONICAL EXAMPLE
+================================================================================
+
+COMPLETE WORKING EXAMPLE: Section "pc-ref-date" (lines 1033-1159)
+
+====== ANNOTATED TEMPLATE ======
+
+<section id="pc-ref-date">                          <!-- SECTION WRAPPER (required id) -->
+  
+  <!-- HEADER BLOCK: breadcrumb + h2 -->
+  <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
+  <h2>Claim for a valid reference date</h2>
+
+  <!-- INTRO PARAGRAPH: context for the section -->
+  <p>Pursuant to section 70 of the BIF Act, a person who has carried out 
+     construction work, or supplied related goods and services, under a 
+     construction contract is entitled to a progress payment from each 
+     reference date.</p>
+
+  <!-- STATUTE EXCERPT BLOCK 1: collapsible statute text -->
+  <details class="statute-excerpt" open>
+    <summary>Section 70 BIF Act – Entitlement to progress payment</summary>
+    <div class="statute-body">
+      <strong>70 Entitlement to progress payment</strong>
+      <p>(1) &nbsp;A person who has carried out construction work, or supplied 
+         related goods and services, under a construction contract is entitled 
+         to receive a progress payment from each reference date under the 
+         contract.</p>
+    </div>
+  </details>
+
+  <!-- CONNECTIVE PARAGRAPH -->
+  <p>A "reference date" is defined under section 67 of the BIF Act.</p>
+
+  <!-- STATUTE EXCERPT BLOCK 2 -->
+  <details class="statute-excerpt" open>
+    <summary>Section 67 BIF Act – Meaning of reference date</summary>
+    <div class="statute-body">
+      <strong>67 Meaning of reference date</strong>
+      <p>(1) &nbsp;A reference date, for a construction contract, means—</p>
+      <p style="margin-left: 1.5rem;">(a) &nbsp;a date stated in, or worked out 
+         under, the contract as the date on which...</p>
+      <!-- More statute content -->
+    </div>
+  </details>
+
+  <!-- SUBHEADING: h3 (starts new topic) -->
+  <h3>Jurisdictional requirement</h3>
+
+  <!-- ANALYSIS PARAGRAPH(S): contextual explanation -->
+  <p>A payment claim will be invalid if it is not made from a valid reference 
+     date. As the High Court unanimously found in <em>Southern Han Breakfast 
+     Point Pty Ltd (in liq) v Lewence Construction Pty Ltd</em> 
+     (2016) 260 CLR 340 (Southern Han):</p>
+
+  <!-- CASE EXCERPT BLOCK: judicial quotation -->
+  <div class="case-excerpt">
+    <p><span class="para-number">[61]</span> The construction of s 13(1) 
+       consonant with the structure of the Act is accordingly that advanced 
+       by Southern Han...</p>
+  </div>
+
+  <!-- CONTINUATION: more analysis, possibly citing additional authority -->
+  <p>The decision in <em>Southern Han</em> was dealing with reference dates 
+     under analogous provisions...</p>
+
+  <!-- ANOTHER CASE EXCERPT (different judgment) -->
+  <div class="case-excerpt">
+    <p><span class="para-number">[47]</span> In <em>Southern Han Breakfast 
+       Point Pty Ltd (in liq) v Lewence Construction Pty Ltd</em> (Southern 
+       Han Breakfast), the High Court confirmed that where one payment claim 
+       has already been made...</p>
+  </div>
+
+  <!-- SUBHEADING FOR NEW ISSUE -->
+  <h3>From each reference date</h3>
+
+  <!-- MORE ANALYSIS -->
+  <p>In past, there have been competing Queensland views as to whether a 
+     payment claim must be made "on" the reference date or may be made 
+     "after" (but in respect of) that date...</p>
+
+  <!-- SUB-SUBHEADING (h4 - less common, used for minor points) -->
+  <!-- PRACTICE TIPS BLOCK: actionable checklist -->
+  <h3>Practice tips</h3>
+
+  <ul>
+    <li>Serve only on or after the reference date, never before.</li>
+    <li>Make one claim per reference date and, if needed, re-include unpaid 
+        amounts in a later claim rather than issuing a second claim for the 
+        same date.</li>
+    <li>Include only work up to the reference date (always exclude work done 
+        later, late variations, or post-date quantities).</li>
+    <li>On termination/take-out, confirm whether reference dates survive; if 
+        not, treat the termination date as the final reference date and avoid 
+        draft-claim preconditions that condition accrual.</li>
+  </ul>
+
+</section>
+
+====== BLOCK TYPES & USAGE ======
+
+1. BREADCRUMB HEADING (always first, lines 357, 563, etc.)
+   <h4 class="breadcrumb-heading">Category Name</h4>
+   Purpose: context, not styled as section number; color: var(--text-muted)
+
+2. SECTION TITLE (always second, h2)
+   <h2>Specific Topic Name</h2>
+   Purpose: main heading; font-size: 22px, font-weight: 700
+
+3. INTRODUCTORY PARAGRAPH
+   <p>Brief summary of what follows, often citing the statute section...</p>
+   Purpose: set scope before diving into case law
+
+4. STATUTE EXCERPT (collapsible details block)
+   <details class="statute-excerpt" open>
+     <summary>Section X Act – Descriptive title</summary>
+     <div class="statute-body">
+       <strong>X Section heading as in statute</strong>
+       <p>(1) &nbsp;Verbatim statute text...</p>
+     </div>
+   </details>
+   Styling: background: #f6fbf9, border: 1px solid #d7e5df, padding: 12px 16px
+   Note: @open attribute makes it expanded by default; omit for collapsed
+
+5. SUBHEADING (h3, introduces new analytic theme)
+   <h3>Subtopic Name</h3>
+   Styling: font-size: 18px, font-weight: 600, margin-top: 36px
+
+6. ANALYSIS PARAGRAPH(S) (contextual discussion, often with case citations)
+   <p>Explanation citing <em>Case Name v Defendant</em> [2023] NSWSC 71:</p>
+   Styling: color: var(--text-secondary), font-size: 14px, line-height: 1.7
+
+7. CASE EXCERPT (judicial quotation block)
+   <div class="case-excerpt">
+     <p><span class="para-number">[61]</span> Quoted text from judgment...</p>
+     <p><span class="para-number">[62]</span> More quoted text...</p>
+   </div>
+   Styling: background: #f7f7f8, border-left: 3px solid #ccc, font-size: 13px
+   Note: para-number spans in [brackets] are styled as font-weight: 600
+
+8. UNORDERED/ORDERED LISTS (context-dependent)
+   <ul>
+     <li>Item 1</li>
+     <li>Item 2</li>
+   </ul>
+   Styling: margin-bottom: 16px, padding-left: 20px
+
+9. PRACTICE TIPS SECTION (always at end, green box)
+   <h3>Practice tips</h3>
+   <ul>
+     <li>Tip 1...</li>
+     <li>Tip 2...</li>
+   </ul>
+   Styling: background: #f0fdf4, border: 1px solid #bbf7d0, 
+            padding: 18px 22px, border-radius: 10px
+
+10. AUTHORITY LIST (bibliography/reference list)
+    <ul class="authority-list">
+      <li><em>Case Name v Respondent</em> [2023] NSWSC 71</li>
+    </ul>
+    Styling: padding-left: 20px, color: var(--text-secondary)
+
+BLOCK ORDERING (canonical sequence within a section):
+  1. <h4 class="breadcrumb-heading"> + <h2>
+  2. <p> (intro)
+  3. <details class="statute-excerpt"> (statute)
+  4. <p> (context)
+  5. <details class="statute-excerpt"> (another statute, if needed)
+  6. <h3> (subheading)
+  7. <p> (analysis)
+  8. <div class="case-excerpt"> (case quote)
+  9. <p> (more analysis)
+  10. <h3> (another subheading)
+  11. <h3>Practice tips
+  12. <ul> (tips list)
+
+================================================================================
+4. CSS CLASS INVENTORY
+================================================================================
+
+All classes used within .knowledge-content (lines 92-244):
+
+SEMANTIC STRUCTURAL CLASSES:
+  .knowledge-content           : main container, display: none by default on sections
+  .knowledge-sidebar           : sticky left sidebar, position: sticky, top: 88px
+  .sidebar-nav                 : unordered list of navigation links
+  .knowledge-container         : grid wrapper (260px sidebar | 1fr content)
+  .knowledge-content section   : each section hidden until activated by JS
+
+TYPOGRAPHY CLASSES:
+  .breadcrumb-heading          : <h4> before each section title; color: var(--text-muted);
+                                 font-size: 13px, font-weight: 500
+  (h2, h3, h4 styled directly via CSS selectors, not classes)
+
+STATUTE & LEGAL CONTENT:
+  .statute-excerpt             : <details> element; background: #f6fbf9;
+                                 border: 1px solid #d7e5df; border-radius: 10px;
+                                 padding: 12px 16px; margin: 18px 0
+  .statute-body                : <div> inside .statute-excerpt; margin-top: 12px;
+                                 color: #1b3a2d; font-size: 14px
+
+  .case-excerpt                : <div> for quoted case law; background: #f7f7f8;
+                                 border-left: 3px solid #ccc; padding: 14px 18px;
+                                 font-size: 13px; line-height: 1.65
+  .para-number                 : <span> for paragraph numbering in cases;
+                                 font-weight: 600; color: #888; margin-right: 8px
+
+ANALYSIS & COMMENTARY:
+  .analysis                    : <div> for analytical commentary; background: #fafafa;
+                                 border-left: 4px solid var(--green); padding: 18px 22px;
+                                 margin-top: 24px
+
+  .practice-tips               : <div> for actionable guidance; background: #f0fdf4;
+                                 border: 1px solid #bbf7d0; padding: 18px 22px;
+                                 border-radius: 10px; margin-top: 24px
+
+  .authority-list              : <ul> for case citations; padding-left: 20px;
+                                 color: var(--text-secondary)
+
+NAVIGATION:
+  .nav                         : top navigation bar; background: var(--bg-dark);
+                                 position: sticky; top: 0; z-index: 100
+  .active                      : applied to links when section is visible;
+                                 .sidebar-nav a.active: background: #e6f9f2,
+                                 color: #008a5c, font-weight: 600
+
+UTILITIES (present but less commonly used in main content):
+  .breadcrumb-heading          : used for category breadcrumbs
+  (admin-editor-* classes exist but are for admin editing UI, not content)
+
+================================================================================
+5. JAVASCRIPT BEHAVIOR
+================================================================================
+
+Navigation is controlled by hash-based routing. All JS begins at line 1806.
+
+KEY VARIABLES & SELECTORS (lines 1807-1811):
+  sidebarNav = document.querySelector('.sidebar-nav')
+  navLinks = sidebarNav.querySelectorAll('a[href^="#"]')
+  contentSections = document.querySelectorAll('.knowledge-content section')
+  welcomeMessage = document.getElementById('welcome-message')
+
+CORE FUNCTION: setActiveState(hash) [lines 1815-1844]
+
+  Purpose: Show/hide sections and update active link styling based on URL hash
+
+  Behavior:
+    1. If hash is empty or invalid, show welcome-message, hide all sections,
+       remove .active class from all links
+    2. If hash matches a valid section:
+       a. Hide welcome-message
+       b. Hide all .knowledge-content section elements
+       c. Show only the target section (display: block)
+       d. Remove .active class from all navLinks
+       e. Find the navLink with matching href and add .active
+       f. Activate the parent link if this is a sub-link (nested <ul>)
+
+CLICK HANDLING (lines 1847-1868):
+
+  sidebarNav.addEventListener('click', (e) => {
+    if link is clicked (e.target.closest('a[href^="#"]')):
+      e.preventDefault()
+      hash = link.getAttribute('href')
+      setActiveState(hash)
+      history.pushState(null, null, window.location.pathname + hash)
+      window.scrollTo({ top: contentArea.offsetTop - 100, behavior: 'smooth' })
+  })
+
+BROWSER HISTORY (lines 1871-1887):
+
+  window.addEventListener('popstate', () => {
+    setActiveState(window.location.hash)
+  })
+
+  // On page load with existing hash, call setActiveState
+
+ACTIVE CLASS APPLICATION (lines 1833-1843):
+
+  Pattern 1: Direct match
+    activeLink = sidebarNav.querySelector(`a[href="${hash}"]`)
+    if (activeLink) activeLink.classList.add('active')
+
+  Pattern 2: Parent activation (for sub-links)
+    parentLink = activeLink.closest('ul')?.previousElementSibling
+    if (parentLink && parentLink.tagName === 'A') {
+      parentLink.classList.add('active')
+    }
+
+This means both the clicked link AND its category parent are highlighted.
+
+================================================================================
+6. BLANK SECTION TEMPLATE - COPY/PASTE READY
+================================================================================
+
+Use this skeleton for new sections. Replace all [PLACEHOLDERS] with content.
+Preserve all class names, id pattern, and block structure exactly.
+
+====== COPY-PASTE TEMPLATE ======
+
+        <section id="[PREFIX-SLUG]">
+          <h4 class="breadcrumb-heading">[Category Name - e.g., "Requirements of a payment claim"]</h4>
+          <h2>[Section title in natural language]</h2>
+
+          <p>[Opening paragraph providing context, often citing statute section...]</p>
+
+          <details class="statute-excerpt" open>
+            <summary>[Section X Act – Descriptive title]</summary>
+            <div class="statute-body">
+              <strong>[X Section number and heading as in statute]</strong>
+              <p>[STATUTE TEXT VERBATIM HERE - use &nbsp; for spaces before list items]</p>
+              <p style="margin-left: 1.5rem;">[Indented statute paragraphs as needed]</p>
+            </div>
+          </details>
+
+          <p>[Transitional paragraph or case context...]</p>
+
+          <h3>[Subheading 1 - specific issue or case name]</h3>
+
+          <p>[Analysis paragraph(s) with case citations...]</p>
+
+          <div class="case-excerpt">
+            <p><span class="para-number">[XX]</span> [QUOTED TEXT FROM JUDGMENT]</p>
+            <p><span class="para-number">[YY]</span> [MORE QUOTED TEXT]</p>
+          </div>
+
+          <p>[Continuation of analysis...]</p>
+
+          <h3>[Subheading 2 - another issue]</h3>
+
+          <p>[More analysis...]</p>
+
+          <ul>
+            <li>[Bulleted point 1]</li>
+            <li>[Bulleted point 2]</li>
+          </ul>
+
+          <h3>Practice tips</h3>
+
+          <ul>
+            <li>[Actionable tip 1]</li>
+            <li>[Actionable tip 2]</li>
+            <li>[Actionable tip 3]</li>
+          </ul>
+
+        </section>
+
+====== MINIMAL TEMPLATE (for stub/short sections) ======
+
+        <section id="[PREFIX-SLUG]">
+          <h4 class="breadcrumb-heading">[Category]</h4>
+          <h2>[Title]</h2>
+
+          <p>[Opening context...]</p>
+
+          <details class="statute-excerpt" open>
+            <summary>[Section X – Title]</summary>
+            <div class="statute-body">
+              <strong>[X Section heading]</strong>
+              <p>[Statute text]</p>
+            </div>
+          </details>
+
+          <h3>Practice tips</h3>
+
+          <ul>
+            <li>[Tip 1]</li>
+            <li>[Tip 2]</li>
+          </ul>
+
+        </section>
+
+====== TEMPLATE WITH ANALYSIS BLOCK (alternate) ======
+
+        <section id="[PREFIX-SLUG]">
+          <h4 class="breadcrumb-heading">[Category]</h4>
+          <h2>[Title]</h2>
+
+          <p>[Context]</p>
+
+          <details class="statute-excerpt" open>
+            <summary>[Section X – Title]</summary>
+            <div class="statute-body">
+              <strong>[Section heading]</strong>
+              <p>[Statute text]</p>
+            </div>
+          </details>
+
+          <div class="analysis">
+            <h4>[Analysis subtitle]</h4>
+            <p>[Key points or summary...]</p>
+          </div>
+
+          <h3>Practice tips</h3>
+          <ul>
+            <li>[Tip]</li>
+          </ul>
+
+        </section>
+
+====== IMPORTANT NOTES FOR WRITERS ======
+
+ANCHOR ID RULES:
+  - Must start with valid prefix (pc, ps, aa, ar, s, d)
+  - Follow with hyphen
+  - Use kebab-case slug (no underscores, no spaces, no uppercase)
+  - Example valid IDs: pc-identify, ps-validity, d-timing, ar-reasons
+
+BREADCRUMB TEXT:
+  - Should match the top-level category in sidebar nav
+  - Examples: "Requirements of a payment claim", "Service", "Adjudicator's decision"
+  - Use exact text from sidebar for consistency
+
+STATUTE EXCERPTS:
+  - Always wrap statute text in <details><summary>...<div class="statute-body">
+  - Use @open attribute to expand by default
+  - Include <strong> for section number & heading
+  - Use &nbsp; before numbered/lettered list items (standard HTML space)
+  - Use <p style="margin-left: 1.5rem;"> for indented sub-paragraphs
+  - Use <p style="margin-left: 3rem;"> for double-indented items
+
+CASE EXCERPTS:
+  - Wrap quoted judgment text in <div class="case-excerpt">
+  - Each paragraph = <p>
+  - Start each quoted para with <span class="para-number">[XX]</span>
+  - Para numbers must match citation ([25], [61], etc.)
+  - Do NOT interpret; quote verbatim from judgment
+
+PRACTICE TIPS:
+  - Always include a <h3>Practice tips</h3> at end of section
+  - Wrap tips in <ul> with <li> items
+  - Make each tip actionable, 1-2 sentences max
+  - Use imperative voice ("Check...", "Ensure...", "Verify...")
+
+INLINE FORMATTING:
+  - Use <em> for case names and emphasis
+  - Use <strong> for statute headings only
+  - Do NOT use <b> or <i> (semantic HTML only)
+
+LISTS:
+  - Use <ul> for unordered (bullets)
+  - Use <ol> for ordered (numbers) – rare in this guide
+  - Use <ul class="authority-list"> for bibliography/case citations
+
+DO NOT USE:
+  - <br> tags (use <p> for paragraph breaks)
+  - <div> unless wrapping a structured block (case-excerpt, analysis)
+  - Custom data attributes (only class and id allowed)
+  - Inline styles except margin-left for indentation
+  - Tables inside practice-tips or case-excerpts (use <p> lists)
+
+ACCESSIBILITY:
+  - Headings must nest logically: h2 > h3 > h4 (never skip levels)
+  - Alt text not needed for code examples (none used)
+  - Href targets must match section IDs exactly (case-sensitive)
+
+================================================================================
+END OF STRUCTURAL REFERENCE DOCUMENT
+================================================================================
+
+For questions or clarifications, refer to the canonical examples:
+  - Full section example: lines 1033–1159 (pc-ref-date)
+  - Navigation patterns: lines 289–344 (sidebar nav markup)
+  - JavaScript logic: lines 1806–1888 (hash routing)
+
+All new sections must pass visual alignment checks and href validation before
+being merged into the live guide.
