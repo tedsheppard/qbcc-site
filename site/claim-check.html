@@ -191,8 +191,12 @@
 
       <div class="workspace-grid">
 
-        <!-- LEFT: document pane -->
-        <div class="pane pane-document" data-pane="document">
+        <!-- LEFT COLUMN: small document pane stacked above the chatbot.
+             Combined height matches the analysis pane on the right. -->
+        <div class="left-stack" data-pane="document">
+
+        <!-- Document pane (compact) -->
+        <div class="pane pane-document">
           <div class="pane-header">
             <h3 class="pane-title">Document</h3>
             <div class="pane-actions">
@@ -240,6 +244,32 @@
 
           </div>
         </div>
+
+        <!-- CHATBOT — inside the left stack so it sits under the doc pane
+             and grows to match the analysis pane height. -->
+        <div class="chatbot" id="chatbot" aria-label="Contextual chatbot">
+          <div class="chatbot-header">
+            <div class="chatbot-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span>Ask about your payment claim or payment schedule</span>
+            </div>
+            <span class="chatbot-scope" title="The chatbot only answers BIF Act / payment claim / payment schedule questions.">BIF Act scope only</span>
+          </div>
+          <div class="chatbot-messages" id="chatbot-messages">
+            <div class="chatbot-empty">
+              <p>Upload a document above, then ask questions like <em>"why did you flag the reference date?"</em> or <em>"what defences could I raise under s 69?"</em></p>
+            </div>
+          </div>
+          <form class="chatbot-input-row" id="chatbot-form">
+            <input type="text" id="chatbot-input" placeholder="Upload a document to start the conversation…" autocomplete="off" disabled>
+            <button type="submit" id="chatbot-send" disabled aria-label="Send">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </form>
+          <p class="chatbot-disclaimer">General information only — not legal advice. For your specific situation, consult a construction lawyer.</p>
+        </div>
+
+        </div><!-- /.left-stack -->
 
         <!-- RIGHT: analysis pane -->
         <div class="pane pane-analysis" data-pane="analysis" hidden>
@@ -298,29 +328,6 @@
           </div>
         </div>
 
-      </div>
-
-      <!-- CHATBOT -->
-      <div class="chatbot" id="chatbot" aria-label="Contextual chatbot">
-        <div class="chatbot-header">
-          <div class="chatbot-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span>Ask about your payment claim or payment schedule</span>
-          </div>
-          <span class="chatbot-scope" title="The chatbot only answers BIF Act / payment claim / payment schedule questions.">BIF Act scope only</span>
-        </div>
-        <div class="chatbot-messages" id="chatbot-messages">
-          <div class="chatbot-empty">
-            <p>Upload a document above, then ask questions like <em>"why did you flag the reference date?"</em> or <em>"what defences could I raise under s 69?"</em></p>
-          </div>
-        </div>
-        <form class="chatbot-input-row" id="chatbot-form">
-          <input type="text" id="chatbot-input" placeholder="Upload a document to start the conversation…" autocomplete="off" disabled>
-          <button type="submit" id="chatbot-send" disabled aria-label="Send">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
-        </form>
-        <p class="chatbot-disclaimer">General information only — not legal advice. For your specific situation, consult a construction lawyer.</p>
       </div>
 
     </section>
