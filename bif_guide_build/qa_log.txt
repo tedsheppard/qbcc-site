@@ -116,3 +116,11 @@ Status: PASS
 - Statute s99-s102 verbatim incl. s102's source-typo "Services of notices" (preserved per Rule 1).
 - Cases verified across the 50+ case set (Vinson, Forte Sydney, Rojo, Neumann, Aalborg, Somerset Civil, EnerMech, Dart Holdings, Gambaro QSC+QCA, Lindvest, McDonald v MAK, Harlech, Pico Play, Sunshine Coast, Ceerose v BPA + A-Civil trio, MGW Engineering v CMOC, Lucas Stuart, Conveyor & General, Penfold, Pelligra, etc.).
 - 492 lines.
+
+--------------------------------------------------------------------------------
+POST-DEPLOY HOTFIX — sidebar nav was dead
+Date: 2026-04-29
+- User reported clicking sidebar items did nothing.
+- Root cause: between the sidebar-nav inline <script> block and the admin-editor inline <script> block, the closing </script> tag was MISSING. Browser concatenated both scripts as one giant block; JS engine hit literal `<script>` token in the middle of code, threw SyntaxError, neither handler registered.
+- Bug was inherited from the prior live guide (same defect at lines 1889-1890 of bif_guide_build/archive/bif_act_guide_LIVE_2026-04-25.html) — i.e. sidebar was almost certainly broken on prod before the v2 push too; user only noticed on revisit.
+- Fix: insert </script> + blank line between the two script blocks. Now 4 <script> opens / 4 </script> closes balance.
