@@ -182,6 +182,21 @@
 
     .authority-list { margin: 16px 0 0 0; padding-left: 20px; color: var(--text-secondary); }
 
+    /* Footnotes (new format) */
+    .knowledge-content sup a { color: #008a5c; text-decoration: none; font-weight: 600; padding: 0 2px; }
+    .knowledge-content sup a:hover { text-decoration: underline; }
+    .knowledge-content ol.footnotes {
+      margin-top: 36px;
+      padding-top: 18px;
+      padding-left: 24px;
+      border-top: 1px solid var(--border-light);
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+    .knowledge-content ol.footnotes li { margin-bottom: 8px; font-size: 12.5px; }
+    .knowledge-content ol.footnotes li:last-child { margin-bottom: 0; }
+
     /* Footer */
     .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
     .footer-inner { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); gap: 24px; }
@@ -303,6 +318,7 @@
           <li><a href="#enforcement">Enforcement</a></li>
           <li><a href="#suspension">Suspension of work</a></li>
           <li><a href="#civil-proceedings">Civil proceedings</a></li>
+          <li style="margin-top:18px;border-top:1px dashed #d4d4d8;padding-top:12px;"><a href="#pc-construction-contract" style="color:#008a5c;font-weight:600;">PREVIEW &mdash; new format</a></li>
         </ul>
       </aside>
 
@@ -4446,6 +4462,54 @@
               <li>Where you are dealing with a superintendent or principal&rsquo;s representative, check the appointment documentation. The right person can validly serve and receive payment claims and payment schedules (<em>Bucklands</em>; <em>Lewance</em>), but a quantity surveyor or junior employee on site, without more, is unlikely to bind the principal (<em>Lucas Stuart</em>; <em>MGW Engineering</em>).</li>
             </ul>
           </div>
+
+        </section>
+
+        <!-- === PREVIEW: new format model page === -->
+        <section id="pc-construction-contract">
+          <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
+          <h2>A construction contract must exist</h2>
+
+          <p>The BIF Act payment regime only switches on if there is a &ldquo;construction contract&rdquo; between you and the other side. Without one, no payment claim can be made and any adjudication that follows has no foundation.</p>
+
+          <details class="statute-excerpt" open>
+            <summary>Section 64 BIF Act &mdash; &ldquo;construction contract&rdquo;</summary>
+            <div class="statute-body">
+              <p><em>construction contract</em> means a contract, agreement or other arrangement under which 1 party undertakes to carry out construction work for, or to supply related goods and services to, another party.</p>
+            </div>
+          </details>
+
+          <h3>What counts as a construction contract</h3>
+
+          <p>The definition is deliberately broad. It captures three things &mdash; a contract, an agreement, or an &ldquo;other arrangement&rdquo; &mdash; and the agreement does not need to be in writing.<sup><a href="#fn-pc-cc-1">1</a></sup> An oral agreement, a partly oral / partly written agreement, or a course of dealing can all qualify.</p>
+
+          <p>What the parties have undertaken must be construction work, or the supply of related goods and services in connection with construction work (those concepts are defined separately at s 65 and s 66). Without that connection, there is no construction contract for the purposes of the Act.</p>
+
+          <p>The &ldquo;other arrangement&rdquo; limb has produced the most case law, because parties often dispute whether a one-off engagement, a quantum-meruit claim, or a non-binding understanding is enough. The current position is that an &ldquo;other arrangement&rdquo; must give rise to either a legally binding obligation or a concluded state of affairs that involves reciprocity around payment for the work.</p>
+
+          <h3>Key authority &mdash; <em>Bettar Holdings v RWC Brookvale</em></h3>
+
+          <p>The most recent appellate guidance is <em>Bettar Holdings Pty Ltd trading as Hunt Collaborative v RWC Brookvale Investment Pty Ltd as trustee for Brookvale Development Trust</em> [2025] NSWCA 242. The NSW Court of Appeal confirmed that an &ldquo;other arrangement&rdquo; must be properly pleaded with the material facts constituting the arrangement and the basis on which the claimant has &ldquo;undertaken&rdquo; to carry out work. McHugh JA (Bell CJ and Kirk JA agreeing) held that an &ldquo;other arrangement&rdquo; requires either:</p>
+
+          <div class="case-excerpt">
+            <p><span class="para-number">[139]</span> a legally binding obligation&hellip; or a concluded state of affairs&hellip; involving some element of reciprocity or acceptance of mutual rights and obligations relating to payment or price for the works.</p>
+          </div>
+
+          <p>On the facts of <em>Bettar</em>, the pleading only alleged a common law contract or an estoppel preventing denial of one. There was no separate allegation that work had been undertaken on any other basis. The Court of Appeal held there was no &ldquo;other arrangement&rdquo;, the adjudication application was a nullity, and the determination was set aside. McHugh JA expressly declined to resolve the earlier first-instance conflict between <em>Lendlease Engineering Pty Ltd v Timecon Pty Ltd</em> [2019] NSWSC 685 and <em>Crown Green Square Pty Ltd v Transport for NSW</em> [2018] NSWSC 1080,<sup><a href="#fn-pc-cc-2">2</a></sup> because the pleading failed under either test.</p>
+
+          <h3>What this means on a project</h3>
+
+          <ul>
+            <li>If you have a signed contract, a construction contract exists. Move on to the next element.</li>
+            <li>An oral agreement, an exchange of emails or purchase orders, or a sequence of agreed minutes can still be a construction contract, provided there is offer, acceptance and an intention to be bound. Document what was agreed and when &mdash; you may need to prove it later.</li>
+            <li>A bare quantum-meruit claim (no contract, just a claim for the value of work done) is unlikely to qualify under the &ldquo;other arrangement&rdquo; limb. The arrangement must include reciprocal payment obligations, not merely the fact that work was done.</li>
+            <li>If you expect the other side to challenge the existence of a contract, plead the arrangement carefully &mdash; identify the material facts, the undertaking to carry out work, and the payment obligation. The appellate courts are scrutinising those pleadings closely after <em>Bettar</em>.</li>
+          </ul>
+
+          <ol class="footnotes">
+            <li id="fn-pc-cc-1">That a written instrument is not required follows from the words &ldquo;contract, agreement or other arrangement&rdquo; in s 64 and is consistently applied: <em>Okaroo Pty Ltd v Vos Construction &amp; Joinery Pty Ltd</em> [2005] NSWSC 45 (Nicholas J); <em>Machkevitch v Andrew Building Constructions Pty Ltd</em> [2012] NSWSC 546 (McDougall J).</li>
+            <li id="fn-pc-cc-2"><em>Lendlease Engineering Pty Ltd v Timecon Pty Ltd</em> [2019] NSWSC 685, [29]&ndash;[33] (Ball J), requiring a legally binding obligation; <em>Crown Green Square Pty Ltd v Transport for NSW</em> [2018] NSWSC 1080 (McDougall J), permitting a less stringent test. For Queensland, the leading reading of the contract limb of the BIF Act definition is <em>Capricorn Quarries Pty Ltd v Devcon Pty Ltd</em> [2010] QSC 28 (Daubney J).</li>
+          </ol>
 
         </section>
 
