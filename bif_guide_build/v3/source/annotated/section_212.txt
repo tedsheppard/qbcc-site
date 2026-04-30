@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 212
+# Chapter: CHAPTER 8B – Transitional provisions for Building and Other Legislation Amendment Act 2022
+# Section title: Definitions for chapter
+# DOCX paragraphs: 5639-5644
+
+[2 Com-BIFSOPA Heading 1] SECTION 212 – Definitions for chapter
+[1 BIFSOPA Heading] 212    Definitions for chapter
+[1.3 BIFSOPA level 1 (CDI)] In this chapter— 
+[1.3 BIFSOPA level 1 (CDI)] amendment Act means the Building Industry Fairness (Security of Payment) and Other Legislation Amendment Act 2020.
+[1.3 BIFSOPA level 1 (CDI)] former, for a provision of this Act, means the provision as in force immediately before amendment by the amendment Act.

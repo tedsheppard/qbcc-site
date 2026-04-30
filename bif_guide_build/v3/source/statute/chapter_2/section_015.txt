@@ -1,0 +1,4 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 15 — Subcontracts generally
+A project trust is not required for a subcontract unless it is a
+type of subcontract to which section14C or 14E apply.

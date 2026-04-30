@@ -1,0 +1,14 @@
+# Annotated BIF Act source — Section 30
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Head contractor to cover shortfalls
+# DOCX paragraphs: 520-530
+
+[2 Com-BIFSOPA Heading 1] SECTION 30 – Head contractor to cover shortfalls
+[1 BIFSOPA Heading] 30    Head contractors to cover shortfalls 
+[1.3 BIFSOPA level 1 (CDI)] This section applies if—
+[1.4 BIFSOPA level 2 (CDI)] an amount is due to be paid from a trust account to a subcontractor beneficiary; and 
+[1.4 BIFSOPA level 2 (CDI)] there is an insufficient amount available in the trust account to pay the amount to the subcontractor beneficiary. 
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must immediately deposit into the trust account an amount equal to the shortfall. 
+[1.1 BIFSOPA Body Text] Maximum penalty—100 penalty units or 1 year’s imprisonment.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] shortfall means an amount equal to the difference between the amount available in a trust account and the amount to be paid from the trust account.

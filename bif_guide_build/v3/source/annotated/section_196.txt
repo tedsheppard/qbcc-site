@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 196
+# Chapter: CHAPTER 6 – Legal proceedings
+# Section title: Proof of signature unnecessary
+# DOCX paragraphs: 5335-5338
+
+[2 Com-BIFSOPA Heading 1] SECTION 196 – Proof of signature unnecessary 
+[1 BIFSOPA Heading] 196    Proof of signature unnecessary 
+[1.1 BIFSOPA Body Text] A signature purporting to be the signature of the registrar is evidence of the signature it purports to be.

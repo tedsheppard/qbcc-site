@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 146
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Appeal
+# DOCX paragraphs: 4834-4837
+
+[2 Com-BIFSOPA Heading 1] SECTION 146 – Appeal
+[1 BIFSOPA Heading] 146    Appeal 
+[1.1 BIFSOPA Body Text] An appeal lies from a decision of the court given in any proceeding under this chapter as if it were a decision given in a proceeding brought otherwise than under this chapter.

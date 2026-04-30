@@ -1,0 +1,20 @@
+# Annotated BIF Act source — Section 34A
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Withdrawing retention amounts held in retention trust account
+# DOCX paragraphs: 584-600
+
+[2 Com-BIFSOPA Heading 1] SECTION 34A – Withdrawing retention amounts held in retention trust account
+[1 BIFSOPA Heading] 34A    Withdrawing retention amounts held in retention trust account
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must not withdraw any part of a retention amount held in the retention trust account unless the withdrawal is to make— 
+[1.4 BIFSOPA level 2 (CDI)] a payment to the subcontractor beneficiary from whom the amount was withheld; or 
+[1.4 BIFSOPA level 2 (CDI)] a payment to the head contractor that is—
+[1.5 BIFSOPA level 3 (CDI)] to correct defects in subcontracted work, or otherwise to secure, wholly or partly, the performance of the related subcontract; and
+[1.5 BIFSOPA level 3 (CDI)] made under the related subcontract; and
+[1.5 BIFSOPA level 3 (CDI)] made after the end of the defect’s liability period for the related subcontract; or
+[1.4 BIFSOPA level 2 (CDI)] a payment ordered by a court; or
+[1.4 BIFSOPA level 2 (CDI)] a payment to a subcontractor beneficiary, engaged on behalf of the head contractor, that—
+[1.5 BIFSOPA level 3 (CDI)] is to correct defects or omissions in subcontracted work; and
+[1.5 BIFSOPA level 3 (CDI)] would be made in accordance with the related subcontract if it were made to the head contractor. 
+[1.1 BIFSOPA Body Text] Maximum penalty—300 penalty units or 2 years imprisonment.
+[1.3 BIFSOPA level 1 (CDI)] In this section— 
+[1.1 BIFSOPA Body Text] related subcontract, for a retention amount, means the subcontract under which the retention amount was withheld from payment.

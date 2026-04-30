@@ -1,0 +1,9 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 9 — Meaning of contract price
+(1) The contract price, for a contract, means the amount the
+contracted party is entitled to be paid under the contract or, if
+the amount can not be accurately calculated, the reasonable
+estimate of the amount the contracted party is entitled to be
+paid under the contract.
+(2) In working out the amount under subsection(1), an amount
+for GST is not to be included.

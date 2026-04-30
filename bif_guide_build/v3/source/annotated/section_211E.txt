@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 211E
+# Chapter: CHAPTER 8A – Transitional provisions for Building Industry Fairness (Security of Payment) and Other Legislation Amendment Act 2020
+# Section title: Transitional regulation-making power
+# DOCX paragraphs: 5629-5638
+
+[2 Com-BIFSOPA Heading 1] SECTION 211E – Transitional regulation-making power
+[1 BIFSOPA Heading] 211E    Transitional regulation-making power
+[1.3 BIFSOPA level 1 (CDI)] A regulation (a transitional regulation) may make provision about a matter for which—
+[1.4 BIFSOPA level 2 (CDI)] it is necessary to make provision to allow or facilitate the doing of anything to achieve the transition from the operation of this Act, as in force before its amendment by the amendment Act, to the operation of this Act, as in force after its amendment by the amendment Act; and
+[1.4 BIFSOPA level 2 (CDI)] this Act does not make provision or sufficient provision.
+[1.3 BIFSOPA level 1 (CDI)] A transitional regulation may have retrospective operation to a day not earlier than the day of the commencement.
+[1.3 BIFSOPA level 1 (CDI)] A transitional regulation must declare it is a transitional regulation.
+[1.3 BIFSOPA level 1 (CDI)] A transitional regulation expires 1 year after the day of the commencement.
+
+[2a BIFSOPA Chapter Heading] CHAPTER 8B – Transitional provisions for Building and Other Legislation Amendment Act 2022

@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 38
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Unauthorised ending of project bank account
+# DOCX paragraphs: 700-706
+
+[2 Com-BIFSOPA Heading 1] SECTION 38 – Unauthorised ending of project bank account 
+[1 BIFSOPA Heading] 38    Unauthorised ending of project bank account 
+[1.3 BIFSOPA level 1 (CDI)] While a project bank account is required for a building contract, the head contractor must not dissolve the project bank account. 
+[1.1 BIFSOPA Body Text] Maximum penalty—500 penalty units or 1 year’s imprisonment. 
+[1.3 BIFSOPA level 1 (CDI)] Without limiting subsection (1), the head contractor is taken to dissolve a project bank account if it closes any of the trust accounts while a project bank account is still required for the building contract.

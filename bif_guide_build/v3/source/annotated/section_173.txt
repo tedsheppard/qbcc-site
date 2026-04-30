@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 173
+# Chapter: CHAPTER 5 – Administration
+# Section title: Ending show cause process without further action
+# DOCX paragraphs: 5139-5144
+
+[2 Com-BIFSOPA Heading 1] SECTION 173 – Ending show cause process without further action 
+[1 BIFSOPA Heading] 173    Ending show cause process without further action 
+[1.3 BIFSOPA level 1 (CDI)] This section applies if, after considering the accepted representations for the show cause notice, the registrar no longer believes a ground exists to suspend or cancel the registration. 
+[1.3 BIFSOPA level 1 (CDI)] The registrar must not take any further action in relation to the show cause notice. 
+[1.3 BIFSOPA level 1 (CDI)] The registrar must give the adjudicator written notice that no further action is to be taken in relation to the show cause notice.

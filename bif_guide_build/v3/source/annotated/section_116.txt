@@ -1,0 +1,16 @@
+# Annotated BIF Act source — Section 116
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Assignment and transmission of subcontractor’s charge
+# DOCX paragraphs: 4446-4457
+
+[2 Com-BIFSOPA Heading 1] SECTION 116 – Assignment and transmission of subcontractor’s charge
+[2.1 Com-BIFSOPA Heading 2] A    Legislation
+[1 BIFSOPA Heading] 116    Assignment and transmission of subcontractor’s charge
+[1.3 BIFSOPA level 1 (CDI)] If the debt secured by a subcontractor’s charge passes to another person on the death or bankruptcy of the person entitled to the charge, or otherwise by operation of law, the right to the charge passes with that debt. 
+[1.3 BIFSOPA level 1 (CDI)] A subcontractor’s charge may be assigned together with the debt secured by the charge.
+
+[2.1 Com-BIFSOPA Heading 2] B    Commentary
+[2.2 Com-BIFSOPA Heading 3] 116.1    The meaning of “or otherwise by operation of law”
+[2.4 Com-BIFSOPA CDI Normal Body Text] The assignment of a debt secured by a charge that is part of a Scheme approved by the Supreme Court for the resolution of claims of those participating in the Scheme may, under this section, result in the passing of the right to the charge to the other person: Seventeenth Canute Pty Ltd v Bradley Air Conditioning Pty Ltd (in liq) [1987] 1 Qd R 111, per Williams J at p 128.
+[2.4 Com-BIFSOPA CDI Normal Body Text] If a notice of claim of charge is validly given, then the subcontractor is entitled to a charge on the money due. That is a charge in the true sense, as recognised in Stapleton v FTS O'Donnell Griffin & Co (Qld) Pty Ltd (1961) 108 CLR 106 at 114. That decision has been treated as applicable to the SCA in Re Pavex Constructions Ltd [1979] Qd R 318 at 324, Re FC Upton & Sons Pty Ltd (in liq) [1986] 2 Qd R 275 at 276 and in Re Radair Pty Ltd [1998] 2 Qd R 539. Consequently, the subcontractor is a secured creditor: Re FC Upton & Sons Pty Ltd (in liq) [1986] 2 Qd R 275 at p 275; and Re Stockport (NQ) Pty Ltd (2003) 127 FCR 291; [2003] FCA 31.
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Re Stockport (NQ) Pty Ltd (2003) 127 FCR 291; [2003] FCA 31 the question was whether or not a notice of charge could be given after the commencement of a deed of arrangement and therefore place creditors into the position of secured creditors. Mansfield J held that s 5 of the SCA gave rise to an entitlement to a charge on money payable to the principal or superior contractor, creating a floating charge so to speak, and that the giving of the notices of charge causes the charge to “crystallise”. His Honour also held that those subcontractors who had lodged a subcontractor's charge and had not voted in favour of the deed, or who had abstained, were not entitled to prove under the deed of administration as they did not fall within the definition of “contractor creditor” as defined in the deed. However, those claimants that had voted in favour of the deed were not entitled to lodge a notice of charge as they had effectively elected to be treated as unsecured creditors.

@@ -1,0 +1,459 @@
+# Source: BIF Regulation 2018
+# Section 49 — Existing trust account records—Act, s 52
+(1) This section applies in relation to a record that, immediately
+before the commencement—
+(a) was mentioned in section10F or 10G; and
+(b) was required to be kept by the trustee for a project trust
+or retention trust.
+(2) The record continues to be prescribed for section 52(a) of the
+Act.
+50 Changes affecting review of trust account
+If section215B of the Act applies in relation to a review of the
+trust account for a project trust or retention trust, sections 10K
+and 10L as in force immediately before the commencement
+continue to apply as if the Building Industry Fairness
+(Security of Payment) and Other Legislation Amendment
+Regulation 2024 had not been made.
+Page 38 Current as at 1 July 2025
+
+Schedule 1AA
+Schedule 1AA Information to be included in
+particular notices
+sections 8 to 10E
+
+transferring or changing the
+name of project trust
+account—Act, s 18B
+
+1 Notice to contracting party about opening project trust
+account
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account;
+(c) the name of the financial institution where the account is
+kept;
+(d) the identifying number of the financial institution (BSB)
+where the account is kept;
+(e) the account number at the financial institution.
+2 Notice to contracting party about changing name of
+project trust account
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account before the change;
+(c) the name of the account after the change;
+
+Schedule 1AA
+(d) the name of the financial institution where the account is
+kept;
+(e) the identifying number of the financial institution (BSB)
+where the account is kept;
+(f) the account number at the financial institution;
+(g) the date the name of the account was changed.
+3 Notice to contracting party about closing project trust
+account
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account;
+(c) the name of the financial institution where the account
+was kept;
+(d) the identifying number of the financial institution (BSB)
+where the account was kept;
+(e) the account number at the financial institution;
+(f) the date the account was closed.
+4 Notice to contracting party about transferring project
+trust account
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account before the transfer;
+(c) the name of the account after the transfer;
+(d) the name of the financial institution where the account
+was kept before the transfer;
+(e) the name of the financial institution where the account
+will be kept after the transfer;
+(f) the identifying number of each financial institution
+(BSB) mentioned in paragraphs (d) and (e);
+Page 40 Current as at 1 July 2025
+
+Schedule 1AA
+(g) the account number at each financial institution
+mentioned in paragraphs (d) and (e);
+(h) the date the account was transferred;
+(i) the date from which the new account is intended to be
+used.
+
+5 Notice to commissioner about opening project trust
+account
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account;
+(c) the name of the financial institution where the account is
+kept;
+(d) the identifying number of the financial institution (BSB)
+where the account is kept;
+(e) the account number at the financial institution;
+(f) the value of the project trust contract;
+(g) the date the first subcontract for the project trust contract
+was entered into;
+(h) the name of the contracting party as it appears on the
+project trust contract;
+(i) the site address for the contracted work;
+(j) a brief description of the contracted work;
+(k) the date of practical completion as provided for under
+the project trust contract;
+(l) the date the account was opened.
+
+Schedule 1AA
+6 Notice to commissioner about changing name of project
+trust account
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account before the change;
+(c) the name of the account after the change;
+(d) the name of the financial institution where the account is
+kept;
+(e) the identifying number of the financial institution (BSB)
+where the account is kept;
+(f) the account number at the financial institution;
+(g) the date the name of the account was changed.
+7 Notice to commissioner about closing project trust
+account
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account;
+(c) the name of the financial institution where the account
+was kept;
+(d) the identifying number of the financial institution (BSB)
+where the account was kept;
+(e) the account number at the financial institution;
+(f) the date the account was closed.
+8 Notice to commissioner about transferring project trust
+account
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account before the transfer;
+(c) the name of the account after the transfer;
+Page 42 Current as at 1 July 2025
+
+Schedule 1AA
+(d) the name of the financial institution where the account
+was kept before the transfer;
+(e) the name of the financial institution where the account
+will be kept after the transfer;
+(f) the identifying number of each financial institution
+(BSB) mentioned in paragraphs (d) and (e);
+(g) the account number at each financial institution
+mentioned in paragraphs (d) and (e);
+(h) the date the account was transferred;
+(i) the date from which the new account is intended to be
+used.
+
+financial institution—Act, s 18C
+1 Information for notice about change of financial
+institution
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account before the transfer;
+(c) the name of the account after the transfer;
+(d) the name of the financial institution where the account
+was kept before the transfer;
+(e) the name of the financial institution where the account
+will be kept after the transfer;
+(f) the identifying number of each financial institution
+(BSB) mentioned in paragraphs (d) and (e);
+(g) the account number at each financial institution
+mentioned in paragraphs (d) and (e);
+(h) the date the account was transferred;
+
+Schedule 1AA
+(i) the date from which the new account is intended to be
+used.
+
+s 23
+1 Notice of project trust
+The following information must be included in the notice—
+(a) the name of the project trust account;
+(b) the name of the financial institution where the project
+trust account is kept;
+(c) the identifying number of the financial institution (BSB)
+where the project trust account is kept;
+(d) the project trust account number at the financial
+institution;
+(e) information identifying the contract to which the project
+trust relates.
+
+withdrawals from project trust
+account—Act, s 23A
+1 Notice about withdrawal to make a payment to a
+subcontractor beneficiary
+The following information must be included in the notice—
+(a) the amount that was or is to be paid to the beneficiary;
+(b) identification of the payment claim for the payment, if
+any;
+(c) the name of the account (the payment account) the
+payment was or is to be paid to;
+Page 44 Current as at 1 July 2025
+
+Schedule 1AA
+(d) the identifying number of the financial institution (BSB)
+where the payment account is kept;
+(e) the account number, at the financial institution, for the
+payment account;
+(f) the date the payment was or is to be paid.
+2 Notice about withdrawal to deposit an amount in a
+retention trust account for the benefit of a subcontractor
+beneficiary
+The following information must be included in the notice—
+(a) the amount to be deposited in the account;
+(b) identification of the payment claim for the deposit, if
+any;
+(c) the name of the account (the deposit account) into
+which the deposit is to be made;
+(d) the name of the financial institution where the deposit
+account is kept;
+(e) the identifying number of the financial institution (BSB)
+where the deposit account is kept;
+(f) the account number, at the financial institution, for the
+deposit account;
+(g) the date the amount was or is to be deposited into the
+deposit account;
+(h) the total retention amounts held in the account, when
+the notice is given, for the beneficiary under the contract
+to which the withdrawal relates.
+
+Schedule 1AA
+
+transferring or changing the
+name of retention trust
+account—Act, s 34B
+1 Notice about opening retention trust account
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account;
+(c) the name of the financial institution where the account is
+kept;
+(d) the identifying number of the financial institution (BSB)
+where the account is kept;
+(e) the account number at the financial institution;
+(f) the date the account was opened.
+2 Notice about changing name of retention trust account
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account before the change;
+(c) the name of the account after the change;
+(d) the name of the financial institution where the account is
+kept;
+(e) the identifying number of the financial institution (BSB)
+where the account is kept;
+(f) the account number at the financial institution;
+(g) the date the name of the account was changed.
+3 Notice about closing retention trust account
+The following information must be included in the notice—
+Page 46 Current as at 1 July 2025
+
+Schedule 1AA
+(a) the name of the trustee;
+(b) the name of the account;
+(c) the name of the financial institution where the account
+was kept;
+(d) the identifying number of the financial institution (BSB)
+where the account was kept;
+(e) the account number at the financial institution;
+(f) the date the account was closed.
+4 Notice about transferring retention trust account
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account before the transfer;
+(c) the name of the account after the transfer;
+(d) the name of the financial institution where the account
+was kept before the transfer;
+(e) the name of the financial institution where the account
+will be kept after the transfer;
+(f) the identifying number of each financial institution
+(BSB) mentioned in paragraphs (d) and (e);
+(g) the account number at each financial institution
+mentioned in paragraphs (d) and (e);
+(h) the date the account was transferred;
+(i) the date from which the new account is intended to be
+used.
+
+Schedule 1AA
+
+financial institution—Act, s 34C
+1 Information for notice about change of financial
+institution
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account before the transfer;
+(c) the name of the account after the transfer;
+(d) the name of the financial institution where the account
+was kept before the transfer;
+(e) the name of the financial institution where the account
+will be kept after the transfer;
+(f) the identifying number of each financial institution
+(BSB) mentioned in paragraphs (d) or (e);
+(g) the account number at each financial institution
+mentioned in paragraphs (d) or (e);
+(h) the date the account was transferred;
+(i) the date from which the new account is intended to be
+used.
+
+s 40
+1 Information about notice of retention trust
+The following information must be included in the notice—
+(a) the name of the retention trust account;
+(b) the name of the financial institution where the retention
+trust account is kept;
+(c) the identifying number of the financial institution (BSB)
+where the retention trust account is kept;
+Page 48 Current as at 1 July 2025
+
+Schedule 1AA
+(d) the retention trust account number at the financial
+institution;
+(e) information identifying the contract to which the
+retention trust relates.
+
+withdrawals from retention
+trust account—Act, s 40A
+1 Notice about deposit of retention amount into retention
+trust account
+The following information must be included in the notice—
+(a) the amount to be deposited in the account;
+(b) identification of the payment claim for the deposit, if
+any;
+(c) the name of the account;
+(d) the name of the financial institution where the account is
+kept;
+(e) the identifying number of the financial institution (BSB)
+where the account is kept;
+(f) the account number at the financial institution for the
+deposit account;
+(g) the total retention amounts held in the account, when
+the notice is given, for the contracted party under the
+contract to which the deposit relates;
+(h) the date the amount is deposited in the account.
+2 Notice about withdrawal of retention amount from
+retention trust account to pay contracted party
+The following information must be included in the notice—
+(a) the amount to be paid;
+
+Schedule 1AA
+(b) identification of the payment claim to which the
+withdrawal relates, if any;
+(c) the name of the account (the payment account) the
+amount is to be paid to;
+(d) the identifying number of the financial institution (BSB)
+where the payment account is kept;
+(e) the account number, at the financial institution, for the
+payment account;
+(f) the total retention amounts held in the retention trust
+account, after the withdrawal, for the contracted party
+under the contract to which the withdrawal relates;
+(g) the date the amount is to be paid.
+3 Notice about withdrawal of retention amount from
+retention trust account to pay someone other than
+contracted party
+The following information must be included in the notice—
+(a) the amount to be paid;
+(b) the reason for the payment;
+Example—
+payment made to correct defects in the contracted work
+(c) the total retention amounts held in the account, after the
+withdrawal, for the contracted party under the contract
+to which the withdrawal relates;
+(d) the date the amount is to be paid.
+Page 50 Current as at 1 July 2025
+
+Schedule 1
+Schedule 1 Adjudication qualification
+section 18(b) and (d)
+
+qualification
+Contract Administration Group Pty Limited ACN 052 986
+544
+
+achieve competency
+1 Role and functions of an adjudicator
+2 Role and functions of the adjudication registry
+3 Analysis of the Building Industry Fairness (Security of
+Payment) Act 2017
+4 Practical aspects of adjudication
+5 Ethics, natural justice and good faith
+6 Decision making and decision writing
+7 Legal concepts for adjudicators
+8 Technical concepts for adjudicators
+9 Assessment—Examination
+10 Assessment 2—Assignment: Mock adjudication decision
+
+Schedule 2
+Schedule 2 Fees
+section 39
+Fee units
+1 Application fee for adjudication (Act, s 79(2)(d))—
+(a) for a payment claim for a progress payment of
+no more than $11,345.70 60.70
+(b) for a payment claim for a progress payment of
+more than $11,345.70 but no more than
+$56,728.80 182.15
+(c) for a payment claim for a progress payment of
+more than $56,728.80 but no more than
+$113,457.60 303.60
+(d) for a payment claim for a progress payment of
+more than $113,457.60 but no more than
+$283,644.05 425.20
+(e) for a payment claim for a progress payment of
+more than $283,644.05 but no more than
+$567,288.05 546.60
+(f) for a payment claim for a progress payment of
+more than $567,288.05 but no more than
+$850,932.15 668.05
+(g) for a payment claim for a progress payment of
+more than $850,932.15 but no more than
+$1,236,206.95 789.55
+Page 52 Current as at 1 July 2025
+
+Schedule 2
+Fee units
+(h) for a payment claim for a progress payment of The number of
+more than $1,236,206.95 fee units equal
+to a fee that is
+0.0794188%
+of the progress
+payment
+amount, up to
+a maximum of
+6,073.80 fee
+units
+Example—
+For an
+adjudication
+application
+made on 1 July
+2025 for a
+progress
+payment of
+$1,300,000,
+the fee is
+$1,032.44 (the
+number of fee
+units equal to
+this fee is
+942.01 fee
+units).
+2 Application fee for registration, or renewal of
+registration, as an adjudicator (Act, ss 159(2)(a)(iii)
+and 167(2)(c)) 843.45
+
+Schedule 3
+Schedule 3 Dictionary
+section 3
+core CPD activity see section28(2).
+CPD activity see section28(1).
+CPD points see section 27(2).
+CPD policy means the policy mentioned in section11(b).
+CPD year means a period of 12 months starting on 1 April.
+grade 1 adjudicator means an adjudicator other than a grade 2
+adjudicator.
+grade 2 adjudicator means an adjudicator who is graded as a
+grade 2 adjudicator under part5, division 2.
+Page 54 Current as at 1 July 2025

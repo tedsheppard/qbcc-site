@@ -1,0 +1,32 @@
+# Annotated BIF Act source — Section 105
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Meaning of work
+# DOCX paragraphs: 4246-4273
+
+[2 Com-BIFSOPA Heading 1] SECTION 105 – Meaning of work
+[1 BIFSOPA Heading] 105    Meaning of work
+[1.3 BIFSOPA level 1 (CDI)] Work, for a contract—
+[1.4 BIFSOPA level 2 (CDI)] means labour, whether skilled or unskilled, carried out by a person in connection with—
+[1.5 BIFSOPA level 3 (CDI)] the construction, decoration, alteration or repair of a building or other structure; or 
+[1.5 BIFSOPA level 3 (CDI)] the development or working of a mine, quarry, sandpit, drain, embankment or other excavation in or on land; or
+[1.5 BIFSOPA level 3 (CDI)] the placement, fixation or erection of materials, plant or machinery used or intended to be used for a purpose mentioned in subparagraph (i) or (ii); or
+[1.5 BIFSOPA level 3 (CDI)] the alteration or improvement of a thing; or
+[1.5 BIFSOPA level 3 (CDI)] the demolition, removal or relocation of a building or other structure; and
+[1.4 BIFSOPA level 2 (CDI)] includes— 
+[1.5 BIFSOPA level 3 (CDI)] the supply of materials used by a subcontractor in connection with other work the subject of a contract; or 
+[1.5 BIFSOPA level 3 (CDI)] the manufacture or fabrication, wherever it happens, of project-specific components for a contract; or 
+[1.5 BIFSOPA level 3 (CDI)] the supply of labour for a contract, other than labour that is only administrative in nature; but 
+[1.4 BIFSOPA level 2 (CDI)] does not include—
+[1.5 BIFSOPA level 3 (CDI)] the mere delivery of goods sold by a vendor under a contract for the sale of goods; or
+[1.5 BIFSOPA level 3 (CDI)] labour done by a person under a contract of service; or 
+[1.5 BIFSOPA level 3 (CDI)] labour done by a person in connection with the testing of materials or the taking of measurements; or
+[1.5 BIFSOPA level 3 (CDI)] a contract for the hire of plant or machinery not intended to be incorporated into work mentioned in paragraph (a).
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] manufacture or fabrication, of project-specific components for a contract, does not include—
+[1.4 BIFSOPA level 2 (CDI)] the manufacture or fabrication of project-specific components if—
+[1.5 BIFSOPA level 3 (CDI)] the components have not been fixed in place for the purposes of the contract; and
+[1.5 BIFSOPA level 3 (CDI)] the components could, without substantial change, reasonably be used other than for the purpose of the contract; or
+[1.4 BIFSOPA level 2 (CDI)] the manufacture or fabrication of project-specific components if the manufacture or fabrication consists merely of cutting something to size or mixing things together. 
+[1.6 BIFSPOA example/note] Example of mixing things together—
+[1.7 BIFSOPA example/note body] mixing things together to make concrete or asphalt
+[1.1 BIFSOPA Body Text] project-specific components, for a contract, means components meeting the particular requirements of the contract, other than components that are standard or ordinary product lines of a commercially available specification.

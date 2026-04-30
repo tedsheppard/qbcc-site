@@ -1,0 +1,30 @@
+# Annotated BIF Act source — Section 95
+# Chapter: CHAPTER 3 – Progress payments
+# Section title: Adjudicator’s fee
+# DOCX paragraphs: 3772-3798
+
+[2 Com-BIFSOPA Heading 1] SECTION 95 – Adjudicator’s fee 
+[2.1 Com-BIFSOPA Heading 2] A    Legislation
+[1 BIFSOPA Heading] 95    Adjudicators fees 
+[1.3 BIFSOPA level 1 (CDI)] An adjudicator is entitled to be paid for adjudicating an adjudication application—
+[1.4 BIFSOPA level 2 (CDI)] the amount, by way of fees and expenses, agreed between the adjudicator and the parties to the adjudication; or
+[1.4 BIFSOPA level 2 (CDI)] if no amount is agreed, the amount, for fees and expenses, that is reasonable having regard to the work done and expenses incurred by the adjudicator. 
+[1.3 BIFSOPA level 1 (CDI)] A regulation may prescribe the maximum amount for fees and expenses (the prescribed maximum) an adjudicator may be paid for adjudicating an adjudication application. 
+[1.3 BIFSOPA level 1 (CDI)] Despite subsection (1), an adjudicator is not entitled to be paid any amount that is more than the prescribed maximum.
+[1.3 BIFSOPA level 1 (CDI)] The claimant and respondent are jointly and severally liable to pay the adjudicator’s fees and expenses.
+[1.3 BIFSOPA level 1 (CDI)] The claimant and respondent are each liable to contribute to the payment of the adjudicator’s fees and expenses in equal proportions unless the adjudicator decides otherwise.
+[1.3 BIFSOPA level 1 (CDI)] An adjudicator is not entitled to be paid any fees or expenses for adjudicating an adjudication application if the adjudicator fails to make a decision on the application.
+[1.3 BIFSOPA level 1 (CDI)] An adjudicator does not fail to make a decision only because— 
+[1.4 BIFSOPA level 2 (CDI)] the adjudication application is withdrawn; or 
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator decided he or she did not have jurisdiction to adjudicate the application; or
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator decided the application was frivolous or vexatious; or 
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator refuses to communicate the adjudicator’s decision on an adjudication application until the adjudicator’s fees and expenses are paid. 
+[1.3 BIFSOPA level 1 (CDI)] Also, if a court finds that the adjudicator’s decision is void and unenforceable, the adjudicator is still entitled to be paid any fees or expenses for adjudicating the application if the adjudicator acted in good faith in adjudicating the application. 
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] adjudicating, an adjudication application, includes accepting, considering and deciding the application.
+[2.1 Com-BIFSOPA Heading 2] B    Commentary
+[2.2 Com-BIFSOPA Heading 3] 95.1    Statutory right to payment
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Alucity Architectural Produce Supply Pty Ltd v Australian Solutions Centre; Alucity Architectural Produce Supply Pty Ltd v Paul J Hick [2016] NSWSC 608, Hammerschlag J dismissed a claim for restitution of all fees paid due to a total failure of consideration. In considering the Adjudicator’s right to payment under section 28 of the NSW Act, His Honour said: 
+[2.5 Com-BIFSOPA Normal Body Quote] The relationship between the [applicant] on the one hand, and the authority and the adjudicator on the other, is statutory. The entitlement of the authority and the adjudicator and the authority to payment arises as a consequence of the [applicant] having invoked the procedures under the Act and because ss 28 and 29 give the authority and the adjudicator a statutory right to payment. 
+[2.4 Com-BIFSOPA CDI Normal Body Text] However, in Galaxy Developments Pty Ltd v Civil Contractors (Aust) Pty Ltd t/a CCA Winslow & Ors [2020] QSC 51, the Court held that an adjudicator who handed down a decision outside the timeframe of section 85 and 86 of BIFSOPA was not entitled to be paid any fees or expenses in relation to the adjudication. In that case, Dalton J held that the adjudicator failed to act in good faith under section 95(8) of the Act in circumstances where, through his agent, the adjudicator represented that the decision had been made within time when this was not the case.
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Civil Contractors (Aust) Pty Ltd v Galaxy Developments Pty Ltd & Ors; Jones v Galaxy Developments Pty Ltd & Ors [2021] QCA 10, the Queensland Court of Appeal determined that the primary judge had erred in finding that the adjudicator had acted in bad faith and had made misrepresentations on the basis that the adjudicator did not have an opportunity to be heard on those subjects. Notwithstanding this error, the Queensland Court of Appeal upheld the primary judge’s decision that an adjudicator was not entitled to any fees because the adjudicator did not make his decision within the timeframe provided for by the BIF Act. The Court of Appeal confirmed that even if the adjudicator’s determination was valid or if the parties were still able and willing to grant the adjudicator an extension, the operation of section 95(6) would still have effect.

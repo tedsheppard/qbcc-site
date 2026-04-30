@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 107
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: When work specified in contract completed
+# DOCX paragraphs: 4281-4286
+
+[2 Com-BIFSOPA Heading 1] SECTION 107 – When work specified in contract completed
+[1 BIFSOPA Heading] 107    When work specified in contract completed
+[1.1 BIFSOPA Body Text] In this chapter, the work specified in a contract is taken to be completed when, with any variations, omissions or deductions authorised or agreed, it has been performed in accordance with the contract, whether or not the contractor—
+[1.4 BIFSOPA level 2 (CDI)] is later employed to do additional work that is connected or related to the work but is not specified in the contract; or
+[1.4 BIFSOPA level 2 (CDI)] is liable to rectify defects in the work discovered after the performance of the work and during a defects liability period for the contract.

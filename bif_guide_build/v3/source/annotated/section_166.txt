@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 166
+# Chapter: CHAPTER 5 – Administration
+# Section title: Form of certificate of registration
+# DOCX paragraphs: 5069-5077
+
+[2 Com-BIFSOPA Heading 1] SECTION 166 – Form of certificate of registration
+[1 BIFSOPA Heading] 166    Form of certificate of registration 
+[1.1 BIFSOPA Body Text] A certificate of registration must state the following particulars—
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator’s name; 
+[1.4 BIFSOPA level 2 (CDI)] the day the registration becomes effective;
+[1.4 BIFSOPA level 2 (CDI)] the day the registration expires;
+[1.4 BIFSOPA level 2 (CDI)] the registration number;
+[1.4 BIFSOPA level 2 (CDI)] the registration conditions.

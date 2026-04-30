@@ -1,0 +1,9 @@
+# Annotated BIF Act source — Section 44
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Interest earned on amounts held in project bank account
+# DOCX paragraphs: 756-761
+
+[2 Com-BIFSOPA Heading 1] SECTION 44 – Interest earned on amounts held in project bank account 
+[1 BIFSOPA Heading] 44    Interest earned on amounts held in project bank account
+[1.3 BIFSOPA level 1 (CDI)] The head contractor is entitled to receive all interest earned on amounts held in a trust account for a project bank account. 
+[1.3 BIFSOPA level 1 (CDI)] Subject to any amount to be paid under this chapter, the head contractor may withdraw an amount equal to the interest once every 12 months or on the dissolution of the project bank account.

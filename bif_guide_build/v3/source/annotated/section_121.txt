@@ -1,0 +1,11 @@
+# Annotated BIF Act source — Section 121
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Application of part
+# DOCX paragraphs: 4494-4500
+
+[2 Com-BIFSOPA Heading 1] SECTION 121 – Application of part
+[1 BIFSOPA Heading] 121    Application of part
+[1.3 BIFSOPA level 1 (CDI)] This part applies if a subcontractor intends to claim a subcontractor’s charge on money payable to the contractor for the contract or to another subcontractor for a higher subcontract.
+[1.3 BIFSOPA level 1 (CDI)] For applying this part in relation to money payable to another subcontractor for a higher subcontract—
+[1.4 BIFSOPA level 2 (CDI)] a reference in a provision to a contractor is taken to be a reference to the other subcontractor; and 
+[1.4 BIFSOPA level 2 (CDI)] a reference in a provision to the contract is taken to be a reference to the higher subcontract.

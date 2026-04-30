@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 179
+# Chapter: CHAPTER 5 – Administration
+# Section title: Stay of operation of original decision
+# DOCX paragraphs: 5203-5213
+
+[2 Com-BIFSOPA Heading 1] SECTION 179 – Stay of operation of original decision 
+[1 BIFSOPA Heading] 179    Stay of operation of original decision 
+[1.3 BIFSOPA level 1 (CDI)] If an application is made for an internal review of an original decision, the applicant may immediately apply, as provided under the QCAT Act, to QCAT for a stay of the decision.
+[1.3 BIFSOPA level 1 (CDI)] QCAT may stay the decision to secure the effectiveness of the review and any later review by QCAT.
+[1.3 BIFSOPA level 1 (CDI)] The stay—
+[1.4 BIFSOPA level 2 (CDI)] may be given on conditions QCAT considers appropriate; and
+[1.4 BIFSOPA level 2 (CDI)] operates for the period fixed by QCAT; and
+[1.4 BIFSOPA level 2 (CDI)] may be revoked or amended by QCAT.
+[1.3 BIFSOPA level 1 (CDI)] The period of the stay must not extend past the time when the registrar makes a review decision about the original decision and any later period QCAT allows the applicant to enable the applicant to apply to QCAT for a review of the review decision.
+[1.3 BIFSOPA level 1 (CDI)] The application affects the decision, or carrying out of the decision, only if the decision is stayed.

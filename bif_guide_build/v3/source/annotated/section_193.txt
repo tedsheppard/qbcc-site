@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 193
+# Chapter: CHAPTER 6 – Legal proceedings
+# Section title: Application of part
+# DOCX paragraphs: 5320-5323
+
+[2 Com-BIFSOPA Heading 1] SECTION 193 – Application of part
+[1 BIFSOPA Heading] 193    Application of part 
+[1.1 BIFSOPA Body Text] This part applies to a proceeding under this Act.

@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 40
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: No power of head contractor to invest
+# DOCX paragraphs: 717-723
+
+[2 Com-BIFSOPA Heading 1] SECTION 40 – No power of head contractor to invest
+[1 BIFSOPA Heading] 40    No power of head contractor to invest
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must not invest funds held in a trust account for the project bank account in any form of investment. 
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units or 1 year’s imprisonment. 
+[1.3 BIFSOPA level 1 (CDI)] Subsection (1) does not apply to interest earned on an amount held in the trust account paid by the financial institution at which the account is held.

@@ -1,0 +1,16 @@
+# Annotated BIF Act source — Section 185
+# Chapter: CHAPTER 5 – Administration
+# Section title: Adjudicator must give information to registrar
+# DOCX paragraphs: 5255-5266
+
+[2 Com-BIFSOPA Heading 1] SECTION 185 – Adjudicator must give information to registrar
+[1 BIFSOPA Heading] 185    Adjudicator must give information to registrar 
+[1.3 BIFSOPA level 1 (CDI)] An adjudicator must inform the registrar, in the approved form, of any of the following matters within 10 business days after it happens—
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator changes any of the following addresses— 
+[1.5 BIFSOPA level 3 (CDI)] the address of the adjudicator; 
+[1.5 BIFSOPA level 3 (CDI)] the address in Queensland at which documents may be served on the adjudicator;
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator is convicted of a relevant offence; 
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator’s registration with a professional association is cancelled because of disciplinary action. 
+[1.1 BIFSOPA Body Text] Maximum penalty—40 penalty units. 
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] relevant offence see section 161(3).

@@ -1,0 +1,11 @@
+# Annotated BIF Act source — Section 197
+# Chapter: CHAPTER 6 – Legal proceedings
+# Section title: Protection from liability
+# DOCX paragraphs: 5339-5344
+
+[2 Com-BIFSOPA Heading 1] SECTION 197 – Protection from liability 
+[1 BIFSOPA Heading] 197    Protection from liability 
+[1.3 BIFSOPA level 1 (CDI)] The commissioner, registrar and staff of the registry do not incur civil liability for an act done, or omission made, honestly and without negligence under this Act.
+[1.3 BIFSOPA level 1 (CDI)] If subsection (1) prevents a civil liability attaching to a person, the liability attaches instead to the State.
+
+[2a BIFSOPA Chapter Heading] CHAPTER 7 – Miscellaneous

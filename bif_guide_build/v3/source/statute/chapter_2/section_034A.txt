@@ -1,0 +1,21 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 34A — Restrictions for retention trust account
+(1) A trustee must ensure the retention trust account is held at an
+approved financial institution.
+Maximum penalty—200 penalty units.
+
+(2) A trustee must ensure the retention trust account is held under
+a name that includes the trustee’s name and the word ‘trust’.
+Maximum penalty—200 penalty units.
+(3) A trustee must ensure that deposits of amounts to, and
+withdrawals of amounts from, the retention trust account are
+made using only methods that create an electronic record of
+the transfer.
+Maximum penalty—500 penalty units.
+(4) A trustee must not close the retention trust account unless—
+(a) all retention amounts held in the account have been
+released to the parties entitled to it under the relevant
+contracts; or
+(b) the account is transferred to an alternative financial
+institution under section 34C.
+Maximum penalty—200 penalty units.

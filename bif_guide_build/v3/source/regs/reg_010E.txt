@@ -1,0 +1,5 @@
+# Source: BIF Regulation 2018
+# Section 10E — Information for notice about deposits to or withdrawals
+from retention trust account—Act, s 40A
+For section40A(2) of the Act, the information stated in
+schedule 1AA, part 8 for the notice is prescribed.

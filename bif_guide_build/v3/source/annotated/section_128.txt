@@ -1,0 +1,16 @@
+# Annotated BIF Act source — Section 128
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Contractor given copy of a notice of claim must respond
+# DOCX paragraphs: 4628-4639
+
+[2 Com-BIFSOPA Heading 1] SECTION 128 – Contractor given copy of a notice of claim must respond 
+[1 BIFSOPA Heading] 128    Contractor given copy of a notice of claim must respond 
+[1.3 BIFSOPA level 1 (CDI)] This section applies if a subcontractor gives a contractor a copy of a notice of claim.
+[1.3 BIFSOPA level 1 (CDI)] The contractor must give both of the following persons a written response to the claim within 10 business days after the contractor is given the copy of the notice of claim, unless the contractor has a reasonable excuse— 
+[1.4 BIFSOPA level 2 (CDI)] the person given the notice of claim;
+[1.4 BIFSOPA level 2 (CDI)] the subcontractor.
+[1.1 BIFSOPA Body Text] Maximum penalty—20 penalty units.
+[1.3 BIFSOPA level 1 (CDI)] The response to the claim must be made in the approved form and—
+[1.4 BIFSOPA level 2 (CDI)] accept liability to pay the amount claimed; or
+[1.4 BIFSOPA level 2 (CDI)] accept liability to pay an amount stated in the response, but otherwise dispute the claim; or
+[1.4 BIFSOPA level 2 (CDI)] dispute the claim.

@@ -1,0 +1,19 @@
+# Annotated BIF Act source — Section 24
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Particular requirement for trust accounts
+# DOCX paragraphs: 440-455
+
+[2 Com-BIFSOPA Heading 1] SECTION 24 – Particular requirement for trust accounts
+[1 BIFSOPA Heading] 24    Particular requirements for trust accounts
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must ensure the following for trust accounts for the project bank account— 
+[1.4 BIFSOPA level 2 (CDI)] deposits of amounts to, and withdrawals of amounts from, the trust accounts can only be made using electronic transfers; and 
+[1.4 BIFSOPA level 2 (CDI)] withdrawals from the trust accounts can only be made using a payment instruction given to the financial institution; and 
+[1.4 BIFSOPA level 2 (CDI)] transfers between the trust accounts can only be made using a payment instruction given to the financial institution. 
+[1.1 BIFSOPA Body Text] Maximum penalty—500 penalty units. 
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must ensure that the principal can view—
+[1.4 BIFSOPA level 2 (CDI)] deposits of amounts to, and withdrawals of amounts from, a trust account from the project bank account; and 
+[1.4 BIFSOPA level 2 (CDI)] information relevant to payment instructions given to a financial institution about the project bank account; and
+[1.4 BIFSOPA level 2 (CDI)] account payment reports. 
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] principal includes an agent or employee of the principal if the principal informs the head contractor that the agent or employee is authorised to view the information mentioned in subsection (2).

@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 215B
+# Chapter: CHAPTER 8C – Transitional provisions for Building Industry Fairness (Security of Payment) and Other Legislation Amendment Act 2024
+# Section title: Changes affecting review of trust account
+# DOCX paragraphs: 5681-5690
+
+[2 Com-BIFSOPA Heading 1] SECTION 215B – Changes affecting review of trust account
+[1 BIFSOPA Heading] 215B    Changes affecting review of trust account
+[1.3 BIFSOPA level 1 (CDI)] This section applies if—
+[1.4 BIFSOPA level 2 (CDI)] before the commencement, the trustee for a project trust or retention trust engaged an auditor to carry out a review of the trust account for the trust under former section 57; and
+[1.4 BIFSOPA level 2 (CDI)] immediately before the commencement— 
+[1.4 BIFSOPA level 2 (CDI)] the review had not been completed; or
+[1.4 BIFSOPA level 2 (CDI)] the account review report for the trust account required under former section 57A had not been given to the trustee.
+[1.3 BIFSOPA level 1 (CDI)] For the purposes of the review and report, former sections 57 and 57A continue to apply as if the Building Industry Fairness (Security of Payment) and Other Legislation Amendment Act 2024 had not been enacted.
+
+[2a BIFSOPA Chapter Heading] CHAPTER 8D – Validation provisions for Residential Tenancies and Rooming Accommodation and Other Legislation Amendment Act 2024

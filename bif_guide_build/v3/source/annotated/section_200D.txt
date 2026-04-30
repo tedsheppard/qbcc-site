@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 200D
+# Chapter: CHAPTER 7 – Miscellaneous
+# Section title: False or misleading information in particular documents
+# DOCX paragraphs: 5421-5430
+
+[2 Com-BIFSOPA Heading 1] SECTION 200D – False or misleading information in particular documents
+[1 BIFSOPA Heading] 200D    False or misleading information in particular documents
+[1.3 BIFSOPA level 1 (CDI)] This section applies to the following documents—
+[1.4 BIFSOPA level 2 (CDI)] a notice of a deposit or withdrawal given under section 23A or 40A; 
+[1.4 BIFSOPA level 2 (CDI)] a supporting statement accompanying a payment claim under section 75.
+[1.3 BIFSOPA level 1 (CDI)] A person must not give a document to another person that includes information the person knows is false or misleading in a material particular.
+[1.3 BIFSOPA level 1 (CDI)] Maximum penalty—100 penalty units.
+[1.3 BIFSOPA level 1 (CDI)] Subsection (2) does not apply to a person if the person, when giving the document— 
+[1.4 BIFSOPA level 2 (CDI)] tells the recipient, to the best of the person’s ability, how it is false or misleading; and 
+[1.4 BIFSOPA level 2 (CDI)] if the person has, or can reasonably obtain, the correct information—gives the correct information to the recipient..

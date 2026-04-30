@@ -1,0 +1,17 @@
+# Annotated BIF Act source — Section 175
+# Chapter: CHAPTER 5 – Administration
+# Section title: Immediate suspension of registration
+# DOCX paragraphs: 5158-5170
+
+[2 Com-BIFSOPA Heading 1] SECTION 175 – Immediate suspension of registration 
+[1 BIFSOPA Heading] 175    Immediate suspension of registration 
+[1.3 BIFSOPA level 1 (CDI)] The registrar may suspend an adjudicator’s registration immediately if the registrar believes—
+[1.4 BIFSOPA level 2 (CDI)] a ground exists to suspend or cancel the registration; and
+[1.4 BIFSOPA level 2 (CDI)] it is necessary to suspend the registration immediately because there is an immediate and serious harm to the effectiveness of the adjudication of payment claims under chapter 3. 
+[1.3 BIFSOPA level 1 (CDI)] The suspension—
+[1.4 BIFSOPA level 2 (CDI)] must be effected by an information notice for the decision given by the registrar to the adjudicator to suspend the adjudicator’s registration together with a show cause notice; and
+[1.4 BIFSOPA level 2 (CDI)] begins when the notices are given to the adjudicator; and
+[1.4 BIFSOPA level 2 (CDI)] continues until the earliest of the following happens— 
+[1.5 BIFSOPA level 3 (CDI)] the registrar cancels the remaining period of the suspension;
+[1.5 BIFSOPA level 3 (CDI)] the show cause notice is finally dealt with;
+[1.5 BIFSOPA level 3 (CDI)] 28 days have passed since the notices were given to the adjudicator.

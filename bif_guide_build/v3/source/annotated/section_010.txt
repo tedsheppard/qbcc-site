@@ -1,0 +1,9 @@
+# Annotated BIF Act source — Section 10
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Contract price
+# DOCX paragraphs: 232-237
+
+[2 Com-BIFSOPA Heading 1] SECTION 10 – Contract price
+[1 BIFSOPA Heading] 10    Contract price
+[1.3 BIFSOPA level 1 (CDI)] The contract price, for a building contract, means the amount the head contractor is entitled to be paid under the contract or, if the amount can not be accurately calculated, the reasonable estimate of the amount the head contractor is entitled to be paid under the contract. 
+[1.3 BIFSOPA level 1 (CDI)] An amount mentioned in subsection (1) is inclusive of GST.

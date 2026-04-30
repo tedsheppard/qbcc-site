@@ -1,0 +1,28 @@
+# Annotated BIF Act source — Section 158
+# Chapter: CHAPTER 5 – Administration
+# Section title: Definitions of chapter
+# DOCX paragraphs: 4962-4985
+
+[2 Com-BIFSOPA Heading 1] SECTION 158 – Definitions of chapter 
+[1 BIFSOPA Heading] 158 – Definitions of chapter 
+[1.1 BIFSOPA Body Text] In this chapter—
+[1.1 BIFSOPA Body Text] accepted representations see section 172(2). 
+[1.1 BIFSOPA Body Text] adjudicated amount see section 88(1).
+[1.1 BIFSOPA Body Text] adjudication application see section 79(1). 
+[1.1 BIFSOPA Body Text] conviction means a finding of guilt, or the acceptance of a plea of guilty, by a court, whether or not a conviction is recorded. 
+[1.1 BIFSOPA Body Text] corresponding law means a law applying, or that applied, in another State, the Commonwealth or a foreign country that provides, or provided, for the same matter as this part or a provision of this part.
+[1.1 BIFSOPA Body Text] information notice, for a decision of the registrar under this part, is a written notice stating—
+[1.4 BIFSOPA level 2 (CDI)] the decision; and
+[1.4 BIFSOPA level 2 (CDI)] the reasons for the decision; and 
+[1.4 BIFSOPA level 2 (CDI)] that the person to whom the notice is given may have the decision reviewed within 28 days; and 
+[1.4 BIFSOPA level 2 (CDI)] how the person may have the decision reviewed. 
+[1.1 BIFSOPA Body Text] original decision see section 177(1). 
+[1.1 BIFSOPA Body Text] payment claim means a claim mentioned in section 75. 
+[1.1 BIFSOPA Body Text] proposed action see section 171(3)(a).
+[1.1 BIFSOPA Body Text] review decision see section 178(2). 
+[1.1 BIFSOPA Body Text] review notice see section 178(3). 
+[1.1 BIFSOPA Body Text] show cause notice see section 171(2). 
+[1.1 BIFSOPA Body Text] show cause period see section 171(3)(e). 
+[1.1 BIFSOPA Body Text] spent conviction means a conviction—
+[1.4 BIFSOPA level 2 (CDI)] for which the rehabilitation period under the Criminal Law (Rehabilitation of Offenders) Act 1986 has expired under that Act; and
+[1.4 BIFSOPA level 2 (CDI)] that is not revived as prescribed by section 11 of that Act.

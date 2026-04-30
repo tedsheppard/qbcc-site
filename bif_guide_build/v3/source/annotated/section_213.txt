@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 213
+# Chapter: CHAPTER 8B – Transitional provisions for Building and Other Legislation Amendment Act 2022
+# Section title: Existing trust account reviews
+# DOCX paragraphs: 5645-5653
+
+[2 Com-BIFSOPA Heading 1] SECTION 213 – Existing trust account reviews
+[1 BIFSOPA Heading] 213    Existing trust account reviews
+[1.3 BIFSOPA level 1 (CDI)] This section applies if—
+[1.4 BIFSOPA level 2 (CDI)] before the commencement, the trustee for a project trust or retention trust engaged an auditor to carry out a review of the trust account for the trust under former section 57; and
+[1.4 BIFSOPA level 2 (CDI)] immediately before the commencement— 
+[1.5 BIFSOPA level 3 (CDI)] the review had not been completed; or 
+[1.5 BIFSOPA level 3 (CDI)] the account review report for the trust account required under former section 57A had not been given to the trustee.
+[1.3 BIFSOPA level 1 (CDI)] For the purposes of the review and report, former sections 57 and 57A continue to apply as if the amendment Act had not commenced.

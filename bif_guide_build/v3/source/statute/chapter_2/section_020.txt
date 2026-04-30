@@ -1,0 +1,28 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 20 — All payments to subcontractor beneficiaries to be paid
+from project trust account
+(1) The contracted party for a project trust contract may only pay
+an amount to a subcontractor beneficiary of the project trust—
+(a) from the project trust account; and
+(b) by depositing the amount into the account of a financial
+institution nominated by the beneficiary.
+Maximum penalty—200 penalty units or 1 year’s
+imprisonment.
+(2) To remove any doubt, it is declared that the obligation to pay
+an amount from the project trust account applies whether or
+not the amount is held in the account when it is to be paid.
+Note—
+See section51 about covering shortfalls.
+(3) The account nominated by the subcontractor beneficiary
+under subsection(1)(b) must be—
+(a) controlled by the beneficiary; and
+(b) if the beneficiary is also required to establish a project
+trust for its subcontract—the account for the project
+trust for the subcontract.
+(4) This section does not apply to—
+(a) a retention amount withheld from payment to a
+subcontractor beneficiary if the amount is deposited into
+a retention trust account of which the subcontractor is,
+or will be, a beneficiary; and
+(b) a retention amount to be released to a subcontractor
+beneficiary from a retention trust account.

@@ -1,0 +1,11 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 31 — What is a retention trust
+A retention trust is a trust—
+(a) over the following amounts—
+(i) retention amounts withheld in the form of cash
+under particular contracts, inclusive of any GST
+related to those amounts;
+(ii) deposits in the retention trust account as required
+under this chapter; and
+(b) primarily for the benefit of the party who will be entitled
+to the retention amount.

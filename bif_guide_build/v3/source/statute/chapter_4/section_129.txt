@@ -1,0 +1,46 @@
+# Source: BIF Act 2017 — Chapter 4
+# Section 129 — Payment of amount claimed
+(1) This section applies if—
+(a) a subcontractor gives a notice of claim to a person under
+section 122 because the person is obliged to pay money
+to a contractor under a contract; and
+
+(b) the subcontractor gives a copy of the notice of claim to a
+contractor under section123; and
+(c) in the contractor’s response to the claim under
+section 128, the contractor—
+(i) accepts liability to pay the amount claimed; or
+(ii) accepts liability to pay an amount stated in the
+response but otherwise disputes the claim.
+(2) If, in the response to the claim, the contractor accepts liability
+to pay the amount claimed, the person given the notice of
+claim must pay the subcontractor the amount the person is
+required to retain.
+(3) If, in the response to the claim, the contractor accepts liability
+to pay an amount stated in the response but otherwise disputes
+the claim, the person given the notice of claim must pay the
+subcontractor the amount the person is required to retain, up
+to the amount stated in the response.
+(4) However, the person given the notice of claim is required to
+comply with subsection(2) or (3) only if, after payment is
+made under that subsection, the retained amount will be equal
+to or more than the unsatisfied amount.
+(5) A payment made by a person in compliance with this section
+discharges the person of all further liability relating to the
+amount paid and of the costs of any proceeding relating to the
+amount paid.
+(6) In this section—
+retained amount, in relation to a notice of claim given to a
+person, means the total of all amounts—
+(a) still retained by the person under section126(2) in
+relation to the claim; and
+(b) paid into court by the person under section126(4) in
+relation to the claim.
+unsatisfied amount, in relation to a notice of claim given to a
+person, means the total of all amounts of claims for which the
+Page 157 Current as at 27 April 2025
+
+notice of claim has been given, other than amounts that have
+been—
+(a) satisfied by payment under subsection(2) or (3); or
+(b) the subject of a notice of claim that has been withdrawn.

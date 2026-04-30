@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 215I
+# Chapter: CHAPTER 8D – Validation provisions for Residential Tenancies and Rooming Accommodation and Other Legislation Amendment Act 2024
+# Section title: No compensation payable by State
+# DOCX paragraphs: 5774-5783
+
+[2 Com-BIFSOPA Heading 1] SECTION 215I – No compensation payable by State
+[1 BIFSOPA Heading] 215I    No compensation payable by State
+[1.3 BIFSOPA level 1 (CDI)] This section applies if, before the commencement—
+[1.4 BIFSOPA level 2 (CDI)] the registrar gave a registry summary of an adjudication application to the claimant in the application; and
+[1.4 BIFSOPA level 2 (CDI)] the claimant gave the registry summary to the respondent in the application.
+[1.3 BIFSOPA level 1 (CDI)] No liability attaches to the commission, the registrar, a public service employee, or the State, and no compensation is payable by the commission, the registrar, a public service employee, or the State, in relation to—
+[1.4 BIFSOPA level 2 (CDI)] the giving of the registry summary by the registrar to the claimant; or
+[1.4 BIFSOPA level 2 (CDI)] anything done or purportedly done as a result of, or in reliance on, the registry summary being given by the registrar to the claimant.
+
+[2a BIFSOPA Chapter Heading] CHAPTER 9 – Amendment of this and other Acts

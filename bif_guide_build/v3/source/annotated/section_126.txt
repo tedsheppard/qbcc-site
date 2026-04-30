@@ -1,0 +1,14 @@
+# Annotated BIF Act source — Section 126
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Person given notice of claim must retain money
+# DOCX paragraphs: 4606-4615
+
+[2 Com-BIFSOPA Heading 1] SECTION 126 – Person given notice of claim must retain money 
+[1 BIFSOPA Heading] 126    Person given notice of claim must retain money 
+[1.3 BIFSOPA level 1 (CDI)] This section applies if a notice of claim is given to a person under section 122 because the person is obliged to pay money to a contractor under a contract. 
+[1.3 BIFSOPA level 1 (CDI)] The person must retain a sufficient part of the money that is or is to become payable by the person under the contract to satisfy the claim until the court in which the claim is heard makes an order about to whom, and in what way, the money is to be paid.
+[1.3 BIFSOPA level 1 (CDI)] If the person fails to retain the money as required under subsection (2), the person is personally liable to pay to the subcontractor the amount of the claim, not exceeding the amount that the person is required to retain under subsection (2). 
+[1.3 BIFSOPA level 1 (CDI)] However, the person may, at any time after the notice of claim is given to the person, pay into court the amount that the person is required to retain under subsection (2).
+[1.3 BIFSOPA level 1 (CDI)] An amount paid into court by a person under subsection (4)—
+[1.4 BIFSOPA level 2 (CDI)] may be paid out only under an order of the court; and
+[1.4 BIFSOPA level 2 (CDI)] discharges the person of all further liability relating to the amount and of the costs of any proceeding in relation to the amount.

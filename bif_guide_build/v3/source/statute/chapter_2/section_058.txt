@@ -1,0 +1,22 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 58 — Commissioner may give redacted information to
+professional bodies
+(1) This section applies if the commissioner reasonably suspects
+the conduct of an auditor engaged under section 57 breaches a
+professional standard or condition applying to the auditor.
+
+(2) The commissioner may inform the relevant professional body
+of the conduct and give the body any information necessary to
+investigate the conduct.
+(3) The commissioner must redact from any information given to
+the professional body all information identifying the trustee of
+a project trust or retention trust.
+(4) In this section—
+condition means a condition imposed as part of registration as
+an auditor or accountant.
+professional body means—
+(a) an entity of which an auditor is a member as an auditor
+or accountant; or
+(b) an entity that registers or licenses a person as an auditor.
+professional standard means a standard about auditing or
+accounting made, or adopted, by a professional body.

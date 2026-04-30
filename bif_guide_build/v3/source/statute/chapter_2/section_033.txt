@@ -1,0 +1,7 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 33 — Establishment of retention trust
+(1) This section applies if, under section 32, a retention trust is
+required for a retention amount withheld from payment under
+a contract.
+(2) The retention trust is established by the contracting party
+withholding the retention amount from payment.

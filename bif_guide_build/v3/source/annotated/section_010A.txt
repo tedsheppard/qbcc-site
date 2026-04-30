@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 10A
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: When amount is liable to be paid to subcontractor
+# DOCX paragraphs: 238-249
+
+[2 Com-BIFSOPA Heading 1] SECTION 10A – When amount is liable to be paid to subcontractor
+[1 BIFSOPA Heading] 10A    When amount is liable to be paid to subcontractor
+[1.1 BIFSOPA Body Text] The head contractor for a project bank account is liable to pay an amount to a subcontractor beneficiary if any of the following apply in connection with a subcontract between the head contractor and the subcontractor beneficiary— 
+[1.4 BIFSOPA level 2 (CDI)] the amount is due to be paid to the subcontractor beneficiary in connection with the subcontract; 
+[1.4 BIFSOPA level 2 (CDI)] the amount is certified, or otherwise assessed, as payable to the subcontractor beneficiary under the subcontract;
+[1.4 BIFSOPA level 2 (CDI)] the head contractor gives the subcontractor beneficiary a payment schedule for the amount; 
+[1.4 BIFSOPA level 2 (CDI)] under section 77 the head contractor is liable to pay the amount to the subcontractor beneficiary;
+[1.4 BIFSOPA level 2 (CDI)] the head contractor must pay the amount to the subcontractor beneficiary because of an adjudication under chapter 3, part 4 of a disputed progress payment relating to the subcontract;
+[1.4 BIFSOPA level 2 (CDI)] the head contractor must pay the amount to the subcontractor beneficiary because of a final and binding dispute resolution process; 
+[1.4 BIFSOPA level 2 (CDI)] a court or tribunal orders the head contractor to pay the amount to the subcontractor beneficiary.

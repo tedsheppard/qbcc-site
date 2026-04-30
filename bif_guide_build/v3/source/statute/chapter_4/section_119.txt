@@ -1,0 +1,38 @@
+# Source: BIF Act 2017 — Chapter 4
+# Section 119 — Request for information about building contract or
+security
+(1) If requested in writing by a subcontractor, the contractor must
+give the subcontractor the following information within 10
+business days after the request is made, unless the contractor
+has a reasonable excuse—
+(a) the name of the person who engaged the contractor
+under the contract;
+(b) the address of—
+(i) the person’s place of business; or
+(ii) if the person does not have a place of
+business—the person’s place of residence;
+(c) the information about the contract that would enable the
+subcontractor to give a notice of claim to a person under
+section 122;
+(d) advice as to whether there are any securities in existence
+for the contract;
+(e) if known to the contractor, the name and address of the
+holder of each security mentioned in paragraph(d).
+Maximum penalty—20 penalty units.
+(2) Subsection (3) applies if, in response to a request under
+subsection(1), the contractor tells the subcontractor of the
+existence of a security but does not give the name and address
+of the holder of the security.
+(3) If requested in writing by the subcontractor, the person who
+engaged the contractor under the contract must give the
+subcontractor the name and address of the holder of the
+security within 10 business days after the request is made,
+unless the person has a reasonable excuse.
+Maximum penalty—20 penalty units.
+
+(4) Subsections (1) to (3) apply in relation to another
+subcontractor for a higher subcontract as if—
+(a) a reference in the subsections to a contractor were a
+reference to the other subcontractor; and
+(b) a reference in the subsections to the contract were a
+reference to the higher subcontract.

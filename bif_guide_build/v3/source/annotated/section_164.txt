@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 164
+# Chapter: CHAPTER 5 – Administration
+# Section title: Term of registration
+# DOCX paragraphs: 5046-5051
+
+[2 Com-BIFSOPA Heading 1] SECTION 164 – Term of registration
+[1 BIFSOPA Heading] 164    Term of registration 
+[1.1 BIFSOPA Body Text] Registration as an adjudicator becomes effective on the day the certificate of registration is issued or on the day of the registration’s renewal and ends either—
+[1.4 BIFSOPA level 2 (CDI)] 3 years after that day; or
+[1.4 BIFSOPA level 2 (CDI)] on the earlier day decided by the registrar and stated in the certificate of registration.

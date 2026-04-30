@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 138
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: When person prejudicially affected by a claim
+# DOCX paragraphs: 4766-4774
+
+[2 Com-BIFSOPA Heading 1] SECTION 138 – When person prejudicially affected by a claim 
+[1 BIFSOPA Heading] 138    When person prejudicially affected by a claim 
+[1.1 BIFSOPA Body Text] Without limiting the circumstances in which a person may be prejudicially affected by a claim of a subcontractor’s charge, a person is taken to be prejudicially affected by the claim if—
+[1.4 BIFSOPA level 2 (CDI)] because of the claim—
+[1.5 BIFSOPA level 3 (CDI)] the payment of an amount to which the person is entitled is delayed or otherwise affected; or
+[1.5 BIFSOPA level 3 (CDI)] the release of a security for a contract given by or for the person is delayed or otherwise affected; and
+[1.4 BIFSOPA level 2 (CDI)] the person is the contractor or a subcontractor for a higher subcontract; and 
+[1.4 BIFSOPA level 2 (CDI)] under the contract or higher subcontract, the person has already paid another person an amount for work the subject of the claim.

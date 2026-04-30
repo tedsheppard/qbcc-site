@@ -1,0 +1,10 @@
+# Source: BIF Act 2017 — Chapter 3
+# Section 100G — Orders court may make
+(1) On hearing an application made under section 100F, the court
+may order that the relevant property be sold if satisfied the
+adjudicated amount, the subject of the charge, remains unpaid
+and it would be appropriate to make the order.
+(2) Without limiting the orders it may make, the court may—
+(a) set aside the charge; or
+(b) appoint a person to act as the claimant’s agent for the
+sale.

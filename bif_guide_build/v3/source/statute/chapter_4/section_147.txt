@@ -1,0 +1,30 @@
+# Source: BIF Act 2017 — Chapter 4
+# Section 147 — Qualified persons
+(1) A person is a qualified person for the purpose of certifying a
+notice of claim under section122 if the person is—
+(a) an architect registered under the Architects Act 2002; or
+(b) a registered professional engineer under the
+Professional Engineers Act 2002; or
+(c) a person licensed under the Queensland Building and
+Construction Commission Act 1991 to carry out or
+supervise work of the type to which the claim relates; or
+(d) a quantity surveyor who is a member of the Australian
+Institute of Quantity Surveyors; or
+(e) a person having expert knowledge of the work to which
+the claim relates and who is accepted in a particular case
+as a qualified person by the contractor and
+subcontractor.
+(2) A person must not give a certificate for a claim that relates to
+any work if the person—
+(a) performed any of the work; or
+(b) has a direct or indirect financial interest in the work.
+(3) If a person gives a certificate for a claim in contravention of
+subsection(2), the claim is of no effect and the relevant
+subcontractor’s charge does not attach.
+(4) A person who gives a certificate for a claim does not have a
+financial interest in the work only because the person is paid a
+fee for giving the certificate.
+(5) A person who gives a certificate for a claim does not incur
+civil liability by reason only of the giving of the certificate
+unless the person is convicted of fraud in relation to giving the
+certificate.

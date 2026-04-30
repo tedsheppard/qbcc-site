@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 199
+# Chapter: CHAPTER 7 – Miscellaneous
+# Section title: Delegations
+# DOCX paragraphs: 5351-5356
+
+[2 Com-BIFSOPA Heading 1] SECTION 199 – Delegations 
+[1 BIFSOPA Heading] 199    Delegations 
+[1.3 BIFSOPA level 1 (CDI)] The commissioner may delegate the commissioner’s functions or powers under this Act to an appropriately qualified officer of the commission. 
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] appropriately qualified includes having the qualifications, experience or standing appropriate to perform the function or exercise the power.

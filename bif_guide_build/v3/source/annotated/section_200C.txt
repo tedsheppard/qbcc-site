@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 200C
+# Chapter: CHAPTER 7 – Miscellaneous
+# Section title: Giving official false or misleading information
+# DOCX paragraphs: 5411-5420
+
+[2 Com-BIFSOPA Heading 1] SECTION 200C – Giving official false or misleading information
+[1 BIFSOPA Heading] 200C    Giving official false or misleading information
+[1.3 BIFSOPA level 1 (CDI)] A person must not, in relation to the administration of this Act, give an official information the person knows is false or misleading in a material particular.
+[1.3 BIFSOPA level 1 (CDI)] Maximum penalty—100 penalty units.
+[1.3 BIFSOPA level 1 (CDI)] Subsection (1) applies to information whether or not the information was given in response to a specific power under this Act. 
+[1.3 BIFSOPA level 1 (CDI)] Subsection (1) does not apply to a person if the person, when giving information in a document—
+[1.4 BIFSOPA level 2 (CDI)] tells the official, to the best of the person’s ability, how the document is false or misleading; and
+[1.4 BIFSOPA level 2 (CDI)] if the person has, or can reasonably obtain, the correct information—gives the correct information. 
+[1.3 BIFSOPA level 1 (CDI)] In this section— 
+[1.3 BIFSOPA level 1 (CDI)] official means the commissioner, the registrar of titles or a special investigator.

@@ -1,0 +1,74 @@
+# Source: BIF Act 2017 — Chapter 4
+# Section 131 — Use of security for benefit of subcontractor if contractor
+does not accept liability for all claims
+(1) This section applies if—
+(a) a subcontractor gives a notice of claim to a person under
+section 122 because the person is obliged to pay money
+to a contractor under a contract; and
+(b) the subcontractor gives a copy of the notice of claim to
+the contractor under section 123; and
+(c) in the contractor’s response to the claim under
+section 128, the contractor disputes the claim (does not
+accept liability to pay the amount claimed); and
+(d) the unsatisfied amount for the contract is more than the
+retained amount for the contract.
+(2) The holder of a security for the contract must—
+(a) retain the security until the court in which the
+subcontractor’s claim is heard makes an order under
+section 132 about enforcing the subcontractor’s charge
+over the security; or
+(b) instead of retaining the security—
+(i) if the security is held as an amount of money—pay
+the amount, up to the difference amount for the
+contract, into court; or
+(ii) if the security is not held as an amount of money
+but may be converted into an amount of
+
+money—convert the security, wholly or partly, into
+an amount of money and pay the amount, up to the
+difference amount for the contract, into court.
+(3) If the holder of the security does not comply with
+subsection(2), the holder is personally liable to pay the
+subcontractor the amount of the subcontractor’s claim to the
+extent that the security would have been capable under this
+chapter, if the holder had complied with the subsection, of
+satisfying the claim.
+(4) A payment of an amount under subsection(2)(b) discharges
+the holder of the security of all further liability for the amount
+paid and of the costs of any proceeding in relation to the
+amount paid.
+(5) Subsections (2) and (3) do not stop the holder of the security
+from exercising an entitlement to use the security for securing
+the performance of the contract, including by keeping control
+of the security until the security would be required to be
+surrendered, wholly or partly, if this section did not apply.
+(6) A provision of the contract, or of another arrangement, about
+the security, including a provision of the security itself, and
+including a provision providing for the surrender, wholly or
+partly, of the security, is of no effect to the extent it purports—
+(a) to stop the holder of the security from complying with
+subsection(2); or
+(b) to operate to the detriment of a person if the holder
+complies with subsection(2).
+(7) An amount paid into court under subsection(2)(b) may be
+paid out only under an order of the court.
+(8) In this section—
+difference amount, for a contract, means the amount by
+which the unsatisfied amount for the contract is more than the
+retained amount for the contract.
+retained amount, for a contract, means the total of—
+(a) all amounts a person is retaining under section 126(2)
+for the contract; and
+Page 161 Current as at 27 April 2025
+
+(b) all amounts a person has paid into court under
+section 126(4) for the contract; and
+(c) all amounts the holder of a security for the contract has
+paid into court under subsection(2)(b) in relation to the
+security.
+unsatisfied amount, for a contract, means the total of all
+amounts of claims of charge for the contract for which a
+notice of claim has been given, other than amounts that have
+been—
+(a) satisfied by payment under section129(2) or (3); or
+(b) the subject of a notice of claim that has been withdrawn.

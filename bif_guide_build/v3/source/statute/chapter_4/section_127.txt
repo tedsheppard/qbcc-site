@@ -1,0 +1,25 @@
+# Source: BIF Act 2017 — Chapter 4
+# Section 127 — Person given notice of claim must comply with request
+from security holder about s 130 or 131
+(1) This section applies if a subcontractor—
+(a) gives a notice of claim to a person obliged to pay money
+to a contractor under a contract; and
+(b) gives the holder of a security for the contract a copy of
+the notice of claim.
+(2) The holder of the security may, in writing, ask the person for
+information the holder reasonably requires to comply with
+section 130 or 131.
+(3) The person must comply with a request made under
+subsection(2) to the greatest practicable extent.
+(4) Subsection (5) applies if—
+(a) the person fails to comply with a request made under
+subsection(2); and
+(b) because of the failure the security holder does not
+comply with section 130(2) or 131(2).
+Page 155 Current as at 27 April 2025
+
+(5) The person, instead of the holder of the security, is personally
+liable to pay the subcontractor the amount the subcontractor is
+liable to be paid under section130(2) or 131(2).
+
+notice of claim

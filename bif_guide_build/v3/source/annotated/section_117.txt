@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 117
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: No subcontractor’s charge over money held in trust under a project bank account
+# DOCX paragraphs: 4458-4461
+
+[2 Com-BIFSOPA Heading 1] SECTION 117 – No subcontractor’s charge over money held in trust under a project bank account 
+[1 BIFSOPA Heading] 117    No subcontractor’s charge over money held in trust under a project bank account 
+[1.1 BIFSOPA Body Text] No entitlement to a subcontractor’s charge exists to the extent it relates to money held in trust under a project bank account.

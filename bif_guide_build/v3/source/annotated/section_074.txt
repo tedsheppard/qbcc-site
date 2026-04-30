@@ -1,0 +1,22 @@
+# Annotated BIF Act source — Section 74
+# Chapter: CHAPTER 3 – Progress payments
+# Section title: Effect of ‘pay when paid’ provisions
+# DOCX paragraphs: 1995-2013
+
+[2 Com-BIFSOPA Heading 1] SECTION 74 – Effect of ‘pay when paid’ provisions 
+[2.1 Com-BIFSOPA Heading 2] A    Legislation
+[1 BIFSOPA Heading] 74    Effect of ‘pay when paid’ provisions
+[1.3 BIFSOPA level 1 (CDI)] A ‘pay when paid’ provision of a construction contract has no effect in relation to any payment for construction work carried out, or related goods and services supplied, under the construction contract. 
+[1.3 BIFSOPA level 1 (CDI)] In this section
+[1.1 BIFSOPA Body Text] amount owing, in relation to a construction contract, means an amount owing for construction work carried out, or related goods and services supplied, under the construction contract.
+[1.1 BIFSOPA Body Text] ‘pay when paid’ provision, of a construction contract, means a provision of the contract—
+[1.4 BIFSOPA level 2 (CDI)] that makes the liability of 1 party (the first party) to pay an amount owing to another party (the second party) contingent on payment to the first party by someone else (the third party) of the whole or any part of that amount; or 
+[1.4 BIFSOPA level 2 (CDI)] that makes the due date for payment of an amount owing by the first party to the second party dependent on the date on which payment of the whole or any part of that amount is made to the first party by the third party; or
+[1.4 BIFSOPA level 2 (CDI)] that otherwise makes the liability to pay an amount owing, or the due date for payment of an amount owing, contingent or dependent on the operation of another contract.
+[2.1 Com-BIFSOPA Heading 2] B    Commentary
+[2.2 Com-BIFSOPA Heading 3] 74.1    Pay contingent on an external event?
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Maxcon Constructions Pty Ltd v Vadasz [2018] HCA 5, the High Court held that a retention clause which made the release of the retention amount contingent on ‘Building Legislation approvals’ had the effect of making the due date for payment “dependent on something unrelated to [the subcontractor’s] performance”, thus being invalid as a ‘pay when paid’ provision under the SA Act. The decision overturned the Full Court of the Federal Court, where a majority of the High Court (Kiefel CJ, Bell, Keane, Nettle and Gordon JJ) said (at [24]-[25]):
+[2.5 Com-BIFSOPA Normal Body Quote] The issue of that certificate of occupancy was dependent upon certification by the builder, Maxcon, that the building work had been performed in accordance with the issued documents, including the head contract between Maxcon and the owner of the land.  It necessarily follows that the issue of the certificate depended on completion of the whole project in accordance with the provisions of the head contract.  Until that certificate was issued on completion of the project, the retention sum was not to be released. 
+[2.5 Com-BIFSOPA Normal Body Quote] And that certificate had not been, and could not have been, issued on 25 February 2016 when Mr Vadasz served on Maxcon a payment claim pursuant to s 13 of the [SA] Act. The due dates for payment of the retention sum were dependent on something unrelated to Mr Vadasz's performance. They were dependent on the operation of another contract – namely, the completion of the head contract, which in turn would have enabled a certificate of occupancy to be issued. Accordingly, the retention provisions were pay when paid provisions within the meaning of s 12(2)(c) of the [SA] Act and Maxcon was not entitled to deduct the retention sum from the progress payment.
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Shells Venture Management v Agresta [2019] VSC 863, Digby J held that a contract which required the service of an ‘occupancy permit’ by the builder as a precondition to the service of a Final Claim would constitute a ‘pay when paid’ provision and infringe section 13 of the Vic Act (equivalent to section 74 of the Act).
+[2.4 Com-BIFSOPA CDI Normal Body Text] For discussion on a ‘pay when paid’ clause see: Ward v Eltherington [1982] Qd R 561.

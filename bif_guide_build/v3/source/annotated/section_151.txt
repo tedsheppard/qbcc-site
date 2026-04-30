@@ -1,0 +1,14 @@
+# Annotated BIF Act source — Section 151
+# Chapter: CHAPTER 5 – Administration
+# Section title: Disqualification from appointment
+# DOCX paragraphs: 4898-4907
+
+[2 Com-BIFSOPA Heading 1] SECTION 151 – Disqualification from appointment
+[1 BIFSOPA Heading] 151    Disqualification from appointment 
+[1.1 BIFSOPA Body Text] A person is disqualified from being appointed as the registrar if the person——
+[1.4 BIFSOPA level 2 (CDI)] has a recorded conviction, other than a spent conviction, for an indictable offence; or
+[1.4 BIFSOPA level 2 (CDI)] is, or has been, convicted of an offence against this Act; or
+[1.4 BIFSOPA level 2 (CDI)] is an insolvent under administration within the meaning of the Corporations Act, section 9; or
+[1.4 BIFSOPA level 2 (CDI)] is not able to manage a corporation because of the Corporations Act, part 2D.6; or
+[1.4 BIFSOPA level 2 (CDI)] is a member of the board within the meaning of the Queensland Building and Construction Commission Act 1991; or 
+[1.4 BIFSOPA level 2 (CDI)] is a person engaged by the commission under a contract to provide advice or a particular service.

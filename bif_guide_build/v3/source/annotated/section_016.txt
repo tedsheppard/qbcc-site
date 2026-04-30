@@ -1,0 +1,40 @@
+# Annotated BIF Act source — Section 16
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Building contracts for residential construction work
+# DOCX paragraphs: 301-337
+
+[2 Com-BIFSOPA Heading 1] SECTION 16 – Building contracts for residential construction work
+[1 BIFSOPA Heading] 16    Building contracts for residential construction work 
+[1.3 BIFSOPA level 1 (CDI)] A project bank account is not required for a building contract if the only building work that the contract is for is residential construction work.
+[1.3 BIFSOPA level 1 (CDI)] However, subsection (1) does not apply to a building contract if— 
+[1.4 BIFSOPA level 2 (CDI)] the principal for the contract is the department; and 
+[1.4 BIFSOPA level 2 (CDI)] the residential construction work relates to 3 or more living units.
+[1.3 BIFSOPA level 1 (CDI)] For subsection (2)(b)—
+[1.4 BIFSOPA level 2 (CDI)] a single detached dwelling is taken to be 1 living unit; and
+[1.4 BIFSOPA level 2 (CDI)] a residential unit is taken to be 1 living unit; and 
+[1.4 BIFSOPA level 2 (CDI)] a duplex is taken to be 2 living units. 
+[1.3 BIFSOPA level 1 (CDI)] In this section— 
+[1.1 BIFSOPA Body Text] building envelope, for a residence or related roofed building, means the outermost sides of the aggregation of the components of a building that have the primary function of separating the internal part of the residence or related roofed building from the external environment.
+[1.6 BIFSPOA example/note] Example of a building envelope—
+[1.7 BIFSOPA example/note body] the slab and footings system, an external wall and a roof related roofed building—
+[1.1 BIFSOPA Body Text] related roofed building—
+[1.4 BIFSOPA level 2 (CDI)] means a building that—
+[1.5 BIFSOPA level 3 (CDI)] has a roof designed to be part of the building and is impervious to water or wind; and 
+[1.5 BIFSOPA level 3 (CDI)] is, or is proposed to be, on the site of a residence or proposed residence; and
+[1.5 BIFSOPA level 3 (CDI)] is used, or proposed to be used, for a purpose related to the use of a residence or proposed residence; but
+[1.4 BIFSOPA level 2 (CDI)] does not include— 
+[1.5 BIFSOPA level 3 (CDI)] a residence; or 
+[1.5 BIFSOPA level 3 (CDI)] a building if the roof is a sail, umbrella or similar thing.
+[1.1 BIFSOPA Body Text] regulated amount means $3,300 or the higher amount, if any, prescribed by a regulation. 
+[1.1 BIFSOPA Body Text] residence means a type of building or structure prescribed by regulation.
+[1.1 BIFSOPA Body Text] residential construction work— 
+[1.4 BIFSOPA level 2 (CDI)] means any of the following work if carried out by a licensed contractor and the insurable value of the work is more than the regulated amount—
+[1.5 BIFSOPA level 3 (CDI)] the erection or construction of a residence or related roofed building;
+[1.5 BIFSOPA level 3 (CDI)] building work within the building envelope of a residence or related roofed building;
+[1.5 BIFSOPA level 3 (CDI)] building work for anything attached or connected to a residence or related roofed building that requires building or plumbing approval; 
+[1.5 BIFSOPA level 3 (CDI)] the erection, construction or installation of a swimming pool within the meaning of the Building Act 1975, schedule 2;
+[1.5 BIFSOPA level 3 (CDI)] other building work prescribed by regulation; and
+[1.4 BIFSOPA level 2 (CDI)] includes additional work, whether or not it is building work, that may be contracted to be carried out under a building contract if—
+[1.5 BIFSOPA level 3 (CDI)] for work relating to a residence—the work is carried out on the site of the residence or proposed residence and is for residential purposes; or
+[1.5 BIFSOPA level 3 (CDI)] for work relating to a related roofed building—the work is carried out on the site of the building or proposed building and is for residential purposes. 
+[1.1 BIFSOPA Body Text] residential unit means a part of a building designed for separate occupation as a residence.

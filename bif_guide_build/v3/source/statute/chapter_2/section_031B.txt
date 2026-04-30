@@ -1,0 +1,25 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 31B — What are the beneficial interests in a retention trust
+(1) The beneficiaries of a retention trust have a beneficial interest
+in—
+(a) for the contracted party as beneficiary—all retention
+amounts held in the trust that were withheld from
+payment to the contracted party; or
+(b) for the contracting party as beneficiary—all amounts
+held in the trust after subtracting the beneficial interests
+mentioned in paragraph(a).
+Note—
+The contracting party’s beneficial interest will generally only
+exist once the contracted party’s beneficial interest has ended
+under subsection(2).
+(2) However, the contracted party’s beneficial interest in a
+retention amount ends—
+(a) if and when the contracting party becomes entitled to be
+paid the amount under the relevant contract; and
+(b) to the extent the contracting party becomes entitled to be
+paid the amount under the relevant contract.
+Example of when the contracting party becomes entitled to be paid
+a retention amount—
+The contracting party becomes entitled under the contract to be
+paid a retention amount to pay for corrections to defects in the
+contracted work.

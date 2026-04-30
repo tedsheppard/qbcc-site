@@ -1,0 +1,28 @@
+# Source: BIF Act 2017 — Chapter 3
+# Section 97G — Charge over amount retained
+(1) This section applies if a claimant gives a payment withholding
+request to a higher party.
+(2) In addition to the obligation of the higher party to retain an
+amount in compliance with the payment withholding request,
+the amount is also subject to a charge in favour of the claimant
+for securing payment of the amount to the claimant if the
+claimant becomes entitled to that amount.
+(3) The charge over the amount expires if any of the following
+happens—
+Page 129 Current as at 27 April 2025
+
+(a) the respondent pays the amount to the claimant;
+(b) the adjudication decision relating to the amount is set
+aside and the respondent pays into court, as security, the
+unpaid portion of the amount pending a final decision;
+(c) the adjudication certificate relating to the amount is filed
+in court as a judgment for debt, but the court dismisses
+the proceedings for enforcement.
+(4) The claimant may enforce the charge as if the charge had been
+given to it under a written agreement between it and the
+higher party.
+(5) An act done to defeat, or purporting to operate so as to defeat,
+the charge is of no effect against the claimant.
+(6) The charge is declared to be a statutory interest to which the
+Personal Property Securities Act 2009 (Cwlth), section 73(2)
+applies.

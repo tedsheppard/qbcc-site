@@ -1,0 +1,14 @@
+# Annotated BIF Act source — Section 28
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Limited purposes for which money may be deposited into project bank account
+# DOCX paragraphs: 499-509
+
+[2 Com-BIFSOPA Heading 1] SECTION 28 – Limited purposes for which money may be deposited into project bank account
+[1 BIFSOPA Heading] 28    Limited purposes for which money may be deposited into project bank account 
+[1.1 BIFSOPA Body Text] The head contractor must not cause an amount to be deposited into a trust account, for the project bank account, for any purpose other than—
+[1.4 BIFSOPA level 2 (CDI)] (a)    paying the head contractor an amount the principal must deposit into the general trust account under section 27(2); or
+[1.4 BIFSOPA level 2 (CDI)] (b)    paying a subcontractor beneficiary an amount the head contractor is liable to pay the subcontractor beneficiary in connection with its subcontract with the head contractor; or
+[1.4 BIFSOPA level 2 (CDI)] (c)    paying an amount held as a retention amount; or 
+[1.4 BIFSOPA level 2 (CDI)] (d)    paying an amount, the subject of a payment dispute; or
+[1.4 BIFSOPA level 2 (CDI)] (e)    making another payment prescribed by regulation. 
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units or 1 year’s imprisonment.

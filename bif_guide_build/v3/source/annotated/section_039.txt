@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 39
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Amounts in project bank account unavailable for head contractors’ debts
+# DOCX paragraphs: 707-716
+
+[2 Com-BIFSOPA Heading 1] SECTION 39 – Amounts in project bank account unavailable for head contractors’ debts 
+[1 BIFSOPA Heading] 39    Amounts in project bank account unavailable for head contractors’ debts 
+[1.3 BIFSOPA level 1 (CDI)] An amount paid, or required to be paid, into a trust account for a project bank account can not be—
+[1.4 BIFSOPA level 2 (CDI)] used for payment of the debt of a creditor of the head contractor; or
+[1.4 BIFSOPA level 2 (CDI)] attached or taken in execution under a court order or process for the benefit of a creditor of the head contractor.
+[1.3 BIFSOPA level 1 (CDI)] Subsection (1) ceases to apply to the amount if lawfully withdrawn from the trust account. 
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] creditor does not include a subcontractor beneficiary to the extent the head contractor is liable to pay an amount to the subcontractor beneficiary in connection with its subcontract with the head contractor.

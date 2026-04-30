@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 108
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Contracts to which this part applies
+# DOCX paragraphs: 4287-4290
+
+[2 Com-BIFSOPA Heading 1] SECTION 108 – Contracts to which this part applies
+[1 BIFSOPA Heading] 108    Contracts to which this part applies
+[1.1 BIFSOPA Body Text] This part applies if a person contracts with another person for the carrying out of work in relation to land or a building.

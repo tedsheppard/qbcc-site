@@ -1,0 +1,34 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 15F — Contracts with less than 90 days until practical
+completion
+(1) A project trust is not required for a contract if there is less than
+90 days between—
+(a) the first day a project trust would, apart from this
+section, be required for the contract (the trigger date);
+and
+Note—
+If the effect of an amendment of a contract is that the contract
+becomes eligible for a project trust for the first time, the trigger
+date is the day the amendment takes effect. See section14A.
+(b) the day practical completion for the contracted work is
+expected to occur.
+(2) If a project trust is not required for a contract because of
+subsection(1), the contracted party must review the
+application of this section to the contract each time an
+amendment of the contract is made that is likely to affect the
+day practical completion for the contracted work is expected
+to occur.
+(3) In this section—
+practical completion, for contracted work for a contract,
+means—
+(a) practical completion as provided for under the contract;
+or
+(b) if the contract does not provide for practical
+completion—when the contracted work would
+reasonably be estimated to be completed—
+(i) in compliance with the contract, including all plans
+and specifications for the work and all statutory
+requirements applying to the work; and
+(ii) without any defects or omissions, other than minor
+defects or minor omissions that will not
+unreasonably affect the intended use of the work.

@@ -1,0 +1,21 @@
+# Annotated BIF Act source — Section 53
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Definitions for part
+# DOCX paragraphs: 853-870
+
+[2 Com-BIFSOPA Heading 1] SECTION 53 – Definitions for part
+[1 BIFSOPA Heading] 53    Definitions for part 
+[1.1 BIFSOPA Body Text] In this part—
+[1.1 BIFSOPA Body Text] administrator see the Corporations Act, section 9.
+[1.1 BIFSOPA Body Text] controller see the Corporations Act, section 9.
+[1.1 BIFSOPA Body Text] insolvency official means—
+[1.4 BIFSOPA level 2 (CDI)] (a)    an administrator, controller, provisional liquidator or liquidator; or 
+[1.4 BIFSOPA level 2 (CDI)] (b)    trustee in bankruptcy; or 
+[1.4 BIFSOPA level 2 (CDI)] (c)    any person having a similar function to an office mentioned in paragraph (a) or (b).
+[1.1 BIFSOPA Body Text] liquidator see the Corporations Act, section 9. 
+[1.1 BIFSOPA Body Text] provisional liquidator see the Corporations Act, section 9.
+[1.1 BIFSOPA Body Text] trustee in bankruptcy, for an individual, means—
+[1.4 BIFSOPA level 2 (CDI)] (a)    in relation to a bankruptcy—the trustee of the estate of the bankrupt; or
+[1.4 BIFSOPA level 2 (CDI)] (b)    in relation to a composition or scheme of arrangement under division 6 of part IV of the Bankruptcy Act 1966 (Cwlth)—the trustee of the composition or scheme of arrangement; or
+[1.4 BIFSOPA level 2 (CDI)] (c)    in relation to a personal insolvency agreement under part X of the Bankruptcy Act 1966 (Cwlth)—the trustee of the agreement; or
+[1.4 BIFSOPA level 2 (CDI)] (d)    in relation to the estate of a deceased person in respect of which an order has been made under part XI of the Bankruptcy Act 1966 (Cwlth)—the trustee of the estate.

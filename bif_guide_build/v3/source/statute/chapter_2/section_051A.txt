@@ -1,0 +1,18 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 51A — Amounts in trust account unavailable for trustee’s debts
+(1) An amount paid, or required to be paid, into a trust account
+under this chapter can not be—
+(a) used to recover a debt owed to a creditor of the trustee;
+or
+(b) attached or taken in execution under a court order or
+process for the benefit of a creditor of the trustee.
+(2) Subsection (1)—
+(a) applies in relation to the trustee, whether in the capacity
+of trustee or otherwise; and
+(b) ceases to apply to an amount once lawfully withdrawn
+from the trust account; and
+(c) does not apply to the extent it would interfere with the
+right of a beneficiary under this Act.
+(3) In this section—
+beneficiary, of a trust account, does not include a beneficiary
+who is also the trustee for the account.

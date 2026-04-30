@@ -1,0 +1,375 @@
+# Element-page brief — aa-fee
+**Title:** Pay the prescribed fee
+**Breadcrumb:** Requirements of an adjudication application
+**Anchor id:** `aa-fee`
+**Output file:** `bif_guide_build/v3/pages/page_aa-fee.html`
+
+## Extra guidance for this element
+The fee schedule sits in the Regulation. Reproduce the schedule (or the current top of it) verbatim, then explain in plain English what fee tier applies based on the claim amount.
+
+---
+# Global rules (same for every element-page)
+
+1. **Match the format model exactly.** Read the model below and replicate
+   the structure: breadcrumb h4, h2 title, opening paragraph, statute
+   excerpt, prose body with topical h3 sub-headings, optional case
+   extract block, "What this means on a project" bullet list,
+   footnotes ordered list at the bottom.
+
+2. **No headings labelling cases.** Do NOT use sub-headings like
+   "Key authority", "Leading authority", "Key case" or "Important
+   decision". Discuss the case naturally in prose under a topical
+   sub-heading instead.
+
+3. **Section reference style.** Always use `s 80` with a space, not
+   `s80`. Apply this to every section reference in your prose, your
+   footnotes, and your statute-excerpt summary text. The ONE exception
+   is the verbatim statute body itself, where the gazetted heading
+   number stays as printed (e.g. `<strong>61 Application of chapter</strong>`).
+
+4. **Plain prose default.** Do NOT use `<div class="analysis">`. The
+   only special blocks you may use are:
+   - `<details class="statute-excerpt" open>` for verbatim statute
+   - `<div class="case-excerpt">` for a single judicial extract (use
+     this at most ONCE per page, only where the extract earns its
+     place — i.e. it's the leading proposition or contains words the
+     courts repeatedly quote)
+   - `<ul>` / `<ol>` for lists
+   - `<ol class="footnotes">` for the footnotes block at the bottom
+
+5. **Verbatim source.** Statutory text, case names, citations, judicial
+   block quotes and adjudication reference numbers must be reproduced
+   word-for-word from the source. Curly→straight quote conversion is
+   fine; everything else is not. Do NOT silently "correct" what looks
+   like a typo or wrong cross-reference in the source — reproduce as
+   written.
+
+6. **No hallucination.** If a case, section or proposition is not in
+   the source bundled below, do not include it.
+
+7. **Audience and register.** Construction project manager / project
+   director. Plain English, active voice, "you" framing where natural.
+   Avoid "pursuant to", "notwithstanding", "inter alia", "it is
+   submitted", "the authorities establish".
+
+8. **Length.** Aim for 400–800 words of prose plus a tight footnote
+   block. Don't pad. Don't truncate either if the source has substance.
+
+9. **Case selection.** Pick at most TWO cases to discuss in-text. The
+   rest go in the footnotes with citation, judge in parentheses, and a
+   one-line gloss of what the case is for. The two in-text cases should
+   be either:
+   - the leading appellate authority (HCA, QCA, recent NSWCA), or
+   - a case whose facts directly illustrate the point.
+   Use AT MOST ONE `<div class="case-excerpt">` block on the page,
+   reserved for a passage the courts treat as the canonical formulation.
+
+10. **HTML entities.** Use `&mdash;`, `&ndash;`, `&hellip;`,
+    `&ldquo;`/`&rdquo;`, `&amp;` rather than literal characters where
+    appropriate.
+
+11. **Output ONE `<section id="SLUG">…</section>` block.** No `<html>`,
+    `<head>`, `<body>`, `<style>`, `<script>` wrappers. No markdown
+    fences. No preamble or explanation outside the HTML.
+
+---
+
+## Format model — replicate this structure exactly
+
+```html
+        <section id="pc-construction-contract">
+          <h4 class="breadcrumb-heading">Requirements of a payment claim</h4>
+          <h2>A construction contract must exist</h2>
+
+          <p>The BIF Act payment regime only switches on if there is a &ldquo;construction contract&rdquo; between you and the other side. Without one, no payment claim can be made and any adjudication that follows has no foundation.</p>
+
+          <details class="statute-excerpt" open>
+            <summary>Section 64 BIF Act &mdash; &ldquo;construction contract&rdquo;</summary>
+            <div class="statute-body">
+              <p><em>construction contract</em> means a contract, agreement or other arrangement under which 1 party undertakes to carry out construction work for, or to supply related goods and services to, another party.</p>
+            </div>
+          </details>
+
+          <h3>What counts</h3>
+
+          <p>The definition does three things at once. It captures any contract or agreement; it extends to an &ldquo;other arrangement&rdquo; beyond a contract; and it removes any requirement that the agreement be in writing. An oral agreement is enough, and so is a partly-oral / partly-written exchange &mdash; for example, a series of emails confirming scope and price, or a sequence of agreed meeting minutes.<sup><a href="#fn-pc-cc-1">1</a></sup></p>
+
+          <p>The work being undertaken must be construction work, or the supply of related goods and services in connection with construction work. Those concepts are defined separately at s 65 and s 66 and are dealt with on the next two pages.</p>
+
+          <h3>The &ldquo;other arrangement&rdquo; limb</h3>
+
+          <p>The &ldquo;other arrangement&rdquo; words exist to catch dealings that don&rsquo;t quite fit the legal definition of a contract &mdash; for instance, a head contractor&rsquo;s direction to a subcontractor to perform variation work where the parties are operating informally &mdash; without letting in every situation where someone has done work for someone else. Drawing the line has produced the most case law under this part of the Act.</p>
+
+          <p>The current position is that an &ldquo;other arrangement&rdquo; must give rise to either:</p>
+
+          <ul>
+            <li>a legally binding obligation (not necessarily a contract &mdash; an estoppel or other source of legal compulsion can suffice, provided some legal consequence flows from it); or</li>
+            <li>a &ldquo;concluded state of affairs&rdquo; involving reciprocity &mdash; that is, both parties have accepted mutual rights and obligations relating to payment or price for the works.</li>
+          </ul>
+
+          <p>The most recent appellate guidance is <em>Bettar Holdings Pty Ltd trading as Hunt Collaborative v RWC Brookvale Investment Pty Ltd as trustee for Brookvale Development Trust</em> [2025] NSWCA 242. The pleading in <em>Bettar</em> alleged only a common law contract or, in the alternative, an estoppel preventing denial of a contract. The NSW Court of Appeal held that wasn&rsquo;t enough &mdash; what was missing was a separate allegation that the claimant had &ldquo;undertaken&rdquo; to perform work on some basis other than a common law contract. McHugh JA (Bell CJ and Kirk JA agreeing) put the test for an &ldquo;other arrangement&rdquo; in these terms:</p>
+
+          <div class="case-excerpt">
+            <p><span class="para-number">[139]</span> a legally binding obligation&hellip; or a concluded state of affairs&hellip; involving some element of reciprocity or acceptance of mutual rights and obligations relating to payment or price for the works.</p>
+          </div>
+
+          <p>His Honour expressly declined to resolve the earlier first-instance conflict between <em>Lendlease Engineering Pty Ltd v Timecon Pty Ltd</em> [2019] NSWSC 685 (Ball J &mdash; required a legally binding obligation) and <em>Crown Green Square Pty Ltd v Transport for NSW</em> [2018] NSWSC 1080 (McDougall J &mdash; adopted a less stringent reciprocity-based test),<sup><a href="#fn-pc-cc-2">2</a></sup> because the pleading in <em>Bettar</em> failed under either test. So which test applies in close cases remains open at appellate level.</p>
+
+          <p>The practical consequence is that a bare quantum-meruit claim &mdash; where work has been done but there is no agreement at all about price or payment terms &mdash; is unlikely to qualify. The &ldquo;arrangement&rdquo; requires reciprocal payment obligations, not merely the fact that work was performed.</p>
+
+          <h3>What this means on a project</h3>
+
+          <ul>
+            <li>If you have a signed contract, a construction contract exists. Move on to the next element.</li>
+            <li>If your engagement is by exchange of emails, purchase orders or agreed meeting minutes, that&rsquo;s still capable of being a construction contract &mdash; provided there is offer, acceptance and an intention to be bound. Document what was agreed and when; you may need to prove it later.</li>
+            <li>For variation or out-of-scope work without a written variation order, capture the instruction and your response in writing as soon as possible. Most &ldquo;other arrangement&rdquo; disputes turn on whether there is evidence of agreement on price or rate.</li>
+            <li>A bare quantum-meruit case &mdash; just a claim for the value of work done, with no agreement &mdash; will probably fall outside the Act. You&rsquo;d need to show reciprocal payment obligations, not just the fact of work done.</li>
+            <li>If you anticipate a challenge to the existence of a contract, plead the arrangement carefully: the material facts of the agreement, the undertaking to carry out work, and the payment obligation. After <em>Bettar</em> the appellate courts are scrutinising those pleadings closely.</li>
+          </ul>
+
+          <ol class="footnotes">
+            <li id="fn-pc-cc-1">That a written instrument is not required follows from the words &ldquo;contract, agreement or other arrangement&rdquo; in s 64: see <em>Okaroo Pty Ltd v Vos Construction &amp; Joinery Pty Ltd</em> [2005] NSWSC 45 (Nicholas J); <em>Machkevitch v Andrew Building Constructions Pty Ltd</em> [2012] NSWSC 546 (McDougall J).</li>
+            <li id="fn-pc-cc-2"><em>Lendlease Engineering Pty Ltd v Timecon Pty Ltd</em> [2019] NSWSC 685, [29]&ndash;[33] (Ball J); <em>Crown Green Square Pty Ltd v Transport for NSW</em> [2018] NSWSC 1080 (McDougall J). For Queensland, <em>Capricorn Quarries Pty Ltd v Devcon Pty Ltd</em> [2010] QSC 28 (Daubney J) is the leading reading of the contract limb of the BIF Act definition.</li>
+          </ol>
+
+        </section>
+
+```
+
+---
+
+## Verbatim BIF Act statute
+
+### `statute/chapter_3/section_079.txt`
+```
+# Source: BIF Act 2017 — Chapter 3
+# Section 79 — Application for adjudication
+(1) A claimant may apply to the registrar for adjudication of a
+payment claim (an adjudication application) if—
+(a) the claimant is entitled to apply for adjudication under
+section 78(2)(b) because of a failure by the respondent
+to pay an amount owed to the claimant by the due date
+for the payment; or
+(b) the amount stated in the payment schedule, given in
+response to the payment claim, is less than the amount
+stated in the payment claim.
+(2) An adjudication application—
+(a) must be in the approved form; and
+(b) must be made within—
+(i) for an application relating to a failure to give a
+payment schedule and pay the full amount stated in
+the payment claim—30 business days after the
+later of the following days—
+(A) the day of the due date for the progress
+payment to which the claim relates;
+(B) the last day the respondent could have given
+the payment schedule under section76; or
+
+(ii) for an application relating to a failure to pay the
+full amount stated in the payment schedule—20
+business days after the due date for the progress
+payment to which the claim relates; or
+(iii) for an application relating to the amount stated in
+the payment schedule being less than the amount
+stated in the payment claim—30 business days
+after the claimant receives the payment schedule;
+and
+(c) must identify the payment claim and the payment
+schedule, if any, to which it relates; and
+(d) must be accompanied by the fee prescribed by
+regulation for the application.
+(3) The adjudication application may be accompanied by
+submissions relevant to the application.
+(4) The claimant must give the following documents to the
+respondent within 4 business days after making the
+adjudication application—
+(a) a copy of the adjudication application;
+(b) a copy of the submissions, if any, accompanying the
+application under subsection(3).
+(5) The registrar must, within 4 business days after the
+application is received, refer the application to a person
+eligible to be an adjudicator under section 80.
+(6) In this section—
+copy, of an adjudication application, includes a document
+containing details of the application given to the claimant by
+the registrar for the purpose of the claimant complying with
+the claimant’s obligation under subsection(4)(a).
+
+```
+
+## Annotated commentary (rewrite for PM audience; preserve case names / citations / block quotes verbatim)
+
+### `annotated/section_079.txt`
+```
+# Annotated BIF Act source — Section 79
+# Chapter: CHAPTER 3 – Progress payments
+# Section title: Application for adjudication
+# DOCX paragraphs: 2356-2464
+
+[2 Com-BIFSOPA Heading 1] SECTION 79 – Application for adjudication 
+[2.1 Com-BIFSOPA Heading 2] A    Legislation
+[1 BIFSOPA Heading] 79    Application for adjudication 
+[1.3 BIFSOPA level 1 (CDI)] A claimant may apply to the registrar for adjudication of a payment claim (an adjudication application) if—
+[1.4 BIFSOPA level 2 (CDI)] the claimant is entitled to apply for adjudication under section 78(2)(b) because of a failure by the respondent to pay an amount owed to the claimant by the due date for the payment; or 
+[1.4 BIFSOPA level 2 (CDI)] the amount stated in the payment schedule, given in response to the payment claim, is less than the amount stated in the payment claim. 
+[1.3 BIFSOPA level 1 (CDI)] An adjudication application—
+[1.4 BIFSOPA level 2 (CDI)] must be in the approved form; and 
+[1.4 BIFSOPA level 2 (CDI)] must be made within—
+[1.5 BIFSOPA level 3 (CDI)] for an application relating to a failure to give a payment schedule and pay the full amount stated in the payment claim—30 business days after the later of the following days— 
+[1.6 BIFSOPA level 4 (CDI)] the day of the due date for the progress payment to which the claim relates; 
+[1.6 BIFSOPA level 4 (CDI)] the last day the respondent could have given the payment schedule under section 76; or 
+[1.5 BIFSOPA level 3 (CDI)] for an application relating to a failure to pay the full amount stated in the payment schedule—20 business days after the due date for the progress payment to which the claim relates; or
+[1.5 BIFSOPA level 3 (CDI)] for an application relating to the amount stated in the payment schedule being less than the amount stated in the payment claim—30 business days after the claimant receives the payment schedule; and 
+[1.4 BIFSOPA level 2 (CDI)] must identify the payment claim and the payment schedule, if any, to which it relates; and 
+[1.4 BIFSOPA level 2 (CDI)] must be accompanied by the fee prescribed by regulation for the application; and
+[1.3 BIFSOPA level 1 (CDI)] The adjudication application may be accompanied by submissions relevant to the application.
+[1.3 BIFSOPA level 1 (CDI)] The claimant must give the following documents to the respondent within 4 business days after making the adjudication application—
+[1.4 BIFSOPA level 2 (CDI)] a copy of the adjudication application;
+[1.4 BIFSOPA level 2 (CDI)] a copy of the submissions, if any, accompanying the application under subsection (3).
+[1.3 BIFSOPA level 1 (CDI)] The registrar must, within 4 business days after the application is received, refer the application to a person eligible to be an adjudicator under section 80.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.4 BIFSOPA level 2 (CDI)] copy, of an adjudication application, includes a document containing details of the application given to the claimant by the registrar for the purpose of the claimant complying with the claimant’s obligation under subsection (4)(a).”
+[2.1 Com-BIFSOPA Heading 2] B    Commentary
+[2.2 Com-BIFSOPA Heading 3] 79.1    Section 79(2)
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Nebmas Pty Ltd v Sub Divide Pty Ltd & Ors [2009] QSC 92, after referring to the decision in Brodyn, McMurdo J said:
+[2.5 Com-BIFSOPA Normal Body Quote] As that judgment makes clear, the conclusion in Kell & Rigby, that the requirement for a notice under s 21(2) is mandatory, does not answer the present question, which is whether the adjudication is void where the adjudicator has decided, albeit wrongly, that there had been compliance with that provision. The judgment of Hodgson JA in Brodyn indicates that this requirement for a notice under s 21(2) is not an essential requirement, in the sense that it was an essential precondition of the existence of an adjudicator’s determination. With regard to the purpose of this legislation, there is no reason why this requirement within s 21(2) should be an essential requirement although, for example, the time limit within s 21(3) should not be essential: cf Project Blue Sky Inc v Australian Broadcasting Authority. Of course s 21(2) provides that an adjudication application “can not be made” unless there is such a notice and these precise words are not replicated in s 21(3). Nevertheless, s 21(3) provides that an adjudication application “must be made” within the times there set out. In each case the words are “emphatic”, and in my view there is no basis for distinguishing between the two provisions on the basis of this difference in words.
+[2.5 Com-BIFSOPA Normal Body Quote] Accordingly, the fact, as I have found, that there was non-compliance with s 21(2) does not have the result for which the present applicant contends. The declaratory relief which it seeks must be refused. It also follows that the interlocutory injunction restraining the first respondent from filing the adjudicator’s certificate should be discharged.
+[2.4 Com-BIFSOPA CDI Normal Body Text] This decision was followed by Fryberg J in De Neefe Signs Pty Ltd v Build1 (Qld) Pty Ltd; Traffic Technologies Traffic Hire Pty Ltd v Build1 (Qld) Pty Ltd [2010] QSC 279.
+[2.4 Com-BIFSOPA CDI Normal Body Text] As to the effect of non-compliance, in De Neefe Signs Pty Ltd v Build1 (Qld) Pty Ltd; Traffic Technologies Traffic Hire Pty Ltd v Build1 (Qld) Pty Ltd [2010] QSC 279, Fryberg held that compliance with section 21(2) to be a precondition to an adjudicator’s jurisdiction. On this point, his Honour said:
+[2.5 Com-BIFSOPA Normal Body Quote] That question must be answered by construing the opening words of the subsection. I acknowledge that they must be construed in the light of the two conditions, particularly the nature and content of those conditions. I acknowledge the force of the view that those conditions seem on their face purely procedural matters aimed at ensuring the provision of natural justice and perhaps reducing the chance that the case will actually go to adjudication. There is however no reason why Parliament should not if it so chooses make fulfilment of conditions of that nature essential to the making of an application. In my judgment, the words “an adjudication application … cannot be made” produce that result. They should be given their natural meaning. If by statute an application cannot be made, then anything purporting to be one cannot be an application. The existence of an application is a basic and essential requirement of an adjudicator’s determination.
+[2.5 Com-BIFSOPA Normal Body Quote] That is the same conclusion as was reached in Kell & Rigby Pty Ltd v Guardian International Properties Pty Ltd.
+[2.5 Com-BIFSOPA Normal Body Quote] The effect of the contrary conclusion is the re-wording of s 21(2) to read “unless the adjudicator thinks” in place of “unless” (and it consequentially requires a change of tense in the two conditions). While the subject matter of BCIPA can hardly be compared with the liberty of the subject, there is powerful (albeit dissenting) authority against adopting that technique of statutory interpretation.
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Parkview Constructions Pty Limited v Total Lifestyle Windows Pty Ltd t/a Total Concept Group [2017] NSWSC 194, Hammerschlag J considered the requirements of service of an adjudication application under section 17 of the NSW Act, the equivalent of section 21 of the Act. Specifically, his Honour found it is plain that what is served on the respondent must itself be in writing. In this case, it was found service via a USB stick did not equate to service of writing stored on it within the meaning of the Act.
+[2.4 Com-BIFSOPA CDI Normal Body Text] In National Management Group Pty Ltd v Biriel Industries Pty Ltd trading as Master Steel & Ors [2019] QSC 219, Wilson J held that an adjudication application made by the claimant satisfied section 79(2)(c) of the BIF Act despite a number of errors, because “the adjudication application document refers to the project name, the reference date and the amount due.”
+[2.2 Com-BIFSOPA Heading 3] 79.1A    Section 79(2)(a) – ‘the approved form’
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Iris Broadbeach Business Pty Ltd v Descon Group Australia Pty Ltd & Anor [2023] QSC 290, Williams J held that the form the claimant gave the respondent as part of the adjudication application was not the ‘approved form’ under s 79(2)(a). The Claimant had provided the ‘QBCC PDF Form’, which is automatically generated when the ‘Electronic Form’ is submitted on the QBCC website.
+[2.4 Com-BIFSOPA CDI Normal Body Text] Williams J explained that the ‘approved form’ is the form approved for the purpose of the Claimant applying to the registrar for adjudication. It is the adjudication application document itself which the claimant lodges, either electronically or in hardcopy, with the QBCC to commence the process which is required to be in the approved form and given to the Respondent. Accordingly, the QBCC PDF Form, which is provided as a receipt of the adjudication application being made is not ‘the approved form’.
+[2.4 Com-BIFSOPA CDI Normal Body Text] Note:     (i) the QBCC Registry has since made changes to the way in which it processes adjudication applications;
+[2.4 Com-BIFSOPA CDI Normal Body Text] (ii) on 6 June 2024, the the Residential Tenancies and Rooming Accommodation and Other Legislation Amendment Act 2024 was passed by the Queensland Parliament, containing significant amendments to the BIF Act. The Explanatory Note to the Third Reading explicitly provides that these amendments are in response to the Queensland Supreme Court’s decision in Iris Broadbeach Business Pty Ltd v Descon Group Australia Pty Ltd & Anor [2023] QSC 290.
+[2.4 Com-BIFSOPA CDI Normal Body Text] Those amendments to the BIF Act in June 2024 have rendered this legal principle from Iris Broachbeach (i.e. the approved form issue) nugatory.
+[2.2 Com-BIFSOPA Heading 3] 79.2    Section 79(2)(b) – ‘must be made within’
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Gisley Investments Pty Ltd v Williams & Anor [2010] QSC 178, Douglas J considered the question of whether an adjudication application made out of time invalidated the adjudication decision. His Honour said:
+[2.5 Com-BIFSOPA Normal Body Quote] It is also possible, however, to approach the question as an exercise in statutory construction by asking whether the failure to seek the adjudication earlier, because the email should have been regarded as a payment schedule, makes the later application, premised on the absence of a valid payment schedule, invalid. To use the language in Project Blue Sky Inc v ABC was it a purpose of the legislation that an act done in breach of s 21(3)(c)(i) should be invalid?
+[2.5 Com-BIFSOPA Normal Body Quote] …
+[2.5 Com-BIFSOPA Normal Body Quote] Here, although the adjudication decision should have been made pursuant to an earlier notice, Mr Williams’ failure to give such a notice seems to have been caused by the imprecision of Gisley Investments’ own email in failing to identify itself as a payment schedule explicitly on its face. The consequence of the delay was that Gisley Investments had a further opportunity to provide a payment schedule and a later notification of the adjudication application that it decided to ignore. In either case, the real objects of the Act of providing notice of the claim and an opportunity to respond by provision of a schedule and by appearing before the adjudicator have been met and there is no good reason why the adjudicator’s decision should be treated as a nullity.
+[2.4 Com-BIFSOPA CDI Normal Body Text] Examples:
+[2.6 Com-BIFSOPA bullet] Adjudication application made out of time. Gisley Investments Pty Ltd v Williams & Anor [2010] QSC 178. The claimant was required to make an adjudication application by 3 December 2009. Due to the claimant not considering a ‘relatively informal’ email to be a payment schedule, an adjudication application was not made until 1 February 2010. Daubney J upheld the validity of the adjudication decision.
+[2.2 Com-BIFSOPA Heading 3] 79.3    Section 79(2)(b)(iii) – ‘receives the payment schedule’
+[2.4 Com-BIFSOPA CDI Normal Body Text] Section 79(2)(b)(iii) is drafted in terms of when the ‘claimant receives the payment schedule’. There is a distinction between ‘service’ and ‘receipt’ under the Act.
+[2.4 Com-BIFSOPA CDI Normal Body Text] Refer to section 102 for further commentary on this distinction, and the meaning of ‘receipt’ under the Act.
+[2.2 Com-BIFSOPA Heading 3] 79.4    Section 79(2)(c) – must identify the payment claim and the payment schedule, if any, to which it relates
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Kangaroo Point Developments MP Property Pty Ltd v RHG Construction Fitout and Maintenance Pty Ltd [2021] QSC 30, Dalton J held that an adjudication application did not satisfy section 79(2)(c) of the BIF Act on the basis that the claimant did not identify the payment schedule that was issued by the respondent, and instead it identified another document. Justice Dalton held that the word “must” in each of section 79(2)(a) and 79(2)(c) of the BIF Act denotes a mandatory requirement of the Act whereas, in contrast, the word “may” in section 79(2)(e) of the BIF Act is used when the applicant for adjudication in fact has a choice as to whether or not to provide submissions.
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Kuatro Build Pty Ltd v Elite Formwork Group Pty Ltd [2025] NSWSC 372 Hmelnitsky J held that Elite’s adjudication application was validly made under s 17 of the SOP Act (equivalent to section 79 BIFSOPA). Elite served its payment claim on 28 November 2024 and lodged its adjudication application on 3 January 2025, which fell within the statutory timeframe. The Court did not identify any issue with compliance under s 17, and no jurisdictional objection was raised in respect of the lodgement or timing of the adjudication application.
+
+[2.2 Com-BIFSOPA Heading 3] 79.5    Section 79(2)(e) – ‘submissions’
+[2.3 Com-BIFSOPA Heading 4] ‘May include the submissions’
+[2.4 Com-BIFSOPA CDI Normal Body Text] The meaning of ‘submission’ was considered by McDougall J in Austruc Constructions Ltd v ACA Developments Pty Ltd; ACA Developments Pty Ltd v Sarlos [2004] NSWSC 131. The plaintiff (a respondent under the NSW Act) submitted that there is a distinction between ‘submission’ and ‘evidence’, with the former being the theory or reasoning propounded. This distinction was rejected by McDougall J. Relevantly, his Honour said:
+[2.5 Com-BIFSOPA Normal Body Quote] I do not think that the word “submissions”, in either s 17(3) or s 22(2), should be limited as Mr Corsaro submitted. Firstly, I do not think that the ordinary English meaning of the word “submission” is limited in the way that ACA contends. It is certainly correct to say that one of the definitions given by the Shorter Oxford English Dictionary is “[t]he theory of a case put forward by an advocate”. However, the same dictionary also defines the word to mean “the act of submitting a matter to a person for decision or consideration”; and it gives other definitions as well. Further, the Macquarie Dictionary defines “submission” as including “the act of submitting ... the condition of having submitted … submissive conduct or attitude … that which is submitted … law an agreement to abide by a decision or obey an authority in some matter referred to arbitration … “.
+[2.5 Com-BIFSOPA Normal Body Quote] It is apparent from the definitions given by both dictionaries that the “ordinary English meaning” for which ACA contends is a specific application of the more general meaning, to the effect of “that which is submitted for decision or consideration”.
+[2.5 Com-BIFSOPA Normal Body Quote] Secondly, I think that the better view of s 17(3) is that it does not limit the matters that may be put to an adjudicator in an adjudication application. In this context, I think that the contrast between the mandatory language of paragraphs (a) to (g), and the discretionary language of paragraph (h), is clear.
+[2.5 Com-BIFSOPA Normal Body Quote] Thirdly, and in any event, I think that it is s 22(2) that governs the situation. It will be recalled that that subsection specifies the only matters that an adjudicator may take into account. Those matters include, through paragraph (c), the relevant payment claim “together with all submissions (including relevant documentation) …”. Not only do the parenthesised words show that the legislature had in mind that the word ”submissions” was not to be construed narrowly, as ACA contends; they show specifically that the submissions may include relevant documentation in support.
+[2.5 Com-BIFSOPA Normal Body Quote] It follows, I think, that if a claimant chooses to include, as part of the relevant documentation supporting its payment claim, a statutory declaration whereby relevant matters are, in effect, verified, then that statutory declaration will form part of the material to be considered by the adjudicator. Equally, if a claimant includes such a statutory declaration in its adjudication application, that is part of the “submission” to be considered.
+[2.4 Com-BIFSOPA CDI Normal Body Text] This approach was followed in Queensland in Syntech Resources Pty Ltd v Peter Campbell Earthmoving (Aust) Pty Ltd [2011] QSC 293, [32] (Daubney J).
+[2.3 Com-BIFSOPA Heading 4] ‘Relevant to the application’
+[2.4 Com-BIFSOPA CDI Normal Body Text] In John Holland v Cardno MBK (NSW) Pty Ltd [2004] NSWSC 258, Einstein J considered the NSW equivalent of section 21(3) and the introduction of new reasons in an adjudication application, holding that:
+[2.5 Com-BIFSOPA Normal Body Quote] The adjudication application will relate to a particular payment claim and payment schedule [section 17 (3) (f)]. The central significance of the entitlement of the applicant to include submissions as part of its adjudication application is because those submissions have to be supportive of the payment claim. Those submissions cannot constitute a payment claim or part of it. The central significance of the entitlement of the respondent to include submissions as part of its adjudication response is because those submissions have to be supportive of the payment schedule. Those submissions cannot constitute a payment schedule or part of it.
+[2.4 Com-BIFSOPA CDI Normal Body Text] The inclusion of submissions by a claimant is directory rather than mandatory: Abacus Funds Management Ltd v Davenport [2003] NSWSC 1027, [19] (McDougall J).
+[2.2 Com-BIFSOPA Heading 3] 79.6    New reasons in an adjudication application
+[2.4 Com-BIFSOPA CDI Normal Body Text] Whether there is an equivalent prohibition to section 82(4) of the Act prohibiting new reasons from appearing in the adjudication response which were not raised in the payment schedule applying in the context of an adjudication application was considered in John Holland v Cardno MBK (NSW) Pty Ltd [2004] NSWSC 258 and Minister for Commerce v Contrax Plumbing (NSW) Pty Ltd [2004] NSWSC 823.
+[2.4 Com-BIFSOPA CDI Normal Body Text] In John Holland v Cardno MBK (NSW) Pty Ltd [2004] NSWSC 258, Einstein J said in the context of section 20(2B) of the NSW Act:
+[2.5 Com-BIFSOPA Normal Body Quote] The primary touchstone it seems to me, is section 20 (2B). Whilst a claimant which provides the most minimal amount of information in its payment claim may even so, be seen to technically comply with section 13, such a claimant will expose itself to an abortive adjudication determination if it be that:
+[2.5 Com-BIFSOPA Normal Body Quote] the respondent is simply unable to discern from the content of the payment claim, sufficient detail of that claim to be in a position to meaningfully verify or reject the claim: hence not then being in a position to do otherwise than to reject the whole of the claim on the basis of its inability to verify any part of the claim;
+[2.5 Com-BIFSOPA Normal Body Quote] the claimant then elects to include the missing detail in the adjudication application with the inexorable consequence that the respondent is barred by section 20 (2B) from dealing with that detail/matter in its adjudication response;
+[2.5 Com-BIFSOPA Normal Body Quote] the adjudicator relies in determining the adjudication application upon the detail supportive of the payment claim which first emerged as part of the adjudication application.
+[2.5 Com-BIFSOPA Normal Body Quote] For those reasons whilst it is not permissible to construe section 13 as providing that in order to be a valid payment claim, such a claim must do more than satisfy the requirements stipulated for by subsection 2 (a), (b) and (c), the consequence to a claimant which does not include sufficient detail of that claim to be in a position to permit the respondent to meaningfully verify or reject the claim, may indeed be to abort any determination.
+[2.4 Com-BIFSOPA CDI Normal Body Text] His Honour then considered the provision of documents in an adjudication application that were not provided in the payment claim. On this point, his Honour said that:
+[2.5 Com-BIFSOPA Normal Body Quote] The deploying for the first time in the adjudication application, of supporting documentation will require careful attention and becomes a matter of degree and detail. However in the main I do not see that a respondent which, by reason of insufficient information supplied with the payment claim, is unable to verify that claim, and says as much in the payment schedule [only later to receive as part of the adjudication application, the supporting documentation which should have been earlier supplied in order to permit a meaningful payment schedule response], will be otherwise than barred by section 20 (2B) from including in its adjudication response reasons for withholding payment arising by reference to the later supporting documentation. It could not be said that those reasons were already included in the payment schedule provided to the claimant. A complaint about inability to verify a claim because of insufficient information is not synonymous with reasons for dealing with a properly supported claim.
+[2.4 Com-BIFSOPA CDI Normal Body Text] The view of Einstein J in John Holland v Cardno were revisited in Minister for Commerce v Contrax Plumbing (NSW) Pty Ltd [2004] NSWSC 823 by McDougall J. His Honour said:
+[2.5 Com-BIFSOPA Normal Body Quote] In John Holland, it was submitted to Einstein J that considerations of procedural fairness demanded that a restriction similar to that contained in s 20(2B) be read into s 17(3), to the effect that a claimant in an adjudication application is restricted to raising only matters canvassed in its payment claim. While his Honour thought that considerations of "logic", and "consistency" with the situation of respondents, suggested that this submission be accepted (at [4]), his conclusion was that the "accepted principles of statutory construction" would not permit the suggested implication to be made (at [21]). This conclusion was bolstered by the fact that, in contrast to the situation of respondents when preparing payment schedules pursuant to s 14(3), it is not an "essential condition" of s 13 that the claimant include any reasons whatsoever in a payment claim (at [18]).
+[2.4 Com-BIFSOPA CDI Normal Body Text] Einstein J dealt with the problem in a different way. He said that when an adjudication application put a claim on a basis that had not been advanced in the payment claim, the adjudicator, as a matter of jurisdiction, could not deal with it; and there would also be denial of natural justice (at [41]). That was because (as his Honour explained at [40]), s 20(2B) would prevent the respondent from including in its adjudication response any reasons relating to the new claim; but it could not deal with a new claim except by doing that which was prevented by s 20(2B). To determine such a new claim upon a basis that the respondent could not answer was, his Honour said, a denial of natural justice.
+[2.4 Com-BIFSOPA CDI Normal Body Text] McDougall J interpreted the decision by Einstein J in John Holland v Cardno in the following manner:
+[2.5 Com-BIFSOPA Normal Body Quote] What Einstein J said in John Holland was that a claimant that did not provide sufficient details in its payment claim to enable the respondent to verify or reject (ie, assess) the claim could not include the missing details in its adjudication application. That was because, since the respondent was barred by s 20(2B) from replying to those details (ie, of responding in its adjudication response in a way that did deal with the merits of the claim) the result “may indeed be to abort any determination”: at [23]. His Honour said, alternatively, that an adjudicator did not have power to consider materials supplied by a claimant in its adjudication application which went outside the materials provided in the payment: at [24]. Materials would go outside what had already been provided if they fell outside the ambit or scope of that earlier material.
+[2.4 Com-BIFSOPA CDI Normal Body Text] However, his Honour rejected that an adjudication application could not address matters raised in the payment schedule. On this point, his Honour said that:
+[2.5 Com-BIFSOPA Normal Body Quote] It would be quite extraordinary if the statutory regime, on its proper construction, prevented an applicant for adjudication from dealing with issues raised by the respondent to adjudication in its payment schedule. Such a construction would mean, in effect, that the applicant would be required to anticipate in its payment claim, and deal with at length, every possible argument that the respondent might rely upon. That would have the effect of increasing enormously the complexity and expense of the statutory procedure: something quite at odds with the statutory objects set out in s 3 and reinforced in the Second Reading Speech. It would also mean that, notwithstanding the best attempts of the applicant to foresee and answer all possible arguments, it might be defeated if the ingenuity of the respondent or its lawyers turned up yet further arguments.
+[2.5 Com-BIFSOPA Normal Body Quote] I do not believe that the legislature intended such consequences to flow from the scheme that it enacted. Nor do I think that there is anything in what Einstein J said in John Holland that requires me to conclude, notwithstanding the views that I have expressed, that the legislature did intend such bizarre consequences to follow.
+[2.4 Com-BIFSOPA CDI Normal Body Text] Refer also to the commentary under section 88, below.
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Probuild Constructions (Aust) Pty Ltd v Shade Systems Pty Ltd [2016] NSWSC 770, Emmett AJA held that there was no denial of procedural fairness in circumstances where an adjudicator made a determination for an amount greater than the amount claimed in an adjudication application.
+[2.4 Com-BIFSOPA CDI Normal Body Text] The amount claimed in the adjudication application was of a lesser amount than the amount claimed in the payment claim due to a number of matters being conceded by the applicant. Emmett AJA held that on a fair reading of the payment claim, payment schedule, the adjudication application and adjudication response, there had been no denial of procedural fairness:
+[2.5 Com-BIFSOPA Normal Body Quote] In all of the circumstances, I do not consider that, on a fair reading of the Payment Claim, the Payment Schedule, the Adjudication Application, and the Adjudication Response, Probuild was denied procedural fairness.
+[2.2 Com-BIFSOPA Heading 3] 79.7    Section 79(3) – ‘adjudication application must be given to the respondent’
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Niclin Constructions Pty Ltd v SHA Premier Constructions Pty Ltd & Anor [2019] QSC 91, Ryan J held that, in order for an adjudication application to be validly served on the respondent in accordance with section 21(5) BCIPA (equivalent to section 79(3) of the Act):
+[2.6 Com-BIFSOPA bullet] a copy of the QBCC form 6 (now form S79) must be served on the respondent as part of the adjudication application; and 
+[2.6 Com-BIFSOPA bullet] the adjudication application, including the QBCC form 6 (now form S79), must be served on the respondent as soon as possible. 
+[2.4 Com-BIFSOPA CDI Normal Body Text] Her Honour reasoned that given the “brutally fast timeframes” imposed by BCIPA, service of the form was significant because it informed the adjudicator when to determine the case in the knowledge that he or she has all the material before them, such as an adjudication response which would follow the application and be due within 10 business days in accordance with BCIPA. This decision is currently being appealed to the Court of Appeal.
+[2.4 Com-BIFSOPA CDI Normal Body Text] This decision was subsequently upheld on appeal. In Niclin Constructions Pty Ltd v SHA Premier Constructions Pty Ltd & Anor [2019] QCA 177, the Queensland Court of Appeal upheld the decision of the primary judge that s 21(5) BCIPA (equivalent of 79 of the Qld Act) requires service of an adjudication application upon the respondent “as soon as possible” after the application is lodged with the registrar.  
+[2.4 Com-BIFSOPA CDI Normal Body Text] In McCarthy v TKM Builders Pty Ltd & Anor [2020] QSC 301, Martin J determined that an adjudication application was not “given to the respondent” in accordance with section 79(3) of the BIF act on the basis that service of the submissions relevant to the adjudication application was invalid. In that case, the submissions to the adjudication application could only be obtained by opening a Dropbox link that was sent via email to the respondent. The court applied Justice McMurdo’s reasoning in Basetec and held that the respondent did not become aware of the contents of the document merely by being referred to a link to a Dropbox file. His Honour found that it was not enough that it could be shown the respondents solicitors saw the submissions when the respondent forwarded the email, the court required a positive action on the part of the receiver.
+
+[Normal] In Equinox Construction Pty Ltd v Henning & Anor [2021] QSC 223, Justice Ryan declared an adjudication determination void because the Claimant failed to “give” a copy of the adjudication application to the Respondent pursuant to section 79(3) of the BIF Act. The Claimant contended that it had posted the adjudication application in accordance with the sections 39 and 29A of the Acts Interpretation Act 1954 (Qld). The Respondent asserted that it did not receive it. In determining that the service of the adjudication application was invalid, Ryan J held that a Claimant must be in a position to strictly prove service so that there can be quick and efficient resolution of disputes by way of adjudication. The Court found that: 
+[1.3 BIFSOPA level 1 (CDI)] evidence of having used a "postage paid" envelope is not sufficient under section 39 or 39A  because the Claimant did not explain how postage paid envelopes were to be used when paying for postage of items contained in them and failed to give evidence about how the postage was calculated/paid for; and 
+[1.3 BIFSOPA level 1 (CDI)] evidence of attending a post office on a specific date is not sufficient to establish how the posting was effected. 
+[Normal] In Equa Building Services Pty Ltd v KLG Trading Pty Ltd [2021] NSWSC 1674, Stevenson J declared that the claimant had sufficiently served a copy of the adjudication application on the respondent, even though it was not an exact reproduction, on the basis that the differences were trivial and inconsequential. In that case, the claimant had served the adjudication application electronically via an online “lockbox” system and provided a hard copy to the respondent. The respondent argued that the hard copy was different to the electronic copy provided to the adjudicator because: the respondent was unable to access a video provided on a USB; it was missing three documents; contained illegible photographs; and documents were mislabelled.
+[1.3 BIFSOPA level 1 (CDI)] Justice Stevenson held that the operation of section 17(5) of the NSW SOP Act (the equivalent of s 79(3) of the BIF Act)  is capable of degrees of non-compliance if it does not prejudice the substantial effect of the objectives of the Act. In assessing the differences, Stevenson J found that the differences were trivial because: the information stored on the USB was available to be accessed and the claimant was unable to access due to software differences in the computer used; the missing documents was a template of the payment claim and an ASIC search of the developer; it was clear that that the photographs were copies of the document uploaded electronically; and the mislabelling was of no consequence in that the documents themselves were contained in both versions. Accordingly, Stevenson J found that it would not be consistent with that legislative object for s 17(5) of the NSW SOP Act (the equivalent of s 79(3) of the BIF Act)  to be read as having the effect that the slightest difference between the adjudication application as submitted to the adjudicator and the copy served on the respondent rendered invalid the purported service of the copy adjudication application, let alone an adjudication determination based on it.
+[1.3 BIFSOPA level 1 (CDI)] In Iris Broadbeach Business Pty Ltd v Descon Group Australia Pty Ltd & Anor [2023] QSC 290, Williams J held that an adjudicator did not have jurisdiction because the claimant had not provided ‘a complete copy’ of the adjudication application to the respondent. The Claimant had provided the ‘QBCC PDF Form’, which was automatically generated by the QBCC when the ‘approved form’ is submitted on the QBCC website and that this is not the approved form. 
+[1.3 BIFSOPA level 1 (CDI)] Williams J found that the differences between the forms were ‘not trivial’ and therefore were ‘such as to result in the copy of the QBCC PDF form not being a “copy” of the Electronic Form’. It was possible to give a full copy of the form electronically completed, and there was no evidence to suggest doing so was ‘onerous or time-consuming such as to make it inconsistent with the timeframes in the statutory regime’. The Court noted this document could be produced by taking a screen shot of each page of the QBCC’s platform when electronically making an adjudication application.
+[1.3 BIFSOPA level 1 (CDI)] Note: The amendments to the BIF Act in June 2024 have rendered this legal principle from Iris Broachbeach (i.e. the approved form issue) nugatory.
+
+```
+
+## BIF Regulation
+
+### `regs/reg_001.txt`
+```
+# Source: BIF Regulation 2018
+# Section 1 — Application fee for adjudication (Act, s 79(2)(d))—
+(a) for a payment claim for a progress payment of
+no more than $11,345.70 60.70
+(b) for a payment claim for a progress payment of
+more than $11,345.70 but no more than
+$56,728.80 182.15
+(c) for a payment claim for a progress payment of
+more than $56,728.80 but no more than
+$113,457.60 303.60
+(d) for a payment claim for a progress payment of
+more than $113,457.60 but no more than
+$283,644.05 425.20
+(e) for a payment claim for a progress payment of
+more than $283,644.05 but no more than
+$567,288.05 546.60
+(f) for a payment claim for a progress payment of
+more than $567,288.05 but no more than
+$850,932.15 668.05
+(g) for a payment claim for a progress payment of
+more than $850,932.15 but no more than
+$1,236,206.95 789.55
+Page 52 Current as at 1 July 2025
+
+Schedule 2
+Fee units
+(h) for a payment claim for a progress payment of The number of
+more than $1,236,206.95 fee units equal
+to a fee that is
+0.0794188%
+of the progress
+payment
+amount, up to
+a maximum of
+6,073.80 fee
+units
+Example—
+For an
+adjudication
+application
+made on 1 July
+2025 for a
+progress
+payment of
+$1,300,000,
+the fee is
+$1,032.44 (the
+number of fee
+units equal to
+this fee is
+942.01 fee
+units).
+
+```

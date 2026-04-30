@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 170
+# Chapter: CHAPTER 5 – Administration
+# Section title: Grounds for suspension or cancellation
+# DOCX paragraphs: 5111-5121
+
+[2 Com-BIFSOPA Heading 1] SECTION 170 – Grounds for suspension or cancellation 
+[1 BIFSOPA Heading] 170    Grounds for suspension or cancellation 
+[1.3 BIFSOPA level 1 (CDI)] Each of the following is a ground for suspending or cancelling an adjudicator’s registration—
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator is not, or is no longer, a suitable person to hold the registration; 
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator has contravened a requirement of the code of conduct made by the registrar under section 181;
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator has contravened a condition of the registration;
+[1.4 BIFSOPA level 2 (CDI)] the registration was issued because of a materially false or misleading representation or declaration.
+[1.3 BIFSOPA level 1 (CDI)] For forming a belief that the adjudicator is not, or is no longer, a suitable person to hold registration, the registrar—
+[1.4 BIFSOPA level 2 (CDI)] must have regard to section 161(1); and
+[1.4 BIFSOPA level 2 (CDI)] may have regard to the matters mentioned in section 161(2).

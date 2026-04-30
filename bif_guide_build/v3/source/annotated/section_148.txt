@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 148
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Right to recover debt generally preserved
+# DOCX paragraphs: 4867-4871
+
+[2 Com-BIFSOPA Heading 1] SECTION 148 – Right to recover debt generally preserved
+[1 BIFSOPA Heading] 148    Right to recover debt generally preserved 
+[1.1 BIFSOPA Body Text] Unless otherwise expressly provided for under this chapter, nothing in this chapter affects the right of a person to whom a debt is due and owing for work done to maintain a personal action to recover the debt against the person liable for it, and a judgment obtained by the plaintiff in any action brought does not affect a charge or other right to which the plaintiff is entitled under this chapter.
+
+[2a BIFSOPA Chapter Heading] CHAPTER 5 – Administration

@@ -1,0 +1,27 @@
+# Source: BIF Act 2017 — Chapter 3
+# Section 74 — Effect of ‘pay when paid’ provisions
+(1) A ‘pay when paid’ provision of a construction contract has no
+effect in relation to any payment for construction work carried
+out, or related goods and services supplied, under the
+construction contract.
+(2) In this section—
+amount owing, in relation to a construction contract, means
+an amount owing for construction work carried out, or related
+goods and services supplied, under the construction contract.
+‘pay when paid’ provision, of a construction contract, means
+a provision of the contract—
+(a) that makes the liability of 1 party (the first party) to pay
+an amount owing to another party (the second party)
+contingent on payment to the first party by someone else
+(the third party) of the whole or any part of that amount;
+or
+Page 103 Current as at 27 April 2025
+
+(b) that makes the due date for payment of an amount owing
+by the first party to the second party dependent on the
+date on which payment of the whole or any part of that
+amount is made to the first party by the third party; or
+(c) that otherwise makes the liability to pay an amount
+owing, or the due date for payment of an amount owing,
+contingent or dependent on the operation of another
+contract.

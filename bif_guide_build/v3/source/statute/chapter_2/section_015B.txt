@@ -1,0 +1,4 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 15B — Contracts between the State and a state authority
+A project trust is not required for a contract if the only parties
+to the contract are the State and a state authority.

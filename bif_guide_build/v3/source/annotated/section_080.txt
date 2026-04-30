@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 80
+# Chapter: CHAPTER 3 – Progress payments
+# Section title: When adjudicator ineligible to adjudicate
+# DOCX paragraphs: 2465-2471
+
+[2 Com-BIFSOPA Heading 1] SECTION 80 – When adjudicator ineligible to adjudicate 
+[1 BIFSOPA Heading] 80    When adjudicator ineligible to adjudicate 
+[1.1 BIFSOPA Body Text] An adjudicator is not eligible to adjudicate an adjudication application if the adjudicator— 
+[1.4 BIFSOPA level 2 (CDI)] is a party to the construction contract to which the application relates; or 
+[1.4 BIFSOPA level 2 (CDI)] has a conflict of interest as prescribed by regulation.

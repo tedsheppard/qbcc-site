@@ -1,0 +1,19 @@
+# Annotated BIF Act source — Section 50
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Principal to be given information about subcontracts
+# DOCX paragraphs: 807-822
+
+[2 Com-BIFSOPA Heading 1] SECTION 50 – Principal to be given information about subcontracts
+[1 BIFSOPA Heading] 50    Principal to be given information about subcontracts
+[1.3 BIFSOPA level 1 (CDI)] This section applies if a project bank account is required to be established for a building contract under section 13. 
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must give the principal the information prescribed by regulation—
+[1.4 BIFSOPA level 2 (CDI)] if the head contractor entered into a subcontract for the building contract before the day a project bank account is required to be established under section 13—within 5 business days after the project bank account is required to be established; or
+[1.6 BIFSPOA example/note] Note—
+[1.7 BIFSOPA example/note body] Under section 15 a project bank account may be required for a building contract only after an amendment of the contract.
+[1.4 BIFSOPA level 2 (CDI)] otherwise—within 5 business days after entering into a subcontract for the building contract. 
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units. 
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must, within 5 business days after becoming aware of a change in information given to the principal under subsection (2), advise the principal of the change using the approved form.
+[1.6 BIFSPOA example/note] Note—
+[1.7 BIFSOPA example/note body] A change would include the addition of a subcontractor beneficiary. 
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units. 
+[1.3 BIFSOPA level 1 (CDI)] A notice given under this section must be given in the approved form.

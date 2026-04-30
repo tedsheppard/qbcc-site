@@ -1,0 +1,45 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 36 — Limited purposes for which money may be withdrawn
+from retention trust account
+(1) A trustee must not withdraw an amount from the retention
+trust account for any purpose other than—
+(a) paying a beneficiary who is a contracted party from
+whom a retention amount was withheld from payment;
+or
+(b) paying the trustee, as contracting party, for the purpose
+of correcting defects or omissions in contracted work, or
+otherwise to secure, wholly or partly, the performance of
+a contract; or
+(c) paying another person for the purpose of correcting
+defects or omissions in contracted work.
+Note—
+As the contracting party for a contract, the trustee’s ability to make a
+payment mentioned in paragraph(a), (b) or (c) would be governed by
+the contract under which the retention amount was withheld.
+Maximum penalty—300 penalty units or 2 years
+imprisonment.
+(2) A trustee must not withdraw an amount from the retention
+trust account for a payment mentioned in subsection(1)(b)
+until after the defects liability period, applying to the amount,
+ends.
+Maximum penalty—300 penalty units or 2 years
+imprisonment.
+(3) The trustee must repay all amounts the trustee withdraws in
+contravention of subsection(1) as soon as practicable after
+withdrawing the amount.
+Maximum penalty—300 penalty units or 2 years
+imprisonment.
+
+(4) The trustee is taken to have withdrawn an amount from the
+retention trust account if—
+(a) the trustee authorises any person to make the
+withdrawal; or
+(b) the trustee knowingly contributes to the withdrawal
+being made.
+(5) This section does not apply to that part of a retention amount
+withheld from payment under a contract that is beyond the
+amount that may be lawfully withheld under the contract.
+Note—
+See the Queensland Building and Construction Commission Act 1991,
+part4A for limits on retention amounts that may be withheld from
+payment under a contract.

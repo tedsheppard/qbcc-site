@@ -1,0 +1,126 @@
+# Annotated BIF Act source — Section 218
+# Chapter: CHAPTER 9 – Amendment of this and other Acts
+# Section title: Amendment of s 32 (When retention trust required)
+# DOCX paragraphs: 5799-5919
+
+[2 Com-BIFSOPA Heading 1] SECTION 218 – Amendment of s 32 (When retention trust required)
+[1 BIFSOPA Heading] 218    Amendment of s 32 (When retention trust required)
+[1.3 BIFSOPA level 1 (CDI)] Section 32(6), definition withholding contract—
+[1.3 BIFSOPA level 1 (CDI)] omit, insert— 
+[1.3 BIFSOPA level 1 (CDI)] withholding contract means—
+[1.3 BIFSOPA level 1 (CDI)] (a) a project trust contract; or
+[1.3 BIFSOPA level 1 (CDI)] (b) a project trust subcontract; or
+[1.3 BIFSOPA level 1 (CDI)] (c) any other subcontract for subcontracting work that contributes to the performance of a project trust contract.
+
+[2 Com-BIFSOPA Heading 1] SCHEDULE 2 – Dictionary
+[1 BIFSOPA Heading] Schedule 2    Dictionary
+[1.1 BIFSOPA Body Text] accepted representations, for chapter 5, see section 172(2).
+[1.1 BIFSOPA Body Text] adjudicated amount, for chapter 3, see section 88(1).
+[1.1 BIFSOPA Body Text] adjudication application see section 79(1).
+[1.1 BIFSOPA Body Text] adjudication certificate see section 91(1).
+[1.1 BIFSOPA Body Text] adjudication response see section 82(1).
+[1.1 BIFSOPA Body Text] adjudicator means an individual registered under chapter 5, part 2, division 2 as an adjudicator.
+[1.1 BIFSOPA Body Text] administrator, for chapter 2, part 5, see the Corporations Act, section 9.
+[1.1 BIFSOPA Body Text] appeal, for chapter 2, part 3, division 6, see section 34B.
+[1.1 BIFSOPA Body Text] approved form means a form approved by the chief executive or the commissioner under section 198.
+[1.1 BIFSOPA Body Text] building, for chapter 2, see section 8.
+[1.1 BIFSOPA Body Text] building contract, for chapter 2, see section 8.
+[1.1 BIFSOPA Body Text] building work, for chapter 2, see section 8.
+[1.1 BIFSOPA Body Text] business day does not include—
+[1.4 BIFSOPA level 2 (CDI)] Saturday or Sunday; or
+[1.4 BIFSOPA level 2 (CDI)] a public holiday, special holiday or bank holiday in the place in which any relevant act is to be or may be done; or
+[1.4 BIFSOPA level 2 (CDI)] any day occurring within any of the following periods—
+[1.5 BIFSOPA level 3 (CDI)] 22 to 24 December;
+[1.5 BIFSOPA level 3 (CDI)] 27 to 31 December;
+[1.5 BIFSOPA level 3 (CDI)] 2 to 10 January.
+[1.1 BIFSOPA Body Text] carry out construction work, for chapter 3, see section 64.
+[1.1 BIFSOPA Body Text] claimant, for chapter 3, see section 75(1).
+[1.1 BIFSOPA Body Text] code of conduct means a code of conduct for adjudicators made by the registrar under section 181.
+[1.1 BIFSOPA Body Text] commission means the Queensland Building and Construction Commission established under the Queensland Building and Construction Commission Act 1991, section 5.
+[1.1 BIFSOPA Body Text] commissioner means the commissioner appointed under the Queensland Building and Construction Commission Act 1991, section 20D.
+[1.1 BIFSOPA Body Text] complex payment claim, for chapter 3, see section 64.
+[1.1 BIFSOPA Body Text] construction contract, for chapter 3, see section 64.
+[1.1 BIFSOPA Body Text] construction work, for chapter 3, see section 65.
+[1.1 BIFSOPA Body Text] contract price—
+[1.4 BIFSOPA level 2 (CDI)] for chapter 2—see section 10; or
+[1.4 BIFSOPA level 2 (CDI)] for chapter 4—see section 104.
+[1.1 BIFSOPA Body Text] contracted building work, for chapter 2, see section 8.
+[1.1 BIFSOPA Body Text] contractor, for chapter 4, see section 104.
+[1.1 BIFSOPA Body Text] controller, for chapter 2, part 5, see the Corporations Act, section 9.
+[1.1 BIFSOPA Body Text] conviction, for chapter 5, part 2, see section 158.
+[1.1 BIFSOPA Body Text] corresponding law, for chapter 5, part 2, see section 158.
+[1.1 BIFSOPA Body Text] court, for chapter 4, see section 104.
+[1.1 BIFSOPA Body Text] defects liability period, for a contract, means—
+[1.4 BIFSOPA level 2 (CDI)] the period worked out under the contract as being the period that—
+[1.5 BIFSOPA level 3 (CDI)] starts on the day of practical completion for the work carried out under the contract; and
+[1.5 BIFSOPA level 3 (CDI)] ends on the last day any omission or defect in the work, carried out under the contract, may be required or directed to be rectified under the contract; or
+[1.4 BIFSOPA level 2 (CDI)] if the contract does not provide for a period mentioned in paragraph (a)—the statutory defects liability period under the Queensland Building and Construction Commission Act 1991, section 67NA(2).
+[1.1 BIFSOPA Body Text] disputed funds trust account, for chapter 2, see section 23(1)(c).
+[1.1 BIFSOPA Body Text] dispute resolution process, for chapter 2, part 3, division 6, see section 34B.
+[1.1 BIFSOPA Body Text] domestic building work see Queensland Building and Construction Commission Act 1991, schedule 1B, section 1.
+[1.1 BIFSOPA Body Text] due date, for a progress payment, for chapter 3, see section 64.
+[1.1 BIFSOPA Body Text] fire protection work, for chapter 2, see the Queensland Building and Construction Commission Act 1991, schedule 2.
+[1.1 BIFSOPA Body Text] first tier subcontract see section 6(5).
+[1.1 BIFSOPA Body Text] general trust account, for chapter 2, see section 23(1)(a).
+[1.1 BIFSOPA Body Text] head contractor, for chapter 2, see section 8.
+[1.1 BIFSOPA Body Text] higher subcontract see section 6(7).
+[1.1 BIFSOPA Body Text] information notice, for chapter 5, see section 158.
+[1.1 BIFSOPA Body Text] insolvency official, for chapter 2, part 5, see section 53.
+[1.1 BIFSOPA Body Text] land, for chapter 4, see section 104.
+[1.1 BIFSOPA Body Text] liquidator, for chapter 2, part 5, see the Corporations Act, section 9.
+[1.1 BIFSOPA Body Text] maintenance work, for chapter 2, see section 8.
+[1.1 BIFSOPA Body Text] notice of claim see section 122.
+[1.1 BIFSOPA Body Text] original decision, for chapter 5, see section 177(1).
+[1.1 BIFSOPA Body Text] payment claim see section 68(1).
+[1.1 BIFSOPA Body Text] payment dispute, for chapter 2, see section 35.
+[1.1 BIFSOPA Body Text] payment instruction means an instruction to a financial institution for the payment of an amount from an account.
+[1.1 BIFSOPA Body Text] payment schedule see section 69.
+[1.1 BIFSOPA Body Text] person, for chapter 4, see section 104.
+[1.1 BIFSOPA Body Text] practical completion, for work carried out under a contract, means—
+[1.4 BIFSOPA level 2 (CDI)] the day practical completion of the work is achieved, as worked out under the contract; or
+[1.4 BIFSOPA level 2 (CDI)] if the contract does not provide for the day practical completion of the work is achieved—the day the work is completed—
+[1.5 BIFSOPA level 3 (CDI)] in compliance with the contract, including all plans and specifications for the work and all statutory requirements applying to the work; and
+[1.5 BIFSOPA level 3 (CDI)] without any defects or omissions, other than minor defects or minor omissions that will not unreasonably affect the intended use of the work.
+[1.1 BIFSOPA Body Text] principal, for chapter 2, see section 8.
+[1.1 BIFSOPA Body Text] progress payment see section 64.
+[1.1 BIFSOPA Body Text] project bank account, for chapter 2, see section 9(1).
+[1.1 BIFSOPA Body Text] proposed action, for chapter 5, see section 171(3)(a).
+[1.1 BIFSOPA Body Text] recognised financial institution means a bank, or other financial institution prescribed by regulation.
+[1.1 BIFSOPA Body Text] provisional liquidator, for chapter 2, part 5, see the Corporations Act, section 9.
+[1.1 BIFSOPA Body Text] reference date, for chapter 3, see section 67.
+[1.1 BIFSOPA Body Text] registrar see section 150(1).
+[1.1 BIFSOPA Body Text] registry, for chapter 5, see section 149(1).
+[1.1 BIFSOPA Body Text] registry staff, for chapter 5, see section 149(2).
+[1.1 BIFSOPA Body Text] related entity, for chapter 2, see section 19.
+[1.1 BIFSOPA Body Text] related goods and services, for chapter 3, see section 66.
+[1.1 BIFSOPA Body Text] relevant construction contract, for chapter 3, see section 64.
+[1.1 BIFSOPA Body Text] respondent, for chapter 3, see section 75(1).
+[1.1 BIFSOPA Body Text] retention amount means an amount that—
+[1.4 BIFSOPA level 2 (CDI)] is payable under a contract, but may, under that contract, be withheld from payment—
+[1.5 BIFSOPA level 3 (CDI)] during the progress of the work to be carried out under the contract; or
+[1.5 BIFSOPA level 3 (CDI)] during the defects liability period for the contract; or
+[1.5 BIFSOPA level 3 (CDI)] both during the progress of the work to be carried out under the contract and during the defects liability period; and
+[1.4 BIFSOPA level 2 (CDI)] is withheld from payment under a contract for the purpose of giving financial protection to the person making the payment in relation to the need to correct defects in the work to be carried out under the contract, or otherwise to secure, wholly or partly, the performance of the contract.
+[1.1 BIFSOPA Body Text] retention trust account, for chapter 2, see section 23(1)(b).
+[1.1 BIFSOPA Body Text] review decision, for chapter 5, see section 178(2).
+[1.1 BIFSOPA Body Text] review notice, for chapter 5, see section 178(3).
+[1.1 BIFSOPA Body Text] second tier subcontract see section 6(6).
+[1.1 BIFSOPA Body Text] security, for chapter 4, see section 104.
+[1.1 BIFSOPA Body Text] show cause notice, for chapter 5, see section 171(2).
+[1.1 BIFSOPA Body Text] show cause period, for chapter 5, see section 171(3)(e).
+[1.1 BIFSOPA Body Text] spent conviction, for chapter 5, see section 158.
+[1.1 BIFSOPA Body Text] standard payment claim, for chapter 3, see section 64.
+[1.1 BIFSOPA Body Text] State authority, for chapter 2, see section 8.
+[1.1 BIFSOPA Body Text] structure, for chapter 4, see section 104.
+[1.1 BIFSOPA Body Text] subcontract see section 6(1).
+[1.1 BIFSOPA Body Text] subcontracted work see section 6(3)(c).
+[1.1 BIFSOPA Body Text] subcontractor see section 6(3)(b).
+[1.1 BIFSOPA Body Text] subcontractor beneficiary, for chapter 2, see section 8.
+[1.1 BIFSOPA Body Text] subcontractor’s charge, for chapter 4, see section 109(4).
+[1.1 BIFSOPA Body Text] supplier, for chapter 2, see section 11.
+[1.1 BIFSOPA Body Text] trustee in bankruptcy, for chapter 2, part 5, see section 53.
+[1.1 BIFSOPA Body Text] valuable instrument, for chapter 4, see section 104.
+[1.1 BIFSOPA Body Text] variation—
+[1.4 BIFSOPA level 2 (CDI)] of a building contract, for chapter 2, see section 8; and
+[1.4 BIFSOPA level 2 (CDI)] of a contract, for chapter 4, see section 104.
+[1.1 BIFSOPA Body Text] work, for a contract, for chapter 4, see section 105.

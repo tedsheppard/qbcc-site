@@ -1,0 +1,11 @@
+# Annotated BIF Act source — Section 195
+# Chapter: CHAPTER 6 – Legal proceedings
+# Section title: Evidentiary aids
+# DOCX paragraphs: 5328-5334
+
+[2 Com-BIFSOPA Heading 1] SECTION 195 – Evidentiary aids
+[1 BIFSOPA Heading] 195    Evidentiary aids 
+[1.3 BIFSOPA level 1 (CDI)] A certificate signed by the registrar certifying anything about the contents of the register is evidence of the thing stated.
+[1.3 BIFSOPA level 1 (CDI)] A certificate signed by the registrar stating any of the following is evidence of the matters stated—
+[1.4 BIFSOPA level 2 (CDI)] that an individual was or was not at a time or during a period, or is or is not, an adjudicator; 
+[1.4 BIFSOPA level 2 (CDI)] that a stated document is a record or document, a copy of a record or document, or an extract from a record or document, kept under this chapter.

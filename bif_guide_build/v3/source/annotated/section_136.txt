@@ -1,0 +1,14 @@
+# Annotated BIF Act source — Section 136
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Proceedings for subcontractor’s charge
+# DOCX paragraphs: 4750-4759
+
+[2 Com-BIFSOPA Heading 1] SECTION 136 – Proceedings for subcontractor’s charge 
+[1 BIFSOPA Heading] 136    Proceedings for subcontractor’s charge 
+[1.3 BIFSOPA level 1 (CDI)] A proceeding for a subcontractor’s charge must— 
+[1.4 BIFSOPA level 2 (CDI)] be started within— 
+[1.5 BIFSOPA level 3 (CDI)] if the claim is for the retention amount only—4 months after the balance of the retention amount is payable; and 
+[1.5 BIFSOPA level 3 (CDI)] otherwise—1 month after notice of the claim is given under section 122 to the person by whom the money is payable; and 
+[1.4 BIFSOPA level 2 (CDI)] be brought by way of action. 
+[1.3 BIFSOPA level 1 (CDI)] For a proceeding for a subcontractor’s charge, it is sufficient if the subcontractor proves that the charge attached to money payable or a security in existence on any date before the date of hearing. 
+[1.3 BIFSOPA level 1 (CDI)] A subcontractor’s charge is extinguished if the proceedings to enforce it are not started as required under subsection (1).

@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 14
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Particular government building contracts
+# DOCX paragraphs: 281-290
+
+[2 Com-BIFSOPA Heading 1] SECTION 14 – Particular government building contracts
+[1 BIFSOPA Heading] 14    Particular government building contracts
+[1.3 BIFSOPA level 1 (CDI)] A building contract is a PBA contract if—
+[1.4 BIFSOPA level 2 (CDI)] the principal for the contract is—
+[1.5 BIFSOPA level 3 (CDI)] the State; or
+[1.5 BIFSOPA level 3 (CDI)] a State authority that has decided a project bank account is to be established for the contract; and
+[1.4 BIFSOPA level 2 (CDI)] more than 50% of the contract price is for building work; and 
+[1.4 BIFSOPA level 2 (CDI)] the contract price for the building contract is $1 million or more but not more than $10 million; and 
+[1.4 BIFSOPA level 2 (CDI)] the building contract is not a subcontract for another building contract.
+[1.3 BIFSOPA level 1 (CDI)] A building contract may, by regulation, be declared a PBA contract if the principal for the contract is the State or a State authority.

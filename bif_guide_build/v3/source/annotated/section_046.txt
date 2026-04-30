@@ -1,0 +1,12 @@
+# Annotated BIF Act source — Section 46
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Right of head contractor to apply to Supreme Court for directions
+# DOCX paragraphs: 775-783
+
+[2 Com-BIFSOPA Heading 1] SECTION 46 – Right of head contractor to apply to Supreme Court for directions 
+[1 BIFSOPA Heading] 46    Right of head contractor to apply to Supreme Court for directions
+[1.3 BIFSOPA level 1 (CDI)] The head contractor may apply to the Supreme Court for directions about—
+[1.4 BIFSOPA level 2 (CDI)] an amount held in trust under a project bank account; or 
+[1.4 BIFSOPA level 2 (CDI)] the administration of the project bank account; or
+[1.4 BIFSOPA level 2 (CDI)] the exercise of a power by the head contractor. 
+[1.3 BIFSOPA level 1 (CDI)] An application made under subsection (1) must be served on all subcontractor beneficiaries for the project bank account unless otherwise directed by the Supreme Court.

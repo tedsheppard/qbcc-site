@@ -1,0 +1,7 @@
+# Source: BIF Regulation 2018
+# Section 15 — Time for lodgement—Act, s 201
+(1) For section201(2)(f)(i) of the Act, an adjudication application
+must be lodged with the registrar no later than 5p.m. on a
+business day.
+(2) An application lodged after 5p.m. is taken to be lodged on the
+next business day.

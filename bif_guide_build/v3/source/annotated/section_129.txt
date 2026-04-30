@@ -1,0 +1,24 @@
+# Annotated BIF Act source — Section 129
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Payment of claim
+# DOCX paragraphs: 4640-4659
+
+[2 Com-BIFSOPA Heading 1] SECTION 129 – Payment of claim 
+[1 BIFSOPA Heading] 129    Payment of claim 
+[1.3 BIFSOPA level 1 (CDI)] This section applies if—
+[1.4 BIFSOPA level 2 (CDI)] a subcontractor gives a notice of claim to a person under section 122 because the person is obliged to pay money to a contractor under a contract; and
+[1.4 BIFSOPA level 2 (CDI)] the subcontractor gives a copy of the notice of claim to a contractor under section 123; and
+[1.4 BIFSOPA level 2 (CDI)] in the contractor’s response to the claim under section 128, the contractor—
+[1.5 BIFSOPA level 3 (CDI)] accepts liability to pay the amount claimed; or 
+[1.5 BIFSOPA level 3 (CDI)] accepts liability to pay an amount stated in the response but otherwise disputes the claim. 
+[1.3 BIFSOPA level 1 (CDI)] If, in the response to the claim, the contractor accepts liability to pay the amount claimed, the person given the notice of claim must pay the subcontractor the amount the person is required to retain. 
+[1.3 BIFSOPA level 1 (CDI)] If, in the response to the claim, the contractor accepts liability to pay an amount stated in the response but otherwise disputes the claim, the person given the notice of claim must pay the subcontractor the amount the person is required to retain, up to the amount stated in the response. 
+[1.3 BIFSOPA level 1 (CDI)] However, the person given the notice of claim is required to comply with subsection (2) or (3) only if, after payment is made under that subsection, the retained amount will be equal to or more than the unsatisfied amount. 
+[1.3 BIFSOPA level 1 (CDI)] A payment made by a person in compliance with this section discharges the person of all further liability relating to the amount paid and of the costs of any proceeding relating to the amount paid. 
+[1.3 BIFSOPA level 1 (CDI)] In this section— 
+[1.1 BIFSOPA Body Text] retained amount, in relation to a notice of claim given to a person, means the total of all amounts—
+[1.4 BIFSOPA level 2 (CDI)] still retained by the person under section 126(2) in relation to the claim; and
+[1.4 BIFSOPA level 2 (CDI)] paid into court by the person under section 126(4) in relation to the claim. 
+[1.1 BIFSOPA Body Text] unsatisfied amount, in relation to a notice of claim given to a person, means the total of all amounts of claims for which the notice of claim has been given, other than amounts that have been— 
+[1.4 BIFSOPA level 2 (CDI)] satisfied by payment under subsection (2) or (3); or 
+[1.4 BIFSOPA level 2 (CDI)] the subject of a notice of claim that has been withdrawn.

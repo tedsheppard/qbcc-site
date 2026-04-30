@@ -1,0 +1,16 @@
+# Annotated BIF Act source — Section 35
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: When payment dispute occurs
+# DOCX paragraphs: 608-620
+
+[2 Com-BIFSOPA Heading 1] SECTION 35 – When payment dispute occurs
+[1 BIFSOPA Heading] 35    When payment dispute occurs
+[1.3 BIFSOPA level 1 (CDI)] A payment dispute occurs if— 
+[1.4 BIFSOPA level 2 (CDI)] a subcontractor beneficiary gives the head contractor a payment claim for a progress payment under section 75; and
+[1.4 BIFSOPA level 2 (CDI)] the head contractor gives a payment schedule to the subcontractor beneficiary for the progress payment; and
+[1.4 BIFSOPA level 2 (CDI)] the head contractor does not prepare a payment instruction to pay the full amount proposed to be paid under the payment schedule. 
+[1.3 BIFSOPA level 1 (CDI)] A payment dispute also occurs if—
+[1.4 BIFSOPA level 2 (CDI)] a subcontractor beneficiary gives the head contractor a payment claim for a progress payment under section 75; and
+[1.4 BIFSOPA level 2 (CDI)] the head contractor fails to give a payment schedule to the subcontractor beneficiary for the progress payment as required to do so under section 76; and 
+[1.4 BIFSOPA level 2 (CDI)] under section 77, the head contractor becomes liable to pay the subcontractor beneficiary the amount claimed in the payment claim; and 
+[1.4 BIFSOPA level 2 (CDI)] the head contractor does not prepare a payment instruction to pay the full amount claimed in the payment claim.

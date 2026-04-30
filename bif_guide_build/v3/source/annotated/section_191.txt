@@ -1,0 +1,17 @@
+# Annotated BIF Act source — Section 191
+# Chapter: CHAPTER 6 – Legal proceedings
+# Section title: Enforcement action to comply with prescribed guidelines
+# DOCX paragraphs: 5299-5311
+
+[2 Com-BIFSOPA Heading 1] SECTION 191 – Enforcement action to comply with prescribed guidelines 
+[1 BIFSOPA Heading] 191    Enforcement action to comply with prescribed guidelines 
+[1.3 BIFSOPA level 1 (CDI)] An entity considering taking enforcement action must consider a guideline, about taking enforcement action, prescribed by regulation. 
+[1.3 BIFSOPA level 1 (CDI)] A failure to comply with subsection (1) does not invalidate or otherwise affect the enforcement action. 
+[1.3 BIFSOPA level 1 (CDI)] Nothing in subsection (1)— 
+[1.4 BIFSOPA level 2 (CDI)] affects the functions of Director of Public Prosecutions under the Director of Public Prosecutions Act 1984, section 10; or 
+[1.4 BIFSOPA level 2 (CDI)] affects the power of the Director of Public Prosecutions to act under the Director of Public Prosecutions Act 1984, section 11; or 
+[1.4 BIFSOPA level 2 (CDI)] prevents a person from complying with a guideline made by the Director of Public Prosecutions under the Director of Public Prosecutions Act 1984, section 11(1). 
+[1.3 BIFSOPA level 1 (CDI)] To the extent of any inconsistency between a guideline prescribed under subsection (1) and a guideline mentioned in subsection (3)(c), the latter guideline prevails.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] enforcement action means a proceeding for an offence against this Act or issuing an infringement notice for an offence against this Act. 
+[1.1 BIFSOPA Body Text] infringement notice see the State Penalties Enforcement Act 1999, schedule 2.

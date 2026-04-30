@@ -1,0 +1,25 @@
+# Source: BIF Act 2017 — Chapter 3
+# Section 97A — Definitions for part
+In this part—
+financier means—
+(a) a financial institution; or
+(b) a person who, in the ordinary course of the person’s
+business, supplies finance for construction contracts.
+head contractor means the contracted party for a contract that
+is not also a subcontract of another contract.
+higher party, for an adjudicated amount, means—
+(a) if the claimant for the amount is a subcontractor—the
+person from whom an amount is or becomes payable to
+the respondent under an arrangement with the
+respondent for related work or services; or
+(b) if the claimant for the amount is a head contractor—the
+person who is the financier for the related work or
+services.
+Page 125 Current as at 27 April 2025
+
+payment withholding request see section97B(2).
+related work or services, for an adjudicated amount, means—
+(a) the construction work to which the adjudicated amount
+relates; or
+(b) the supply of related goods and services to which the
+adjudicated amount relates.

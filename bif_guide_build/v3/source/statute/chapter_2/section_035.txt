@@ -1,0 +1,26 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 35 — All retention amounts withheld must be deposited in
+retention trust account
+(1) This section applies if, under section 32, a retention trust is
+required for a retention amount withheld from payment under
+a contract.
+(2) The contracting party must deposit the retention amount
+withheld under the contract in a retention trust account (the
+deposit obligation) as follows—
+
+(a) if the retention trust is required under
+section 32(1)—when the retention amount is withheld;
+(b) if the retention trust is required under section32(2) and
+there is an existing retention trust account into which the
+retention amount may be deposited—within 5 business
+days after the contract becomes a withholding contract;
+(c) if the retention trust is required under section32(2) and
+there is no existing retention trust account into which the
+retention amount may be deposited—when the retention
+trust account is opened.
+Maximum penalty—200 penalty units or 2 years
+imprisonment.
+(3) A term of a contract is of no effect to the extent it is
+inconsistent with the deposit obligation.
+(4) The retention amount to which the deposit obligation relates is
+inclusive of any GST related to the amount.

@@ -1,0 +1,9 @@
+# Annotated BIF Act source — Section 187
+# Chapter: CHAPTER 5 – Administration
+# Section title: False or misleading statements
+# DOCX paragraphs: 5278-5282
+
+[2 Com-BIFSOPA Heading 1] SECTION 187 – False or misleading statements 
+[1 BIFSOPA Heading] 187    False or misleading statements 
+[1.1 BIFSOPA Body Text] A person must not, for an application made under this part, state anything to the registrar the person knows is false or misleading in a material particular. 
+[1.1 BIFSOPA Body Text] Maximum penalty—100 penalty units

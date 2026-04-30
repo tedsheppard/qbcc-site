@@ -1,0 +1,30 @@
+# Annotated BIF Act source — Section 161
+# Chapter: CHAPTER 5 – Administration
+# Section title: Suitability of person to be registered
+# DOCX paragraphs: 5005-5030
+
+[2 Com-BIFSOPA Heading 1] SECTION 161 – Suitability of person to be registered
+[1 BIFSOPA Heading] 161    Suitability of person to be registered 
+[1.3 BIFSOPA level 1 (CDI)] A person is not eligible to be registered as an adjudicator unless the person holds—
+[1.4 BIFSOPA level 2 (CDI)] an adjudication qualification; or
+[1.4 BIFSOPA level 2 (CDI)] another qualification that the registrar considers to be equivalent to an adjudication qualification. 
+[1.3 BIFSOPA level 1 (CDI)] In deciding whether an applicant is a suitable person to be registered as an adjudicator, the registrar may have regard to the following matters— 
+[1.4 BIFSOPA level 2 (CDI)] whether the person—
+[1.5 BIFSOPA level 3 (CDI)] has a conviction for a relevant offence, other than a spent conviction; or
+[1.5 BIFSOPA level 3 (CDI)] held a registration under this part, or a licence or registration under a corresponding law, that was suspended or cancelled; or
+[1.5 BIFSOPA level 3 (CDI)] has been refused registration under this part or a licence or registration under a corresponding law; or
+[1.5 BIFSOPA level 3 (CDI)] is an insolvent under administration within the meaning of the Corporations Act, section 9; or 
+[1.5 BIFSOPA level 3 (CDI)] is competent to adjudicate matters under chapter 3; or 
+[1.4 BIFSOPA level 2 (CDI)] whether the person’s registration with a professional association was cancelled because of disciplinary action;
+[1.4 BIFSOPA level 2 (CDI)] the experience and qualifications of the person;
+[1.4 BIFSOPA level 2 (CDI)] the matters stated in the application for registration under section 159; 
+[1.4 BIFSOPA level 2 (CDI)] anything else relevant to the person’s ability to perform the person’s functions as an adjudicator.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] adjudication qualification means a qualification issued by a body prescribed by regulation to an individual stating that the individual has achieved an adjudication competency standard prescribed by regulation.
+[1.1 BIFSOPA Body Text] relevant offence means—
+[1.4 BIFSOPA level 2 (CDI)] an indictable offence, other than an indictable offence that is taken to be a simple offence under the Criminal Code, section 659; or 
+[1.4 BIFSOPA level 2 (CDI)] an offence against this Act; or 
+[1.4 BIFSOPA level 2 (CDI)] an offence against a corresponding law; or
+[1.4 BIFSOPA level 2 (CDI)] an offence against the Queensland Building and Construction Commission Act 1991 or a law of another State or the Commonwealth that provides for the same matter as that Act or a provision of that Act; or 
+[1.4 BIFSOPA level 2 (CDI)] an offence against the repealed Domestic Building Contracts Act 2000 or a law of another State or the Commonwealth that provides for the same matter as that Act or a provision of that Act; or 
+[1.4 BIFSOPA level 2 (CDI)] an offence, relating to the provision of services as an adjudicator, against a law applying, or that applied, in the State, the Commonwealth, another State or a foreign country.

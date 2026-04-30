@@ -1,0 +1,144 @@
+# Source: BIF Regulation 2018
+# Section 10F — Ledger accounts and reconciliation statements—Act,
+s 52
+(1) For section52(a) of the Act, the following records are
+prescribed for each project trust and retention trust—
+(a) ledger accounts kept in accordance with subsection(2);
+and
+(b) monthly reconciliation statements prepared in
+accordance with subsection(3) showing that the ledger
+accounts correctly record relevant transactions for the
+trust.
+(2) The ledger accounts for a project trust or retention trust must
+be kept as follows—
+(a) the ledger accounts for the trust must be kept separately
+from the ledger accounts for any other trust and from
+any other accounting record;
+(b) each relevant transaction for the trust must be recorded
+in the ledger accounts within 3 business days after the
+transaction occurs;
+(c) there must be separate ledger accounts for the
+following—
+(i) each beneficiary other than the trustee;
+Page 16 Current as at 1 July 2025
+
+(ii) the trustee;
+(iii) the trust account;
+(d) before an electronic system used to keep the ledger
+accounts is changed or records are archived or deleted
+from the system, steps must be taken to ensure that the
+records remain accessible in a readable form.
+(3) A monthly reconciliation statement—
+(a) must be prepared within 5 business days after the end of
+each month; and
+(b) must show a trial balance of the ledger accounts at the
+end of the month confirming that the total of debit
+balances equals the total of credit balances; and
+(c) must show that the balance in the trust account ledger
+account at the end of the month is the same as the
+balance shown in the financial institution statement for
+the trust account at the end of the month.
+(4) In this section—
+relevant transaction, for a project trust or retention trust—
+(a) means an activity or event that affects the financial
+position and value of interests in the trust; and
+(b) includes—
+(i) for a project trust—
+(A) a claimant giving a payment claim under
+section 75 of the Act; and
+(B) a respondent giving a claimant a payment
+schedule under section76 of the Act; and
+(C) any other activity or event that affects a
+claimant’s entitlement to a progress
+payment; and
+(ii) for a retention trust—
+(A) withholding an amount from payment to a
+beneficiary; and
+
+(B) an activity or event that affects the
+beneficiary’s entitlement to the amount
+withheld.
+10G Other trust records—Act, s 52
+For section52(a) of the Act, the following records are also
+prescribed for a project trust or retention trust—
+(a) each financial institution statement for the trust account
+relied on for a reconciliation;
+(b) each payment instruction directing payment from the
+trust account;
+(c) each notice received or given under the Act by the
+trustee;
+(d) for a project trust—
+(i) documents comprising or evidencing each of the
+following—
+(A) the project trust contract;
+(B) each project trust subcontract for the project
+trust contract;
+(C) each amendment of the project trust contract
+or a project trust subcontract for the project
+trust contract; and
+(ii) each payment claim for a payment under a contract
+mentioned in subparagraph(i); and
+(iii) each payment schedule responding to a payment
+claim mentioned in subparagraph(ii).
+
+10H Information for direction to trustee—Act, s 53B
+For section 53B(3) of the Act, the following information is
+prescribed—
+Page 18 Current as at 1 July 2025
+
+(a) that the direction is given under section53B of the Act;
+(b) the following details of the trust account to which the
+direction relates—
+(i) the name of the account;
+(ii) the name of the financial institution where the
+account is kept;
+(iii) the identifying number of the financial institution
+(BSB) where the account is kept;
+(iv) the account number for the account;
+(c) the period within which the direction must be complied
+with;
+(d) the reason for giving the direction.
+
+10I Agreements between commission and financial
+institutions—Act, s 55
+For section 55(3)(c) of the Act, the following information is
+prescribed—
+(a) arrangements for giving information to the
+commissioner about account details;
+(b) arrangements for giving information to the
+commissioner when a trust account has been opened,
+closed, transferred or had it’s name changed;
+(c) how information to which the agreement applies is to be
+given to the commissioner;
+(d) the frequency with which information to which the
+agreement applies must be given to the commissioner.
+
+10J Information for direction to financial institution—Act,
+s 55C
+For section 55C(2) of the Act, the following information is
+prescribed—
+(a) that the direction is given under section55C of the Act;
+(b) the following details of the trust account to which the
+direction relates—
+(i) the name of the account;
+(ii) the identifying number of the financial institution
+(BSB) where the account is kept;
+(iii) the account number for the account;
+(c) the period for which the direction applies.
+
+conduct for adjudicators
+11 Approval of registrar’s policies—Act, s 155
+For section155(2) of the Act—
+(a) version 1 of the document called ‘Adjudicator referral
+policy’ and published on the commission’s website is
+approved as a policy about administering chapter3 of
+the Act; and
+(b) version 1 of the document called ‘Continuing
+professional development for adjudicators policy’ and
+published on the commission’s website is approved as a
+policy about administering chapter5 of the Act.
+12 Approval of code of conduct—Act, s 181
+For section181(2) of the Act, version 1 of the document
+called ‘Code of conduct for adjudicators’ and published on the
+commission’s website is approved.
+Page 20 Current as at 1 July 2025

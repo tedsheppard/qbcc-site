@@ -1,0 +1,14 @@
+# Annotated BIF Act source — Section 12
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: References to particular terms in this chapter
+# DOCX paragraphs: 260-270
+
+[2 Com-BIFSOPA Heading 1] SECTION 12 – References to particular terms in this chapter
+[1 BIFSOPA Heading] 12    References to particular terms in this chapter
+[1.1 BIFSOPA Body Text] In this chapter— 
+[1.4 BIFSOPA level 2 (CDI)] (a)    a reference to a building contract in association with a reference to a project bank account is a reference to the building contract for which the project bank account is required; and
+[1.4 BIFSOPA level 2 (CDI)] (b)    a reference to a principal in association with a reference to a project bank account is a reference to the principal for the building contract for which the project bank account is required; and 
+[1.4 BIFSOPA level 2 (CDI)] (c)    a reference to a head contractor in association with a reference to a project bank account is a reference to the head contractor for the building contract for which the project bank account is required; and 
+[1.4 BIFSOPA level 2 (CDI)] (d)    a reference to a subcontract in association with a reference to a project bank account is a reference to a subcontract for the building contract for which the project bank account is required; and
+[1.4 BIFSOPA level 2 (CDI)] (e)    a reference to a subcontractor beneficiary in association with a reference to a project bank account is a reference to a subcontractor beneficiary for the project bank account; and
+[1.4 BIFSOPA level 2 (CDI)] (f)    a reference to a trust account in association with a reference to a project bank account is a reference to o a trust account opened for the project bank account.

@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 214
+# Chapter: CHAPTER 8B – Transitional provisions for Building and Other Legislation Amendment Act 2022
+# Section title: Existing obligations to report serious breaches
+# DOCX paragraphs: 5654-5663
+
+[2 Com-BIFSOPA Heading 1] SECTION 214 – Existing obligations to report serious breaches
+[1 BIFSOPA Heading] 214    Existing obligations to report serious breaches
+[1.3 BIFSOPA level 1 (CDI)] This section applies if—
+[1.4 BIFSOPA level 2 (CDI)] before the commencement, an auditor was required to notify the commissioner of a belief about a circumstance under former 57C; and
+[1.4 BIFSOPA level 2 (CDI)] immediately before the commencement, the auditor had not yet notified the commissioner.
+[1.3 BIFSOPA level 1 (CDI)] For the purposes of the notification, former section 57C continues to apply as if the amendment Act had not been enacted. 
+[1.3 BIFSOPA level 1 (CDI)] However, if the review of the trust account in relation to which the notification requirement arose had not been completed immediately before the commencement— 
+[1.4 BIFSOPA level 2 (CDI)] subsection (2) does not apply; and
+[1.4 BIFSOPA level 2 (CDI)] section 57C as in force after the commencement applies to the auditor in relation to the review
+[2a BIFSOPA Chapter Heading] CHAPTER 8C – Transitional provisions for Building Industry Fairness (Security of Payment) and Other Legislation Amendment Act 2024

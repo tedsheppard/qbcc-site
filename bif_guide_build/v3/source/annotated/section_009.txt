@@ -1,0 +1,25 @@
+# Annotated BIF Act source — Section 9
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: What is a project bank account
+# DOCX paragraphs: 210-231
+
+[2 Com-BIFSOPA Heading 1] SECTION 9 – What is a project bank account
+[1 BIFSOPA Heading] 9    What is a project bank account
+[1.3 BIFSOPA level 1 (CDI)] A project bank account is a trust over the following amounts— 
+[1.4 BIFSOPA level 2 (CDI)] an amount paid by the principal to the head contractor under a building contract;
+[1.4 BIFSOPA level 2 (CDI)] an amount a subcontractor is entitled to be paid by the head contractor in connection with a first-tier subcontract; 
+[1.4 BIFSOPA level 2 (CDI)] a retention amount withheld from a subcontractor under a first-tier subcontract; 
+[1.4 BIFSOPA level 2 (CDI)] an amount that is the subject of a payment dispute. 
+[1.3 BIFSOPA level 1 (CDI)] The head contractor is the trustee of the project bank account.
+[1.3 BIFSOPA level 1 (CDI)] The head contractor and each subcontractor are the beneficiaries of the project bank account and have a beneficial interest in the amounts held on trust under the project bank account to the extent of—
+[1.4 BIFSOPA level 2 (CDI)] for a subcontractor—an amount the subcontractor is entitled to be paid in connection with its subcontract, including a retention amount and an amount the subject of a payment dispute; or 
+[1.4 BIFSOPA level 2 (CDI)] for the head contractor—the remainder for the project bank account. 
+[1.3 BIFSOPA level 1 (CDI)] A subcontractor—
+[1.4 BIFSOPA level 2 (CDI)] becomes a beneficiary when its subcontract is entered into; and
+[1.4 BIFSOPA level 2 (CDI)] ceases to be a beneficiary when paid all amounts it is entitled to be paid in connection with its subcontract, including a retention amount and an amount the subject of a payment dispute. 
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] remainder, for a project bank account, means the amount held in trust under the project bank account after subtracting all of the following amounts—
+[1.4 BIFSOPA level 2 (CDI)] an amount a subcontractor is entitled to be paid by the head contractor in connection with a first-tier subcontract; 
+[1.4 BIFSOPA level 2 (CDI)] a retention amount withheld from a subcontractor under a first-tier subcontract;
+[1.4 BIFSOPA level 2 (CDI)] an amount that is the subject of a payment dispute.
+[1.1 BIFSOPA Body Text] subcontractor, for a building contract, means a subcontractor, other than a supplier, for a first-tier subcontract for the building contract.

@@ -1,0 +1,45 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 10A — Who is a related entity
+(1) A person is a related entity for another person if—
+(a) for individuals—they are members of the same family;
+or
+(b) for an individual and a corporation—the individual or a
+member of the individual’s family—
+
+(i) is a majority shareholder, director or secretary of
+the corporation or a related body corporate of the
+corporation; or
+(ii) has an interest of 50% or more in the corporation;
+or
+(c) for an individual and a trustee of a trust—the individual
+or a related entity under another provision of this section
+is a beneficiary of the trust; or
+(d) for corporations—they are related bodies corporate; or
+(e) for a corporation and a trustee of a trust—the
+corporation or a related entity under another provision
+of this section is a beneficiary of the trust; or
+(f) for trustees of 2 or more trusts—
+(i) a person is a beneficiary of both trusts; or
+(ii) a person is a beneficiary of 1 trust and a related
+entity under another provision of this section is a
+beneficiary of the other trust.
+(2) Also, a person is a related entity for another person if the
+persons acquire interests in a land holding trust and the
+acquisitions form, evidence, give effect to or arise from what
+is substantially 1 arrangement.
+(3) In this section—
+family, for a person, means—
+(a) the person’s spouse; or
+(b) a parent of the person or the person’s spouse; or
+(c) a grandparent of the person or the person’s spouse; or
+(d) a brother, sister, aunt, uncle, nephew or niece of the
+person or the person’s spouse; or
+(e) a child of the person or the person’s spouse; or
+(f) a grandchild of the person or the person’s spouse; or
+(g) the spouse of any person mentioned in paragraphs(b) to
+(f).
+Page 25 Current as at 27 April 2025
+
+land holding trust see the Duties Act 2001, schedule6.
+related bodies corporate means bodies corporate that are
+related under the Corporations Act, section50.

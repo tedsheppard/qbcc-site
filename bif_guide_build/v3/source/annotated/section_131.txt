@@ -1,0 +1,33 @@
+# Annotated BIF Act source — Section 131
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Use of security for benefits of subcontractor if contractor does not accept liability for all claims
+# DOCX paragraphs: 4688-4715
+
+[2 Com-BIFSOPA Heading 1] SECTION 131 – Use of security for benefits of subcontractor if contractor does not accept liability for all claims 
+[1 BIFSOPA Heading] 131    Use of security for benefits of subcontractor if contractor does not accept liability for all claims 
+[1.3 BIFSOPA level 1 (CDI)] This section applies if—
+[1.4 BIFSOPA level 2 (CDI)] a subcontractor gives a notice of claim to a person under section 122 because the person is obliged to pay money to a contractor under a contract; and 
+[1.4 BIFSOPA level 2 (CDI)] the subcontractor gives a copy of the notice of claim to the contractor under section 123; and
+[1.4 BIFSOPA level 2 (CDI)] in the contractor’s response to the claim under section 128, the contractor disputes the claim (does not accept liability to pay the amount claimed); and
+[1.4 BIFSOPA level 2 (CDI)] the unsatisfied amount for the contract is more than the retained amount for the contract. 
+[1.3 BIFSOPA level 1 (CDI)] The holder of a security for the contract must—
+[1.4 BIFSOPA level 2 (CDI)] retain the security until the court in which the subcontractor’s claim is heard makes an order under section 132 about enforcing the subcontractor’s charge over the security; or 
+[1.4 BIFSOPA level 2 (CDI)] instead of retaining the security— 
+[1.5 BIFSOPA level 3 (CDI)] if the security is held as an amount of money—pay the amount, up to the difference amount for the contract, into court; or
+[1.5 BIFSOPA level 3 (CDI)] if the security is not held as an amount of money but may be converted into an amount of money— convert the security, wholly or partly, into an amount of money and pay the amount, up to the difference amount for the contract, into court. 
+[1.3 BIFSOPA level 1 (CDI)] If the holder of the security does not comply with subsection (2), the holder is personally liable to pay the subcontractor the amount of the subcontractor’s claim to the extent that the security would have been capable under this chapter, if the holder had complied with the subsection, of satisfying the claim. 
+[1.3 BIFSOPA level 1 (CDI)] A payment of an amount under subsection (2)(b) discharges the holder of the security of all further liability for the amount paid and of the costs of any proceeding in relation to the amount paid.
+[1.3 BIFSOPA level 1 (CDI)] Subsections (2) and (3) do not stop the holder of the security from exercising an entitlement to use the security for securing the performance of the contract, including by keeping control of the security until the security would be required to be surrendered, wholly or partly, if this section did not apply. 
+[1.3 BIFSOPA level 1 (CDI)] A provision of the contract, or of another arrangement, about the security, including a provision of the security itself, and including a provision providing for the surrender, wholly or partly, of the security, is of no effect to the extent it purports— 
+[1.4 BIFSOPA level 2 (CDI)] to stop the holder of the security from complying with subsection (2); or 
+[1.4 BIFSOPA level 2 (CDI)] to operate to the detriment of a person if the holder complies with subsection (2). 
+[1.3 BIFSOPA level 1 (CDI)] An amount paid into court under subsection (2)(b) may be paid out only under an order of the court. 
+[1.3 BIFSOPA level 1 (CDI)] In this section— 
+[1.1 BIFSOPA Body Text] difference amount, for a contract, means the amount by which the unsatisfied amount for the contract is more than the retained amount for the contract. 
+[1.1 BIFSOPA Body Text] retained amount, for a contract, means the total of— 
+[1.4 BIFSOPA level 2 (CDI)] all amounts a person is retaining under section 126(2) for the contract; and
+[1.4 BIFSOPA level 2 (CDI)] all amounts a person has paid into court under section 126(4) for the contract; and
+[1.4 BIFSOPA level 2 (CDI)] all amounts the holder of a security for the contract has paid into court under subsection (2)(b) in relation to the security.
+[1.1 BIFSOPA Body Text] unsatisfied amount, for a contract, means the total of all amounts of claims of charge for the contract for which a notice of claim has been given, other than amounts that have been—
+[1.4 BIFSOPA level 2 (CDI)] satisfied by payment under section 129(2) or (3); or 
+[1.4 BIFSOPA level 2 (CDI)] the subject of a notice of claim that has been withdrawn. subsection (2)(b) in relation to the security.

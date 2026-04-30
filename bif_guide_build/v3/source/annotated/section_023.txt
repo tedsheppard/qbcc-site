@@ -1,0 +1,32 @@
+# Annotated BIF Act source — Section 23
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Head contractor must establish project bank account
+# DOCX paragraphs: 411-439
+
+[2 Com-BIFSOPA Heading 1] SECTION 23 – Head contractor must establish project bank account
+[1 BIFSOPA Heading] 23    Head contractor must establish project bank account
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must establish a project bank account by opening all of the following trust accounts at the office or a branch of a financial institution within the State—
+[1.4 BIFSOPA level 2 (CDI)] an account (general trust account) for amounts paid under the head contract, paid under a subcontract with a subcontractor beneficiary or authorised to be deposited under section 28(e);
+[1.4 BIFSOPA level 2 (CDI)] an account (retention trust account) for amounts held as a retention amount for a subcontract with a subcontractor beneficiary;
+[1.4 BIFSOPA level 2 (CDI)] an account (disputed funds trust account) for amounts the subject of a payment dispute. 
+[1.1 BIFSOPA Body Text] Maximum penalty—500 penalty units. 
+[1.3 BIFSOPA level 1 (CDI)] The building contract may provide for the date by which the project bank account must be established but only to the extent that the date is not— 
+[1.4 BIFSOPA level 2 (CDI)] less than 20 business days after the building contract is entered into; or 
+[1.4 BIFSOPA level 2 (CDI)] later than 20 business days after the head contractor enters into the first subcontract for the building contract. 
+[1.3 BIFSOPA level 1 (CDI)] The project bank account must be established by the date provided for its establishment under the building contract. 
+[1.3 BIFSOPA level 1 (CDI)] However, if the contract does not provide for a date for establishment of a project bank account, or provides for a date incompatible with subsection (2), the project bank account must be established within 20 business days after the head contractor enters into the first subcontract for the building contract. 
+[1.3 BIFSOPA level 1 (CDI)] Also, if a regulation prescribes a maximum period within which a project bank account must be established, the project bank account must be established within the prescribed period. 
+[1.3 BIFSOPA level 1 (CDI)] Despite subsections (1) to (5), subsection (7) applies if the head contractor has already entered into a subcontract for the building contract before the day (the start date) a project bank account is required for the contract. 
+[1.6 BIFSPOA example/note] Note—
+[1.7 BIFSOPA example/note body] Under section 15 a project bank account may be required for a building contract after an amendment of the contract.
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must establish the project bank account within 20 business days after the start date.
+[1.1 BIFSOPA Body Text] Maximum penalty—500 penalty units. 
+[1.3 BIFSOPA level 1 (CDI)] This section does not apply to a head contractor if the contractor can prove that there is less than 90 days between— 
+[1.4 BIFSOPA level 2 (CDI)] the day a project bank account would, apart from this subsection, have been required for the contract; and 
+[1.4 BIFSOPA level 2 (CDI)] the day practical completion for the building work carried out under the contract would occur. 
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] practical completion, for building work carried out under a building contract, means— 
+[1.4 BIFSOPA level 2 (CDI)] the day for practical completion as worked out under the contract; or
+[1.4 BIFSOPA level 2 (CDI)] if the contract does not provide for the day practical completion of the work is achieved—the day that work carried out under the contract would reasonably be estimated to be completed— 
+[1.5 BIFSOPA level 3 (CDI)] in compliance with the contract, including all plans and specifications for the work and all statutory requirements applying to the work; and
+[1.5 BIFSOPA level 3 (CDI)] without any defects or omissions, other than minor defects or minor omissions that will not unreasonably affect the intended use of the work.

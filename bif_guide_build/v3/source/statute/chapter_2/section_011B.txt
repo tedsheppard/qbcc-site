@@ -1,0 +1,15 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 11B — What are the beneficial interests in a project trust
+(1) The beneficiaries of a project trust for a contract have a
+beneficial interest in—
+(a) for a subcontractor for the contract (as beneficiary)—all
+amounts the subcontractor is entitled to be paid in
+connection with project trust subcontracts; or
+
+(b) for the contracted party for the contract (as
+beneficiary)—the remainder for the trust.
+(2) In this section—
+remainder, for a project trust, means the amount still held in
+trust after subtracting all amounts subcontractor beneficiaries
+are entitled to be paid in connection with project trust
+subcontracts.

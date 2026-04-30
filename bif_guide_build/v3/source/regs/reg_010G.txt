@@ -1,0 +1,23 @@
+# Source: BIF Regulation 2018
+# Section 10G — Other trust records—Act, s 52
+For section52(a) of the Act, the following records are also
+prescribed for a project trust or retention trust—
+(a) each financial institution statement for the trust account
+relied on for a reconciliation;
+(b) each payment instruction directing payment from the
+trust account;
+(c) each notice received or given under the Act by the
+trustee;
+(d) for a project trust—
+(i) documents comprising or evidencing each of the
+following—
+(A) the project trust contract;
+(B) each project trust subcontract for the project
+trust contract;
+(C) each amendment of the project trust contract
+or a project trust subcontract for the project
+trust contract; and
+(ii) each payment claim for a payment under a contract
+mentioned in subparagraph(i); and
+(iii) each payment schedule responding to a payment
+claim mentioned in subparagraph(ii).

@@ -1,0 +1,19 @@
+# Annotated BIF Act source — Section 34
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Dealing with retention amounts
+# DOCX paragraphs: 568-583
+
+[2 Com-BIFSOPA Heading 1] SECTION 34 – Dealing with retention amounts
+[1 BIFSOPA Heading] 34    Dealing with retention amounts
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must ensure that a retention amount for a subcontract with a subcontractor beneficiary is held in the retention trust account for the project bank account. 
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units or 2 years imprisonment.
+[1.3 BIFSOPA level 1 (CDI)] If a project bank account is not established until after a retention amount is withheld from a subcontractor beneficiary, subsection (1) applies to that part of the retention amount still withheld past 5 business days after the project bank account is established. 
+[1.6 BIFSPOA example/note] Note—
+[1.7 BIFSOPA example/note body] Under section 15 a project bank account may be required for a building contract only after an amendment of the contract. 
+[1.3 BIFSOPA level 1 (CDI)] If subsection (2) causes the head contractor to deposit a retention amount into the retention trust account, the head contractor must give written notice of the deposit to the subcontractor beneficiary from whom the amount was withheld.
+[1.1 BIFSOPA Body Text] Maximum penalty—100 penalty units. 
+[1.3 BIFSOPA level 1 (CDI)] The notice of the deposit must— 
+[1.4 BIFSOPA level 2 (CDI)] be given to the subcontractor beneficiary as soon as practicable after making the deposit; and 
+[1.4 BIFSOPA level 2 (CDI)] state the amount of the deposit and when the deposit was made. 
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must ensure a retention amount held in the retention trust account is identifiable as being held for the subcontractor beneficiary from whom it was withheld. 
+[1.1 BIFSOPA Body Text] Maximum penalty—100 penalty units.

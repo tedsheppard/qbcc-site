@@ -1,0 +1,18 @@
+# Annotated BIF Act source — Section 20
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Application of chapter if parties to a subcontract are related entities
+# DOCX paragraphs: 381-395
+
+[2 Com-BIFSOPA Heading 1] SECTION 20 – Application of chapter if parties to a subcontract are related entities
+[1 BIFSOPA Heading] 20    Application of chapter if parties to a subcontract are related entities
+[1.3 BIFSOPA level 1 (CDI)] This section applies if—
+[1.4 BIFSOPA level 2 (CDI)] a project bank account is required for a building contract; and 
+[1.4 BIFSOPA level 2 (CDI)] a subcontractor, for a first-tier subcontract, is a related entity for the head contractor.
+[1.3 BIFSOPA level 1 (CDI)] A project bank account is also required for the first-tier subcontract if the subcontractor further subcontracts all or part of the building work it is required to carry out under the subcontract.
+[1.3 BIFSOPA level 1 (CDI)] For the purpose of subsection (2), this chapter, other than this division, applies as if— 
+[1.4 BIFSOPA level 2 (CDI)] a reference to a principal is taken to be a reference to the head contractor; and 
+[1.4 BIFSOPA level 2 (CDI)] a reference to a head contractor is taken to be a reference to the subcontractor for a first-tier subcontract; and
+[1.4 BIFSOPA level 2 (CDI)] a reference to a subcontractor (the higher subcontractor) for a first-tier subcontract is taken to be a reference to a subcontractor for a second-tier subcontract to which the higher subcontractor is a party. 
+[1.3 BIFSOPA level 1 (CDI)] To remove any doubt, it is declared that the subcontractor continues to be a subcontractor beneficiary under the project bank account for the building contract.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] subcontractor does not include a supplier.

@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 133
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Particular subcontractor securities of no effect
+# DOCX paragraphs: 4731-4733
+
+[2 Com-BIFSOPA Heading 1] SECTION 133 – Particular subcontractor securities of no effect
+[1 BIFSOPA Heading] 133    Particular subcontractor securities of no effect 
+[1.1 BIFSOPA Body Text] To the extent that something is given by or for a subcontractor for securing, wholly or partly, the performance by a contractor of the contractor’s contract it is of no effect.

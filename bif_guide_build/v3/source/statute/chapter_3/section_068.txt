@@ -1,0 +1,19 @@
+# Source: BIF Act 2017 — Chapter 3
+# Section 68 — Meaning of payment claim
+(1) A payment claim, for a progress payment, is a written
+document that—
+(a) identifies the construction work or related goods and
+services to which the progress payment relates; and
+(b) states the amount (the claimed amount) of the progress
+payment that the claimant claims is payable by the
+respondent; and
+(c) requests payment of the claimed amount; and
+(d) includes the other information prescribed by regulation.
+(2) The amount claimed in the payment claim may include an
+amount that—
+(a) the respondent is liable to pay the claimant under
+section 98(3); or
+(b) is held under the construction contract by the respondent
+and that the claimant claims is due for release.
+(3) A written document bearing the word ‘invoice’ is taken to
+satisfy subsection(1)(c).

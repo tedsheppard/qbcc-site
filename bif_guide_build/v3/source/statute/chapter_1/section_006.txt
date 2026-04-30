@@ -1,0 +1,63 @@
+# Source: BIF Act 2017 — Chapter 1
+# Section 6 — Subcontracts, subcontractors and subcontracted work
+(1) A contract is a subcontract for another contract if—
+(a) performance of the contract contributes to the
+performance of the other contract because the work,
+required to be carried out under the contract, will form
+all or part of the work required to be carried out under
+the other contract; and
+(b) the contribution mentioned in paragraph(a) is not
+merely coincidence.
+Example for paragraph(b)—
+the purchase of tools from a retail store
+(2) To remove any doubt, it is declared that—
+(a) the contribution mentioned in subsection(1)(a) may be
+indirect because the contract contributes to the
+performance of 1 or more other subcontracts in order to
+contribute to the other contract; and
+Note—
+A subcontract that contributes directly to a contract would have
+1 entity that is both a party to the subcontract and a party to the
+contract.
+(b) a contract may be a subcontract for another contract
+regardless of whether any party to the contract is also a
+party to the other contract.
+(3) If the party to a contract, who is required to carry out work
+under the contract, subcontracts all or part of the work—
+(a) the resulting subcontract is a subcontract for the
+contract; and
+(b) the person required to carry out the work under the
+subcontract is a subcontractor for the contract; and
+(c) the work required to be carried out under the subcontract
+is the subcontracted work for the contract.
+(4) The categories of subcontracts are first tier subcontracts,
+second tier subcontracts, third tier subcontracts and so on.
+(5) A subcontract is a first tier subcontract for a contract if—
+
+(a) performance of the subcontract contributes directly to
+the performance of the contract; and
+(b) 1 person is both a party to the subcontract and a party to
+the contract.
+(6) A subcontract is a second tier subcontract for a contract if—
+(a) performance of the subcontract contributes to the
+performance of the contract only by also contributing to
+the performance of another subcontract for the contract;
+and
+(b) no party to the subcontract is also a party to the contract;
+and
+(c) 1 person is both a party to the subcontract and a party to
+the other subcontract.
+(7) A subcontract is a higher subcontract for another subcontract
+if—
+(a) performance of the other subcontract contributes to the
+performance of the subcontract because the work,
+required to be carried out under the other subcontract,
+will form all or part of the work required to be carried
+out under the subcontract; and
+(b) both subcontracts are subcontracts for the same contract.
+Example—
+A first tier subcontract would be a higher subcontract for a third tier
+subcontract if the work required to be carried out under the third tier
+subcontract will form all or part of the work required to be carried out
+under the first tier subcontract.
+Page 17 Current as at 27 April 2025

@@ -1,0 +1,239 @@
+# Source: Queensland Building and Construction Commission Act 1991
+# Section 42 (unlawful carrying out of building work — illegality affects PC validity under BIF Act)
+
+42 Unlawful carrying out of building work
+(1) Unless exempt under schedule1A, a person must not carry
+out, or undertake to carry out, building work unless the person
+holds a contractor’s licence of the appropriate class under this
+Act.
+Maximum penalty—
+(a) for a first offence—250 penalty units; or
+(b) for a second offence—300 penalty units; or
+(c) for a third or later offence, or if the building work
+carried out is tier 1 defective work—350 penalty units or
+1 year’s imprisonment.
+(2) An individual who contravenes subsection(1) and is liable to
+a maximum penalty of 350 penalty units or 1 year’s
+imprisonment, commits a crime.
+(3) Subject to subsection(4), a person who carries out building
+work in contravention of this section is not entitled to any
+monetary or other consideration for doing so.
+(4) A person is not stopped under subsection(3) from claiming
+reasonable remuneration for carrying out building work, but
+only if the amount claimed—
+(a) is not more than the amount paid by the person in
+supplying materials and labour for carrying out the
+building work; and
+(b) does not include allowance for any of the following—
+(i) the supply of the person’s own labour;
+Page 72 Current as at 1 February 2026
+
+(ii) the making of a profit by the person for carrying
+out the building work;
+(iii) costs incurred by the person in supplying materials
+and labour if, in the circumstances, the costs were
+not reasonably incurred; and
+(c) is not more than any amount agreed to, or purportedly
+agreed to, as the price for carrying out the building
+work; and
+(d) does not include any amount paid by the person that
+may fairly be characterised as being, in substance, an
+amount paid for the person’s own direct or indirect
+benefit.
+42A Temporary exemption from s 42 for up to 12 months for
+new classes of licence
+(1) This section applies if—
+(a) on or after 1 July 2000, a class of licence (the new class
+of licence) is established under this Act; and
+(b) immediately before the establishment of the new class
+of licence a person (the relevant person) was carrying
+on a business that included carrying out work (relevant
+work) within the scope of work for the new class of
+licence; and
+(c) either of the following applied immediately before the
+establishment of the new class of licence—
+(i) no relevant work was building work;
+(ii) some relevant work was building work, but its
+carrying out was incidental to the carrying out of
+all other relevant work.
+(2) Section42 does not apply to the relevant person for carrying
+out, or undertaking to carry out, relevant work for the first 6
+months after the new class of licence is established.
+(3) Also, if the relevant person applies for the new class of licence
+within the 6-month period mentioned in subsection(2),
+
+section 42 does not apply in relation to the person for carrying
+out, or undertaking to carry out, relevant work until the
+application is decided or withdrawn.
+(4) To remove any doubt, it is declared that while section 42 does
+not apply to the relevant person under subsection(2) or (3)—
+(a) the person is not prohibited from carrying out, or
+undertaking to carry out, relevant work under
+section 42(1); and
+(b) the person is not stopped from being entitled to
+monetary or other consideration for carrying out
+relevant work under section42(3).
+(5) If the application mentioned in subsection(3) is not decided
+or withdrawn within 12 months after the new class of licence
+is established, the application is taken to be refused at the end
+of the 12 months.
+42B Carrying out building work without a nominee
+(1) A licensee that is a company must not carry out, or undertake
+to carry out, building work unless the licensee has a nominee
+who holds a contractor’s licence or a nominee supervisor’s
+licence for the building work carried out, or undertaken to be
+carried out, under the company’s class of licence.
+Maximum penalty—
+(a) for a first offence—250 penalty units; or
+(b) for a second offence—300 penalty units; or
+(c) for a third or later offence, or if the building work
+carried out is tier 1 defective work—350 penalty units.
+(2) However, a licensee does not commit an offence against
+subsection(1) if the period the licensee has not had a nominee
+is less than 28 days.
+(3) An individual who contravenes subsection(1) and is liable to
+a maximum penalty of 350 penalty units, commits a crime.
+Page 74 Current as at 1 February 2026
+
+42C Unlawful carrying out of fire protection work
+(1) An individual must not personally carry out, or personally
+supervise, fire protection work unless the individual—
+(a) holds a fire protection occupational licence; or
+(b) holds a licence, registration or authorisation under this
+or another Act that allows the person to personally carry
+out or personally supervise the work.
+Maximum penalty—
+(a) for a first offence—250 penalty units; or
+(b) for a second offence—300 penalty units; or
+(c) for a third or later offence, or if the fire protection work
+carried out is tier 1 defective work—350 penalty units or
+1 year’s imprisonment.
+(2) Subsection (1) does not apply to an individual who personally
+carries out fire protection work if—
+(a) the fire protection work is a type prescribed under a
+regulation; and
+(b) the individual has the technical qualifications prescribed
+under a regulation for the type of fire protection work;
+and
+(c) the individual carries out the fire protection work for a
+licensed contractor who holds a licence of the relevant
+class for the work.
+(3) Also, subsection(1) does not apply to—
+(a) an apprentice who personally carries out fire protection
+work in a calling that requires the apprentice to carry out
+the work; or
+(b) a trainee who personally carries out fire protection work
+in a calling that requires the trainee to carry out the
+work; or
+(c) a student who personally carries out fire protection work
+as part of training under the supervision of teaching staff
+at—
+
+[s 42CA]
+(i) a university; or
+(ii) a college, school or similar institution conducted,
+approved or accredited by the State or the
+Commonwealth; or
+(d) a student who, for work experience, personally carries
+out fire protection work as part of a pre-vocational
+course.
+(3A) Further, subsection(1) does not apply to a person who,
+immediately before the establishment of a new class of
+licence, registration or authorisation mentioned in
+subsection(1), was carrying out work within the scope of
+work for the new class of licence, registration or authorisation
+in a circumstance prescribed by regulation.
+(4) An individual who contravenes subsection(1) and is liable to
+a maximum penalty of 350 penalty units or 1 year’s
+imprisonment, commits a crime.
+42CA Unlawful carrying out of mechanical services work
+(1) An individual must not personally carry out, or personally
+supervise, mechanical services work unless the individual—
+(a) holds a mechanical services occupational licence; or
+(b) holds a licence, registration or authorisation under this
+Act or another Act that allows the person to personally
+carry out or personally supervise the work.
+Maximum penalty—
+(a) for a first offence—250 penalty units; or
+(b) for a second offence—300 penalty units; or
+(c) for a third or later offence, or if the mechanical services
+work carried out is tier 1 defective work—350 penalty
+units or 1 year’s imprisonment.
+(2) Subsection (1) does not apply to an individual who personally
+carries out mechanical services work if the mechanical
+services work is a type prescribed by regulation.
+Page 76 Current as at 1 February 2026
+
+(3) Also, subsection(1) does not apply to—
+(a) an apprentice who personally carries out mechanical
+services work in a calling that requires the apprentice to
+carry out the work; or
+(b) a trainee who personally carries out mechanical services
+work in a calling that requires the trainee to carry out the
+work; or
+(c) a student who personally carries out mechanical
+services work as part of training under the supervision
+of teaching staff at—
+(i) a university; or
+(ii) a college, school or similar institution conducted,
+approved or accredited by the State or the
+Commonwealth; or
+(d) a student who, for work experience, personally carries
+out mechanical services work as part of a pre-vocational
+course.
+(3A) Further, subsection(1) does not apply to a person who,
+immediately before the establishment of a new class of
+licence, registration or authorisation mentioned in
+subsection(1), was carrying out work within the scope of
+work for the new class of licence, registration or authorisation
+in a circumstance prescribed by regulation.
+(4) An individual who contravenes subsection(1) and is liable to
+a maximum penalty of 350 penalty units or 1 year’s
+imprisonment commits a crime.
+42D Licensed contractor must not engage or direct
+unauthorised person for fire protection work
+(1) A licensed contractor must not engage or direct an employee
+to carry out fire protection work unless the employee is
+authorised to carry out the work under this or another Act.
+Maximum penalty—
+(a) for a first offence—250 penalty units; or
+
+[s 42DA]
+(b) for a second offence—300 penalty units; or
+(c) for a third or later offence, or if the fire protection work
+carried out is tier 1 defective work—350 penalty units or
+1 year’s imprisonment.
+(2) An individual who contravenes subsection(1) and is liable to
+a maximum penalty of 350 penalty units or 1 year’s
+imprisonment, commits a crime.
+Note—
+This provision is an executive liability provision—see section111B.
+42DA Licensed contractor must not engage or direct
+unauthorised person for mechanical services work
+(1) A licensed contractor must not engage or direct an employee
+to carry out mechanical services work unless the employee is
+authorised to carry out the work under this Act or another Act.
+Maximum penalty—
+(a) for a first offence—250 penalty units; or
+(b) for a second offence—300 penalty units; or
+(c) for a third or later offence, or if the mechanical services
+work carried out is tier 1 defective work—350 penalty
+units or 1 year’s imprisonment.
+(2) An individual who contravenes subsection(1) and is liable to
+a maximum penalty of 350 penalty units or 1 year’s
+imprisonment commits a crime.
+Note—
+This provision is an executive liability provision—see section111B.
+42E Avoidance of contractual obligations causing significant
+financial loss
+(1) This section applies to a person who is a party to a building
+contract.
+(2) The person must not, without reasonable excuse, cause
+another party to the building contract to suffer a significant
+Page 78 Current as at 1 February 2026
+
+financial loss because of the person’s deliberate
+non-compliance with the contract.
+Maximum penalty—350 penalty units.
+Note—
+See also the Justices Act 1886, section76.

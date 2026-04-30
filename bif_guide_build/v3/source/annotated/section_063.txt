@@ -1,0 +1,16 @@
+# Annotated BIF Act source — Section 63
+# Chapter: CHAPTER 3 – Progress payments
+# Section title: Act does not limit claimant’s other rights
+# DOCX paragraphs: 1081-1093
+
+[2 Com-BIFSOPA Heading 1] SECTION 63 – Act does not limit claimant’s other rights
+[2.1 Com-BIFSOPA Heading 2] A    Legislation
+[1 BIFSOPA Heading] 63    Act does not limit claimant other rights
+[1.1 BIFSOPA Body Text] A claimant’s entitlements and remedies under this chapter do not limit— 
+[1.4 BIFSOPA level 2 (CDI)] another entitlement a claimant may have under a construction contract; or 
+[1.4 BIFSOPA level 2 (CDI)] any remedy a claimant may have for recovering the other entitlement
+[2.1 Com-BIFSOPA Heading 2] B    Commentary
+[2.2 Com-BIFSOPA Heading 3] 63.1    Other rights preserved
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Jemzone Pty Ltd v Trytan Pty Ltd [2002] NSWSC 395, Austin J observed that the structure (of the NSW Act):
+[2.5 Com-BIFSOPA Normal Body Quote] generally leaves it to the construction contract to define the rights of the parties but makes “default provisions” to fill in the contractual gaps.
+[2.4 Com-BIFSOPA CDI Normal Body Text] Refer to the commentary under 101.2 in relation to the interaction between the contractual and statutory rights.

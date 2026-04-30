@@ -1,0 +1,41 @@
+# Annotated BIF Act source — Section 73
+# Chapter: CHAPTER 3 – Progress payments
+# Section title: Due date for payment
+# DOCX paragraphs: 1958-1994
+
+[2 Com-BIFSOPA Heading 1] SECTION 73 – Due date for payment
+[2.1 Com-BIFSOPA Heading 2] A    Legislation
+[1 BIFSOPA Heading] 73    Due date for payment
+[1.3 BIFSOPA level 1 (CDI)] A progress payment under a construction contract becomes payable—
+[1.4 BIFSOPA level 2 (CDI)] if the contract provides for the matter—on the day on which the payment becomes payable under the contract; or
+[1.1 BIFSOPA Body Text] Notes— 
+[Style1] A ‘pay when paid’ provision in a construction contract has no effect, see section 74.
+[Style1] A provision in a construction management trade contract or subcontract providing for payment of a progress payment later than 25 business days is void, see the Queensland Building and Construction Commission Act 1991, section 67U. 
+[Style1] A provision in a commercial building contract providing for payment of a progress payment later than 15 business days is void, see the Queensland Building and Construction Commission Act 1991, section 67W.
+[1.4 BIFSOPA level 2 (CDI)] if the contract does not provide for the matter—on the day that is 10 business days after the day a payment claim for the progress payment is made under part 3.
+[1.3 BIFSOPA level 1 (CDI)] Interest for a construction contract is payable on the unpaid amount of a progress payment that has become payable at the greater of the following rates— 
+[1.4 BIFSOPA level 2 (CDI)] the rate stated in the contract;
+[1.4 BIFSOPA level 2 (CDI)] the rate prescribed under the Civil Proceedings Act 2011, section 59(3) for a money order debt.
+[1.3 BIFSOPA level 1 (CDI)] However, for a construction contract to which the Queensland Building and Construction Commission Act 1991, section 67P applies because it is a building contract, interest is payable at the penalty rate under that section.
+[1.3 BIFSOPA level 1 (CDI)] Each of the following construction contracts are taken to be a contract to which subsection (1)(b) applies—
+[1.4 BIFSOPA level 2 (CDI)] a construction contract that includes a ‘pay when paid’ provision; 
+[1.4 BIFSOPA level 2 (CDI)] a construction management trade contract or subcontract mentioned in the Queensland Building and Construction Commission Act 1991, section 67U;
+[1.4 BIFSOPA level 2 (CDI)] a commercial building contract mentioned in the Queensland Building and Construction Commission Act 1991, section 67W. 
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] ‘pay when paid’ provision, of a construction contract, see section 74.
+[2.1 Com-BIFSOPA Heading 2] B    Commentary
+[2.2 Com-BIFSOPA Heading 3] 73.1    Changes introduced to section 73
+[2.4 Com-BIFSOPA CDI Normal Body Text] The introduction of section 73 has restructured section 15 of BCIPA which previously stipulated the due date for the payment of a progress payment.
+[2.4 Com-BIFSOPA CDI Normal Body Text] Section 73(1)(a) mirrors section 15(1)(a) and specifies that a progress payment will become payable on the day in which the payment becomes payable under the contract. However:
+[2.6 Com-BIFSOPA bullet] Note 1 voids a ‘pay when paid’ provision as defined in section 74. 
+[2.6 Com-BIFSOPA bullet] Note 2 makes void a provision which provides for payment later than 25 business days under a construction management trade contract or subcontract (consistent with section 67U of the Queensland Building and Construction Commission Act 1991)
+[2.6 Com-BIFSOPA bullet] Note 3 makes void a provision which provides for payment later than 15 business days for a commercial building contract under 67W of the Queensland Building and Construction Commission Act 1991.
+[2.4 Com-BIFSOPA CDI Normal Body Text] If the contract does not provide for the due date for payment, section 73(1)(b) operates to deem the due date for payment to be 10 business days after a payment claim for a progress payment is made. Where a provision listed under Notes 1-3 is rendered void, Section 73(4) deems the due date consistent with section 73(1)(b).
+[2.4 Com-BIFSOPA CDI Normal Body Text] The following commentary remains applicable.
+[2.2 Com-BIFSOPA Heading 3] 73.2    Due date for payment
+[2.4 Com-BIFSOPA CDI Normal Body Text] See Isis Projects Pty Ltd v Clarence Street Ltd [2004] NSWSC 222, where Einstein J held that a claimant must prove that a respondent’s liability has accrued in terms of a ‘valid payment claim’ and prove what is the due date for the progress payment (at [33]). His Honour rejected a construction of the due date as the ‘claimed’ due date.
+[2.4 Com-BIFSOPA CDI Normal Body Text] The appeal from this decision was dismissed: See Clarence Street Pty Ltd v Isis Projects Pty Ltd [2005] NSWCA 391.
+[2.2 Com-BIFSOPA Heading 3] 73.3    Interest payable
+[2.4 Com-BIFSOPA CDI Normal Body Text] In McCarthy v State of Queensland [2013] QCA 313, Muir JA said of BCIPA that:
+[2.5 Com-BIFSOPA Normal Body Quote] Sections 17 to 20 inclusive do not contemplate the recovery of interest on the amount claimed in a payment claim, unless that interest is part of the progress payment in respect of which a payment claim is made.
+[QBS Body Text] In Duff Kennedy Pty Ltd v Galileo Miranda Nominee Pty Ltd [2020] NSWCA 25, the New South Wales Court of Appeal affirmed that the definition of “scheduled amount” does not include interest payable under section 11 of the NSW Act (equivalent to section 73 of the Act) on the unpaid amount of a progress payment unless that amount is included in a “scheduled amount”. In that case, the respondent failed to pay a sum by the deadline, and interest accrued for which the appellant asserted became payable under section 11 of the NSW Act. The respondent purported to exercise its right to suspend works due to the default in payment, and after the works failed to commence, the respondent issued a show cause notice. In upholding the decision of Parker J at trial and dismissing the appeal, White and Brereton JJA and Barrett AJA held that the appellant was in breach by unjustifiably suspending the works since the interest did not fall within the definition of “scheduled amount”.

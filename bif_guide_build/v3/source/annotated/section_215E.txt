@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 215E
+# Chapter: CHAPTER 8D – Validation provisions for Residential Tenancies and Rooming Accommodation and Other Legislation Amendment Act 2024
+# Section title: Validation of adjudication decision made before commencement—registry summary given to respondent
+# DOCX paragraphs: 5708-5718
+
+[2 Com-BIFSOPA Heading 1] SECTION 215E – Validation of adjudication decision made before commencement—registry summary given to respondent
+[1 BIFSOPA Heading] 215E    Validation of adjudication decision made before commencement—registry summary given to respondent
+[1.3 BIFSOPA level 1 (CDI)] This section applies if, before the commencement—
+[1.4 BIFSOPA level 2 (CDI)] an adjudicator purportedly made a decision under section 88 (the relevant decision) on an adjudication application; and 
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator did not have jurisdiction to make the relevant decision only because the claimant did not give a copy of the adjudication application to the respondent as required under former section 79(3); and
+[1.4 BIFSOPA level 2 (CDI)] the claimant gave a registry summary of the adjudication application to the respondent.
+[1.3 BIFSOPA level 1 (CDI)] Despite the absence of jurisdiction mentioned in subsection (1)(b)— 
+[1.4 BIFSOPA level 2 (CDI)] the relevant decision is as valid as it would have been if the claimant had complied with former section 79(3) and the adjudicator had jurisdiction to make the decision; and 
+[1.4 BIFSOPA level 2 (CDI)] anything done or purportedly done as a result of, or in reliance on, the relevant decision is taken to be, and always to have been, as valid and lawful as it would have been if, at the time the thing was done, the adjudicator had jurisdiction to make the relevant decision as mentioned in paragraph (a).
+[1.3 BIFSOPA level 1 (CDI)] This section applies even if a proceeding relating to the adjudication application has been commenced in a court.

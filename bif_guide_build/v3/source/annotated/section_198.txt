@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 198
+# Chapter: CHAPTER 7 – Miscellaneous
+# Section title: Approved forms
+# DOCX paragraphs: 5345-5350
+
+[2 Com-BIFSOPA Heading 1] SECTION 198 – Approved forms
+[1 BIFSOPA Heading] 198    Approved forms 
+[1.3 BIFSOPA level 1 (CDI)] The chief executive or commissioner may approve forms for use under this Act. 
+[1.3 BIFSOPA level 1 (CDI)] Information in an approved form must, if the approved form requires, be verified by a statutory declaration.
+[1.3 BIFSOPA level 1 (CDI)] An approved form has no effect if information in the form must be verified by a statutory declaration and it is not.

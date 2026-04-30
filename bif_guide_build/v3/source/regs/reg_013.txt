@@ -1,0 +1,50 @@
+# Source: BIF Regulation 2018
+# Section 13 — Conflicts of interest—Act, s 80
+(1) For section 80(b) of the Act, an adjudicator has a conflict of
+interest if—
+(a) the adjudicator or a family member of the adjudicator—
+(i) is, or is contracted to be, employed or otherwise
+engaged by the claimant or respondent for the
+adjudication application; or
+(ii) is an owner of a building, structure or land in
+relation to which construction work or the supply
+of related goods and services to which the
+adjudication application relates is being carried
+out; or
+(iii) is carrying out construction work or the supply of
+related goods and services in relation to a building,
+structure or land to which the adjudication
+application relates; or
+(iv) has a direct or indirect pecuniary or other interest
+in a matter to be considered during the adjudication
+that could conflict with the proper performance of
+the adjudicator in adjudicating the adjudication
+application; or
+(b) the claimant or respondent for the adjudication
+application is a family member of the adjudicator.
+(2) For subsection(1), a person is a family member of the
+adjudicator if the person is—
+(a) the adjudicator’s spouse; or
+(b) a grandparent, parent, uncle, aunt, brother, sister, cousin,
+child, nephew, niece or grandchild of—
+(i) the adjudicator; or
+(ii) the adjudicator’s spouse; or
+(c) a spouse of a person mentioned in paragraph(b).
+
+(3) In this section—
+freehold land see the Land Act 1994, schedule 6.
+owner—
+(a) of a building or structure, means the owner of the
+building or structure under the Building Act 1975; or
+(b) of land, means the following—
+(i) if the land is freehold land—the registered owner
+of the land;
+(ii) if the land is the subject of a lease registered under
+the Land Title Act 1994—the lessee of the land;
+(iii) if the land is the subject of a lease registered under
+the Land Act 1994—the lessee of the land;
+(iv) if the land is a reserve—the trustee of the reserve;
+(v) if a person has occupation rights in relation to the
+land under a licence or permit—the licensee or
+permittee.
+reserve see the Land Act 1994, schedule 6.

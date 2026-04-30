@@ -1,0 +1,23 @@
+# Annotated BIF Act source — Section 114
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Assignments etc. of no effect against subcontractor’s charge
+# DOCX paragraphs: 4414-4433
+
+[2 Com-BIFSOPA Heading 1] SECTION 114 – Assignments etc. of no effect against subcontractor’s charge
+[2.1 Com-BIFSOPA Heading 2] A    Legislation
+[1 BIFSOPA Heading] 114    Assignments etc. of no effect against subcontractor’s charge 
+[1.3 BIFSOPA level 1 (CDI)] An assignment, disposition or charge of any kind that is made or given by a contractor for money that is or is to become payable to the contractor under the contract has no effect against a subcontractor’s charge. 
+[1.3 BIFSOPA level 1 (CDI)] However, subsection (1) does not apply to an assignment, disposition or charge made or given by the contractor to the contractor’s employees for wages payable to them in relation to the contract. 
+[1.3 BIFSOPA level 1 (CDI)] Subject to this chapter, money that is, or is to become, payable to the contractor can not be attached or passed or charged by operation of law so as to defeat or impair a subcontractor’s charge.
+[1.3 BIFSOPA level 1 (CDI)] Subsections (1) to (3) apply in relation to another subcontractor for a higher subcontract as if—
+[1.4 BIFSOPA level 2 (CDI)] a reference in the subsections to a contractor were a reference to the other subcontractor; and
+[1.4 BIFSOPA level 2 (CDI)] a reference in the subsections to the contract were a reference to the higher subcontract. 
+[2.1 Com-BIFSOPA Heading 2] B    Commentary
+[2.2 Com-BIFSOPA Heading 3] 114.1    The meaning of assignment
+[2.4 Com-BIFSOPA CDI Normal Body Text] An assignment is “the immediate transfer of an existing proprietary right, vested or contingent, from the assignor to the assignee”: Norman v Federal Commissioner of Taxation (Cth) (1963) 109 CLR 9, per Windeyer J at p 26. Semble, being expressed without limitation, the term seems to contemplate an assignment at law or in equity. See Federal Commissioner of Taxtation (Cth) v Everett (1979) 143 CLR 440.
+[2.2 Com-BIFSOPA Heading 3] 114.2    The meaning of disposition
+[2.4 Com-BIFSOPA CDI Normal Body Text] This term connotes a wide concept, extending to any form of assurance, disclaimer or release of property. See PT Ltd v Maradona Pty Ltd (No 2) (1992) 27 NSWLR 241, per Giles J at p 249.
+[2.2 Com-BIFSOPA Heading 3] 114.3    The meaning of charge
+[2.4 Com-BIFSOPA CDI Normal Body Text] For the meaning of this term see Sandford v DV Building & Constructions Co Pty Ltd [1963] VR 137.
+[2.2 Com-BIFSOPA Heading 3] 114.4    The meaning of wages
+[2.4 Com-BIFSOPA CDI Normal Body Text] See Value Engineering Australasia Pty Ltd v Commissioner of State Taxation (WA) (1984) 16 ATR 1; 84 ATC 4701.

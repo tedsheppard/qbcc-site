@@ -1,0 +1,23 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 12 — When project trust required for a contract
+(1) This section applies to a contract entered into on or after the
+commencement of this section.
+(2) A project trust is required for a contract if—
+(a) the contract is eligible for a project trust under
+subdivision2; and
+(b) the contract is not exempted under subdivision3; and
+(c) the contracted party enters into a subcontract for all or
+part of the contracted work.
+(3) The requirement starts on the first day a project trust is
+required under subsection(2).
+(4) The requirement continues until the project trust is dissolved
+under section21, regardless of any of the following
+changes—
+(a) a variation, or any other amendment, of the contract;
+(b) a change in the contract price;
+(c) a change in the contracted work.
+Page 29 Current as at 27 April 2025
+
+(5) If a project trust is required for a contract and a project trust is
+also required for a subcontract of the contract, separate project
+trusts are required for the contract and the subcontract.

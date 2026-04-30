@@ -1,0 +1,17 @@
+# Source: BIF Act 2017 — Chapter 4
+# Section 113 — All money paid in reduction of contract price generally
+subject to subcontractor’s charge
+(1) For a subcontractor’s charge, the amount of money payable to
+the contractor under the contract is taken to include all money
+paid in reduction of the contract price to any person other than
+the subcontractor claiming the charge, unless that money is
+paid—
+(a) in good faith and not for the purpose of defeating or
+impairing a subcontractor’s charge; and
+(b) without contravening section126.
+(2) Subsection (1) applies in relation to money payable to another
+subcontractor for a higher subcontract as if—
+(a) a reference in the subsection to a contractor were a
+reference to the other subcontractor; and
+(b) a reference in the subsection to the contract were a
+reference to the higher subcontract.

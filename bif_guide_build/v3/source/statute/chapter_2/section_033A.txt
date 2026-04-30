@@ -1,0 +1,23 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 33A — Charge over retention amounts held in retention trust
+(1) This section applies if, under section 32, a retention trust is
+required for a retention amount withheld from payment under
+a contract.
+(2) In addition to the retention trust, the retention amount is also
+subject to a charge in favour of the contracted party for
+securing the release of the amount when the party becomes
+entitled to the amount.
+(3) However, if and when the contracting party becomes entitled
+to be paid part of the retention amount under the contract, the
+charge is released over that part of the retention amount.
+(4) The contracted party may enforce the charge as if the charge
+had been given to it under a written agreement between it and
+the contracting party.
+Page 55 Current as at 27 April 2025
+
+(5) An act done to defeat, or purporting to operate so as to defeat,
+the charge is of no effect against the contracted party.
+(6) The charge is declared to be a statutory interest to which the
+Personal Property Securities Act 2009 (Cwlth), section 73(2)
+applies.
+(7) The charge is inclusive of any GST related to the amount.

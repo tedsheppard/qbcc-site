@@ -1,0 +1,30 @@
+# Source: BIF Act 2017 — Chapter 3
+# Section 97C — Obligation of higher party to retain amount payable to
+respondent
+(1) This section applies if a claimant gives a payment withholding
+request to a higher party for an adjudicated amount.
+(2) The higher party must retain, out of the related amount
+payable to the respondent, either the adjudicated amount or
+the related amount payable to the respondent, whichever is
+less.
+Example—
+If the adjudicated amount is $55,000 but the amount payable to the
+respondent is only $40,000, the higher party’s obligation is to retain
+$40,000.
+If the adjudicated amount is $55,000 and the amount payable to the
+respondent is $120,000, the higher party’s obligation is to retain
+$55,000.
+Maximum penalty—50 penalty units.
+(3) The obligation under subsection(2) remains in force only
+until the claimant is paid the adjudicated amount.
+(4) A part payment of the adjudicated amount removes the
+obligation under subsection(2) to the extent of the part
+payment.
+Page 127 Current as at 27 April 2025
+
+(5) If the claimant is paid the adjudicated amount, the claimant
+must inform the higher party of the payment within 5 business
+days after the amount is paid.
+Maximum penalty—50 penalty units.
+(6) In this section—
+related amount payable to the respondent see section97B(3).

@@ -1,0 +1,12 @@
+# Source: BIF Act 2017 — Chapter 4
+# Section 112 — Damages etc. not covered by subcontractor’s charge
+A subcontractor’s charge can not include the following—
+(a) damages for breach of contract or in tort;
+
+(b) an amount payable on the basis of an extra-contractual
+remedy, including, for example, as reasonable
+compensation for work done;
+(c) damages or other relief under another chapter or another
+Act;
+(d) damages or other relief under an Act of another State or
+the Commonwealth.

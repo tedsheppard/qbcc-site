@@ -1,0 +1,14 @@
+# Annotated BIF Act source — Section 186
+# Chapter: CHAPTER 5 – Administration
+# Section title: Protection from liability for adjudicators
+# DOCX paragraphs: 5267-5277
+
+[2 Com-BIFSOPA Heading 1] SECTION 186 – Protection from liability for adjudicators
+[2.1 Com-BIFSOPA Heading 2] A    Legislation
+[1 BIFSOPA Heading] 186    Protection from liability for adjudicators
+[1.1 BIFSOPA Body Text] An adjudicator is not personally liable for anything done or omitted to be done in good faith—
+[1.4 BIFSOPA level 2 (CDI)] in performing the adjudicator’s functions under this chapter; or
+[1.4 BIFSOPA level 2 (CDI)] in the reasonable belief that the thing was done or omitted to be done in the performance of the adjudicator’s functions under this chapter.
+[2.1 Com-BIFSOPA Heading 2] B    Commentary
+[2.2 Com-BIFSOPA Heading 3] 186.1    Not a privative clause
+[2.4 Com-BIFSOPA CDI Normal Body Text] It has been held that the equivalent section 30 the NSW Act is not privative in nature: Musico v Davenport [2003] NSWSC 977, [36] (McDougall J); Abacus Funds Management Ltd v Davenport [2003] NSWSC 935, [21] (Gzell J); Multiplex Constructions Pty Ltd v Lukiens & Anor [2003] NSWSC 1140, [32] (Palmer J).

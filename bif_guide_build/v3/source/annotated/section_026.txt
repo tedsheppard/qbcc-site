@@ -1,0 +1,20 @@
+# Annotated BIF Act source — Section 26
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Notice of trust account’s opening, closing or name change
+# DOCX paragraphs: 462-478
+
+[2 Com-BIFSOPA Heading 1] SECTION 26 – Notice of trust account’s opening, closing or name change
+[1 BIFSOPA Heading] 26    Notice of trust account’s opening, closing or name change
+[1.3 BIFSOPA level 1 (CDI)] This section applies if the head contractor takes any of the following actions in relation to the project bank account— 
+[1.4 BIFSOPA level 2 (CDI)] opens a trust account; 
+[1.4 BIFSOPA level 2 (CDI)] changes the name of a trust account;
+[1.4 BIFSOPA level 2 (CDI)] closes a trust account.
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must give the principal notice, in the approved form, of taking the action within 5 business days after taking it.
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units.
+[1.3 BIFSOPA level 1 (CDI)] The approved form must require the following information— 
+[1.4 BIFSOPA level 2 (CDI)] the name of the trust account; 
+[1.4 BIFSOPA level 2 (CDI)] the name of the financial institution where the trust account is or was kept; 
+[1.4 BIFSOPA level 2 (CDI)] the identifying number of the financial institution;
+[1.6 BIFSPOA example/note] Note—
+[1.7 BIFSOPA example/note body] The identifying number is commonly referred to as the bank state branch number (BSB).
+[1.4 BIFSOPA level 2 (CDI)] the trust account number.

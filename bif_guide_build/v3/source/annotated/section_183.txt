@@ -1,0 +1,11 @@
+# Annotated BIF Act source — Section 183
+# Chapter: CHAPTER 5 – Administration
+# Section title: Surrender of registration
+# DOCX paragraphs: 5237-5243
+
+[2 Com-BIFSOPA Heading 1] SECTION 183 – Surrender of registration  
+[1 BIFSOPA Heading] 183    Surrender of registration
+[1.3 BIFSOPA level 1 (CDI)] An adjudicator may surrender the adjudicator’s registration by giving the registrar written notice of the surrender.
+[1.3 BIFSOPA level 1 (CDI)] The surrender takes effect on the later of the following— 
+[1.4 BIFSOPA level 2 (CDI)] the day the notice is given; 
+[1.4 BIFSOPA level 2 (CDI)] the day specified in the notice.

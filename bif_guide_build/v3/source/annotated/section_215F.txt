@@ -1,0 +1,17 @@
+# Annotated BIF Act source — Section 215F
+# Chapter: CHAPTER 8D – Validation provisions for Residential Tenancies and Rooming Accommodation and Other Legislation Amendment Act 2024
+# Section title: Declaration of court made before commencement that adjudication void is of no effect
+# DOCX paragraphs: 5719-5731
+
+[2 Com-BIFSOPA Heading 1] SECTION 215F – Declaration of court made before commencement that adjudication void is of no effect
+[1 BIFSOPA Heading] 215F    Declaration of court made before commencement that adjudication void is of no effect
+[1.3 BIFSOPA level 1 (CDI)] This section applies if, before the commencement, a court in a proceeding— 
+[1.4 BIFSOPA level 2 (CDI)] declared that a decision made under section 88 on an adjudication application was void only because the adjudicator did not have jurisdiction to make the decision because the claimant did not give a copy of the adjudication application to the respondent as required under former section 79(3); and 
+[1.4 BIFSOPA level 2 (CDI)] found that the claimant gave a registry summary of the adjudication application to the respondent.
+[1.3 BIFSOPA level 1 (CDI)] The declaration of the court is of no effect.
+[1.3 BIFSOPA level 1 (CDI)] Despite the declaration of the court—
+[1.4 BIFSOPA level 2 (CDI)] the decision made under section 88 is as valid as it would have been if the claimant had complied with former section 79(3) and the adjudicator had jurisdiction to make the decision; and
+[1.4 BIFSOPA level 2 (CDI)] anything done or purportedly done as a result of, or in reliance on, the decision made under section 88 is taken to be, and always to have been, as valid and lawful as it would have been if, at the time the thing was done, the adjudicator had jurisdiction to make the decision as mentioned in paragraph (a).
+[1.3 BIFSOPA level 1 (CDI)] If the adjudicator decided in the adjudication that the respondent was required to pay an adjudicated amount, for the purposes of section 90, the respondent is taken to have received a copy of the adjudicator’s decision on the day that is 30 business days after the commencement. 
+[1.3 BIFSOPA level 1 (CDI)] If the court made any other order in the proceeding, including, for example, an order as to costs, a party to the proceeding may apply to the court to vary the order. 
+[1.3 BIFSOPA level 1 (CDI)] The court may hear and decide an application under subsection (5) and make the orders it considers appropriate having regard to the operation of this chapter.

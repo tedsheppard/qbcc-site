@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 156
+# Chapter: CHAPTER 5 – Administration
+# Section title: Delegation by registrar
+# DOCX paragraphs: 4949-4951
+
+[2 Com-BIFSOPA Heading 1] SECTION 156 – Delegation by registrar
+[1 BIFSOPA Heading] 156    Delegation by registrar 
+[1.1 BIFSOPA Body Text] The registrar may delegate the registrar’s powers under this Act or another Act to an appropriately qualified member of the registry staff.

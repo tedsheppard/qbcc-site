@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 7
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Purpose of Chapter
+# DOCX paragraphs: 150-154
+
+[2 Com-BIFSOPA Heading 1] SECTION 7 – Purpose of Chapter
+[1 BIFSOPA Heading] 7    Purpose of Chapter
+[1.1 BIFSOPA Body Text] The main purpose of this chapter is to ensure that money to be paid to particular subcontractors is held in a way that protects the interests of the subcontractors.

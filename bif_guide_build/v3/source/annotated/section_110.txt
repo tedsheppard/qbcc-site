@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 110
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Limits on amount recoverable under subcontractor’s charge
+# DOCX paragraphs: 4381-4391
+
+[2 Com-BIFSOPA Heading 1] SECTION 110 – Limits on amount recoverable under subcontractor’s charge
+[1 BIFSOPA Heading] 110    Limits on amount recoverable under subcontractor’s charge
+[1.1 BIFSOPA Body Text] The total amount recoverable under a subcontractor’s charge can not exceed the amount payable—
+[1.4 BIFSOPA level 2 (CDI)] to the subcontractor under its subcontract; or 
+[1.6 BIFSPOA example/note] Example—
+[1.7 BIFSOPA example/note body] If the amount payable to the subcontractor for work is $18,000, the subcontractor’s charge can not be for more than $18,000.
+[1.4 BIFSOPA level 2 (CDI)] if the charge relates to money payable to the contractor under the contract—to the contractor under the contract; or 
+[1.6 BIFSPOA example/note] Example—
+[1.7 BIFSOPA example/note body] If the amount payable to the subcontractor for work is $18,000 and the amount payable to the contractor under the contract is $11,000, the subcontractor’s charge for the related contract can not be for more than $11,000. 
+[1.4 BIFSOPA level 2 (CDI)] if the charge relates to money payable to another subcontractor under a higher subcontract—to the other subcontractor under the higher subcontract.

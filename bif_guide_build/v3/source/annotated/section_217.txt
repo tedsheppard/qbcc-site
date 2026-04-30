@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 217
+# Chapter: CHAPTER 9 – Amendment of this and other Acts
+# Section title: Replacement of s 14 (Eligibility of contract for project trust when contract entered into)
+# DOCX paragraphs: 5790-5798
+
+[2 Com-BIFSOPA Heading 1] SECTION 217 – Replacement of s 14 (Eligibility of contract for project trust when contract entered into)
+[1 BIFSOPA Heading] 217    Replacement of s 14 (Eligibility of contract for project trust when contract entered into)
+[1.3 BIFSOPA level 1 (CDI)] Section 14— 
+[1.3 BIFSOPA level 1 (CDI)] omit, insert— 
+[1.3 BIFSOPA level 1 (CDI)] 14 Eligibility of contract for project trust when contract entered into 
+[1.3 BIFSOPA level 1 (CDI)] A contract is eligible for a project trust if, when it is entered into— 
+[1.3 BIFSOPA level 1 (CDI)] (a) more than 50% of the contract price is for project trust work; and
+[1.3 BIFSOPA level 1 (CDI)] (b) the contract price is $1 million or more.

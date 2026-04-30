@@ -1,0 +1,14 @@
+# Annotated BIF Act source — Section 188
+# Chapter: CHAPTER 5 – Administration
+# Section title: False or misleading documents
+# DOCX paragraphs: 5283-5291
+
+[2 Com-BIFSOPA Heading 1] SECTION 188 – False or misleading documents 
+[1 BIFSOPA Heading] 188    False or misleading documents 
+[1.3 BIFSOPA level 1 (CDI)] A person must not, for an application made under this part, give a document to the registrar that includes information the person knows is false or misleading in a material particular. 
+[1.1 BIFSOPA Body Text] Maximum penalty—100 penalty units. 
+[1.3 BIFSOPA level 1 (CDI)]  Subsection (1) does not apply to a person if the person, when giving the document— 
+[1.4 BIFSOPA level 2 (CDI)] tells the registrar, to the best of the person’s ability, how it is false or misleading; and
+[1.4 BIFSOPA level 2 (CDI)] if the person has, or can reasonably obtain, the correct information—gives the correct information to the registrar.
+
+[2a BIFSOPA Chapter Heading] CHAPTER 6 – Legal proceedings

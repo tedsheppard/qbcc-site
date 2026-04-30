@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 180
+# Chapter: CHAPTER 5 – Administration
+# Section title: Applying to QCAT for external review
+# DOCX paragraphs: 5214-5219
+
+[2 Com-BIFSOPA Heading 1] SECTION 180 – Applying to QCAT for external review 
+[1 BIFSOPA Heading] 180    Applying to QCAT for external review 
+[1.1 BIFSOPA Body Text] A person who has applied for an internal review of an original decision under division 5 and is dissatisfied with the review decision may apply, as provided under the QCAT Act, to QCAT for an external review of the review decision. 
+[1.6 BIFSPOA example/note] Note— 
+[1.7 BIFSOPA example/note body] The QCAT Act requires the application to be made within 28 days after the day the applicant is notified of the reviewable decision. If the registrar did not notify the applicant of the reviewable decision within 28 days (the first 28 days) after the applicant applied for a review of an original decision, the applicant would have 28 days to apply to QCAT for an external review starting at the end of the first 28 days.

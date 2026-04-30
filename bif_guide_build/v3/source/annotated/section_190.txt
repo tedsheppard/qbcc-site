@@ -1,0 +1,11 @@
+# Annotated BIF Act source — Section 190
+# Chapter: CHAPTER 6 – Legal proceedings
+# Section title: Proceedings of offences
+# DOCX paragraphs: 5292-5298
+
+[2 Com-BIFSOPA Heading 1] SECTION 190 – Proceedings of offences
+[1 BIFSOPA Heading] 190    Proceedings of offences 
+[1.3 BIFSOPA level 1 (CDI)] A proceeding for an offence against this Act may be started only within 1 year after the offence comes to the complainant’s knowledge, but no later than 2 years after the commission of the offence.
+[1.3 BIFSOPA level 1 (CDI)] A statement in a complaint for an offence against this Act that the matter of the complaint came to the complainant’s knowledge on a stated day is evidence the matter came to the complainant’s knowledge on that day. 
+[1.3 BIFSOPA level 1 (CDI)] A proceeding for an offence against this Act may be started only by a person authorised in writing by the commissioner, either generally or in a particular case, to start the proceeding. 
+[1.3 BIFSOPA level 1 (CDI)] The written authorisation is evidence that the person is authorised to start the proceeding.

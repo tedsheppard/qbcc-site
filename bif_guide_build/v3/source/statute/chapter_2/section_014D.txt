@@ -1,0 +1,4 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 14D — Prescribed contracts require project trusts
+A contract is eligible for a project trust if it is of a type of
+contract prescribed by regulation.

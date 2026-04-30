@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 210
+# Chapter: CHAPTER 8 – Transitional and repeal
+# Section title: References to repealed Act
+# DOCX paragraphs: 5572-5576
+
+[2 Com-BIFSOPA Heading 1] SECTION 210 – References to repealed Act
+[1 BIFSOPA Heading] 210    References to repealed Act
+[1.3 BIFSOPA level 1 (CDI)] A reference in an Act or document to the repealed Act may, if the context permits, be taken to be a reference to this Act
+
+[2a BIFSOPA Chapter Heading] CHAPTER 8A – Transitional provisions for Building Industry Fairness (Security of Payment) and Other Legislation Amendment Act 2020

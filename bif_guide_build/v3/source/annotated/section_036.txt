@@ -1,0 +1,27 @@
+# Annotated BIF Act source — Section 36
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Obligation to transfer amounts if payable dispute occurs
+# DOCX paragraphs: 621-644
+
+[2 Com-BIFSOPA Heading 1] SECTION 36 – Obligation to transfer amounts if payable dispute occurs
+[1 BIFSOPA Heading] 36    Obligation to transfer amounts if payable dispute occurs
+[1.3 BIFSOPA level 1 (CDI)] If a payment dispute occurs, the head contractor must transfer an amount to the disputed funds trust account that is equal to the difference between— 
+[1.4 BIFSOPA level 2 (CDI)] whichever of the following amounts apply for the dispute—
+[1.5 BIFSOPA level 3 (CDI)] for a payment dispute mentioned in section 35(1)—the amount the head contractor proposed to pay the subcontractor beneficiary under a payment schedule;
+[1.5 BIFSOPA level 3 (CDI)] for a payment dispute mentioned in section 35(2)—the amount the head contractor is liable to pay the subcontractor beneficiary under section 77; and
+[1.4 BIFSOPA level 2 (CDI)] whichever of the following amounts apply for the dispute—
+[1.5 BIFSOPA level 3 (CDI)] if the head contractor prepared a payment instruction for payment to the subcontractor beneficiary of an amount in relation to the payment dispute—the amount stated in the payment instruction;
+[1.5 BIFSOPA level 3 (CDI)] if the head contractor did not prepare a payment instruction—$0. 
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units or 1 year’s imprisonment. 
+[1.3 BIFSOPA level 1 (CDI)] The amount must be transferred—
+[1.4 BIFSOPA level 2 (CDI)] for a payment dispute mentioned in section 35(1)— when the head contractor prepares a payment instruction for payment to the subcontractor beneficiary for the progress payment; or 
+[1.4 BIFSOPA level 2 (CDI)] for a payment dispute mentioned in section 35(2)— when the head contractor becomes liable to pay the subcontractor beneficiary under section 77.
+[1.3 BIFSOPA level 1 (CDI)] However, the head contractor need not comply with subsection (1) for an amount the subject of a payment dispute mentioned in subsection 35(2) to the extent the amount to be transferred is more than the contract price for the subcontract with the subcontractor beneficiary. 
+[1.3 BIFSOPA level 1 (CDI)] The contract price, for a subcontract, means the amount the subcontractor is entitled to be paid under the subcontract or, if the amount can not be accurately calculated, the reasonable estimate of the amount the subcontractor is entitled to be paid under the subcontract.
+[1.3 BIFSOPA level 1 (CDI)] An amount mentioned in subsection (4) is inclusive of GST.
+[1.3 BIFSOPA level 1 (CDI)] Immediately after transferring an amount under subsection (1), the head contractor must inform the subcontractor beneficiary in writing of when the amount was transferred into the disputed funds trust account.
+[1.1 BIFSOPA Body Text] Maximum penalty—50 penalty units.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] transfer means—
+[1.4 BIFSOPA level 2 (CDI)] transfer from the general trust account or retention trust account; or 
+[1.4 BIFSOPA level 2 (CDI)] to the extent there is insufficient funds available in the accounts mentioned in paragraph (a)—transfer or deposit from another source.

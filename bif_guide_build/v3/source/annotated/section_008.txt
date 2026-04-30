@@ -1,0 +1,58 @@
+# Annotated BIF Act source — Section 8
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Definitions for chapter
+# DOCX paragraphs: 155-209
+
+[2 Com-BIFSOPA Heading 1] SECTION 8 – Definitions for chapter
+[1 BIFSOPA Heading] 8    Definitions for chapter
+[1.3 BIFSOPA level 1 (CDI)] In this chapter—
+[1.1 BIFSOPA Body Text] building means a fixed structure that is wholly or partly enclosed by walls or is roofed. 
+[1.3 BIFSOPA level 1 (CDI)] building contract— 
+[1.4 BIFSOPA level 2 (CDI)] (a)    means a contract or other arrangement for carrying out building work in Queensland (whether or not the contract or arrangement is also for other matters); but
+[1.4 BIFSOPA level 2 (CDI)] (b)    does not include a subcontract.
+[1.3 BIFSOPA level 1 (CDI)] building work—
+[1.4 BIFSOPA level 2 (CDI)] (a)    means—
+[1.5 BIFSOPA level 3 (CDI)] (i)    the erection or construction of a building; or 
+[1.5 BIFSOPA level 3 (CDI)] (ii)    the renovation, alteration, extension, improvement or repair of a building; or
+[1.5 BIFSOPA level 3 (CDI)] (iii)    the provision of lighting, heating, ventilation, air-conditioning, water supply, sewerage or drainage in connection with a building; or 
+[1.5 BIFSOPA level 3 (CDI)] (iv)    any site work (including the construction of retaining structures) related to work of a kind referred to above; or 
+[1.5 BIFSOPA level 3 (CDI)] (v)    the preparation of plans or specifications for the performance of building work; or 
+[1.5 BIFSOPA level 3 (CDI)] (vi)    contract administration carried out by a person in relation to the construction of a building designed by the person; or
+[1.5 BIFSOPA level 3 (CDI)] (vii)    fire protection work; or
+[1.5 BIFSOPA level 3 (CDI)] (viii)    carrying out a completed building inspection; or 
+[1.5 BIFSOPA level 3 (CDI)] (ix)    the inspection or investigation of a building, and the provision of advice or a report, for termite management systems for the building or for termite infestation in the building; and
+[1.4 BIFSOPA level 2 (CDI)] (b)    includes work prescribed by regulation; and
+[1.4 BIFSOPA level 2 (CDI)] (c)    does not include work prescribed by regulation.
+[1.1 BIFSOPA Body Text] contracted building work, for a building contract, means the building work required to be carried out under the contract. 
+[1.1 BIFSOPA Body Text] contract price see section 10. 
+[1.1 BIFSOPA Body Text] disputed funds trust account see section 23(1)(c). 
+[1.1 BIFSOPA Body Text] fire protection work see the Queensland Building and Construction Commission Act 1991, schedule 2.
+[1.1 BIFSOPA Body Text] first tier subcontract see section 6(5).
+[1.1 BIFSOPA Body Text] general trust account see section 23(1)(a).
+[1.1 BIFSOPA Body Text] head contractor means the party to a building contract who is required to carry out building work under the contract.
+[1.1 BIFSOPA Body Text] maintenance work— 
+[1.4 BIFSOPA level 2 (CDI)] (a)    means work required on an ongoing basis to—
+[1.5 BIFSOPA level 3 (CDI)] (i)    prevent deterioration or failure of a thing; or 
+[1.5 BIFSOPA level 3 (CDI)] (ii)    restore a thing to its correct operating specifications; or 
+[1.5 BIFSOPA level 3 (CDI)] (iii)    replace a component at the end of its working life; but 
+[1.4 BIFSOPA level 2 (CDI)] (b)    does not include—
+[1.5 BIFSOPA level 3 (CDI)] (i)    improving a building to increase its capabilities or functions; or 
+[1.5 BIFSOPA level 3 (CDI)] (ii)    improving a building to meet new statutory requirements applying to the building; or
+[1.5 BIFSOPA level 3 (CDI)] (iii)    a refurbishment or replacement of a building that extends the life of the building.
+[1.1 BIFSOPA Body Text] payment dispute see section 35. 
+[1.1 BIFSOPA Body Text] principal means the party to a building contract for whose benefit building work is to be carried out under the contract. 
+[1.1 BIFSOPA Body Text] project bank account see section 9(1).
+[1.1 BIFSOPA Body Text] related entity see section 19.
+[1.1 BIFSOPA Body Text] retention trust account see section 23(1)(b).
+[1.1 BIFSOPA Body Text] State authority—
+[1.4 BIFSOPA level 2 (CDI)] (a)    means—
+[1.5 BIFSOPA level 3 (CDI)] (i)    an agency, authority, commission, corporation, instrumentality, office, or other entity, established under an Act or by authority of the State for a public or State purpose; or
+[1.5 BIFSOPA level 3 (CDI)] (ii)    a corporation owned or controlled by the State, a local government or an entity mentioned in subparagraph (i), if declared by regulation to be a State authority; or
+[1.5 BIFSOPA level 3 (CDI)] (iii)    a subsidiary of a corporation mentioned in subparagraph (ii); or 
+[1.5 BIFSOPA level 3 (CDI)] (iv)    a part of an entity mentioned in subparagraphs (i) to (iii); but 
+[1.4 BIFSOPA level 2 (CDI)] (b)    does not include an entity prescribed by regulation. 
+[1.1 BIFSOPA Body Text] subcontractor beneficiary, for a project bank account, means a subcontractor that— 
+[1.4 BIFSOPA level 2 (CDI)] (a)    as a party to a subcontract for the building contract is required to carry out subcontracted work; and
+[1.4 BIFSOPA level 2 (CDI)] (b)    is a beneficiary of the project bank account. 
+[1.1 BIFSOPA Body Text] supplier see section 11. 
+[1.1 BIFSOPA Body Text] variation, of a building contract, means an addition to, or an omission from, the building work required to be carried out under the contract.

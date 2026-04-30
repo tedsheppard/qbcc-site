@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 135
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Enforcing subcontractor’s charge on behalf of other subcontractors
+# DOCX paragraphs: 4741-4749
+
+[2 Com-BIFSOPA Heading 1] SECTION 135 – Enforcing subcontractor’s charge on behalf of other subcontractors
+[1 BIFSOPA Heading] 135    Enforcing subcontractor’s charge on behalf of other subcontractors 
+[1.3 BIFSOPA level 1 (CDI)] An action to enforce a subcontractor’s charge under this chapter may be brought by or on behalf of any number of subcontractors claiming subcontractors’ charges. 
+[1.3 BIFSOPA level 1 (CDI)] Every action brought by a subcontractor to enforce a subcontractor’s charge is deemed to be also brought on behalf of every other subcontractor—
+[1.4 BIFSOPA level 2 (CDI)] who has given a notice of claim under section 122; and 
+[1.4 BIFSOPA level 2 (CDI)] whose charge has not been extinguished under section 136(3); and
+[1.4 BIFSOPA level 2 (CDI)] who becomes a party to the action in accordance with Uniform Civil Procedure Rules 1999 and subsection (3).
+[1.3 BIFSOPA level 1 (CDI)] Subject to the Uniform Civil Procedure Rules 1999, a subcontractor may become a party at any time before the date appointed for the hearing or any adjournment of the hearing.

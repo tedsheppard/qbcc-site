@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 4
+# Chapter: CHAPTER 1 – Preliminary
+# Section title: Act binds all persons
+# DOCX paragraphs: 109-113
+
+[2 Com-BIFSOPA Heading 1] SECTION 4 – Act binds all persons
+[1 BIFSOPA Heading] 4     Act binds all persons 
+[1.1 BIFSOPA Body Text] This Act binds all persons, including the State, and, as far as the legislative power of the Parliament permits, the Commonwealth and the other States.

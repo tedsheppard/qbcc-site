@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 143
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Consolidation of action
+# DOCX paragraphs: 4823-4826
+
+[2 Com-BIFSOPA Heading 1] SECTION 143 – Consolidation of action
+[1 BIFSOPA Heading] 143    Consolidation of action 
+[1.1 BIFSOPA Body Text] If separate actions are brought under this chapter against the same person, or against several persons in relation to the whole or any part of the work required to be carried out under the same contract, the court may order those actions be consolidated on the terms the court considers appropriate.

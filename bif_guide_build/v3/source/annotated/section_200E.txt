@@ -1,0 +1,26 @@
+# Annotated BIF Act source — Section 200E
+# Chapter: CHAPTER 7 – Miscellaneous
+# Section title: Confidentiality of information
+# DOCX paragraphs: 5431-5451
+
+[2 Com-BIFSOPA Heading 1] SECTION 200E – Confidentiality of information
+[1 BIFSOPA Heading] 200E    Confidentiality of information
+[1.3 BIFSOPA level 1 (CDI)] This section applies if a person obtains information, or gains access to a document, in exercising a power or performing a function under this Act.
+[1.3 BIFSOPA level 1 (CDI)] A person must not do any of the following—
+[1.4 BIFSOPA level 2 (CDI)] disclose to anyone else—
+[1.5 BIFSOPA level 3 (CDI)] the information; or 
+[1.5 BIFSOPA level 3 (CDI)] information contained in the document;
+[1.4 BIFSOPA level 2 (CDI)]  give access to the document to anyone else;
+[1.4 BIFSOPA level 2 (CDI)] use the information or document for any purpose. Maximum penalty—100 penalty units. 
+[1.3 BIFSOPA level 1 (CDI)] Subsection (2) does not apply to the disclosure of information, or the giving of access to a document or the use of information or a document— 
+[1.4 BIFSOPA level 2 (CDI)] about a person, with the person’s consent; or 
+[1.4 BIFSOPA level 2 (CDI)] that is necessary for the exercise of a power or performance of a function under this Act; or 
+[1.4 BIFSOPA level 2 (CDI)] that is made or given by the commission or a person authorised by the commission if the commission reasonably believes the disclosure, access or use— 
+[1.5 BIFSOPA level 3 (CDI)] is necessary for administering, or monitoring or enforcing compliance with this Act or the Queensland Building and Construction Commission Act 1991; or 
+[1.5 BIFSOPA level 3 (CDI)] is necessary for the administration or enforcement of another Act prescribed by regulation; or 
+[1.5 BIFSOPA level 3 (CDI)] is necessary for the administration or enforcement of another Act or law, if the disclosure, access or use is necessary to lessen or prevent a serious risk to public safety; or
+[1.4 BIFSOPA level 2 (CDI)] that is required by any court, tribunal, authority or person having lawful authority to require the production of documents or the answering of questions; or
+[1.4 BIFSOPA level 2 (CDI)] to a Minister.
+[1.3 BIFSOPA level 1 (CDI)] Also, subsection (2) does not apply to— 
+[1.4 BIFSOPA level 2 (CDI)] the disclosure of information, or the giving of access to a document, by the commission to the chief executive for the purpose of monitoring the operation and effectiveness of this Act; or
+[1.4 BIFSOPA level 2 (CDI)] the use of the information or document by the chief executive for that purpose.

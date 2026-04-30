@@ -1,0 +1,52 @@
+# Source: BIF Regulation 2018
+# Section 1 — Application fee for adjudication (Act, s 79(2)(d))—
+(a) for a payment claim for a progress payment of
+no more than $11,345.70 60.70
+(b) for a payment claim for a progress payment of
+more than $11,345.70 but no more than
+$56,728.80 182.15
+(c) for a payment claim for a progress payment of
+more than $56,728.80 but no more than
+$113,457.60 303.60
+(d) for a payment claim for a progress payment of
+more than $113,457.60 but no more than
+$283,644.05 425.20
+(e) for a payment claim for a progress payment of
+more than $283,644.05 but no more than
+$567,288.05 546.60
+(f) for a payment claim for a progress payment of
+more than $567,288.05 but no more than
+$850,932.15 668.05
+(g) for a payment claim for a progress payment of
+more than $850,932.15 but no more than
+$1,236,206.95 789.55
+Page 52 Current as at 1 July 2025
+
+Schedule 2
+Fee units
+(h) for a payment claim for a progress payment of The number of
+more than $1,236,206.95 fee units equal
+to a fee that is
+0.0794188%
+of the progress
+payment
+amount, up to
+a maximum of
+6,073.80 fee
+units
+Example—
+For an
+adjudication
+application
+made on 1 July
+2025 for a
+progress
+payment of
+$1,300,000,
+the fee is
+$1,032.44 (the
+number of fee
+units equal to
+this fee is
+942.01 fee
+units).

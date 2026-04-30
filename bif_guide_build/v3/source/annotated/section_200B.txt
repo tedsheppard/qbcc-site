@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 200B
+# Chapter: CHAPTER 7 – Miscellaneous
+# Section title: Act does not prevent early payment
+# DOCX paragraphs: 5408-5410
+
+[2 Com-BIFSOPA Heading 1] SECTION 200B – Act does not prevent early payment
+[1 BIFSOPA Heading] 200B    Act does not prevent early payment
+[1.1 BIFSOPA Body Text] Nothing in this Act prevents a person paying an amount due under a contract before the latest date allowed under the contract for payment of that amount.

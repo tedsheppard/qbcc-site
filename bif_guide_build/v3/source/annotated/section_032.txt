@@ -1,0 +1,12 @@
+# Annotated BIF Act source — Section 32
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Order of Priority
+# DOCX paragraphs: 545-553
+
+[2 Com-BIFSOPA Heading 1] SECTION 32 – Order of Priority 
+[1 BIFSOPA Heading] 32    Order of Priority 
+[1.3 BIFSOPA level 1 (CDI)] A head contractor must not withdraw an amount from a trust account for a project bank account to pay itself, or make another payment prescribed by regulation, unless—
+[1.4 BIFSOPA level 2 (CDI)] there would still be a sufficient amount available in the trust account after the withdrawal to pay all amounts the head contractor is liable to pay the subcontractor beneficiaries at the time of the withdrawal; and
+[1.4 BIFSOPA level 2 (CDI)] the withdrawal will not reduce a retention amount, for a subcontract, held in the retention trust account before the retention amount may be released under the subcontract.
+[1.1 BIFSOPA Body Text] Maximum penalty—300 penalty units or 2 years imprisonment.
+[1.3 BIFSOPA level 1 (CDI)] However, the head contractor may withdraw an amount contrary to subsection (1) if the withdrawal is to make a payment ordered by a court or for an adjudication under chapter 3, part 4.

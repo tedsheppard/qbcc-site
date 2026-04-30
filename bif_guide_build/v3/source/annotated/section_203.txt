@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 203
+# Chapter: CHAPTER 8 – Transitional and repeal
+# Section title: Definitions for part
+# DOCX paragraphs: 5495-5499
+
+[2 Com-BIFSOPA Heading 1] SECTION 203 – Definitions for part
+[1 BIFSOPA Heading] 203    Definitions for part
+[1.3 BIFSOPA level 1 (CDI)] In this part— 
+[1.3 BIFSOPA level 1 (CDI)] existing, in relation to a matter, means the matter as in force immediately before the commencement. 
+[Normal] repealed Act means the repealed Building and Construction Industry Payments Act 2004, as in force immediately before its repeal.

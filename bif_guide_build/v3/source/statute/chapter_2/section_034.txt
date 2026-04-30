@@ -1,0 +1,19 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 34 — Contracting party withholding retention amount must
+open retention trust account
+(1) This section applies if, under section 32, a retention trust is
+required for a retention amount withheld from payment under
+a contract.
+(2) The contracting party must open an account for the retention
+trust at a financial institution—
+(a) if the retention trust is required under
+section 32(1)—before the retention amount is withheld;
+or
+(b) if the retention trust is required under
+section 32(2)—within 20 business days after the
+contract becomes a withholding contract.
+Maximum penalty—500 penalty units.
+(3) However, the contracting party need only establish 1 retention
+trust account for all retention amounts withheld by the party
+under any number of contracts for which it is the contracting
+party.

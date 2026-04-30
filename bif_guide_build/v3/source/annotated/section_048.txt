@@ -1,0 +1,9 @@
+# Annotated BIF Act source — Section 48
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Equity and courts jurisdiction preserved
+# DOCX paragraphs: 789-794
+
+[2 Com-BIFSOPA Heading 1] SECTION 48 – Equity and courts jurisdiction preserved
+[1 BIFSOPA Heading] 48    Equity and courts jurisdiction preserved
+[1.3 BIFSOPA level 1 (CDI)] A principle of equity relating to trusts applies for a project bank account except to the extent that the principle is inconsistent with this Act.
+[1.3 BIFSOPA level 1 (CDI)] Nothing in this chapter affects a court’s inherent jurisdiction to supervise a project bank account as a trust.

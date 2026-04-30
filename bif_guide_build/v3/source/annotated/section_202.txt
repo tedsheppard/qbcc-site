@@ -1,0 +1,9 @@
+# Annotated BIF Act source — Section 202
+# Chapter: CHAPTER 8 – Transitional and repeal
+# Section title: Acts repealed
+# DOCX paragraphs: 5491-5494
+
+[2 Com-BIFSOPA Heading 1] SECTION 202 – Acts repealed
+[1 BIFSOPA Heading] 202    Acts repealed
+[1.3 BIFSOPA level 1 (CDI)] The Building and Construction Industry Payments Act 2004, No. 6 is repealed.
+[1.3 BIFSOPA level 1 (CDI)] The Subcontractors’ Charges Act 1974, No. 37 is repealed.

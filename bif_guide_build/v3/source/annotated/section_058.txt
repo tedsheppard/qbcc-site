@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 58
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Limited liability of principal
+# DOCX paragraphs: 943-947
+
+[2 Com-BIFSOPA Heading 1] SECTION 58 – Limited liability of principal 
+[1 BIFSOPA Heading] 58    Limited liability of principal 
+[1.1 BIFSOPA Body Text] Nothing in this chapter creates or supports a right of action against the principal by a subcontractor beneficiary, or the head contractor, as a beneficiary of a project bank account.

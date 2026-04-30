@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 15
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Amendment of building contract
+# DOCX paragraphs: 291-300
+
+[2 Com-BIFSOPA Heading 1] SECTION 15 – Amendment of building contract
+[1 BIFSOPA Heading] 15    Amendment of building contract
+[1.3 BIFSOPA level 1 (CDI)] A building contract becomes a PBA contract if—
+[1.4 BIFSOPA level 2 (CDI)] before an amendment of the contract, the contract is not a building contract described in section 14; but 
+[1.4 BIFSOPA level 2 (CDI)] after an amendment of the contract, the contract is a building contract described in section 14.
+[1.3 BIFSOPA level 1 (CDI)] However, if the amendment of the building contract includes an increase in the contract price, the contract becomes a PBA contract only if the amendment of the contract, together with any earlier amendments of the contract, increases the contract price by 30% or more.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] amendment, of a building contract, includes any variation of the contract or change in the contract price.

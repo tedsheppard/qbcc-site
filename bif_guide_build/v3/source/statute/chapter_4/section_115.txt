@@ -1,0 +1,28 @@
+# Source: BIF Act 2017 — Chapter 4
+# Section 115 — Insufficient money available for claims
+(1) This section applies if—
+(a) there are 2 or more subcontractors’ charges made
+against a contractor for the same contract; and
+(b) the money that is, or is to become, payable to the
+contractor under the contract is insufficient to satisfy all
+of the subcontractors’ charges for the contract in full.
+(2) The total amount recoverable under the subcontractors’
+charges is reduced in proportion to the amounts of the
+charges.
+Example—
+If there is a subcontractor’s charge for $5,000, another for $10,000 and
+the amount remaining to be paid to the contractor is only $12,000, the
+amount recoverable under the charges would be reduced to $4,000 and
+$8,000 respectively.
+(3) The money mentioned in subsection(1)(b) includes money
+that is, or is to become, payable on the basis of a
+subcontractor’s charge on a security for the contract, including
+money payable under section 130 or under an order of the
+court under section132.
+
+(4) Subsection (1) applies in relation to another subcontractor for
+a higher subcontract as if—
+(a) a reference in the subsection to a contractor were a
+reference to the other subcontractor; and
+(b) a reference in the subsection to the contract were a
+reference to the higher subcontract.

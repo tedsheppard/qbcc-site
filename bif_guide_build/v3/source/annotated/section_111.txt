@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 111
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Subcontractor’s charge valid although provision of the subcontract still to be complied with
+# DOCX paragraphs: 4392-4396
+
+[2 Com-BIFSOPA Heading 1] SECTION 111 – Subcontractor’s charge valid although provision of the subcontract still to be complied with
+[1 BIFSOPA Heading] 111    Subcontractor’s charge valid although provision of subcontract still to be complied with
+[1.1 BIFSOPA Body Text] A subcontractor’s charge may be for money, the payment of which is governed by a provision of the subcontract that is still to be complied with, including, for example, the following—
+[1.4 BIFSOPA level 2 (CDI)] a provision establishing a procedure for the certification of the amount, quality or value of work that has been performed; 
+[1.4 BIFSOPA level 2 (CDI)] a provision establishing a procedure for the resolution of a dispute about the amount, quality or value of work that has been performed.

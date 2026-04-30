@@ -1,0 +1,16 @@
+# Annotated BIF Act source — Section 171
+# Chapter: CHAPTER 5 – Administration
+# Section title: Show cause notice
+# DOCX paragraphs: 5122-5133
+
+[2 Com-BIFSOPA Heading 1] SECTION 171 – Show cause notice
+[1 BIFSOPA Heading] 171 – Show cause notice 
+[1.3 BIFSOPA level 1 (CDI)] This section applies if the registrar believes a ground exists to suspend or cancel an adjudicator’s registration.
+[1.3 BIFSOPA level 1 (CDI)] The registrar must give the adjudicator a notice under this section (a show cause notice).
+[1.3 BIFSOPA level 1 (CDI)] The show cause notice must state—
+[1.4 BIFSOPA level 2 (CDI)] the action (the proposed action) the registrar proposes taking under this division; and
+[1.4 BIFSOPA level 2 (CDI)] the grounds for the proposed action; and 
+[1.4 BIFSOPA level 2 (CDI)] an outline of the facts and circumstances forming the basis for the grounds; and
+[1.4 BIFSOPA level 2 (CDI)] if the proposed action is suspension of the registration— the proposed suspension period; and
+[1.4 BIFSOPA level 2 (CDI)] an invitation to the adjudicator to show within a stated period (the show cause period) why the proposed action should not be taken. 
+[1.3 BIFSOPA level 1 (CDI)] The show cause period must be a period ending at least 21 days after the show cause notice is given to the adjudicator.

@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 141
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Effect of payment made under order of the court
+# DOCX paragraphs: 4815-4818
+
+[2 Com-BIFSOPA Heading 1] SECTION 141 – Effect of payment made under order of the court
+[1 BIFSOPA Heading] 141    Effect of payment made under order of the court 
+[1.1 BIFSOPA Body Text] A payment of money by a person to another person in compliance with an order of a court made under this chapter is, to the extent of the amount paid, a sufficient discharge of the person’s liability to pay the money to another person who, if not for the order, would have been entitled to receive payment of that money.

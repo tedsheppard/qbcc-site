@@ -1,0 +1,22 @@
+# Annotated BIF Act source — Section 167
+# Chapter: CHAPTER 5 – Administration
+# Section title: Applications for renewal of registration
+# DOCX paragraphs: 5078-5095
+
+[2 Com-BIFSOPA Heading 1] SECTION 167 – Applications for renewal of registration
+[1 BIFSOPA Heading] 167    Applications for renewal of registration 
+[1.3 BIFSOPA level 1 (CDI)] An adjudicator may apply to the registrar for the renewal of the adjudicator’s registration.
+[1.3 BIFSOPA level 1 (CDI)] The application must be made at least 1 month before the registration ends and must— 
+[1.4 BIFSOPA level 2 (CDI)] be in the approved form; and
+[1.4 BIFSOPA level 2 (CDI)] be signed by or for the applicant; and
+[1.4 BIFSOPA level 2 (CDI)] be accompanied by the fee prescribed by regulation for the application. 
+[1.3 BIFSOPA level 1 (CDI)] The registrar must consider the application and renew, or refuse to renew, the registration.
+[1.3 BIFSOPA level 1 (CDI)] In deciding whether to grant the application, the registrar may have regard to the matters mentioned in section 161(2). 
+[1.3 BIFSOPA level 1 (CDI)] The registrar must not renew the registration if— 
+[1.4 BIFSOPA level 2 (CDI)] the applicant would not be eligible to be registered as an adjudicator under section 161(1); or
+[1.4 BIFSOPA level 2 (CDI)] the applicant has not completed the required continuing professional development prescribed under section 165(1).
+[1.3 BIFSOPA level 1 (CDI)] If the registrar decides to refuse to renew the registration, the registrar must give the applicant an information notice for the decision. 
+[1.3 BIFSOPA level 1 (CDI)] If the registrar decides to impose conditions on the registration, the registrar must give the applicant an information notice for the decision.
+[1.3 BIFSOPA level 1 (CDI)] A registration may be renewed by— 
+[1.4 BIFSOPA level 2 (CDI)] endorsing the existing certificate of registration; or 
+[1.4 BIFSOPA level 2 (CDI)] cancelling the existing certificate and issuing another certificate.

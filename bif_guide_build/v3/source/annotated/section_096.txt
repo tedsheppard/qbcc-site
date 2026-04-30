@@ -1,0 +1,25 @@
+# Annotated BIF Act source — Section 96
+# Chapter: CHAPTER 3 – Progress payments
+# Section title: Deciding fees payable by claimant and respondent
+# DOCX paragraphs: 3799-3820
+
+[2 Com-BIFSOPA Heading 1] SECTION 96 – Deciding fees payable by claimant and respondent 
+[1 BIFSOPA Heading] 96    Deciding fees payable by claimant and respondent 
+[1.3 BIFSOPA level 1 (CDI)] When making a decision about an adjudication application, an adjudicator may also decide the following— 
+[1.4 BIFSOPA level 2 (CDI)] the proportion of the adjudicator’s fees and expenses to be paid by the claimant and respondent; 
+[1.4 BIFSOPA level 2 (CDI)] the proportion of the fee, payable for the adjudication application under section 79(2)(d), for which the respondent is to reimburse the claimant.
+[1.3 BIFSOPA level 1 (CDI)] In making the decision, the adjudicator—
+[1.4 BIFSOPA level 2 (CDI)] must consider the conduct of the claimant and respondent; and 
+[1.4 BIFSOPA level 2 (CDI)] may consider any of the following matters—
+[1.5 BIFSOPA level 3 (CDI)] the relative success of the claimant or respondent in the adjudication;
+[1.5 BIFSOPA level 3 (CDI)] whether the claimant or respondent commenced or participated in the adjudication for an improper purpose; 
+[1.5 BIFSOPA level 3 (CDI)] whether the claimant or respondent commenced or participated in the adjudication without reasonable prospects of success;
+[1.5 BIFSOPA level 3 (CDI)] the reasons given by the respondent for not making the progress payment the subject of the adjudication application;
+[1.5 BIFSOPA level 3 (CDI)] whether an adjudication application is withdrawn;
+[1.5 BIFSOPA level 3 (CDI)] the services provided by the adjudicator in adjudicating the adjudication application, including the amount of time taken to consider discrete aspects of the amount claimed;
+[1.5 BIFSOPA level 3 (CDI)] another matter the adjudicator considers relevant in making the decision.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] adjudicating, an adjudication application, includes accepting, considering and deciding the application. 
+[1.1 BIFSOPA Body Text] conduct, of the claimant and respondent, includes—
+[1.4 BIFSOPA level 2 (CDI)] whether the claimant or respondent has acted unreasonably leading up to, or during, the adjudication; or
+[1.4 BIFSOPA level 2 (CDI)] whether the respondent attempted to include new reasons in an adjudication response in contravention of section 82(4). new reasons see section 82(4).

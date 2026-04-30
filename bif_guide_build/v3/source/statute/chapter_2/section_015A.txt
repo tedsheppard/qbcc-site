@@ -1,0 +1,4 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 15A — Contracts with particular entities
+A project trust is not required for a contract if the contracting
+party or contracted party is an entity prescribed by regulation.

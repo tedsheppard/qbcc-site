@@ -1,0 +1,21 @@
+# Annotated BIF Act source — Section 36C
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Returning amounts held in disputed funds trust account after particular time
+# DOCX paragraphs: 665-682
+
+[2 Com-BIFSOPA Heading 1] SECTION 36C – Returning amounts held in disputed funds trust account after particular time 
+[1 BIFSOPA Heading] 36C    Returning amounts held in disputed funds trust account after particular time
+[1.3 BIFSOPA level 1 (CDI)] This section applies if—
+[1.4 BIFSOPA level 2 (CDI)] the head contractor transfers an amount into the disputed funds trust account under section 36; and
+[1.4 BIFSOPA level 2 (CDI)] at the end of the relevant day any part of the amount remains in the disputed funds trust account. 
+[1.3 BIFSOPA level 1 (CDI)] As soon as practicable after the relevant day, the head contractor must—
+[1.4 BIFSOPA level 2 (CDI)] if the amount was transferred from the general trust account or retention trust account—return the remaining amount to the trust account from which it was transferred; or 
+[1.4 BIFSOPA level 2 (CDI)] otherwise—withdraw the remaining amount for payment to the head contractor. 
+[1.1 BIFSOPA Body Text] Maximum penalty—50 penalty units.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] relevant day, for an amount transferred into the disputed funds trust account, means—
+[1.4 BIFSOPA level 2 (CDI)] if the amount is the subject of a dispute resolution process and the outcome of the process can not be appealed—the day the dispute resolution process ends; or
+[1.4 BIFSOPA level 2 (CDI)] if the amount is the subject of a dispute resolution process and the outcome of the dispute resolution process may be appealed—
+[1.5 BIFSOPA level 3 (CDI)] the last day by which the appeal may be commenced; or
+[1.5 BIFSOPA level 3 (CDI)] if an appeal from the outcome of the process is commenced—the day the appeal is decided; or
+[1.4 BIFSOPA level 2 (CDI)] otherwise—the day that is 60 days after the notice of the transfer was given to the subcontractor beneficiary under section 36(7).

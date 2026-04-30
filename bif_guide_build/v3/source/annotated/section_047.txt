@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 47
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: No assignment of entitlement by head contractor
+# DOCX paragraphs: 784-788
+
+[2 Com-BIFSOPA Heading 1] SECTION 47 – No assignment of entitlement by head contractor
+[1 BIFSOPA Heading] 47    No assignment of entitlement by head contractor
+[1.1 BIFSOPA Body Text] An assignment by the head contractor of an entitlement of the head contractor to an amount held in trust under the project bank account is of no effect.

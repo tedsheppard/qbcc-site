@@ -1,0 +1,16 @@
+# Annotated BIF Act source — Section 45
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Account to be kept by head contractor
+# DOCX paragraphs: 762-774
+
+[2 Com-BIFSOPA Heading 1] SECTION 45 – Account to be kept by head contractor
+[1 BIFSOPA Heading] 45    Account to be kept by head contractor
+[1.3 BIFSOPA level 1 (CDI)] A head contractor must keep written records of all transactions involving amounts held in a trust account for a project bank account that will—
+[1.4 BIFSOPA level 2 (CDI)] sufficiently explain the transactions; and
+[1.4 BIFSOPA level 2 (CDI)] provide a true position in relation to the outcome of the transactions; and
+[1.4 BIFSOPA level 2 (CDI)] enable accurate accounts to be prepared from time to time; and
+[1.4 BIFSOPA level 2 (CDI)] enable convenient and proper audit of the transactions.
+[1.1 BIFSOPA Body Text] Maximum penalty—300 penalty units or 1 year’s imprisonment. 
+[1.3 BIFSOPA level 1 (CDI)] Any words used in the records to explain a transaction must be in the English language.
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must retain a copy of the records for a period of not less than 7 years. 
+[1.1 BIFSOPA Body Text] Maximum penalty—300 penalty units or 1 year’s imprisonment.

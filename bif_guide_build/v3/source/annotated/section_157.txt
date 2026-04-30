@@ -1,0 +1,14 @@
+# Annotated BIF Act source — Section 157
+# Chapter: CHAPTER 5 – Administration
+# Section title: Annual report on operation of chapter and registry
+# DOCX paragraphs: 4952-4961
+
+[2 Com-BIFSOPA Heading 1] SECTION 157 – Annual report on operation of chapter and registry
+[1 BIFSOPA Heading] 157    Annual report on operation of chapter and registry 
+[1.3 BIFSOPA level 1 (CDI)] As soon as practicable after each financial year, but not later than 30 September, the commissioner must give the Minister a report including— 
+[1.4 BIFSOPA level 2 (CDI)] a review of the operation of chapter 3 and the registry during the preceding financial year; and
+[1.4 BIFSOPA level 2 (CDI)] proposals for improving the operation of, and forecasts of the workload of, the registry in the present financial year. 
+[1.3 BIFSOPA level 1 (CDI)] The report may be included in the commission’s annual report.
+[1.3 BIFSOPA level 1 (CDI)] Unless the report is included in the commission’s annual report, the Minister must table a copy of the report in the Legislative Assembly within 14 sitting days after receiving the report. 
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] annual report means an annual report prepared under the Financial Accountability Act 2009, section 63.

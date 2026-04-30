@@ -1,0 +1,38 @@
+# Annotated BIF Act source — Section 66
+# Chapter: CHAPTER 3 – Progress payments
+# Section title: Meaning of related goods and services
+# DOCX paragraphs: 1258-1292
+
+[2 Com-BIFSOPA Heading 1] SECTION 66 – Meaning of related goods and services
+[2.1 Com-BIFSOPA Heading 2] A    Legislation
+[1 BIFSOPA Heading] 66    Meaning of related goods and services 
+[1.3 BIFSOPA level 1 (CDI)] Related goods and services, in relation to construction work, means any of the following— 
+[1.4 BIFSOPA level 2 (CDI)] goods of the following kind— 
+[1.5 BIFSOPA level 3 (CDI)] materials and components to form part of any building, structure or work arising from construction work;
+[1.5 BIFSOPA level 3 (CDI)] plant or materials (whether supplied by sale, hire or otherwise) for use in connection with the carrying out of construction work; 
+[1.4 BIFSOPA level 2 (CDI)] services of the following kind—
+[1.5 BIFSOPA level 3 (CDI)] the provision of labour to carry out construction work; 
+[1.5 BIFSOPA level 3 (CDI)] architectural, design, surveying or quantity surveying services relating to construction work;
+[1.5 BIFSOPA level 3 (CDI)] building, engineering, interior or exterior decoration or landscape advisory services relating to construction work;
+[1.5 BIFSOPA level 3 (CDI)] soil testing services relating to construction work; 
+[1.4 BIFSOPA level 2 (CDI)] goods and services, relating to construction work, of a kind prescribed by regulation.
+[1.3 BIFSOPA level 1 (CDI)] In this chapter, a reference to related goods and services includes a reference to related goods or services.
+[2.1 Com-BIFSOPA Heading 2] B    Commentary
+[2.2 Com-BIFSOPA Heading 3] 66.1    A ‘natural’ construction
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Capricorn Quarries Pty Ltd v Inline Communication Construction Pty Ltd [2012] QSC 388; [2013] 2 Qd R 1, Jackson J rejected a submission that the Act should be given a ‘remedial’ construction. His Honour held, that, in construing the definitions of ‘construction contract’, ‘construction work’ and ‘related goods and services’, a ‘natural’ construction should be given. His Honour held:
+[2.5 Com-BIFSOPA Normal Body Quote] Having regard to the context as discussed, in my view, a “natural” construction of the relevant definitions of BCIPA in this case is to be preferred to an approach which seeks to extend the operation of BCIPA by a “liberal interpretation” to be engaged in with the purpose of increasing the width of the class of persons who are entitled to the benefit of a payment claim and correspondingly increasing the width of the class of persons who are subject to BCIPA’s restriction and obligations.
+[2.5 Com-BIFSOPA Normal Body Quote] The language chosen by Parliament to define “construction contract”, “construction work” and “related goods and services” has no purpose other than to draw the line between who is in and who is out of those classes.  There seems to be little logic in seeking to stretch that language either way.  In saying this, I take a “natural” construction to be that arrived at by the usual process of the application of the common law of statutory interpretation, as affected by statute, but without a presumptive approach.
+[2.2 Com-BIFSOPA Heading 3] 66.2    ‘Supply’
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Patrick Stevedores Operations (No 2) Pty Ltd v McConnell Dowell Constructors (Aust) Pty Ltd [2014] NSWSC 1413, Ball J held that neither plant and materials ordered by the claimant to comply with its contractual obligations, nor the costs of removing equipment from the site, were ‘construction work under the contract’ or the supply of ‘related goods or services’. His Honour held that plant and materials ordered were to put the claimant ‘in a position where it could comply with its contractual obligations’, but it was not by itself, the supply of related goods or services.
+[2.2 Com-BIFSOPA Heading 3] 66.3    Section 66(1)(a) – ‘for use in connection with’
+[2.4 Com-BIFSOPA CDI Normal Body Text] This phrase was considered in Theiss Pty Ltd v Warren Brothers Earthmoving Pty Ltd [2011] QSC 345. Fryberg J held:
+[2.5 Com-BIFSOPA Normal Body Quote] In my judgment, “for use in connection with” is not satisfied simply by proving that the plant or materials supplied were used in connection with the carrying out of construction work.  Warren's submission to that effect should be rejected. “For” is a word of wide denotation.  In the present context it carries a purposive meaning.  It suggests that the phrase must be satisfied at the outset of the transaction, before the plant or materials are used.  Evidence of the use to which plant or materials were put may support an inference as to the purpose for which they were at that time to be used, but such evidence could not satisfy the phrase without such an inference.
+[2.5 Com-BIFSOPA Normal Body Quote] That conclusion is supported by the manner in which “related goods and services” is used in the Act. The most important use is in the definition of construction contract, a definition which relevantly refers to a “contract, agreement or other arrangement”. As noted above, in most other contexts in which the expression is used it is used to refer to related goods and services supplied under a construction contract. That suggests that the contract or arrangement will supply an important part of the evidence by which the proposed use of the plant or materials is to be identified. The use must be able to be identified at the time of the contract or arrangement or possibly, if the supply takes place at an earlier time, at the time of the supply.
+[2.4 Com-BIFSOPA CDI Normal Body Text] This was adopted by Jackson J in Capricorn Quarries Pty Ltd v Inline Communication Construction Pty Ltd [2012] QSC 388; [2013] 2 Qd R 1, 11 [49].
+[2.2 Com-BIFSOPA Heading 3] 66.4    ‘Services’
+[2.4 Com-BIFSOPA CDI Normal Body Text] In Sheppard Homes Pty Ltd v FADL Industrial Pty Ltd [2010] QSC 228, Fryberg J considered that the supply of a licence for drawings does not fall within the definition of services.
+[2.4 Com-BIFSOPA CDI Normal Body Text] The agreement in question in Sheppard Homes Pty Ltd v FADL Industrial Pty Ltd [2010] QSC 228 was an agreement between a consultant and a builder under which the consultant provided a licence to the builder to use certain plans for building work. Fryberg J held that the agreement was not the provision of related services under the Act.
+[2.3 Com-BIFSOPA Heading 4] Architectural services 
+[2.4 Com-BIFSOPA CDI Normal Body Text] Architectural services have been held to fall under the definition of ‘related goods and services’: Peter’s of Kensington v Seeksucker Pty Ltd [2008] NSWSC 897.
+[2.3 Com-BIFSOPA Heading 4] Project management services
+[2.4 Com-BIFSOPA CDI Normal Body Text] Project management services have also been held to fall under the definition of ‘related goods and services’: Biseja Pty Ltd v NSI Group Pty Ltd [2006] NSWSC 835.

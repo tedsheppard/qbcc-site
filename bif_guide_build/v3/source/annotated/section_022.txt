@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 22
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Application of part
+# DOCX paragraphs: 406-410
+
+[2 Com-BIFSOPA Heading 1] SECTION 22 – Application of part
+[1 BIFSOPA Heading] 22    Application of part
+[1.1 BIFSOPA Body Text] This part applies if a project bank account is required for a building contract under section 13.

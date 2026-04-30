@@ -1,0 +1,21 @@
+# Annotated BIF Act source — Section 42
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Power to delegate
+# DOCX paragraphs: 731-748
+
+[2 Com-BIFSOPA Heading 1] SECTION 42 – Power to delegate
+[1 BIFSOPA Heading] 42    Power to delegate
+[1.3 BIFSOPA level 1 (CDI)] The head contractor may, using the approved form, delegate to a person resident in the State any powers of the contractor in relation to a project bank account, other than the power to delegate.
+[1.3 BIFSOPA level 1 (CDI)] The delegation takes effect— 
+[1.4 BIFSOPA level 2 (CDI)] if the person accepts the delegation; and
+[1.4 BIFSOPA level 2 (CDI)] during the periods stated in the approved form.
+[1.3 BIFSOPA level 1 (CDI)] The head contractor is liable for the acts and defaults of its delegate as if they were the contractor’s own acts and defaults.
+[1.3 BIFSOPA level 1 (CDI)] Subsection (5) applies if—
+[1.4 BIFSOPA level 2 (CDI)] a person is delegated a power of a head contractor under subsection (1); and
+[1.4 BIFSOPA level 2 (CDI)] the person purports to—
+[1.5 BIFSOPA level 3 (CDI)] exercise a different power of the head contractor; or
+[1.5 BIFSOPA level 3 (CDI)] exercise the power while the delegation is not in force; or
+[1.5 BIFSOPA level 3 (CDI)] exercise the power after the delegation has been revoked by the head contractor or by operation of law; and
+[1.4 BIFSOPA level 2 (CDI)] another person relies on the power purportedly exercised by the delegate.
+[1.3 BIFSOPA level 1 (CDI)] Unless the other person had actual notice that the delegate was not authorised to exercise the power, the purported exercise of the power is taken to be as valid as if it were exercised under a delegation that was in force and authorised the purported exercise of the power. 
+[1.3 BIFSOPA level 1 (CDI)] The costs relating to the delegation are not recoverable from the project bank account or any of the beneficiaries.

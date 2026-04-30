@@ -1,0 +1,17 @@
+# Annotated BIF Act source — Section 33
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Insufficient amounts available for payments
+# DOCX paragraphs: 554-567
+
+[2 Com-BIFSOPA Heading 1] SECTION 33 – Insufficient amounts available for payments
+[1 BIFSOPA Heading] 33    Insufficient amounts available for payments
+[1.3 BIFSOPA level 1 (CDI)] This section applies if—
+[1.4 BIFSOPA level 2 (CDI)] the head contractor is liable to pay 2 or more subcontractor beneficiaries (each a claimant) an amount from a trust account at the same time; and
+[1.4 BIFSOPA level 2 (CDI)] the total amount held in the trust account is insufficient to satisfy in full all of the amounts liable to be paid to the claimants; and
+[1.4 BIFSOPA level 2 (CDI)] at the time an amount liable to be paid to a claimant is due to be paid, the head contractor has not complied with its obligation under section 30 to cover the insufficient amount.
+[1.3 BIFSOPA level 1 (CDI)] The amount to be paid by the head contractor to each subcontractor beneficiary is to be reduced in proportion to the amounts liable to be paid to each. 
+[1.6 BIFSPOA example/note] Example—
+[1.7 BIFSOPA example/note body] If one subcontractor beneficiary is to be paid $50,000 and another subcontractor beneficiary is to be paid $30,000 but only $40,000 is available, the beneficiaries are to be paid $25,000 and $15,000 respectively. 
+[1.3 BIFSOPA level 1 (CDI)] While there continues to be insufficient amounts held in the trust account, the head contractor must not pay a claimant unless the amount paid complies with subsection (2). 
+[1.1 BIFSOPA Body Text] Maximum penalty—100 penalty units or 1 year’s imprisonment. 
+[1.3 BIFSOPA level 1 (CDI)] Nothing in this section relieves the head contractor of its liability to pay in full the amounts the head contractor is liable to pay each claimant.

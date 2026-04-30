@@ -1,0 +1,27 @@
+# Source: BIF Act 2017 — Chapter 3
+# Section 100C — Expiry of charge
+(1) If a charge has been registered over relevant property under
+section 100B, the charge expires the day that is 24 months
+after the day the charge is registered.
+(2) However, before the expiry of the charge under subsection(1),
+the claimant may apply to a court of competent jurisdiction to
+extend the charge for an additional period of not more than 24
+months.
+(3) The court may grant the application for extension if satisfied
+the charge was registered under section 100B and it would be
+appropriate to make the order.
+(4) If the court grants the application for extension—
+(a) the claimant must notify the registrar of titles of the
+extension in the appropriate form; and
+
+(b) the charge expires at the end of the extension.
+(5) The charge also expires if—
+(a) the adjudication decision for the adjudicated amount,
+the subject of the charge, is set aside; or
+(b) the respondent pays into court, as security, the unpaid
+portion of the adjudicated amount, the subject of the
+charge, pending the final decision in the relevant
+proceedings; or
+(c) after filing the adjudication certificate as a judgment for
+a debt under section93, a court dismisses the
+proceedings for the enforcement of the debt.

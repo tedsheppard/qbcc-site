@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 103
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Application and operation of chapter
+# DOCX paragraphs: 4109-4113
+
+[2 Com-BIFSOPA Heading 1] SECTION 103 – Application and operation of chapter
+[1 BIFSOPA Heading] 103    Application and operation of chapter 
+[1.1 BIFSOPA Body Text] This chapter does not apply to domestic building work relating to a detached dwelling that is carried out for an individual, unless the work is carried out for the purpose of a business conducted by the individual either alone or as a member of a partnership.

@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 17
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Building contracts for maintenance work
+# DOCX paragraphs: 338-342
+
+[2 Com-BIFSOPA Heading 1] SECTION 17 – Building contracts for maintenance work
+[1 BIFSOPA Heading] 17    Building contracts for maintenance work
+[1.1 BIFSOPA Body Text] A project bank account is not required for a building contract if the only building work that the contract is for is maintenance work.

@@ -1,0 +1,19 @@
+# Annotated BIF Act source — Section 132
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Authority of court for security
+# DOCX paragraphs: 4716-4730
+
+[2 Com-BIFSOPA Heading 1] SECTION 132 – Authority of court for security 
+[1 BIFSOPA Heading] 132    Authority of court for security 
+[1.3 BIFSOPA level 1 (CDI)] This section applies if the holder of a security for a contract—
+[1.4 BIFSOPA level 2 (CDI)] is retaining the security under section 130(2)(a) or 131(2)(a) for a subcontractor’s charge; or 
+[1.4 BIFSOPA level 2 (CDI)] has paid an amount for the security into court under section 131(2)(b) for a subcontractor’s charge. 
+[1.3 BIFSOPA level 1 (CDI)] The court may make the order it considers appropriate for enforcing the subcontractor’s charge over the security, including an order for realising the security. 
+[1.3 BIFSOPA level 1 (CDI)] However, the court may make an order for realising the security only if the holder of the security is no longer entitled, under any contract or other arrangement about the security, including under the security itself, to use the security—
+[1.4 BIFSOPA level 2 (CDI)]  for securing the performance of the contract; or 
+[1.4 BIFSOPA level 2 (CDI)]  in some other way provided for in the contract.
+[1.3 BIFSOPA level 1 (CDI)] Without limiting the orders the court may make under subsection (2), the court may order the holder of the security to produce the security to the court. 
+[1.3 BIFSOPA level 1 (CDI)] A precondition or expiry provision for the security is of no effect to the extent that the provision purports to stop the realisation of a security under subsection (2).
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] expiry provision, for a security, means a provision of a contract or another arrangement about the security, including a provision of the security itself, under which the security stops, wholly or partly, having effect. 
+[1.1 BIFSOPA Body Text] precondition provision, for a security, means a provision of a contract or another arrangement about the security, including a provision of the security itself, stating the circumstances that are to apply before the holder of the security may exercise an entitlement to use the security for securing the performance of a contract.

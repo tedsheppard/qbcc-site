@@ -1,0 +1,23 @@
+# Source: BIF Regulation 2018
+# Section 8 — Notice to commissioner about transferring project trust
+account
+The following information must be included in the notice—
+(a) the name of the trustee;
+(b) the name of the account before the transfer;
+(c) the name of the account after the transfer;
+Page 42 Current as at 1 July 2025
+
+Schedule 1AA
+(d) the name of the financial institution where the account
+was kept before the transfer;
+(e) the name of the financial institution where the account
+will be kept after the transfer;
+(f) the identifying number of each financial institution
+(BSB) mentioned in paragraphs (d) and (e);
+(g) the account number at each financial institution
+mentioned in paragraphs (d) and (e);
+(h) the date the account was transferred;
+(i) the date from which the new account is intended to be
+used.
+
+financial institution—Act, s 18C

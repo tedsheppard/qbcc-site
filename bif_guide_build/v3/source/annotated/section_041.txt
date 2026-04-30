@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 41
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Power to employ agents
+# DOCX paragraphs: 724-730
+
+[2 Com-BIFSOPA Heading 1] SECTION 41 – Power to employ agents
+[1 BIFSOPA Heading] 41    Power to employ agents
+[1.3 BIFSOPA level 1 (CDI)] The head contractor may employ, or otherwise engage, an agent to do any act relating to the project bank account on behalf of the contractor.
+[1.3 BIFSOPA level 1 (CDI)] The head contractor is liable for the acts and defaults of its agent as if they were the contractor’s own acts and defaults. 
+[1.3 BIFSOPA level 1 (CDI)] The costs of employing or engaging an agent under subsection (1) are not recoverable from the project bank account or any of the beneficiaries.

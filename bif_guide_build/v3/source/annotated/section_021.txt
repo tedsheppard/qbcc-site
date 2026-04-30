@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 21
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Notices about related entities
+# DOCX paragraphs: 396-405
+
+[2 Com-BIFSOPA Heading 1] SECTION 21 – Notices about related entities
+[1 BIFSOPA Heading] 21    Notices about related entities
+[1.3 BIFSOPA level 1 (CDI)] This section applies if a project bank account is established for a building contract.
+[1.3 BIFSOPA level 1 (CDI)] If the principal knows that a subcontractor beneficiary is a related entity for the head contractor, the principal must advise the commissioner of the matter in the approved form within 5 business days after the person first knows the subcontractor beneficiary is a related entity for the head contractor. 
+[1.1 BIFSOPA Body Text] Maximum penalty—50 penalty units. 
+[1.3 BIFSOPA level 1 (CDI)] For subsection (2), the principal is taken to know a subcontractor beneficiary is a related entity for the head contractor if the principal ought reasonably to know.
+[1.3 BIFSOPA level 1 (CDI)] If the head contractor enters into a subcontract with a related entity, the head contractor must advise the commissioner and the principal, in the approved form, within 5 business days after entering into the subcontract.
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units

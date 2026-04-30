@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 155
+# Chapter: CHAPTER 5 – Administration
+# Section title: Registrar’s policy
+# DOCX paragraphs: 4940-4948
+
+[2 Com-BIFSOPA Heading 1] SECTION 155 – Registrar’s policy 
+[1 BIFSOPA Heading] 155    Registrar’s policy 
+[1.3 BIFSOPA level 1 (CDI)] The registrar may make a policy about the administration of chapter 3 or this chapter.
+[1.3 BIFSOPA level 1 (CDI)] However, the policy does not take effect until approved by regulation.
+[1.3 BIFSOPA level 1 (CDI)] The commissioner must—
+[1.4 BIFSOPA level 2 (CDI)] publish the policy on the commission’s website; and
+[1.4 BIFSOPA level 2 (CDI)] keep copies of the policy available for inspection, free of charge, at the commission’s office when the office is open to the public; and
+[1.4 BIFSOPA level 2 (CDI)] if asked, advise where copies of the policy may be obtained.

@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 182
+# Chapter: CHAPTER 5 – Administration
+# Section title: Adjudicator must comply with registration conditions
+# DOCX paragraphs: 5231-5236
+
+[2 Com-BIFSOPA Heading 1] SECTION 182 – Adjudicator must comply with registration conditions
+[1 BIFSOPA Heading] 182    Adjudicator must comply with registration conditions
+[1.3 BIFSOPA level 1 (CDI)] An adjudicator must not contravene a condition of the registration. 
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units. 
+[1.3 BIFSOPA level 1 (CDI)] The penalty under subsection (1) may be imposed whether or not the registration is suspended or cancelled because of the contravention.

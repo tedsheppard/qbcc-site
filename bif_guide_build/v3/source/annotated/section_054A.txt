@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 54A
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Application of division
+# DOCX paragraphs: 893-897
+
+[2 Com-BIFSOPA Heading 1] SECTION 54A – Application of division
+[1 BIFSOPA Heading] 54    Application of division 
+[1.1 BIFSOPA Body Text] This division applies if a principal is appointed as trustee for a project bank account under section 54.

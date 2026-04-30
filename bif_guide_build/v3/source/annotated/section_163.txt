@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 163
+# Chapter: CHAPTER 5 – Administration
+# Section title: Decision on application for registration
+# DOCX paragraphs: 5040-5045
+
+[2 Com-BIFSOPA Heading 1] SECTION 163 – Decision on application for registration
+[1 BIFSOPA Heading] 163    Decision on application for registration 
+[1.3 BIFSOPA level 1 (CDI)] If the registrar decides to grant the application, the registrar must issue a certificate of registration to the applicant.
+[1.3 BIFSOPA level 1 (CDI)] If the registrar decides to impose conditions on the registration, the registrar must immediately give the applicant an information notice for the decision.
+[1.3 BIFSOPA level 1 (CDI)] If the registrar decides to refuse to grant the application, the registrar must immediately give the applicant an information notice for the decision.

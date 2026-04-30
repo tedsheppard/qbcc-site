@@ -1,0 +1,8 @@
+# Annotated BIF Act source — Section 194
+# Chapter: CHAPTER 6 – Legal proceedings
+# Section title: Appointments and authority
+# DOCX paragraphs: 5324-5327
+
+[2 Com-BIFSOPA Heading 1] SECTION 194 – Appointments and authority 
+[1 BIFSOPA Heading] 194    Appointments and authority 
+[1.1 BIFSOPA Body Text] The registrar’s appointment must be presumed unless a party to the proceeding, by reasonable notice, requires proof of it.

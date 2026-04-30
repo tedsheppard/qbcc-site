@@ -1,0 +1,16 @@
+# Source: BIF Act 2017 — Chapter 3
+# Section 97D — Contravention of requirement by higher party
+(1) This section applies if—
+(a) a claimant gives a payment withholding request to a
+higher party for an adjudicated amount; and
+(b) the higher party fails to retain an amount as required
+under section 97C.
+(2) The higher party becomes jointly and severally liable with the
+respondent for paying the adjudicated amount to the claimant
+but only to the extent of the failure.
+Note—
+The higher party may not be required to retain the same amount as the
+respondent’s debt, see section97B(2).
+(3) The higher party may recover as a debt from the respondent
+any amount that the claimant recovers from the higher party
+under a right of action conferred by subsection(2).

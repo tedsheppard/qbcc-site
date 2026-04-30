@@ -1,0 +1,31 @@
+# Source: BIF Act 2017 — Chapter 3
+# Section 85 — Time for deciding adjudication application
+(1) Subject to section86, an adjudicator must decide an
+adjudication application no later than—
+(a) for a standard payment claim—10 business days after
+the response date; or
+(b) for a complex payment claim—15 business days after
+the response date.
+(2) The response date is—
+(a) if the adjudicator is given an adjudication response
+under section 83—the day on which the adjudicator
+receives the response; or
+(b) if the respondent is prevented from giving the
+adjudicator an adjudication response under
+section 82(2)—the last day on which the respondent
+could have given the adjudicator an adjudication
+Page 113 Current as at 27 April 2025
+
+response under section 83 had it not been prevented
+from doing so under section82(2); or
+(c) otherwise—the last day on which the respondent could
+give the adjudicator an adjudication response under
+section 83.
+(3) An adjudicator must not decide an adjudication application
+before the end of the period that the respondent may give an
+adjudication response to the adjudicator under section 83,
+unless—
+(a) the adjudicator decides he or she does not have
+jurisdiction to adjudicate the application; or
+(b) the adjudicator decides the application is frivolous or
+vexatious.

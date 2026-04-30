@@ -1,0 +1,11 @@
+# Annotated BIF Act source — Section 120
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Damages payable for failure to give information
+# DOCX paragraphs: 4487-4493
+
+[2 Com-BIFSOPA Heading 1] SECTION 120 – Damages payable for failure to give information  
+[1 BIFSOPA Heading] 120    Damages payable for failure to give information
+[1.3 BIFSOPA level 1 (CDI)] This section applies if a person fails to give a subcontractor information as required under section 119. 
+[1.3 BIFSOPA level 1 (CDI)] The person is liable to pay the subcontractor an amount for damages that the subcontractor incurred as a consequence of the failure.
+[1.3 BIFSOPA level 1 (CDI)] Damages under subsection (2) must be decided by the court on the application of the subcontractor. 
+[1.3 BIFSOPA level 1 (CDI)] In a proceeding mentioned in subsection (3) the person is excused from the liability under subsection (2) if the person satisfies the court that the person has a reasonable excuse for the failure.

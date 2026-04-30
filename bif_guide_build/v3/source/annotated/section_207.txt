@@ -1,0 +1,11 @@
+# Annotated BIF Act source — Section 207
+# Chapter: CHAPTER 8 – Transitional and repeal
+# Section title: Definitions for part
+# DOCX paragraphs: 5543-5549
+
+[2 Com-BIFSOPA Heading 1] SECTION 207 – Definitions for part
+[1 BIFSOPA Heading] 207    Definitions for part
+[1.3 BIFSOPA level 1 (CDI)] In this part—
+[1.3 BIFSOPA level 1 (CDI)] repealed Act means the repealed Subcontractors’ Charges Act 1974, as in force immediately before its repeal.
+[1.3 BIFSOPA level 1 (CDI)] repealed, in relation to a provision, means that provision of the repealed Act.
+[1.3 BIFSOPA level 1 (CDI)] subcontractor’s charge means a charge within the meaning of section 3 of the repealed Act.

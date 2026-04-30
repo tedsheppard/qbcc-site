@@ -1,0 +1,12 @@
+# Annotated BIF Act source — Section 112
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Damages etc. not covered by subcontractor’s charge
+# DOCX paragraphs: 4397-4404
+
+[2 Com-BIFSOPA Heading 1] SECTION 112 – Damages etc. not covered by subcontractor’s charge
+[1 BIFSOPA Heading] 112    Damages etc. not covered by subcontractor’s charge
+[1.1 BIFSOPA Body Text] A subcontractor’s charge can not include the following— 
+[1.4 BIFSOPA level 2 (CDI)] damages for breach of contract or in tort;
+[1.4 BIFSOPA level 2 (CDI)] an amount payable on the basis of an extra-contractual remedy, including, for example, as reasonable compensation for work done; 
+[1.4 BIFSOPA level 2 (CDI)] damages or other relief under another chapter or another Act;
+[1.4 BIFSOPA level 2 (CDI)] damages or other relief under an Act of another State or the Commonwealth.

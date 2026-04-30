@@ -1,0 +1,21 @@
+# Annotated BIF Act source — Section 209
+# Chapter: CHAPTER 8 – Transitional and repeal
+# Section title: Unfinished matters for existing subcontractors’ charges to be dealt with under the repealed Act
+# DOCX paragraphs: 5555-5571
+
+[2 Com-BIFSOPA Heading 1] SECTION 209 – Unfinished matters for existing subcontractors’ charges to be dealt with under the repealed Act
+[1 BIFSOPA Heading] 209    Unfinished matters for existing subcontractors’ charges to be dealt with under the repealed Act
+[1.3 BIFSOPA level 1 (CDI)] This section applies if, before the commencement, a subcontractor gave a person a notice of claim of charge for a subcontractor’s charge and, at the commencement, there are unfinished matters for the charge.
+[1.3 BIFSOPA level 1 (CDI)] Despite the repeal of the Subcontractors’ Charges Act 1974, the repealed Act continues to apply for the notice of claim and subcontractor’s charge, and any unfinished matters for the charge.
+[1.3 BIFSOPA level 1 (CDI)] To remove any doubt, it is declared that if a subcontractor became entitled to a subcontractor’s charge before the commencement, but had not given a person a notice of claim of charge in relation to the charge, the person must secure the charge in accordance with this Act. 
+[1.3 BIFSOPA level 1 (CDI)] In this section— 
+[1.3 BIFSOPA level 1 (CDI)] notice of claim of charge means a notice complying with repealed section 10(1)(a).
+[1.3 BIFSOPA level 1 (CDI)] unfinished matter, for a subcontractor’s charge, includes a matter under the repealed Act that has yet to be started or completed, including, for example, the following—
+[1.4 BIFSOPA level 2 (CDI)] giving a person who holds a security a notice under repealed section 10(1)(aa); 
+[1.4 BIFSOPA level 2 (CDI)] giving a person a notice of having made a claim under repealed section 10(1)(b);
+[1.4 BIFSOPA level 2 (CDI)] a person given a notice of claim of charge retaining money under repealed section 11;
+[1.4 BIFSOPA level 2 (CDI)] the giving of a contractor’s notice under repealed section 11(3).
+[1.4 BIFSOPA level 2 (CDI)] the use of securities for the subcontractor’s charge under repealed section 11A to 11D;
+[1.4 BIFSOPA level 2 (CDI)] the giving of information under repealed section 9A or 11E; 
+[1.4 BIFSOPA level 2 (CDI)] the paying of money for the subcontractor’s charge;
+[1.4 BIFSOPA level 2 (CDI)] the enforcement of the subcontractor’s charge.

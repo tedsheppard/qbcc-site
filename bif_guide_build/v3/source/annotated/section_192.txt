@@ -1,0 +1,12 @@
+# Annotated BIF Act source — Section 192
+# Chapter: CHAPTER 6 – Legal proceedings
+# Section title: Payment of penalties and fines
+# DOCX paragraphs: 5312-5319
+
+[2 Com-BIFSOPA Heading 1] SECTION 192 – Payment of penalties and fines
+[1 BIFSOPA Heading] 192    Payment of penalties and fines 
+[1.3 BIFSOPA level 1 (CDI)] A penalty recovered because of a proceeding for an offence against this Act prosecuted by a person authorised by the commissioner must be paid to the commission.
+[1.3 BIFSOPA level 1 (CDI)] A fine recovered because of an infringement notice for an offence against this Act and for which the commission is the administering authority must be paid to the commission. 
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] administering authority, for an infringement notice, see the State Penalties Enforcement Act 1999, schedule 2. 
+[1.1 BIFSOPA Body Text] infringement notice see the State Penalties Enforcement Act 1999, schedule 2.

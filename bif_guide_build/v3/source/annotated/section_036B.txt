@@ -1,0 +1,17 @@
+# Annotated BIF Act source — Section 36B
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Withdrawing amounts held in disputed funds trust account
+# DOCX paragraphs: 651-664
+
+[2 Com-BIFSOPA Heading 1] SECTION 36B – Withdrawing amounts held in disputed funds trust account
+[1 BIFSOPA Heading] 36B    Withdrawing amounts held in disputed funds trust account
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must not withdraw any part of an amount held in the disputed funds trust account unless the withdrawal is to—
+[1.4 BIFSOPA level 2 (CDI)] make a payment to—
+[1.5 BIFSOPA level 3 (CDI)] the subcontractor beneficiary who is a party to the payment dispute for which the amount is held; or
+[1.5 BIFSOPA level 3 (CDI)] the head contractor in accordance with the outcome of a dispute resolution process; or
+[1.5 BIFSOPA level 3 (CDI)] another person in the circumstances prescribed by regulation; or 
+[1.4 BIFSOPA level 2 (CDI)] comply with the head contractor’s obligation under section 36C(2). 
+[1.1 BIFSOPA Body Text] Maximum penalty—300 penalty units or 2 years imprisonment.
+[1.3 BIFSOPA level 1 (CDI)] However, if the outcome of the dispute resolution process mentioned in subsection (1)(a)(ii) may be appealed, the withdrawal for the payment to the head contractor under that provision must not be made until— 
+[1.4 BIFSOPA level 2 (CDI)] the conclusion of the period within which the appeal may be commenced; and 
+[1.4 BIFSOPA level 2 (CDI)] if the appeal is commenced—the conclusion of the appeal.

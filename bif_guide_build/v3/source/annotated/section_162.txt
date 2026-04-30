@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 162
+# Chapter: CHAPTER 5 – Administration
+# Section title: Request for further information
+# DOCX paragraphs: 5031-5039
+
+[2 Com-BIFSOPA Heading 1] SECTION 162 – Request for further information
+[1 BIFSOPA Heading] 162    Request for further information 
+[1.3 BIFSOPA level 1 (CDI)] The registrar may, by written notice given to the applicant, require the applicant to give the registrar further information or a document the registrar reasonably requires to decide the application. 
+[1.3 BIFSOPA level 1 (CDI)] The requirement—
+[1.4 BIFSOPA level 2 (CDI)] must state the period, of at least 28 days, within which the applicant must give the registrar the information or document; or
+[1.4 BIFSOPA level 2 (CDI)] may require the information or document be verified by statutory declaration.
+[1.3 BIFSOPA level 1 (CDI)] The registrar may, before the end of the stated period, extend the time for complying with the requirement. 
+[1.3 BIFSOPA level 1 (CDI)] Unless the registrar extends the time to comply with the requirement, the applicant is taken to have withdrawn the application if he or she does not comply with the requirement with the stated period.

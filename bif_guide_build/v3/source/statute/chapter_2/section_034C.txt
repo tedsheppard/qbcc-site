@@ -1,0 +1,23 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 34C — Change of financial institution
+(1) A trustee must not transfer the retention trust account to an
+alternative financial institution unless—
+(a) the alternative financial institution is an approved
+financial institution; and
+(b) all amounts held in the account are transferred with the
+account to the alternative financial institution; and
+(c) the trustee informs all contracted parties, from whom
+retention amounts held in the account have been
+withheld from payment, about the transfer as prescribed
+by regulation.
+Maximum penalty—200 penalty units.
+Note—
+See, also, section34B for the trustee’s obligation to inform the
+commissioner of closing and opening a retention trust account.
+(2) When transferring the retention trust account to an alternative
+financial institution, the trustee may withdraw the amounts of
+interest credited to the account by a financial institution.
+(3) In this section—
+alternative financial institution, for a retention trust account,
+means a financial institution that is not the financial institution
+at which the account is currently kept.

@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 113
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: All money paid in reduction of contract price generally subject to subcontractors charge
+# DOCX paragraphs: 4405-4413
+
+[2 Com-BIFSOPA Heading 1] SECTION 113 – All money paid in reduction of contract price generally subject to subcontractors charge
+[1 BIFSOPA Heading] 113    All money paid in reduction of contract price generally subject to subcontractor’s charge
+[1.3 BIFSOPA level 1 (CDI)] For a subcontractor’s charge, the amount of money payable to the contractor under the contract is taken to include all money paid in reduction of the contract price to any person other than the subcontractor claiming the charge, unless that money is paid—
+[1.4 BIFSOPA level 2 (CDI)] in good faith and not for the purpose of defeating or impairing a subcontractor’s charge; and 
+[1.4 BIFSOPA level 2 (CDI)] without contravening section 126. 
+[1.3 BIFSOPA level 1 (CDI)] Subsection (1) applies in relation to money payable to another subcontractor for a higher subcontract as if—
+[1.4 BIFSOPA level 2 (CDI)] a reference in the subsection to a contractor were a reference to the other subcontractor; and
+[1.4 BIFSOPA level 2 (CDI)] a reference in the subsection to the contract were a reference to the higher subcontract.

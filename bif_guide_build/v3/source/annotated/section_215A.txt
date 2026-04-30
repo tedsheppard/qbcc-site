@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 215A
+# Chapter: CHAPTER 8C – Transitional provisions for Building Industry Fairness (Security of Payment) and Other Legislation Amendment Act 2024
+# Section title: Retention amounts
+# DOCX paragraphs: 5670-5680
+
+[2 Com-BIFSOPA Heading 1] SECTION 215A – Retention amounts
+[1 BIFSOPA Heading] 215A    Retention amounts
+[1.3 BIFSOPA level 1 (CDI)] New section 32 applies in relation to a retention amount withheld from payment whether before or after the commencement.
+[1.3 BIFSOPA level 1 (CDI)] Subsection (3) applies if— 
+[1.4 BIFSOPA level 2 (CDI)] a retention amount was withheld from payment before the commencement; and
+[1.4 BIFSOPA level 2 (CDI)] immediately before the commencement, the retention amount was not required to be deposited in a retention trust account; and
+[1.4 BIFSOPA level 2 (CDI)] on the commencement, the retention amount is required to be deposited in a retention trust account. 
+[1.3 BIFSOPA level 1 (CDI)] If this subsection applies—
+[1.4 BIFSOPA level 2 (CDI)] new section 34(2)(b) applies as if a retention trust account were required to be opened within 20 business days after the commencement; and
+[1.4 BIFSOPA level 2 (CDI)] new section 35(2)(b) and (c) apply as if the retention amount were required to be deposited in a retention trust account within 20 business days after the commencement.

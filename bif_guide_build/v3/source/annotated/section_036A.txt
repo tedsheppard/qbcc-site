@@ -1,0 +1,9 @@
+# Annotated BIF Act source — Section 36A
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Identifying amounts held in the disputed funds trust account
+# DOCX paragraphs: 645-650
+
+[2 Com-BIFSOPA Heading 1] SECTION 36A – Identifying amounts held in the disputed funds trust account 
+[1 BIFSOPA Heading] 36A    Identifying amounts held in the disputed funds trust account 
+[1.1 BIFSOPA Body Text] The head contractor must ensure an amount held in the disputed funds trust account is identifiable as being held for the subcontractor beneficiary who is a party to the payment dispute for which the amount is held.
+[1.1 BIFSOPA Body Text] Maximum penalty—100 penalty units.

@@ -1,0 +1,26 @@
+# Annotated BIF Act source — Section 154
+# Chapter: CHAPTER 5 – Administration
+# Section title: Registrar’s functions and powers
+# DOCX paragraphs: 4918-4939
+
+[2 Com-BIFSOPA Heading 1] SECTION 154 – Registrar’s functions and powers
+[1 BIFSOPA Heading] 154 – Registrar’s functions and powers 
+[1.3 BIFSOPA level 1 (CDI)] The registrar is responsible for managing the registry and the administration of the registry. 
+[1.3 BIFSOPA level 1 (CDI)] The registrar has the following functions—
+[1.4 BIFSOPA level 2 (CDI)] referring adjudication applications to adjudicators; 
+[1.4 BIFSOPA level 2 (CDI)] keeping a register containing details of adjudicators (the adjudicator register); 
+[1.4 BIFSOPA level 2 (CDI)] ensuring the adjudicator register is available for inspection by a person— 
+[1.5 BIFSOPA level 3 (CDI)] if a regulation prescribes a fee for the inspection— on payment of the fee prescribed; or 
+[1.5 BIFSOPA level 3 (CDI)] otherwise—without charge; 
+[1.4 BIFSOPA level 2 (CDI)] supplying a certificate as to the correctness of a matter in the adjudicator register to a person paying the fee prescribed by regulation for the certificate; 
+[1.4 BIFSOPA level 2 (CDI)] keeping and publishing records of decisions by adjudicators;
+[1.4 BIFSOPA level 2 (CDI)] keeping account of fees paid or payable to the registrar; 
+[1.4 BIFSOPA level 2 (CDI)] collecting statistical data and other information relevant to the administration of the registry for the commissioner’s report to the Minister under section 157; 
+[1.4 BIFSOPA level 2 (CDI)] administering the continuing professional development requirements prescribed by regulation for adjudicators;
+[1.4 BIFSOPA level 2 (CDI)] making a code of conduct for adjudicators;
+[1.4 BIFSOPA level 2 (CDI)] providing an advisory service to consumers about the role of the registry or the adjudication process; 
+[1.4 BIFSOPA level 2 (CDI)] reporting to the commissioner about the administration of the registry;
+[1.4 BIFSOPA level 2 (CDI)] performing another function given under this Act or another Act. 
+[1.3 BIFSOPA level 1 (CDI)] The registrar has the powers reasonably necessary to perform the registrar’s functions.
+[1.3 BIFSOPA level 1 (CDI)] The registrar must perform the registrar’s functions and exercise the registrar’s powers impartially and transparently.
+[1.3 BIFSOPA level 1 (CDI)] The commissioner must not direct the registrar in performing a function mentioned in subsection (2)(a), (d) or (e).

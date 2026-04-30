@@ -1,0 +1,19 @@
+# Annotated BIF Act source — Section 91
+# Chapter: CHAPTER 3 – Progress payments
+# Section title: Adjudication certificate
+# DOCX paragraphs: 3626-3641
+
+[2 Com-BIFSOPA Heading 1] SECTION 91 – Adjudication certificate 
+[1 BIFSOPA Heading] 91    Adjudication certificate
+[1.3 BIFSOPA level 1 (CDI)] As soon as practicable after being given a copy of a decision by an adjudicator, but no later than 5 business days after being given the decision, the registrar must give the claimant a certificate (an adjudication certificate) of the decision stating the following matters—
+[1.4 BIFSOPA level 2 (CDI)] the name of the claimant; 
+[1.4 BIFSOPA level 2 (CDI)] the name of the respondent who is liable to pay the adjudicated amount; 
+[1.4 BIFSOPA level 2 (CDI)] the adjudicated amount;
+[1.4 BIFSOPA level 2 (CDI)] the date on which payment of the adjudicated amount was required to be paid to the claimant;
+[1.4 BIFSOPA level 2 (CDI)] the rate of interest payable on the adjudicated amount; 
+[1.4 BIFSOPA level 2 (CDI)] the fees, identified in the decision, that the respondent is to pay;
+[1.4 BIFSOPA level 2 (CDI)] that the certificate is made under this Act.
+[1.3 BIFSOPA level 1 (CDI)] However, the registrar does not have to give the claimant an adjudication certificate if— 
+[1.4 BIFSOPA level 2 (CDI)] the respondent is not required to pay an amount under the decision; or 
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator decided he or she does not have jurisdiction to decide the application; or
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator decided the adjudication application is frivolous or vexatious.

@@ -1,0 +1,13 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 18A — Restrictions for project trust account
+(1) A trustee must ensure the project trust account is held at an
+approved financial institution.
+Maximum penalty—200 penalty units.
+(2) A trustee must ensure the project trust account is held under a
+name that includes the trustee’s name and the word ‘trust’.
+Maximum penalty—200 penalty units.
+(3) A trustee must ensure that deposits of amounts to, and
+withdrawals of amounts from, the project trust account are
+made using only methods that create an electronic record of
+the transfer.
+Maximum penalty—500 penalty units.

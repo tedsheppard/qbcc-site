@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 90
+# Chapter: CHAPTER 3 – Progress payments
+# Section title: Respondent required to pay adjudicated amount
+# DOCX paragraphs: 3616-3625
+
+[2 Com-BIFSOPA Heading 1] SECTION 90 – Respondent required to pay adjudicated amount
+[1 BIFSOPA Heading] 90    Respondent required to pay adjudicated amount 
+[1.1 BIFSOPA Body Text] If an adjudicator decides that a respondent is required to pay an adjudicated amount, the respondent must pay the amount to the claimant on or before—
+[1.4 BIFSOPA level 2 (CDI)] the day that is 5 business days after the day on which a copy of the adjudicator’s decision is given to the respondent by the adjudicator; or 
+[1.4 BIFSOPA level 2 (CDI)] if the adjudicator decides a later date for payment under section 88(1)(b)—the later date. 
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units. 
+[1.6 BIFSPOA example/note] Note—
+[1.7 BIFSOPA example/note body] A failure to pay an adjudicated amount on or before the due date is also a ground for taking disciplinary action under the Queensland Building and Construction Commission Act 1991.

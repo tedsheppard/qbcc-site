@@ -1,0 +1,13 @@
+# Annotated BIF Act source — Section 29
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: All payments to subcontractor beneficiaries to be paid from project bank account
+# DOCX paragraphs: 510-519
+
+[2 Com-BIFSOPA Heading 1] SECTION 29 – All payments to subcontractor beneficiaries to be paid from project bank account 
+[1 BIFSOPA Heading] 29    All payments from project bank account 
+[1.3 BIFSOPA level 1 (CDI)] This section applies if the head contractor is liable to pay an amount to a subcontractor beneficiary in connection with its subcontract with the head contractor.
+[1.3 BIFSOPA level 1 (CDI)] The head contractor may only pay the amount to the subcontractor beneficiary from a trust account. 
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units or 1 year’s imprisonment.
+[1.3 BIFSOPA level 1 (CDI)] To remove any doubt, it is declared that the obligation under subsection (2) applies whether or not the amount to be paid is held in a trust account when the amount is due.
+[1.6 BIFSPOA example/note] Note—
+[1.7 BIFSOPA example/note body] See section 30 about head contractors covering shortfalls

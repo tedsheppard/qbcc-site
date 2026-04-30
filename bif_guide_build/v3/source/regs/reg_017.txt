@@ -1,0 +1,61 @@
+# Source: BIF Regulation 2018
+# Section 17 — Limitations on submissions and accompanying
+documents for particular adjudication applications—Act,
+s 201
+(1) This section prescribes, for section201(2)(g) of the Act,
+limitations on submissions and accompanying documents
+for—
+(a) adjudication applications relating to payment claims for
+progress payments of not more than $25,000; and
+(b) adjudication responses to adjudication applications
+mentioned in paragraph(a).
+(2) The submissions—
+(a) must not exceed 10 pages in total; and
+(b) if typed—
+(i) must be set out in a document the margins of which
+are at least 2.54cm; and
+(ii) must be written in a font size of at least 10 point;
+and
+(c) may only be accompanied by the following documents
+or copies of the documents—
+(i) the payment claim to which the adjudication
+application relates;
+(ii) the construction contract to which the payment
+claim relates;
+(iii) a payment schedule given in response to the
+payment claim;
+(iv) if a party to the application gave the other party a
+document in support of the payment claim or the
+payment schedule at the time the claim or schedule
+was given to the other party—the supporting
+document;
+(v) if a party to the application gave the other party a
+document relating to the construction
+contract—the related document;
+Page 24 Current as at 1 July 2025
+
+Examples—
+(cid:129) correspondence agreeing to a variation of a
+construction contract or an extension of time
+(cid:129) a program of work
+(vi) an expert report about a matter to which the
+payment claim relates;
+(vii) a statutory declaration about a matter to which the
+payment claim relates.
+(3) In this section—
+expert report means a report made by a person dealing
+entirely or mainly with the issues the person is qualified to
+give expert evidence about.
+
+18 Adjudication qualification—Act, s 201
+The following matters are prescribed, for section201(2)(b) of
+the Act, for an adjudication qualification—
+(a) the name of the qualification is Certificate in
+Adjudication;
+(b) a body mentioned in schedule 1, part1 may issue the
+qualification;
+(c) the adjudication competency to be achieved is
+completion of the course called ‘Building Industry
+Fairness (Security of Payment) Adjudication’;
+(d) the elements that must be successfully completed are the
+elements mentioned in schedule 1, part2.

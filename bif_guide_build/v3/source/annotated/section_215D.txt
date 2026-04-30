@@ -1,0 +1,12 @@
+# Annotated BIF Act source — Section 215D
+# Chapter: CHAPTER 8D – Validation provisions for Residential Tenancies and Rooming Accommodation and Other Legislation Amendment Act 2024
+# Section title: Validation of non-compliance with former section 79(3)
+# DOCX paragraphs: 5700-5707
+
+[2 Com-BIFSOPA Heading 1] SECTION 215D – Validation of non-compliance with former section 79(3)
+[1 BIFSOPA Heading] 215D    Validation of non-compliance with former section 79(3)
+[1.3 BIFSOPA level 1 (CDI)] This section applies if, before the commencement—
+[1.4 BIFSOPA level 2 (CDI)] a claimant made an adjudication application; and
+[1.4 BIFSOPA level 2 (CDI)] the claimant did not give a copy of the adjudication application to the respondent as required under former section 79(3); and
+[1.4 BIFSOPA level 2 (CDI)] the claimant gave the respondent a registry summary of the adjudication application.
+[1.3 BIFSOPA level 1 (CDI)] The claimant is taken to have complied with former section 79(3).

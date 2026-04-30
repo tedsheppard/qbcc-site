@@ -1,0 +1,18 @@
+# Source: BIF Act 2017 — Chapter 3
+# Section 100 — Proceedings to recover unpaid amount as debt
+(1) This section applies if a claimant starts proceedings in a court
+under section78(2)(a) to recover an unpaid amount from a
+respondent as a debt owing to the claimant.
+(2) Judgment in favour of the claimant is not to be given by a
+court unless the court is satisfied that—
+(a) the respondent did not pay the amount to the claimant
+on or before the due date for the progress payment to
+which the payment claim relates; and
+(b) if the respondent’s liability to pay the amount arises
+because of a failure to give a payment schedule—the
+respondent did not give the claimant a payment schedule
+within the time required to do so under this Act.
+(3) The respondent is not, in those proceedings, entitled—
+(a) to bring any counterclaim against the claimant; or
+(b) to raise any defence in relation to matters arising under
+the construction contract.

@@ -1,0 +1,22 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 40 — Notice of retention trust before withholding retention
+amount
+(1) If, under section 32, a retention trust is required for a retention
+amount withheld from payment under a contract, the
+contracting party must give the contracted party a notice about
+the use of a retention trust (notice of retention trust) as
+required by this section.
+Maximum penalty—200 penalty units or 1 year’s
+imprisonment.
+(2) The notice of retention trust must—
+(a) be in writing; and
+(b) include a statement that a retention trust will be used for
+withholding retention amounts under the contract; and
+
+(c) include the information prescribed by regulation.
+(3) The notice of retention trust must be given to the contracted
+party before withholding the retention amount.
+(4) However, if the retention trust account was not opened before
+the retention trust is required under section32, the notice of
+retention trust must be given to the contracted party within 5
+business days after opening the account.

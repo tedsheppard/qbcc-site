@@ -1,0 +1,36 @@
+# Annotated BIF Act source — Section 6
+# Chapter: CHAPTER 1 – Preliminary
+# Section title: Subcontracts, subcontractors and subcontracted work
+# DOCX paragraphs: 119-149
+
+[2 Com-BIFSOPA Heading 1] SECTION 6 – Subcontracts, subcontractors and subcontracted work
+[1 BIFSOPA Heading] 6    Subcontracts, subcontractors and subcontracted work
+[1.3 BIFSOPA level 1 (CDI)] A contract is a subcontract for another contract if—
+[1.4 BIFSOPA level 2 (CDI)] performance of the contract contributes to the performance of the other contract because the work, required to be carried out under the contract, will form all or part of the work required to be carried out under the other contract; and 
+[1.4 BIFSOPA level 2 (CDI)] the contribution mentioned in paragraph (a) is not merely coincidence. 
+[1.6 BIFSPOA example/note] Example for paragraph (b)— 
+[1.7 BIFSOPA example/note body] the purchase of tools from a retail store
+[1.3 BIFSOPA level 1 (CDI)] To remove any doubt, it is declared that—
+[1.4 BIFSOPA level 2 (CDI)] the contribution mentioned in subsection (1)(a) may be indirect because the contract contributes to the performance of 1 or more other subcontracts in order to contribute to the other contract; and
+[1.6 BIFSPOA example/note] Note— 
+[1.7 BIFSOPA example/note body] A subcontract that contributes directly to a contract would have 1 entity that is both a party to the subcontract and a party to the contract. 
+[1.4 BIFSOPA level 2 (CDI)] a contract may be a subcontract for another contract regardless of whether any party to the contract is also a party to the other contract.
+[1.3 BIFSOPA level 1 (CDI)] If the party to a contract, who is required to carry out work under the contract, subcontracts all or part of the work— 
+[1.4 BIFSOPA level 2 (CDI)] the resulting subcontract is a subcontract for the contract; and
+[1.4 BIFSOPA level 2 (CDI)] the person required to carry out the work under the subcontract is a subcontractor for the contract; and 
+[1.4 BIFSOPA level 2 (CDI)] the work required to be carried out under the subcontract is the subcontracted work for the contract.
+[1.3 BIFSOPA level 1 (CDI)] The categories of subcontracts are first tier subcontracts, second tier subcontracts, third tier subcontracts and so on. 
+[1.3 BIFSOPA level 1 (CDI)] A subcontract is a first-tier subcontract for a contract if— 
+[1.4 BIFSOPA level 2 (CDI)] performance of the subcontract contributes directly to the performance of the contract; and 
+[1.4 BIFSOPA level 2 (CDI)] 1 person is both a party to the subcontract and a party to the contract. 
+[1.3 BIFSOPA level 1 (CDI)] A subcontract is a second-tier subcontract for a contract if— 
+[1.4 BIFSOPA level 2 (CDI)] performance of the subcontract contributes to the performance of the contract only by also contributing to the performance of another subcontract for the contract; and
+[1.4 BIFSOPA level 2 (CDI)] no party to the subcontract is also a party to the contract; and
+[1.4 BIFSOPA level 2 (CDI)] 1 person is both a party to the subcontract and a party to the other subcontract.
+[1.3 BIFSOPA level 1 (CDI)] A subcontract is a higher subcontract for another subcontract if—
+[1.4 BIFSOPA level 2 (CDI)] performance of the other subcontract contributes to the performance of the subcontract because the work, required to be carried out under the other subcontract, will form all or part of the work required to be carried out under the subcontract; and 
+[1.4 BIFSOPA level 2 (CDI)] both subcontracts are subcontracts for the same contract. 
+[1.6 BIFSPOA example/note] Example—
+[1.7 BIFSOPA example/note body] A first-tier subcontract would be a higher subcontract for a third-tier subcontract if the work required to be carried out under the third-tier subcontract will form all or part of the work required to be carried out under the first tier subcontract.
+
+[2a BIFSOPA Chapter Heading] CHAPTER 2 – Project bank accounts

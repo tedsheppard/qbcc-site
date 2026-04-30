@@ -1,0 +1,39 @@
+# Annotated BIF Act source — Section 211C
+# Chapter: CHAPTER 8A – Transitional provisions for Building Industry Fairness (Security of Payment) and Other Legislation Amendment Act 2020
+# Section title: Transitioning to new scheme
+# DOCX paragraphs: 5594-5628
+
+[2 Com-BIFSOPA Heading 1] SECTION 211C – Transitioning to new scheme
+[1 BIFSOPA Heading] 211C    Transitioning to new scheme
+[1.3 BIFSOPA level 1 (CDI)] This section applies in relation to a building contract—
+[1.4 BIFSOPA level 2 (CDI)] if the contract was entered into because of a tender process—for which the tender process was started before the replacement of chapter 2 by the amendment Act; or
+[1.4 BIFSOPA level 2 (CDI)] otherwise—entered into before the replacement of chapter 2 by the amendment Act.
+[1.3 BIFSOPA level 1 (CDI)] If a project bank account is required for the building contract under former section 13 as applied under section 211B and the head contractor has not yet opened accounts at a financial institution for the project bank account, the head contractor may transition to the new scheme by opening a project trust account and, if necessary, a retention trust account for the contract as required under chapter 2.
+[1.3 BIFSOPA level 1 (CDI)] Note—
+[1.3 BIFSOPA level 1 (CDI)] The requirement to establish a project bank account under former section 13 might not apply to the building contract until an amendment of the contract. See section 211B and former section 15.
+[1.3 BIFSOPA level 1 (CDI)] If a project bank account is required for the building contract under former section 13 as applied under section 211B and the head contractor opened accounts at a financial institution for the project bank account before the commencement, the trustee for the project bank account may transition to the new scheme by complying with the following requirements within 6 months after the commencement—
+[1.4 BIFSOPA level 2 (CDI)] for the general trust account—
+[1.5 BIFSOPA level 3 (CDI)] the trustee must close the general trust account and transfer all funds held in the account to a project trust account at an approved financial institution; and
+[1.5 BIFSOPA level 3 (CDI)] when opening the project trust account, the trustee must comply with section 18A; and
+[1.5 BIFSOPA level 3 (CDI)] the transfer of the general trust account to the project trust account must comply with section 18B and, if necessary, section 18C; and
+[1.5 BIFSOPA level 3 (CDI)] the transfer of the general trust account to the project trust account must be recorded in the trust records for the project trust account; and
+[1.4 BIFSOPA level 2 (CDI)] for the retention trust account—
+[1.5 BIFSOPA level 3 (CDI)] the trustee must close the retention trust account (the old retention trust account) and transfer all funds held in the account to a new retention trust account at an approved financial institution; and 
+[1.5 BIFSOPA level 3 (CDI)] when opening the new retention trust account, the trustee must comply with section 34A; and
+[1.5 BIFSOPA level 3 (CDI)] the transfer of the old retention trust account to the new retention trust account must comply with section 34B and, if necessary, section 34C; and
+[1.5 BIFSOPA level 3 (CDI)] the transfer of the old retention trust account to the new retention trust account must be recorded in the trust records for the project trust account; and
+[1.4 BIFSOPA level 2 (CDI)]  for the disputed funds trust account—the trustee must close the disputed funds trust account.
+[1.3 BIFSOPA level 1 (CDI)] However, the trustee must not close the disputed funds trust account if—
+[1.4 BIFSOPA level 2 (CDI)] there are funds held in trust in the account; or
+[1.4 BIFSOPA level 2 (CDI)] there is a payment dispute relating to the building contract.
+[1.4 BIFSOPA level 2 (CDI)] Note— 
+[1.4 BIFSOPA level 2 (CDI)] If a trustee can not close a disputed funds trust account, the trustee will not be able to transition to the new scheme.
+[1.3 BIFSOPA level 1 (CDI)] If the trustee transitions to the new scheme, the trustee must give notice of the transition, including the information prescribed by regulation, to each beneficiary affected by the transition. 
+[1.3 BIFSOPA level 1 (CDI)] Maximum penalty—200 penalty units.
+[1.3 BIFSOPA level 1 (CDI)] If a trustee transitions to the new scheme—
+[1.4 BIFSOPA level 2 (CDI)] section 211B ceases to apply in relation to the building contract from transition; and
+[1.4 BIFSOPA level 2 (CDI)] the trustee is not liable for any failure to comply with former chapter 2 to the extent the failure relates to the trustee complying with subsection (3) or (5).
+[1.3 BIFSOPA level 1 (CDI)] Despite former section 37(1) the trustee (as head contractor) may dissolve the project bank account to transition to the new scheme.
+[1.3 BIFSOPA level 1 (CDI)] Nothing in this section enables a trustee to deposit an amount into a retention trust account or project trust account that may not be deposited into the account under section 19A or 35A.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.3 BIFSOPA level 1 (CDI)] new scheme means project trusts and retention trusts under chapter 2 as replaced by the amendment Act.

@@ -1,0 +1,24 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 31A — Who are the trustee and beneficiaries of a retention trust
+(1) This section applies to a retention trust established for
+retention amounts withheld from payment under a contract
+(the retention trust contract).
+(2) The contracting party is both the trustee and a beneficiary of
+the retention trust.
+(3) The contracting party—
+(a) becomes the trustee and a beneficiary of the retention
+trust when the trust is established; and
+(b) ceases to be the trustee and a beneficiary of the retention
+trust when the trust is dissolved.
+(4) The contracted party is a beneficiary of the retention trust.
+(5) The contracted party—
+(a) becomes a beneficiary of the retention trust when a
+retention amount is withheld from payment to the party
+under the retention trust contract; and
+(b) ceases to be a beneficiary of the retention trust when
+paid all retention amounts it has a beneficial interest in
+and the trust is lawfully dissolved.
+
+Note—
+A retention amount need only be released to a contracted party
+when required under the relevant contract.

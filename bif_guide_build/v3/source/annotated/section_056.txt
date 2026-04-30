@@ -1,0 +1,17 @@
+# Annotated BIF Act source — Section 56
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Principal as trustee
+# DOCX paragraphs: 924-937
+
+[2 Com-BIFSOPA Heading 1] SECTION 56 – Principal as trustee
+[1 BIFSOPA Heading] 56    Principal as trustee
+[1.3 BIFSOPA level 1 (CDI)] As trustee of the project bank account, the principal may only make the payments to the subcontractor beneficiaries or head contractor (as a beneficiary) that may be made under this chapter.
+[1.3 BIFSOPA level 1 (CDI)] To remove any doubt, it is declared that— 
+[1.4 BIFSOPA level 2 (CDI)] the principal as trustee is not entitled to any payment from the project bank account, other than payment of an amount for interest earned under section 44; and
+[1.4 BIFSOPA level 2 (CDI)] the head contractor is not relieved of their obligation to top-up any shortfall in the project bank account under section 30; and 
+[1.4 BIFSOPA level 2 (CDI)] the head contractor continues to be a beneficiary of the project bank account; and
+[1.4 BIFSOPA level 2 (CDI)] the principal as trustee is responsible for preparing any payment instructions required for payments from the project bank account; and
+[1.4 BIFSOPA level 2 (CDI)] an amount paid, or required to be paid, into a project bank account can not be—
+[1.5 BIFSOPA level 3 (CDI)] used for payment of the debt of a creditor of the principal; or 
+[1.5 BIFSOPA level 3 (CDI)] attached or taken in execution under a court order or process by a creditor of the principal; or
+[1.5 BIFSOPA level 3 (CDI)] used to pay bank fees.

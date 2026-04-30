@@ -1,0 +1,23 @@
+# Annotated BIF Act source — Section 205
+# Chapter: CHAPTER 8 – Transitional and repeal
+# Section title: Unfinished matters for existing payment claims to be dealt with under the repealed Act
+# DOCX paragraphs: 5513-5531
+
+[2 Com-BIFSOPA Heading 1] SECTION 205 – Unfinished matters for existing payment claims to be dealt with under the repealed Act
+[1 BIFSOPA Heading] 205    Unfinished matters for existing payment claims to be dealt with under the repealed Act
+[1.3 BIFSOPA level 1 (CDI)] This section applies if a payment claim was given to a respondent before the commencement and, at the commencement, there are unfinished matters for the payment claim. 
+[1.3 BIFSOPA level 1 (CDI)] Despite the repeal of the Building and Construction Industry Payments Act 2004, the repealed Act continues to apply for the payment claim and any unfinished matters for the claim. 
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.3 BIFSOPA level 1 (CDI)] unfinished matter, for a payment claim, includes a matter under the repealed Act that has yet to be started or completed, including, for example, the following—
+[1.4 BIFSOPA level 2 (CDI)] replying to the payment claim by serving a payment schedule on the claimant;
+[1.4 BIFSOPA level 2 (CDI)] the consequences of not paying any or all of the claimed amount for the progress payment to which the payment claim relates;
+[1.4 BIFSOPA level 2 (CDI)] making an adjudication application for adjudication of the payment claim;
+[1.4 BIFSOPA level 2 (CDI)] the adjudication of the payment claim under the repealed Act, including—
+[1.5 BIFSOPA level 3 (CDI)] the giving of an adjudication response; or 
+[1.5 BIFSOPA level 3 (CDI)] the adjudication procedures; or
+[1.5 BIFSOPA level 3 (CDI)] the adjudicator’s decision; or
+[1.5 BIFSOPA level 3 (CDI)] correcting a clerical mistake in an adjudicator’s decision; or
+[1.5 BIFSOPA level 3 (CDI)] the consequences of not paying the claimant the adjudicated amount; or
+[1.5 BIFSOPA level 3 (CDI)] the filing of an adjudication certificate as a judgment debt; or
+[1.5 BIFSOPA level 3 (CDI)] an adjudicator’s entitlement to be paid for adjudicating the payment claim, including accepting, considering and deciding the application;
+[1.4 BIFSOPA level 2 (CDI)] the claimant suspending work under the construction contract relevant to the payment claim.

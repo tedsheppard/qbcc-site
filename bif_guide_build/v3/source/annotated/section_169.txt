@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 169
+# Chapter: CHAPTER 5 – Administration
+# Section title: Registration taken to be in fore while application for renewal is considered
+# DOCX paragraphs: 5105-5110
+
+[2 Com-BIFSOPA Heading 1] SECTION 169 – Registration taken to be in fore while application for renewal is considered 
+[1 BIFSOPA Heading] 169    Registration taken to be in fore while application for renewal is considered 
+[1.3 BIFSOPA level 1 (CDI)] If an application is made under section 167, the adjudicator’s registration is taken to continue in force from the day that it would, apart from this section, have ended until the application is decided under section 167 or is withdrawn.
+[1.3 BIFSOPA level 1 (CDI)] However, if the application is refused, the registration continues in force until the information notice for the decision is given to the applicant.
+[1.3 BIFSOPA level 1 (CDI)] Subsection (1) does not apply if the registration is earlier suspended or cancelled.

@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 34B
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Definitions for division
+# DOCX paragraphs: 601-607
+
+[2 Com-BIFSOPA Heading 1] SECTION 34B – Definitions for division
+[1 BIFSOPA Heading] 34B    Definitions for division 
+[1.1 BIFSOPA Body Text] In this division—
+[1.1 BIFSOPA Body Text] appeal, of an outcome of a dispute resolution process, includes a review of the outcome of the dispute resolution process. 
+[1.1 BIFSOPA Body Text] dispute resolution process means a process prescribed by regulation.

@@ -1,0 +1,18 @@
+# Source: BIF Act 2017 — Chapter 3
+# Section 67 — Meaning of reference date
+(1) A reference date, for a construction contract, means—
+(a) a date stated in, or worked out under, the contract as the
+date on which a claim for a progress payment may be
+made for construction work carried out, or related goods
+and services supplied, under the contract; or
+(b) if the contract does not provide for the matter—
+
+(i) the last day of the month in which the construction
+work was first carried out, or the related goods and
+services were first supplied, under the contract; and
+(ii) the last day of each later month.
+(2) However, if a construction contract is terminated and the
+contract does not provide for, or purports to prevent, a
+reference date surviving beyond termination, the final
+reference date for the contract is the date the contract is
+terminated.

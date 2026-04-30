@@ -1,0 +1,11 @@
+# Annotated BIF Act source — Section 201B
+# Chapter: CHAPTER 8 – Transitional and repeal
+# Section title: No subcontractors’ charges over money held in trust
+# DOCX paragraphs: 5481-5487
+
+[2 Com-BIFSOPA Heading 1] SECTION 201B – No subcontractors’ charges over money held in trust
+[1 BIFSOPA Heading] 201B    No subcontractors’ charges over money held in trust
+[1.3 BIFSOPA level 1 (CDI)] This section applies until the repeal of the Subcontractors’ Charges Act 1974.
+[1.3 BIFSOPA level 1 (CDI)] No entitlement to a subcontractor’s charge exists to the extent it relates to money held in trust under a project bank account.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.3 BIFSOPA level 1 (CDI)] subcontractor’s charge means a charge within the meaning of section 3 of the Subcontractors’ Charges Act 1974.

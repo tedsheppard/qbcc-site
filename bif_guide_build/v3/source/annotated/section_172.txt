@@ -1,0 +1,9 @@
+# Annotated BIF Act source — Section 172
+# Chapter: CHAPTER 5 – Administration
+# Section title: Representation about show cause notices
+# DOCX paragraphs: 5134-5138
+
+[2 Com-BIFSOPA Heading 1] SECTION 172 – Representation about show cause notices
+[1 BIFSOPA Heading] 172    Representation about show cause notices 
+[1.3 BIFSOPA level 1 (CDI)] The adjudicator may make written representations about the show cause notice to the registrar in the show cause period. 
+[1.3 BIFSOPA level 1 (CDI)] The registrar must consider all representations (the accepted representations) made under subsection (1).

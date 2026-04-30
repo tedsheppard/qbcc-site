@@ -1,0 +1,17 @@
+# Annotated BIF Act source — Section 174
+# Chapter: CHAPTER 5 – Administration
+# Section title: Suspension or cancellation
+# DOCX paragraphs: 5145-5157
+
+[2 Com-BIFSOPA Heading 1] SECTION 174 – Suspension or cancellation  
+[1 BIFSOPA Heading] 174    Suspension or cancellation  
+[1.3 BIFSOPA level 1 (CDI)] This section applies if—
+[1.4 BIFSOPA level 2 (CDI)] there are accepted representations for the show cause notice and, after considering the representations, the registrar still believes a ground exists to suspend or cancel the registration; or
+[1.4 BIFSOPA level 2 (CDI)] there are no accepted representations. 
+[1.3 BIFSOPA level 1 (CDI)] If the registrar believes suspension or cancellation of the registration is warranted, the registrar may—
+[1.4 BIFSOPA level 2 (CDI)] if the proposed action stated in the show cause notice was to suspend the registration for a stated period— suspend the registration for not longer than the stated period; or
+[1.4 BIFSOPA level 2 (CDI)] if the proposed action stated in the show cause notice was to cancel the registration—either cancel the registration or suspend it for a period. 
+[1.3 BIFSOPA level 1 (CDI)] The registrar must immediately give an information notice for the decision to the adjudicator.
+[1.3 BIFSOPA level 1 (CDI)] The decision takes effect on the later of the following days— 
+[1.4 BIFSOPA level 2 (CDI)] the day the information notice is given to the adjudicator;
+[1.4 BIFSOPA level 2 (CDI)] the day stated in the information notice for that purpose.

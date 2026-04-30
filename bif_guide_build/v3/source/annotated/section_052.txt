@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 52
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Principal to inform commissioner of discrepancies
+# DOCX paragraphs: 841-852
+
+[2 Com-BIFSOPA Heading 1] SECTION 52 – Principal to inform commissioner of discrepancies
+[1 BIFSOPA Heading] 52    Principal to inform commissioner of discrepancies
+[1.3 BIFSOPA level 1 (CDI)] This section applies if a head contractor gives a principal a copy of information contained in a payment instruction under section 51.
+[1.3 BIFSOPA level 1 (CDI)] The principal must inform the commissioner of any discrepancies in the payment instruction as soon as practicable after becoming aware of the discrepancies or after it ought to reasonably have known of the discrepancies.
+[1.1 BIFSOPA Body Text] Maximum penalty—100 penalty units.
+[1.3 BIFSOPA level 1 (CDI)] In this section—
+[1.1 BIFSOPA Body Text] discrepancies, for a payment instruction, means—
+[1.4 BIFSOPA level 2 (CDI)] an error in the account number for a subcontractor beneficiary; or
+[1.4 BIFSOPA level 2 (CDI)] payment to an entity, other than the head contractor, that is not a subcontractor beneficiary; or 
+[1.4 BIFSOPA level 2 (CDI)] payment to a subcontractor beneficiary if the name of the beneficiary and the account name do not match.

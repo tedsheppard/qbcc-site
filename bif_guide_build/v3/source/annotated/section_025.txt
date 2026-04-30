@@ -1,0 +1,9 @@
+# Annotated BIF Act source — Section 25
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Name of trust account
+# DOCX paragraphs: 456-461
+
+[2 Com-BIFSOPA Heading 1] SECTION 25 – Name of trust account
+[1 BIFSOPA Heading] 25    Name of trust account
+[1.1 BIFSOPA Body Text] If opening an account at a financial institution in relation to a project bank account, the head contractor must ensure the account’s name includes the word ‘trust’.
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units.

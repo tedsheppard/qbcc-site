@@ -1,0 +1,18 @@
+# Annotated BIF Act source — Section 159
+# Chapter: CHAPTER 5 – Administration
+# Section title: Application for registration as adjudicator
+# DOCX paragraphs: 4986-4999
+
+[2 Com-BIFSOPA Heading 1] SECTION 159 – Application for registration as adjudicator 
+[1 BIFSOPA Heading] 159    Application for registration as adjudicator 
+[1.3 BIFSOPA level 1 (CDI)] An individual may apply to the registrar for registration as an adjudicator.
+[1.3 BIFSOPA level 1 (CDI)] The application—
+[1.4 BIFSOPA level 2 (CDI)] must be—
+[1.5 BIFSOPA level 3 (CDI)] in the approved form; and
+[1.5 BIFSOPA level 3 (CDI)] signed by or for the applicant; and
+[1.5 BIFSOPA level 3 (CDI)] accompanied by the fee prescribed by regulation for the application; and
+[1.4 BIFSOPA level 2 (CDI)] must state the following—
+[1.5 BIFSOPA level 3 (CDI)] the name and address of the applicant;
+[1.5 BIFSOPA level 3 (CDI)] an address in Queensland for service of documents;
+[1.5 BIFSOPA level 3 (CDI)] the experience and qualifications of the applicant, relevant to deciding adjudication applications;
+[1.5 BIFSOPA level 3 (CDI)] other details, required in the approved form for the application, to enable the registrar to decide whether the applicant is a suitable person to be registered as an adjudicator.

@@ -1,0 +1,11 @@
+# Annotated BIF Act source — Section 60
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Application of Trust Accounts Act 1973 and Trust Act 1973
+# DOCX paragraphs: 957-962
+
+[2 Com-BIFSOPA Heading 1] SECTION 60 – Application of Trust Accounts Act 1973 and Trust Act 1973
+[1 BIFSOPA Heading] 60    Application of Trust Accounts Act 1973 and Trusts Act 1973
+[1.1 BIFSOPA Body Text] The Trust Accounts Act 1973 and the Trusts Act 1973 do not apply to a project bank account or a trustee or beneficiary of a project bank account.
+
+
+[2a BIFSOPA Chapter Heading] CHAPTER 3 – Progress payments

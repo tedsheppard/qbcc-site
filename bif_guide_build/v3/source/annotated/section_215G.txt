@@ -1,0 +1,34 @@
+# Annotated BIF Act source — Section 215G
+# Chapter: CHAPTER 8D – Validation provisions for Residential Tenancies and Rooming Accommodation and Other Legislation Amendment Act 2024
+# Section title: Adjudication application must be re-decided if adjudicator decided before commencement that adjudicator did not have jurisdiction
+# DOCX paragraphs: 5732-5761
+
+[2 Com-BIFSOPA Heading 1] SECTION 215G – Adjudication application must be re-decided if adjudicator decided before commencement that adjudicator did not have jurisdiction
+[1 BIFSOPA Heading] 215G    Adjudication application must be re-decided if adjudicator decided before commencement that adjudicator did not have jurisdiction
+[1.3 BIFSOPA level 1 (CDI)] This section applies if, before the commencement— 
+[1.4 BIFSOPA level 2 (CDI)] a claimant made an adjudication application; and
+[1.4 BIFSOPA level 2 (CDI)]  the claimant did not give a copy of the adjudication application to the respondent as required under former section 79(3); and
+[1.4 BIFSOPA level 2 (CDI)] the claimant gave the respondent a registry summary of the adjudication application; and 
+[1.4 BIFSOPA level 2 (CDI)] an adjudicator (the original adjudicator) was appointed under section 81; and
+[1.4 BIFSOPA level 2 (CDI)] the original adjudicator decided under section 84(2)(a)(i) that the original adjudicator did not have jurisdiction to adjudicate the application only because the claimant did not give a copy of the adjudication application to the respondent as required under former section 79(3).
+[1.3 BIFSOPA level 1 (CDI)] The decision of the original adjudicator is void and of no effect.
+[1.3 BIFSOPA level 1 (CDI)] On the commencement, the registrar is taken to refer the adjudication application to the original adjudicator for a decision. 
+[1.3 BIFSOPA level 1 (CDI)] The original adjudicator must accept or reject the referral, unless the original adjudicator has a reasonable excuse, within 14 business days after the commencement by notifying the registrar of the acceptance or rejection.
+[1.3 BIFSOPA level 1 (CDI)] If the original adjudicator rejects the referral or does not accept it within the period required under subsection (4)— 
+[1.4 BIFSOPA level 2 (CDI)] the registrar must refer the adjudication application to another adjudicator (the new adjudicator) within 4 business days after becoming aware of the rejection or failure; and
+[1.4 BIFSOPA level 2 (CDI)] no fee is payable for referring the adjudication application to the new adjudicator.
+[1.3 BIFSOPA level 1 (CDI)] The new adjudicator must accept or reject the referral, unless the new adjudicator has a reasonable excuse, within 4 business days after the referral under subsection (5)(a).
+[1.3 BIFSOPA level 1 (CDI)] If the original adjudicator or the new adjudicator accepts the referral—
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator is taken to be appointed to decide the adjudication application; and
+[1.4 BIFSOPA level 2 (CDI)] the failure of the claimant to comply with former section 79(3) is taken not to deprive the adjudicator of jurisdiction to decide the adjudication application; and 
+[1.4 BIFSOPA level 2 (CDI)] within 4 business days after the appointment, the adjudicator must give the claimant and the respondent a notice stating that— 
+[1.5 BIFSOPA level 3 (CDI)] the decision of the original adjudicator mentioned in subsection (1)(e) is void under subsection (2); and 
+[1.5 BIFSOPA level 3 (CDI)] the respondent may give the adjudicator a response to the adjudication application within 15 business days after receiving the notice; and
+[1.5 BIFSOPA level 3 (CDI)] the adjudicator will decide the adjudication application within 15 business days after the end of the period within which the respondent may give a response under subparagraph (ii); and
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator must decide the adjudication application under section 88 within 15 business days after the end of the period within which the respondent may give a response under subparagraph (ii).
+[1.3 BIFSOPA level 1 (CDI)] For the making of a decision on the adjudication application by the original adjudicator or the new adjudicator under this section— 
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator may ask for further written submissions from either party and must give the other party an opportunity to comment on the submissions; and
+[1.4 BIFSOPA level 2 (CDI)] the time for deciding the adjudication application may be extended under section 86; and
+[1.4 BIFSOPA level 2 (CDI)] sections 89 to 97 apply in relation to the adjudication.
+[1.3 BIFSOPA level 1 (CDI)] For subsection (8)(b), section 86 applies as if a reference to section 85(1) were a reference to subsection (7)(d).
+[1.3 BIFSOPA level 1 (CDI)] To remove any doubt, it is declared that subsection (8) does not limit the application of this Act to the decision on the adjudication application by the original adjudicator or the new adjudicator under this section.

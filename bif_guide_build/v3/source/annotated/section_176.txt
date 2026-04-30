@@ -1,0 +1,14 @@
+# Annotated BIF Act source — Section 176
+# Chapter: CHAPTER 5 – Administration
+# Section title: Effect of suspension or cancellation of registration of adjudicator
+# DOCX paragraphs: 5171-5180
+
+[2 Com-BIFSOPA Heading 1] SECTION 176 – Effect of suspension or cancellation of registration of adjudicator 
+[1 BIFSOPA Heading] 176    Effect of suspension or cancellation of registration of adjudicator 
+[1.3 BIFSOPA level 1 (CDI)] This section applies if—
+[1.4 BIFSOPA level 2 (CDI)] the registration of an adjudicator is suspended or cancelled or otherwise ends; and 
+[1.4 BIFSOPA level 2 (CDI)] an adjudication application has been referred to the adjudicator for adjudication of a payment claim; and
+[1.4 BIFSOPA level 2 (CDI)] the adjudicator has not yet made a decision under section 88 for the adjudication application. 
+[1.3 BIFSOPA level 1 (CDI)] Within 4 business days after the registration is suspended, cancelled or ends, the registrar must refer the adjudication application to a person eligible to be an adjudicator under section 80. 
+[1.3 BIFSOPA level 1 (CDI)] No fee is payable for the referral. 
+[1.3 BIFSOPA level 1 (CDI)] The adjudicator is not entitled to any fees or expenses in relation to the adjudication application.

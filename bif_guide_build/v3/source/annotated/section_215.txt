@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 215
+# Chapter: CHAPTER 8C – Transitional provisions for Building Industry Fairness (Security of Payment) and Other Legislation Amendment Act 2024
+# Section title: Definitions for chapter
+# DOCX paragraphs: 5664-5669
+
+[2 Com-BIFSOPA Heading 1] SECTION 215 – Definitions for chapter
+[1 BIFSOPA Heading] 215    Definitions for chapter
+[1.3 BIFSOPA level 1 (CDI)] In this chapter— 
+[1.3 BIFSOPA level 1 (CDI)] former, for a section of this Act, means the section as in force from time to time before the commencement.
+[1.3 BIFSOPA level 1 (CDI)] new, for a section of this Act, means the section as in force from the commencement.

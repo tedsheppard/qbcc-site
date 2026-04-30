@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 43
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Head contractor not entitled to payment for administration of project bank account or fees
+# DOCX paragraphs: 749-755
+
+[2 Com-BIFSOPA Heading 1] SECTION 43 – Head contractor not entitled to payment for administration of project bank account or fees
+[1 BIFSOPA Heading] 43    Head contractors not entitled to payment for administration of project bank account or fees
+[1.1 BIFSOPA Body Text] The head contractor is not entitled to payment from the project bank account, or from a subcontractor beneficiary, for any amount relating to— 
+[1.4 BIFSOPA level 2 (CDI)] (a)    the administration of the project bank account by the contractor; or 
+[1.4 BIFSOPA level 2 (CDI)] (b)    fees payable for the project bank account.

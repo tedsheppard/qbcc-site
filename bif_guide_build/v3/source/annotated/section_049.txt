@@ -1,0 +1,15 @@
+# Annotated BIF Act source — Section 49
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Notice of project bank account before entering subcontracts
+# DOCX paragraphs: 795-806
+
+[2 Com-BIFSOPA Heading 1] SECTION 49 – Notice of project bank account before entering subcontracts 
+[1 BIFSOPA Heading] 49    Notice of project bank account before entering subcontracts
+[1.3 BIFSOPA level 1 (CDI)] This section applies if a project bank account is required for a building contract under section 13.
+[1.3 BIFSOPA level 1 (CDI)] Before entering into a subcontract for the building contract, the head contractor must give the subcontractor the following information using the approved form—
+[1.4 BIFSOPA level 2 (CDI)] that a project bank account will be used for making payments to the subcontractor; 
+[1.4 BIFSOPA level 2 (CDI)] details of the financial institution at which the trust accounts for the project bank account are to be held. 
+[1.1 BIFSOPA Body Text] Maximum penalty—200 penalty units or 1 year’s imprisonment. 
+[1.3 BIFSOPA level 1 (CDI)] However, if the head contractor entered into a subcontract for the building contract before the day (the start date) a project bank account is required for the contract, the head contractor must give the subcontractor the information within 10 business days after the start date. 
+[1.6 BIFSPOA example/note] Note—
+[1.7 BIFSOPA example/note body] Under section 15 a project bank account may be required for a building contract only after an amendment of the contract.

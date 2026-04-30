@@ -1,0 +1,17 @@
+# Annotated BIF Act source — Section 31
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Limited purposes for which money may be withdrawn from project bank account
+# DOCX paragraphs: 531-544
+
+[2 Com-BIFSOPA Heading 1] SECTION 31 – Limited purposes for which money may be withdrawn from project bank account
+[1 BIFSOPA Heading] 31    Limited purposes for which money may be withdrawn from project bank account 
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must not withdraw an amount from a trust account for any purpose other than— 
+[1.4 BIFSOPA level 2 (CDI)] paying a subcontractor beneficiary an amount the head contractor is liable to pay the subcontractor beneficiary in connection with its subcontract with the head contractor; or 
+[1.4 BIFSOPA level 2 (CDI)] paying to the head contractor an amount that the principal is liable to pay the head contractor for contracted building work but only to the extent the head contractor is not also liable to pay a subcontractor beneficiary for the same work; or 
+[1.4 BIFSOPA level 2 (CDI)] returning an amount paid in error by the principal; or
+[1.4 BIFSOPA level 2 (CDI)] transferring the money to another trust account as required under this chapter; or
+[1.4 BIFSOPA level 2 (CDI)] making another payment prescribed by regulation. 
+[1.1 BIFSOPA Body Text] Maximum penalty—300 penalty units or 2 years imprisonment. 
+[1.3 BIFSOPA level 1 (CDI)] The head contractor must repay to the trust account all amounts that the head contractor withdraws in contravention of subsection (1) as soon as practicable after withdrawing the amount. 
+[1.1 BIFSOPA Body Text] Maximum penalty—300 penalty units or 2 years imprisonment. 
+[1.3 BIFSOPA level 1 (CDI)] The head contractor is taken to have made a withdrawal if the head contractor authorises any person to make the withdrawal or knowingly contributes to the withdrawal being made.

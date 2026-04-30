@@ -1,0 +1,46 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 32 — When retention trust required
+(1) A retention trust is required for a retention amount withheld
+from payment under a contract if—
+Page 53 Current as at 27 April 2025
+
+(a) the contract is a withholding contract at the time the
+retention amount is withheld; and
+(b) the retention amount is withheld by the contracting
+party in the form of cash.
+(2) Also, a retention trust is required for a retention amount
+withheld from payment under a contract if—
+(a) the contract was not a withholding contract at the time
+the retention amount was withheld but the contract has
+since become a withholding contract; and
+(b) the contract is a first tier subcontract; and
+(c) the retention amount was withheld by the contracting
+party in the form of cash; and
+(d) the retention amount had not been released to the parties
+entitled to it at the time the contract became a
+withholding contract.
+(3) The requirement starts, or is taken to have started, on the first
+day the contracting party withholds the retention amount from
+payment.
+(4) The requirement continues until all of the retention amount
+has been released to the parties entitled to it under the
+withholding contract, regardless of any of the following
+changes—
+(a) a variation, or any other amendment, of the contract;
+(b) a change in the contracted work.
+(5) This section does not apply to a retention amount withheld
+from payment under a contract if—
+(a) the contracting party is the State, the Commonwealth, a
+state authority, a local government or another entity
+prescribed by regulation; or
+(b) the contract price for the contract is at least the
+minimum contract price.
+(6) In this section—
+withholding contract means—
+
+(a) a project trust contract that is—
+(i) a head contract; or
+(ii) a subcontract that is eligible for a project trust
+under section 14C or 14D; or
+(b) a project trust subcontract for a project trust contract
+mentioned in paragraph(a).

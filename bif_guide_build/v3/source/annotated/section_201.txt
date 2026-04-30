@@ -1,0 +1,25 @@
+# Annotated BIF Act source — Section 201
+# Chapter: CHAPTER 7 – Miscellaneous
+# Section title: Regulation-making power
+# DOCX paragraphs: 5452-5471
+
+[2 Com-BIFSOPA Heading 1] SECTION 201 – Regulation-making power
+[1 BIFSOPA Heading] 201    Regulation-making power 
+[1.3 BIFSOPA level 1 (CDI)] The Governor in Council may make regulations under this Act.
+[1.3 BIFSOPA level 1 (CDI)] A regulation may—
+[1.4 BIFSOPA level 2 (CDI)] provide for payment instructions for project bank accounts; and
+[1.4 BIFSOPA level 2 (CDI)] for an adjudication qualification, prescribe the following—
+[1.5 BIFSOPA level 3 (CDI)] the name of the qualification;
+[1.5 BIFSOPA level 3 (CDI)] the bodies that may issue the qualification; 
+[1.5 BIFSOPA level 3 (CDI)] the name of the adjudication competency to be achieved to gain the qualification; 
+[1.5 BIFSOPA level 3 (CDI)] the elements that must be successfully completed to achieve the competency; and
+[1.4 BIFSOPA level 2 (CDI)] prescribe the grading of adjudicators; and 
+[1.4 BIFSOPA level 2 (CDI)] prescribe the continuing professional development that must be undertaken by adjudicators; and 
+[1.4 BIFSOPA level 2 (CDI)] prescribe the limits on fees payable to adjudicators; and 
+[1.4 BIFSOPA level 2 (CDI)] prescribe procedures for— 
+[1.5 BIFSOPA level 3 (CDI)] the lodgement of adjudication applications with the registrar, including the last time during a day that applications may be lodged; and
+[1.5 BIFSOPA level 3 (CDI)] the processing of adjudication applications by the registrar; and
+[1.4 BIFSOPA level 2 (CDI)] prescribe limitations on submissions and accompanying documents for adjudication applications and adjudication responses; and
+[1.4 BIFSOPA level 2 (CDI)] provide for fees payable under this Act.
+
+[2a BIFSOPA Chapter Heading] CHAPTER 8 – Transitional and repeal

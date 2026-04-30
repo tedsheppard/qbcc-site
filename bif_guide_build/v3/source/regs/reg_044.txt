@@ -1,0 +1,8 @@
+# Source: BIF Regulation 2018
+# Section 44 — Grading of existing adjudicators
+(1) This section applies to a person whose registration as an
+adjudicator is continued under section 204 of the Act.
+(2) The person is taken to be—
+(a) if section 20(a) or (b) applies in relation to the
+adjudicator—a grade 2 adjudicator; or
+(b) otherwise—a grade 1 adjudicator.

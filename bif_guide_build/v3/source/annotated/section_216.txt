@@ -1,0 +1,10 @@
+# Annotated BIF Act source — Section 216
+# Chapter: CHAPTER 9 – Amendment of this and other Acts
+# Section title: Amendment of s 14 (Particular contracts for project trust work)
+# DOCX paragraphs: 5784-5789
+
+[2 Com-BIFSOPA Heading 1] SECTION 216 – Amendment of s 14 (Particular contracts for project trust work)
+[1 BIFSOPA Heading] 216    Amendment of s 14 (Particular contracts for project trust work)
+[1.3 BIFSOPA level 1 (CDI)] Section 14(1)(c)(ii), ‘$10 million’—
+[1.3 BIFSOPA level 1 (CDI)] omit, insert—
+[1.3 BIFSOPA level 1 (CDI)] $3 million

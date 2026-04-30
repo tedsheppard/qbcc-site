@@ -1,0 +1,14 @@
+# Annotated BIF Act source — Section 18
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Government contracts tendered before commencement
+# DOCX paragraphs: 343-353
+
+[2 Com-BIFSOPA Heading 1] SECTION 18 – Government contracts tendered before commencement
+[1 BIFSOPA Heading] 18    Government contracts tendered before commencement
+[1.3 BIFSOPA level 1 (CDI)] A project bank account is not required for a building contract if—
+[1.4 BIFSOPA level 2 (CDI)] the principal is the State or a State authority; and 
+[1.4 BIFSOPA level 2 (CDI)] the first time the tender for the contract was issued or advertised was before the commencement of this section.
+[1.3 BIFSOPA level 1 (CDI)] To remove any doubt, it is declared that the project bank account continues to not be required for the building contract regardless of any of the following— 
+[1.4 BIFSOPA level 2 (CDI)] a variation, or any other amendment, of the contract;
+[1.4 BIFSOPA level 2 (CDI)] a change in the contract price; 
+[1.4 BIFSOPA level 2 (CDI)] a change in the work to be carried out under the contract.

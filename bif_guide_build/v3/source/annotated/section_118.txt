@@ -1,0 +1,11 @@
+# Annotated BIF Act source — Section 118
+# Chapter: CHAPTER 4 – Subcontractors’ charges
+# Section title: Limit of 1 claim for work
+# DOCX paragraphs: 4462-4468
+
+[2 Com-BIFSOPA Heading 1] SECTION 118 – Limit of 1 claim for work
+[1 BIFSOPA Heading] 118    Limit of 1 claim for work
+[1.3 BIFSOPA level 1 (CDI)] A subcontractor may make more than 1 claim in relation to money that is payable, or is to become payable, to the subcontractor for subcontracted work, however—
+[1.4 BIFSOPA level 2 (CDI)] each claim must be about a separate and distinguishable item of work done by the subcontractor under the subcontract; and 
+[1.4 BIFSOPA level 2 (CDI)] there must not be more than 1 claim about any 1 item.
+[1.3 BIFSOPA level 1 (CDI)] A subcontractor’s charge that is inconsistent with subsection (1) is of no effect and does not attach.

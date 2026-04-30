@@ -1,0 +1,44 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 53B — Power to issue directions affecting trust accounts
+(1) This section applies if—
+(a) the contract for a project trust or retention trust (the trust
+contract) is terminated; or
+(b) the contracted party for the trust contract becomes an
+insolvent under administration; or
+(c) the commissioner reasonably suspects a trust account is
+not being used as required under this Act or is being
+used in a way that is inconsistent with this Act; or
+(d) for a trustee that is a licensee under the Queensland
+Building and Construction Commission Act 1991—
+(i) the trustee’s licence is suspended or cancelled; or
+(ii) the trustee does not satisfy the minimum financial
+requirements under the Queensland Building and
+Construction Commission Act 1991.
+(2) The commissioner may, by written notice, give the trustee—
+(a) a direction that an amount not be withdrawn from a
+stated trust account without the commissioner’s written
+approval; or
+
+(b) a direction that the trustee give the commissioner an
+account review report for 1 or more of the trust accounts
+for the trustee.
+(3) The direction must include the information prescribed by
+regulation.
+(4) If the commissioner gives a trustee a direction under
+subsection(2)—
+(a) the commissioner must give a copy of the direction to
+the relevant financial institution; and
+(b) the commissioner may end or withdraw the direction by
+giving written notice of the matter to each entity given
+the direction or a copy of the direction.
+(5) The trustee must comply with the direction within the period
+stated in the notice unless the direction is withdrawn.
+Maximum penalty—100 penalty units.
+(6) In this section—
+trustee means—
+(a) if subsection(1)(a) or (b) applies—the trustee for the
+project trust or retention trust; or
+(b) if subsection(1)(c) applies—the trustee for the trust
+account; or
+(c) if subsection(1)(d) applies—the trustee mentioned in
+that subsection.

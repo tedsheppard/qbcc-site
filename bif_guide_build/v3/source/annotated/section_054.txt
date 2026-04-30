@@ -1,0 +1,25 @@
+# Annotated BIF Act source — Section 54
+# Chapter: CHAPTER 2 – Project bank accounts
+# Section title: Right of principal to step in as trustee
+# DOCX paragraphs: 871-892
+
+[2 Com-BIFSOPA Heading 1] SECTION 54 – Right of principal to step in as trustee
+[1 BIFSOPA Heading] 54    Right of principal to step in as trustee
+[1.3 BIFSOPA level 1 (CDI)] This section applies if a project bank account is established for a building contract and—
+[1.4 BIFSOPA level 2 (CDI)] the contract is terminated by the principal for a default by the head contractor; or 
+[1.4 BIFSOPA level 2 (CDI)] if the head contractor is an individual—he or she is an insolvent under administration within the meaning of the Corporations Act, section 9; or
+[1.4 BIFSOPA level 2 (CDI)] if the head contractor is a company—
+[1.5 BIFSOPA level 3 (CDI)] the company has a provisional liquidator, liquidator, administrator or controller appointed; or
+[1.5 BIFSOPA level 3 (CDI)] the company is wound up, or is ordered to be wound up by the Court within the meaning of the Corporations Act, section 9; or 
+[1.4 BIFSOPA level 2 (CDI)] another circumstance, prescribed by regulation, happens. 
+[1.3 BIFSOPA level 1 (CDI)] The principal may give a notice, in the approved form, to the head contractor advising that the principal will replace the head contractor as trustee of the project bank account. 
+[1.3 BIFSOPA level 1 (CDI)] From the day the notice is given to the head contractor— 
+[1.4 BIFSOPA level 2 (CDI)] the head contractor is discharged as trustee for the project bank account; and
+[1.4 BIFSOPA level 2 (CDI)] the principal is appointed as trustee for the project bank account.
+[1.3 BIFSOPA level 1 (CDI)] The notice—
+[1.4 BIFSOPA level 2 (CDI)] divests the amounts held in trust under the project bank account from the head contractor as trustee; and 
+[1.4 BIFSOPA level 2 (CDI)] vests the amounts held in trust under the project bank account in the principal as trustee. 
+[1.3 BIFSOPA level 1 (CDI)] However, the head contractor continues to be entitled to an amount of interest that the head contractor would have been entitled to under section 44, up to the divestment. 
+[1.3 BIFSOPA level 1 (CDI)] Nothing in this section relieves the head contractor of their liability for an act or failure committed as trustee.
+[1.3 BIFSOPA level 1 (CDI)] In this section— 
+[1.1 BIFSOPA Body Text] head contractor includes an insolvency official for the head contractor.

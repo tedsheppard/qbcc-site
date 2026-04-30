@@ -1,0 +1,38 @@
+# Source: BIF Act 2017 — Chapter 2
+# Section 20C — Insufficient amounts available for payments
+(1) This section applies if—
+(a) a project trust is established for a contract; and
+(b) the contracted party is liable to pay 2 or more
+subcontractor beneficiaries (each a claimant) an amount
+at the same time; and
+(c) the total amount held in the project trust account is
+insufficient to satisfy in full all of the amounts liable to
+be paid to the claimants; and
+(d) when an amount liable to be paid to a claimant is due to
+be paid, the contracted party has not complied with its
+obligation under section51 to cover the insufficient
+amount.
+
+(2) The amount to be paid by the contracted party to each
+claimant is to be reduced in proportion to the amounts liable
+to be paid to each.
+Example—
+If one subcontractor beneficiary is to be paid $50,000 and another
+subcontractor beneficiary is to be paid $30,000 but only $40,000 is
+available, the beneficiaries are to be paid $25,000 and $15,000
+respectively.
+(3) If the contracted party makes a payment complying with
+subsection(2), the party must, using an approved way, inform
+the commissioner of the payment as soon as practicable after
+making it.
+Maximum penalty—100 penalty units.
+(4) While there continues to be an insufficient amount held in the
+project trust account, the contracted party must not pay a
+subcontractor beneficiary unless the payment complies with
+subsection(2).
+Maximum penalty—100 penalty units or 1 year’s
+imprisonment.
+(5) Nothing in this section relieves the contracted party of the
+party’s liability to pay in full the amounts the subcontractor
+beneficiaries are entitled to be paid in connection with project
+trust subcontracts.
