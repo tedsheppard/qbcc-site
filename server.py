@@ -88,6 +88,11 @@ PAGE_BACKUP_DIR = os.path.join(SITE_DIR, ".page_backups")
 os.makedirs(PAGE_BACKUP_DIR, exist_ok=True)
 _use_persistent = os.getenv("USE_PERSISTENT_DB", "true").lower() == "true"
 DB_PATH = "/var/data/qbcc.db" if _use_persistent else "/tmp/qbcc.db"
+# Inline page edits made via the /admin/page/ endpoint are written here, not
+# to SITE_DIR. /var/data is Render's persistent disk so the edits survive
+# redeploys; on local dev we fall back to a project-local folder.
+PAGE_OVERRIDES_DIR = "/var/data/page_overrides" if _use_persistent else os.path.join(ROOT, "_page_overrides")
+os.makedirs(PAGE_OVERRIDES_DIR, exist_ok=True)
 LEXIFILE_STORAGE = "/tmp/lexifile_storage"
 os.makedirs(LEXIFILE_STORAGE, exist_ok=True)
 
@@ -116,6 +121,61 @@ def resolve_site_page_path(page_path: str, create_dirs: bool = False) -> Tuple[s
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
 
     return abs_path, cleaned
+
+
+def resolve_override_page_path(page_path: str, create_dirs: bool = False) -> Tuple[str, str]:
+    """Mirror of resolve_site_page_path but rooted in PAGE_OVERRIDES_DIR.
+
+    Returns the absolute file path of the override copy of a page (which may
+    or may not exist) plus the relative path. Same path-traversal guards as
+    the site-dir version.
+    """
+    cleaned = (page_path or "").strip().lstrip("/").replace("\\", "/")
+    if not cleaned:
+        raise HTTPException(status_code=400, detail="Missing page path")
+    if ".." in cleaned:
+        raise HTTPException(status_code=400, detail="Invalid page path")
+    if cleaned.endswith("/"):
+        cleaned = cleaned[:-1]
+    if not cleaned.lower().endswith(".html"):
+        cleaned = f"{cleaned}.html"
+
+    abs_path = os.path.abspath(os.path.join(PAGE_OVERRIDES_DIR, cleaned))
+    overrides_root = os.path.abspath(PAGE_OVERRIDES_DIR)
+    if not abs_path.startswith(overrides_root):
+        raise HTTPException(status_code=400, detail="Invalid page path")
+
+    if create_dirs:
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+
+    return abs_path, cleaned
+
+
+def serve_page_with_override(relative_path: str) -> Optional[str]:
+    """Return the absolute path to serve for a relative HTML page.
+
+    Checks the persistent overrides directory first; if a saved override
+    exists for the requested page, returns that path. Otherwise falls back
+    to the site-dir copy if it exists. Returns None if neither exists.
+
+    The relative_path argument is relative to SITE_DIR (e.g. ``"index.html"``,
+    ``"bif-act-guide.html"``). Any path-traversal attempts return None.
+    """
+    cleaned = (relative_path or "").lstrip("/").replace("\\", "/")
+    if not cleaned or ".." in cleaned:
+        return None
+
+    override_abs = os.path.abspath(os.path.join(PAGE_OVERRIDES_DIR, cleaned))
+    overrides_root = os.path.abspath(PAGE_OVERRIDES_DIR)
+    if override_abs.startswith(overrides_root) and os.path.isfile(override_abs):
+        return override_abs
+
+    site_abs = os.path.abspath(os.path.join(SITE_DIR, cleaned))
+    site_root = os.path.abspath(SITE_DIR)
+    if site_abs.startswith(site_root) and os.path.isfile(site_abs):
+        return site_abs
+
+    return None
 
 
 # Download DB from GCS on startup if it doesn't exist in /tmp
@@ -1496,19 +1556,31 @@ def get_editable_page(
     include_content: bool = Query(False),
     admin: dict = Depends(get_admin_user)
 ):
-    """Return metadata (and optionally content) for an editable static page."""
-    file_path, relative_path = resolve_site_page_path(page_path)
-    if not os.path.exists(file_path):
+    """Return metadata (and optionally content) for an editable static page.
+
+    If a persistent override exists for the requested page, the metadata
+    reflects the override (size, mtime, content) and ``has_override`` is
+    True. Otherwise the data comes from the git-shipped copy in SITE_DIR.
+    """
+    site_path, relative_path = resolve_site_page_path(page_path)
+    override_path, _ = resolve_override_page_path(page_path)
+
+    has_override = os.path.isfile(override_path)
+    serve_path = override_path if has_override else site_path
+
+    if not os.path.isfile(serve_path):
         raise HTTPException(status_code=404, detail="Page not found")
 
     response = {
         "page": relative_path,
-        "last_modified": datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat(),
-        "size": os.path.getsize(file_path)
+        "last_modified": datetime.fromtimestamp(os.path.getmtime(serve_path)).isoformat(),
+        "size": os.path.getsize(serve_path),
+        "has_override": has_override,
+        "git_version_present": os.path.isfile(site_path),
     }
 
     if include_content:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(serve_path, "r", encoding="utf-8") as f:
             response["content"] = f.read()
 
     return response
@@ -1520,30 +1592,68 @@ def update_editable_page(
     payload: PageUpdateRequest,
     admin: dict = Depends(get_admin_user)
 ):
-    """Persist inline edits for a static HTML page and capture a backup."""
-    file_path, relative_path = resolve_site_page_path(page_path, create_dirs=True)
+    """Persist inline edits for a static HTML page to the persistent overrides
+    directory. The git-shipped copy in SITE_DIR is left untouched so future
+    redeploys keep the canonical version intact; the override layer in
+    PAGE_OVERRIDES_DIR shadows it at request time (see serve_page_with_override).
+
+    A backup of the previous override (or the site-dir copy on first save) is
+    captured in PAGE_BACKUP_DIR for recovery.
+    """
+    override_path, relative_path = resolve_override_page_path(page_path, create_dirs=True)
+    site_path, _ = resolve_site_page_path(page_path)
     content = payload.content or ""
     if not content.strip():
         raise HTTPException(status_code=400, detail="File content cannot be empty")
 
     backup_path = None
-    if os.path.exists(file_path):
+    backup_source = override_path if os.path.isfile(override_path) else (
+        site_path if os.path.isfile(site_path) else None
+    )
+    if backup_source:
         timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
         safe_name = relative_path.replace("/", "_")
         backup_filename = f"{safe_name}.{timestamp}.bak"
         backup_path = os.path.join(PAGE_BACKUP_DIR, backup_filename)
-        shutil.copy2(file_path, backup_path)
+        shutil.copy2(backup_source, backup_path)
 
-    temp_path = f"{file_path}.tmp"
+    temp_path = f"{override_path}.tmp"
     with open(temp_path, "w", encoding="utf-8") as temp_file:
         temp_file.write(content + "\n")
-    os.replace(temp_path, file_path)
+    os.replace(temp_path, override_path)
 
     return {
         "message": "Page updated",
         "page": relative_path,
         "bytes_written": len((content + "\n").encode("utf-8")),
-        "backup": os.path.relpath(backup_path, SITE_DIR) if backup_path else None
+        "backup": os.path.relpath(backup_path, SITE_DIR) if backup_path else None,
+        "stored_as_override": True,
+    }
+
+
+@app.delete("/admin/page/{page_path:path}/override")
+def delete_page_override(
+    page_path: str,
+    admin: dict = Depends(get_admin_user)
+):
+    """Delete the persistent override for a page so the git-shipped copy
+    serves again. A backup of the deleted override is captured first.
+    """
+    override_path, relative_path = resolve_override_page_path(page_path)
+    if not os.path.isfile(override_path):
+        return {"message": "No override to delete", "page": relative_path}
+
+    timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    safe_name = relative_path.replace("/", "_")
+    backup_filename = f"{safe_name}.{timestamp}.deleted.bak"
+    backup_path = os.path.join(PAGE_BACKUP_DIR, backup_filename)
+    shutil.copy2(override_path, backup_path)
+    os.remove(override_path)
+
+    return {
+        "message": "Override deleted; git-shipped copy will now serve",
+        "page": relative_path,
+        "backup": os.path.relpath(backup_path, SITE_DIR),
     }
 
 # In server.py, add these new endpoints with your other admin routes
@@ -5079,11 +5189,17 @@ async def serve_html_page(path_name: str):
         path_name = "index"
 
 
+    # First try overrides (persistent disk) for the .html form. This lets
+    # admin inline edits survive redeploys without committing to git.
+    override_serve = serve_page_with_override(f"{path_name}.html")
+    if override_serve:
+        return FileResponse(override_serve)
+
     file_path = os.path.join(SITE_DIR, f"{path_name}.html")
-    
+
     if os.path.abspath(file_path).startswith(os.path.abspath(SITE_DIR)) and os.path.exists(file_path) and not os.path.isdir(file_path):
         return FileResponse(file_path)
-    
+
     static_file_path = os.path.join(SITE_DIR, path_name)
     if os.path.abspath(static_file_path).startswith(os.path.abspath(SITE_DIR)) and os.path.exists(static_file_path) and not os.path.isdir(static_file_path):
         return FileResponse(static_file_path)

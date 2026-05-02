@@ -6330,6 +6330,13 @@
         toolbar.className = 'admin-editor-toolbar';
         toolbar.innerHTML = `
         <div class="admin-editor-status" data-role="status">Editor idle</div>
+        <div class="admin-editor-override" data-role="override-banner" style="display:none;font-size:12px;padding:8px 10px;border-radius:6px;background:#fef3c7;color:#854d0e;border:1px solid #fde68a;margin-bottom:6px;line-height:1.4;">
+          <strong>Override active</strong> — your edits are saved on the server (persistent disk) but not yet in git. They survive redeploys; download to commit them properly, or discard to revert to the git version.
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" data-action="download-override" style="font-size:11px;padding:4px 8px;border:1px solid #d4a017;background:#fff;color:#854d0e;border-radius:4px;cursor:pointer;">Download override HTML</button>
+            <button type="button" data-action="discard-override" style="font-size:11px;padding:4px 8px;border:1px solid #fca5a5;background:#fff;color:#991b1b;border-radius:4px;cursor:pointer;">Discard &amp; revert to git</button>
+          </div>
+        </div>
         <div class="admin-toolbar-row" data-row="format">
           <button type="button" data-command="paragraph">Paragraph</button>
           <button type="button" data-command="h2">H2</button>
@@ -6346,7 +6353,7 @@
         <div class="admin-toolbar-row" data-row="actions">
           <button type="button" data-action="reload" data-variant="ghost">Reload file</button>
           <button type="button" data-action="exit" data-variant="danger">Exit</button>
-          <button type="button" data-action="save" data-variant="primary">Save & Publish</button>
+          <button type="button" data-action="save" data-variant="primary">Save</button>
         </div>
       `;
         document.body.appendChild(toolbar);
@@ -6469,9 +6476,11 @@ ${clone.outerHTML}`;
             const data = await safeJson(response);
             throw new Error(data.detail || 'Failed to save file');
           }
-          await response.json();
+          const result = await response.json();
           updateSnapshot();
-          showToast('Changes published');
+          updateOverrideBanner(!!(result && result.stored_as_override));
+          showToast('Saved as override (persists across redeploys)');
+          setStatus('Saved — override active');
         } catch (error) {
           setStatus(error.message || 'Save failed');
           showToast(error.message || 'Save failed');
@@ -6563,6 +6572,10 @@ ${clone.outerHTML}`;
           }
         } else if (action === 'reload') {
           reloadFromServer();
+        } else if (action === 'download-override') {
+          downloadOverrideHtml();
+        } else if (action === 'discard-override') {
+          discardOverride();
         }
       };
 
@@ -6574,6 +6587,48 @@ ${clone.outerHTML}`;
         }
       };
 
+      const updateOverrideBanner = (hasOverride) => {
+        if (!toolbar) return;
+        const banner = toolbar.querySelector('[data-role="override-banner"]');
+        if (banner) banner.style.display = hasOverride ? 'block' : 'none';
+      };
+
+      const downloadOverrideHtml = async () => {
+        try {
+          const data = await fetchPageMeta(true);
+          const blob = new Blob([data.content || ''], { type: 'text/html;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = (data.page || pagePath).replace(/\//g, '_');
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          setStatus('Override HTML downloaded — commit it to git when ready');
+        } catch (err) {
+          setStatus('Download failed: ' + err.message);
+        }
+      };
+
+      const discardOverride = async () => {
+        if (!confirm('Discard the persistent override and revert this page to the git-shipped version? Your inline edits will be backed up but the live page will reload to show the git copy.')) {
+          return;
+        }
+        try {
+          const headers = { Authorization: `Bearer ${state.token}`, Accept: 'application/json' };
+          const res = await fetch(`/admin/page/${encodedPagePath}/override`, { method: 'DELETE', headers });
+          if (!res.ok) {
+            const payload = await safeJson(res);
+            throw new Error(payload.detail || `Discard failed (${res.status})`);
+          }
+          setStatus('Override discarded — reloading to show git version');
+          setTimeout(() => window.location.reload(), 700);
+        } catch (err) {
+          setStatus('Discard failed: ' + err.message);
+        }
+      };
+
       const verifyAdminAccess = async () => {
         if (!state.token) {
           state.isAdmin = false;
@@ -6581,9 +6636,10 @@ ${clone.outerHTML}`;
           return false;
         }
         try {
-          await fetchPageMeta(false);
+          const meta = await fetchPageMeta(false);
           state.isAdmin = true;
           mountEditorUI();
+          updateOverrideBanner(!!(meta && meta.has_override));
           setStatus('Editor idle');
           updateToggleLabel();
           return true;
