@@ -1,7 +1,7 @@
 import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io, json, sys, threading
 from urllib.parse import unquote_plus
 from fastapi import FastAPI, Query, Form, Path, HTTPException, UploadFile, File, Body
-from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from email.message import EmailMessage
@@ -1629,6 +1629,119 @@ def update_editable_page(
         "backup": os.path.relpath(backup_path, SITE_DIR) if backup_path else None,
         "stored_as_override": True,
     }
+
+
+@app.get("/admin/render-page/{page_path:path}")
+def render_admin_page(
+    page_path: str,
+    admin: dict = Depends(get_admin_user)
+):
+    """Admin-only HTML render of a static page. Returns the override copy if
+    one exists, otherwise the git-shipped copy. Used by gated public routes
+    (e.g. /bif-act-guide) to fetch the real content after client-side auth.
+    """
+    site_path, relative_path = resolve_site_page_path(page_path)
+    override_path, _ = resolve_override_page_path(page_path)
+
+    if os.path.isfile(override_path):
+        serve_path = override_path
+    elif os.path.isfile(site_path):
+        serve_path = site_path
+    else:
+        raise HTTPException(status_code=404, detail="Page not found")
+
+    return FileResponse(serve_path, media_type="text/html")
+
+
+# ---------------------------------------------------------------------------
+# Admin-gated public route: /bif-act-guide is a paying-admin-only page.
+# Browsers don't auto-send the JWT in headers on plain navigation, so the
+# server returns a tiny client-side gate that:
+#   - reads purchase_token from localStorage,
+#   - calls /admin/render-page/bif-act-guide.html with Authorization,
+#   - on 200 swaps in the real HTML (scripts re-execute via document.write),
+#   - on 401 (no/expired token) redirects to /login?redirect=/bif-act-guide,
+#   - on 403 (logged in but not admin) shows an "admins only" message.
+# ---------------------------------------------------------------------------
+_BIF_GUIDE_GATE_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BIF Act Guide | Sopal</title>
+  <style>
+    html, body { margin: 0; padding: 0; background: #0a0a0a; color: #e5e5e5; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; }
+    .gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+    .gate-card { max-width: 480px; text-align: center; }
+    .gate-card h1 { font-size: 18px; font-weight: 600; margin: 0 0 8px; color: #fafafa; letter-spacing: -0.01em; }
+    .gate-card p { font-size: 14px; color: #999; margin: 0 0 20px; line-height: 1.5; }
+    .gate-card a { color: #00d47e; text-decoration: none; font-weight: 500; }
+    .gate-card a:hover { text-decoration: underline; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #333; border-top-color: #00d47e; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="gate" id="gate">
+    <div class="gate-card" id="card">
+      <p><span class="spinner"></span>Verifying access&hellip;</p>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var TARGET = '/bif-act-guide';
+      var ENDPOINT = '/admin/render-page/bif-act-guide.html';
+      var token = '';
+      try { token = window.localStorage.getItem('purchase_token') || ''; } catch (e) {}
+      var card = document.getElementById('card');
+
+      function showAdminsOnly() {
+        card.innerHTML = '<h1>Admins only</h1>' +
+          '<p>The BIF Act Guide is restricted to administrators of this site. ' +
+          'You are signed in but do not have admin access.</p>' +
+          '<p><a href="/account.html">Back to your account</a> &middot; <a href="/login?redirect=' +
+          encodeURIComponent(TARGET) + '">Sign in as a different user</a></p>';
+      }
+
+      function redirectToLogin() {
+        window.location.replace('/login?redirect=' + encodeURIComponent(TARGET));
+      }
+
+      if (!token) { redirectToLogin(); return; }
+
+      fetch(ENDPOINT, {
+        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'text/html' },
+        cache: 'no-store',
+        credentials: 'same-origin'
+      }).then(function (res) {
+        if (res.status === 200) {
+          return res.text().then(function (html) {
+            document.open();
+            document.write(html);
+            document.close();
+          });
+        }
+        if (res.status === 401) { redirectToLogin(); return; }
+        if (res.status === 403) { showAdminsOnly(); return; }
+        card.innerHTML = '<h1>Could not load page</h1><p>Server returned ' + res.status + '. Try refreshing.</p>';
+      }).catch(function () {
+        card.innerHTML = '<h1>Network error</h1><p>Could not reach the server. <a href="javascript:location.reload()">Retry</a></p>';
+      });
+    })();
+  </script>
+</body>
+</html>
+"""
+
+
+@app.get("/bif-act-guide")
+@app.get("/bif-act-guide.html")
+def serve_bif_act_guide_gate():
+    """Public-facing route for the BIF Act Guide returns a thin auth-gate
+    HTML stub. The real page content is served by /admin/render-page/...
+    and only if the user is a logged-in admin.
+    """
+    return Response(content=_BIF_GUIDE_GATE_HTML, media_type="text/html")
 
 
 @app.delete("/admin/page/{page_path:path}/override")
