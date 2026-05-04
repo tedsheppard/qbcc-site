@@ -264,10 +264,16 @@
         throw new Error(msg);
       }
       const data = await r.json();
-      // Replace temp chip with real one
+      // Replace temp chip with real one. If no text could be extracted
+      // (n_chars === 0), surface that on the chip so the user knows the
+      // file was uploaded but unreadable (scanned/image PDF etc).
+      const unreadable = !data.n_chars || data.n_chars === 0;
       state.documents = state.documents.map(d => d.id === tempId
-        ? { id: data.id, filename: data.filename, size_bytes: data.size_bytes,
-            n_chars: data.n_chars, truncated: data.truncated }
+        ? {
+            id: data.id, filename: data.filename, size_bytes: data.size_bytes,
+            n_chars: data.n_chars, truncated: data.truncated,
+            error: unreadable ? "no text extracted (scanned PDF?)" : undefined,
+          }
         : d);
     } catch (e) {
       state.documents = state.documents.map(d => d.id === tempId

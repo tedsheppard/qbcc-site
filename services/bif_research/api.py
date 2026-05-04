@@ -478,12 +478,13 @@ def get_conversation(conv_id: str):
 # ---------------------------------------------------------------------------
 
 def _extract_pdf_text(path: Path) -> str:
+    """Try PyPDF2 first; fall back to pdfplumber which handles a wider
+    range of PDF encodings. Returns empty string for scanned/image PDFs
+    (those need OCR, which is a future enhancement)."""
+    text = ""
     try:
         import PyPDF2
-    except Exception:
-        return ""
-    out = []
-    try:
+        out = []
         with open(path, "rb") as f:
             r = PyPDF2.PdfReader(f)
             for page in r.pages:
@@ -491,9 +492,27 @@ def _extract_pdf_text(path: Path) -> str:
                     out.append(page.extract_text() or "")
                 except Exception:
                     continue
+        text = "\n".join(out).strip()
     except Exception as e:
-        log.warning(f"pdf extract failed for {path}: {e}")
-    return "\n".join(out)
+        log.info(f"PyPDF2 extract failed for {path}: {e}")
+
+    if len(text) < 200:
+        try:
+            import pdfplumber
+            out = []
+            with pdfplumber.open(str(path)) as pdf:
+                for page in pdf.pages:
+                    try:
+                        out.append(page.extract_text() or "")
+                    except Exception:
+                        continue
+            alt = "\n".join(out).strip()
+            if len(alt) > len(text):
+                text = alt
+        except Exception as e:
+            log.info(f"pdfplumber extract failed for {path}: {e}")
+
+    return text
 
 
 def _extract_docx_text(path: Path) -> str:
@@ -812,26 +831,40 @@ async def ask(payload: AskRequest, request: Request):
             # answerer/reasoner all see this as part of the user turn so
             # they can read and reason over the document content.
             user_docs = _load_conv_documents_text(conv_id) if conv_id else []
-            if user_docs:
-                doc_blocks = []
-                for d in user_docs:
-                    if not d["text"].strip():
-                        continue
-                    doc_blocks.append(
-                        f"=== ATTACHED DOCUMENT: {d['filename']} ===\n{d['text']}"
-                    )
-                if doc_blocks:
-                    docs_preamble = (
-                        "The user has attached the following document(s) to this "
-                        "conversation. Read them and use them as part of the factual "
-                        "context for your answer. They are NOT primary law and must "
-                        "not be cited as authority.\n\n"
-                        + "\n\n".join(doc_blocks)
-                        + "\n\n=== END OF ATTACHED DOCUMENTS ===\n\n"
-                    )
-                    question_with_docs = docs_preamble + "USER QUESTION:\n" + payload.question
-                else:
-                    question_with_docs = payload.question
+            doc_blocks = []
+            unreadable = []
+            for d in user_docs:
+                txt = (d.get("text") or "").strip()
+                if not txt:
+                    unreadable.append(d.get("filename", "(unnamed)"))
+                    continue
+                doc_blocks.append(
+                    f"=== ATTACHED DOCUMENT: {d['filename']} ===\n{txt}"
+                )
+            preamble_parts = []
+            if doc_blocks:
+                preamble_parts.append(
+                    "The user has attached the following document(s) to this "
+                    "conversation. Read them and use them as part of the factual "
+                    "context for your answer. They are NOT primary law and must "
+                    "not be cited as authority.\n\n"
+                    + "\n\n".join(doc_blocks)
+                    + "\n\n=== END OF ATTACHED DOCUMENTS ==="
+                )
+            if unreadable:
+                preamble_parts.append(
+                    "NOTE: the user attached the following document(s) but no "
+                    "text could be extracted (likely a scanned/image-only PDF "
+                    "that requires OCR). Tell the user explicitly that you "
+                    "could not read the file and suggest they paste the text or "
+                    "upload a text-based PDF/DOCX:\n  - "
+                    + "\n  - ".join(unreadable)
+                )
+            if preamble_parts:
+                question_with_docs = (
+                    "\n\n".join(preamble_parts)
+                    + "\n\nUSER QUESTION:\n" + payload.question
+                )
             else:
                 question_with_docs = payload.question
 
