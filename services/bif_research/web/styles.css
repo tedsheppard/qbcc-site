@@ -211,14 +211,15 @@ img { display: block; max-width: 100%; }
 .turn { padding: 14px 0 18px; border-bottom: 1px solid #f0f0f0; }
 .turn:last-child { border-bottom: none; }
 .turn .role {
+  display: block;
   font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--text-faint); margin-bottom: 8px; font-weight: 500;
-  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--text-faint); margin: 0 0 10px; font-weight: 500;
 }
+.turn .role .confidence-indicator { margin-left: 8px; vertical-align: middle; }
 .turn-user .user-text {
   background: var(--green-tint); border-radius: 12px;
-  padding: 12px 16px; font-size: 14.5px; line-height: 1.5;
-  display: inline-block; max-width: 100%;
+  padding: 12px 16px; font-size: 14.5px; line-height: 1.55;
+  display: block; max-width: 100%;
 }
 .turn-assistant .role { color: var(--text-faint); }
 .confidence-indicator {
