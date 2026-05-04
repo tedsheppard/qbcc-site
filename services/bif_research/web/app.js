@@ -303,6 +303,17 @@
     const title = document.getElementById("tool-view-title");
     const main = document.getElementById("main-pane");
     if (!view || !frame || !main) return;
+    // The sitewide page-transition guard sets sessionStorage.nt-transitioning
+    // to overlay a black cover on the next page until JS clears it. The
+    // claim-check iframe inherits sessionStorage from this tab and would
+    // pick up the flag, drawing a solid black rectangle. Clear it before
+    // the iframe loads so the embedded page renders normally.
+    try {
+      sessionStorage.removeItem("nt-transitioning");
+      if (frame.contentWindow && frame.contentWindow.sessionStorage) {
+        frame.contentWindow.sessionStorage.removeItem("nt-transitioning");
+      }
+    } catch (e) { /* cross-origin or storage disabled — ignore */ }
     let src = "/claim-check?embed=1";
     if (mode === "claim" || mode === "schedule") src += "#" + mode;
     if (frame.dataset.currentSrc !== src) {
