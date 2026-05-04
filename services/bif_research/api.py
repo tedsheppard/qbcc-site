@@ -528,17 +528,147 @@ def _extract_docx_text(path: Path) -> str:
         return ""
 
 
+def _extract_xlsx_text(path: Path) -> str:
+    try:
+        import openpyxl
+    except Exception:
+        return ""
+    try:
+        wb = openpyxl.load_workbook(str(path), data_only=True, read_only=True)
+        out = []
+        for sheet in wb.sheetnames:
+            ws = wb[sheet]
+            out.append(f"=== Sheet: {sheet} ===")
+            for row in ws.iter_rows(values_only=True):
+                cells = ["" if v is None else str(v) for v in row]
+                if any(c.strip() for c in cells):
+                    out.append("\t".join(cells))
+        wb.close()
+        return "\n".join(out)
+    except Exception as e:
+        log.warning(f"xlsx extract failed for {path}: {e}")
+        return ""
+
+
+def _extract_image_ocr(path: Path) -> str:
+    try:
+        import pytesseract
+        from PIL import Image
+    except Exception:
+        return ""
+    try:
+        img = Image.open(str(path))
+        return pytesseract.image_to_string(img) or ""
+    except Exception as e:
+        log.warning(f"image OCR failed for {path}: {e}")
+        return ""
+
+
+def _extract_msg_text(path: Path) -> str:
+    try:
+        import extract_msg
+    except Exception:
+        return ""
+    try:
+        m = extract_msg.Message(str(path))
+        parts = []
+        if m.subject: parts.append(f"Subject: {m.subject}")
+        if m.sender: parts.append(f"From: {m.sender}")
+        if m.to: parts.append(f"To: {m.to}")
+        if m.date: parts.append(f"Date: {m.date}")
+        if m.body: parts.append("\n" + m.body)
+        return "\n".join(parts)
+    except Exception as e:
+        log.warning(f"msg extract failed for {path}: {e}")
+        return ""
+
+
+def _extract_pdf_ocr(path: Path) -> str:
+    """OCR-based fallback for image-only PDFs. Uses pdf2image (needs
+    poppler-utils) → pytesseract per page. Slow but handles scanned
+    decisions. Returns '' if dependencies are missing."""
+    try:
+        from pdf2image import convert_from_path
+        import pytesseract
+    except Exception:
+        return ""
+    try:
+        pages = convert_from_path(str(path), dpi=200)
+    except Exception as e:
+        log.warning(f"pdf2image failed for {path}: {e}")
+        return ""
+    out = []
+    for i, img in enumerate(pages, 1):
+        try:
+            txt = pytesseract.image_to_string(img) or ""
+            if txt.strip():
+                out.append(f"--- page {i} ---\n{txt}")
+        except Exception as e:
+            log.info(f"OCR page {i} failed: {e}")
+            continue
+    return "\n\n".join(out)
+
+
 def _extract_text_from_upload(path: Path, mime: str, filename: str) -> str:
     name = filename.lower()
+    # PDF — text-based first; OCR as last-ditch fallback for scans
     if name.endswith(".pdf") or mime == "application/pdf":
-        return _extract_pdf_text(path)
+        text = _extract_pdf_text(path)
+        if len(text.strip()) < 200:
+            ocr = _extract_pdf_ocr(path)
+            if len(ocr) > len(text):
+                text = ocr
+        return text
     if name.endswith(".docx") or mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
         return _extract_docx_text(path)
-    if name.endswith(".txt") or name.endswith(".md") or mime.startswith("text/"):
+    if name.endswith(".doc"):
+        # Legacy Word — try docx2txt; if not installed, return empty.
+        # textract / antiword are heavier system deps; skip for now.
+        try:
+            import docx2txt
+            return (docx2txt.process(str(path)) or "").strip()
+        except Exception as e:
+            log.info(f"doc legacy extract not available for {path}: {e}")
+            return ""
+    if name.endswith((".xlsx", ".xlsm")) or mime in (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel.sheet.macroenabled.12",
+    ):
+        return _extract_xlsx_text(path)
+    if name.endswith(".csv") or mime == "text/csv":
         try:
             return path.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            return ""
+    if name.endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp")) or mime.startswith("image/"):
+        return _extract_image_ocr(path)
+    if name.endswith(".msg"):
+        return _extract_msg_text(path)
+    if name.endswith(".eml"):
+        try:
+            from email import message_from_bytes
+            from email.policy import default as email_policy
+            msg = message_from_bytes(path.read_bytes(), policy=email_policy)
+            body = msg.get_body(preferencelist=("plain", "html"))
+            txt = ""
+            if body:
+                try: txt = body.get_content() or ""
+                except Exception: txt = ""
+            header = "\n".join(f"{k}: {v}" for k, v in msg.items())
+            return header + "\n\n" + txt
         except Exception as e:
-            log.warning(f"txt read failed for {path}: {e}")
+            log.warning(f"eml extract failed: {e}")
+            return ""
+    if name.endswith((".txt", ".md", ".rtf", ".log")) or mime.startswith("text/"):
+        try:
+            raw = path.read_text(encoding="utf-8", errors="replace")
+            if name.endswith(".rtf"):
+                # Best-effort RTF plain-text — strip control words crudely.
+                import re
+                raw = re.sub(r"\\[a-zA-Z]+-?\d* ?", "", raw)
+                raw = re.sub(r"[{}]", "", raw)
+            return raw
+        except Exception:
             return ""
     return ""
 

@@ -27,3 +27,5 @@ reportlab
 pdfplumber>=0.11.0
 rank_bm25>=0.2.2
 anthropic>=0.40.0
+docx2txt>=0.8
+pdf2image>=1.17.0

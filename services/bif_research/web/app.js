@@ -53,7 +53,12 @@
   };
 
   const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
-  const ALLOWED_UPLOAD_EXT = [".pdf", ".docx", ".txt", ".md"];
+  const ALLOWED_UPLOAD_EXT = [
+    ".pdf", ".docx", ".doc", ".txt", ".md", ".rtf", ".csv",
+    ".xlsx", ".xls", ".xlsm",
+    ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp",
+    ".msg", ".eml",
+  ];
   const fmtBytes = (n) => {
     if (n < 1024) return n + " B";
     if (n < 1024 * 1024) return (n / 1024).toFixed(0) + " KB";
