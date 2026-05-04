@@ -431,6 +431,76 @@ img { display: block; max-width: 100%; }
 .upload-btn.uploading .upload-plus { animation: rotate 1s linear infinite; }
 @keyframes rotate { to { transform: rotate(360deg); } }
 
+/* Jurisdiction picker — small pill above the input shell. Today only
+ * Queensland is selectable; other states show as greyed-out 'soon'. */
+.jurisdiction-row {
+  max-width: 820px; margin: 0 auto 8px;
+  position: relative;
+  display: flex; justify-content: flex-start;
+}
+.jurisdiction-picker {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px 5px 9px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px; color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.jurisdiction-picker:hover {
+  border-color: var(--green);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,212,126,0.10);
+}
+.jurisdiction-picker strong {
+  color: var(--text); font-weight: 600;
+}
+.jurisdiction-picker .jurisdiction-flag {
+  color: var(--green-dark);
+}
+.jurisdiction-picker .jurisdiction-chevron {
+  color: var(--text-faint);
+  margin-left: 2px;
+  transition: transform 0.15s;
+}
+.jurisdiction-picker[aria-expanded="true"] .jurisdiction-chevron {
+  transform: rotate(180deg);
+}
+.jurisdiction-menu {
+  position: absolute;
+  bottom: calc(100% + 6px); left: 0;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+  min-width: 240px;
+  padding: 6px;
+  list-style: none;
+  z-index: 60;
+}
+.jurisdiction-menu[hidden] { display: none; }
+.jurisdiction-menu li {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-radius: 8px;
+  font-size: 13px; cursor: default;
+}
+.jurisdiction-menu li.active {
+  background: var(--green-tint); color: var(--text);
+  font-weight: 500;
+}
+.jurisdiction-menu li.active .active-dot {
+  color: var(--green-dark); font-size: 14px; font-weight: 700;
+}
+.jurisdiction-menu li.disabled {
+  color: var(--text-faint);
+}
+.jurisdiction-menu li.disabled .soon {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+  background: #f0f0f0; color: var(--text-muted);
+  padding: 1px 6px; border-radius: 999px;
+}
+
 /* Attachment chip strip */
 .attachments {
   max-width: 820px; margin: 0 auto 8px;

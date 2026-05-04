@@ -86,12 +86,36 @@
       <div class="conv-container" id="conv-container">
         <div class="welcome" id="welcome">
           <h1>Ask any security of payment question</h1>
-          <p class="welcome-sub">Verbatim citations from the BIF Act, QBCC Act, the regulations, and every Queensland court decision since 2004. Attach a contract or claim — SopalAI reads it alongside the law.</p>
         </div>
         <div class="conv-stream" id="conv-stream"></div>
       </div>
 
       <div class="input-bar">
+        <div class="jurisdiction-row">
+          <button class="jurisdiction-picker" id="jurisdiction-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+            <svg class="jurisdiction-flag" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="1.8" aria-hidden="true">
+              <path d="M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12z"/>
+              <circle cx="12" cy="10" r="2.5"/>
+            </svg>
+            <span>Jurisdiction:</span>
+            <strong id="jurisdiction-current">Queensland</strong>
+            <svg class="jurisdiction-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2" aria-hidden="true">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+          <ul class="jurisdiction-menu" id="jurisdiction-menu" role="listbox" hidden>
+            <li role="option" aria-selected="true" data-juris="qld" class="active">
+              <span>Queensland</span><span class="active-dot" aria-hidden="true">✓</span>
+            </li>
+            <li role="option" aria-disabled="true" class="disabled"><span>New South Wales</span><span class="soon">soon</span></li>
+            <li role="option" aria-disabled="true" class="disabled"><span>Victoria</span><span class="soon">soon</span></li>
+            <li role="option" aria-disabled="true" class="disabled"><span>Western Australia</span><span class="soon">soon</span></li>
+            <li role="option" aria-disabled="true" class="disabled"><span>South Australia</span><span class="soon">soon</span></li>
+            <li role="option" aria-disabled="true" class="disabled"><span>Tasmania</span><span class="soon">soon</span></li>
+            <li role="option" aria-disabled="true" class="disabled"><span>Northern Territory</span><span class="soon">soon</span></li>
+            <li role="option" aria-disabled="true" class="disabled"><span>Australian Capital Territory</span><span class="soon">soon</span></li>
+          </ul>
+        </div>
         <div class="attachments" id="attachments" hidden></div>
         <div class="input-shell">
           <button class="upload-btn" id="upload-btn" type="button" title="Attach a document (PDF, DOCX, TXT — up to 20 MB)">

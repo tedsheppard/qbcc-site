@@ -293,6 +293,30 @@
     });
   }
 
+  // -------- jurisdiction picker (QLD only for now) --------
+  const jurisdictionBtn = document.getElementById("jurisdiction-btn");
+  const jurisdictionMenu = document.getElementById("jurisdiction-menu");
+  if (jurisdictionBtn && jurisdictionMenu) {
+    const close = () => {
+      jurisdictionMenu.hidden = true;
+      jurisdictionBtn.setAttribute("aria-expanded", "false");
+    };
+    const open = () => {
+      jurisdictionMenu.hidden = false;
+      jurisdictionBtn.setAttribute("aria-expanded", "true");
+    };
+    jurisdictionBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      jurisdictionMenu.hidden ? open() : close();
+    });
+    document.addEventListener("click", (e) => {
+      if (!jurisdictionMenu.hidden && !jurisdictionMenu.contains(e.target) && e.target !== jurisdictionBtn) close();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !jurisdictionMenu.hidden) close();
+    });
+  }
+
   // -------- recents --------
   async function loadRecents() {
     try {
