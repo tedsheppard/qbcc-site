@@ -518,8 +518,8 @@
       const items = payload.cases.map(c => `<li>${escape(c)}</li>`).join("");
       inner += `<ul class="status-cases">${items}</ul>`;
       if (Array.isArray(payload.missed) && payload.missed.length) {
-        const missed = payload.missed.map(c => `<li>${escape(c)} <span class="missed-tag">(not in corpus)</span></li>`).join("");
-        inner += `<div class="status-cases-label">Mentioned but not indexed:</div><ul class="status-cases status-cases-missed">${missed}</ul>`;
+        const missed = payload.missed.map(c => `<li>${escape(c)}</li>`).join("");
+        inner += `<div class="status-cases-label">Non-Queensland decisions:</div><ul class="status-cases status-cases-missed">${missed}</ul>`;
       }
     }
     div.innerHTML = inner;
