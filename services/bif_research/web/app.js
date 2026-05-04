@@ -777,7 +777,9 @@
   // -------- input behaviour --------
   function autosize() {
     els.input.style.height = "auto";
-    els.input.style.height = Math.min(200, els.input.scrollHeight) + "px";
+    // Grow with content up to 240px, but never collapse below the CSS
+    // min-height (64px) — that's enforced by CSS even if we set lower.
+    els.input.style.height = Math.min(240, Math.max(64, els.input.scrollHeight)) + "px";
   }
   els.input.addEventListener("input", () => {
     autosize();
