@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SopalAI — Construction Law Research | Sopal</title>
+  <meta name="description" content="Ask any question about the BIF Act, payment claims, adjudications and other Queensland security-of-payment matters. Verbatim citations from statute and Queensland case law." />
+  <link rel="icon" href="/assets/favicon.ico" type="image/x-icon" />
+  <!-- Resolve relative URLs against the mount prefix (/sopalai/ in
+       production, / for local dev when uvicorn serves at the root). -->
+  <script>(function(){var b=location.pathname.indexOf("/sopalai")===0?"/sopalai/":"/";document.write('<base href="'+b+'">');})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="static/styles.css" />
+</head>
+<body>
+  <!-- TOP NAV (matches the rest of sopal.com.au) -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/" class="nav-logo">
+          <img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;" />
+        </a>
+        <div class="nav-links">
+          <a href="/search">Search</a>
+          <a href="/adjudicators">Adjudicators</a>
+          <a href="/sopalai" class="active">SopalAI</a>
+          <a href="/interest-calculator">Interest Calculator</a>
+          <a href="/due-date-calculator">Due Date Calculator</a>
+          <a href="/how-to">How-To Guide</a>
+          <a href="/feedback">Feedback</a>
+        </div>
+      </div>
+      <div class="nav-right">
+        <a href="#" id="nav-signin" class="btn-signin">Sign In</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="app">
+    <!-- Sidebar (simplified — only New chat + Recents) -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <button class="new-chat" id="new-chat-btn" type="button">
+          <span class="plus">+</span> New chat
+        </button>
+      </div>
+      <div class="recents-block">
+        <div class="recents-label">Recents</div>
+        <ul class="recents-list" id="recents-list"></ul>
+      </div>
+      <div class="sidebar-footer">
+        <span id="status-pill" class="status-pill">Ready</span>
+        <span id="usage-pill" class="usage-pill" title="Questions remaining"></span>
+      </div>
+    </aside>
+
+    <!-- Main pane -->
+    <main class="main">
+      <div class="conv-container" id="conv-container">
+        <div class="welcome" id="welcome">
+          <div class="welcome-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" stroke="#000" fill="none" stroke-width="2"><path d="M12 4v16M4 12h16"/></svg>
+          </div>
+          <h1>Ask anything about the BIF Act.</h1>
+          <p class="welcome-sub">Queensland security-of-payment, BIF Regulation, QBCC Act, and the Queensland line of judgments are indexed. Every quote is mechanically verified against the underlying source — no hallucinated citations.</p>
+          <div class="welcome-examples">
+            <button type="button" class="example" data-q="What is the test for a valid payment claim under the BIF Act?">What is the test for a valid payment claim?</button>
+            <button type="button" class="example" data-q="How long does a respondent have to give a payment schedule?">How long does a respondent have to give a payment schedule?</button>
+            <button type="button" class="example" data-q="How have Queensland courts treated the requirement that a payment claim identify the construction work?">How have Qld courts treated the 'identify the construction work' requirement?</button>
+            <button type="button" class="example" data-q="What does s 93(4) say about defences when filing an adjudication certificate as a judgment debt?">What does s 93(4) say about defences to enforcement?</button>
+          </div>
+        </div>
+        <div class="conv-stream" id="conv-stream"></div>
+      </div>
+
+      <div class="input-bar">
+        <div class="input-shell">
+          <textarea
+            id="question-input"
+            class="question-input"
+            rows="1"
+            placeholder="Ask any question about the BIF Act, payment claims, adjudications, or other security of payment matters"
+          ></textarea>
+          <button id="ask-btn" class="ask-btn" type="button" disabled>Ask</button>
+        </div>
+        <div class="input-hint">
+          Sources cited inline. Click any <span class="cite-marker">[1]</span> to view the verbatim passage.
+        </div>
+      </div>
+    </main>
+
+    <!-- Source side panel -->
+    <aside class="source-panel" id="source-panel" aria-hidden="true">
+      <div class="source-panel-header">
+        <h3 id="source-panel-title">Source</h3>
+        <button class="panel-close" id="source-panel-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="source-panel-body" id="source-panel-body"></div>
+    </aside>
+  </div>
+
+  <!-- Quota gate modal (anon → sign in; signed → enterprise contact) -->
+  <div class="modal-backdrop" id="gate-modal" aria-hidden="true">
+    <div class="modal">
+      <button class="modal-close" id="gate-modal-close" aria-label="Close">×</button>
+      <h2 id="gate-modal-title">You've used your free questions</h2>
+      <p id="gate-modal-body">Sign in (free) to get 30 questions per day.</p>
+      <div class="modal-actions">
+        <a id="gate-modal-primary" class="btn btn-primary" href="/login?redirect=/sopalai">Sign in</a>
+        <a id="gate-modal-secondary" class="btn btn-ghost" href="/register?redirect=/sopalai">Create account</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="static/app.js"></script>
+</body>
+</html>

@@ -2,6 +2,16 @@
 qbcc.db
 *.db
 
+# SopalAI (services/bif_research) — corpus + indexes are downloaded from
+# GCS at build time, never committed. Local-only stuff stays out of git.
+services/bif_research/store/
+services/bif_research/__pycache__/
+services/bif_research/**/__pycache__/
+services/bif_research/eval/results/
+*.pkl
+*.sqlite
+chroma_db/
+
 # PDFs in upload directory
 new_decisions_upload/
 *.pdf

@@ -2,17 +2,43 @@ services:
   - type: web
     name: qbcc-site
     env: python
-    plan: free
+    plan: starter
+    disk:
+      name: qbcc-data
+      mountPath: /var/data
+      sizeGB: 5
     buildCommand: |
       echo ">>> Installing dependencies"
       pip install -r requirements.txt
 
       echo ">>> Downloading qbcc.db"
       curl -f -L "https://storage.googleapis.com/sopal-bucket/qbcc.db" -o qbcc.db
-
-      echo ">>> Checking file size"
       ls -lh qbcc.db
-      test -s qbcc.db || (echo "❌ qbcc.db missing!" && exit 1)
+      test -s qbcc.db || (echo "qbcc.db missing" && exit 1)
+
+      echo ">>> Downloading SopalAI (bif_research) corpus + indexes from GCS"
+      mkdir -p services/bif_research/store
+      curl -f -L "https://storage.googleapis.com/sopal-bucket/bif_research_store/chunks.sqlite"     -o services/bif_research/store/chunks.sqlite
+      curl -f -L "https://storage.googleapis.com/sopal-bucket/bif_research_store/bm25.pkl"          -o services/bif_research/store/bm25.pkl
+      curl -f -L "https://storage.googleapis.com/sopal-bucket/bif_research_store/name_index.sqlite" -o services/bif_research/store/name_index.sqlite
+      curl -f -L "https://storage.googleapis.com/sopal-bucket/bif_research_store/chroma.tar.gz"     -o /tmp/chroma.tar.gz
+      tar -xzf /tmp/chroma.tar.gz -C services/bif_research/store/
+      ls -lh services/bif_research/store/
+      test -s services/bif_research/store/chunks.sqlite     || (echo "chunks.sqlite missing"     && exit 1)
+      test -s services/bif_research/store/bm25.pkl          || (echo "bm25.pkl missing"          && exit 1)
+      test -s services/bif_research/store/name_index.sqlite || (echo "name_index.sqlite missing" && exit 1)
+      test -d services/bif_research/store/chroma            || (echo "chroma dir missing"        && exit 1)
     startCommand: |
       echo ">>> Starting server"
       uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # SopalAI conversations + per-query cost ledger live on the persistent
+      # disk so they survive deploys.
+      - key: BIF_CONV_DB
+        value: /var/data/bif_conversations.sqlite
+      - key: BIF_ANON_LIMIT
+        value: "4"
+      - key: BIF_SIGNED_DAILY_LIMIT
+        value: "30"
+      # OPENAI_API_KEY, ANTHROPIC_API_KEY, SECRET_KEY, GCS_CREDENTIALS_JSON,
+      # JWT_ALG and Stripe keys are set in the Render dashboard (sync: false).

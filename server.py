@@ -253,6 +253,19 @@ app.include_router(_claim_check_router)
 app.include_router(_claim_check_redirect_router)
 # <<< claim-check feature
 
+# >>> SopalAI (Construction Law Research) — services/bif_research/api.py
+# Mounted at /sopalai. Brings its own /api/ask SSE endpoint, /api/usage,
+# /api/conversations, etc — all live under /sopalai/api/*. The SPA shell
+# at /sopalai shadows site/sopalai.html (the old adjudication-decision
+# search). Auth: shares the JWT secret with this app via SECRET_KEY env.
+try:
+    from services.bif_research.api import app as _sopalai_app
+    app.mount("/sopalai", _sopalai_app)
+    print(">>> Mounted SopalAI at /sopalai")
+except Exception as _e:
+    print(f"WARNING: failed to mount SopalAI ({_e}); /sopalai will 404")
+# <<< SopalAI
+
 # --- UNIFIED USERS DATABASE CONNECTION ---
 PURCHASES_DB_PATH = "/var/data/adjudicator_purchases.db"
 purchases_con = sqlite3.connect(PURCHASES_DB_PATH, check_same_thread=False)
