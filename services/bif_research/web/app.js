@@ -459,6 +459,9 @@
       const r = await fetch(`${API}/api/conversations/${id}`);
       if (!r.ok) return;
       const conv = await r.json();
+      // If the user is currently inside a tool view, close it so the
+      // chat pane is visible again.
+      if (typeof closeToolView === "function") closeToolView(true);
       state.conversationId = id;
       els.convStream.innerHTML = "";
       showWelcome(false);
@@ -480,6 +483,8 @@
 
   // -------- new chat --------
   function newChat() {
+    // If the tool view is open, close it so the chat pane is visible
+    if (typeof closeToolView === "function") closeToolView(true);
     state.conversationId = null;
     els.convStream.innerHTML = "";
     showWelcome(true);
