@@ -260,19 +260,24 @@ app.include_router(_claim_check_redirect_router)
 # search). Auth: shares the JWT secret with this app via SECRET_KEY env.
 try:
     from services.bif_research.api import app as _sopalai_app
+    from services.bif_research.api import WEB as _sopalai_web
     app.mount("/ai", _sopalai_app)
-    # Starlette's Mount only matches paths starting with "/ai/" (the prefix
-    # plus a slash). A bare "/ai" hits no mount route and falls through to
-    # the catchall, which serves site/index.html. Redirect explicitly so
-    # the user lands on the SPA. /sopalai also bounces here for old links.
+    # Starlette's Mount("/ai", app) matches paths starting with "/ai/" but
+    # NOT a bare "/ai". Without an explicit handler the bare URL would
+    # fall through to the site catchall and serve the homepage. Serve the
+    # SPA shell directly here — the index.html's <base href> script sets
+    # the asset base to "/ai/" regardless of trailing slash, so relative
+    # paths still resolve correctly. No redirect, clean URL.
     @app.get("/ai", include_in_schema=False)
-    def _ai_redirect():
-        return RedirectResponse("/ai/", status_code=307)
+    def _ai_index():
+        return FileResponse(str(_sopalai_web / "index.html"))
 
+    # /sopalai is the pre-rename URL — keep it 308'ing to /ai/ for any
+    # links/bookmarks still pointing at the old slug.
     @app.get("/sopalai", include_in_schema=False)
     @app.get("/sopalai/", include_in_schema=False)
     def _sopalai_redirect():
-        return RedirectResponse("/ai/", status_code=308)
+        return RedirectResponse("/ai", status_code=308)
 
     print(">>> Mounted SopalAI at /ai")
 except Exception as _e:
