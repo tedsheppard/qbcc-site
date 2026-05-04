@@ -98,13 +98,23 @@ class Retriever:
                 f"BM25 corpus size {len(self._corpus_tokens)} != "
                 f"chunks table size {len(self._chunk_ids_ordered)}"
             )
-        if self._chroma_collection is None:
-            client = chromadb.PersistentClient(path=str(CHROMA_PATH))
+        if self._chroma_collection is None and not getattr(self, "_chroma_disabled", False):
+            # Wrap the entire chroma init: chromadb's Rust backend can raise
+            # PanicException (or even a bare panic that crosses the FFI as a
+            # generic Exception) on corrupted/version-mismatched stores. If
+            # that happens we degrade to BM25-only — the dense channel goes
+            # quiet but the rest of the pipeline keeps running.
             try:
+                client = chromadb.PersistentClient(path=str(CHROMA_PATH))
                 self._chroma_collection = client.get_collection("bif_research")
-            except Exception as e:
-                log.warning(f"chroma collection unavailable: {e}")
+            except BaseException as e:
+                log.warning(
+                    "chroma init failed (%s); disabling dense channel for "
+                    "this process — hybrid retrieval falls back to BM25 only",
+                    e,
+                )
                 self._chroma_collection = None
+                self._chroma_disabled = True
 
     def _fetch_chunks(self, chunk_ids: list[str]) -> dict[str, Hit]:
         if not chunk_ids:
