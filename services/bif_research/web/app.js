@@ -60,6 +60,11 @@
 
   const showWelcome = (show) => {
     els.welcome.style.display = show ? "" : "none";
+    // Toggle the centred / pulsing welcome layout on <main>. When the
+    // user starts a conversation we drop the input bar back to the
+    // bottom and stop the pulse.
+    const main = document.getElementById("main-pane");
+    if (main) main.classList.toggle("is-welcome", !!show);
   };
 
   // -------- auth + anon identity --------

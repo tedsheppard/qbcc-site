@@ -165,30 +165,56 @@ img { display: block; max-width: 100%; }
   padding: 28px 28px 12px;
   display: flex; flex-direction: column; align-items: center;
 }
+/* Welcome mode: centre the welcome + input vertically (Claude-style).
+ * Once the first question is asked, JS removes .is-welcome from .main
+ * and the input bar drops back to the bottom. */
+.main.is-welcome { justify-content: center; }
+.main.is-welcome .conv-container {
+  flex: 0 0 auto; padding: 0 28px 4px;
+}
+.main.is-welcome .input-bar {
+  border-top: none;
+  padding-top: 0;
+  margin-bottom: 0;
+}
+.main.is-welcome .input-shell {
+  animation: pulse-input 2.6s ease-in-out infinite;
+}
+.main.is-welcome .input-shell:focus-within {
+  animation: none;
+}
+.main.is-welcome .input-hint {
+  opacity: 0.85;
+}
+@keyframes pulse-input {
+  0%, 100% {
+    border-color: var(--border);
+    box-shadow: 0 0 0 0 rgba(0, 212, 126, 0.0);
+  }
+  50% {
+    border-color: var(--green);
+    box-shadow: 0 0 0 5px rgba(0, 212, 126, 0.14);
+  }
+}
 .conv-container::-webkit-scrollbar { width: 8px; }
 .conv-container::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
 
 /* WELCOME */
 .welcome {
-  width: 100%; max-width: 760px; margin: 6vh auto 0;
+  width: 100%; max-width: 760px; margin: 0 auto;
   text-align: center;
   display: flex; flex-direction: column; align-items: center;
 }
 .welcome.hidden { display: none; }
-.welcome-icon {
-  width: 56px; height: 56px;
-  background: var(--green); border-radius: 14px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 20px;
-}
-.welcome-icon svg { width: 28px; height: 28px; }
+.main.is-welcome .welcome { padding-bottom: 18px; }
 .welcome h1 {
-  font-size: 30px; font-weight: 700; letter-spacing: -0.025em;
-  margin: 0 0 12px; color: var(--text);
+  font-size: 32px; font-weight: 700; letter-spacing: -0.025em;
+  margin: 0 0 14px; color: var(--text);
 }
 .welcome-sub {
-  font-size: 14.5px; color: var(--text-muted); max-width: 600px;
-  margin: 0 auto 32px;
+  font-size: 14.5px; color: var(--text-muted); max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.6;
 }
 .welcome-examples {
   width: 100%;
@@ -342,15 +368,69 @@ img { display: block; max-width: 100%; }
 }
 .input-shell {
   max-width: 820px; margin: 0 auto;
-  display: flex; align-items: stretch; gap: 8px;
+  display: flex; align-items: center; gap: 8px;
   background: white;
   border: 1px solid var(--border); border-radius: 14px;
-  padding: 8px 8px 8px 14px;
+  padding: 6px 8px 6px 6px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .input-shell:focus-within {
   border-color: var(--green);
   box-shadow: 0 0 0 3px rgba(0,212,126,0.10);
+}
+.upload-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 11px 7px 9px;
+  background: white;
+  color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 10px;
+  font-size: 13px; font-weight: 500;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.upload-btn:hover {
+  border-color: var(--green);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,212,126,0.12);
+}
+.upload-btn .upload-plus {
+  font-size: 16px; line-height: 1; color: var(--green); font-weight: 600;
+}
+.upload-btn .upload-label { line-height: 1; }
+.upload-btn.uploading { color: var(--text-faint); cursor: wait; }
+.upload-btn.uploading .upload-plus { animation: rotate 1s linear infinite; }
+@keyframes rotate { to { transform: rotate(360deg); } }
+
+/* Attachment chip strip */
+.attachments {
+  max-width: 820px; margin: 0 auto 8px;
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.attachments[hidden] { display: none; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--green-tint); color: var(--text);
+  border: 1px solid rgba(0, 179, 104, 0.3);
+  border-radius: 999px;
+  padding: 5px 10px 5px 12px;
+  font-size: 12.5px;
+  max-width: 320px;
+}
+.chip .chip-name {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;
+}
+.chip .chip-meta { color: var(--text-faint); font-size: 11px; }
+.chip .chip-remove {
+  background: transparent; border: 0; padding: 0; line-height: 1;
+  color: var(--text-faint); font-size: 16px; cursor: pointer;
+  width: 18px; height: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.chip .chip-remove:hover { background: rgba(0,0,0,0.06); color: var(--text); }
+.chip.error {
+  background: #fde7e7; color: #b03030;
+  border-color: rgba(176, 48, 48, 0.3);
 }
 .question-input {
   flex: 1; resize: none; border: none; outline: none;

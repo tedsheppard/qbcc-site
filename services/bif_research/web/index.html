@@ -57,20 +57,22 @@
     </aside>
 
     <!-- Main pane -->
-    <main class="main">
+    <main class="main is-welcome" id="main-pane">
       <div class="conv-container" id="conv-container">
         <div class="welcome" id="welcome">
-          <div class="welcome-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" stroke="#000" fill="none" stroke-width="2"><path d="M12 4v16M4 12h16"/></svg>
-          </div>
-          <h1>Ask anything about the BIF Act.</h1>
-          <p class="welcome-sub">Queensland security-of-payment, BIF Regulation, QBCC Act, and the Queensland line of judgments are indexed. Every quote is mechanically verified against the underlying source — no hallucinated citations.</p>
+          <h1>Ask me anything</h1>
+          <p class="welcome-sub">Queensland security of payment, answered with verbatim citations. SopalAI draws on the BIF Act, BIF Regulation, QBCC Act, QBCC Regulation, and the full line of Queensland court decisions since 2004. It also reads adjudication decisions for real-world context and applied principles — never as primary law. Attach a contract, payment claim, or schedule and SopalAI will read it alongside the law.</p>
         </div>
         <div class="conv-stream" id="conv-stream"></div>
       </div>
 
       <div class="input-bar">
+        <div class="attachments" id="attachments" hidden></div>
         <div class="input-shell">
+          <button class="upload-btn" id="upload-btn" type="button" title="Attach a document (PDF, DOCX, TXT — up to 20 MB)">
+            <span class="upload-plus" aria-hidden="true">+</span><span class="upload-label">Upload</span>
+          </button>
+          <input type="file" id="upload-input" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown" hidden />
           <textarea
             id="question-input"
             class="question-input"
