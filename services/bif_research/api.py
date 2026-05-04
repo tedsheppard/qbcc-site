@@ -805,8 +805,7 @@ async def ask(payload: AskRequest, request: Request):
             # `with cap:` block yield-free and let cap.calls accumulate
             # across multiple enter/exit cycles in different threads.
 
-            yield emit("status", {"phase": "planning",
-                                  "msg": "Planning — naming provisions and authorities…"})
+            yield emit("status", {"phase": "planning", "msg": "Planning"})
 
             # Load any documents the user attached to this conversation and
             # prepend their extracted text to the question. The planner +

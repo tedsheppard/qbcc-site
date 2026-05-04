@@ -503,10 +503,8 @@
     const animate = opts.animate !== false;
     const div = document.createElement("div");
     div.className = "turn turn-assistant";
-    const conf = answer.confidence || "medium";
-    const confClass = ["high", "medium", "low"].includes(conf) ? conf : "medium";
     div.innerHTML = `
-      <div class="role">Sopal Research <span class="confidence-indicator ${confClass}">${escape(conf)}</span></div>
+      <div class="role">Sopal Research</div>
       ${answer.answer_html || "<p>(no answer)</p>"}
     `;
 
