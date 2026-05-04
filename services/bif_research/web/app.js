@@ -873,9 +873,10 @@
   // -------- input behaviour --------
   function autosize() {
     els.input.style.height = "auto";
-    // Grow with content up to 240px, but never collapse below the CSS
-    // min-height (64px) — that's enforced by CSS even if we set lower.
-    els.input.style.height = Math.min(240, Math.max(64, els.input.scrollHeight)) + "px";
+    // Single-line empty state is ~24px (font 14.5 × line-height 1.6).
+    // Grow with content up to 240px. align-items: center on the shell
+    // keeps the textarea content vertically aligned with the buttons.
+    els.input.style.height = Math.min(240, els.input.scrollHeight) + "px";
   }
   els.input.addEventListener("input", () => {
     autosize();

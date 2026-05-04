@@ -569,9 +569,17 @@ img { display: block; max-width: 100%; }
 .question-input {
   flex: 1; resize: none; border: none; outline: none;
   font: inherit; font-size: 14.5px; color: var(--text);
-  background: transparent; padding: 8px 0;
-  min-height: 64px; max-height: 240px;
-  line-height: 1.45;
+  background: transparent;
+  /* No vertical padding — the input-shell's 8px padding handles spacing.
+   * With line-height 1.6 the textarea is exactly one line tall (≈23px)
+   * which lines up with the Upload/Ask buttons (~32px) once the shell's
+   * align-items: center vertical-centers everyone against shell height. */
+  padding: 0 4px;
+  height: auto;
+  min-height: 0; max-height: 240px;
+  line-height: 1.6;
+  display: block;
+  overflow-y: auto;
 }
 .question-input::placeholder { color: var(--text-faint); }
 .ask-btn {
