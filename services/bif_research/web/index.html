@@ -39,12 +39,37 @@
   </nav>
 
   <div class="app">
-    <!-- Sidebar (simplified — only New chat + Recents) -->
+    <!-- Sidebar (simplified — New chat + Tools + Recents) -->
     <aside class="sidebar">
       <div class="sidebar-top">
         <button class="new-chat" id="new-chat-btn" type="button">
           <span class="plus">+</span> New chat
         </button>
+      </div>
+      <div class="tools-block">
+        <div class="tools-label">Tools</div>
+        <ul class="tools-list">
+          <li>
+            <a href="/claim-check#claim" class="tool-item">
+              <span class="tool-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" width="16" height="16">
+                  <path d="M9 12h6M9 16h6M9 8h6M5 5h14v14H5z"/>
+                </svg>
+              </span>
+              Payment Claim Checker
+            </a>
+          </li>
+          <li>
+            <a href="/claim-check#schedule" class="tool-item">
+              <span class="tool-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" width="16" height="16">
+                  <path d="M3 7h18M3 12h18M3 17h12"/>
+                </svg>
+              </span>
+              Payment Schedule Checker
+            </a>
+          </li>
+        </ul>
       </div>
       <div class="recents-block">
         <div class="recents-label">Recents</div>

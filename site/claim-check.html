@@ -379,5 +379,35 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js" defer></script>
 
   <script src="/assets/claim-check/claim-check.js" defer></script>
+
+  <!-- Sidebar deep-link filter: when the user arrives from the SopalAI
+       sidebar via /claim-check#claim or #schedule, hide the irrelevant
+       half of the mode picker so they only see what they came for. -->
+  <script>
+    (function () {
+      function applyHashFilter() {
+        var h = (location.hash || "").replace(/^#/, "").toLowerCase();
+        if (h !== "claim" && h !== "schedule") return;
+        var keepPrefix = h === "claim" ? "payment_claim_" : "payment_schedule_";
+        document.querySelectorAll(".mode-tile").forEach(function (t) {
+          var m = t.getAttribute("data-mode") || "";
+          t.style.display = m.indexOf(keepPrefix) === 0 ? "" : "none";
+        });
+        var heading = document.querySelector(".mode-picker h1, .mode-picker h2, .mode-picker [aria-label]");
+        if (heading) {
+          var label = h === "claim" ? "Check a payment claim" : "Check a payment schedule";
+          if (heading.textContent && heading.textContent.length < 80) {
+            heading.textContent = label;
+          }
+        }
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyHashFilter);
+      } else {
+        applyHashFilter();
+      }
+      window.addEventListener("hashchange", applyHashFilter);
+    })();
+  </script>
 </body>
 </html>
