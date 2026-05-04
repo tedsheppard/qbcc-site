@@ -275,9 +275,20 @@ img { display: block; max-width: 100%; }
   animation: type-fade 240ms ease-out forwards;
   display: inline-block;
 }
+/* Block-level containers with visual chrome (the green answer-quote
+ * boxes). Hidden until their first word's animation-delay so the box
+ * doesn't pop in empty. */
+.type-block {
+  opacity: 0;
+  animation: type-block-fade 240ms ease-out forwards;
+}
 @keyframes type-fade {
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes type-block-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* ANSWER STYLING */
@@ -359,6 +370,13 @@ img { display: block; max-width: 100%; }
   font-size: 11.5px; color: var(--text-faint);
 }
 .input-hint .cite-marker { vertical-align: baseline; }
+.input-hint .terms-link {
+  color: var(--green-dark);
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 179, 104, 0.35);
+  text-underline-offset: 2px;
+}
+.input-hint .terms-link:hover { text-decoration-color: var(--green-dark); }
 
 /* SOURCE PANEL */
 .source-panel {

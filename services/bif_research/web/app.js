@@ -288,16 +288,26 @@
 
   // Wrap each visible word inside `root` in a <span class="type-word"> with
   // a staggered animation-delay so the answer fades in left-to-right at a
-  // typing-style cadence. CSS does the actual animation. Skips text inside
-  // citation markers and source cards.
+  // typing-style cadence. CSS does the actual animation.
+  //
+  // Citation markers ([1] superscripts) ARE animated in flow so they don't
+  // pop in before the surrounding paragraph text. Block-level containers
+  // that have visual chrome (blockquotes / answer-quote) are made
+  // initially-hidden and fade in synchronously with their first word, so
+  // the green box doesn't appear empty before its text.
   function applyTypingAnimation(root, msPerWord = 16) {
     if (!root) return;
-    const skipSelectors = ["sup", ".cite-marker", ".confidence-indicator", "code", "pre"];
+    // Walk every text node; only skip nodes inside elements that already
+    // have their own initial hiding (none, currently) or that we don't
+    // want animated like <code>/<pre>.
     const skipNode = (node) => {
       let n = node;
       while (n && n !== root) {
-        if (n.nodeType === 1 && skipSelectors.some(sel =>
-          (sel.startsWith(".") ? n.classList && n.classList.contains(sel.slice(1)) : n.tagName && n.tagName.toLowerCase() === sel))) return true;
+        if (n.nodeType === 1 && n.tagName) {
+          const tag = n.tagName.toLowerCase();
+          if (tag === "code" || tag === "pre") return true;
+          if (n.classList && n.classList.contains("confidence-indicator")) return true;
+        }
         n = n.parentNode;
       }
       return false;
@@ -327,6 +337,16 @@
       }
       node.parentNode.replaceChild(frag, node);
     }
+
+    // Block-level containers with visual chrome must wait for their first
+    // word to start before becoming visible — otherwise the green
+    // blockquote box appears empty before its quoted text fades in.
+    root.querySelectorAll("blockquote, .answer-quote").forEach(bq => {
+      const firstWord = bq.querySelector(".type-word");
+      if (!firstWord) return;
+      bq.classList.add("type-block");
+      bq.style.animationDelay = firstWord.style.animationDelay;
+    });
   }
 
   function renderAssistantTurn(answer, opts = {}) {
