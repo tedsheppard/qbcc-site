@@ -197,13 +197,14 @@
     }
 
     async function loadAll() {
-      const [summary, queries, users] = await Promise.all([
+      const [summary, queries, users, missing] = await Promise.all([
         fetchJSON("/api/admin/costs/summary"),
         fetchJSON("/api/admin/queries?limit=300"),
         fetchJSON("/api/admin/users?days=30"),
+        fetchJSON("/api/admin/missing-authorities?days=90"),
       ]);
-      if (summary._unauth || queries._unauth || users._unauth) return renderAuthGate("unauth");
-      if (summary._forbidden || queries._forbidden || users._forbidden) return renderAuthGate("forbidden");
+      if (summary._unauth || queries._unauth || users._unauth || missing._unauth) return renderAuthGate("unauth");
+      if (summary._forbidden || queries._forbidden || users._forbidden || missing._forbidden) return renderAuthGate("forbidden");
 
       // Identify the admin viewer (best-effort via /api/usage which decodes the same JWT)
       try {
@@ -211,10 +212,15 @@
         if (u && u.email) navWho.textContent = u.email;
       } catch (e) { /* ignore */ }
 
-      renderDashboard({ summary, queries: queries.queries || [], users: users.users || [] });
+      renderDashboard({
+        summary,
+        queries: queries.queries || [],
+        users: users.users || [],
+        missing: { summary: missing.summary || [], recent: missing.recent || [] },
+      });
     }
 
-    function renderDashboard({ summary, queries, users }) {
+    function renderDashboard({ summary, queries, users, missing }) {
       const all = summary.all_time || {};
       const today = summary.today_utc || {};
       const last24 = summary.last_24h || {};
@@ -245,10 +251,11 @@
 
         <div class="panel" id="queries-panel">
           <div class="panel-header">
-            <h2>Recent queries</h2>
+            <h2>Activity</h2>
             <div class="tabs">
               <button class="tab active" data-tab="queries">Queries (${queries.length})</button>
               <button class="tab" data-tab="users">Users (${users.length})</button>
+              <button class="tab" data-tab="missing">Missing authorities (${(missing.summary || []).length})</button>
             </div>
           </div>
           <div id="tab-content"></div>
@@ -258,7 +265,8 @@
       const tabContent = document.getElementById("tab-content");
       const renderTab = (which) => {
         if (which === "queries") tabContent.innerHTML = renderQueries(queries);
-        else tabContent.innerHTML = renderUsers(users);
+        else if (which === "users") tabContent.innerHTML = renderUsers(users);
+        else if (which === "missing") tabContent.innerHTML = renderMissing(missing);
         wireRowClicks(which);
       };
       document.querySelectorAll(".tab").forEach(t => {
@@ -329,6 +337,57 @@
             <th class="num">Tokens (in/out)</th><th>First seen</th><th>Last seen</th>
           </tr></thead>
           <tbody>${lines}</tbody>
+        </table>`;
+    }
+
+    function renderMissing({ summary, recent }) {
+      if (!summary.length && !recent.length) {
+        return '<div class="empty">No missing authorities logged in the last 90 days.</div>';
+      }
+      const top = summary.map(r => `
+        <tr>
+          <td><span class="who">${escape(r.authority)}</span></td>
+          <td class="num">${r.n_misses}</td>
+          <td class="num">${r.n_conversations}</td>
+          <td class="num">${r.n_distinct_users}</td>
+          <td class="when">${escape(fmtTime(r.first_seen))} (${escape(fmtRel(r.first_seen))})</td>
+          <td class="when">${escape(fmtTime(r.last_seen))} (${escape(fmtRel(r.last_seen))})</td>
+        </tr>`).join("");
+      const recentRows = recent.slice(0, 200).map(r => {
+        const ident = r.identifier || "";
+        const isSigned = ident.startsWith("user:");
+        const who = isSigned ? ident.slice(5) :
+                    (ident.startsWith("anon:") ? "anon " + ident.slice(5,13) : (ident || "—"));
+        const pill = isSigned
+          ? '<span class="pill signed">signed</span>'
+          : '<span class="pill anon">anon</span>';
+        return `
+          <tr>
+            <td class="when">${escape(fmtTime(r.seen_at))}<br>
+                <span style="color:var(--faint);font-size:11px">${escape(fmtRel(r.seen_at))}</span></td>
+            <td>${pill}<br><span class="who">${escape(who)}</span></td>
+            <td><span class="who">${escape(r.authority)}</span></td>
+            <td class="question">${escape((r.question || "").slice(0, 200))}${(r.question||"").length > 200 ? "…" : ""}</td>
+          </tr>`;
+      }).join("");
+      return `
+        <div style="padding: 14px 16px 6px; color: var(--muted); font-size: 12.5px; border-bottom: 1px solid var(--border);">
+          Authorities the planner named but the corpus could not resolve. Most are interstate (NSWCA, HCA) and intentionally outside the Qld-only corpus. Anything Qld-only with high counts is a real coverage gap worth indexing.
+        </div>
+        <div style="padding: 14px 16px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--faint); font-weight: 600;">Top missing (last 90 days)</div>
+        <table>
+          <thead><tr>
+            <th>Authority</th><th class="num">Misses</th><th class="num">Conversations</th>
+            <th class="num">Distinct users</th><th>First seen</th><th>Last seen</th>
+          </tr></thead>
+          <tbody>${top || '<tr><td colspan="6" class="empty">none yet</td></tr>'}</tbody>
+        </table>
+        <div style="padding: 18px 16px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--faint); font-weight: 600; border-top: 1px solid var(--border); margin-top: 4px;">Recent misses (latest ${Math.min(recent.length, 200)})</div>
+        <table>
+          <thead><tr>
+            <th>When</th><th>Who</th><th>Authority</th><th>Question</th>
+          </tr></thead>
+          <tbody>${recentRows || '<tr><td colspan="4" class="empty">none yet</td></tr>'}</tbody>
         </table>`;
     }
 

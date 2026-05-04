@@ -209,6 +209,22 @@ def init_conv_db() -> sqlite3.Connection:
         con.execute("ALTER TABLE query_costs ADD COLUMN identifier TEXT")
     except sqlite3.OperationalError:
         pass
+    # Log of authorities the planner wanted to cite but the name_index
+    # could not resolve — these are typically interstate/HCA cases not in
+    # the Qld corpus, OR Qld cases that were never indexed (corpus gaps).
+    # The dev portal aggregates this to surface coverage gaps.
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS missing_authorities (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            seen_at         REAL NOT NULL,
+            conversation_id TEXT,
+            question        TEXT,
+            authority       TEXT NOT NULL,
+            identifier      TEXT
+        )
+    """)
+    con.execute("CREATE INDEX IF NOT EXISTS idx_missing_auth_name ON missing_authorities(authority)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_missing_auth_time ON missing_authorities(seen_at)")
     con.commit()
     return con
 
@@ -601,13 +617,30 @@ async def ask(payload: AskRequest, request: Request):
             if route == "hard":
                 resolved_cases = _resolved_case_citations(plan.named_authorities or [])
                 in_corpus = [c for c in resolved_cases if c["in_corpus"]]
-                n_cases = len(in_corpus)
+                missed = [c for c in resolved_cases if not c["in_corpus"]]
                 yield emit("status", {
                     "phase": "reading_cases",
-                    "msg": f"Reading {n_cases} judgment(s) in parallel",
+                    "msg": "Reading judgments",
                     "cases": [c["citation"] for c in in_corpus],
-                    "missed": [c["citation"] for c in resolved_cases if not c["in_corpus"]],
+                    "missed": [c["citation"] for c in missed],
                 })
+                # Log the planner-wanted-but-not-indexed authorities so the
+                # dev portal can surface coverage gaps over time.
+                if missed:
+                    try:
+                        rows = [
+                            (time.time(), conv_id, payload.question, c["citation"], identifier)
+                            for c in missed
+                        ]
+                        conv_con().executemany(
+                            "INSERT INTO missing_authorities "
+                            "(seen_at, conversation_id, question, authority, identifier) "
+                            "VALUES (?, ?, ?, ?, ?)",
+                            rows,
+                        )
+                        conv_con().commit()
+                    except Exception as merr:
+                        log.warning(f"failed to log missing_authorities: {merr}")
             else:
                 yield emit("status", {"phase": "retrieving",
                                       "msg": "Retrieving sources…"})
@@ -805,6 +838,61 @@ def admin_queries(request: Request, limit: int = 200):
             "conv_title": r[15] or "",
         })
     return {"queries": out, "n": len(out)}
+
+
+@app.get("/api/admin/missing-authorities")
+def admin_missing_authorities(request: Request, days: int = 90, limit: int = 500):
+    """Aggregate of authorities the planner named but the corpus didn't
+    have. Returns a per-authority roll-up plus the most-recent N raw rows
+    so we can drill down."""
+    _require_admin(request)
+    since = time.time() - days * 86400
+    summary = conv_con().execute(
+        """SELECT authority,
+                  COUNT(*)            AS n_misses,
+                  MAX(seen_at)        AS last_seen,
+                  MIN(seen_at)        AS first_seen,
+                  COUNT(DISTINCT conversation_id) AS n_conversations,
+                  COUNT(DISTINCT identifier)      AS n_distinct_users
+           FROM missing_authorities
+           WHERE seen_at >= ?
+           GROUP BY authority
+           ORDER BY n_misses DESC, last_seen DESC""",
+        (since,),
+    ).fetchall()
+    recent = conv_con().execute(
+        """SELECT id, seen_at, conversation_id, question, authority, identifier
+           FROM missing_authorities
+           WHERE seen_at >= ?
+           ORDER BY seen_at DESC
+           LIMIT ?""",
+        (since, limit),
+    ).fetchall()
+    return {
+        "days": days,
+        "summary": [
+            {
+                "authority": r[0],
+                "n_misses": r[1],
+                "last_seen": r[2],
+                "first_seen": r[3],
+                "n_conversations": r[4],
+                "n_distinct_users": r[5],
+            }
+            for r in summary
+        ],
+        "recent": [
+            {
+                "id": r[0],
+                "seen_at": r[1],
+                "conversation_id": r[2],
+                "question": r[3],
+                "authority": r[4],
+                "identifier": r[5] or "",
+            }
+            for r in recent
+        ],
+    }
 
 
 @app.get("/api/admin/users")
