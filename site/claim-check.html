@@ -380,13 +380,21 @@
 
   <script src="/assets/claim-check/claim-check.js" defer></script>
 
-  <!-- Sidebar deep-link filter + embed support.
-       /claim-check?embed=1 hides the page's own nav + footer so the
-       page can be rendered cleanly inside an iframe (used by the
-       SopalAI shell). The hash-filter only narrows which mode tiles
-       are visible — never touches text content of any element. -->
+  <!-- Page-transition cleanup, embed support, and sidebar hash filter.
+       claim-check.html doesn't include the site-wide /assets/js/main.js,
+       so it never clears the #nt-precover overlay set by the transition
+       guard at the top of the page — leaving the page black when the
+       user lands here after any in-site nav. We remove that style here
+       unconditionally on load. -->
   <script>
     (function () {
+      function clearTransitionOverlay() {
+        try { sessionStorage.removeItem("nt-transitioning"); } catch (e) {}
+        var pc = document.getElementById("nt-precover");
+        if (pc && pc.parentNode) pc.parentNode.removeChild(pc);
+        document.documentElement.style.background = "";
+        document.body && (document.body.style.visibility = "");
+      }
       function applyEmbedMode() {
         var qs = new URLSearchParams(location.search);
         if (qs.get("embed") === "1") {
@@ -408,14 +416,18 @@
         });
       }
       function init() {
+        clearTransitionOverlay();
         applyEmbedMode();
         applyHashFilter();
       }
+      // Run as early and as often as we can to make sure the overlay is gone.
+      clearTransitionOverlay();
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", init);
       } else {
         init();
       }
+      window.addEventListener("load", clearTransitionOverlay);
       window.addEventListener("hashchange", applyHashFilter);
     })();
   </script>
