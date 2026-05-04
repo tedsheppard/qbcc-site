@@ -2,11 +2,9 @@ services:
   - type: web
     name: qbcc-site
     env: python
-    plan: starter
-    disk:
-      name: qbcc-data
-      mountPath: /var/data
-      sizeGB: 5
+    # plan + disk are managed via the Render dashboard (starter plan, 13GB
+    # disk at /var/data) so that the YAML doesn't accidentally try to
+    # resize/rename the live disk.
     buildCommand: |
       echo ">>> Installing dependencies"
       pip install -r requirements.txt
@@ -16,7 +14,7 @@ services:
       ls -lh qbcc.db
       test -s qbcc.db || (echo "qbcc.db missing" && exit 1)
 
-      echo ">>> Downloading SopalAI (bif_research) corpus + indexes from GCS"
+      echo ">>> Downloading SopalAI corpus + indexes from GCS"
       mkdir -p services/bif_research/store
       curl -f -L "https://storage.googleapis.com/sopal-bucket/bif_research_store/chunks.sqlite"     -o services/bif_research/store/chunks.sqlite
       curl -f -L "https://storage.googleapis.com/sopal-bucket/bif_research_store/bm25.pkl"          -o services/bif_research/store/bm25.pkl

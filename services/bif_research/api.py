@@ -125,8 +125,15 @@ ANON_QUESTION_LIMIT = int(os.environ.get("BIF_ANON_LIMIT", "4"))
 # Signed-in user per-UTC-day cap before requiring enterprise contact
 SIGNED_DAILY_LIMIT = int(os.environ.get("BIF_SIGNED_DAILY_LIMIT", "30"))
 # JWT secret + algorithm — must match the values server.py uses to sign
-# `purchase_token` so we can verify it without a circular import.
-JWT_SECRET = os.environ.get("SECRET_KEY") or os.environ.get("JWT_SECRET", "dev-secret")
+# `purchase_token` so we can verify it without a circular import. server.py
+# reads `LEXIFILE_SECRET_KEY` and falls back to "dev-secret-key"; we mirror
+# that exactly so signed users get recognised in production.
+JWT_SECRET = (
+    os.environ.get("LEXIFILE_SECRET_KEY")
+    or os.environ.get("SECRET_KEY")
+    or os.environ.get("JWT_SECRET")
+    or "dev-secret-key"
+)
 JWT_ALG = os.environ.get("JWT_ALG", "HS256")
 
 
