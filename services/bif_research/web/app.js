@@ -1,16 +1,16 @@
 /* SopalAI — Construction Law Research frontend
- * API mounted at /sopalai/api/*. Auth: JWT (purchase_token in localStorage)
+ * API mounted at /ai/api/*. Auth: JWT (purchase_token in localStorage)
  * for signed users; X-Anon-ID header (UUID in localStorage) for anonymous.
  */
 (() => {
-  // The API is mounted under /sopalai when running inside the main sopal.com.au
+  // The API is mounted under /ai when running inside the main sopal.com.au
   // server. For local dev (uvicorn services.bif_research.api:app on port 8000)
   // we fall back to same-origin.
   // When served from sopal.com.au, the bif_research app is mounted at
-  // /sopalai so all API paths get a /sopalai prefix. For local dev
+  // /ai so all API paths get a /ai prefix. For local dev
   // (uvicorn services.bif_research.api:app) the app sits at the root.
-  const MOUNTED = location.pathname.startsWith("/sopalai");
-  const API = MOUNTED ? "/sopalai" : "";
+  const MOUNTED = location.pathname.startsWith("/ai");
+  const API = MOUNTED ? "/ai" : "";
 
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -112,7 +112,7 @@
       els.navSignin.setAttribute("href", "/account");
     } else {
       els.navSignin.textContent = "Sign In";
-      els.navSignin.setAttribute("href", "/login?redirect=/sopalai");
+      els.navSignin.setAttribute("href", "/login?redirect=/ai");
     }
   }
 
@@ -122,9 +122,9 @@
       els.gateModalTitle.textContent = "You've used your free questions";
       els.gateModalBody.textContent = "Sign in (free) to get 30 questions per day.";
       els.gateModalPrimary.textContent = "Sign in";
-      els.gateModalPrimary.setAttribute("href", "/login?redirect=/sopalai");
+      els.gateModalPrimary.setAttribute("href", "/login?redirect=/ai");
       els.gateModalSecondary.style.display = "";
-      els.gateModalSecondary.setAttribute("href", "/register?redirect=/sopalai");
+      els.gateModalSecondary.setAttribute("href", "/register?redirect=/ai");
     } else {
       els.gateModalTitle.textContent = "Daily limit reached";
       els.gateModalBody.textContent =

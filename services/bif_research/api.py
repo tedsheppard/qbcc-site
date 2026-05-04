@@ -202,8 +202,39 @@ def init_conv_db() -> sqlite3.Connection:
         )
     """)
     con.execute("CREATE INDEX IF NOT EXISTS idx_quota_id_time ON query_quota(identifier, asked_at)")
+    # Migration: add identifier column to query_costs so the admin dashboard
+    # can show who asked each query. Safe to run repeatedly — sqlite raises
+    # OperationalError if the column already exists; we swallow that.
+    try:
+        con.execute("ALTER TABLE query_costs ADD COLUMN identifier TEXT")
+    except sqlite3.OperationalError:
+        pass
     con.commit()
     return con
+
+
+# ---------------------------------------------------------------------------
+# Admin authentication
+# ---------------------------------------------------------------------------
+
+# Comma-separated list of emails allowed to hit /api/admin/* endpoints.
+# Defaults to the build owner so the dashboard isn't open to the public.
+ADMIN_EMAILS = {
+    e.strip().lower()
+    for e in os.environ.get("BIF_ADMIN_EMAILS", "edwardsheppard5@gmail.com").split(",")
+    if e.strip()
+}
+
+
+def _require_admin(request: "Request") -> str:
+    """Decode the Authorization JWT, confirm the email is in ADMIN_EMAILS,
+    and return that email. Raises 401/403 otherwise."""
+    email = _decode_user_email(request.headers.get("authorization"))
+    if not email:
+        raise HTTPException(401, "Sign in required")
+    if email.lower() not in ADMIN_EMAILS:
+        raise HTTPException(403, "Admin only")
+    return email.lower()
 
 
 _conv_con: sqlite3.Connection | None = None
@@ -629,8 +660,8 @@ async def ask(payload: AskRequest, request: Request):
                         n_propositions, n_sources, confidence, refused,
                         cumulative_usd_before, cumulative_usd_after, total_cost_usd,
                         input_tokens, output_tokens, n_api_calls,
-                        by_operation_json, calls_json)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        by_operation_json, calls_json, identifier)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         conv_id,
                         payload.question,
@@ -649,6 +680,7 @@ async def ask(payload: AskRequest, request: Request):
                         cap_summary["n_api_calls"],
                         json.dumps(cap_summary["by_operation"]),
                         json.dumps(cap_summary["calls"]),
+                        identifier,
                     ),
                 )
                 conv_con().commit()
@@ -690,8 +722,9 @@ async def ask(payload: AskRequest, request: Request):
 # ---------------------------------------------------------------------------
 
 @app.get("/api/admin/costs")
-def admin_costs(limit: int = 100, conversation_id: str | None = None):
+def admin_costs(request: Request, limit: int = 100, conversation_id: str | None = None):
     """Recent per-query cost rows. Most recent first."""
+    _require_admin(request)
     where = ""
     params: list = []
     if conversation_id:
@@ -702,7 +735,7 @@ def admin_costs(limit: int = 100, conversation_id: str | None = None):
         f"""SELECT id, conversation_id, question, started_at, finished_at, elapsed_ms,
                    n_propositions, n_sources, confidence, refused,
                    total_cost_usd, input_tokens, output_tokens, n_api_calls,
-                   by_operation_json
+                   by_operation_json, identifier
             FROM query_costs
             {where}
             ORDER BY started_at DESC
@@ -719,13 +752,102 @@ def admin_costs(limit: int = 100, conversation_id: str | None = None):
             "total_cost_usd": r[10],
             "input_tokens": r[11], "output_tokens": r[12], "n_api_calls": r[13],
             "by_operation": json.loads(r[14] or "{}"),
+            "identifier": r[15] or "",
         })
     return {"queries": out, "n": len(out)}
 
 
+@app.get("/api/admin/queries")
+def admin_queries(request: Request, limit: int = 200):
+    """Dev-portal feed: every recent query joined with the conversation
+    title, formatted for direct table display. Admin only."""
+    _require_admin(request)
+    rows = conv_con().execute(
+        """SELECT qc.id, qc.conversation_id, qc.question, qc.started_at,
+                  qc.elapsed_ms, qc.confidence, qc.refused,
+                  qc.total_cost_usd, qc.input_tokens, qc.output_tokens,
+                  qc.n_api_calls, qc.identifier, qc.by_operation_json,
+                  qc.n_propositions, qc.n_sources,
+                  c.title
+           FROM query_costs qc
+           LEFT JOIN conversations c ON c.id = qc.conversation_id
+           ORDER BY qc.started_at DESC
+           LIMIT ?""",
+        (limit,),
+    ).fetchall()
+    out = []
+    for r in rows:
+        ident = r[11] or ""
+        is_signed = ident.startswith("user:")
+        display_who = ident[5:] if is_signed else ("anon " + ident[5:13] if ident.startswith("anon:") else ident)
+        try: by_op = json.loads(r[12] or "{}")
+        except: by_op = {}
+        # Identify route from operation names: hard pipeline uses 'reasoner'
+        route = "hard" if any(k.startswith("reasoner") or k.startswith("read-case") for k in by_op) else "fast"
+        out.append({
+            "id": r[0],
+            "conversation_id": r[1],
+            "question": r[2],
+            "started_at": r[3],
+            "elapsed_ms": r[4],
+            "confidence": r[5] or "",
+            "refused": bool(r[6]),
+            "total_cost_usd": r[7] or 0,
+            "input_tokens": r[8] or 0,
+            "output_tokens": r[9] or 0,
+            "n_api_calls": r[10] or 0,
+            "identifier": ident,
+            "is_signed": is_signed,
+            "who": display_who,
+            "route": route,
+            "n_propositions": r[13] or 0,
+            "n_sources": r[14] or 0,
+            "conv_title": r[15] or "",
+        })
+    return {"queries": out, "n": len(out)}
+
+
+@app.get("/api/admin/users")
+def admin_users(request: Request, days: int = 30):
+    """Per-user query counts + cost over the last N days (default 30)."""
+    _require_admin(request)
+    since = time.time() - days * 86400
+    rows = conv_con().execute(
+        """SELECT identifier,
+                  COUNT(*)               AS n_queries,
+                  COALESCE(SUM(total_cost_usd),0) AS cost,
+                  COALESCE(SUM(input_tokens),0)   AS in_tok,
+                  COALESCE(SUM(output_tokens),0)  AS out_tok,
+                  MIN(started_at)        AS first_seen,
+                  MAX(started_at)        AS last_seen
+           FROM query_costs
+           WHERE identifier IS NOT NULL AND started_at >= ?
+           GROUP BY identifier
+           ORDER BY last_seen DESC""",
+        (since,),
+    ).fetchall()
+    out = []
+    for r in rows:
+        ident = r[0] or ""
+        is_signed = ident.startswith("user:")
+        out.append({
+            "identifier": ident,
+            "is_signed": is_signed,
+            "who": ident[5:] if is_signed else ("anon " + ident[5:13] if ident.startswith("anon:") else ident),
+            "n_queries": r[1],
+            "total_cost_usd": round(r[2], 6),
+            "input_tokens": r[3],
+            "output_tokens": r[4],
+            "first_seen": r[5],
+            "last_seen": r[6],
+        })
+    return {"users": out, "days": days, "n": len(out)}
+
+
 @app.get("/api/admin/costs/summary")
-def admin_costs_summary():
+def admin_costs_summary(request: Request):
     """Aggregate cost stats — total, today, last 24h, average per query."""
+    _require_admin(request)
     now = time.time()
     day_ago = now - 24 * 3600
     week_ago = now - 7 * 24 * 3600
@@ -766,8 +888,9 @@ def admin_costs_summary():
 
 
 @app.get("/api/admin/costs/{cost_id}")
-def admin_cost_detail(cost_id: int):
+def admin_cost_detail(cost_id: int, request: Request):
     """Full detail of one cost row, including per-call breakdown."""
+    _require_admin(request)
     r = conv_con().execute(
         "SELECT id, conversation_id, question, started_at, finished_at, elapsed_ms, "
         "n_propositions, n_sources, confidence, refused, "
@@ -827,11 +950,15 @@ def health():
 
 if WEB.exists():
     # /static/* -> any file under web/ (styles.css, app.js, future assets).
-    # When the app is mounted at /sopalai in production, these become
-    # /sopalai/static/styles.css etc — matching the absolute paths in
+    # When the app is mounted at /ai in production, these become
+    # /ai/static/styles.css etc — matching the absolute paths in
     # index.html. Local-dev clients hit /static/styles.css with no prefix.
     app.mount("/static", StaticFiles(directory=str(WEB)), name="static")
 
     @app.get("/")
     def index():
         return FileResponse(str(WEB / "index.html"))
+
+    @app.get("/admin")
+    def admin_dashboard():
+        return FileResponse(str(WEB / "admin.html"))

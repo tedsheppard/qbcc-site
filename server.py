@@ -254,16 +254,16 @@ app.include_router(_claim_check_redirect_router)
 # <<< claim-check feature
 
 # >>> SopalAI (Construction Law Research) — services/bif_research/api.py
-# Mounted at /sopalai. Brings its own /api/ask SSE endpoint, /api/usage,
-# /api/conversations, etc — all live under /sopalai/api/*. The SPA shell
-# at /sopalai shadows site/sopalai.html (the old adjudication-decision
+# Mounted at /ai. Brings its own /api/ask SSE endpoint, /api/usage,
+# /api/conversations, etc — all live under /ai/api/*. The SPA shell
+# at /ai shadows site/ai.html (the old adjudication-decision
 # search). Auth: shares the JWT secret with this app via SECRET_KEY env.
 try:
     from services.bif_research.api import app as _sopalai_app
-    app.mount("/sopalai", _sopalai_app)
-    print(">>> Mounted SopalAI at /sopalai")
+    app.mount("/ai", _sopalai_app)
+    print(">>> Mounted SopalAI at /ai")
 except Exception as _e:
-    print(f"WARNING: failed to mount SopalAI ({_e}); /sopalai will 404")
+    print(f"WARNING: failed to mount SopalAI ({_e}); /ai will 404")
 # <<< SopalAI
 
 # --- UNIFIED USERS DATABASE CONNECTION ---

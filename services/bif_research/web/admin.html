@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SopalAI · Dev Portal</title>
+  <script>(function(){var b=location.pathname.indexOf("/ai")===0?"/ai/":"/";document.write('<base href="'+b+'">');})();</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #fafafa; --panel: #fff; --border: #e5e5e5; --text: #1a1a1a;
+      --muted: #6b6b6b; --faint: #888; --green: #00d47e; --green-dark: #00b368;
+      --green-tint: #e6faf1; --warn: #fff7e0; --bad: #fde7e7; --nav: #0a0a0a;
+    }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .nav {
+      background: var(--nav); color: #fff;
+      padding: 14px 28px; display: flex; align-items: center; gap: 18px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .nav .brand { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
+    .nav .crumb { color: #999; font-size: 13px; }
+    .nav .right { margin-left: auto; display: flex; gap: 14px; align-items: center; }
+    .nav .right a { color: #999; font-size: 13px; text-decoration: none; }
+    .nav .right a:hover { color: #fff; }
+    .nav .right .who { color: #fff; font-size: 12px; }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 24px 28px; }
+    h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+    .subtitle { color: var(--muted); margin-bottom: 22px; font-size: 13.5px; }
+
+    .stats {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .stat .label {
+      font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--faint); margin-bottom: 4px;
+    }
+    .stat .value { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+    .stat .sub { font-size: 11.5px; color: var(--faint); margin-top: 2px; }
+
+    .panel {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      margin-bottom: 24px; overflow: hidden;
+    }
+    .panel-header {
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-header h2 { font-size: 14px; font-weight: 600; }
+    .tabs { display: flex; gap: 4px; }
+    .tab {
+      padding: 6px 12px; font-size: 12.5px; font-weight: 500;
+      border-radius: 6px; cursor: pointer; background: transparent;
+      border: none; color: var(--muted);
+    }
+    .tab:hover { background: rgba(0,0,0,0.04); color: var(--text); }
+    .tab.active { background: var(--green-tint); color: var(--green-dark); }
+    .controls {
+      display: flex; gap: 8px; padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .controls input, .controls select {
+      flex: 0 1 auto; padding: 6px 10px; font-size: 12.5px; font-family: inherit;
+      border: 1px solid var(--border); border-radius: 6px; outline: none;
+    }
+    .controls input:focus, .controls select:focus { border-color: var(--green); }
+    .controls input[type=search] { flex: 1; min-width: 200px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td {
+      padding: 9px 12px; text-align: left; border-bottom: 1px solid #f0f0f0;
+      vertical-align: top;
+    }
+    th {
+      background: #fafafa; font-weight: 600; color: var(--muted);
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+      position: sticky; top: 0;
+    }
+    tr.row { cursor: pointer; }
+    tr.row:hover { background: rgba(0, 212, 126, 0.04); }
+    tr.detail-row td { background: #fafafa; padding: 14px 24px; }
+    .pill {
+      display: inline-block; padding: 1px 7px; border-radius: 999px;
+      font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em;
+    }
+    .pill.high { background: var(--green-tint); color: var(--green-dark); }
+    .pill.medium { background: var(--warn); color: #b18000; }
+    .pill.low { background: var(--bad); color: #b03030; }
+    .pill.refused { background: var(--bad); color: #b03030; }
+    .pill.signed { background: var(--green-tint); color: var(--green-dark); }
+    .pill.anon { background: #f0f0f0; color: var(--muted); }
+    .pill.hard { background: #ede9fe; color: #6d28d9; }
+    .pill.fast { background: #e0f2fe; color: #0369a1; }
+    .who { font-weight: 500; }
+    .question { color: var(--text); max-width: 480px; }
+    .question:first-letter { text-transform: capitalize; }
+    .num { font-variant-numeric: tabular-nums; text-align: right; }
+    .when { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .by-op {
+      font-family: 'SF Mono', Menlo, monospace; font-size: 11px; color: var(--muted);
+      background: #fff; padding: 12px; border-radius: 6px; border: 1px solid var(--border);
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .auth-gate {
+      max-width: 420px; margin: 80px auto; text-align: center;
+      background: var(--panel); padding: 40px; border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .auth-gate h2 { font-size: 18px; margin-bottom: 8px; }
+    .auth-gate p { color: var(--muted); margin-bottom: 18px; }
+    .auth-gate a {
+      display: inline-block; padding: 10px 18px; border-radius: 8px;
+      background: var(--green); color: #fff; font-weight: 600; text-decoration: none;
+    }
+    .auth-gate a:hover { background: var(--green-dark); }
+    .empty { padding: 48px 24px; text-align: center; color: var(--faint); font-size: 13px; }
+    .badge-route { font-size: 10px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <span class="brand">SopalAI · Dev Portal</span>
+    <span class="crumb">queries · users · cost</span>
+    <div class="right">
+      <a href="/ai">← back to SopalAI</a>
+      <span class="who" id="nav-who"></span>
+    </div>
+  </nav>
+
+  <div class="container" id="root">
+    <p class="subtitle">Loading…</p>
+  </div>
+
+  <script>
+  (() => {
+    const MOUNTED = location.pathname.indexOf("/ai") === 0;
+    const API = MOUNTED ? "/ai" : "";
+    const root = document.getElementById("root");
+    const navWho = document.getElementById("nav-who");
+    const escape = (s) => String(s ?? "").replace(/[&<>"']/g, c =>
+      ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    const fmtUSD = n => "$" + (Math.round(n * 10000) / 10000).toFixed(4);
+    const fmtUSDshort = n => "$" + (Math.round(n * 1000) / 1000).toFixed(3);
+    const fmtMs = ms => ms >= 1000 ? (ms/1000).toFixed(1) + "s" : ms + "ms";
+    const fmtTime = ts => {
+      const d = new Date(ts * 1000);
+      const today = new Date();
+      const isToday = d.toDateString() === today.toDateString();
+      if (isToday) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) +
+             " " + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+    const fmtRel = ts => {
+      const s = Math.floor((Date.now()/1000 - ts));
+      if (s < 60) return s + "s ago";
+      if (s < 3600) return Math.floor(s/60) + "m ago";
+      if (s < 86400) return Math.floor(s/3600) + "h ago";
+      return Math.floor(s/86400) + "d ago";
+    };
+
+    function authHeaders() {
+      const t = localStorage.getItem("purchase_token");
+      if (!t) return null;
+      return { "Authorization": "Bearer " + t };
+    }
+
+    async function fetchJSON(path) {
+      const h = authHeaders();
+      if (!h) return { _unauth: true };
+      const r = await fetch(API + path, { headers: h });
+      if (r.status === 401) return { _unauth: true };
+      if (r.status === 403) return { _forbidden: true };
+      if (!r.ok) throw new Error(r.statusText);
+      return r.json();
+    }
+
+    function renderAuthGate(reason) {
+      root.innerHTML = `
+        <div class="auth-gate">
+          <h2>${reason === "forbidden" ? "Admin only" : "Sign in required"}</h2>
+          <p>${reason === "forbidden"
+            ? "Your account isn't on the SopalAI admin allowlist."
+            : "Sign in with an admin account to view the dev portal."}</p>
+          <a href="/login?redirect=/ai/admin">Sign in</a>
+        </div>`;
+    }
+
+    async function loadAll() {
+      const [summary, queries, users] = await Promise.all([
+        fetchJSON("/api/admin/costs/summary"),
+        fetchJSON("/api/admin/queries?limit=300"),
+        fetchJSON("/api/admin/users?days=30"),
+      ]);
+      if (summary._unauth || queries._unauth || users._unauth) return renderAuthGate("unauth");
+      if (summary._forbidden || queries._forbidden || users._forbidden) return renderAuthGate("forbidden");
+
+      // Identify the admin viewer (best-effort via /api/usage which decodes the same JWT)
+      try {
+        const u = await fetch(API + "/api/usage", { headers: authHeaders() }).then(r => r.json());
+        if (u && u.email) navWho.textContent = u.email;
+      } catch (e) { /* ignore */ }
+
+      renderDashboard({ summary, queries: queries.queries || [], users: users.users || [] });
+    }
+
+    function renderDashboard({ summary, queries, users }) {
+      const all = summary.all_time || {};
+      const today = summary.today_utc || {};
+      const last24 = summary.last_24h || {};
+      const cumSpend = summary.cumulative_spend_usd || 0;
+      const remaining = summary.remaining_usd || 0;
+
+      root.innerHTML = `
+        <h1>Dev portal</h1>
+        <div class="subtitle">Live activity, per-query cost, and per-user usage from the SopalAI conversations DB.</div>
+
+        <div class="stats">
+          <div class="stat"><div class="label">All-time queries</div>
+               <div class="value">${all.n_queries ?? 0}</div>
+               <div class="sub">${fmtUSD(all.total_cost_usd ?? 0)} total</div></div>
+          <div class="stat"><div class="label">Today (UTC)</div>
+               <div class="value">${today.n_queries ?? 0}</div>
+               <div class="sub">${fmtUSD(today.cost_usd ?? 0)}</div></div>
+          <div class="stat"><div class="label">Last 24h</div>
+               <div class="value">${last24.n_queries ?? 0}</div>
+               <div class="sub">${fmtUSD(last24.cost_usd ?? 0)}</div></div>
+          <div class="stat"><div class="label">Avg cost / query</div>
+               <div class="value">${fmtUSDshort(all.avg_cost_per_query_usd ?? 0)}</div>
+               <div class="sub">${Math.round((all.avg_elapsed_ms ?? 0)/100)/10}s avg</div></div>
+          <div class="stat"><div class="label">Spend / cap</div>
+               <div class="value">${fmtUSDshort(cumSpend)}</div>
+               <div class="sub">${fmtUSDshort(remaining)} left</div></div>
+        </div>
+
+        <div class="panel" id="queries-panel">
+          <div class="panel-header">
+            <h2>Recent queries</h2>
+            <div class="tabs">
+              <button class="tab active" data-tab="queries">Queries (${queries.length})</button>
+              <button class="tab" data-tab="users">Users (${users.length})</button>
+            </div>
+          </div>
+          <div id="tab-content"></div>
+        </div>
+      `;
+
+      const tabContent = document.getElementById("tab-content");
+      const renderTab = (which) => {
+        if (which === "queries") tabContent.innerHTML = renderQueries(queries);
+        else tabContent.innerHTML = renderUsers(users);
+        wireRowClicks(which);
+      };
+      document.querySelectorAll(".tab").forEach(t => {
+        t.addEventListener("click", () => {
+          document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+          t.classList.add("active");
+          renderTab(t.dataset.tab);
+        });
+      });
+      renderTab("queries");
+    }
+
+    function renderQueries(rows) {
+      if (!rows.length) return '<div class="empty">No queries yet.</div>';
+      const lines = rows.map(r => {
+        const conf = r.confidence || "medium";
+        const refusedPill = r.refused ? '<span class="pill refused">refused</span>' : '';
+        const signedPill = r.is_signed
+          ? '<span class="pill signed">signed</span>'
+          : '<span class="pill anon">anon</span>';
+        const routePill = `<span class="pill ${r.route} badge-route">${escape(r.route)}</span>`;
+        const confPill = `<span class="pill ${conf}">${escape(conf)}</span>`;
+        return `
+          <tr class="row" data-id="${r.id}">
+            <td class="when">${escape(fmtTime(r.started_at))}<br>
+                <span style="color:var(--faint);font-size:11px">${escape(fmtRel(r.started_at))}</span></td>
+            <td>${signedPill}<br><span class="who">${escape(r.who)}</span></td>
+            <td class="question">${escape((r.question || "").slice(0, 240))}${(r.question||"").length > 240 ? "…" : ""}</td>
+            <td>${routePill} ${confPill} ${refusedPill}</td>
+            <td class="num">${fmtMs(r.elapsed_ms || 0)}</td>
+            <td class="num">${fmtUSD(r.total_cost_usd || 0)}</td>
+            <td class="num">${(r.input_tokens||0).toLocaleString()} / ${(r.output_tokens||0).toLocaleString()}</td>
+            <td class="num">${r.n_api_calls || 0}</td>
+          </tr>
+          <tr class="detail-row" data-detail-for="${r.id}" style="display:none">
+            <td colspan="8"><div id="detail-${r.id}">Loading…</div></td>
+          </tr>`;
+      }).join("");
+      return `
+        <table>
+          <thead><tr>
+            <th>When</th><th>Who</th><th>Question</th><th>Route / Confidence</th>
+            <th class="num">Elapsed</th><th class="num">Cost</th>
+            <th class="num">Tokens (in/out)</th><th class="num">API calls</th>
+          </tr></thead>
+          <tbody>${lines}</tbody>
+        </table>`;
+    }
+
+    function renderUsers(rows) {
+      if (!rows.length) return '<div class="empty">No identified users in the last 30 days.</div>';
+      const lines = rows.map(r => `
+        <tr>
+          <td>${r.is_signed
+            ? '<span class="pill signed">signed</span>'
+            : '<span class="pill anon">anon</span>'}
+            <span class="who">${escape(r.who)}</span></td>
+          <td class="num">${r.n_queries}</td>
+          <td class="num">${fmtUSD(r.total_cost_usd)}</td>
+          <td class="num">${(r.input_tokens||0).toLocaleString()} / ${(r.output_tokens||0).toLocaleString()}</td>
+          <td class="when">${escape(fmtTime(r.first_seen))}</td>
+          <td class="when">${escape(fmtTime(r.last_seen))} (${escape(fmtRel(r.last_seen))})</td>
+        </tr>`).join("");
+      return `
+        <table>
+          <thead><tr>
+            <th>User</th><th class="num">Queries</th><th class="num">Total cost</th>
+            <th class="num">Tokens (in/out)</th><th>First seen</th><th>Last seen</th>
+          </tr></thead>
+          <tbody>${lines}</tbody>
+        </table>`;
+    }
+
+    function wireRowClicks(which) {
+      if (which !== "queries") return;
+      document.querySelectorAll("tr.row").forEach(row => {
+        row.addEventListener("click", async () => {
+          const id = row.dataset.id;
+          const detailRow = document.querySelector(`tr.detail-row[data-detail-for="${id}"]`);
+          if (!detailRow) return;
+          if (detailRow.style.display === "table-row") {
+            detailRow.style.display = "none";
+            return;
+          }
+          // Hide other open details
+          document.querySelectorAll("tr.detail-row").forEach(r => r.style.display = "none");
+          detailRow.style.display = "table-row";
+          const cell = document.getElementById("detail-" + id);
+          try {
+            const detail = await fetchJSON("/api/admin/costs/" + id);
+            if (detail._unauth || detail._forbidden) { cell.textContent = "Auth lost"; return; }
+            const callsTable = (detail.calls || []).map(c =>
+              `  ${c.timestamp.slice(11,19)}  ${(c.operation||'?').padEnd(18)}  ${(c.model||'?').padEnd(20)}  in=${String(c.input_tokens||0).padStart(6)}  out=${String(c.output_tokens||0).padStart(5)}  $${(c.cost_usd||0).toFixed(4)}`
+            ).join("\n");
+            const byOp = Object.entries(detail.by_operation || {}).map(([op, v]) =>
+              `  ${op.padEnd(18)}  calls=${v.calls}  in=${v.in}  out=${v.out}  $${v.cost_usd.toFixed(4)}`
+            ).join("\n");
+            cell.innerHTML = `
+              <div style="margin-bottom:10px;color:var(--muted);font-size:12px">
+                <strong>Conversation:</strong> ${escape(detail.conversation_id || '—')}
+                · <strong>Started:</strong> ${escape(fmtTime(detail.started_at))}
+                · <strong>Elapsed:</strong> ${fmtMs(detail.elapsed_ms || 0)}
+                · <strong>Total:</strong> ${fmtUSD(detail.total_cost_usd || 0)}
+                · <strong>Cumulative before/after:</strong> ${fmtUSD(detail.cumulative_usd_before || 0)} → ${fmtUSD(detail.cumulative_usd_after || 0)}
+              </div>
+              <div style="margin-bottom:8px"><strong>Question</strong></div>
+              <div class="by-op" style="margin-bottom:14px">${escape(detail.question || '')}</div>
+              <div style="margin-bottom:8px"><strong>Per-operation totals</strong></div>
+              <pre class="by-op">${escape(byOp || '(none)')}</pre>
+              <div style="margin:14px 0 8px"><strong>Per-call breakdown</strong></div>
+              <pre class="by-op">${escape(callsTable || '(none)')}</pre>`;
+          } catch (e) {
+            cell.textContent = "Error: " + e.message;
+          }
+        });
+      });
+    }
+
+    loadAll().catch(e => {
+      root.innerHTML = `<div class="auth-gate"><h2>Error</h2><p>${escape(e.message)}</p></div>`;
+    });
+  })();
+  </script>
+</body>
+</html>
