@@ -226,7 +226,8 @@
         if (m.role === "user") {
           renderUserTurn(m.content.text || "");
         } else if (m.role === "assistant") {
-          renderAssistantTurn(m.content);
+          // Don't re-type historical answers when re-opening a conversation.
+          renderAssistantTurn(m.content, { animate: false });
         }
       });
       loadRecents();
@@ -285,7 +286,51 @@
     });
   }
 
-  function renderAssistantTurn(answer) {
+  // Wrap each visible word inside `root` in a <span class="type-word"> with
+  // a staggered animation-delay so the answer fades in left-to-right at a
+  // typing-style cadence. CSS does the actual animation. Skips text inside
+  // citation markers and source cards.
+  function applyTypingAnimation(root, msPerWord = 16) {
+    if (!root) return;
+    const skipSelectors = ["sup", ".cite-marker", ".confidence-indicator", "code", "pre"];
+    const skipNode = (node) => {
+      let n = node;
+      while (n && n !== root) {
+        if (n.nodeType === 1 && skipSelectors.some(sel =>
+          (sel.startsWith(".") ? n.classList && n.classList.contains(sel.slice(1)) : n.tagName && n.tagName.toLowerCase() === sel))) return true;
+        n = n.parentNode;
+      }
+      return false;
+    };
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) => (skipNode(n.parentNode) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    let wordIdx = 0;
+    for (const node of nodes) {
+      if (!node.nodeValue || !node.nodeValue.trim()) continue;
+      const parts = node.nodeValue.split(/(\s+)/);
+      const frag = document.createDocumentFragment();
+      for (const p of parts) {
+        if (!p) continue;
+        if (/^\s+$/.test(p)) {
+          frag.appendChild(document.createTextNode(p));
+        } else {
+          const span = document.createElement("span");
+          span.className = "type-word";
+          span.style.animationDelay = (wordIdx * msPerWord) + "ms";
+          span.textContent = p;
+          frag.appendChild(span);
+          wordIdx++;
+        }
+      }
+      node.parentNode.replaceChild(frag, node);
+    }
+  }
+
+  function renderAssistantTurn(answer, opts = {}) {
+    const animate = opts.animate !== false;
     const div = document.createElement("div");
     div.className = "turn turn-assistant";
     const conf = answer.confidence || "medium";
@@ -294,6 +339,25 @@
       <div class="role">Sopal Research <span class="confidence-indicator ${confClass}">${escape(conf)}</span></div>
       ${answer.answer_html || "<p>(no answer)</p>"}
     `;
+
+    // Type-out animation on the answer body (not the role label, not sources).
+    if (animate) {
+      const summary = div.querySelector(".answer-summary");
+      const body = div.querySelector(".answer-body");
+      if (summary) applyTypingAnimation(summary, 14);
+      if (body) {
+        // Continue the cadence after the summary so the body picks up where
+        // summary left off rather than overlapping. Approximate offset:
+        // count summary words and shift body delays.
+        const summaryWords = summary ? summary.querySelectorAll(".type-word").length : 0;
+        applyTypingAnimation(body, 14);
+        if (summaryWords) {
+          body.querySelectorAll(".type-word").forEach((s, i) => {
+            s.style.animationDelay = ((summaryWords + i) * 14) + "ms";
+          });
+        }
+      }
+    }
 
     // Sources block
     if (answer.sources && answer.sources.length) {

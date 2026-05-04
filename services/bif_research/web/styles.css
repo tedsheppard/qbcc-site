@@ -263,6 +263,23 @@ img { display: block; max-width: 100%; }
 }
 .status-cases-missed li .missed-tag { color: var(--text-faint); font-size: 11px; }
 
+/* TYPING ANIMATION
+ * Each word is wrapped in <span class="type-word"> with a per-word
+ * animation-delay set inline. The span starts invisible and fades in.
+ * Total duration of the answer = words * 14ms + 240ms tail (the fade
+ * itself). The user sees text appear left-to-right at typing speed
+ * without any actual character-by-character JS scheduling.
+ */
+.type-word {
+  opacity: 0;
+  animation: type-fade 240ms ease-out forwards;
+  display: inline-block;
+}
+@keyframes type-fade {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ANSWER STYLING */
 .answer-summary p { font-weight: 500; margin: 0 0 12px; font-size: 15.5px; }
 .answer-body p   { margin: 0 0 12px; }
