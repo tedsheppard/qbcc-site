@@ -293,6 +293,64 @@
     });
   }
 
+  // -------- tool view (claim-check etc) inside the SopalAI shell --------
+  const TOOL_LABELS = {
+    "claim-check": { claim: "Payment Claim Checker", schedule: "Payment Schedule Checker" },
+  };
+  function openToolView(tool, mode) {
+    const view = document.getElementById("tool-view");
+    const frame = document.getElementById("tool-view-frame");
+    const title = document.getElementById("tool-view-title");
+    const main = document.getElementById("main-pane");
+    if (!view || !frame || !main) return;
+    let src = "/claim-check?embed=1";
+    if (mode === "claim" || mode === "schedule") src += "#" + mode;
+    if (frame.dataset.currentSrc !== src) {
+      frame.src = src;
+      frame.dataset.currentSrc = src;
+    }
+    if (title) {
+      const labels = TOOL_LABELS[tool] || {};
+      title.textContent = labels[mode] || labels.claim || "SopalAI tool";
+    }
+    view.hidden = false;
+    main.classList.add("in-tool-view");
+  }
+  function closeToolView(pushState = true) {
+    const view = document.getElementById("tool-view");
+    const main = document.getElementById("main-pane");
+    if (view) view.hidden = true;
+    if (main) main.classList.remove("in-tool-view");
+    if (pushState) {
+      const u = new URL(location.href);
+      u.searchParams.delete("view");
+      u.searchParams.delete("mode");
+      history.pushState({}, "", u.toString());
+    }
+  }
+  function applyUrlView() {
+    const qs = new URLSearchParams(location.search);
+    const view = qs.get("view");
+    const mode = qs.get("mode");
+    if (view === "claim-check") openToolView("claim-check", mode);
+    else closeToolView(false);
+  }
+  document.querySelectorAll('.tool-item[data-tool="claim-check"]').forEach(a => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      const mode = a.dataset.mode || "claim";
+      const u = new URL(location.href);
+      u.searchParams.set("view", "claim-check");
+      u.searchParams.set("mode", mode);
+      history.pushState({}, "", u.toString());
+      openToolView("claim-check", mode);
+    });
+  });
+  const toolViewClose = document.getElementById("tool-view-close");
+  if (toolViewClose) toolViewClose.addEventListener("click", () => closeToolView(true));
+  window.addEventListener("popstate", applyUrlView);
+  applyUrlView();
+
   // -------- jurisdiction picker (QLD only for now) --------
   const jurisdictionBtn = document.getElementById("jurisdiction-btn");
   const jurisdictionMenu = document.getElementById("jurisdiction-menu");

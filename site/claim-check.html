@@ -380,11 +380,24 @@
 
   <script src="/assets/claim-check/claim-check.js" defer></script>
 
-  <!-- Sidebar deep-link filter: when the user arrives from the SopalAI
-       sidebar via /claim-check#claim or #schedule, hide the irrelevant
-       half of the mode picker so they only see what they came for. -->
+  <!-- Sidebar deep-link filter + embed support.
+       /claim-check?embed=1 hides the page's own nav + footer so the
+       page can be rendered cleanly inside an iframe (used by the
+       SopalAI shell). The hash-filter only narrows which mode tiles
+       are visible — never touches text content of any element. -->
   <script>
     (function () {
+      function applyEmbedMode() {
+        var qs = new URLSearchParams(location.search);
+        if (qs.get("embed") === "1") {
+          document.documentElement.classList.add("cc-embed");
+          var style = document.createElement("style");
+          style.textContent =
+            ".cc-embed nav, .cc-embed .nav, .cc-embed footer, .cc-embed .footer { display: none !important; }" +
+            ".cc-embed body { padding-bottom: 0 !important; }";
+          document.head.appendChild(style);
+        }
+      }
       function applyHashFilter() {
         var h = (location.hash || "").replace(/^#/, "").toLowerCase();
         if (h !== "claim" && h !== "schedule") return;
@@ -393,18 +406,15 @@
           var m = t.getAttribute("data-mode") || "";
           t.style.display = m.indexOf(keepPrefix) === 0 ? "" : "none";
         });
-        var heading = document.querySelector(".mode-picker h1, .mode-picker h2, .mode-picker [aria-label]");
-        if (heading) {
-          var label = h === "claim" ? "Check a payment claim" : "Check a payment schedule";
-          if (heading.textContent && heading.textContent.length < 80) {
-            heading.textContent = label;
-          }
-        }
+      }
+      function init() {
+        applyEmbedMode();
+        applyHashFilter();
       }
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", applyHashFilter);
+        document.addEventListener("DOMContentLoaded", init);
       } else {
-        applyHashFilter();
+        init();
       }
       window.addEventListener("hashchange", applyHashFilter);
     })();

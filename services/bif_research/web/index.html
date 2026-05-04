@@ -50,7 +50,7 @@
         <div class="tools-label">Tools</div>
         <ul class="tools-list">
           <li>
-            <a href="/claim-check#claim" class="tool-item">
+            <a href="?view=claim-check&amp;mode=claim" class="tool-item" data-tool="claim-check" data-mode="claim">
               <span class="tool-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" width="16" height="16">
                   <path d="M9 12h6M9 16h6M9 8h6M5 5h14v14H5z"/>
@@ -60,7 +60,7 @@
             </a>
           </li>
           <li>
-            <a href="/claim-check#schedule" class="tool-item">
+            <a href="?view=claim-check&amp;mode=schedule" class="tool-item" data-tool="claim-check" data-mode="schedule">
               <span class="tool-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" width="16" height="16">
                   <path d="M3 7h18M3 12h18M3 17h12"/>
@@ -83,6 +83,15 @@
 
     <!-- Main pane -->
     <main class="main is-welcome" id="main-pane">
+      <!-- Tool view (claim/schedule checker) — hidden until ?view=... -->
+      <section class="tool-view" id="tool-view" hidden>
+        <div class="tool-view-header">
+          <h2 id="tool-view-title">Payment Claim Checker</h2>
+          <button class="tool-view-close" id="tool-view-close" type="button" aria-label="Close tool">×</button>
+        </div>
+        <iframe id="tool-view-frame" class="tool-view-frame" title="SopalAI tool"></iframe>
+      </section>
+
       <div class="conv-container" id="conv-container">
         <div class="welcome" id="welcome">
           <h1>Ask any security of payment question</h1>
@@ -125,7 +134,7 @@
           <textarea
             id="question-input"
             class="question-input"
-            rows="3"
+            rows="2"
             placeholder="Ask any question about the BIF Act, payment claims, adjudications, or other security of payment matters"
           ></textarea>
           <button id="ask-btn" class="ask-btn" type="button" disabled>Ask</button>

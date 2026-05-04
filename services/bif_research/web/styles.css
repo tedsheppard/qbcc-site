@@ -229,6 +229,38 @@ img { display: block; max-width: 100%; }
 .conv-container::-webkit-scrollbar { width: 8px; }
 .conv-container::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
 
+/* Tool view: full-pane iframe for cross-tool integrations (claim-check
+ * etc) with a tiny header that lets the user close back to chat. */
+.tool-view {
+  position: absolute; inset: 0; z-index: 30;
+  background: var(--bg-page);
+  display: flex; flex-direction: column;
+}
+.tool-view[hidden] { display: none; }
+.tool-view-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 18px; border-bottom: 1px solid var(--border);
+  background: white;
+  flex-shrink: 0;
+}
+.tool-view-header h2 {
+  font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+}
+.tool-view-close {
+  font-size: 22px; color: var(--text-faint);
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+}
+.tool-view-close:hover { background: #f0f0f0; color: var(--text); }
+.tool-view-frame {
+  flex: 1; border: 0; width: 100%;
+  background: var(--bg-soft);
+}
+.main { position: relative; }
+.main.in-tool-view .conv-container,
+.main.in-tool-view .input-bar { display: none; }
+
 /* WELCOME */
 .welcome {
   width: 100%; max-width: 760px; margin: 0 auto;
