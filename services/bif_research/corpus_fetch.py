@@ -34,7 +34,9 @@ def _chunks_db() -> sqlite3.Connection:
     if _chunks_conn is None:
         if not CHUNKS_DB.exists():
             raise FileNotFoundError(f"chunks.sqlite missing: {CHUNKS_DB}")
-        _chunks_conn = sqlite3.connect(CHUNKS_DB)
+        # check_same_thread=False — read-only access from ThreadPoolExecutor
+        # reader workers in parallel_reader.py. Safe because we never write.
+        _chunks_conn = sqlite3.connect(CHUNKS_DB, check_same_thread=False)
         _chunks_conn.row_factory = sqlite3.Row
     return _chunks_conn
 
@@ -47,7 +49,7 @@ def _name_db() -> sqlite3.Connection:
                 f"name_index.sqlite missing: {NAME_DB} — "
                 "run `python3 -m services.bif_research.name_index build`"
             )
-        _name_conn = sqlite3.connect(NAME_DB)
+        _name_conn = sqlite3.connect(NAME_DB, check_same_thread=False)
         _name_conn.row_factory = sqlite3.Row
     return _name_conn
 

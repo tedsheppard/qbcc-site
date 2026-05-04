@@ -82,7 +82,9 @@ class Retriever:
 
     def _ensure_loaded(self):
         if self._chunks_con is None:
-            self._chunks_con = sqlite3.connect(str(CHUNKS_DB))
+            # check_same_thread=False — Retriever instance is shared across
+            # FastAPI worker threads. Read-only so it's safe.
+            self._chunks_con = sqlite3.connect(str(CHUNKS_DB), check_same_thread=False)
             self._chunks_con.row_factory = sqlite3.Row
         if self._bm25 is None:
             with open(BM25_PATH, "rb") as f:

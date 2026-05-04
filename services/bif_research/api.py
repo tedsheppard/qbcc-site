@@ -411,7 +411,7 @@ def get_conversation(conv_id: str):
 def get_source(chunk_id: str):
     if not CHUNKS_DB.exists():
         raise HTTPException(503, "Index not built")
-    con = sqlite3.connect(str(CHUNKS_DB))
+    con = sqlite3.connect(str(CHUNKS_DB), check_same_thread=False)
     con.row_factory = sqlite3.Row
     row = con.execute(
         "SELECT chunk_id, source_id, source_type, header, text, metadata_json "
@@ -807,7 +807,7 @@ def health():
         "chroma_present": (CHROMA_PATH / "chroma.sqlite3").exists(),
     }
     if CHUNKS_DB.exists():
-        con = sqlite3.connect(str(CHUNKS_DB))
+        con = sqlite3.connect(str(CHUNKS_DB), check_same_thread=False)
         n = con.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
         by_type = {
             r[0]: r[1]

@@ -302,7 +302,10 @@ def _db() -> sqlite3.Connection:
             raise FileNotFoundError(
                 f"name_index.sqlite missing — run `python3 -m services.bif_research.name_index build`"
             )
-        _conn = sqlite3.connect(NAME_DB)
+        # check_same_thread=False — lookup_case() / lookup_provision() are
+        # called from FastAPI request threads AND from corpus_fetch reader
+        # workers in ThreadPoolExecutor. Read-only so it's safe.
+        _conn = sqlite3.connect(NAME_DB, check_same_thread=False)
         _conn.row_factory = sqlite3.Row
     return _conn
 
