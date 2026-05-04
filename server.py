@@ -261,6 +261,19 @@ app.include_router(_claim_check_redirect_router)
 try:
     from services.bif_research.api import app as _sopalai_app
     app.mount("/ai", _sopalai_app)
+    # Starlette's Mount only matches paths starting with "/ai/" (the prefix
+    # plus a slash). A bare "/ai" hits no mount route and falls through to
+    # the catchall, which serves site/index.html. Redirect explicitly so
+    # the user lands on the SPA. /sopalai also bounces here for old links.
+    @app.get("/ai", include_in_schema=False)
+    def _ai_redirect():
+        return RedirectResponse("/ai/", status_code=307)
+
+    @app.get("/sopalai", include_in_schema=False)
+    @app.get("/sopalai/", include_in_schema=False)
+    def _sopalai_redirect():
+        return RedirectResponse("/ai/", status_code=308)
+
     print(">>> Mounted SopalAI at /ai")
 except Exception as _e:
     print(f"WARNING: failed to mount SopalAI ({_e}); /ai will 404")
