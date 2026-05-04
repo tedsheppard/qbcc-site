@@ -37,6 +37,9 @@
     gateModalBody: $("#gate-modal-body"),
     gateModalPrimary: $("#gate-modal-primary"),
     gateModalSecondary: $("#gate-modal-secondary"),
+    uploadBtn: $("#upload-btn"),
+    uploadInput: $("#upload-input"),
+    attachments: $("#attachments"),
   };
 
   // -------- state --------
@@ -46,6 +49,15 @@
     asking: false,
     user: null,           // {email} when signed in, else null
     usage: null,          // {kind, used, limit, remaining}
+    documents: [],        // attached docs for the active conversation
+  };
+
+  const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+  const ALLOWED_UPLOAD_EXT = [".pdf", ".docx", ".txt", ".md"];
+  const fmtBytes = (n) => {
+    if (n < 1024) return n + " B";
+    if (n < 1024 * 1024) return (n / 1024).toFixed(0) + " KB";
+    return (n / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   // -------- helpers --------
@@ -151,6 +163,136 @@
     if (e.target === els.gateModal) closeGateModal();
   });
 
+  // -------- attachments / upload --------
+  function renderAttachments() {
+    if (!els.attachments) return;
+    if (!state.documents.length) {
+      els.attachments.hidden = true;
+      els.attachments.innerHTML = "";
+      return;
+    }
+    els.attachments.hidden = false;
+    els.attachments.innerHTML = state.documents.map(d => `
+      <span class="chip${d.error ? ' error' : ''}" data-id="${escape(d.id || '')}">
+        <span class="chip-name">${escape(d.filename)}</span>
+        <span class="chip-meta">${escape(fmtBytes(d.size_bytes || 0))}${d.truncated ? ' · trimmed' : ''}${d.error ? ' · ' + escape(d.error) : ''}</span>
+        <button class="chip-remove" type="button" aria-label="Remove">×</button>
+      </span>`).join("");
+    els.attachments.querySelectorAll(".chip-remove").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const chip = e.target.closest(".chip");
+        const id = chip && chip.dataset.id;
+        if (id) removeAttachment(id);
+      });
+    });
+  }
+
+  async function refreshAttachmentsForConversation() {
+    if (!state.conversationId) {
+      state.documents = [];
+      renderAttachments();
+      return;
+    }
+    try {
+      const r = await fetch(`${API}/api/conversations/${state.conversationId}/documents`);
+      if (!r.ok) return;
+      const data = await r.json();
+      state.documents = (data.documents || []).map(d => ({...d}));
+      renderAttachments();
+    } catch (e) { /* ignore */ }
+  }
+
+  async function removeAttachment(docId) {
+    // Optimistic UI
+    state.documents = state.documents.filter(d => d.id !== docId);
+    renderAttachments();
+    try {
+      await fetch(`${API}/api/upload/${encodeURIComponent(docId)}`, {
+        method: "DELETE", headers: authHeaders(),
+      });
+    } catch (e) { /* ignore — local state already updated */ }
+  }
+
+  function validateUpload(file) {
+    if (!file) return "No file";
+    if (file.size > MAX_UPLOAD_BYTES) return "File too large (20 MB max)";
+    const lower = (file.name || "").toLowerCase();
+    if (!ALLOWED_UPLOAD_EXT.some(ext => lower.endsWith(ext))) {
+      return "Unsupported type — use PDF, DOCX, TXT or MD";
+    }
+    return null;
+  }
+
+  async function handleUpload(file) {
+    const err = validateUpload(file);
+    if (err) {
+      // Show transient error chip
+      state.documents = state.documents.concat([{
+        id: "err-" + Date.now(),
+        filename: file.name || "upload",
+        size_bytes: file.size || 0,
+        error: err,
+      }]);
+      renderAttachments();
+      setTimeout(() => {
+        state.documents = state.documents.filter(d => !d.error);
+        renderAttachments();
+      }, 4000);
+      return;
+    }
+    await ensureConversation();
+    // Show optimistic uploading chip
+    const tempId = "tmp-" + Date.now();
+    state.documents = state.documents.concat([{
+      id: tempId, filename: file.name, size_bytes: file.size, uploading: true,
+    }]);
+    renderAttachments();
+    els.uploadBtn.classList.add("uploading");
+
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("conversation_id", state.conversationId);
+      const r = await fetch(`${API}/api/upload`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: fd,
+      });
+      if (!r.ok) {
+        let msg = `Upload failed (${r.status})`;
+        try { const e = await r.json(); if (e.detail) msg = e.detail; } catch {}
+        throw new Error(msg);
+      }
+      const data = await r.json();
+      // Replace temp chip with real one
+      state.documents = state.documents.map(d => d.id === tempId
+        ? { id: data.id, filename: data.filename, size_bytes: data.size_bytes,
+            n_chars: data.n_chars, truncated: data.truncated }
+        : d);
+    } catch (e) {
+      state.documents = state.documents.map(d => d.id === tempId
+        ? { ...d, uploading: false, error: e.message || "upload failed" } : d);
+      setTimeout(() => {
+        state.documents = state.documents.filter(d => d.id !== tempId);
+        renderAttachments();
+      }, 4500);
+    } finally {
+      els.uploadBtn.classList.remove("uploading");
+      renderAttachments();
+    }
+  }
+
+  if (els.uploadBtn) {
+    els.uploadBtn.addEventListener("click", () => els.uploadInput && els.uploadInput.click());
+  }
+  if (els.uploadInput) {
+    els.uploadInput.addEventListener("change", async (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (f) await handleUpload(f);
+      e.target.value = ""; // allow re-upload of the same file
+    });
+  }
+
   // -------- recents --------
   async function loadRecents() {
     try {
@@ -236,6 +378,7 @@
         }
       });
       loadRecents();
+      refreshAttachmentsForConversation();
       scrollToBottom();
     } catch (e) {
       console.warn("conv load failed", e);
@@ -248,6 +391,8 @@
     els.convStream.innerHTML = "";
     showWelcome(true);
     els.input.value = "";
+    state.documents = [];
+    renderAttachments();
     els.input.focus();
     loadRecents();
   }

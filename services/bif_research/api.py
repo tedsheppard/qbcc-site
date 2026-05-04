@@ -28,7 +28,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -136,6 +136,12 @@ JWT_SECRET = (
 )
 JWT_ALG = os.environ.get("JWT_ALG", "HS256")
 
+# User-document uploads
+UPLOAD_DIR = Path(os.environ.get("BIF_UPLOAD_DIR", "/var/data/bif_uploads"))
+MAX_UPLOAD_BYTES = int(os.environ.get("BIF_MAX_UPLOAD_BYTES", str(20 * 1024 * 1024)))   # 20 MB
+MAX_DOC_TEXT_CHARS = int(os.environ.get("BIF_MAX_DOC_TEXT_CHARS", str(180_000)))         # ≈45k tokens
+MAX_DOCS_PER_CONV = int(os.environ.get("BIF_MAX_DOCS_PER_CONV", "10"))
+
 
 # ---------------------------------------------------------------------------
 # Conversation store
@@ -225,6 +231,23 @@ def init_conv_db() -> sqlite3.Connection:
     """)
     con.execute("CREATE INDEX IF NOT EXISTS idx_missing_auth_name ON missing_authorities(authority)")
     con.execute("CREATE INDEX IF NOT EXISTS idx_missing_auth_time ON missing_authorities(seen_at)")
+    # User-uploaded documents: a contract / payment claim / schedule that
+    # the user attaches to a conversation. Extracted text is included in
+    # the prompt context for every subsequent ask in the same conversation.
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS uploaded_documents (
+            id              TEXT PRIMARY KEY,
+            conversation_id TEXT NOT NULL,
+            filename        TEXT NOT NULL,
+            mime            TEXT,
+            size_bytes      INTEGER,
+            n_chars         INTEGER,
+            text            TEXT,
+            uploaded_at     REAL,
+            disk_path       TEXT
+        )
+    """)
+    con.execute("CREATE INDEX IF NOT EXISTS idx_uploaded_conv ON uploaded_documents(conversation_id)")
     con.commit()
     return con
 
@@ -451,6 +474,185 @@ def get_conversation(conv_id: str):
 
 
 # ---------------------------------------------------------------------------
+# User-document uploads (per-conversation context)
+# ---------------------------------------------------------------------------
+
+def _extract_pdf_text(path: Path) -> str:
+    try:
+        import PyPDF2
+    except Exception:
+        return ""
+    out = []
+    try:
+        with open(path, "rb") as f:
+            r = PyPDF2.PdfReader(f)
+            for page in r.pages:
+                try:
+                    out.append(page.extract_text() or "")
+                except Exception:
+                    continue
+    except Exception as e:
+        log.warning(f"pdf extract failed for {path}: {e}")
+    return "\n".join(out)
+
+
+def _extract_docx_text(path: Path) -> str:
+    try:
+        import docx
+    except Exception:
+        return ""
+    try:
+        d = docx.Document(str(path))
+        return "\n".join(p.text for p in d.paragraphs if p.text)
+    except Exception as e:
+        log.warning(f"docx extract failed for {path}: {e}")
+        return ""
+
+
+def _extract_text_from_upload(path: Path, mime: str, filename: str) -> str:
+    name = filename.lower()
+    if name.endswith(".pdf") or mime == "application/pdf":
+        return _extract_pdf_text(path)
+    if name.endswith(".docx") or mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        return _extract_docx_text(path)
+    if name.endswith(".txt") or name.endswith(".md") or mime.startswith("text/"):
+        try:
+            return path.read_text(encoding="utf-8", errors="replace")
+        except Exception as e:
+            log.warning(f"txt read failed for {path}: {e}")
+            return ""
+    return ""
+
+
+@app.post("/api/upload")
+async def upload_document(
+    request: Request,
+    file: UploadFile = File(...),
+    conversation_id: str = Form(...),
+):
+    """Accept a single document (PDF / DOCX / TXT / MD) up to 20 MB and
+    attach it to a conversation. Subsequent /api/ask calls in the same
+    conversation will include the extracted text in the prompt context."""
+    # Quota gate (signed users + anon-id) — same identifier rules as /ask
+    identifier, is_signed, _email = _identify_request(
+        request.headers.get("authorization"),
+        request.headers.get("x-anon-id"),
+    )
+    # Validate conversation exists
+    if not conv_con().execute(
+        "SELECT 1 FROM conversations WHERE id=?", (conversation_id,)
+    ).fetchone():
+        raise HTTPException(404, "Conversation not found")
+    # Cap on docs per conversation
+    n_existing = conv_con().execute(
+        "SELECT COUNT(*) FROM uploaded_documents WHERE conversation_id=?",
+        (conversation_id,),
+    ).fetchone()[0]
+    if n_existing >= MAX_DOCS_PER_CONV:
+        raise HTTPException(409, f"Max {MAX_DOCS_PER_CONV} documents per conversation")
+
+    # Read body and enforce size cap
+    raw = await file.read()
+    if len(raw) > MAX_UPLOAD_BYTES:
+        raise HTTPException(413, f"File exceeds {MAX_UPLOAD_BYTES // (1024*1024)} MB limit")
+    if not raw:
+        raise HTTPException(400, "Empty file")
+
+    # Persist to disk (per-conv subdir on the persistent volume)
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    conv_dir = UPLOAD_DIR / conversation_id
+    conv_dir.mkdir(parents=True, exist_ok=True)
+    doc_id = uuid.uuid4().hex[:16]
+    safe_name = (file.filename or "upload.bin").replace("/", "_").replace("\\", "_")[:200]
+    suffix = Path(safe_name).suffix or ""
+    disk_path = conv_dir / f"{doc_id}{suffix}"
+    disk_path.write_bytes(raw)
+
+    # Extract text (best-effort, capped)
+    text = _extract_text_from_upload(disk_path, file.content_type or "", safe_name)
+    truncated = False
+    if len(text) > MAX_DOC_TEXT_CHARS:
+        text = text[:MAX_DOC_TEXT_CHARS]
+        truncated = True
+
+    conv_con().execute(
+        """INSERT INTO uploaded_documents
+           (id, conversation_id, filename, mime, size_bytes, n_chars, text, uploaded_at, disk_path)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            doc_id,
+            conversation_id,
+            safe_name,
+            file.content_type or "",
+            len(raw),
+            len(text),
+            text,
+            time.time(),
+            str(disk_path),
+        ),
+    )
+    conv_con().commit()
+    return {
+        "id": doc_id,
+        "filename": safe_name,
+        "size_bytes": len(raw),
+        "n_chars": len(text),
+        "truncated": truncated,
+        "extracted": bool(text.strip()),
+    }
+
+
+@app.get("/api/conversations/{conv_id}/documents")
+def list_conversation_documents(conv_id: str):
+    rows = conv_con().execute(
+        "SELECT id, filename, mime, size_bytes, n_chars, uploaded_at "
+        "FROM uploaded_documents WHERE conversation_id=? ORDER BY uploaded_at",
+        (conv_id,),
+    ).fetchall()
+    return {
+        "documents": [
+            {
+                "id": r[0], "filename": r[1], "mime": r[2],
+                "size_bytes": r[3], "n_chars": r[4], "uploaded_at": r[5],
+            }
+            for r in rows
+        ]
+    }
+
+
+@app.delete("/api/upload/{doc_id}")
+def delete_document(doc_id: str):
+    row = conv_con().execute(
+        "SELECT disk_path FROM uploaded_documents WHERE id=?", (doc_id,)
+    ).fetchone()
+    if not row:
+        raise HTTPException(404, "Not found")
+    try:
+        Path(row[0]).unlink(missing_ok=True)
+    except Exception as e:
+        log.warning(f"failed to delete upload file: {e}")
+    conv_con().execute("DELETE FROM uploaded_documents WHERE id=?", (doc_id,))
+    conv_con().commit()
+    return {"ok": True}
+
+
+def _load_conv_documents_text(conv_id: str) -> list[dict]:
+    """Return all uploaded documents for a conversation, ready to be
+    prepended to the prompt context."""
+    if not conv_id:
+        return []
+    rows = conv_con().execute(
+        "SELECT id, filename, n_chars, text FROM uploaded_documents "
+        "WHERE conversation_id=? ORDER BY uploaded_at",
+        (conv_id,),
+    ).fetchall()
+    return [
+        {"id": r[0], "filename": r[1], "n_chars": r[2], "text": r[3] or ""}
+        for r in rows
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Source endpoint
 # ---------------------------------------------------------------------------
 
@@ -606,9 +808,37 @@ async def ask(payload: AskRequest, request: Request):
             yield emit("status", {"phase": "planning",
                                   "msg": "Planning — naming provisions and authorities…"})
 
+            # Load any documents the user attached to this conversation and
+            # prepend their extracted text to the question. The planner +
+            # answerer/reasoner all see this as part of the user turn so
+            # they can read and reason over the document content.
+            user_docs = _load_conv_documents_text(conv_id) if conv_id else []
+            if user_docs:
+                doc_blocks = []
+                for d in user_docs:
+                    if not d["text"].strip():
+                        continue
+                    doc_blocks.append(
+                        f"=== ATTACHED DOCUMENT: {d['filename']} ===\n{d['text']}"
+                    )
+                if doc_blocks:
+                    docs_preamble = (
+                        "The user has attached the following document(s) to this "
+                        "conversation. Read them and use them as part of the factual "
+                        "context for your answer. They are NOT primary law and must "
+                        "not be cited as authority.\n\n"
+                        + "\n\n".join(doc_blocks)
+                        + "\n\n=== END OF ATTACHED DOCUMENTS ===\n\n"
+                    )
+                    question_with_docs = docs_preamble + "USER QUESTION:\n" + payload.question
+                else:
+                    question_with_docs = payload.question
+            else:
+                question_with_docs = payload.question
+
             # Phase A — planner + routing (no yields inside)
             with cap:
-                rewritten = _rewrite_with_history(payload.question, history)
+                rewritten = _rewrite_with_history(question_with_docs, history)
                 plan = planner_module.plan(rewritten, real=True)
                 route = route_question(plan, rewritten)
 
