@@ -578,11 +578,9 @@
       ? `<div class="check-decisions">Related decisions: ${result.decisions.map(d => `<a href="${escapeAttr(d.url || searchHref)}" target="_blank" rel="noopener">${escapeHtml(d.title || 'decision')}</a>`).join(' · ')}</div>`
       : '';
 
-    const hasReasoning = result && (result.reasoning_trace || result.model);
+    const hasReasoning = !!(result && result.reasoning_trace);
     const reasoningOpen = !!state.reasoningOpen && state.reasoningOpen[check.id];
-    const modelBadge = (result && result.model)
-      ? `<span class="reasoning-model">${escapeHtml(result.model)}${result.reasoning ? ' · reasoning=' + escapeHtml(result.reasoning) : ''}${result.confidence ? ' · confidence=' + escapeHtml(result.confidence) : ''}</span>`
-      : '';
+    const modelBadge = '';
     const reasoningHtml = hasReasoning
       ? `<div class="check-reasoning" ${reasoningOpen ? '' : 'hidden'}>
           ${result.reasoning_trace ? `<div class="reasoning-body">${escapeHtml(result.reasoning_trace).replace(/\n/g, '<br>')}</div>` : ''}

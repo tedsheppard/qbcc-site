@@ -765,7 +765,7 @@
     const div = document.createElement("div");
     div.className = "turn turn-assistant";
     div.innerHTML = `
-      <div class="role">Sopal Research</div>
+      <div class="role">SopalAI</div>
       ${answer.answer_html || "<p>(no answer)</p>"}
     `;
 
@@ -976,7 +976,7 @@
     // assistant turn placeholder with status messages
     const turn = document.createElement("div");
     turn.className = "turn turn-assistant";
-    turn.innerHTML = `<div class="role">Sopal Research</div>`;
+    turn.innerHTML = `<div class="role">SopalAI</div>`;
     const statusBlock = document.createElement("div");
     statusBlock.className = "status-block";
     turn.appendChild(statusBlock);
