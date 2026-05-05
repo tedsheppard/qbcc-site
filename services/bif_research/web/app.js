@@ -308,17 +308,13 @@
   const TOOL_LABELS = {
     "claim-check": { claim: "Payment Claim Checker", schedule: "Payment Schedule Checker" },
   };
-  function openToolView(tool, mode) {
+  function openToolView(tool, mode, opts) {
+    opts = opts || {};
     const view = document.getElementById("tool-view");
     const frame = document.getElementById("tool-view-frame");
     const title = document.getElementById("tool-view-title");
     const main = document.getElementById("main-pane");
     if (!view || !frame || !main) return;
-    // The sitewide page-transition guard sets sessionStorage.nt-transitioning
-    // to overlay a black cover on the next page until JS clears it. The
-    // claim-check iframe inherits sessionStorage from this tab and would
-    // pick up the flag, drawing a solid black rectangle. Clear it before
-    // the iframe loads so the embedded page renders normally.
     try {
       sessionStorage.removeItem("nt-transitioning");
       if (frame.contentWindow && frame.contentWindow.sessionStorage) {
@@ -326,14 +322,20 @@
       }
     } catch (e) { /* cross-origin or storage disabled — ignore */ }
     let src = "/claim-check?embed=1";
-    if (mode === "claim" || mode === "schedule") src += "#" + mode;
+    if (opts.sessionId) {
+      src += "#session-" + opts.sessionId;
+    } else if (mode === "claim" || mode === "schedule") {
+      src += "#" + mode;
+    }
     if (frame.dataset.currentSrc !== src) {
       frame.src = src;
       frame.dataset.currentSrc = src;
     }
     if (title) {
       const labels = TOOL_LABELS[tool] || {};
-      title.textContent = labels[mode] || labels.claim || "SopalAI tool";
+      title.textContent = opts.sessionId
+        ? "Resuming verify session"
+        : (labels[mode] || labels.claim || "SopalAI tool");
     }
     view.hidden = false;
     main.classList.add("in-tool-view");
@@ -397,40 +399,109 @@
     });
   }
 
-  // -------- recents --------
+  // -------- recents (unified: SopalAI chats + claim-check Verify sessions) --------
+  const CLAIM_CHECK_LS_PREFIX = "sopal-claim-check-session-";
+
+  function listClaimCheckSessions() {
+    const out = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith(CLAIM_CHECK_LS_PREFIX)) continue;
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        try {
+          const obj = JSON.parse(raw);
+          out.push({
+            kind: "verify",                     // tag
+            key: k,                              // localStorage key (used to delete)
+            sessionId: k.replace(CLAIM_CHECK_LS_PREFIX, ""),
+            title: obj.title
+              || (obj.docMeta && obj.docMeta.filename)
+              || (obj.mode ? prettyClaimCheckMode(obj.mode) : "Claim check session"),
+            updatedAt: (obj.savedAt || 0) / 1000,  // ms -> seconds for sort with conv updated_at
+          });
+        } catch (_) { /* corrupt entry, skip */ }
+      }
+    } catch (_) { /* localStorage unavailable */ }
+    return out;
+  }
+
+  function prettyClaimCheckMode(mode) {
+    return ({
+      payment_claim_serving:    "Payment claim — serving",
+      payment_claim_received:   "Payment claim — received",
+      payment_schedule_giving:  "Payment schedule — giving",
+      payment_schedule_received:"Payment schedule — received",
+    })[mode] || "Claim check";
+  }
+
   async function loadRecents() {
+    let chats = [];
     try {
       const r = await fetch(`${API}/api/conversations`, { headers: authHeaders() });
-      const items = await r.json();
-      els.recents.innerHTML = "";
-      items.forEach((c) => {
-        const li = document.createElement("li");
-        li.dataset.id = c.id;
-        const span = document.createElement("span");
-        span.className = "chat-title-text";
-        span.textContent = c.title || "New chat";
-        const del = document.createElement("button");
-        del.type = "button";
-        del.className = "recent-delete";
-        del.setAttribute("aria-label", "Delete conversation");
-        del.title = "Delete conversation";
-        del.innerHTML = "×";
-        del.addEventListener("click", (e) => {
-          e.stopPropagation();
-          confirmDeleteConversation(c.id, c.title || "this chat");
-        });
-        li.appendChild(span);
-        li.appendChild(del);
-        li.addEventListener("click", () => loadConversation(c.id));
-        els.recents.appendChild(li);
+      chats = (await r.json()).map(c => ({
+        kind: "chat",
+        id: c.id,
+        title: c.title || "New chat",
+        updatedAt: c.updated_at || 0,
+      }));
+    } catch (e) { /* ignore — keep claim-check items */ }
+
+    const verifies = listClaimCheckSessions();
+    const merged = [...chats, ...verifies].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+    els.recents.innerHTML = "";
+    merged.forEach((item) => {
+      const li = document.createElement("li");
+      li.dataset.kind = item.kind;
+      if (item.kind === "chat") {
+        li.dataset.id = item.id;
+      } else {
+        li.dataset.sessionKey = item.key;
+        li.dataset.sessionId = item.sessionId;
+      }
+      const tag = document.createElement("span");
+      tag.className = `recent-tag tag-${item.kind}`;
+      tag.textContent = item.kind === "chat" ? "Chat" : "Verify";
+      const span = document.createElement("span");
+      span.className = "chat-title-text";
+      span.textContent = item.title;
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "recent-delete";
+      del.setAttribute("aria-label", "Delete");
+      del.title = "Delete";
+      del.innerHTML = "×";
+      del.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (item.kind === "chat") {
+          confirmDeleteConversation(item.id, item.title);
+        } else {
+          const ok = await showConfirm({
+            title: "Delete this verify session?",
+            body: `“${item.title}” will be permanently removed from this browser. This cannot be undone.`,
+            confirmText: "Delete permanently", danger: true,
+          });
+          if (!ok) return;
+          try { localStorage.removeItem(item.key); } catch (_) {}
+          loadRecents();
+        }
       });
-      // Highlight current
-      $$(".recents-list li").forEach((li) =>
-        li.classList.toggle("active", li.dataset.id === state.conversationId)
-      );
-    } catch (e) {
-      console.warn("recents load failed", e);
-    }
+      li.appendChild(tag);
+      li.appendChild(span);
+      li.appendChild(del);
+      li.addEventListener("click", () => {
+        if (item.kind === "chat") loadConversation(item.id);
+        else openToolView("claim-check", null, { sessionId: item.sessionId });
+      });
+      els.recents.appendChild(li);
+    });
+    // Highlight current
+    $$(".recents-list li").forEach((li) => {
+      const active = li.dataset.kind === "chat" && li.dataset.id === state.conversationId;
+      li.classList.toggle("active", !!active);
+    });
   }
 
   // -------- in-app confirm modal (no chrome popup) --------
@@ -967,6 +1038,12 @@
       els.askBtn.disabled = false;
       els.input.focus();
     });
+  });
+
+  // Refresh recents when the iframe (or another tab) saves a new
+  // claim-check session into localStorage.
+  window.addEventListener("storage", (e) => {
+    if (e.key && e.key.startsWith(CLAIM_CHECK_LS_PREFIX)) loadRecents();
   });
 
   // -------- init --------

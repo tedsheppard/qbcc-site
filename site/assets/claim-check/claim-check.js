@@ -1565,4 +1565,10 @@
       }
     }
   }
+
+  // Expose resume + the LS_PREFIX so the SopalAI shell can
+  // (a) auto-resume a session from a #session-<key> URL hash, and
+  // (b) read the same prefix when listing sessions in the sidebar.
+  window.resumeStoredSession = resumeStoredSession;
+  window.SOPAL_CLAIM_CHECK_LS_PREFIX = LS_PREFIX;
 })();

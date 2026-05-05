@@ -402,9 +402,29 @@
           var style = document.createElement("style");
           style.textContent =
             ".cc-embed nav, .cc-embed .nav, .cc-embed footer, .cc-embed .footer { display: none !important; }" +
+            // The 'Previous sessions' panel is replaced by the SopalAI
+            // sidebar Recents list (tagged Verify) when embedded.
+            ".cc-embed #prev-sessions, .cc-embed .prev-sessions { display: none !important; }" +
             ".cc-embed body { padding-bottom: 0 !important; }";
           document.head.appendChild(style);
         }
+      }
+      function applySessionResume() {
+        var h = (location.hash || "").replace(/^#/, "");
+        var m = /^session-(.+)$/.exec(h);
+        if (!m) return;
+        var key = "sopal-claim-check-session-" + m[1];
+        // Wait for claim-check.js to expose resumeStoredSession on window.
+        var tries = 0;
+        var iv = setInterval(function () {
+          tries++;
+          if (typeof window.resumeStoredSession === "function") {
+            try { window.resumeStoredSession(key); } catch (_) {}
+            clearInterval(iv);
+          } else if (tries > 50) {
+            clearInterval(iv);
+          }
+        }, 100);
       }
       function applyHashFilter() {
         var h = (location.hash || "").replace(/^#/, "").toLowerCase();
@@ -419,6 +439,7 @@
         clearTransitionOverlay();
         applyEmbedMode();
         applyHashFilter();
+        applySessionResume();
       }
       // Run as early and as often as we can to make sure the overlay is gone.
       clearTransitionOverlay();
