@@ -530,6 +530,11 @@ img { display: block; max-width: 100%; }
   padding: 10px 32px; border-top: 1px solid #222;
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   flex-shrink: 0;
+  /* Stick the bar to the bottom of .main even in welcome mode (where
+   * justify-content: flex-start would otherwise let the bar ride up
+   * directly under the input). margin-top: auto pushes it to the
+   * bottom of the flex container regardless of justify-content. */
+  margin-top: auto;
 }
 .ai-disclaimer-bar strong { color: #ddd; font-weight: 600; }
 .ai-disclaimer-bar .ai-disclaimer-copy { color: #777; white-space: nowrap; }
