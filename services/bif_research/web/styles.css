@@ -141,10 +141,21 @@ img { display: block; max-width: 100%; }
   padding: 7px 10px; border-radius: 7px;
   font-size: 13.5px; color: var(--text);
   cursor: pointer;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   margin-bottom: 1px;
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  position: relative;
 }
 .recents-list li:hover { background: rgba(0, 0, 0, .035); }
+.recents-list li .recent-delete {
+  display: none;
+  background: transparent; border: 0; padding: 0;
+  width: 22px; height: 22px; border-radius: 5px;
+  color: var(--text-faint); font-size: 18px; line-height: 1;
+  cursor: pointer; flex-shrink: 0;
+}
+.recents-list li:hover .recent-delete,
+.recents-list li.active .recent-delete { display: inline-flex; align-items: center; justify-content: center; }
+.recents-list li .recent-delete:hover { background: rgba(0,0,0,0.08); color: #b03030; }
 .recents-list li.active {
   background: var(--green-tint);
   color: var(--text); font-weight: 500;
@@ -680,6 +691,10 @@ img { display: block; max-width: 100%; }
   background: white; color: var(--text); border: 1px solid var(--border);
 }
 .modal .btn-ghost:hover { background: var(--bg-soft); border-color: var(--border-strong); }
+.modal .btn-danger {
+  background: #c0392b; color: white; flex: 1; min-width: 140px;
+}
+.modal .btn-danger:hover { background: #962e22; }
 .modal-close {
   position: absolute; top: 12px; right: 12px;
   width: 32px; height: 32px; border-radius: 8px;

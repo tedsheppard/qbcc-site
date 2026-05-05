@@ -215,6 +215,14 @@ def init_conv_db() -> sqlite3.Connection:
         con.execute("ALTER TABLE query_costs ADD COLUMN identifier TEXT")
     except sqlite3.OperationalError:
         pass
+    # Same migration for conversations — owner identifier so /api/conversations
+    # only returns chats the requesting user owns. Legacy rows (NULL) become
+    # invisible to everyone.
+    try:
+        con.execute("ALTER TABLE conversations ADD COLUMN identifier TEXT")
+    except sqlite3.OperationalError:
+        pass
+    con.execute("CREATE INDEX IF NOT EXISTS idx_conv_identifier ON conversations(identifier)")
     # Log of authorities the planner wanted to cite but the name_index
     # could not resolve — these are typically interstate/HCA cases not in
     # the Qld corpus, OR Qld cases that were never indexed (corpus gaps).
@@ -428,35 +436,69 @@ def _gate_message(info: dict) -> str:
 # Conversation endpoints
 # ---------------------------------------------------------------------------
 
+def _conv_owner(conv_id: str) -> Optional[str]:
+    """Return the identifier that owns this conversation, or None if the
+    row is missing OR is a legacy NULL-identifier row (treated as owned
+    by no one)."""
+    r = conv_con().execute(
+        "SELECT identifier FROM conversations WHERE id = ?", (conv_id,)
+    ).fetchone()
+    return r[0] if r and r[0] else None
+
+
+def _own_conv_or_404(conv_id: str, identifier: str) -> None:
+    """Raise 404 if conv doesn't exist, 403 if it's owned by someone else."""
+    owner = _conv_owner(conv_id)
+    if owner is None:
+        raise HTTPException(404, "Conversation not found")
+    if owner != identifier:
+        # 404, not 403, to avoid leaking existence
+        raise HTTPException(404, "Conversation not found")
+
+
 @app.get("/api/conversations")
-def list_conversations(limit: int = 30):
+def list_conversations(request: Request, limit: int = 30):
+    identifier, _signed, _email = _identify_request(
+        request.headers.get("authorization"),
+        request.headers.get("x-anon-id"),
+    )
     rows = conv_con().execute(
         "SELECT id, title, created_at, updated_at FROM conversations "
-        "ORDER BY updated_at DESC LIMIT ?", (limit,)
+        "WHERE identifier = ? "
+        "ORDER BY updated_at DESC LIMIT ?",
+        (identifier, limit),
     ).fetchall()
     return [{"id": r[0], "title": r[1], "created_at": r[2], "updated_at": r[3]} for r in rows]
 
 
 @app.post("/api/conversations")
-def create_conversation(payload: ConvCreateRequest):
+def create_conversation(payload: ConvCreateRequest, request: Request):
+    identifier, _signed, _email = _identify_request(
+        request.headers.get("authorization"),
+        request.headers.get("x-anon-id"),
+    )
     conv_id = uuid.uuid4().hex[:12]
     now = time.time()
     title = payload.title or "New chat"
     conv_con().execute(
-        "INSERT INTO conversations (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
-        (conv_id, title, now, now),
+        "INSERT INTO conversations (id, title, created_at, updated_at, identifier) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (conv_id, title, now, now, identifier),
     )
     conv_con().commit()
     return {"id": conv_id, "title": title}
 
 
 @app.get("/api/conversations/{conv_id}")
-def get_conversation(conv_id: str):
+def get_conversation(conv_id: str, request: Request):
+    identifier, _signed, _email = _identify_request(
+        request.headers.get("authorization"),
+        request.headers.get("x-anon-id"),
+    )
+    _own_conv_or_404(conv_id, identifier)
     conv = conv_con().execute(
         "SELECT id, title, created_at, updated_at FROM conversations WHERE id = ?", (conv_id,)
     ).fetchone()
-    if not conv:
-        raise HTTPException(404, "Conversation not found")
     msgs = conv_con().execute(
         "SELECT role, content_json, created_at FROM messages "
         "WHERE conversation_id = ? ORDER BY id", (conv_id,)
@@ -471,6 +513,37 @@ def get_conversation(conv_id: str):
             for r in msgs
         ],
     }
+
+
+@app.delete("/api/conversations/{conv_id}")
+def delete_conversation(conv_id: str, request: Request):
+    """Permanently delete a conversation and all its messages, documents,
+    and uploaded files on disk. Owner-gated."""
+    identifier, _signed, _email = _identify_request(
+        request.headers.get("authorization"),
+        request.headers.get("x-anon-id"),
+    )
+    _own_conv_or_404(conv_id, identifier)
+    # Best-effort: purge uploaded files on disk
+    try:
+        rows = conv_con().execute(
+            "SELECT disk_path FROM uploaded_documents WHERE conversation_id=?",
+            (conv_id,),
+        ).fetchall()
+        for r in rows:
+            try: Path(r[0]).unlink(missing_ok=True)
+            except Exception: pass
+        conv_dir = UPLOAD_DIR / conv_id
+        try: conv_dir.rmdir()
+        except Exception: pass
+    except Exception as e:
+        log.warning(f"upload purge failed for conv {conv_id}: {e}")
+    # DB deletes
+    conv_con().execute("DELETE FROM uploaded_documents WHERE conversation_id=?", (conv_id,))
+    conv_con().execute("DELETE FROM messages WHERE conversation_id=?", (conv_id,))
+    conv_con().execute("DELETE FROM conversations WHERE id=?", (conv_id,))
+    conv_con().commit()
+    return {"ok": True, "deleted": conv_id}
 
 
 # ---------------------------------------------------------------------------
@@ -687,11 +760,8 @@ async def upload_document(
         request.headers.get("authorization"),
         request.headers.get("x-anon-id"),
     )
-    # Validate conversation exists
-    if not conv_con().execute(
-        "SELECT 1 FROM conversations WHERE id=?", (conversation_id,)
-    ).fetchone():
-        raise HTTPException(404, "Conversation not found")
+    # Conversation must exist AND be owned by the requester
+    _own_conv_or_404(conversation_id, identifier)
     # Cap on docs per conversation
     n_existing = conv_con().execute(
         "SELECT COUNT(*) FROM uploaded_documents WHERE conversation_id=?",
@@ -752,7 +822,12 @@ async def upload_document(
 
 
 @app.get("/api/conversations/{conv_id}/documents")
-def list_conversation_documents(conv_id: str):
+def list_conversation_documents(conv_id: str, request: Request):
+    identifier, _signed, _email = _identify_request(
+        request.headers.get("authorization"),
+        request.headers.get("x-anon-id"),
+    )
+    _own_conv_or_404(conv_id, identifier)
     rows = conv_con().execute(
         "SELECT id, filename, mime, size_bytes, n_chars, uploaded_at "
         "FROM uploaded_documents WHERE conversation_id=? ORDER BY uploaded_at",
@@ -770,12 +845,19 @@ def list_conversation_documents(conv_id: str):
 
 
 @app.delete("/api/upload/{doc_id}")
-def delete_document(doc_id: str):
+def delete_document(doc_id: str, request: Request):
+    identifier, _signed, _email = _identify_request(
+        request.headers.get("authorization"),
+        request.headers.get("x-anon-id"),
+    )
     row = conv_con().execute(
-        "SELECT disk_path FROM uploaded_documents WHERE id=?", (doc_id,)
+        "SELECT disk_path, conversation_id FROM uploaded_documents WHERE id=?",
+        (doc_id,),
     ).fetchone()
     if not row:
         raise HTTPException(404, "Not found")
+    # Owner check via parent conversation
+    _own_conv_or_404(row[1], identifier)
     try:
         Path(row[0]).unlink(missing_ok=True)
     except Exception as e:
@@ -889,6 +971,8 @@ async def ask(payload: AskRequest, request: Request):
     conv_id = payload.conversation_id
     is_first_turn = False
     if conv_id:
+        # Owner check — block writing into someone else's conversation
+        _own_conv_or_404(conv_id, identifier)
         # Check if this is the first turn so we know to generate a title
         existing_count = conv_con().execute(
             "SELECT COUNT(*) FROM messages WHERE conversation_id = ?",

@@ -199,7 +199,7 @@
       return;
     }
     try {
-      const r = await fetch(`${API}/api/conversations/${state.conversationId}/documents`);
+      const r = await fetch(`${API}/api/conversations/${state.conversationId}/documents`, { headers: authHeaders() });
       if (!r.ok) return;
       const data = await r.json();
       state.documents = (data.documents || []).map(d => ({...d}));
@@ -400,16 +400,27 @@
   // -------- recents --------
   async function loadRecents() {
     try {
-      const r = await fetch(`${API}/api/conversations`);
+      const r = await fetch(`${API}/api/conversations`, { headers: authHeaders() });
       const items = await r.json();
       els.recents.innerHTML = "";
       items.forEach((c) => {
         const li = document.createElement("li");
+        li.dataset.id = c.id;
         const span = document.createElement("span");
         span.className = "chat-title-text";
         span.textContent = c.title || "New chat";
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "recent-delete";
+        del.setAttribute("aria-label", "Delete conversation");
+        del.title = "Delete conversation";
+        del.innerHTML = "×";
+        del.addEventListener("click", (e) => {
+          e.stopPropagation();
+          confirmDeleteConversation(c.id, c.title || "this chat");
+        });
         li.appendChild(span);
-        li.dataset.id = c.id;
+        li.appendChild(del);
         li.addEventListener("click", () => loadConversation(c.id));
         els.recents.appendChild(li);
       });
@@ -420,6 +431,53 @@
     } catch (e) {
       console.warn("recents load failed", e);
     }
+  }
+
+  // -------- in-app confirm modal (no chrome popup) --------
+  function showConfirm({ title, body, confirmText = "Delete", danger = true }) {
+    return new Promise((resolve) => {
+      const back = document.createElement("div");
+      back.className = "modal-backdrop open";
+      back.innerHTML = `
+        <div class="modal" role="dialog" aria-modal="true">
+          <button class="modal-close" type="button" aria-label="Close">×</button>
+          <h2>${escape(title)}</h2>
+          <p>${escape(body)}</p>
+          <div class="modal-actions">
+            <button class="btn btn-ghost" data-act="cancel" type="button">Cancel</button>
+            <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-act="confirm" type="button">${escape(confirmText)}</button>
+          </div>
+        </div>`;
+      const cleanup = (val) => { back.remove(); resolve(val); };
+      back.addEventListener("click", (e) => {
+        if (e.target === back) cleanup(false);
+        const act = e.target.closest("[data-act]");
+        if (act) cleanup(act.getAttribute("data-act") === "confirm");
+        if (e.target.closest(".modal-close")) cleanup(false);
+      });
+      const escHandler = (e) => {
+        if (e.key === "Escape") { document.removeEventListener("keydown", escHandler); cleanup(false); }
+      };
+      document.addEventListener("keydown", escHandler);
+      document.body.appendChild(back);
+    });
+  }
+
+  async function confirmDeleteConversation(convId, title) {
+    const ok = await showConfirm({
+      title: "Delete this conversation?",
+      body: `“${title}” will be permanently deleted, including any uploaded documents. This cannot be undone.`,
+      confirmText: "Delete permanently",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await fetch(`${API}/api/conversations/${encodeURIComponent(convId)}`, {
+        method: "DELETE", headers: authHeaders(),
+      });
+    } catch (e) { /* ignore */ }
+    if (state.conversationId === convId) newChat();
+    else loadRecents();
   }
 
   // Sidebar: animate the chat title into place when the LLM-generated
@@ -457,7 +515,8 @@
   async function ensureConversation() {
     if (state.conversationId) return state.conversationId;
     const r = await fetch(`${API}/api/conversations`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({}),
     });
     const data = await r.json();
@@ -467,7 +526,7 @@
 
   async function loadConversation(id) {
     try {
-      const r = await fetch(`${API}/api/conversations/${id}`);
+      const r = await fetch(`${API}/api/conversations/${id}`, { headers: authHeaders() });
       if (!r.ok) return;
       const conv = await r.json();
       // If the user is currently inside a tool view, close it so the
