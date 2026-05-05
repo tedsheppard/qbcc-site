@@ -442,7 +442,14 @@ def _evaluate_semantic(rule: dict[str, Any], document_text: str) -> dict[str, An
             reasoning_effort=reasoning,
             tier="default",
             response_format={"type": "json_object"},
-            max_output_tokens=700,
+            # GPT-5.x family burns hidden reasoning tokens before producing
+            # output. At 700 the model frequently exhausts the budget on
+            # internal reasoning and returns empty content (or truncated
+            # JSON missing the 'reasoning' field), which then surfaces to
+            # the user as 'The model did not return a reasoning trace…'.
+            # 3000 covers ~1500 hidden reasoning + ~1000 of structured
+            # output for even the longest checks.
+            max_output_tokens=3000,
         )
     except llm_config.CostCapExceededError:
         raise
@@ -481,17 +488,29 @@ def _evaluate_semantic(rule: dict[str, Any], document_text: str) -> dict[str, An
     quote = str(data.get("quote") or "").strip()
     reasoning_trace = str(data.get("reasoning") or "").strip()
 
-    # Belt-and-braces: if the model skipped the reasoning field, synthesise a
-    # minimal trace from quote + explanation only. Do NOT include the rule's
-    # internal pass/warning/fail criteria — those are configuration, not
-    # user-facing reasons.
+    # Belt-and-braces: if the model skipped the reasoning field, synthesise
+    # a minimal trace from quote + explanation + status. Never show the
+    # bare 'no reasoning' fallback to users — it looks broken.
     if not reasoning_trace:
         parts = []
         if quote:
             parts.append(f'Evidence in the document: "{quote}"')
         if explanation:
             parts.append(explanation)
-        reasoning_trace = "\n\n".join(parts) or "The model did not return a reasoning trace for this check. Try re-running the analysis."
+        if not parts:
+            # Last-resort framing that's at least informative about the
+            # status the model arrived at, instead of a dead-end string.
+            status_word = {
+                "pass":    "passed this check",
+                "warning": "produced a warning for this check",
+                "fail":    "did not satisfy this check",
+            }.get(status, "was reviewed against this check")
+            parts.append(
+                f"Automated review: the document {status_word} but the model "
+                f"did not produce a written rationale. Re-run the analysis "
+                f"if a detailed explanation is needed."
+            )
+        reasoning_trace = "\n\n".join(parts)
 
     return {
         "status": status,
