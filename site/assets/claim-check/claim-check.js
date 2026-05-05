@@ -13,7 +13,16 @@
 
   // ---------- constants ----------
   const MAX_BYTES = 50 * 1024 * 1024; // 50MB per spec Section 1
-  const SS_KEY = 'sopal.claimCheck.v2';
+  // Payment Claim Checker and Payment Schedule Checker are entirely
+  // separate workspaces — each has its own sessionStorage namespace so
+  // switching from one to the other doesn't restore the other tool's
+  // document / checks / results.
+  const _hashKind = (() => {
+    const h = (location.hash || '').replace(/^#/, '').toLowerCase();
+    if (h === 'claim' || h === 'schedule') return h;
+    return '';
+  })();
+  const SS_KEY = 'sopal.claimCheck.v2' + (_hashKind ? '.' + _hashKind : '');
   const MIN_STATUS_DISPLAY_MS = 400; // Section 4: each status visible for >=400ms
 
   const MODE_LABELS = {
