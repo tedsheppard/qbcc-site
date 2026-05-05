@@ -708,23 +708,49 @@ def _extract_msg_text(path: Path) -> str:
         return ""
 
 
+def _ensure_gcv_credentials() -> str | None:
+    """Make sure /tmp/gcs_credentials.json exists and return its path.
+
+    server.py writes this file lazily inside get_gcs_client(); if no
+    other route has been hit yet the file may not exist when an upload
+    arrives. We write it on demand from the GCS_CREDENTIALS_JSON env
+    var so the OCR path doesn't depend on server.py side effects.
+
+    Returns the path on success, None if no creds env var is set.
+    """
+    cred_path = "/tmp/gcs_credentials.json"
+    if os.path.exists(cred_path):
+        return cred_path
+    creds = os.getenv("GCS_CREDENTIALS_JSON")
+    if not creds:
+        return None
+    try:
+        with open(cred_path, "w") as f:
+            f.write(creds)
+        log.info(f"wrote GCV credentials to {cred_path} on demand")
+        return cred_path
+    except Exception as e:
+        log.warning(f"failed to write GCV credentials file: {e}")
+        return None
+
+
 def _extract_pdf_ocr(path: Path) -> str:
     """OCR-based fallback for image-only PDFs.
 
     Strategy in order of preference:
       1. Google Cloud Vision DOCUMENT_TEXT_DETECTION (works on Render —
-         the credentials file at /tmp/gcs_credentials.json is written
-         by server.py at boot from the GCS_CREDENTIALS_JSON env var).
+         credentials are taken from GCS_CREDENTIALS_JSON, written to
+         /tmp/gcs_credentials.json on demand if not already there).
       2. pdf2image + pytesseract (only works locally where poppler and
          tesseract binaries are installed).
 
     Returns '' if both fail.
     """
     # --- 1. Google Cloud Vision (preferred on Render) ---
-    try:
-        from google.cloud import vision as gcloud_vision
-        cred_path = "/tmp/gcs_credentials.json"
-        if os.path.exists(cred_path):
+    cred_path = _ensure_gcv_credentials()
+    if cred_path:
+        try:
+            from google.cloud import vision as gcloud_vision
             try:
                 pdf_bytes = path.read_bytes()
                 client = gcloud_vision.ImageAnnotatorClient.from_service_account_json(cred_path)
@@ -747,13 +773,16 @@ def _extract_pdf_ocr(path: Path) -> str:
                 if text.strip():
                     log.info(f"GCV OCR succeeded for {path.name} ({len(text)} chars)")
                     return text
-                log.info(f"GCV OCR returned empty text for {path.name}")
+                log.warning(f"GCV OCR returned empty text for {path.name}")
             except Exception as e:
-                log.warning(f"GCV OCR failed for {path.name}: {e}")
-        else:
-            log.info("GCV creds file missing; skipping GCV OCR fallback")
-    except Exception as e:
-        log.info(f"google-cloud-vision not importable: {e}")
+                log.warning(f"GCV OCR call failed for {path.name}: {e}")
+        except Exception as e:
+            log.warning(f"google-cloud-vision not importable: {e}")
+    else:
+        log.warning(
+            "GCS_CREDENTIALS_JSON missing — cannot run GCV OCR for "
+            f"{path.name}; PDF body content will be unreadable"
+        )
 
     # --- 2. pdf2image + pytesseract (local-dev fallback) ---
     try:
@@ -1161,9 +1190,21 @@ async def ask(payload: AskRequest, request: Request):
             if doc_blocks:
                 preamble_parts.append(
                     "The user has attached the following document(s) to this "
-                    "conversation. Read them and use them as part of the factual "
-                    "context for your answer. They are NOT primary law and must "
-                    "not be cited as authority.\n\n"
+                    "conversation. Treat the text below as the user's own "
+                    "submitted material — read it, summarise it, quote from "
+                    "it, and answer the user's question about it.\n\n"
+                    "DO NOT refuse to answer on the basis that the document "
+                    "is not in your corpus, not a published judgment, not "
+                    "citable authority, or not primary law. Those are true "
+                    "but irrelevant: the user is asking you about THIS "
+                    "specific document, not asking you to cite it as "
+                    "binding precedent. Treat it the same way you would "
+                    "treat text the user typed directly into the chat.\n\n"
+                    "Restriction (only): when you cite legal authority in "
+                    "your answer, do not cite the attached document itself "
+                    "as authority — cite the BIF Act sections and "
+                    "judgments from the indexed corpus that bear on what "
+                    "the document says.\n\n"
                     + "\n\n".join(doc_blocks)
                     + "\n\n=== END OF ATTACHED DOCUMENTS ==="
                 )
