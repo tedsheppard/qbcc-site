@@ -484,6 +484,67 @@ async def contract_scan(
 
 
 # ---------------------------------------------------------------------------
+# Session-title generator (used by the SopalAI sidebar Recents)
+# ---------------------------------------------------------------------------
+
+@router.post("/title")
+async def generate_session_title(request: Request, payload: dict = Body(...)) -> dict:
+    """Generate a 3-6 word title for a verify session, given mode + a
+    snippet of the document (and optionally the analysis summary).
+    Cheap default-tier call. Used by the SopalAI sidebar Recents."""
+    mode = (payload.get("mode") or "").strip()
+    doc = (payload.get("document_text") or "")[:1500]
+    summary = (payload.get("summary") or "")[:500]
+    filename = (payload.get("filename") or "").strip()
+    if not mode and not doc and not summary and not filename:
+        return {"title": "Claim check"}
+
+    mode_label = {
+        "payment_claim_serving":    "claim being served",
+        "payment_claim_received":   "claim received",
+        "payment_schedule_giving":  "schedule being given",
+        "payment_schedule_received":"schedule received",
+    }.get(mode, mode or "claim check")
+
+    sys = (
+        "You write concise 3-6 word labels for security-of-payment "
+        "compliance-check sessions. The label must identify the parties "
+        "or project where possible, then the document type. No quotes. "
+        "No trailing punctuation. Example outputs: 'Devcon claim — Civils', "
+        "'MWB schedule — Stage 2', 'Acme progress claim 17'."
+    )
+    user_parts = [f"Mode: {mode_label}"]
+    if filename: user_parts.append(f"Filename: {filename}")
+    if doc:      user_parts.append(f"Document excerpt:\n---\n{doc}\n---")
+    if summary:  user_parts.append(f"Analyst summary:\n{summary}")
+    user_parts.append("Return ONLY the label text, nothing else.")
+    user = "\n\n".join(user_parts)
+
+    from services.claim_check import llm_config
+    try:
+        resp = llm_config.complete(
+            messages=[
+                {"role": "system", "content": sys},
+                {"role": "user",   "content": user},
+            ],
+            reasoning_effort="low",
+            tier="default",
+            max_output_tokens=300,
+        )
+    except llm_config.CostCapExceededError as e:
+        raise HTTPException(429, str(e))
+    except Exception as e:
+        log.exception("title generation failed")
+        return {"title": ""}
+
+    title = (resp.get("content") or "").strip().strip('"').strip("'")
+    title = title.split("\n")[0].strip()
+    if len(title) > 80:
+        title = title[:77].rstrip() + "…"
+    return {"title": title or ""}
+
+
+# ---------------------------------------------------------------------------
 # DOCX preview (server-side conversion)
 # ---------------------------------------------------------------------------
 

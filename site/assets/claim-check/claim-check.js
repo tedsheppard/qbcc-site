@@ -118,6 +118,7 @@
         licenseeRecords: state.licenseeRecords,
         contractScan: state.contractScan,
         history: state.history,
+        title: state.title || null,
         docMeta: state.doc ? { filename: state.doc.filename, size: state.doc.size, kind: state.doc.kind } : null,
       };
       sessionStorage.setItem(SS_KEY, JSON.stringify(snap));
@@ -167,6 +168,7 @@
         mode: snap.mode,
         docMeta: snap.docMeta,
         summary: snap.summary,
+        title: snap.title || null,
         checks: snap.checks,
         results: snap.results,
         states: snap.states,
@@ -344,6 +346,7 @@
         licenseeRecords: s.licenseeRecords || {},
         contractScan: s.contractScan || null,
         history: s.history || [],
+        title: s.title || null,
         doc: s.docMeta ? { ...s.docMeta } : null,
       });
       return true;
@@ -1107,7 +1110,34 @@
       chatbotInput.disabled = false;
       chatbotSend.disabled = false;
       saveSession();
+      // Fire-and-forget: ask the server for an AI-generated 3-6 word
+      // session title so the SopalAI sidebar Recents shows something
+      // meaningful instead of "pasted text" / "Payment claim — received".
+      try { generateSessionTitle(); } catch (_) {}
     }
+  }
+
+  async function generateSessionTitle() {
+    if (state.title) return; // don't overwrite a user/AI title we already have
+    try {
+      const r = await fetch('/api/claim-check/title', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: state.mode || '',
+          document_text: (state.documentText || state.doc && state.doc.text || '').slice(0, 1500),
+          summary: state.summary || '',
+          filename: (state.doc && state.doc.filename) || '',
+        }),
+      });
+      if (!r.ok) return;
+      const j = await r.json();
+      const t = (j && j.title || '').trim();
+      if (t) {
+        state.title = t;
+        saveSession();
+      }
+    } catch (_) {}
   }
 
   function handleSseEvent(event, data) {

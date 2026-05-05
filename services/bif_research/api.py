@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -80,6 +81,51 @@ def _generate_chat_title(question: str) -> str:
     if len(short) > 60:
         short = short[:57].rstrip() + "…"
     return short
+
+
+_INTENT_PHRASE = {
+    "statutory":    "Statutory question",
+    "case_law":     "Case-law question",
+    "procedural":   "Procedural question",
+    "definitional": "Definitional question",
+    "general":      "General question",
+}
+
+
+def _short(s: str, max_words: int = 7) -> str:
+    s = (s or "").strip()
+    if not s:
+        return ""
+    words = s.split()
+    if len(words) <= max_words:
+        return s
+    return " ".join(words[:max_words]) + "…"
+
+
+def _plan_bullets(plan) -> list[str]:
+    """Compose a list of short ('≤7 words') bullets describing what the
+    planner decided. Surfaced under the 'Planning' status row so the
+    user sees the model's reasoning live (intent → provisions →
+    authorities → queries). Order matters — we render top-to-bottom.
+    """
+    bullets: list[str] = []
+    intent = (plan.intent or "general").lower()
+    bullets.append(_INTENT_PHRASE.get(intent, "General question"))
+    if plan.named_provisions:
+        bullets.append("Naming controlling provisions")
+        for p in plan.named_provisions[:8]:
+            bullets.append(_short(p, 8))
+    if plan.named_authorities:
+        bullets.append("Recalling leading authorities")
+        for a in plan.named_authorities[:8]:
+            # Strip the bracketed citation tail to keep bullets short.
+            short = re.sub(r"\s*\[\d{4}\].*$", "", a).strip()
+            bullets.append(_short(short or a, 8))
+    if plan.queries:
+        bullets.append("Reformulating retrieval queries")
+        for q in plan.queries[:4]:
+            bullets.append("“" + _short(q, 8) + "”")
+    return [b for b in bullets if b]
 
 
 def _resolved_case_citations(named_authorities: list[str]) -> list[dict]:
@@ -657,9 +703,53 @@ def _extract_msg_text(path: Path) -> str:
 
 
 def _extract_pdf_ocr(path: Path) -> str:
-    """OCR-based fallback for image-only PDFs. Uses pdf2image (needs
-    poppler-utils) → pytesseract per page. Slow but handles scanned
-    decisions. Returns '' if dependencies are missing."""
+    """OCR-based fallback for image-only PDFs.
+
+    Strategy in order of preference:
+      1. Google Cloud Vision DOCUMENT_TEXT_DETECTION (works on Render —
+         the credentials file at /tmp/gcs_credentials.json is written
+         by server.py at boot from the GCS_CREDENTIALS_JSON env var).
+      2. pdf2image + pytesseract (only works locally where poppler and
+         tesseract binaries are installed).
+
+    Returns '' if both fail.
+    """
+    # --- 1. Google Cloud Vision (preferred on Render) ---
+    try:
+        from google.cloud import vision as gcloud_vision
+        cred_path = "/tmp/gcs_credentials.json"
+        if os.path.exists(cred_path):
+            try:
+                pdf_bytes = path.read_bytes()
+                client = gcloud_vision.ImageAnnotatorClient.from_service_account_json(cred_path)
+                input_config = gcloud_vision.InputConfig(
+                    content=pdf_bytes, mime_type="application/pdf"
+                )
+                feature = gcloud_vision.Feature(
+                    type_=gcloud_vision.Feature.Type.DOCUMENT_TEXT_DETECTION
+                )
+                req = gcloud_vision.AnnotateFileRequest(
+                    input_config=input_config, features=[feature]
+                )
+                resp = client.batch_annotate_files(requests=[req])
+                pieces: list[str] = []
+                for file_resp in resp.responses:
+                    for page_resp in file_resp.responses:
+                        if page_resp.full_text_annotation:
+                            pieces.append(page_resp.full_text_annotation.text or "")
+                text = "\n\n".join(p for p in pieces if p.strip())
+                if text.strip():
+                    log.info(f"GCV OCR succeeded for {path.name} ({len(text)} chars)")
+                    return text
+                log.info(f"GCV OCR returned empty text for {path.name}")
+            except Exception as e:
+                log.warning(f"GCV OCR failed for {path.name}: {e}")
+        else:
+            log.info("GCV creds file missing; skipping GCV OCR fallback")
+    except Exception as e:
+        log.info(f"google-cloud-vision not importable: {e}")
+
+    # --- 2. pdf2image + pytesseract (local-dev fallback) ---
     try:
         from pdf2image import convert_from_path
         import pytesseract
@@ -688,9 +778,23 @@ def _extract_text_from_upload(path: Path, mime: str, filename: str) -> str:
     if name.endswith(".pdf") or mime == "application/pdf":
         text = _extract_pdf_text(path)
         if len(text.strip()) < 200:
+            log.info(
+                f"upload {filename!r}: native extract yielded "
+                f"{len(text.strip())} chars; trying OCR fallback"
+            )
             ocr = _extract_pdf_ocr(path)
             if len(ocr) > len(text):
+                log.info(f"upload {filename!r}: OCR yielded {len(ocr)} chars")
                 text = ocr
+            else:
+                log.warning(
+                    f"upload {filename!r}: OCR also produced no usable text"
+                )
+        else:
+            log.info(
+                f"upload {filename!r}: native PDF extract yielded "
+                f"{len(text.strip())} chars"
+            )
         return text
     if name.endswith(".docx") or mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
         return _extract_docx_text(path)
@@ -1087,6 +1191,18 @@ async def ask(payload: AskRequest, request: Request):
                 rewritten = _rewrite_with_history(question_with_docs, history)
                 plan = planner_module.plan(rewritten, real=True)
                 route = route_question(plan, rewritten)
+
+            # Real-time planning bullets — surfaces what the planner
+            # decided as a list under the "Planning" status, so the user
+            # sees the model's reasoning live (intent → provisions →
+            # authorities → queries).
+            plan_bullets = _plan_bullets(plan)
+            if plan_bullets:
+                yield emit("status", {
+                    "phase": "planning_thoughts",
+                    "msg": "Planning",
+                    "bullets": plan_bullets,
+                })
 
             yield emit("status", {"phase": "routing",
                                   "msg": f"Routed to {route} path"})

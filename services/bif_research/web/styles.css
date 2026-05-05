@@ -372,6 +372,55 @@ img { display: block; max-width: 100%; }
 }
 .status-cases-missed li .missed-tag { color: var(--text-faint); font-size: 11px; }
 
+/* Planning-thought bullets — short ≤7-word items the planner produced.
+ * Each li carries an inline animation-delay so the bullets pop in one
+ * after another rather than all at once. */
+.status-thoughts {
+  list-style: disc; margin: 6px 0 0 26px; padding: 0;
+  flex-basis: 100%; font-size: 13px; color: var(--text-muted);
+}
+.status-thoughts li {
+  padding: 1px 0;
+  opacity: 0;
+  animation: thought-fade 320ms ease-out forwards;
+}
+@keyframes thought-fade {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Shimmer sweep on the in-progress status text — silver→black gradient
+ * cycles left-to-right to indicate ongoing work. Done rows lose the
+ * .shimmer class implicitly because we never re-render after marking
+ * them done; the static text colour takes over. */
+.turn-status.in-progress .msg.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--text-muted) 0%,
+    var(--text-muted) 35%,
+    #111 50%,
+    var(--text-muted) 65%,
+    var(--text-muted) 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+          color: transparent;
+  animation: msg-shimmer 1.8s linear infinite;
+}
+.turn-status.done .msg.shimmer {
+  /* Stop the sweep once the row is marked done. */
+  animation: none;
+  background: none;
+  -webkit-text-fill-color: var(--text-faint);
+          color: var(--text-faint);
+}
+@keyframes msg-shimmer {
+  from { background-position: 100% 0; }
+  to   { background-position: -100% 0; }
+}
+
 /* TYPING ANIMATION
  * Each word is wrapped in <span class="type-word"> with a per-word
  * animation-delay set inline. The span starts invisible and fades in.

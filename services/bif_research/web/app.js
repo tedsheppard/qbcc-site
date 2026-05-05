@@ -653,7 +653,7 @@
     });
     const div = document.createElement("div");
     div.className = "turn-status in-progress";
-    let inner = `<span class="dot"></span><span class="msg">${escape(msg)}</span>`;
+    let inner = `<span class="dot"></span><span class="msg shimmer">${escape(msg)}</span>`;
     // For reading_cases, render the case-citation list under the status row
     if (payload && payload.phase === "reading_cases" && Array.isArray(payload.cases)) {
       const items = payload.cases.map(c => `<li>${escape(c)}</li>`).join("");
@@ -662,6 +662,14 @@
         const missed = payload.missed.map(c => `<li>${escape(c)}</li>`).join("");
         inner += `<div class="status-cases-label">Non-Queensland decisions:</div><ul class="status-cases status-cases-missed">${missed}</ul>`;
       }
+    }
+    // For planning_thoughts, render the planner's intent + provisions +
+    // authorities + queries as bite-sized bullets that fade in one by one.
+    if (payload && payload.phase === "planning_thoughts" && Array.isArray(payload.bullets)) {
+      const items = payload.bullets.map((b, i) =>
+        `<li style="animation-delay:${i * 220}ms">${escape(b)}</li>`
+      ).join("");
+      inner += `<ul class="status-thoughts">${items}</ul>`;
     }
     div.innerHTML = inner;
     parent.appendChild(div);
