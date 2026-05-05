@@ -446,6 +446,13 @@ img { display: block; max-width: 100%; }
   opacity: 0;
   animation: type-fade 240ms ease-out forwards;
 }
+/* Trailing blocks (the Sources panel below the answer) — wait for the
+ * body typing to finish before fading in, so they don't pop in at the
+ * bottom of the answer while text is still streaming above them. */
+.type-after {
+  opacity: 0;
+  animation: type-fade 320ms ease-out forwards;
+}
 @keyframes type-fade {
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }

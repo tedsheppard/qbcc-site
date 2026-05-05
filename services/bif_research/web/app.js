@@ -663,16 +663,30 @@
         inner += `<div class="status-cases-label">Non-Queensland decisions:</div><ul class="status-cases status-cases-missed">${missed}</ul>`;
       }
     }
-    // For planning_thoughts, render the planner's intent + provisions +
-    // authorities + queries as bite-sized bullets that fade in one by one.
+    // For planning_thoughts, prepare an empty list — bullets are
+    // appended one at a time below so the row's layout grows as
+    // bullets land, instead of pre-reserving space for the full list.
+    let plannedBullets = null;
     if (payload && payload.phase === "planning_thoughts" && Array.isArray(payload.bullets)) {
-      const items = payload.bullets.map((b, i) =>
-        `<li style="animation-delay:${i * 220}ms">${escape(b)}</li>`
-      ).join("");
-      inner += `<ul class="status-thoughts">${items}</ul>`;
+      inner += `<ul class="status-thoughts"></ul>`;
+      plannedBullets = payload.bullets;
     }
     div.innerHTML = inner;
     parent.appendChild(div);
+    if (plannedBullets) {
+      const ul = div.querySelector(".status-thoughts");
+      // Stream bullets in with a short, lively cadence (~110ms apart).
+      // Each bullet is appended only when it appears, so subsequent
+      // status events sit directly under the last visible bullet
+      // rather than below a tall block of invisible placeholders.
+      plannedBullets.forEach((b, i) => {
+        setTimeout(() => {
+          const li = document.createElement("li");
+          li.textContent = b;
+          ul.appendChild(li);
+        }, i * 110);
+      });
+    }
     return div;
   }
 
@@ -756,19 +770,23 @@
     `;
 
     // Type-out animation on the answer body (not the role label, not sources).
+    // We track totalDelayMs so trailing blocks (the Sources panel below)
+    // can wait for the typing to finish before fading in.
+    let totalDelayMs = 0;
+    const MS_PER_WORD = 14;
     if (animate) {
       const summary = div.querySelector(".answer-summary");
       const body = div.querySelector(".answer-body");
-      if (summary) applyTypingAnimation(summary, 14);
+      if (summary) applyTypingAnimation(summary, MS_PER_WORD);
       if (body) {
         // Continue the cadence after the summary so the body picks up where
         // summary left off rather than overlapping. Approximate offset:
         // count summary words and shift body delays.
         const summaryWords = summary ? summary.querySelectorAll(".type-word").length : 0;
-        applyTypingAnimation(body, 14);
+        applyTypingAnimation(body, MS_PER_WORD);
         if (summaryWords) {
           body.querySelectorAll(".type-word").forEach((s, i) => {
-            s.style.animationDelay = ((summaryWords + i) * 14) + "ms";
+            s.style.animationDelay = ((summaryWords + i) * MS_PER_WORD) + "ms";
           });
         }
         // Re-sync each blockquote / answer-quote container's fade-in delay
@@ -780,6 +798,11 @@
           const fw = bq.querySelector(".type-word");
           if (fw) bq.style.animationDelay = fw.style.animationDelay;
         });
+        const bodyWords = body.querySelectorAll(".type-word").length;
+        totalDelayMs = (summaryWords + bodyWords) * MS_PER_WORD + 240;
+      } else if (summary) {
+        const summaryWords = summary.querySelectorAll(".type-word").length;
+        totalDelayMs = summaryWords * MS_PER_WORD + 240;
       }
       // Hide every citation marker until its surrounding word has faded
       // in, so footnotes don't appear next to invisible text.
@@ -795,10 +818,13 @@
       });
     }
 
-    // Sources block
+    // Sources block — defer until the typing animation completes so the
+    // panel doesn't pop in at the bottom while text is still typing in
+    // above it.
     if (answer.sources && answer.sources.length) {
       const wrap = document.createElement("div");
-      wrap.className = "sources-list";
+      wrap.className = "sources-list" + (animate ? " type-after" : "");
+      if (animate) wrap.style.animationDelay = totalDelayMs + "ms";
       wrap.innerHTML = "<h4>Sources</h4>";
       answer.sources.forEach((s, i) => {
         const idx = i + 1;
