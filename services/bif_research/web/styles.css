@@ -440,6 +440,12 @@ img { display: block; max-width: 100%; }
   opacity: 0;
   animation: type-block-fade 240ms ease-out forwards;
 }
+/* Inline citation markers — fade in synchronously with the type-word
+ * they trail so footnotes don't pop in before the surrounding text. */
+.type-cite {
+  opacity: 0;
+  animation: type-fade 240ms ease-out forwards;
+}
 @keyframes type-fade {
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }

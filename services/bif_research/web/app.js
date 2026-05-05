@@ -771,7 +771,28 @@
             s.style.animationDelay = ((summaryWords + i) * 14) + "ms";
           });
         }
+        // Re-sync each blockquote / answer-quote container's fade-in delay
+        // to its (now-shifted) first word, otherwise the green box pops in
+        // at the old delay before the body text has caught up to it. Same
+        // for inline citation markers — they sit on top of the paragraph
+        // text and look "early" if they appear before their context.
+        body.querySelectorAll(".type-block").forEach(bq => {
+          const fw = bq.querySelector(".type-word");
+          if (fw) bq.style.animationDelay = fw.style.animationDelay;
+        });
       }
+      // Hide every citation marker until its surrounding word has faded
+      // in, so footnotes don't appear next to invisible text.
+      div.querySelectorAll(".cite-marker").forEach(cm => {
+        // Find the closest preceding type-word to inherit its delay.
+        let prev = cm.previousElementSibling;
+        while (prev && !(prev.classList && prev.classList.contains("type-word"))) {
+          prev = prev.previousElementSibling;
+        }
+        const delay = prev ? prev.style.animationDelay : "0ms";
+        cm.classList.add("type-cite");
+        cm.style.animationDelay = delay;
+      });
     }
 
     // Sources block
