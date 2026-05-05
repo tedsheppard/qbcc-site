@@ -596,16 +596,20 @@ def delete_conversation(conv_id: str, request: Request):
 # User-document uploads (per-conversation context)
 # ---------------------------------------------------------------------------
 
-def _extract_pdf_text(path: Path) -> str:
+def _extract_pdf_text(path: Path) -> tuple[str, int]:
     """Try PyPDF2 first; fall back to pdfplumber which handles a wider
-    range of PDF encodings. Returns empty string for scanned/image PDFs
-    (those need OCR, which is a future enhancement)."""
+    range of PDF encodings. Returns (text, n_pages). The page count
+    matters because a scanned multi-page decision with a typed cover
+    page still extracts a few hundred chars; we use chars/page as the
+    signal to fall through to OCR rather than total chars."""
     text = ""
+    n_pages = 0
     try:
         import PyPDF2
         out = []
         with open(path, "rb") as f:
             r = PyPDF2.PdfReader(f)
+            n_pages = len(r.pages)
             for page in r.pages:
                 try:
                     out.append(page.extract_text() or "")
@@ -615,23 +619,25 @@ def _extract_pdf_text(path: Path) -> str:
     except Exception as e:
         log.info(f"PyPDF2 extract failed for {path}: {e}")
 
-    if len(text) < 200:
-        try:
-            import pdfplumber
-            out = []
-            with pdfplumber.open(str(path)) as pdf:
-                for page in pdf.pages:
-                    try:
-                        out.append(page.extract_text() or "")
-                    except Exception:
-                        continue
-            alt = "\n".join(out).strip()
-            if len(alt) > len(text):
-                text = alt
-        except Exception as e:
-            log.info(f"pdfplumber extract failed for {path}: {e}")
+    # Try pdfplumber too. Take whichever yields more text.
+    try:
+        import pdfplumber
+        out = []
+        with pdfplumber.open(str(path)) as pdf:
+            if not n_pages:
+                n_pages = len(pdf.pages)
+            for page in pdf.pages:
+                try:
+                    out.append(page.extract_text() or "")
+                except Exception:
+                    continue
+        alt = "\n".join(out).strip()
+        if len(alt) > len(text):
+            text = alt
+    except Exception as e:
+        log.info(f"pdfplumber extract failed for {path}: {e}")
 
-    return text
+    return text, max(n_pages, 1)
 
 
 def _extract_docx_text(path: Path) -> str:
@@ -774,28 +780,20 @@ def _extract_pdf_ocr(path: Path) -> str:
 
 def _extract_text_from_upload(path: Path, mime: str, filename: str) -> str:
     name = filename.lower()
-    # PDF — text-based first; OCR as last-ditch fallback for scans
+    # PDF — always run BOTH the native extract and OCR, then take
+    # whichever produced the most text. Native is instant for text-based
+    # PDFs; OCR (Google Cloud Vision) handles scans + scan-with-typed-cover.
+    # No char/page heuristic — the longest result wins.
     if name.endswith(".pdf") or mime == "application/pdf":
-        text = _extract_pdf_text(path)
-        if len(text.strip()) < 200:
-            log.info(
-                f"upload {filename!r}: native extract yielded "
-                f"{len(text.strip())} chars; trying OCR fallback"
-            )
-            ocr = _extract_pdf_ocr(path)
-            if len(ocr) > len(text):
-                log.info(f"upload {filename!r}: OCR yielded {len(ocr)} chars")
-                text = ocr
-            else:
-                log.warning(
-                    f"upload {filename!r}: OCR also produced no usable text"
-                )
-        else:
-            log.info(
-                f"upload {filename!r}: native PDF extract yielded "
-                f"{len(text.strip())} chars"
-            )
-        return text
+        native, n_pages = _extract_pdf_text(path)
+        n_native = len(native.strip())
+        ocr = _extract_pdf_ocr(path)
+        n_ocr = len(ocr.strip())
+        log.info(
+            f"upload {filename!r}: native={n_native} chars, "
+            f"ocr={n_ocr} chars across {n_pages} pages"
+        )
+        return ocr if n_ocr > n_native else native
     if name.endswith(".docx") or mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
         return _extract_docx_text(path)
     if name.endswith(".doc"):
