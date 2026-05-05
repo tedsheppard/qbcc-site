@@ -18,9 +18,12 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
+import sqlite3
 import threading
 import time
 from collections import defaultdict
+from pathlib import Path
 from typing import Any, AsyncIterator, Optional
 
 from fastapi import APIRouter, Body, File, Form, HTTPException, Query, Request, UploadFile
@@ -29,6 +32,139 @@ from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 log = logging.getLogger("claim_check.routes")
 
 router = APIRouter(prefix="/api/claim-check", tags=["claim-check"])
+
+# ---------------------------------------------------------------------------
+# Server-side run log (Payment Claim / Payment Schedule verifier admin tab)
+# ---------------------------------------------------------------------------
+
+_RUNS_DB_PATH = Path(os.environ.get(
+    "CLAIM_CHECK_RUNS_DB",
+    "/var/data/claim_check_runs.sqlite"
+        if os.path.isdir("/var/data")
+        else str(Path(__file__).resolve().parent.parent / "services" / "claim_check" / "runs.sqlite"),
+))
+_runs_con: sqlite3.Connection | None = None
+_runs_lock = threading.Lock()
+
+
+def _runs_con_init() -> sqlite3.Connection:
+    _RUNS_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(str(_RUNS_DB_PATH), check_same_thread=False)
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS claim_check_runs (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            started_at   REAL,
+            finished_at  REAL,
+            mode         TEXT,
+            kind         TEXT,
+            filename     TEXT,
+            n_chars      INTEGER,
+            n_pages      INTEGER,
+            scanned      INTEGER,
+            n_pass       INTEGER,
+            n_warn       INTEGER,
+            n_fail       INTEGER,
+            n_input      INTEGER,
+            summary      TEXT,
+            title        TEXT,
+            ip           TEXT,
+            user_email   TEXT
+        )
+    """)
+    con.execute("CREATE INDEX IF NOT EXISTS idx_ccr_started ON claim_check_runs(started_at DESC)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_ccr_kind ON claim_check_runs(kind)")
+    con.commit()
+    return con
+
+
+def _runs_con() -> sqlite3.Connection:
+    global _runs_con
+    if _runs_con is None:
+        with _runs_lock:
+            if _runs_con is None:
+                _runs_con = _runs_con_init()
+    return _runs_con
+
+
+def _kind_for_mode(mode: str) -> str:
+    if mode.startswith("payment_claim_"):
+        return "claim"
+    if mode.startswith("payment_schedule_"):
+        return "schedule"
+    return "other"
+
+
+def _decode_user_email_from_request(request: Request) -> str:
+    """Best-effort: decode the JWT in Authorization to surface a signed
+    user email on admin run rows. Returns "" if anonymous or invalid."""
+    auth = request.headers.get("authorization") or ""
+    if not auth.lower().startswith("bearer "):
+        return ""
+    token = auth.split(" ", 1)[1].strip()
+    if not token:
+        return ""
+    try:
+        from jose import jwt  # python-jose is already a dep
+    except Exception:
+        return ""
+    secret = (
+        os.getenv("LEXIFILE_SECRET_KEY")
+        or os.getenv("SECRET_KEY")
+        or "dev-secret-key"
+    )
+    alg = os.getenv("JWT_ALG") or "HS256"
+    try:
+        payload = jwt.decode(token, secret, algorithms=[alg])
+    except Exception:
+        return ""
+    email = (payload.get("email") or payload.get("sub") or "").strip()
+    return email if "@" in email else ""
+
+
+def _log_claim_check_run(
+    *,
+    started_at: float,
+    finished_at: float,
+    mode: str,
+    filename: str,
+    n_chars: int,
+    n_pages: int | None,
+    scanned: bool,
+    results: list[dict],
+    summary: str,
+    title: str,
+    ip: str,
+    user_email: str,
+) -> None:
+    """Insert a single run row. Best-effort — never raise into the
+    user-facing response path."""
+    n_pass = sum(1 for r in results if r.get("status") == "pass")
+    n_warn = sum(1 for r in results if r.get("status") == "warning")
+    n_fail = sum(1 for r in results if r.get("status") == "fail")
+    n_input = sum(1 for r in results if r.get("status") == "input")
+    try:
+        _runs_con().execute(
+            """INSERT INTO claim_check_runs
+               (started_at, finished_at, mode, kind, filename, n_chars,
+                n_pages, scanned, n_pass, n_warn, n_fail, n_input,
+                summary, title, ip, user_email)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                started_at, finished_at, mode, _kind_for_mode(mode), filename,
+                int(n_chars or 0),
+                int(n_pages) if n_pages else None,
+                1 if scanned else 0,
+                n_pass, n_warn, n_fail, n_input,
+                (summary or "")[:500],
+                (title or "")[:120],
+                ip or "",
+                user_email or "",
+            ),
+        )
+        _runs_con().commit()
+    except Exception as e:
+        log.warning("claim_check_runs insert failed: %s", e)
+
 
 # Legacy URL redirects after the 2026-04-25 Sopal Assist pivot.
 # /claim-check is the canonical URL again; bookmarks created during the brief
@@ -258,6 +394,10 @@ async def analyse_stream(
     pages = extras.get("pages") or None
     scanned_flag = bool(extras.get("scanned"))
 
+    started_at = time.time()
+    user_email = _decode_user_email_from_request(request)
+    summary_text = rule_engine._derive_summary(mode, document_text)
+
     async def event_stream() -> AsyncIterator[str]:
         yield _sse("status", {"message": "Reading the document…"})
         yield _sse("meta", {
@@ -266,10 +406,12 @@ async def analyse_stream(
             "chars": len(document_text),
             "pages": pages,
             "scanned": scanned_flag,
-            "summary": rule_engine._derive_summary(mode, document_text),
+            "summary": summary_text,
         })
 
         loop = asyncio.get_event_loop()
+        # Captured here so we can log the run row at the end.
+        run_results: list[dict] = []
 
         for rule in rules:
             yield _sse("status", {"message": f"Checking {rule.get('act_reference', '')} — {rule['title']}…"})
@@ -294,6 +436,8 @@ async def analyse_stream(
                     "query": rule.get("search_query") or rule["title"],
                 }
 
+            run_results.append({"status": result.get("status")})
+
             # Optional citation surfacing (best-effort; fast).
             yield _sse("status", {"message": "Searching Sopal for relevant decisions…"})
             try:
@@ -309,6 +453,24 @@ async def analyse_stream(
 
         yield _sse("status", {"message": "Compiling analysis…"})
         yield _sse("complete", {"document_text": document_text})
+
+        # Persist the run for the admin tabs. Title is filled in
+        # asynchronously by the AI-title endpoint a moment later (see
+        # below) — this row holds the placeholder until then.
+        _log_claim_check_run(
+            started_at=started_at,
+            finished_at=time.time(),
+            mode=mode,
+            filename=source_name or "",
+            n_chars=len(document_text),
+            n_pages=pages,
+            scanned=scanned_flag,
+            results=run_results,
+            summary=summary_text or "",
+            title="",
+            ip=ip,
+            user_email=user_email,
+        )
 
     return StreamingResponse(
         event_stream(),
@@ -552,7 +714,99 @@ async def generate_session_title(request: Request, payload: dict = Body(...)) ->
     title = title.split("\n")[0].strip()
     if len(title) > 80:
         title = title[:77].rstrip() + "…"
+
+    # Best-effort: stamp this title onto the most recent untitled run
+    # row for the same mode (so the admin tabs show a meaningful label).
+    if title and mode:
+        try:
+            _runs_con().execute(
+                """UPDATE claim_check_runs SET title = ?
+                   WHERE id = (
+                       SELECT id FROM claim_check_runs
+                       WHERE mode = ? AND (title IS NULL OR title = '')
+                       ORDER BY started_at DESC LIMIT 1
+                   )""",
+                (title[:120], mode),
+            )
+            _runs_con().commit()
+        except Exception as e:
+            log.info("failed to attach title to run row: %s", e)
+
     return {"title": title or ""}
+
+
+# ---------------------------------------------------------------------------
+# Admin: list run rows for the /admin Payment Claim / Schedule tabs
+# ---------------------------------------------------------------------------
+
+_MODE_LABELS_ADMIN = {
+    "payment_claim_serving":     "Claim — about to serve",
+    "payment_claim_received":    "Claim — received",
+    "payment_schedule_giving":   "Schedule — about to give",
+    "payment_schedule_received": "Schedule — received",
+}
+
+
+def _require_admin_email(request: Request) -> str:
+    """Mirror of bif_research's admin gate — same JWT secret, same email
+    allow-list. Raises 401/403 otherwise."""
+    email = _decode_user_email_from_request(request)
+    if not email:
+        raise HTTPException(401, "Sign in required")
+    allow = {
+        e.strip().lower()
+        for e in os.environ.get("BIF_ADMIN_EMAILS", "edwardsheppard5@gmail.com").split(",")
+        if e.strip()
+    }
+    if email.lower() not in allow:
+        raise HTTPException(403, "Admin only")
+    return email.lower()
+
+
+@router.get("/admin/runs")
+def admin_list_runs(
+    request: Request,
+    kind: str = Query("claim", regex="^(claim|schedule|all)$"),
+    limit: int = Query(500, ge=1, le=2000),
+) -> dict:
+    """Return recent verifier runs for the admin tabs. `kind` filters
+    Payment Claim runs vs Payment Schedule runs (or all)."""
+    _require_admin_email(request)
+    where = "" if kind == "all" else "WHERE kind = ?"
+    params: tuple = () if kind == "all" else (kind,)
+    rows = _runs_con().execute(
+        f"""SELECT id, started_at, finished_at, mode, kind, filename,
+                   n_chars, n_pages, scanned, n_pass, n_warn, n_fail,
+                   n_input, summary, title, ip, user_email
+            FROM claim_check_runs
+            {where}
+            ORDER BY started_at DESC
+            LIMIT ?""",
+        (*params, limit),
+    ).fetchall()
+    out = []
+    for r in rows:
+        out.append({
+            "id": r[0],
+            "started_at": r[1],
+            "finished_at": r[2],
+            "mode": r[3],
+            "mode_label": _MODE_LABELS_ADMIN.get(r[3] or "", r[3] or ""),
+            "kind": r[4],
+            "filename": r[5] or "",
+            "n_chars": r[6] or 0,
+            "n_pages": r[7],
+            "scanned": bool(r[8]),
+            "n_pass": r[9] or 0,
+            "n_warn": r[10] or 0,
+            "n_fail": r[11] or 0,
+            "n_input": r[12] or 0,
+            "summary": r[13] or "",
+            "title": r[14] or "",
+            "ip": r[15] or "",
+            "user_email": r[16] or "",
+        })
+    return {"runs": out, "n": len(out)}
 
 
 # ---------------------------------------------------------------------------

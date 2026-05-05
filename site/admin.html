@@ -299,10 +299,9 @@
           <button class="nav-btn" data-tab="subscriptions">Subscriptions</button>
           <button class="nav-btn" data-tab="upload">Upload Decisions</button>
           <button class="nav-btn" data-tab="backup">Backups</button>
-          <a href="/ai/admin" class="nav-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-            <span>SopalAI Portal</span>
-            <span style="font-size: 14px; opacity: 0.6;">↗</span>
-          </a>
+          <button class="nav-btn" data-tab="aiqueries">SopalAI Queries</button>
+          <button class="nav-btn" data-tab="claimruns">Payment Claim Verifier</button>
+          <button class="nav-btn" data-tab="scheduleruns">Payment Schedule Verifier</button>
         </aside>
 
         <div class="admin-content">
@@ -384,6 +383,15 @@
               </div>
             </div>
           </section>
+
+          <!-- SopalAI Queries -->
+          <section id="tab-aiqueries" class="admin-section"></section>
+
+          <!-- Payment Claim Verifier runs -->
+          <section id="tab-claimruns" class="admin-section"></section>
+
+          <!-- Payment Schedule Verifier runs -->
+          <section id="tab-scheduleruns" class="admin-section"></section>
 
           <!-- Backups -->
           <section id="tab-backup" class="admin-section">
@@ -588,6 +596,9 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'fullaccess': loadFullAccess(); break;
       case 'invoicerequests': loadInvoiceRequests(); break;
       case 'subscriptions': loadTable('/admin/all-subscriptions', 'tab-subscriptions', 'All Subscriptions', renderSubscriptionsTable); break;
+      case 'aiqueries': loadAiQueries(); break;
+      case 'claimruns': loadVerifierRuns('claim', 'tab-claimruns', 'Payment Claim Verifier — recent runs'); break;
+      case 'scheduleruns': loadVerifierRuns('schedule', 'tab-scheduleruns', 'Payment Schedule Verifier — recent runs'); break;
     }
   }
 
@@ -1402,6 +1413,121 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.textContent = 'Create New Backup';
       }
     });
+  }
+
+  // ─── SopalAI Queries ─────────────────────────────────────
+  function fmtDuration(ms) {
+    if (!ms) return '—';
+    if (ms < 1000) return ms + 'ms';
+    return (ms / 1000).toFixed(1) + 's';
+  }
+  function fmtMoney(n) {
+    if (n == null) return '—';
+    return '$' + Number(n).toFixed(4);
+  }
+  function fmtUnixTs(ts) {
+    if (!ts) return '—';
+    try {
+      return new Date(ts * 1000).toLocaleString('en-AU', {
+        timeZone: 'Australia/Sydney',
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: true,
+      });
+    } catch (e) { return String(ts); }
+  }
+
+  async function loadAiQueries() {
+    const section = document.getElementById('tab-aiqueries');
+    section.innerHTML = '<div class="card"><h2>SopalAI Queries</h2><p class="loading">Loading...</p></div>';
+    try {
+      const res = await fetch('/api/admin/queries?limit=300', { headers: authHeaders() });
+      if (!res.ok) throw new Error(`Failed (${res.status})`);
+      const data = await res.json();
+      const queries = data.queries || [];
+      if (!queries.length) {
+        section.innerHTML = '<div class="card"><h2>SopalAI Queries</h2><p style="color:var(--text-muted)">No SopalAI queries logged yet.</p></div>';
+        return;
+      }
+      section.innerHTML = `
+        <div class="card">
+          <h2>SopalAI Queries <span style="font-weight:400;font-size:13px;color:var(--text-muted)">(latest ${queries.length})</span></h2>
+          <div class="table-wrap"><table>
+            <thead><tr>
+              <th>Time (AEST)</th><th>User</th><th>Question</th>
+              <th>Route</th><th>Conf.</th><th>Refused</th>
+              <th>Latency</th><th>Cost</th><th>API calls</th>
+            </tr></thead>
+            <tbody>${queries.map(q => `<tr>
+              <td>${fmtUnixTs(q.started_at)}</td>
+              <td>${q.is_signed
+                  ? esc(q.who)
+                  : `<span style="color:var(--text-muted)">anon ${esc((q.who || '').replace(/^anon\s+/, '').slice(0, 8))}</span>`}</td>
+              <td style="max-width:420px;white-space:normal">${esc(q.question || '')}</td>
+              <td>${q.route === 'hard'
+                  ? '<span class="badge" style="background:#fef3c7;color:#92400e">hard</span>'
+                  : '<span class="badge" style="background:#e0e7ff;color:#3730a3">fast</span>'}</td>
+              <td>${esc(q.confidence || '')}</td>
+              <td>${q.refused
+                  ? '<span class="badge badge-red">Yes</span>'
+                  : '<span class="badge badge-green">No</span>'}</td>
+              <td>${fmtDuration(q.elapsed_ms)}</td>
+              <td>${fmtMoney(q.total_cost_usd)}</td>
+              <td>${q.n_api_calls || 0}</td>
+            </tr>`).join('')}</tbody>
+          </table></div>
+        </div>`;
+    } catch (err) {
+      section.innerHTML = `<div class="card"><h2>SopalAI Queries</h2><p class="error-text">${esc(err.message)}</p></div>`;
+    }
+  }
+
+  // ─── Verifier runs (Payment Claim / Payment Schedule) ─────
+  async function loadVerifierRuns(kind, sectionId, title) {
+    const section = document.getElementById(sectionId);
+    section.innerHTML = `<div class="card"><h2>${title}</h2><p class="loading">Loading...</p></div>`;
+    try {
+      const res = await fetch(`/api/claim-check/admin/runs?kind=${encodeURIComponent(kind)}&limit=500`,
+        { headers: authHeaders() });
+      if (!res.ok) throw new Error(`Failed (${res.status})`);
+      const data = await res.json();
+      const runs = data.runs || [];
+      if (!runs.length) {
+        section.innerHTML = `<div class="card"><h2>${title}</h2><p style="color:var(--text-muted)">No ${kind} runs logged yet.</p></div>`;
+        return;
+      }
+      section.innerHTML = `
+        <div class="card">
+          <h2>${title} <span style="font-weight:400;font-size:13px;color:var(--text-muted)">(latest ${runs.length})</span></h2>
+          <div class="table-wrap"><table>
+            <thead><tr>
+              <th>Time (AEST)</th><th>User</th><th>Mode</th>
+              <th>Title / Filename</th>
+              <th>Pages</th><th>Pass</th><th>Warn</th><th>Fail</th><th>Input</th>
+              <th>Scanned?</th>
+            </tr></thead>
+            <tbody>${runs.map(r => `<tr>
+              <td>${fmtUnixTs(r.started_at)}</td>
+              <td>${r.user_email
+                  ? esc(r.user_email)
+                  : `<span style="color:var(--text-muted)">anon (${esc(r.ip || 'no IP')})</span>`}</td>
+              <td>${esc(r.mode_label || r.mode || '')}</td>
+              <td style="max-width:380px;white-space:normal">${
+                r.title
+                  ? `<strong>${esc(r.title)}</strong><br><span style="color:var(--text-muted);font-size:12px">${esc(r.filename || '')}</span>`
+                  : esc(r.filename || '<span style="color:var(--text-muted)">(pasted text)</span>')
+              }</td>
+              <td>${r.n_pages != null ? r.n_pages : '—'}</td>
+              <td><span class="badge badge-green">${r.n_pass}</span></td>
+              <td>${r.n_warn ? `<span class="badge" style="background:#fef3c7;color:#92400e">${r.n_warn}</span>` : '—'}</td>
+              <td>${r.n_fail ? `<span class="badge badge-red">${r.n_fail}</span>` : '—'}</td>
+              <td>${r.n_input ? `<span class="badge" style="background:#e0e7ff;color:#3730a3">${r.n_input}</span>` : '—'}</td>
+              <td>${r.scanned ? 'Yes' : 'No'}</td>
+            </tr>`).join('')}</tbody>
+          </table></div>
+        </div>`;
+    } catch (err) {
+      section.innerHTML = `<div class="card"><h2>${title}</h2><p class="error-text">${esc(err.message)}</p></div>`;
+    }
   }
 
   // ─── Boot ────────────────────────────────────────────────
