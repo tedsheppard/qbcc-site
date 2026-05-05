@@ -1350,7 +1350,12 @@
         body = "Your question is outside what this tool covers. Try asking about payment claims, schedules, reference dates, licensing, or the document you uploaded.";
       } else if (e && e.status >= 500) {
         title = "Couldn't reach the assistant";
-        body = "The server had trouble responding. Please try again.";
+        // Surface the backend's detail when it's informative (e.g.
+        // "All models in chain failed: ..."). Otherwise fall back to
+        // the generic message.
+        body = (detail && detail.length > 8 && !/^Chat failed \(\d+\)/.test(detail))
+          ? detail
+          : "The server had trouble responding. Please try again.";
       }
       if (window.ClaimCheckModal) {
         window.ClaimCheckModal.open({

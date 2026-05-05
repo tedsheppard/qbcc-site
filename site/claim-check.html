@@ -4,7 +4,7 @@
   <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claim Assist | Sopal</title>
+  <title>Payment Claim &amp; Schedule Checker | Sopal</title>
   <meta name="description" content="Check BIF Act compliance of a payment claim or payment schedule — before you serve it, or after you receive it.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -103,7 +103,7 @@
   <!-- PAGE HEADER -->
   <div class="page-header">
     <div class="container">
-      <h1>Claim Assist</h1>
+      <h1 id="cc-page-title">Payment Claim &amp; Schedule Checker</h1>
       <p class="lede">Check BIF Act compliance of payment claims and payment schedules — before you serve, or after you receive.</p>
     </div>
   </div>
@@ -360,7 +360,10 @@
   <!-- STICKY DISCLAIMER BAR (replaces full site footer on this page) -->
   <div class="disclaimer-bar" role="contentinfo">
     <div>
-      <strong>General information only — not legal advice.</strong> For your specific situation, consult a qualified construction lawyer.
+      <strong>General information only — not legal advice.</strong>
+      By using this tool you understand it is a research tool only and agree to our
+      <a href="/ai-terms" style="color:#7be7b8;text-decoration:underline">Terms of Use</a>.
+      For your specific situation, consult a qualified construction lawyer.
     </div>
     <div class="copy">© 2026 Sopal Australia</div>
   </div>
@@ -434,6 +437,11 @@
           var m = t.getAttribute("data-mode") || "";
           t.style.display = m.indexOf(keepPrefix) === 0 ? "" : "none";
         });
+        // Mode-aware page heading + tab title.
+        var label = h === "claim" ? "Payment Claim Checker" : "Payment Schedule Checker";
+        var heading = document.getElementById("cc-page-title");
+        if (heading) heading.textContent = label;
+        try { document.title = label + " | Sopal"; } catch (e) {}
       }
       function init() {
         clearTransitionOverlay();

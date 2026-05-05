@@ -405,18 +405,29 @@ async def chat(request: Request, payload: dict = Body(...)) -> dict:
 
     from services.claim_check import chatbot as chatbot_mod, llm_config
 
+    log.info(
+        "claim-check chat: mode=%s msg_len=%d doc_len=%d hist=%d checks=%d answers=%d",
+        mode, len(message), len(document_text or ""),
+        len(history) if isinstance(history, list) else 0,
+        len(check_results) if isinstance(check_results, list) else 0,
+        len(user_answers),
+    )
     try:
         reply = chatbot_mod.chat(mode, document_text, check_results, history, message, user_answers=user_answers)
     except llm_config.CostCapExceededError as e:
+        log.warning("claim-check chat: cost cap exceeded — %s", e)
         raise HTTPException(status_code=503, detail=str(e))
     except RuntimeError as e:
         msg = str(e)
+        log.warning("claim-check chat: RuntimeError — %s", msg)
         if "OPENAI_API_KEY" in msg:
             raise HTTPException(status_code=503, detail="Chat is temporarily unavailable (LLM not configured).")
-        raise HTTPException(status_code=502, detail=msg)
+        # "All models in chain failed" surfaces here. Pass the detail
+        # through so the frontend can show something actionable.
+        raise HTTPException(status_code=502, detail=msg[:240])
     except Exception as e:
-        log.exception("Chat failed (unexpected)")
-        raise HTTPException(status_code=500, detail=f"Chat failed: {e}")
+        log.exception("claim-check chat: unexpected failure")
+        raise HTTPException(status_code=500, detail=f"Chat failed: {type(e).__name__}: {str(e)[:200]}")
 
     return {"reply": reply}
 

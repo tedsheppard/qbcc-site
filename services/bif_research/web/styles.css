@@ -519,6 +519,28 @@ img { display: block; max-width: 100%; }
   padding: 8px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+
+/* Sticky disclaimer at the very bottom of the chat pane — same visual
+ * language as the bar on /claim-check so the two pages feel like one
+ * product. Sits inside .main as the last flex row so it never overlaps
+ * the input bar above. */
+.ai-disclaimer-bar {
+  background: #111; color: #aaa;
+  font-size: 12px; line-height: 1.5;
+  padding: 10px 32px; border-top: 1px solid #222;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  flex-shrink: 0;
+}
+.ai-disclaimer-bar strong { color: #ddd; font-weight: 600; }
+.ai-disclaimer-bar .ai-disclaimer-copy { color: #777; white-space: nowrap; }
+.ai-disclaimer-bar a.ai-disclaimer-terms {
+  color: var(--green); text-decoration: underline;
+}
+.ai-disclaimer-bar a.ai-disclaimer-terms:hover { color: #fff; }
+@media (max-width: 700px) {
+  .ai-disclaimer-bar { font-size: 11px; padding: 8px 16px; flex-wrap: wrap; }
+  .ai-disclaimer-bar .ai-disclaimer-copy { display: none; }
+}
 .input-shell:focus-within {
   border-color: var(--green);
   box-shadow: 0 0 0 3px rgba(0,212,126,0.10);
