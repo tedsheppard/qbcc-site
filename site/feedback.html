@@ -4,7 +4,7 @@
   <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Feedback | Sopal</title>
+  <title>Contact | Sopal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
@@ -49,6 +49,32 @@
 
     .contact-info { background: #f7f7f8; border: 1px solid var(--border-light); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
     .contact-info a { color: var(--green-dark); font-weight: 500; }
+
+    /* Contact details + map */
+    .contact-block {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+      background: white; border: 1px solid var(--border-light);
+      border-radius: 14px; padding: 28px; margin-bottom: 24px;
+    }
+    .contact-details { display: flex; flex-direction: column; gap: 14px; }
+    .contact-name { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 6px; }
+    .contact-row { display: flex; align-items: baseline; gap: 12px; font-size: 15px; color: var(--text-primary); }
+    .contact-row .contact-label {
+      flex: 0 0 70px; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+    .contact-row a { color: var(--green-dark); font-weight: 500; }
+    .contact-row a:hover { text-decoration: underline; }
+    .contact-map {
+      border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--border-light);
+      min-height: 220px; background: #f7f7f8;
+    }
+    .contact-map iframe {
+      width: 100%; height: 100%; min-height: 220px;
+      border: 0; display: block;
+    }
 
     /* TYPE PILLS */
     .type-selector { margin-bottom: 28px; }
@@ -107,6 +133,8 @@
       .footer-inner { grid-template-columns: 1fr; }
       .feedback-card { padding: 24px 20px; }
       .page-wrap { padding: 24px 16px 60px; }
+      .contact-block { grid-template-columns: 1fr; padding: 22px; }
+      .contact-map { min-height: 200px; }
     }
 
     @media (max-width: 480px) {
@@ -128,7 +156,7 @@
           <a href="/interest-calculator">Interest Calculator</a>
           <a href="/due-date-calculator">Due Date Calculator</a>
           <a href="/how-to">How-To Guide</a>
-          <a href="/feedback" class="active">Feedback</a>
+          <a href="/feedback" class="active">Contact</a>
         </div>
       </div>
       <div class="nav-right"></div>
@@ -137,14 +165,35 @@
 
   <div class="page-header">
     <div class="container">
-      <h1>Feedback</h1>
-      <p>Help us improve Sopal by sharing your thoughts, bug reports, or feature requests.</p>
+      <h1>Contact</h1>
+      <p>Talk to the team behind Sopal — questions, enterprise access, bug reports, or anything else.</p>
     </div>
   </div>
 
   <div class="page-wrap">
-    <div class="contact-info">
-      You can also reach us directly at <a href="mailto:info@sopal.com.au">info@sopal.com.au</a>
+    <div class="contact-block">
+      <div class="contact-details">
+        <div class="contact-name">Ted Sheppard</div>
+        <div class="contact-row">
+          <span class="contact-label">Email</span>
+          <a href="mailto:info@sopal.com.au">info@sopal.com.au</a>
+        </div>
+        <div class="contact-row">
+          <span class="contact-label">Phone</span>
+          <a href="tel:+61450251716">+61 450 251 716</a>
+        </div>
+        <div class="contact-row">
+          <span class="contact-label">Location</span>
+          <span>Brisbane QLD 4000</span>
+        </div>
+      </div>
+      <div class="contact-map">
+        <iframe
+          title="Brisbane CBD map"
+          src="https://www.openstreetmap.org/export/embed.html?bbox=152.985%2C-27.490%2C153.060%2C-27.450&amp;layer=mapnik&amp;marker=-27.4698%2C153.0251"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
     </div>
 
     <div class="feedback-card">
@@ -198,15 +247,15 @@
         </div>
 
         <div id="formError" class="form-error" style="display:none;"></div>
-        <button type="submit" class="submit-btn" id="submitBtn">Send feedback</button>
+        <button type="submit" class="submit-btn" id="submitBtn">Send message</button>
       </form>
 
       <div class="success-state" id="successMessage">
         <div class="success-icon">
           <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
-        <h2>Feedback sent</h2>
-        <p>Thanks for taking the time. We'll review this shortly.</p>
+        <h2>Message sent</h2>
+        <p>Thanks for getting in touch. We'll get back to you shortly.</p>
         <a href="/feedback" class="back-link">Send another</a>
       </div>
     </div>
@@ -220,7 +269,7 @@
           <p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p>
         </div>
         <div class="footer-col"><h4>Tools</h4><a href="/search">Decision Search</a><a href="/adjudicators">Adjudicators</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a></div>
-        <div class="footer-col"><h4>Resources</h4><a href="/how-to">How-To Guide</a><a href="/feedback">Feedback</a></div>
+        <div class="footer-col"><h4>Resources</h4><a href="/how-to">How-To Guide</a><a href="/feedback">Contact</a></div>
         <div class="footer-col"><h4>Legal</h4><a href="/privacy">Privacy</a><a href="/terms">Terms of Use</a><a href="/account-terms">Account Terms</a><a href="/subscription-terms">Subscription Terms</a></div>
       </div>
       <div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div>
@@ -279,7 +328,7 @@ document.getElementById('feedbackForm').addEventListener('submit', async functio
     errorEl.style.display = 'block';
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Send feedback';
+    submitBtn.textContent = 'Send message';
   }
 });
 </script>
