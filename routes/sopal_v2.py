@@ -300,7 +300,8 @@ async def sopal_v2_search(
     q_norm = normalize_query(q or "")
     nq2 = preprocess_sqlite_query(q_norm) if q_norm else ""
 
-    where_clauses: list[str] = [
+    # Outer (non-FTS) filters are applied after we've already narrowed to FTS hits.
+    outer_clauses: list[str] = [
         "a.decision_date IS NOT NULL",
         "a.decision_date != ''",
         "LOWER(TRIM(a.decision_date)) != 'null'",
@@ -308,35 +309,23 @@ async def sopal_v2_search(
         "a.claimant_name != ''",
         "LOWER(TRIM(a.claimant_name)) != 'not specified'",
     ]
-    sql_params: list[Any] = []
-
-    if nq2:
-        where_clauses.append("fts MATCH ?")
-        sql_params.append(nq2)
+    outer_params: list[Any] = []
     if startDate:
-        where_clauses.append("a.decision_date >= ?")
-        sql_params.append(startDate)
+        outer_clauses.append("a.decision_date >= ?")
+        outer_params.append(startDate)
     if endDate:
-        where_clauses.append("a.decision_date <= ?")
-        sql_params.append(endDate)
+        outer_clauses.append("a.decision_date <= ?")
+        outer_params.append(endDate)
     if minClaim is not None:
-        where_clauses.append("CAST(a.claimed_amount AS REAL) >= ?")
-        sql_params.append(minClaim)
+        outer_clauses.append("CAST(a.claimed_amount AS REAL) >= ?")
+        outer_params.append(minClaim)
     if maxClaim is not None:
-        where_clauses.append("CAST(a.claimed_amount AS REAL) <= ?")
-        sql_params.append(maxClaim)
-
-    base_join = """
-        FROM fts
-        JOIN docs_fresh d ON fts.rowid = d.rowid
-        LEFT JOIN decision_details a ON d.ejs_id = a.ejs_id
-    """
-    where_sql = f"WHERE {' AND '.join(where_clauses)}"
+        outer_clauses.append("CAST(a.claimed_amount AS REAL) <= ?")
+        outer_params.append(maxClaim)
+    outer_where = "WHERE " + " AND ".join(outer_clauses)
 
     if not q_norm and sort == "relevance":
         sort = "newest"
-    # FTS5's `rank` virtual column isn't always projected through SELECT DISTINCT,
-    # so use bm25() explicitly when relevance sorting is requested with a query.
     order_clauses = {
         "newest": "ORDER BY a.decision_date DESC",
         "oldest": "ORDER BY a.decision_date ASC",
@@ -345,33 +334,43 @@ async def sopal_v2_search(
         "adj_high": "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN -1 ELSE CAST(a.adjudicated_amount AS REAL) END DESC",
         "adj_low": "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 9999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC",
     }
-    if sort in order_clauses:
-        order_clause = order_clauses[sort]
-        rank_col = ""
+    # FTS5 bm25() must be selected from a query that's *directly* against the FTS
+    # virtual table — no DISTINCT, no JOIN. Pull rowid + bm25 + snippet there,
+    # then join the metadata tables to a derived "hits" subquery.
+    if nq2:
+        snippet_expr = "snippet(fts, '<mark>', '</mark>', ' … ', 0, 30)"
+        fts_subquery = f"SELECT rowid, bm25(fts) AS rscore, {snippet_expr} AS snippet FROM fts WHERE fts MATCH ?"
+        fts_params: list[Any] = [nq2]
     else:
-        # Relevance: project bm25 explicitly so DISTINCT keeps it visible.
-        order_clause = "ORDER BY rscore"
-        rank_col = ", bm25(fts) AS rscore" if nq2 else ", 0 AS rscore"
-        if not nq2:
-            order_clause = "ORDER BY a.decision_date DESC"
-            rank_col = ""
+        fts_subquery = "SELECT rowid, 0 AS rscore, '' AS snippet FROM fts"
+        fts_params = []
 
-    snippet_select = "snippet(fts, '<mark>', '</mark>', ' … ', 0, 30)" if nq2 else "substr(d.full_text, 1, 200) || '...'"
+    if sort == "relevance" and nq2:
+        order_clause = "ORDER BY hits.rscore"
+    else:
+        order_clause = order_clauses.get(sort, "ORDER BY a.decision_date DESC")
+
+    join_block = (
+        f"FROM ({fts_subquery}) AS hits "
+        f"JOIN docs_fresh d ON hits.rowid = d.rowid "
+        f"LEFT JOIN decision_details a ON d.ejs_id = a.ejs_id "
+        f"{outer_where}"
+    )
 
     try:
-        total = con.execute(f"SELECT COUNT(DISTINCT fts.rowid) {base_join} {where_sql}", tuple(sql_params)).fetchone()[0]
+        total = con.execute(f"SELECT COUNT(*) {join_block}", tuple(fts_params + outer_params)).fetchone()[0]
         sql = f"""
-            SELECT DISTINCT fts.rowid, {snippet_select} AS snippet,
+            SELECT hits.rowid,
+                   CASE WHEN hits.snippet = '' THEN substr(d.full_text, 1, 200) || '...' ELSE hits.snippet END AS snippet,
                    a.claimant_name, a.respondent_name, a.adjudicator_name,
                    a.act_category, d.reference, d.pdf_path, d.ejs_id,
                    a.claimed_amount, a.adjudicated_amount,
-                   a.decision_date{rank_col}
-            {base_join}
-            {where_sql}
+                   a.decision_date
+            {join_block}
             {order_clause}
             LIMIT ? OFFSET ?
         """
-        rows = con.execute(sql, tuple(sql_params) + (limit, offset)).fetchall()
+        rows = con.execute(sql, tuple(fts_params + outer_params) + (limit, offset)).fetchall()
     except sqlite3.OperationalError as exc:
         raise HTTPException(status_code=500, detail=f"Search query failed: {exc}") from exc
 
