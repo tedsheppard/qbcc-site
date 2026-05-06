@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import os
 import io
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
@@ -171,6 +173,12 @@ Format the answer in clean Markdown with headings, bullets, and tables where use
 Include a short note where appropriate that Sopal assists with legal and contract analysis but does not replace professional legal advice."""
 
 
+def _current_date_context() -> str:
+    """Keep isolated Sopal v2 AI calls anchored to the user's local product context."""
+    now = datetime.now(ZoneInfo("Australia/Brisbane"))
+    return f"Current date: {now.strftime('%-d %B %Y')} (Australia/Brisbane)."
+
+
 def _build_messages(payload: SopalV2AgentRequest, *, assistant_only: bool = False) -> list[dict[str, str]]:
     message = (payload.message or "").strip()
     if not message:
@@ -217,7 +225,7 @@ def _build_messages(payload: SopalV2AgentRequest, *, assistant_only: bool = Fals
     )
 
     return [
-        {"role": "system", "content": BASE_SYSTEM_PROMPT + "\n\n" + task_prompt},
+        {"role": "system", "content": BASE_SYSTEM_PROMPT + "\n\n" + _current_date_context() + "\n\n" + task_prompt},
         {"role": "user", "content": user_content},
     ]
 
