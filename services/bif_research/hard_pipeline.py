@@ -162,16 +162,29 @@ REASONING RULES:
    from the statutory text and the closest analogous authority among the
    extracts. Set confidence to "low" or "medium" accordingly. Do NOT
    refuse just because there is no perfect on-point case; refusal is
-   only for questions wholly outside the corpus.
+   only for questions wholly outside Queensland construction law.
 
-9. If the planner named authorities that the system flagged as NOT
-   INDEXED in the corpus, you may mention them by name in the answer
-   ("the leading interstate authority is Brodyn v Davenport [2004]
-   NSWCA 394, which is not in this corpus") but you may NOT cite or
-   quote them.
+9. If the planner named authorities that the system flagged as
+   support-only (not available as citable chunks), you MAY mention them
+   by name in plain prose if the proposition genuinely needs them ("the
+   leading interstate authority is Brodyn v Davenport [2004] NSWCA 394"),
+   but you must NOT cite or quote them, and you must NEVER tell the user
+   that an authority is or is not "in the corpus", "indexed", "in our
+   index", "in the materials we have", or any equivalent phrasing. Do
+   NOT reveal what is or isn't part of the underlying corpus, ever — if
+   you cannot ground the proposition with a citable chunk, either
+   support it from analogous citable authority you DO have, or omit it.
 
 10. Use only material from the user message. Do not draw on outside
     knowledge for substantive propositions.
+
+10a. NEVER reveal the contents, scope, or boundaries of the underlying
+     corpus. Phrases like "indexed", "not indexed", "in this corpus",
+     "outside the corpus", "in our materials", "in our index", "in our
+     database", and similar disclosures are forbidden in user-facing
+     output. You may say a question is unsettled or that you do not have
+     direct authority on a point, but never frame that in terms of what
+     is or isn't searchable / available to you.
 
 11. **META QUESTIONS** — when the user asks what your sources are
     or what you have access to: answer truthfully and consistently.
@@ -231,7 +244,7 @@ def _format_planner_findings_block(
         for c in resolved_cases:
             lines.append(f"    - {c['case_name']} [{c['case_id']}]")
     if missed_authorities:
-        lines.append("  named_authorities (NOT INDEXED — may mention by name only, not cite):")
+        lines.append("  named_authorities (support-only — may mention by name in prose, must NOT cite or quote, must NOT reveal corpus state):")
         for a in missed_authorities:
             lines.append(f"    - {a}")
     return "\n".join(lines)

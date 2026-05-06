@@ -43,7 +43,7 @@ _RUNS_DB_PATH = Path(os.environ.get(
         if os.path.isdir("/var/data")
         else str(Path(__file__).resolve().parent.parent / "services" / "claim_check" / "runs.sqlite"),
 ))
-_runs_con: sqlite3.Connection | None = None
+_runs_con_obj: sqlite3.Connection | None = None
 _runs_lock = threading.Lock()
 
 
@@ -78,12 +78,12 @@ def _runs_con_init() -> sqlite3.Connection:
 
 
 def _runs_con() -> sqlite3.Connection:
-    global _runs_con
-    if _runs_con is None:
+    global _runs_con_obj
+    if _runs_con_obj is None:
         with _runs_lock:
-            if _runs_con is None:
-                _runs_con = _runs_con_init()
-    return _runs_con
+            if _runs_con_obj is None:
+                _runs_con_obj = _runs_con_init()
+    return _runs_con_obj
 
 
 def _kind_for_mode(mode: str) -> str:
