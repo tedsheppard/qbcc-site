@@ -335,6 +335,8 @@ async def sopal_v2_search(
 
     if not q_norm and sort == "relevance":
         sort = "newest"
+    # FTS5's `rank` virtual column isn't always projected through SELECT DISTINCT,
+    # so use bm25() explicitly when relevance sorting is requested with a query.
     order_clauses = {
         "newest": "ORDER BY a.decision_date DESC",
         "oldest": "ORDER BY a.decision_date ASC",
@@ -343,7 +345,16 @@ async def sopal_v2_search(
         "adj_high": "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN -1 ELSE CAST(a.adjudicated_amount AS REAL) END DESC",
         "adj_low": "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 9999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC",
     }
-    order_clause = order_clauses.get(sort, "ORDER BY rank")
+    if sort in order_clauses:
+        order_clause = order_clauses[sort]
+        rank_col = ""
+    else:
+        # Relevance: project bm25 explicitly so DISTINCT keeps it visible.
+        order_clause = "ORDER BY rscore"
+        rank_col = ", bm25(fts) AS rscore" if nq2 else ", 0 AS rscore"
+        if not nq2:
+            order_clause = "ORDER BY a.decision_date DESC"
+            rank_col = ""
 
     snippet_select = "snippet(fts, '<mark>', '</mark>', ' … ', 0, 30)" if nq2 else "substr(d.full_text, 1, 200) || '...'"
 
@@ -354,7 +365,7 @@ async def sopal_v2_search(
                    a.claimant_name, a.respondent_name, a.adjudicator_name,
                    a.act_category, d.reference, d.pdf_path, d.ejs_id,
                    a.claimed_amount, a.adjudicated_amount,
-                   a.decision_date
+                   a.decision_date{rank_col}
             {base_join}
             {where_sql}
             {order_clause}
