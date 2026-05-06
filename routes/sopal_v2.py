@@ -8,10 +8,11 @@ endpoints for prototype AI calls.
 from __future__ import annotations
 
 import os
+import io
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -51,67 +52,110 @@ AGENT_LABELS: dict[str, str] = {
 }
 
 
+REVIEW_OUTPUT_FRAME = """Structure the response with these sections:
+1. Executive summary
+2. Issues identified
+3. Compliance / entitlement analysis
+4. Missing information
+5. Evidence required
+6. Recommended amendments
+7. Suggested next steps
+8. Risk rating
+
+Be specific to the document/facts provided. If the supplied text is inadequate, say exactly what is missing."""
+
+DRAFT_OUTPUT_FRAME = """Structure the response with these sections:
+1. Draft document / letter / submission
+2. Assumptions
+3. Placeholders to complete
+4. Evidence schedule
+5. Optional alternative wording
+6. Risks / notes
+
+Draft in usable professional wording. Use bracketed placeholders where facts or evidence are missing."""
+
+
 AGENT_INSTRUCTIONS: dict[tuple[str, str], str] = {
     ("payment-claims", "review"): (
         "Review a payment claim for potential issues under the applicable security of payment framework, "
         "especially BIF Act style requirements where relevant. Identify compliance issues, missing information, "
         "date problems, repeat claim issues, excluded or problematic amounts if applicable, and practical amendments. "
-        "Do not state definitive legal conclusions beyond available information. Ask for missing documents where needed."
+        "Focus on whether the document appears to be a payment claim, the claimed amount, identification of work or "
+        "related goods/services, request for payment, service/date issues, reference date or claim date issues if relevant, "
+        "repeat claim risks, problematic amounts, and supporting documents. "
+        + REVIEW_OUTPUT_FRAME
     ),
     ("payment-claims", "draft"): (
-        "Draft a payment claim or supporting cover content based on user instructions and provided context. "
-        "Include placeholders where evidence is missing. Be precise and legally careful."
+        "Draft payment claim content and a cover letter/email if useful. Include claim items if facts are supplied, "
+        "statutory wording where appropriate, and placeholders for amount, work, dates, recipient, contract, and project. "
+        + DRAFT_OUTPUT_FRAME
     ),
     ("payment-schedules", "review"): (
         "Review a payment schedule for adequacy, timing, reasons for withholding, clarity of scheduled amount, "
         "jurisdictional and compliance risks, and whether reasons may be too vague or missing. Identify risks for "
-        "both claimant and respondent where relevant."
+        "both claimant and respondent where relevant. Focus on timing, scheduled amount, itemisation, reasons for "
+        "withholding, reasons not properly raised, and likely adjudication risk. "
+        + REVIEW_OUTPUT_FRAME
     ),
     ("payment-schedules", "draft"): (
         "Draft a payment schedule, including scheduled amount, reasons for withholding, itemised disputed amounts, "
-        "and reservation of rights where appropriate. Include placeholders for evidence."
+        "contractual/statutory basis, evidence references, and reservation of rights where appropriate. "
+        + DRAFT_OUTPUT_FRAME
     ),
     ("eots", "review"): (
         "Review an extension of time notice or claim against the contract requirements and general construction "
         "claims logic. Identify trigger event, notice timing, causation, critical delay, supporting documents, "
-        "and time bar risks."
+        "time bar risks, and whether the claim also raises variation or delay cost issues. "
+        + REVIEW_OUTPUT_FRAME
     ),
     ("eots", "draft"): (
         "Draft an EOT notice or EOT claim using the user's contract and project facts. Include event description, "
-        "contractual basis, delay period, causation, evidence, and reservations."
+        "contractual basis, delay period, causation, supporting documents, and reservations. "
+        + DRAFT_OUTPUT_FRAME
     ),
     ("variations", "review"): (
         "Review a variation notice or claim. Identify whether there is a direction or change, contractual basis, "
-        "notice compliance, valuation method, evidence, and risks."
+        "scope change, notice compliance, valuation method, evidence, time/cost impact, and time bar risk. "
+        + REVIEW_OUTPUT_FRAME
     ),
     ("variations", "draft"): (
         "Draft a variation notice or claim. Include direction or change, contract clause placeholder, scope change, "
-        "cost and time impact, evidence, and reservation of rights."
+        "valuation, cost and time impact, supporting evidence, and reservation of rights. "
+        + DRAFT_OUTPUT_FRAME
     ),
     ("delay-costs", "review"): (
         "Review a delay cost, prolongation, or disruption claim. Identify entitlement basis, compensable delay, "
-        "causal link, quantum support, duplication risks, and evidence gaps."
+        "causal link, quantum support, duplication risks, notice compliance, and evidence gaps. "
+        + REVIEW_OUTPUT_FRAME
     ),
     ("delay-costs", "draft"): (
         "Draft a delay cost claim with sections for entitlement, causation, delay period, quantum, supporting evidence, "
-        "and reservation of rights."
+        "and reservation of rights. "
+        + DRAFT_OUTPUT_FRAME
     ),
     ("adjudication-application", "review"): (
         "Review draft adjudication application material for structure, jurisdictional and compliance risks, statutory "
-        "timing, claim and payment schedule alignment, evidence gaps, and clarity."
+        "timing, payment claim validity, payment schedule issues, claim/schedule alignment, evidence gaps, annexures, "
+        "and clarity. "
+        + REVIEW_OUTPUT_FRAME
     ),
     ("adjudication-application", "draft"): (
         "Draft an adjudication application submission structure and content based on provided claim, schedule, contract, "
-        "and evidence. Include chronology, jurisdiction, issues, entitlement, quantum, and annexure or evidence references."
+        "and evidence. Include chronology, jurisdiction, statutory framework, contract background, payment claim, "
+        "payment schedule, issues, entitlement, quantum, anticipated objections, and annexure/evidence references. "
+        + DRAFT_OUTPUT_FRAME
     ),
     ("adjudication-response", "review"): (
         "Review draft adjudication response material for structure, jurisdictional objections, alignment with the payment "
-        "schedule, reasons not previously raised risk, evidence gaps, and clarity."
+        "schedule, reasons previously raised, new reasons risk, response structure, claimant arguments, evidence gaps, "
+        "and clarity. "
+        + REVIEW_OUTPUT_FRAME
     ),
     ("adjudication-response", "draft"): (
         "Draft an adjudication response structure and content based on the payment schedule, application, contract, "
         "and evidence. Include jurisdictional objections, response to each claim item, evidentiary references, and "
-        "reasons previously raised."
+        "reasons previously raised. "
+        + DRAFT_OUTPUT_FRAME
     ),
 }
 
@@ -122,7 +166,7 @@ Do not invent facts, cases, document contents, statistics, dates, or project rec
 If the user has not provided enough information, identify the missing information and explain why it matters.
 Do not state definitive legal conclusions beyond the information provided.
 Do not claim that uploaded or selected files were read unless their text is present in the user message or project context.
-Format the answer with concise headings and bullet points where helpful.
+Format the answer in clean Markdown with headings, bullets, and tables where useful.
 Include a short note where appropriate that Sopal assists with legal and contract analysis but does not replace professional legal advice."""
 
 
@@ -135,8 +179,11 @@ def _build_messages(payload: SopalV2AgentRequest, *, assistant_only: bool = Fals
     mode = payload.mode or "review"
     if assistant_only:
         task_prompt = (
-            "You are helping inside the Sopal v2 project assistant. Answer using only the user's typed instructions "
-            "and any explicit project context provided. If no project documents are available, say so plainly."
+            "You are helping inside the Sopal v2 project assistant. Use the user's typed instructions, pasted project "
+            "context, and extracted document text if provided. Distinguish contract context from project library context "
+            "where possible. If no project documents are available, say so plainly, then answer from the typed instructions. "
+            "For analysis questions, use: direct answer, relevant contract/SOPA issues, missing context, and next steps. "
+            "For drafting questions, provide usable wording plus assumptions and placeholders."
         )
         label = "Project Assistant"
     else:
@@ -152,9 +199,9 @@ def _build_messages(payload: SopalV2AgentRequest, *, assistant_only: bool = Fals
         file_names = [str(f.get("name", "")).strip() for f in payload.files if f.get("name")]
         if file_names:
             file_note = (
-                "\n\nSelected file names, not parsed by this prototype: "
+                "\n\nSelected file names supplied with this request: "
                 + ", ".join(file_names[:12])
-                + ". Do not treat these as document contents."
+                + ". Only rely on file contents if extracted text is included in the message or project context."
             )
 
     context = (payload.projectContext or "").strip()
@@ -222,3 +269,40 @@ async def sopal_v2_chat(payload: SopalV2AgentRequest) -> dict[str, Any]:
         "model": result.get("model"),
         "lowConfidence": result.get("low_confidence", False),
     }
+
+
+@router.post("/extract")
+async def sopal_v2_extract(file: UploadFile = File(...)) -> dict[str, Any]:
+    """Extract text for the local Sopal v2 workspace without persisting files."""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="File name is required")
+    content = await file.read()
+    if len(content) > 25 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File is too large. Limit is 25MB.")
+
+    name = file.filename
+    lower = name.lower()
+    try:
+        if lower.endswith(".txt"):
+            text = content.decode("utf-8", errors="replace")
+        elif lower.endswith(".pdf"):
+            import PyPDF2
+
+            reader = PyPDF2.PdfReader(io.BytesIO(content))
+            text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        elif lower.endswith(".docx"):
+            import docx
+
+            document = docx.Document(io.BytesIO(content))
+            text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+        else:
+            raise HTTPException(status_code=400, detail="Supported file types: PDF, DOCX, TXT.")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"Could not extract text from {name}: {exc}") from exc
+
+    text = (text or "").strip()
+    if not text:
+        raise HTTPException(status_code=422, detail="No text could be extracted from this file.")
+    return {"filename": name, "text": text[:120_000], "characters": len(text), "truncated": len(text) > 120_000}
