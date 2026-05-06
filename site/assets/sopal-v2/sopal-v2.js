@@ -1,151 +1,78 @@
-/* Sopal v2 workspace — isolated client. Talks only to existing Sopal endpoints
-   and /api/sopal-v2/* helpers. Does not modify any live Sopal page. */
+/* Sopal v2 workspace — isolated client. Only touches /api/sopal-v2/* + the
+   existing read-only Sopal endpoints (/api/adjudicators, /api/adjudicator/{name},
+   /api/decision-text, /get_interest_rate, /open). No live Sopal pages or JS
+   are modified by this file. */
 (function () {
   "use strict";
 
   const root = document.getElementById("sopal-v2-root");
-  const STORAGE_KEY = "sopal-v2-local-workspace-v1";
-  const CHAT_HISTORY_KEY = "sopal-v2-chat-history-v1";
-  const TOKEN_KEY = "purchase_token";
+  const STORE_KEY = "sopal-v2-workspace-v2";
 
   /* ---------- Static config ---------- */
 
-  const sections = [
-    { title: "Research", items: [
-      ["Adjudication Decisions", "/sopal-v2/research/adjudication-decisions"],
-      ["Adjudicator Statistics", "/sopal-v2/research/adjudicator-statistics"],
-    ] },
-    { title: "Tools", items: [
-      ["Due Date Calculator", "/sopal-v2/tools/due-date-calculator"],
-      ["Interest Calculator", "/sopal-v2/tools/interest-calculator"],
-    ] },
-    { title: "Projects", items: [
-      ["Contracts", "/sopal-v2/projects/contracts"],
-      ["Project Library", "/sopal-v2/projects/library"],
-      ["Assistant", "/sopal-v2/projects/assistant"],
-    ] },
-    { title: "Agents", items: [
-      ["Payment Claims", "/sopal-v2/agents/payment-claims"],
-      ["Payment Schedules", "/sopal-v2/agents/payment-schedules"],
-      ["EOTs", "/sopal-v2/agents/eots"],
-      ["Variations", "/sopal-v2/agents/variations"],
-      ["Delay Costs", "/sopal-v2/agents/delay-costs"],
-      ["Adjudication Application", "/sopal-v2/agents/adjudication-application"],
-      ["Adjudication Response", "/sopal-v2/agents/adjudication-response"],
-    ] },
+  const AGENT_KEYS = [
+    "payment-claims",
+    "payment-schedules",
+    "eots",
+    "variations",
+    "delay-costs",
+    "adjudication-application",
+    "adjudication-response",
   ];
-
-  const agentLabels = Object.fromEntries(
-    sections[3].items.map(([label, href]) => [href.split("/").pop(), label])
-  );
-
-  const agentDescriptions = {
-    "payment-claims": "Review or draft payment claim material with SOPA compliance, work identification, dates, service, and evidence focus.",
-    "payment-schedules": "Review or draft payment schedules with scheduled amount, withholding reasons, timing, and adjudication-risk focus.",
-    eots: "Review or draft extension of time notices and claims against contract requirements, causation, and critical delay evidence.",
-    variations: "Review or draft variation notices and claims with direction, scope, valuation, notice, and evidence focus.",
-    "delay-costs": "Review or draft delay cost, prolongation, or disruption claims with entitlement, causation, quantum, and duplication focus.",
-    "adjudication-application": "Review or draft adjudication application submissions, jurisdiction, chronology, entitlement, quantum, and annexures.",
-    "adjudication-response": "Review or draft adjudication response submissions, jurisdictional objections, payment schedule alignment, and evidence.",
+  const AGENT_LABELS = {
+    "payment-claims": "Payment Claims",
+    "payment-schedules": "Payment Schedules",
+    eots: "EOTs",
+    variations: "Variations",
+    "delay-costs": "Delay Costs",
+    "adjudication-application": "Adjudication Application",
+    "adjudication-response": "Adjudication Response",
   };
-
-  const includeLists = {
-    "payment-claims": ["Payment claim text", "Contract clauses", "Date served / received", "Reference date or claim date", "Prior claims if relevant", "Invoices and supporting schedules"],
-    "payment-schedules": ["Payment claim being answered", "Draft/current schedule", "Scheduled amount", "Reasons for withholding", "Date claim received", "Contract payment clauses"],
-    eots: ["Contract EOT clause", "Delay event", "Notice date", "Delay period", "Programme/critical path facts", "Supporting correspondence/photos"],
+  const AGENT_DESCRIPTIONS = {
+    "payment-claims": "Review or draft payment claim material — BIF Act compliance, work identification, dates, service, evidence.",
+    "payment-schedules": "Review or draft payment schedules — scheduled amount, withholding reasons, timing, adjudication risk.",
+    eots: "Review or draft extension of time notices and claims — contract notice, causation, critical delay, evidence.",
+    variations: "Review or draft variation notices and claims — direction, scope, valuation, time/cost impact, evidence.",
+    "delay-costs": "Review or draft delay cost / prolongation / disruption claims — entitlement, causation, quantum.",
+    "adjudication-application": "Review or draft adjudication application material — chronology, jurisdiction, entitlement, quantum, annexures.",
+    "adjudication-response": "Review or draft adjudication response material — jurisdictional objections, payment schedule alignment, evidence.",
+  };
+  const INCLUDE_LISTS = {
+    "payment-claims": ["Payment claim text", "Contract clauses", "Date served / received", "Reference date", "Prior claims if relevant", "Invoices and supporting schedules"],
+    "payment-schedules": ["Payment claim being answered", "Draft / current schedule", "Scheduled amount", "Reasons for withholding", "Date claim received", "Contract payment clauses"],
+    eots: ["Contract EOT clause", "Delay event", "Notice date", "Delay period", "Programme / critical path facts", "Supporting correspondence / photos"],
     variations: ["Contract variation clause", "Instruction or direction", "Changed scope", "Notice date", "Valuation material", "Time impact facts"],
-    "delay-costs": ["Entitlement clause", "Delay event and period", "Causation facts", "Quantum calculation", "Notice correspondence", "Overlap/duplication checks"],
-    "adjudication-application": ["Payment claim", "Payment schedule", "Contract", "Chronology", "Evidence bundle", "Quantum/supporting calculations"],
+    "delay-costs": ["Entitlement clause", "Delay event and period", "Causation facts", "Quantum calculation", "Notice correspondence", "Overlap / duplication checks"],
+    "adjudication-application": ["Payment claim", "Payment schedule", "Contract", "Chronology", "Evidence bundle", "Quantum / supporting calculations"],
     "adjudication-response": ["Application", "Payment schedule", "Contract", "Jurisdictional objections", "Evidence responding to each item", "Reasons already raised"],
   };
 
-  // Scenario starters tailored to each agent and mode.
-  const scenarioStarters = {
-    "payment-claims:review": [
-      "Review my payment claim served on [date] for $[amount]. Identify any BIF Act compliance issues and missing items.",
-      "I served a payment claim that the respondent says is invalid. Help me check whether it meets the BIF Act requirements.",
-      "Check whether this is a repeat claim and whether the reference date is valid.",
+  const SCENARIO_STARTERS = {
+    review: [
+      "Review this document for BIF Act compliance and identify any fatal issues.",
+      "Identify the strongest jurisdictional objections and weakest claim items.",
+      "List the missing evidence I should request before progressing.",
+      "Check timing — has the document been served and dated correctly under the BIF Act?",
+      "Stress-test the document the way a respondent's lawyer would.",
     ],
-    "payment-claims:draft": [
-      "Draft a payment claim for [scope of work] for $[amount] under contract [name]. Include the BIF Act endorsement.",
-      "Draft a cover email serving a payment claim on the respondent.",
-      "Prepare a payment claim itemised by trade with placeholders for invoices and dates.",
+    draft: [
+      "Draft a payment claim for [scope of work] for $[amount] under contract [name].",
+      "Draft an extension of time notice for [event] under clause [#].",
+      "Draft a variation notice for [scope change] valued at $[amount].",
+      "Draft an adjudication application structure responding to a $0 schedule.",
+      "Draft a covering email serving the attached document on the respondent.",
     ],
-    "payment-schedules:review": [
-      "Review this payment schedule for adequacy, withholding reasons, and adjudication risk.",
-      "I'm the claimant. Find weaknesses or vague reasons in the respondent's payment schedule.",
-      "Check whether reasons in this schedule will support a later adjudication response under s 82.",
-    ],
-    "payment-schedules:draft": [
-      "Draft a payment schedule scheduling $[amount] with itemised reasons for withholding.",
-      "Draft a $0 payment schedule with full statutory reasons and a reservation of rights.",
-      "Prepare a payment schedule responding to the attached claim, item by item.",
-    ],
-    "eots:review": [
-      "Review my draft EOT notice for [event] under clause [#]. Check causation and timing.",
-      "I missed the contractual notice deadline. Tell me my exposure and any options.",
-      "Check whether this delay is on the critical path and whether the programme evidence is enough.",
-    ],
-    "eots:draft": [
-      "Draft an EOT notice for [event] of [days] days delay under clause [#].",
-      "Draft a detailed EOT claim for prolonged wet weather affecting concrete pours.",
-      "Prepare a covering letter serving an EOT notice with a programme analysis annexure.",
-    ],
-    "variations:review": [
-      "Review this variation claim for entitlement, contractual basis, and valuation.",
-      "Check whether the principal's instruction is a variation or a clarification.",
-      "Identify time-bar risks on this variation notice.",
-    ],
-    "variations:draft": [
-      "Draft a variation notice for [scope] valued at $[amount] under clause [#].",
-      "Draft a variation claim with cost breakdown, time impact, and reservation of rights.",
-      "Prepare a notice converting a verbal direction into a written variation request.",
-    ],
-    "delay-costs:review": [
-      "Review my prolongation claim. Check causation, overlap with EOTs, and quantum support.",
-      "Are there duplication risks between my EOT, variation, and delay cost claims?",
-      "Test whether this disruption claim has enough contemporaneous records.",
-    ],
-    "delay-costs:draft": [
-      "Draft a prolongation claim for [days] days at preliminaries of $[rate]/week.",
-      "Draft a disruption claim using a measured-mile approach.",
-      "Prepare a delay cost claim with entitlement, causation, quantum, and evidence schedule.",
-    ],
-    "adjudication-application:review": [
-      "Review my adjudication application for jurisdiction, timing, and structure under the BIF Act.",
-      "Check whether my chronology and evidence schedule support each claim item.",
-      "Find weak points the respondent will attack in the response.",
-    ],
-    "adjudication-application:draft": [
-      "Draft the structure of an adjudication application for $[amount].",
-      "Prepare the issues, entitlement, and quantum sections of an adjudication application.",
-      "Draft submissions answering anticipated jurisdictional objections.",
-    ],
-    "adjudication-response:review": [
-      "Review my draft adjudication response. Check alignment with the payment schedule.",
-      "Identify any new reasons that I cannot raise under s 82(4).",
-      "Check whether my jurisdictional objections are properly framed.",
-    ],
-    "adjudication-response:draft": [
-      "Draft an adjudication response structure with jurisdictional objections.",
-      "Prepare a response to each item in the application with evidence references.",
-      "Draft submissions on quantum and offset reductions.",
+    assistant: [
+      "Summarise the key risks in my contract.",
+      "What are my next steps after receiving this payment schedule?",
+      "Walk me through the timeline for an adjudication application under the BIF Act.",
+      "What's the difference between a variation and a delay cost claim?",
+      "Help me draft a short response to a Show Cause notice.",
     ],
   };
 
-  const headers = {
-    home: ["Sopal", "Research decisions, calculate dates and interest, and run SOPA document workflows."],
-    "research/adjudication-decisions": ["Adjudication Decisions", "Search the full Sopal adjudication decision database."],
-    "research/adjudicator-statistics": ["Adjudicator Statistics", "Real outcomes by adjudicator across the Sopal database."],
-    "tools/due-date-calculator": ["Due Date Calculator", "BIF Act business-day calculator with Queensland holiday handling."],
-    "tools/interest-calculator": ["Interest Calculator", "Statutory and contractual interest with daily RBA rates."],
-    "projects/contracts": ["Contracts", "Build local contract context for the Assistant and agents."],
-    "projects/library": ["Project Library", "Build local project context: claims, notices, correspondence."],
-    "projects/assistant": ["Assistant", "Ask AI questions against typed instructions and your local context."],
-  };
-
-  // QLD public holidays + regional show holidays (matches the live calculator).
-  const holidays = {
+  // QLD public holidays + regional show holidays — copied from the live Sopal due-date calculator.
+  const HOLIDAYS = {
     qld: [
       ["2025-01-01", "New Year's Day"], ["2025-01-27", "Australia Day"], ["2025-04-18", "Good Friday"], ["2025-04-19", "Day after Good Friday"], ["2025-04-21", "Easter Monday"], ["2025-04-25", "Anzac Day"], ["2025-05-05", "Labour Day"], ["2025-10-06", "King's Birthday"], ["2025-12-25", "Christmas Day"], ["2025-12-26", "Boxing Day"],
       ["2026-01-01", "New Year's Day"], ["2026-01-26", "Australia Day"], ["2026-04-03", "Good Friday"], ["2026-04-04", "Day after Good Friday"], ["2026-04-06", "Easter Monday"], ["2026-04-25", "Anzac Day"], ["2026-05-04", "Labour Day"], ["2026-10-05", "King's Birthday"], ["2026-12-25", "Christmas Day"], ["2026-12-28", "Boxing Day Holiday"],
@@ -163,111 +90,129 @@
     mackay: [["2025-06-19", "Mackay Show"]].map(([date, name]) => ({ date, name })),
   };
 
+  const LOCATION_OPTIONS = [
+    ["bne", "Brisbane"], ["gld", "Gold Coast"], ["sunshine_coast", "Sunshine Coast"], ["tsw", "Townsville"],
+    ["cns", "Cairns"], ["toowoomba", "Toowoomba"], ["mackay", "Mackay"], ["rockhampton", "Rockhampton"],
+    ["ipswich", "Ipswich"], ["qld", "Queensland (general)"],
+  ];
+
+  const CONTRACT_FORMS = ["AS 4000", "AS 4902", "AS 2124", "AS 4300", "AS 4905", "GC21", "MW21", "Bespoke", "Other"];
+
   /* ---------- State ---------- */
 
+  let store = loadStore();
+  let modal = null; // { render(): string, bind(root): void, close(): void }
+  let projectMenuOpen = false;
   let sidebarOpen = false;
-  let workspace = loadWorkspace();
-  let chatHistory = loadChatHistory();
-  let authUser = null; // populated by refreshAuth()
-  let modal = null;    // {render: () => string, bind: (root) => void}
 
-  function loadWorkspace() {
+  function emptyStore() { return { projects: {}, currentProjectId: null }; }
+  function loadStore() {
     try {
-      return Object.assign({ contracts: [], library: [] }, JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"));
-    } catch { return { contracts: [], library: [] }; }
+      const parsed = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+      if (parsed && parsed.projects) return parsed;
+    } catch {}
+    return emptyStore();
   }
-  function saveWorkspace() { localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace)); }
+  function saveStore() { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
 
-  function loadChatHistory() {
-    try { return JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || "{}"); }
-    catch { return {}; }
+  function getProject(id) { return id ? store.projects[id] || null : null; }
+  function projectList() { return Object.values(store.projects).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)); }
+  function currentProject() { return getProject(store.currentProjectId); }
+  function selectProject(id) {
+    if (!store.projects[id]) return;
+    store.currentProjectId = id;
+    saveStore();
   }
-  function saveChatHistory() { localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatHistory)); }
-
-  function chatKey(options) {
-    if (options.assistant) return "assistant";
-    return `${options.agentType || "unknown"}:${options.mode || "review"}`;
+  function newProjectId() { return `p_${Math.random().toString(36).slice(2, 10)}`; }
+  function createProject(input) {
+    const id = newProjectId();
+    const now = Date.now();
+    const project = {
+      id,
+      name: (input.name || "Untitled project").trim(),
+      claimant: (input.claimant || "").trim(),
+      respondent: (input.respondent || "").trim(),
+      contractForm: input.contractForm || "Bespoke",
+      reference: (input.reference || "").trim(),
+      userIsParty: input.userIsParty || "claimant",
+      contracts: [],
+      library: [],
+      chats: {},
+      createdAt: now,
+      updatedAt: now,
+    };
+    store.projects[id] = project;
+    store.currentProjectId = id;
+    saveStore();
+    return project;
+  }
+  function saveProject(p) {
+    p.updatedAt = Date.now();
+    store.projects[p.id] = p;
+    saveStore();
+  }
+  function deleteProject(id) {
+    delete store.projects[id];
+    if (store.currentProjectId === id) store.currentProjectId = projectList()[0]?.id || null;
+    saveStore();
+  }
+  function projectChat(p, key) {
+    if (!p.chats[key]) p.chats[key] = { messages: [] };
+    return p.chats[key];
   }
 
-  function authToken() { return localStorage.getItem(TOKEN_KEY) || ""; }
-
-  function authHeaders(extra) {
-    const h = Object.assign({}, extra || {});
-    const t = authToken();
-    if (t) h.Authorization = `Bearer ${t}`;
-    return h;
-  }
-
-  async function refreshAuth() {
-    const t = authToken();
-    if (!t) { authUser = null; return; }
-    try {
-      const r = await fetch("/purchase-me", { headers: authHeaders(), credentials: "include" });
-      if (r.ok) authUser = await r.json();
-      else { authUser = null; if (r.status === 401) localStorage.removeItem(TOKEN_KEY); }
-    } catch { authUser = null; }
-  }
-
-  function signOut() {
-    localStorage.removeItem(TOKEN_KEY);
-    authUser = null;
-    render();
-  }
-
-  /* ---------- Helpers ---------- */
+  /* ---------- Tiny helpers ---------- */
 
   function escapeHtml(value) {
-    return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
-
-  function cleanPath() {
-    const path = window.location.pathname.replace(/\/+$/, "");
-    return path.replace(/^\/sopal-v2\/?/, "") || "home";
+  function attr(value) { return escapeHtml(value); }
+  function pct(n) { return `${Number(n || 0).toFixed(1)}%`; }
+  function formatCurrencyCompact(n) {
+    const num = Number(n || 0);
+    return num.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
   }
-
-  function navigate(href) { window.history.pushState({}, "", href); render(); }
-
-  function isActive(href) {
-    const current = window.location.pathname.replace(/\/+$/, "") || "/sopal-v2";
-    return current === href || (href !== "/sopal-v2" && current.startsWith(href + "/"));
+  function formatCurrencyFull(n) {
+    const num = Number(n || 0);
+    return num.toLocaleString("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-
-  function routeTitle(route) {
-    if (route.startsWith("agents/")) {
-      const key = route.split("/")[1];
-      return [agentLabels[key] || "Agent", agentDescriptions[key] || "Review or draft SOPA material."];
-    }
-    return headers[route] || headers.home;
+  function formatCurrencyMicro(n) {
+    const num = Number(n || 0);
+    return num.toLocaleString("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: 4, maximumFractionDigits: 4 });
   }
-
+  function money(value) {
+    if (value === null || value === undefined || value === "" || value === "N/A") return "";
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0 ? formatCurrencyCompact(n) : "";
+  }
   function parseDate(value) {
     if (!value) return null;
     const date = new Date(`${value}T00:00:00`);
     return Number.isNaN(date.getTime()) ? null : date;
   }
-  function formatDate(date) {
-    return date ? date.toLocaleDateString("en-AU", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : "";
+  function formatDate(d) {
+    if (!d) return "";
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
   }
-  function formatCurrency(value) {
-    const num = Number(value || 0);
-    return num.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
-  }
-  function formatPercent(value) { return `${Number(value || 0).toFixed(1)}%`; }
-  function money(value) {
-    if (value === null || value === undefined || value === "" || value === "N/A") return "";
-    const n = Number(value);
-    return Number.isFinite(n) && n > 0 ? formatCurrency(n) : "";
+  function shortDate(value) {
+    const d = parseDate(value) || new Date(value);
+    if (!d || Number.isNaN(d.getTime())) return value || "";
+    return d.toLocaleDateString("en-AU");
   }
   function formatSnippet(text) {
     return escapeHtml(text || "").replace(/&lt;mark&gt;/g, "<mark>").replace(/&lt;\/mark&gt;/g, "</mark>");
   }
 
-  /* ---------- Markdown rendering (line-based, safe) ---------- */
+  /* ---------- Markdown (line-based) ---------- */
 
   function renderMarkdown(text) {
     const lines = String(text || "").replace(/\r\n/g, "\n").split("\n");
     const out = [];
-    let mode = null;       // null | "ul" | "ol"
+    let mode = null;
     let para = [];
 
     function flushPara() {
@@ -280,19 +225,16 @@
       if (mode === "ol") out.push("</ol>");
       mode = null;
     }
-
-    for (let raw of lines) {
+    for (const raw of lines) {
       const line = raw.replace(/\s+$/, "");
       if (!line.trim()) { flushPara(); flushList(); continue; }
-
       const h = line.match(/^(#{1,6})\s+(.+)$/);
       if (h) {
         flushPara(); flushList();
-        const level = Math.min(h[1].length + 2, 6); // # -> h3 (avoid duplicating page h1)
+        const level = Math.min(h[1].length + 2, 6);
         out.push(`<h${level}>${inline(h[2])}</h${level}>`);
         continue;
       }
-
       const bullet = line.match(/^\s*[-*]\s+(.+)$/);
       if (bullet) {
         flushPara();
@@ -300,7 +242,6 @@
         out.push(`<li>${inline(bullet[1])}</li>`);
         continue;
       }
-
       const num = line.match(/^\s*(\d+)[.)]\s+(.+)$/);
       if (num) {
         flushPara();
@@ -308,12 +249,10 @@
         out.push(`<li>${inline(num[2])}</li>`);
         continue;
       }
-
       flushList();
       para.push(line);
     }
-    flushPara();
-    flushList();
+    flushPara(); flushList();
     return out.join("");
 
     function inline(s) {
@@ -326,156 +265,254 @@
     }
   }
 
-  /* ---------- Sidebar / header ---------- */
+  /* ---------- Routing ---------- */
 
-  function authButton() {
-    if (authUser) {
-      const initial = (authUser.first_name || authUser.email || "?").trim().charAt(0).toUpperCase();
-      const label = authUser.first_name ? authUser.first_name : authUser.email;
-      return `<div class="auth-pill" data-user-menu>
-        <span class="avatar avatar-sm">${escapeHtml(initial)}</span>
-        <span class="auth-pill-label">${escapeHtml(label)}</span>
-        <button class="ghost-button compact" type="button" data-sign-out>Sign out</button>
-      </div>`;
-    }
-    return `<button class="dark-button compact" type="button" data-sign-in>Sign in</button>`;
+  function cleanPath() {
+    const path = window.location.pathname.replace(/\/+$/, "");
+    return path.replace(/^\/sopal-v2\/?/, "") || "home";
+  }
+  function navigate(href) {
+    window.history.pushState({}, "", href);
+    render();
+  }
+  function isActiveExact(href) {
+    const current = window.location.pathname.replace(/\/+$/, "") || "/sopal-v2";
+    return current === href;
+  }
+  function isActivePrefix(href) {
+    const current = window.location.pathname.replace(/\/+$/, "") || "/sopal-v2";
+    return current === href || current.startsWith(href + "/");
+  }
+
+  /* ---------- Sidebar ---------- */
+
+  const ICON = {
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+    coins: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18M7 6h1v4M16.71 13.88l.7.71-2.82 2.82"/></svg>',
+    home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>',
+    file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+    chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    sparkles: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M19 15l.5 1.5L21 17l-1.5.5L19 19l-.5-1.5L17 17l1.5-.5z"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+    chevDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+    chevRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>',
+    upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8 12 3 7 8"/><path d="M12 3v12"/></svg>',
+    paperclip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m21 12-9.5 9.5a5 5 0 0 1-7.1-7.1L14 4.7a3.5 3.5 0 0 1 4.95 4.95L9.5 19.07a2 2 0 0 1-2.83-2.83L16 6.9"/></svg>',
+    send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="m22 2-11 11"/></svg>',
+    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+    grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
+    arrowUpRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>',
+    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+    layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 10 6-10 6L2 8z"/><path d="m2 14 10 6 10-6"/></svg>',
+  };
+
+  function workspaceNav() {
+    return [
+      { label: "Decision Search", href: "/sopal-v2/research/decisions", icon: ICON.search },
+      { label: "Adjudicator Statistics", href: "/sopal-v2/research/adjudicators", icon: ICON.users },
+      { label: "Due Date Calculator", href: "/sopal-v2/tools/due-date-calculator", icon: ICON.calendar },
+      { label: "Interest Calculator", href: "/sopal-v2/tools/interest-calculator", icon: ICON.coins },
+    ];
+  }
+
+  function projectSubNav(projectId) {
+    const base = `/sopal-v2/projects/${projectId}`;
+    return [
+      { label: "Overview", href: `${base}/overview`, icon: ICON.home },
+      { label: "Contract", href: `${base}/contract`, icon: ICON.file },
+      { label: "Project Library", href: `${base}/library`, icon: ICON.folder },
+      { label: "Assistant", href: `${base}/assistant`, icon: ICON.chat },
+    ];
+  }
+
+  function projectAgentNav(projectId) {
+    const base = `/sopal-v2/projects/${projectId}/agents`;
+    return AGENT_KEYS.map((key) => ({ label: AGENT_LABELS[key], href: `${base}/${key}`, icon: ICON.sparkles }));
   }
 
   function Sidebar() {
+    const project = currentProject();
+    const projects = projectList();
     return `
       <aside class="sopal-sidebar ${sidebarOpen ? "open" : ""}">
-        <div class="sidebar-top">
-          <div class="wordmark">
-            <a href="/sopal-v2" data-nav>Sopal</a>
-            <span class="prototype-pill">v2</span>
+        <div class="sidebar-brand"><a href="/sopal-v2" data-nav>Sopal</a><span class="brand-pill">v2</span></div>
+
+        <div class="sidebar-scroll">
+          <div class="nav-group-title">Workspace</div>
+          ${workspaceNav().map((item) => `
+            <a class="nav-item ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
+              <span class="nav-icon">${item.icon}</span>
+              <span class="nav-label">${escapeHtml(item.label)}</span>
+            </a>`).join("")}
+
+          <div class="nav-divider"></div>
+
+          <div class="nav-group-title row">
+            <span>Projects</span>
+            <button class="icon-button" type="button" data-new-project title="New project">${ICON.plus}</button>
           </div>
-          <button class="new-project" type="button" data-go="/sopal-v2/projects/contracts">+ New context</button>
-        </div>
-        <div class="nav-scroll">
-          ${sections.map((section) => `
-            <div class="nav-group">
-              <div class="nav-group-title">${escapeHtml(section.title)}</div>
-              ${section.items.map(([label, href]) => `<a class="nav-item ${isActive(href) ? "active" : ""}" href="${href}" data-nav>${escapeHtml(label)}</a>`).join("")}
+
+          ${projects.length === 0 ? `
+            <div class="sidebar-empty">
+              <p>No projects yet.</p>
+              <button class="ghost-button compact" type="button" data-new-project>+ New project</button>
             </div>
-          `).join("")}
+          ` : `
+            <div class="project-switcher">
+              <button class="project-switcher-trigger" type="button" data-project-menu-toggle>
+                <span class="truncate">${project ? escapeHtml(project.name) : "Select a project"}</span>
+                <span class="chev">${ICON.chevDown}</span>
+              </button>
+              ${projectMenuOpen ? `
+                <div class="project-menu" role="menu">
+                  ${projects.map((p) => `
+                    <button class="project-menu-row ${p.id === store.currentProjectId ? "active" : ""}" type="button" data-select-project="${attr(p.id)}">
+                      <span class="truncate">${escapeHtml(p.name)}</span>
+                    </button>`).join("")}
+                  <div class="project-menu-divider"></div>
+                  <button class="project-menu-row create" type="button" data-new-project>${ICON.plus}<span>New project</span></button>
+                </div>` : ""}
+            </div>
+
+            ${project ? `
+              ${projectSubNav(project.id).map((item) => `
+                <a class="nav-item ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
+                  <span class="nav-icon">${item.icon}</span>
+                  <span class="nav-label">${escapeHtml(item.label)}</span>
+                </a>`).join("")}
+              <div class="nav-subgroup-title">Agents</div>
+              ${projectAgentNav(project.id).map((item) => `
+                <a class="nav-item nav-item-sub ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
+                  <span class="nav-icon">${item.icon}</span>
+                  <span class="nav-label">${escapeHtml(item.label)}</span>
+                </a>`).join("")}
+            ` : ""}
+          `}
         </div>
-        <div class="sidebar-bottom">
-          <div class="sidebar-auth">${authButton()}</div>
-          <div class="sidebar-context-count">${workspace.contracts.length + workspace.library.length} local context item${workspace.contracts.length + workspace.library.length === 1 ? "" : "s"}</div>
+
+        <div class="sidebar-foot">
+          <a class="nav-item small" href="/sopal-v2/projects" data-nav>
+            <span class="nav-icon">${ICON.grid}</span>
+            <span class="nav-label">Your projects</span>
+          </a>
         </div>
       </aside>
     `;
   }
 
-  function MainHeader(route) {
-    const [title, description] = routeTitle(route);
+  /* ---------- Top header ---------- */
+
+  function MainHeader(crumbs) {
     return `
       <header class="main-header">
-        <div class="main-title">
-          <h1>${escapeHtml(title)}</h1>
-          <p>${escapeHtml(description)}</p>
-        </div>
-        <div class="header-actions">
+        <div class="header-left">
           <button class="ghost-button mobile-toggle" type="button" data-toggle-sidebar aria-label="Open menu">Menu</button>
-          <a class="link-button" href="/ai" target="_blank" rel="noopener">SopalAI</a>
-          <a class="link-button" href="https://sopal.com.au" target="_blank" rel="noopener">sopal.com.au</a>
+          <nav class="breadcrumb">
+            ${crumbs.map((c, i) => {
+              const last = i === crumbs.length - 1;
+              if (last) return `<span class="crumb current">${escapeHtml(c.label)}</span>`;
+              const sep = `<span class="crumb-sep">${ICON.chevRight}</span>`;
+              return c.href
+                ? `<a class="crumb" href="${attr(c.href)}" data-nav>${escapeHtml(c.label)}</a>${sep}`
+                : `<span class="crumb">${escapeHtml(c.label)}</span>${sep}`;
+            }).join("")}
+          </nav>
+        </div>
+        <div class="header-right">
+          <a class="link-button small" href="https://sopal.com.au" target="_blank" rel="noopener">sopal.com.au</a>
         </div>
       </header>
     `;
   }
 
-  function EmptyState(title, body, actionHtml) {
-    return `<div class="empty-state"><strong>${escapeHtml(title)}</strong><p>${escapeHtml(body)}</p>${actionHtml || ""}</div>`;
+  function PageBody(content) {
+    return `<div class="page-body">${content}</div>`;
+  }
+
+  /* ---------- Empty state ---------- */
+
+  function EmptyState(title, body, actions) {
+    return `<div class="empty-state">
+      <strong>${escapeHtml(title)}</strong>
+      <p>${escapeHtml(body)}</p>
+      ${actions || ""}
+    </div>`;
   }
 
   /* ---------- Home ---------- */
 
   function HomePage() {
-    const tiles = [
-      { title: "Search adjudication decisions", body: "Full-text search the BIF Act / BCIPA decision database with filters and detail views.", href: "/sopal-v2/research/adjudication-decisions", group: "Research" },
-      { title: "Adjudicator statistics", body: "Browse award rates, total claimed/awarded, and decision history by adjudicator.", href: "/sopal-v2/research/adjudicator-statistics", group: "Research" },
-      { title: "Due date calculator", body: "BIF Act business-day deadlines for claims, schedules, applications, responses and decisions.", href: "/sopal-v2/tools/due-date-calculator", group: "Tools" },
-      { title: "Interest calculator", body: "Statutory (QBCC s 67P, daily RBA) or contractual interest with full daily breakdown.", href: "/sopal-v2/tools/interest-calculator", group: "Tools" },
-      { title: "Review a payment claim", body: "AI review against BIF Act compliance, evidence and amendment recommendations.", href: "/sopal-v2/agents/payment-claims?mode=review", group: "Agents" },
-      { title: "Draft an EOT claim", body: "AI-drafted notice or claim with assumptions, placeholders and evidence schedule.", href: "/sopal-v2/agents/eots?mode=draft", group: "Agents" },
-      { title: "Adjudication application", body: "Build a structured application: chronology, jurisdiction, entitlement, quantum.", href: "/sopal-v2/agents/adjudication-application?mode=draft", group: "Agents" },
-      { title: "Project assistant", body: "Chat across pasted/extracted contract and project context.", href: "/sopal-v2/projects/assistant", group: "Projects" },
-    ];
+    const tools = workspaceNav();
+    const projects = projectList();
+    return PageBody(`
+      <div class="home-shell">
+        <section class="home-hero">
+          <h2>Welcome to Sopal v2</h2>
+          <p>Search adjudication decisions, run BIF Act calculators, and manage SOPA workflows project by project.</p>
+        </section>
 
-    const ctxCount = workspace.contracts.length + workspace.library.length;
-    const recentChats = Object.entries(chatHistory)
-      .filter(([, h]) => Array.isArray(h.messages) && h.messages.length > 0)
-      .sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0))
-      .slice(0, 4);
+        <section class="home-section">
+          <div class="section-head"><h3>Workspace tools</h3><p>Available everywhere — no project required.</p></div>
+          <div class="tile-grid">
+            ${tools.map((t) => `
+              <a class="tile" href="${t.href}" data-nav>
+                <span class="tile-icon">${t.icon}</span>
+                <strong>${escapeHtml(t.label)}</strong>
+              </a>`).join("")}
+          </div>
+        </section>
 
-    const greeting = authUser
-      ? `Welcome back, ${escapeHtml(authUser.first_name || authUser.email)}.`
-      : `Sign in to use the decision search. The rest of the workspace works without an account.`;
+        <section class="home-section">
+          <div class="section-head row">
+            <div><h3>Your projects</h3><p>Each project is one construction contract — head contract or subcontract.</p></div>
+            <button class="dark-button" type="button" data-new-project>${ICON.plus}<span>New project</span></button>
+          </div>
+          ${projects.length === 0 ? `
+            <div class="card-empty">
+              <div class="card-empty-icon">${ICON.file}</div>
+              <h4>Create your first project</h4>
+              <p>Add the contract details, paste in clauses or upload your contract — Sopal then runs every agent (Payment Claims, EOTs, Adjudication etc.) inside that project's context.</p>
+              <button class="dark-button" type="button" data-new-project>Create project</button>
+            </div>
+          ` : `
+            <div class="project-list">
+              ${projects.map((p) => projectRow(p)).join("")}
+            </div>
+          `}
+        </section>
+      </div>
+    `);
+  }
 
+  function projectRow(p) {
+    const meta = [p.reference, p.contractForm, p.claimant ? `${p.claimant} v ${p.respondent || "?"}` : ""].filter(Boolean).join(" · ");
     return `
-      <section class="home-hero">
-        <div class="home-hero-text">
-          <h2>What are you working on?</h2>
-          <p>${greeting}</p>
-          ${authUser ? "" : `<button class="dark-button" type="button" data-sign-in>Sign in</button>`}
+      <a class="project-row" href="/sopal-v2/projects/${attr(p.id)}/overview" data-nav>
+        <div class="project-row-icon">${ICON.file}</div>
+        <div class="project-row-text">
+          <strong>${escapeHtml(p.name)}</strong>
+          <span>${escapeHtml(meta || "Bespoke contract")}</span>
         </div>
-      </section>
-      <section class="home-tiles">
-        ${tiles.map((t) => `
-          <a class="tile" href="${t.href}" data-nav>
-            <span class="tile-tag">${escapeHtml(t.group)}</span>
-            <strong>${escapeHtml(t.title)}</strong>
-            <span class="tile-body">${escapeHtml(t.body)}</span>
-          </a>
-        `).join("")}
-      </section>
-      <section class="home-bottom">
-        <div class="panel">
-          <div class="panel-header"><div><h2>Local workspace</h2><p>Saved in this browser. Clear cache and it goes away.</p></div></div>
-          <div class="panel-body metric-grid">
-            <div class="metric"><span>${workspace.contracts.length}</span><label>contract items</label></div>
-            <div class="metric"><span>${workspace.library.length}</span><label>library items</label></div>
-            <div class="metric"><span>${ctxCount ? "Ready" : "Empty"}</span><label>agent context</label></div>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panel-header"><div><h2>Recent conversations</h2><p>Pick up where you left off.</p></div></div>
-          <div class="panel-body recent-list">
-            ${recentChats.length
-              ? recentChats.map(([key, h]) => {
-                const [agent, mode] = key.split(":");
-                const label = key === "assistant" ? "Project Assistant" : `${agentLabels[agent] || agent} · ${mode || "review"}`;
-                const href = key === "assistant" ? "/sopal-v2/projects/assistant" : `/sopal-v2/agents/${agent}?mode=${mode || "review"}`;
-                const last = h.messages[h.messages.length - 1] || {};
-                return `<a class="recent-item" href="${href}" data-nav>
-                  <strong>${escapeHtml(label)}</strong>
-                  <span>${escapeHtml((last.content || "").slice(0, 110))}${(last.content || "").length > 110 ? "…" : ""}</span>
-                </a>`;
-              }).join("")
-              : EmptyState("No conversations yet.", "Start an agent or open the project assistant.")}
-          </div>
-        </div>
-      </section>
+        <span class="status-pill">${p.contracts.length || 0} contract docs · ${p.library.length || 0} library</span>
+        <span class="row-chev">${ICON.chevRight}</span>
+      </a>
     `;
   }
 
-  /* ---------- Research: decisions ---------- */
+  /* ---------- Research: Decision search ---------- */
 
-  function ResearchPage(kind) {
-    if (kind === "adjudication-decisions") return AdjudicationDecisionsPage();
-    if (kind === "adjudicator-statistics") return AdjudicatorStatisticsPage();
-    return HomePage();
-  }
-
-  function labelSort(value) {
-    return ({ relevance: "Relevance", newest: "Newest", oldest: "Oldest", claim_high: "Claimed: high to low", claim_low: "Claimed: low to high", adj_high: "Awarded: high to low", adj_low: "Awarded: low to high" })[value] || value;
-  }
-
-  function AdjudicationDecisionsPage() {
+  function DecisionsPage() {
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q") || "";
     const sort = params.get("sort") || "relevance";
-
+    const filtersOn = ["startDate", "endDate", "minClaim", "maxClaim"].some((k) => params.get(k));
     setTimeout(() => {
       const form = document.querySelector("[data-decision-search]");
       if (form) form.addEventListener("submit", (event) => {
@@ -484,65 +521,63 @@
         const next = new URLSearchParams();
         if (data.get("q")) next.set("q", data.get("q"));
         next.set("sort", data.get("sort") || "relevance");
-        ["startDate", "endDate", "minClaim", "maxClaim"].forEach((key) => { if (data.get(key)) next.set(key, data.get(key)); });
-        navigate(`/sopal-v2/research/adjudication-decisions?${next.toString()}`);
+        ["startDate", "endDate", "minClaim", "maxClaim"].forEach((k) => { if (data.get(k)) next.set(k, data.get(k)); });
+        navigate(`/sopal-v2/research/decisions?${next.toString()}`);
       });
-      if (params.toString() && q) fetchDecisionResults(params, 0);
+      if (q || params.toString()) fetchDecisionResults(params, 0);
     }, 0);
 
-    const filtersOn = ["startDate", "endDate", "minClaim", "maxClaim"].some((k) => params.get(k));
+    return PageBody(`
+      <div class="page-shell">
+        <h1 class="page-title">Decision search</h1>
+        <p class="page-sub">Searches Sopal's adjudication decision database. Results render here — no jumps to the live site.</p>
 
-    return `
-      <div class="research-layout">
-        <section class="panel">
-          <div class="panel-header"><div><h2>Decision search</h2><p>Searches the live Sopal decision database. Sign in to run searches.</p></div></div>
-          <form class="panel-body search-form" data-decision-search>
-            <input class="text-input span-2" name="q" type="search" value="${escapeHtml(q)}" placeholder="Search terms, party names, adjudicator, section references" autofocus>
+        <div class="card">
+          <form class="search-form" data-decision-search>
+            <input class="text-input span-all" name="q" type="search" value="${attr(q)}" placeholder="Adjudicator, party, section, keywords…" autofocus>
             <select class="select-input" name="sort">
-              ${["relevance", "newest", "oldest", "claim_high", "claim_low", "adj_high", "adj_low"].map((s) => `<option value="${s}" ${sort === s ? "selected" : ""}>${labelSort(s)}</option>`).join("")}
+              ${["relevance","newest","oldest","claim_high","claim_low","adj_high","adj_low"].map((s) => `<option value="${s}" ${sort===s?"selected":""}>${labelSort(s)}</option>`).join("")}
             </select>
             <button class="dark-button" type="submit">Search</button>
-            <details class="filters-toggle span-2" ${filtersOn ? "open" : ""}>
-              <summary>Filters${filtersOn ? " (active)" : ""}</summary>
+            <details class="filters" ${filtersOn ? "open" : ""}>
+              <summary>Filters${filtersOn ? " · active" : ""}</summary>
               <div class="filters-grid">
-                <label>From<input class="text-input" name="startDate" type="date" value="${escapeHtml(params.get("startDate") || "")}"></label>
-                <label>To<input class="text-input" name="endDate" type="date" value="${escapeHtml(params.get("endDate") || "")}"></label>
-                <label>Min claimed<input class="text-input" name="minClaim" type="number" step="1000" value="${escapeHtml(params.get("minClaim") || "")}"></label>
-                <label>Max claimed<input class="text-input" name="maxClaim" type="number" step="1000" value="${escapeHtml(params.get("maxClaim") || "")}"></label>
+                <label>From<input class="text-input" name="startDate" type="date" value="${attr(params.get("startDate") || "")}"></label>
+                <label>To<input class="text-input" name="endDate" type="date" value="${attr(params.get("endDate") || "")}"></label>
+                <label>Min claimed<input class="text-input" name="minClaim" type="number" step="1000" value="${attr(params.get("minClaim") || "")}"></label>
+                <label>Max claimed<input class="text-input" name="maxClaim" type="number" step="1000" value="${attr(params.get("maxClaim") || "")}"></label>
               </div>
             </details>
           </form>
-        </section>
-        <section id="decision-results">${q ? EmptyState("Searching decisions…", "Querying the real Sopal decision database.") : EmptyState("Enter a query.", "Try an adjudicator name, a party, a section reference, or keywords from a decision.")}</section>
-        <aside id="decision-detail" class="panel detail-panel">${EmptyState("Select a decision.", "Click any result to view metadata and load the full decision text.")}</aside>
+        </div>
+
+        <div class="research-grid">
+          <section id="decision-results">${q ? skeletonRows() : EmptyState("Enter a search.", "Try an adjudicator name, a party, a section reference, or keywords from a decision.")}</section>
+          <aside id="decision-detail" class="card detail-panel">${EmptyState("Select a decision.", "Click any result to view the full text inline.")}</aside>
+        </div>
       </div>
-    `;
+    `);
+  }
+
+  function labelSort(value) {
+    return ({ relevance: "Relevance", newest: "Newest", oldest: "Oldest", claim_high: "Claimed: high → low", claim_low: "Claimed: low → high", adj_high: "Awarded: high → low", adj_low: "Awarded: low → high" })[value] || value;
+  }
+
+  function skeletonRows() {
+    return `<div class="card"><div class="card-body"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></div>`;
   }
 
   async function fetchDecisionResults(params, offset) {
     const mount = document.getElementById("decision-results");
     if (!mount) return;
-    mount.innerHTML = `<div class="panel"><div class="panel-body skeleton-results"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></div>`;
+    mount.innerHTML = skeletonRows();
     const qs = new URLSearchParams(params);
     qs.set("limit", "20");
     qs.set("offset", String(offset || 0));
     try {
-      const response = await fetch(`/search_fast?${qs.toString()}`, { headers: authHeaders(), credentials: "include" });
+      const response = await fetch(`/api/sopal-v2/search?${qs.toString()}`, { credentials: "include" });
       const data = await response.json().catch(() => ({}));
-      if (response.status === 401) {
-        mount.innerHTML = `
-          <div class="panel">
-            <div class="panel-body">
-              ${EmptyState("Sign in to search.", "Searching the decision database requires an account.", `<button class="dark-button" type="button" data-sign-in>Sign in</button> <a class="link-button" href="https://sopal.com.au/login" target="_blank" rel="noopener">Create account</a>`)}
-            </div>
-          </div>`;
-        return;
-      }
-      if (response.status === 429) {
-        mount.innerHTML = `<div class="error-banner">Search limit reached for this month. ${escapeHtml(data.message || "")}</div>`;
-        return;
-      }
-      if (!response.ok) throw new Error(data.message || data.detail || data.error || "Search failed");
+      if (!response.ok) throw new Error(data.detail || data.error || "Search failed");
       const items = Array.isArray(data.items) ? data.items : [];
       const total = Number(data.total || items.length);
       if (!items.length) {
@@ -550,12 +585,10 @@
         return;
       }
       mount.innerHTML = `
-        <div class="panel">
-          <div class="panel-header">
-            <div><h2>${total.toLocaleString()} result${total === 1 ? "" : "s"}</h2><p>Live records from the Sopal decision database.</p></div>
-          </div>
-          <div class="panel-body results-list">${items.map(renderDecisionItem).join("")}</div>
-          ${items.length < total ? `<div class="panel-footer"><button class="ghost-button" type="button" data-load-more="${(offset || 0) + items.length}">Load more (${(total - ((offset || 0) + items.length)).toLocaleString()} remaining)</button></div>` : ""}
+        <div class="card">
+          <div class="card-head"><h3>${total.toLocaleString()} result${total === 1 ? "" : "s"}</h3></div>
+          <div class="card-body results-list">${items.map(renderDecisionItem).join("")}</div>
+          ${items.length < total ? `<div class="card-foot"><button class="ghost-button" type="button" data-load-more="${(offset || 0) + items.length}">Load more (${(total - ((offset || 0) + items.length)).toLocaleString()} remaining)</button></div>` : ""}
         </div>`;
       mount.querySelectorAll("[data-decision-id]").forEach((el) => el.addEventListener("click", () => loadDecisionDetail(el.dataset.decisionId, el.dataset.title)));
       const more = mount.querySelector("[data-load-more]");
@@ -569,13 +602,12 @@
     const mount = document.getElementById("decision-results");
     if (!mount) return;
     const list = mount.querySelector(".results-list");
-    const footer = mount.querySelector(".panel-footer");
-    if (!list) return;
+    const foot = mount.querySelector(".card-foot");
     const qs = new URLSearchParams(params);
     qs.set("limit", "20");
     qs.set("offset", String(offset));
     try {
-      const response = await fetch(`/search_fast?${qs.toString()}`, { headers: authHeaders(), credentials: "include" });
+      const response = await fetch(`/api/sopal-v2/search?${qs.toString()}`, { credentials: "include" });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.detail || "Search failed");
       const items = Array.isArray(data.items) ? data.items : [];
@@ -586,10 +618,10 @@
       });
       const total = Number(data.total || 0);
       const newOffset = offset + items.length;
-      if (newOffset >= total || !items.length) { if (footer) footer.remove(); }
-      else if (footer) footer.querySelector("[data-load-more]").dataset.loadMore = String(newOffset);
+      if (newOffset >= total || !items.length) { if (foot) foot.remove(); }
+      else if (foot) foot.querySelector("[data-load-more]").dataset.loadMore = String(newOffset);
     } catch (error) {
-      if (footer) footer.innerHTML = `<div class="error-banner">${escapeHtml(error.message)}</div>`;
+      if (foot) foot.innerHTML = `<div class="error-banner">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -606,8 +638,8 @@
       money(item.adjudicated_amount) ? `${money(item.adjudicated_amount)} awarded` : "",
     ].filter(Boolean);
     return `
-      <article class="result-item clickable" data-decision-id="${escapeHtml(id)}" data-title="${escapeHtml(title)}" tabindex="0">
-        <h3>${escapeHtml(title)}</h3>
+      <article class="result-row" data-decision-id="${attr(id)}" data-title="${attr(title)}" tabindex="0">
+        <h4>${escapeHtml(title)}</h4>
         <div class="result-meta">${meta.map((m) => `<span>${escapeHtml(m)}</span>`).join("")}</div>
         <p>${formatSnippet(item.snippet)}</p>
       </article>`;
@@ -616,37 +648,35 @@
   async function loadDecisionDetail(id, title) {
     const mount = document.getElementById("decision-detail");
     if (!mount || !id) return;
-    mount.innerHTML = `<div class="panel-header"><div><h2>${escapeHtml(title || "Decision")}</h2><p>Loading decision text…</p></div></div><div class="panel-body"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>`;
+    mount.innerHTML = `<div class="card-head"><h3>${escapeHtml(title || "Decision")}</h3></div><div class="card-body">${skeletonRows()}</div>`;
     try {
       const response = await fetch(`/api/decision-text/${encodeURIComponent(id)}`, { credentials: "include" });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.detail || "Decision text failed");
       const text = (data.fullText || "").trim();
       mount.innerHTML = `
-        <div class="panel-header">
-          <div><h2>${escapeHtml(title || id)}</h2><p>${escapeHtml(id)}</p></div>
-          <div class="panel-actions">
-            <button class="ghost-button compact" type="button" data-copy-text="${escapeHtml(text.slice(0, 8000))}">Copy text</button>
-            <a class="link-button" href="/open?id=${encodeURIComponent(id)}" target="_blank" rel="noopener">Open original</a>
-          </div>
+        <div class="card-head">
+          <div><h3>${escapeHtml(title || id)}</h3><p class="muted">${escapeHtml(id)}</p></div>
+          <button class="ghost-button compact" type="button" data-copy-text="${attr(text.slice(0, 8000))}">${ICON.copy}<span>Copy</span></button>
         </div>
-        <div class="panel-body">
-          ${text ? `<div class="decision-text">${escapeHtml(text.slice(0, 12000))}${text.length > 12000 ? "\n\n[Text truncated. Open original for the full record.]" : ""}</div>` : EmptyState("No text on file.", "This decision has no extracted text. Open the original PDF.")}
+        <div class="card-body">
+          ${text ? `<div class="decision-text">${escapeHtml(text.slice(0, 12000))}${text.length > 12000 ? "\n\n[Text truncated. The full record is in the Sopal database.]" : ""}</div>` : EmptyState("No text on file.", "This record has no extracted text.")}
         </div>`;
     } catch (error) {
       mount.innerHTML = `<div class="error-banner">${escapeHtml(error.message || "Could not load decision text")}</div>`;
     }
   }
 
-  /* ---------- Research: adjudicator stats ---------- */
+  /* ---------- Research: adjudicators ---------- */
 
-  function AdjudicatorStatisticsPage() {
+  function AdjudicatorsPage() {
     setTimeout(fetchAdjudicators, 0);
-    return `
-      <div class="section-stack">
-        <div class="panel">
-          <div class="panel-header"><div><h2>Adjudicator statistics</h2><p>Live data from the Sopal decision database.</p></div></div>
-          <div class="panel-body toolbar">
+    return PageBody(`
+      <div class="page-shell">
+        <h1 class="page-title">Adjudicator statistics</h1>
+        <p class="page-sub">Live data from the Sopal decision database. Click an adjudicator to view their decision history.</p>
+        <div class="card">
+          <div class="card-body toolbar">
             <input class="text-input" data-adj-filter placeholder="Filter adjudicators by name">
             <select class="select-input" data-adj-sort>
               <option value="decisions">Most decisions</option>
@@ -658,15 +688,16 @@
             </select>
           </div>
         </div>
-        <div class="stats-grid-shell">
-          <section id="adjudicator-results">${EmptyState("Loading statistics…", "Querying /api/adjudicators.")}</section>
-          <aside id="adjudicator-detail" class="panel detail-panel">${EmptyState("Select an adjudicator.", "Click a card to view their decision history and totals.")}</aside>
+        <div class="research-grid">
+          <section id="adj-results">${skeletonRows()}</section>
+          <aside id="adj-detail" class="card detail-panel">${EmptyState("Select an adjudicator.", "Open any card to see their decisions, totals and award rates rendered here.")}</aside>
         </div>
-      </div>`;
+      </div>
+    `);
   }
 
   async function fetchAdjudicators() {
-    const mount = document.getElementById("adjudicator-results");
+    const mount = document.getElementById("adj-results");
     if (!mount) return;
     try {
       const response = await fetch("/api/adjudicators", { credentials: "include" });
@@ -682,7 +713,7 @@
   }
 
   function renderAdjudicators() {
-    const mount = document.getElementById("adjudicator-results");
+    const mount = document.getElementById("adj-results");
     if (!mount) return;
     const filter = (document.querySelector("[data-adj-filter]")?.value || "").toLowerCase();
     const sort = document.querySelector("[data-adj-sort]")?.value || "decisions";
@@ -697,24 +728,24 @@
       zeroes: (b.zeroAwardCount || 0) - (a.zeroAwardCount || 0),
     }[sort]));
     mount.innerHTML = items.length
-      ? `<div class="adjudicator-grid">${items.slice(0, 80).map((item) => `
-          <button class="stat-card-btn" type="button" data-adjudicator="${escapeHtml(item.name)}">
+      ? `<div class="adj-grid">${items.slice(0, 80).map((item) => `
+          <button class="adj-card" type="button" data-adjudicator="${attr(item.name)}">
             <strong>${escapeHtml(item.name)}</strong>
-            <span>${item.totalDecisions} decisions</span>
-            <span>${formatCurrency(item.totalClaimAmount)} claimed</span>
-            <span>${formatCurrency(item.totalAwardedAmount)} awarded</span>
-            <span class="rate-pill">${formatPercent(item.avgAwardRate)} avg award</span>
+            <span class="muted">${item.totalDecisions} decisions</span>
+            <div class="adj-card-row">${formatCurrencyCompact(item.totalClaimAmount)} claimed</div>
+            <div class="adj-card-row">${formatCurrencyCompact(item.totalAwardedAmount)} awarded</div>
+            <span class="rate-pill">${pct(item.avgAwardRate)} avg award</span>
           </button>`).join("")}</div>`
       : EmptyState("No adjudicators match.", "Clear or change the filter.");
     mount.querySelectorAll("[data-adjudicator]").forEach((b) => b.addEventListener("click", () => loadAdjudicatorDetail(b.dataset.adjudicator)));
   }
 
   async function loadAdjudicatorDetail(name) {
-    const mount = document.getElementById("adjudicator-detail");
+    const mount = document.getElementById("adj-detail");
     if (!mount) return;
-    mount.innerHTML = `<div class="panel-header"><div><h2>${escapeHtml(name)}</h2><p>Loading decisions…</p></div></div><div class="panel-body"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>`;
+    mount.innerHTML = `<div class="card-head"><h3>${escapeHtml(name)}</h3><p class="muted">Loading decisions…</p></div><div class="card-body">${skeletonRows()}</div>`;
     try {
-      const response = await fetch(`/api/adjudicator/${encodeURIComponent(name)}`, { headers: authHeaders(), credentials: "include" });
+      const response = await fetch(`/api/adjudicator/${encodeURIComponent(name)}`, { credentials: "include" });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.detail || data.error || "Adjudicator detail failed");
       const decisions = Array.isArray(data) ? data : [];
@@ -723,374 +754,712 @@
       const awardedSum = decisions.reduce((s, d) => s + (Number(d.awardedAmount) || 0), 0);
       const zeroes = decisions.filter((d) => Number(d.awardedAmount) === 0).length;
       mount.innerHTML = `
-        <div class="panel-header">
-          <div><h2>${escapeHtml(name)}</h2><p>${decisions.length} decision${decisions.length === 1 ? "" : "s"}</p></div>
-          <a class="link-button" href="/adjudicators" target="_blank" rel="noopener">Open full page</a>
-        </div>
-        <div class="panel-body">
+        <div class="card-head"><div><h3>${escapeHtml(name)}</h3><p class="muted">${decisions.length} decision${decisions.length === 1 ? "" : "s"}</p></div></div>
+        <div class="card-body">
           <div class="metric-grid compact">
-            <div class="metric"><span>${decisions.length}</span><label>decisions</label></div>
-            <div class="metric"><span>${formatCurrency(claimedSum)}</span><label>total claimed</label></div>
-            <div class="metric"><span>${formatCurrency(awardedSum)}</span><label>total awarded</label></div>
-            <div class="metric"><span>${formatPercent(summary.avgAwardRate || 0)}</span><label>avg award rate</label></div>
-            <div class="metric"><span>${zeroes}</span><label>$0 awards</label></div>
-            <div class="metric"><span>${formatPercent(summary.avgClaimantFeeProportion || 0)}</span><label>claimant fee share</label></div>
+            <div class="metric"><strong>${decisions.length}</strong><span>decisions</span></div>
+            <div class="metric"><strong>${formatCurrencyCompact(claimedSum)}</strong><span>total claimed</span></div>
+            <div class="metric"><strong>${formatCurrencyCompact(awardedSum)}</strong><span>total awarded</span></div>
+            <div class="metric"><strong>${pct(summary.avgAwardRate || 0)}</strong><span>avg award rate</span></div>
+            <div class="metric"><strong>${zeroes}</strong><span>$0 awards</span></div>
+            <div class="metric"><strong>${pct(summary.avgClaimantFeeProportion || 0)}</strong><span>claimant fee share</span></div>
           </div>
           <div class="mini-list">
-            ${decisions.slice(0, 25).map((d) => `
-              <article ${d.id ? `class="clickable" data-decision-id="${escapeHtml(d.id)}" data-title="${escapeHtml(d.title || "")}" tabindex="0"` : ""}>
+            ${decisions.slice(0, 30).map((d) => `
+              <article class="mini-item" ${d.id ? `data-decision-id="${attr(d.id)}" data-title="${attr(d.title || "")}" tabindex="0"` : ""}>
                 <strong>${escapeHtml(d.title || "Decision")}</strong>
-                <span>${escapeHtml(d.date || "")}${d.outcome ? ` · ${escapeHtml(d.outcome)}` : ""}${d.projectType ? ` · ${escapeHtml(d.projectType)}` : ""}</span>
-                <span>claimed ${formatCurrency(d.claimAmount)} · awarded ${formatCurrency(d.awardedAmount)}</span>
+                <span class="muted">${escapeHtml(shortDate(d.date) || "")}${d.outcome ? ` · ${escapeHtml(d.outcome)}` : ""}${d.projectType ? ` · ${escapeHtml(d.projectType)}` : ""}</span>
+                <span class="muted">claimed ${formatCurrencyCompact(d.claimAmount)} · awarded ${formatCurrencyCompact(d.awardedAmount)}</span>
               </article>`).join("")}
-            ${decisions.length > 25 ? `<div class="muted">${decisions.length - 25} more not shown — open the full page.</div>` : ""}
+            ${decisions.length > 30 ? `<div class="muted">${decisions.length - 30} more not shown.</div>` : ""}
           </div>
         </div>`;
       mount.querySelectorAll("[data-decision-id]").forEach((el) => el.addEventListener("click", () => {
-        navigate(`/sopal-v2/research/adjudication-decisions?q=${encodeURIComponent(el.dataset.title || "")}`);
+        navigate(`/sopal-v2/research/decisions?q=${encodeURIComponent(el.dataset.title || "")}`);
       }));
     } catch (error) {
       mount.innerHTML = `<div class="error-banner">${escapeHtml(error.message || "Could not load adjudicator")}</div>`;
     }
   }
 
-  /* ---------- Tools: due date + interest calculators ---------- */
+  /* ---------- Tools: due date calculator (mirrors live Sopal layout) ---------- */
 
-  function ToolPage(kind) {
-    return kind === "interest-calculator" ? InterestCalculator() : DueDateCalculator();
+  const DUE_DATE_SCENARIOS = [
+    { id: "paymentSchedule", title: "Payment Schedule", subtitle: "When is the schedule due?", section: "s 76 BIF Act" },
+    { id: "adjudicationApp", title: "Adjudication Application", subtitle: "Deadline to lodge", section: "s 79 BIF Act" },
+    { id: "adjudicationResp", title: "Adjudication Response", subtitle: "Deadline for the response", section: "s 83 BIF Act" },
+    { id: "adjudicatorDecision", title: "Adjudicator's Decision", subtitle: "Deadline to deliver", section: "s 85 BIF Act" },
+  ];
+
+  function DueDatePage() {
+    const params = new URLSearchParams(window.location.search);
+    const active = params.get("scenario") && DUE_DATE_SCENARIOS.some((s) => s.id === params.get("scenario")) ? params.get("scenario") : "paymentSchedule";
+    setTimeout(() => bindDueDate(active), 0);
+    return PageBody(`
+      <div class="page-shell">
+        <h1 class="page-title">Due date calculator</h1>
+        <p class="page-sub">BIF Act business-day deadlines for adjudication timelines. Excludes weekends, QLD/local public holidays and the s 87 Christmas shutdown.</p>
+        <div class="due-grid">
+          <div class="scenario-list">
+            ${DUE_DATE_SCENARIOS.map((s) => `
+              <button class="scenario-card ${s.id === active ? "active" : ""}" type="button" data-scenario="${attr(s.id)}">
+                <strong>${escapeHtml(s.title)}</strong>
+                <span class="muted">${escapeHtml(s.subtitle)}</span>
+                <span class="section-tag">${escapeHtml(s.section)}</span>
+              </button>`).join("")}
+          </div>
+          <div class="card calc-card">
+            <div class="card-head">
+              <div>
+                <h3 id="due-card-title"></h3>
+                <p class="muted"><label class="loc-row">Location <select class="select-input compact" id="due-location">${LOCATION_OPTIONS.map(([v,l]) => `<option value="${v}">${escapeHtml(l)}</option>`).join("")}</select></label></p>
+              </div>
+              <span class="section-badge" id="due-card-badge"></span>
+            </div>
+            <div class="card-body" id="due-form-mount"></div>
+            <div class="card-body" id="due-result"></div>
+          </div>
+        </div>
+      </div>
+    `);
   }
 
-  function DueDateCalculator() {
-    setTimeout(bindDueDateCalculator, 0);
-    return `
-      <div class="tool-grid">
-        <section class="panel">
-          <div class="panel-header"><div><h2>BIF Act due date</h2><p>Native business-day calculator with Queensland holiday handling.</p></div></div>
-          <form class="panel-body calc-form" data-due-form>
-            <label>Scenario
-              <select class="select-input" name="scenario">
-                <option value="paymentSchedule">Payment schedule due date (s 76)</option>
-                <option value="adjudicationAppLess">Adjudication application — schedule less than claimed (s 79(2)(b)(iii))</option>
-                <option value="adjudicationAppNoPayAmount">Adjudication application — scheduled amount unpaid (s 79(2)(b)(ii))</option>
-                <option value="adjudicationAppNoSchedule">Adjudication application — no schedule and no payment (s 79(2)(b)(i))</option>
-                <option value="adjudicationResponseStandard">Adjudication response — standard claim (s 83)</option>
-                <option value="adjudicationResponseComplex">Adjudication response — complex claim (s 83)</option>
-                <option value="adjudicatorDecisionStandard">Adjudicator decision — standard claim (s 85)</option>
-                <option value="adjudicatorDecisionComplex">Adjudicator decision — complex claim (s 85)</option>
+  function bindDueDate(initial) {
+    let scenario = initial;
+    const titleEl = document.getElementById("due-card-title");
+    const badgeEl = document.getElementById("due-card-badge");
+    const formMount = document.getElementById("due-form-mount");
+    const resultMount = document.getElementById("due-result");
+    if (!titleEl || !formMount) return;
+
+    function applyScenario(id) {
+      scenario = id;
+      const meta = DUE_DATE_SCENARIOS.find((s) => s.id === id);
+      titleEl.textContent = `${meta.title} — due date`;
+      badgeEl.textContent = meta.section;
+      document.querySelectorAll("[data-scenario]").forEach((el) => el.classList.toggle("active", el.dataset.scenario === id));
+      const url = new URL(window.location.href);
+      url.searchParams.set("scenario", id);
+      window.history.replaceState({}, "", url);
+      resultMount.innerHTML = "";
+      formMount.innerHTML = renderDueForm(id);
+      bindDueForm(id);
+    }
+
+    document.querySelectorAll("[data-scenario]").forEach((el) => el.addEventListener("click", () => applyScenario(el.dataset.scenario)));
+    applyScenario(scenario);
+
+    function renderDueForm(id) {
+      if (id === "paymentSchedule") {
+        return `
+          <details class="provision">
+            <summary>Relevant provision · s 76 BIF Act</summary>
+            <div class="provision-body">
+              <p><strong>76 Responding to payment claim.</strong> A respondent must respond by giving the claimant a payment schedule within whichever ends first — (a) the period under the contract; or (b) 15 business days after the payment claim is given.</p>
+            </div>
+          </details>
+          <form class="calc-form" data-due-form>
+            <label class="span-2">Date payment claim given<input class="text-input" type="date" name="given"></label>
+            <button class="dark-button span-2" type="submit">Calculate due date</button>
+          </form>`;
+      }
+      if (id === "adjudicationApp") {
+        return `
+          <details class="provision">
+            <summary>Relevant provision · s 79 BIF Act</summary>
+            <div class="provision-body">
+              <p><strong>79 Application for adjudication</strong> — must be made within: (i) for failure to give a schedule and pay the claim — 30 business days after the later of the payment due date or last day a schedule could have been given; (ii) for failure to pay the scheduled amount — 20 business days after the payment due date; (iii) where scheduled amount is less than claimed — 30 business days after receipt of the schedule.</p>
+            </div>
+          </details>
+          <form class="calc-form" data-due-form>
+            <label class="span-2">Reason for application
+              <select class="select-input" name="aaScenario" data-due-aa-scenario>
+                <option value="less" selected>Scheduled amount was less than claimed amount</option>
+                <option value="no-pay-schedule">Respondent failed to provide a payment schedule</option>
+                <option value="no-pay-amount">Respondent failed to pay the scheduled amount</option>
               </select>
             </label>
-            <label>Location
-              <select class="select-input" name="location">
-                <option value="qld">Queensland statewide</option>
-                <option value="bne">Brisbane</option>
-                <option value="gld">Gold Coast</option>
-                <option value="cns">Cairns</option>
-                <option value="tsw">Townsville</option>
-                <option value="ipswich">Ipswich</option>
-                <option value="toowoomba">Toowoomba</option>
-                <option value="sunshine_coast">Sunshine Coast</option>
-                <option value="rockhampton">Rockhampton</option>
-                <option value="mackay">Mackay</option>
-              </select>
-            </label>
-            <label>Primary start date<input class="text-input" name="startDate" type="date"></label>
-            <label>Second date (where required)<input class="text-input" name="secondDate" type="date"></label>
-            <label>Extension days (where applicable)<input class="text-input" name="eotDays" type="number" min="0" max="30" value="0"></label>
-            <button class="dark-button span-2" type="submit">Calculate</button>
-          </form>
-        </section>
-        <section class="panel">
-          <div class="panel-header"><div><h2>Result</h2><p>Excludes weekends, QLD/local public holidays and the s 87 Christmas shutdown.</p></div></div>
-          <div class="panel-body" id="due-result">${EmptyState("No calculation yet.", "Choose a scenario and enter the relevant dates.")}</div>
-        </section>
-      </div>`;
-  }
-
-  function bindDueDateCalculator() {
-    const form = document.querySelector("[data-due-form]");
-    if (!form) return;
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const data = Object.fromEntries(new FormData(form).entries());
-      const result = calculateDueDate(data);
-      const mount = document.getElementById("due-result");
-      mount.innerHTML = result.error ? `<div class="error-banner">${escapeHtml(result.error)}</div>` : renderDateResult(result);
-    });
-  }
-
-  function calculateDueDate(data) {
-    const scenario = data.scenario;
-    const location = data.location || "qld";
-    const start = parseDate(data.startDate);
-    const second = parseDate(data.secondDate);
-    const eotDays = Math.max(0, parseInt(data.eotDays || "0", 10) || 0);
-    if (!start) return { error: "Primary start date is required." };
-    let basis = "", days = 0, startDate = start, eot = 0;
-    if (scenario === "paymentSchedule") { days = 15; basis = "15 business days after the payment claim is given (s 76 BIF Act)."; }
-    if (scenario === "adjudicationAppLess") { days = 30; basis = "30 business days after the payment schedule is received (s 79(2)(b)(iii))."; }
-    if (scenario === "adjudicationAppNoPayAmount") { days = 20; basis = "20 business days after the due date for payment (s 79(2)(b)(ii))."; }
-    if (scenario === "adjudicationAppNoSchedule") {
-      if (!second) return { error: "Second date is required for the later of payment due date and schedule due date." };
-      startDate = new Date(Math.max(start.getTime(), second.getTime()));
-      days = 30; basis = "30 business days after the later of the payment due date or payment schedule due date (s 79(2)(b)(i)).";
+            <label class="span-2" data-aa-field="schedule-received">Date payment schedule received<input class="text-input" type="date" name="scheduleReceived"></label>
+            <label data-aa-field="payment-due" hidden>Due date for progress payment<input class="text-input" type="date" name="paymentDue"></label>
+            <label data-aa-field="schedule-due" hidden>Last day to provide schedule<input class="text-input" type="date" name="scheduleDue"></label>
+            <button class="dark-button span-2" type="submit">Calculate due date</button>
+          </form>`;
+      }
+      if (id === "adjudicationResp") {
+        return `
+          <details class="provision">
+            <summary>Relevant provision · s 83 BIF Act</summary>
+            <div class="provision-body">
+              <p><strong>83 Time for making adjudication response</strong> — Standard claim: later of 10 BD after receiving s 79(4) documents OR 7 BD after acceptance. Complex claim: later of 15 BD OR 12 BD, with up to 15 additional BD extension under s 83(3).</p>
+            </div>
+          </details>
+          <form class="calc-form" data-due-form>
+            <label>Date application received<input class="text-input" type="date" name="appReceived"></label>
+            <label>Date acceptance received<input class="text-input" type="date" name="acceptanceReceived"></label>
+            <div class="span-2">
+              <span class="form-label">Claim type</span>
+              <div class="radio-group">
+                <label class="radio-option"><input type="radio" name="claimType" value="standard" checked>Standard (≤ $750k)</label>
+                <label class="radio-option"><input type="radio" name="claimType" value="complex">Complex (> $750k)</label>
+              </div>
+            </div>
+            <div class="span-2 eot-block" data-eot-block hidden>
+              <label class="check-line"><input type="checkbox" name="eotEnabled" data-eot-enabled> Extension of time granted by adjudicator (s 83(3))</label>
+              <div class="eot-days" data-eot-days hidden>
+                <label>Additional business days (1-15)<input class="text-input compact" type="number" name="eotDays" min="1" max="15" value="1"></label>
+              </div>
+            </div>
+            <button class="dark-button span-2" type="submit">Calculate due date</button>
+          </form>`;
+      }
+      if (id === "adjudicatorDecision") {
+        return `
+          <details class="provision">
+            <summary>Relevant provision · s 85 BIF Act</summary>
+            <div class="provision-body">
+              <p><strong>85 Time for deciding adjudication application</strong> — 10 BD after the response date for a standard claim, 15 BD for a complex claim. Parties may agree to extend under s 86 (any agreed days).</p>
+            </div>
+          </details>
+          <form class="calc-form" data-due-form>
+            <label class="span-2">Date adjudication response given<input class="text-input" type="date" name="responseGiven"></label>
+            <div class="span-2">
+              <span class="form-label">Claim type</span>
+              <div class="radio-group">
+                <label class="radio-option"><input type="radio" name="claimType" value="standard" checked>Standard (≤ $750k)</label>
+                <label class="radio-option"><input type="radio" name="claimType" value="complex">Complex (> $750k)</label>
+              </div>
+            </div>
+            <div class="span-2 eot-block-2">
+              <label class="check-line"><input type="checkbox" name="eotEnabled" data-eot-enabled> Extension of time agreed by parties (s 86)</label>
+              <div class="eot-days" data-eot-days hidden>
+                <label>Extension days<input class="text-input compact" type="number" name="eotDays" min="1" value="1"></label>
+                <label>Day type
+                  <select class="select-input compact" name="eotDayType">
+                    <option value="business">Business days</option>
+                    <option value="calendar">Calendar days</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <button class="dark-button span-2" type="submit">Calculate due date</button>
+          </form>`;
+      }
+      return "";
     }
-    if (scenario === "adjudicationResponseStandard" || scenario === "adjudicationResponseComplex") {
-      if (!second) return { error: "Second date is required: application documents received date and acceptance received date." };
-      const appDays = scenario === "adjudicationResponseStandard" ? 10 : 15;
-      const acceptanceDays = scenario === "adjudicationResponseStandard" ? 7 : 12;
-      const appResult = addBusinessDays(start, appDays, location);
-      const acceptanceResult = addBusinessDays(second, acceptanceDays, location);
-      const laterIsApp = appResult.finalDate.getTime() >= acceptanceResult.finalDate.getTime();
-      eot = scenario === "adjudicationResponseComplex" ? Math.min(eotDays, 15) : 0;
-      const picked = laterIsApp ? appResult : acceptanceResult;
-      const extension = eot ? addBusinessDays(picked.finalDate, eot, location) : picked;
-      return {
-        title: "Adjudication response due date",
-        startDate: laterIsApp ? start : second,
-        days: laterIsApp ? appDays : acceptanceDays,
-        eot,
-        finalDate: extension.finalDate,
-        skipped: picked.skipped.concat(eot ? extension.skipped : []),
-        basis: `Later of ${appDays} business days after receiving application documents, or ${acceptanceDays} business days after receiving notice of acceptance (s 83 BIF Act).${eot ? " Complex-claim extension applied." : ""}`,
-      };
+
+    function bindDueForm(id) {
+      const form = formMount.querySelector("[data-due-form]");
+      if (!form) return;
+
+      if (id === "adjudicationApp") {
+        const sel = form.querySelector("[data-due-aa-scenario]");
+        const fields = {
+          "schedule-received": form.querySelector('[data-aa-field="schedule-received"]'),
+          "payment-due": form.querySelector('[data-aa-field="payment-due"]'),
+          "schedule-due": form.querySelector('[data-aa-field="schedule-due"]'),
+        };
+        const apply = () => {
+          Object.values(fields).forEach((f) => { if (f) f.hidden = true; });
+          if (sel.value === "less") fields["schedule-received"].hidden = false;
+          else if (sel.value === "no-pay-amount") fields["payment-due"].hidden = false;
+          else if (sel.value === "no-pay-schedule") { fields["payment-due"].hidden = false; fields["schedule-due"].hidden = false; }
+        };
+        sel.addEventListener("change", apply);
+        apply();
+      }
+
+      if (id === "adjudicationResp") {
+        const radios = form.querySelectorAll('input[name="claimType"]');
+        const eotBlock = form.querySelector("[data-eot-block]");
+        const eotEnabled = form.querySelector("[data-eot-enabled]");
+        const eotDays = form.querySelector("[data-eot-days]");
+        const apply = () => {
+          const isComplex = form.querySelector('input[name="claimType"]:checked').value === "complex";
+          eotBlock.hidden = !isComplex;
+          if (!isComplex) { eotEnabled.checked = false; eotDays.hidden = true; }
+        };
+        radios.forEach((r) => r.addEventListener("change", apply));
+        eotEnabled.addEventListener("change", () => { eotDays.hidden = !eotEnabled.checked; });
+        apply();
+      }
+
+      if (id === "adjudicatorDecision") {
+        const eotEnabled = form.querySelector("[data-eot-enabled]");
+        const eotDays = form.querySelector("[data-eot-days]");
+        eotEnabled.addEventListener("change", () => { eotDays.hidden = !eotEnabled.checked; });
+      }
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const data = Object.fromEntries(new FormData(form).entries());
+        const location = document.getElementById("due-location").value;
+        try {
+          const result = computeDueDate(id, data, location);
+          resultMount.innerHTML = renderDateResult(result);
+        } catch (error) {
+          resultMount.innerHTML = `<div class="error-banner">${escapeHtml(error.message || "Calculation failed")}</div>`;
+        }
+      });
     }
-    if (scenario === "adjudicatorDecisionStandard") { days = 10; eot = eotDays; basis = "10 business days after adjudication response is given, plus any agreed extension (s 85)."; }
-    if (scenario === "adjudicatorDecisionComplex") { days = 15; eot = eotDays; basis = "15 business days after adjudication response is given, plus any agreed extension (s 85)."; }
-    const base = addBusinessDays(startDate, days, location);
-    const final = eot ? addBusinessDays(base.finalDate, eot, location) : base;
-    return { title: labelScenario(scenario), startDate, days, eot, finalDate: final.finalDate, skipped: base.skipped.concat(eot ? final.skipped : []), basis };
   }
 
-  function labelScenario(value) {
-    return ({
-      paymentSchedule: "Payment schedule due date",
-      adjudicationAppLess: "Adjudication application due date",
-      adjudicationAppNoPayAmount: "Adjudication application due date",
-      adjudicationAppNoSchedule: "Adjudication application due date",
-      adjudicationResponseStandard: "Adjudication response due date",
-      adjudicationResponseComplex: "Adjudication response due date",
-      adjudicatorDecisionStandard: "Adjudicator decision due date",
-      adjudicatorDecisionComplex: "Adjudicator decision due date",
-    })[value] || "Due date";
+  function computeDueDate(scenario, data, location) {
+    if (scenario === "paymentSchedule") {
+      const start = parseDate(data.given);
+      if (!start) throw new Error("Enter the date the payment claim was given.");
+      const r = addBusinessDays(start, 15, location);
+      return { title: "Payment Schedule due date", finalDate: r.finalDate, startDate: start, days: 15, eotNote: "", basis: "15 business days after the payment claim is given (s 76 BIF Act).", skipped: r.skipped };
+    }
+    if (scenario === "adjudicationApp") {
+      if (data.aaScenario === "less") {
+        const start = parseDate(data.scheduleReceived);
+        if (!start) throw new Error("Enter the date the payment schedule was received.");
+        const r = addBusinessDays(start, 30, location);
+        return { title: "Adjudication application due date", finalDate: r.finalDate, startDate: start, days: 30, basis: "30 business days after the payment schedule was received (s 79(2)(b)(iii) BIF Act).", skipped: r.skipped };
+      }
+      if (data.aaScenario === "no-pay-amount") {
+        const start = parseDate(data.paymentDue);
+        if (!start) throw new Error("Enter the due date for the progress payment.");
+        const r = addBusinessDays(start, 20, location);
+        return { title: "Adjudication application due date", finalDate: r.finalDate, startDate: start, days: 20, basis: "20 business days after the due date for the progress payment (s 79(2)(b)(ii) BIF Act).", skipped: r.skipped };
+      }
+      const a = parseDate(data.paymentDue);
+      const b = parseDate(data.scheduleDue);
+      if (!a || !b) throw new Error("Enter both the payment due date and the last day to provide a schedule.");
+      const start = new Date(Math.max(a.getTime(), b.getTime()));
+      const r = addBusinessDays(start, 30, location);
+      return { title: "Adjudication application due date", finalDate: r.finalDate, startDate: start, days: 30, basis: "30 business days after the LATER of the payment due date or schedule due date (s 79(2)(b)(i) BIF Act).", skipped: r.skipped };
+    }
+    if (scenario === "adjudicationResp") {
+      const appReceived = parseDate(data.appReceived);
+      const acceptanceReceived = parseDate(data.acceptanceReceived);
+      if (!appReceived || !acceptanceReceived) throw new Error("Enter both the application-received and acceptance-received dates.");
+      const claimType = data.claimType || "standard";
+      const days1 = claimType === "standard" ? 10 : 15;
+      const days2 = claimType === "standard" ? 7 : 12;
+      const r1 = addBusinessDays(appReceived, days1, location);
+      const r2 = addBusinessDays(acceptanceReceived, days2, location);
+      const r1IsLater = r1.finalDate.getTime() >= r2.finalDate.getTime();
+      const picked = r1IsLater ? r1 : r2;
+      const startDate = r1IsLater ? appReceived : acceptanceReceived;
+      const startDays = r1IsLater ? days1 : days2;
+      let finalDate = picked.finalDate;
+      let skipped = picked.skipped.slice();
+      let eotNote = "";
+      if (claimType === "complex" && data.eotEnabled === "on") {
+        const eotDays = Math.min(15, Math.max(1, parseInt(data.eotDays || "1", 10) || 1));
+        const ext = addBusinessDays(finalDate, eotDays, location);
+        finalDate = ext.finalDate;
+        skipped = skipped.concat(ext.skipped);
+        eotNote = ` Plus ${eotDays} additional business day${eotDays > 1 ? "s" : ""} extension under s 83(3).`;
+      }
+      return { title: "Adjudication response due date", finalDate, startDate, days: startDays, basis: `Later of ${days1} business days after receiving the application, or ${days2} business days after receiving notice of acceptance (s 83 BIF Act).${eotNote}`, skipped };
+    }
+    if (scenario === "adjudicatorDecision") {
+      const start = parseDate(data.responseGiven);
+      if (!start) throw new Error("Enter the date the adjudication response was given.");
+      const claimType = data.claimType || "standard";
+      const days = claimType === "standard" ? 10 : 15;
+      const base = addBusinessDays(start, days, location);
+      let finalDate = base.finalDate;
+      let skipped = base.skipped.slice();
+      let eotNote = "";
+      if (data.eotEnabled === "on") {
+        const eotDays = Math.max(1, parseInt(data.eotDays || "1", 10) || 1);
+        const dayType = data.eotDayType || "business";
+        if (dayType === "business") {
+          const ext = addBusinessDays(finalDate, eotDays, location);
+          finalDate = ext.finalDate;
+          skipped = skipped.concat(ext.skipped);
+          eotNote = ` Plus ${eotDays} business day${eotDays > 1 ? "s" : ""} extension agreed under s 86.`;
+        } else {
+          const next = new Date(finalDate.getTime());
+          next.setDate(next.getDate() + eotDays);
+          finalDate = next;
+          eotNote = ` Plus ${eotDays} calendar day${eotDays > 1 ? "s" : ""} extension agreed under s 86.`;
+        }
+      }
+      return { title: "Adjudicator's decision due date", finalDate, startDate: start, days, basis: `${days} business days after the adjudication response was given (s 85 BIF Act).${eotNote}`, skipped };
+    }
+    throw new Error("Unknown scenario.");
   }
 
   function isBusinessDay(date, location) {
-    const day = date.getDay();
-    if (day === 0 || day === 6) return { isBiz: false, reason: "Weekend" };
-    const month = date.getMonth(), dayOfMonth = date.getDate();
-    if ((month === 11 && dayOfMonth >= 22 && dayOfMonth <= 24) || (month === 11 && dayOfMonth >= 27 && dayOfMonth <= 31) || (month === 0 && dayOfMonth >= 2 && dayOfMonth <= 10)) return { isBiz: false, reason: "Christmas shutdown (s 87)" };
+    const d = date.getDay();
+    if (d === 0 || d === 6) return { isBiz: false, reason: "Weekend" };
+    const m = date.getMonth(), day = date.getDate();
+    if ((m === 11 && day >= 22 && day <= 24) || (m === 11 && day >= 27 && day <= 31) || (m === 0 && day >= 2 && day <= 10)) return { isBiz: false, reason: "Christmas shutdown (s 87)" };
     const dateString = date.toISOString().slice(0, 10);
-    const publicHoliday = (holidays.qld || []).concat(holidays[location] || []).find((h) => h.date === dateString);
-    return publicHoliday ? { isBiz: false, reason: publicHoliday.name } : { isBiz: true, reason: "" };
+    const list = (HOLIDAYS.qld || []).concat(HOLIDAYS[location] || []);
+    const hit = list.find((h) => h.date === dateString);
+    return hit ? { isBiz: false, reason: hit.name } : { isBiz: true, reason: "" };
   }
 
   function addBusinessDays(startDate, days, location) {
-    const currentDate = new Date(startDate.getTime());
-    let daysAdded = 0; const skipped = [];
-    currentDate.setDate(currentDate.getDate() + 1);
-    while (daysAdded < days) {
-      const check = isBusinessDay(currentDate, location);
-      if (check.isBiz) daysAdded++;
-      else skipped.push({ date: new Date(currentDate.getTime()), reason: check.reason });
-      if (daysAdded < days) currentDate.setDate(currentDate.getDate() + 1);
+    const current = new Date(startDate.getTime());
+    let added = 0;
+    const skipped = [];
+    current.setDate(current.getDate() + 1);
+    while (added < days) {
+      const check = isBusinessDay(current, location);
+      if (check.isBiz) added++;
+      else skipped.push({ date: new Date(current.getTime()), reason: check.reason });
+      if (added < days) current.setDate(current.getDate() + 1);
     }
-    return { finalDate: currentDate, skipped };
+    return { finalDate: current, skipped };
+  }
+
+  function summariseSkipped(skipped) {
+    if (!skipped.length) return "None";
+    const groups = {};
+    skipped.forEach((s) => { groups[s.reason] = (groups[s.reason] || 0) + 1; });
+    return Object.entries(groups).map(([reason, count]) => `${count} × ${reason}`).join(", ");
   }
 
   function renderDateResult(result) {
-    const skippedSummary = summarizeSkipped(result.skipped);
     const copyText = `${result.title}: ${formatDate(result.finalDate)}\n${result.basis}`;
     return `<div class="calc-result">
       <span class="calc-result-tag">${escapeHtml(result.title)}</span>
-      <strong>${formatDate(result.finalDate)}</strong>
+      <strong>${escapeHtml(formatDate(result.finalDate))}</strong>
       <p>${escapeHtml(result.basis)}</p>
       <dl>
-        <dt>Start date</dt><dd>${formatDate(result.startDate)}</dd>
-        <dt>Business-day period</dt><dd>${result.days}${result.eot ? ` + ${result.eot} extension days` : ""}</dd>
-        <dt>Non-business days skipped</dt><dd>${escapeHtml(skippedSummary)}</dd>
+        <dt>Start date</dt><dd>${escapeHtml(formatDate(result.startDate))}</dd>
+        <dt>Business-day period</dt><dd>${result.days}</dd>
+        <dt>Non-business days skipped</dt><dd>${escapeHtml(summariseSkipped(result.skipped))}</dd>
       </dl>
-      <button class="ghost-button compact" data-copy-text="${escapeHtml(copyText)}">Copy</button>
+      <button class="ghost-button compact" type="button" data-copy-text="${attr(copyText)}">${ICON.copy}<span>Copy</span></button>
     </div>`;
   }
 
-  function summarizeSkipped(skipped) {
-    if (!skipped.length) return "None";
-    const grouped = {};
-    skipped.forEach((d) => { grouped[d.reason] = (grouped[d.reason] || 0) + 1; });
-    return Object.entries(grouped).map(([reason, count]) => `${count} ${reason}`).join(", ");
-  }
+  /* ---------- Tools: Interest calculator (mirrors live Sopal layout) ---------- */
 
-  function InterestCalculator() {
+  function InterestPage() {
     setTimeout(bindInterestCalculator, 0);
     const today = new Date().toISOString().slice(0, 10);
-    return `
-      <div class="tool-grid">
-        <section class="panel">
-          <div class="panel-header"><div><h2>Interest</h2><p>QBCC s 67P uses live RBA cash rate. Contractual mode uses your annual rate.</p></div></div>
-          <form class="panel-body calc-form" data-interest-form>
-            <label>Rate type
-              <select class="select-input" name="type">
-                <option value="qbcc">QBCC Act s 67P (10% + RBA cash rate)</option>
-                <option value="contractual">Contractual rate</option>
-              </select>
-            </label>
-            <label>Principal amount<input class="text-input" name="principal" type="number" min="0" step="0.01" placeholder="Amount unpaid"></label>
-            <label>Due date<input class="text-input" name="startDate" type="date"></label>
-            <label>Calculation date<input class="text-input" name="endDate" type="date" value="${today}"></label>
-            <label>Contractual annual rate %<input class="text-input" name="annualRate" type="number" min="0" step="0.01" value="10"></label>
-            <button class="dark-button span-2" type="submit">Calculate</button>
-          </form>
-        </section>
-        <section class="panel">
-          <div class="panel-header"><div><h2>Result</h2><p>Daily compounded calculation including both endpoints.</p></div></div>
-          <div class="panel-body" id="interest-result">${EmptyState("No calculation yet.", "Enter the unpaid amount and dates.")}</div>
-        </section>
-      </div>`;
+    return PageBody(`
+      <div class="page-shell">
+        <h1 class="page-title">Interest calculator</h1>
+        <p class="page-sub">Calculate interest on overdue progress payments under BIF Act s 73.</p>
+        <div class="interest-grid">
+          <div class="card">
+            <div class="card-head"><h3>Calculate interest</h3><p class="muted">Choose the rate type below.</p></div>
+            <div class="card-body">
+              <div class="tab-strip">
+                <button class="tab-strip-btn active" type="button" data-rate-type="qbcc">QBCC s 67P rate</button>
+                <button class="tab-strip-btn" type="button" data-rate-type="contractual">Contractual rate</button>
+              </div>
+              <form class="calc-form" data-interest-form>
+                <input type="hidden" name="type" value="qbcc">
+                <label class="span-2">Progress payment amount<div class="input-group"><span class="prefix">$</span><input class="text-input" type="number" name="principal" min="0" step="0.01" placeholder="0.00"></div></label>
+                <label class="span-2 contractual-only" data-contractual hidden>Annual interest rate<div class="input-group"><input class="text-input" type="number" name="annualRate" min="0" step="0.01" value="10"><span class="suffix">%</span></div></label>
+                <label>Due date<input class="text-input" type="date" name="startDate"></label>
+                <label>Calculation date<input class="text-input" type="date" name="endDate" value="${today}"></label>
+                <button class="dark-button span-2" type="submit">Calculate interest</button>
+              </form>
+            </div>
+            <details class="provision">
+              <summary>BIF Act s 73 — interest on overdue progress payments</summary>
+              <div class="provision-body">
+                <p>(1) A progress payment becomes payable — (a) on the day it becomes payable under the contract; or (b) 10 business days after the payment claim is made if the contract is silent.</p>
+                <p>(2) Interest is payable at the greater of the contract rate or the rate prescribed under the <em>Civil Proceedings Act 2011</em> s 59(3) for a money order debt.</p>
+                <p>(3) For a building contract under the <em>QBCC Act 1991</em> s 67P, interest is payable at the penalty rate under that section (10% + RBA cash rate).</p>
+              </div>
+            </details>
+          </div>
+          <div id="interest-result-card" class="card">${interestPlaceholder()}</div>
+        </div>
+      </div>
+    `);
+  }
+
+  function interestPlaceholder() {
+    return `<div class="card-body interest-placeholder">${EmptyState("No calculation yet.", "Enter the unpaid amount and dates, then calculate.")}</div>`;
   }
 
   function bindInterestCalculator() {
     const form = document.querySelector("[data-interest-form]");
     if (!form) return;
+    const tabs = document.querySelectorAll("[data-rate-type]");
+    const contractualField = document.querySelector("[data-contractual]");
+    const typeInput = form.elements.type;
+    tabs.forEach((tab) => tab.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.toggle("active", t === tab));
+      const t = tab.dataset.rateType;
+      typeInput.value = t;
+      contractualField.hidden = t !== "contractual";
+      const card = document.getElementById("interest-result-card");
+      if (card) card.innerHTML = interestPlaceholder();
+    }));
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const mount = document.getElementById("interest-result");
-      mount.innerHTML = `<div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Calculating…</span></div>`;
-      const data = Object.fromEntries(new FormData(form).entries());
+      const card = document.getElementById("interest-result-card");
+      card.innerHTML = `<div class="card-body"><div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Calculating…</span></div></div>`;
       try {
-        const result = await calculateInterest(data);
-        mount.innerHTML = renderInterestResult(result);
+        const data = Object.fromEntries(new FormData(form).entries());
+        const result = await computeInterest(data);
+        card.innerHTML = renderInterestResult(result);
+        card.querySelectorAll("[data-toggle-breakdown]").forEach((b) => b.addEventListener("click", () => {
+          const body = document.getElementById("interest-breakdown-body");
+          if (!body) return;
+          body.hidden = !body.hidden;
+          b.classList.toggle("open", !body.hidden);
+        }));
       } catch (error) {
-        mount.innerHTML = `<div class="error-banner">${escapeHtml(error.message || "Interest calculation failed")}</div>`;
+        card.innerHTML = `<div class="card-body"><div class="error-banner">${escapeHtml(error.message || "Interest calculation failed")}</div></div>`;
       }
     });
   }
 
-  async function calculateInterest(data) {
+  async function computeInterest(data) {
     const principal = Number(data.principal);
     const startDate = parseDate(data.startDate);
     const endDate = parseDate(data.endDate);
-    if (!principal || !startDate || !endDate) throw new Error("Principal and valid dates are required.");
-    if (endDate < startDate) throw new Error("Calculation date must be after the due date.");
+    if (!principal || principal <= 0) throw new Error("Enter the unpaid principal amount.");
+    if (!startDate || !endDate) throw new Error("Enter both the due date and the calculation date.");
+    if (endDate < startDate) throw new Error("The calculation date must be on or after the due date.");
     const days = Math.ceil((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
     if (data.type === "contractual") {
       const annualRate = Number(data.annualRate);
-      if (Number.isNaN(annualRate)) throw new Error("Contractual rate is required.");
-      return { type: "Contractual", principal, days, interest: principal * ((annualRate / 365) / 100) * days, annualRate, startDate, endDate };
+      if (Number.isNaN(annualRate)) throw new Error("Enter the contractual annual rate.");
+      const interest = principal * (annualRate / 100 / 365) * days;
+      return { type: "Contractual", principal, days, interest, startDate, endDate, annualRate };
     }
-    const response = await fetch(`/get_interest_rate?startDate=${startDate.toISOString().slice(0, 10)}&endDate=${endDate.toISOString().slice(0, 10)}`, { credentials: "include" });
+    const sd = startDate.toISOString().slice(0, 10);
+    const ed = endDate.toISOString().slice(0, 10);
+    const response = await fetch(`/get_interest_rate?startDate=${sd}&endDate=${ed}`, { credentials: "include" });
     const ratesData = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(ratesData.detail || "Could not fetch RBA rates.");
+    if (!response.ok) throw new Error(ratesData.detail || "Could not fetch the live RBA cash-rate series.");
+    const dailyRates = (ratesData.dailyRates || []).map((r) => ({ date: r.date, rate: Number(r.rate) }));
+    if (!dailyRates.length) throw new Error("No daily rates returned for that period.");
     let interest = 0;
-    (ratesData.dailyRates || []).forEach((row) => { interest += (principal / 365) * ((10 + Number(row.rate)) / 100); });
-    const rates = (ratesData.dailyRates || []).map((row) => Number(row.rate));
-    return { type: "QBCC Act s 67P", principal, days, interest, startDate, endDate, minRate: rates.length ? Math.min(...rates) : 0, maxRate: rates.length ? Math.max(...rates) : 0, dailyRates: ratesData.dailyRates || [] };
+    dailyRates.forEach((row) => { interest += (principal / 365) * ((10 + row.rate) / 100); });
+    const rates = dailyRates.map((r) => r.rate);
+    return { type: "QBCC s 67P", principal, days, interest, startDate, endDate, minRate: Math.min(...rates), maxRate: Math.max(...rates), dailyRates };
   }
 
   function renderInterestResult(result) {
     const total = result.principal + result.interest;
-    const rateLine = result.type === "QBCC Act s 67P" ? `10% + RBA rate (${result.minRate.toFixed(2)}% to ${result.maxRate.toFixed(2)}%)` : `${result.annualRate.toFixed(2)}% contractual`;
-    const copyText = `Interest: ${formatCurrency(result.interest)}\nTotal: ${formatCurrency(total)}\nRate: ${rateLine}`;
-    return `<div class="calc-result">
-      <span class="calc-result-tag">${escapeHtml(result.type)}</span>
-      <strong>${formatCurrency(result.interest)}</strong>
-      <p>Interest on ${formatCurrency(result.principal)} over ${result.days} days. Total: ${formatCurrency(total)}.</p>
-      <dl>
-        <dt>Rate</dt><dd>${escapeHtml(rateLine)}</dd>
-        <dt>Due date</dt><dd>${formatDate(result.startDate)}</dd>
-        <dt>Calculation date</dt><dd>${formatDate(result.endDate)}</dd>
-      </dl>
-      <button class="ghost-button compact" data-copy-text="${escapeHtml(copyText)}">Copy</button>
-      ${result.dailyRates && result.dailyRates.length ? `<details class="breakdown"><summary>Daily breakdown (${result.dailyRates.length} rows)</summary>
-        <table>
-          <thead><tr><th>Date</th><th>RBA</th><th>Effective</th><th>Daily interest</th></tr></thead>
-          <tbody>${result.dailyRates.slice(0, 200).map((row) => `<tr><td>${escapeHtml(row.date)}</td><td>${Number(row.rate).toFixed(2)}%</td><td>${(10 + Number(row.rate)).toFixed(2)}%</td><td>${formatCurrency((result.principal / 365) * ((10 + Number(row.rate)) / 100))}</td></tr>`).join("")}</tbody>
-        </table>
-      </details>` : ""}
-    </div>`;
-  }
+    const isQbcc = result.type === "QBCC s 67P";
+    const rateRange = isQbcc
+      ? (result.minRate.toFixed(2) === result.maxRate.toFixed(2)
+        ? `${(10 + result.minRate).toFixed(2)}% (10% + ${result.minRate.toFixed(2)}% RBA)`
+        : `${(10 + result.minRate).toFixed(2)}% – ${(10 + result.maxRate).toFixed(2)}%`)
+      : `${result.annualRate.toFixed(2)}%`;
+    const rateDetail = isQbcc
+      ? (result.minRate.toFixed(2) === result.maxRate.toFixed(2) ? "Single RBA cash rate over the period." : "Variable daily rate (10% + RBA cash rate).")
+      : "Contractual rate as entered.";
 
-  /* ---------- Projects ---------- */
-
-  function ProjectPage(kind) {
-    if (kind === "assistant") {
-      return `<div class="section-stack">${ContextSummary()}${ChatPanel({
-        endpoint: "/api/sopal-v2/chat",
-        assistant: true,
-        placeholder: "Ask about project facts, contract wording, notices, claims, schedules or correspondence.",
-        emptyTitle: "Project assistant",
-        emptyBody: "Ask a question. Toggle project context on to include local extracted/pasted context.",
-      })}</div>`;
-    }
-    return ContextManager(kind === "contracts" ? "contracts" : "library");
-  }
-
-  function ContextSummary() {
-    const total = workspace.contracts.length + workspace.library.length;
-    return `<section class="panel compact-panel">
-      <div class="panel-header">
-        <div><h2>Available local context</h2><p>${workspace.contracts.length} contract item${workspace.contracts.length === 1 ? "" : "s"} · ${workspace.library.length} project library item${workspace.library.length === 1 ? "" : "s"}</p></div>
-        <div class="panel-actions">
-          ${total ? `<button class="ghost-button compact" type="button" data-toggle-context-preview>Preview context</button>` : ""}
-          <a class="link-button" href="/sopal-v2/projects/contracts" data-nav>Manage</a>
-        </div>
-      </div>
-      <div class="panel-body context-preview" data-context-preview hidden>
-        ${total
-          ? [...workspace.contracts.map((d) => ({ ...d, kind: "contract" })), ...workspace.library.map((d) => ({ ...d, kind: "library" }))]
-              .map((d) => `<details><summary><strong>${escapeHtml(d.name)}</strong> <span class="muted">${d.kind} · ${d.text.length.toLocaleString()} chars</span></summary><pre>${escapeHtml(d.text.slice(0, 4000))}${d.text.length > 4000 ? "\n…" : ""}</pre></details>`).join("")
-          : EmptyState("No context yet.", "Add contracts or project library items to make the assistant context-aware.")}
-      </div>
-    </section>`;
-  }
-
-  function ContextManager(bucket) {
-    const label = bucket === "contracts" ? "Contracts" : "Project Library";
-    const helper = bucket === "contracts"
-      ? "Paste contract clauses or extract text from PDF/DOCX/TXT. Becomes browser-local context for the assistant and agents."
-      : "Paste RFIs, correspondence, notices, claims, schedules, programme notes, or extract text from PDF/DOCX/TXT.";
-    setTimeout(() => bindContextManager(bucket), 0);
-    return `
-      <div class="context-layout">
-        <section class="panel">
-          <div class="panel-header"><div><h2>${escapeHtml(label)}</h2><p>${escapeHtml(helper)}</p></div></div>
-          <form class="panel-body context-form" data-context-form="${bucket}">
-            <label>Label<input class="text-input" name="name" placeholder="Document or context name"></label>
-            <label class="span-2">Paste text<textarea class="text-area" name="text" placeholder="Paste clauses, correspondence, claim text, schedule text, or facts."></textarea></label>
-            <div class="file-dropzone span-2">
-              <label>Or extract from PDF/DOCX/TXT<input type="file" data-context-file accept=".pdf,.docx,.txt"></label>
-              <div class="file-list" data-context-file-status>No file selected.</div>
-            </div>
-            <button class="dark-button span-2" type="submit">Save to local context</button>
-          </form>
-        </section>
-        <section class="panel">
-          <div class="panel-header">
-            <div><h2>Saved context</h2><p>Stored in this browser's localStorage.</p></div>
-            ${(workspace[bucket] || []).length ? `<button class="ghost-button compact" type="button" data-clear-context="${bucket}">Clear all</button>` : ""}
+    const breakdown = (result.dailyRates && result.dailyRates.length)
+      ? `<div class="breakdown">
+          <button class="breakdown-toggle" type="button" data-toggle-breakdown>
+            <span>Daily breakdown · ${result.dailyRates.length} day${result.dailyRates.length === 1 ? "" : "s"}</span>
+            <span class="chev">${ICON.chevDown}</span>
+          </button>
+          <div class="breakdown-body" id="interest-breakdown-body" hidden>
+            <table class="breakdown-table">
+              <thead><tr><th>Date</th><th>RBA</th><th>Effective</th><th class="num">Daily interest</th></tr></thead>
+              <tbody>
+                ${result.dailyRates.slice(0, 365).map((row) => {
+                  const eff = (10 + row.rate) / 100;
+                  const day = (result.principal / 365) * eff;
+                  return `<tr><td>${escapeHtml(row.date)}</td><td>${row.rate.toFixed(2)}%</td><td>${(eff * 100).toFixed(2)}%</td><td class="num">${formatCurrencyMicro(day)}</td></tr>`;
+                }).join("")}
+              </tbody>
+            </table>
           </div>
-          <div class="panel-body context-list">${renderContextList(bucket)}</div>
-        </section>
+        </div>`
+      : "";
+
+    const copy = `Calculation summary
+Principal\t${formatCurrencyFull(result.principal)}
+Rate type\t${result.type}
+Rate\t${rateRange}
+Due date\t${formatDate(result.startDate)}
+Calculation date\t${formatDate(result.endDate)}
+Days\t${result.days}
+Interest\t${formatCurrencyFull(result.interest)}
+Total\t${formatCurrencyFull(total)}`;
+
+    return `<div class="card-head"><h3>Result</h3></div>
+      <div class="card-body interest-result">
+        <div class="result-headline">
+          <span class="muted">Interest payable</span>
+          <strong>${formatCurrencyFull(result.interest)}</strong>
+          <span class="muted">on ${formatCurrencyFull(result.principal)} over ${result.days} day${result.days === 1 ? "" : "s"}</span>
+        </div>
+        <table class="result-table">
+          <tbody>
+            <tr><td>Principal</td><td>${formatCurrencyFull(result.principal)}</td></tr>
+            <tr><td>Rate type</td><td>${escapeHtml(result.type)}</td></tr>
+            <tr><td>Annual rate</td><td>${escapeHtml(rateRange)}</td></tr>
+            <tr><td>Rate detail</td><td>${escapeHtml(rateDetail)}</td></tr>
+            <tr><td>Due date</td><td>${escapeHtml(formatDate(result.startDate))}</td></tr>
+            <tr><td>Calculation date</td><td>${escapeHtml(formatDate(result.endDate))}</td></tr>
+            <tr><td>Days</td><td>${result.days}</td></tr>
+            <tr><td>Interest</td><td>${formatCurrencyFull(result.interest)}</td></tr>
+          </tbody>
+        </table>
+        <div class="result-total"><span>Total payable</span><strong>${formatCurrencyFull(total)}</strong></div>
+        <button class="ghost-button compact" type="button" data-copy-text="${attr(copy)}">${ICON.copy}<span>Copy results</span></button>
+        ${breakdown}
       </div>`;
   }
 
-  function renderContextList(bucket) {
-    const items = workspace[bucket] || [];
-    if (!items.length) return EmptyState(`No ${bucket === "contracts" ? "contracts" : "project documents"} saved.`, "Add pasted or extracted text to make agents context-aware.");
-    return items.map((item, index) => `
-      <article class="context-item">
-        <div class="context-item-head">
-          <strong>${escapeHtml(item.name)}</strong>
-          <span class="muted">${item.text.length.toLocaleString()} chars · ${escapeHtml(item.source || "pasted")}</span>
+  /* ---------- Project workspace ---------- */
+
+  function ProjectsListPage() {
+    const projects = projectList();
+    return PageBody(`
+      <div class="page-shell">
+        <div class="page-head">
+          <div><h1 class="page-title">Your projects</h1><p class="page-sub">Each project is one construction contract — head contract or subcontract.</p></div>
+          <button class="dark-button" type="button" data-new-project>${ICON.plus}<span>New project</span></button>
         </div>
-        <details><summary>Preview</summary><pre>${escapeHtml(item.text.slice(0, 2000))}${item.text.length > 2000 ? "\n…" : ""}</pre></details>
-        <div class="context-item-actions">
-          <button class="ghost-button compact" data-copy-text="${escapeHtml(item.text.slice(0, 8000))}" type="button">Copy</button>
-          <button class="ghost-button compact danger" data-remove-context="${bucket}:${index}" type="button">Remove</button>
-        </div>
-      </article>`).join("");
+        ${projects.length === 0 ? `
+          <div class="card-empty">
+            <div class="card-empty-icon">${ICON.file}</div>
+            <h4>Create your first project</h4>
+            <p>Give it a name, the parties, the contract form. Then upload or paste the contract — the assistant and every agent will work in that project's context.</p>
+            <button class="dark-button" type="button" data-new-project>Create project</button>
+          </div>
+        ` : `<div class="project-list">${projects.map((p) => projectRow(p)).join("")}</div>`}
+      </div>
+    `);
   }
 
-  function bindContextManager(bucket) {
+  function ProjectOverviewPage(projectId) {
+    const project = getProject(projectId);
+    if (!project) return notFoundPage();
+    const recentChats = Object.entries(project.chats || {})
+      .filter(([, c]) => Array.isArray(c.messages) && c.messages.length > 0)
+      .sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0))
+      .slice(0, 5);
+    setTimeout(() => bindProjectActions(projectId), 0);
+    return PageBody(`
+      <div class="page-shell">
+        <div class="page-head">
+          <div><h1 class="page-title">${escapeHtml(project.name)}</h1><p class="page-sub">${escapeHtml([project.reference, project.contractForm, [project.claimant, project.respondent].filter(Boolean).join(" v ")].filter(Boolean).join(" · ") || "Bespoke contract")}</p></div>
+          <div class="page-actions">
+            <button class="ghost-button compact" type="button" data-edit-project>Edit details</button>
+            <button class="ghost-button compact danger" type="button" data-delete-project="${attr(project.id)}">${ICON.trash}<span>Delete</span></button>
+          </div>
+        </div>
+        <div class="project-grid">
+          <section class="card">
+            <div class="card-head"><h3>Project details</h3></div>
+            <div class="card-body">
+              <dl class="kv">
+                <dt>Project name</dt><dd>${escapeHtml(project.name)}</dd>
+                <dt>Contract form</dt><dd>${escapeHtml(project.contractForm)}</dd>
+                <dt>Reference</dt><dd>${escapeHtml(project.reference || "—")}</dd>
+                <dt>Claimant</dt><dd>${escapeHtml(project.claimant || "—")}</dd>
+                <dt>Respondent</dt><dd>${escapeHtml(project.respondent || "—")}</dd>
+                <dt>You are</dt><dd>${escapeHtml(project.userIsParty === "respondent" ? "Respondent" : "Claimant")}</dd>
+              </dl>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-head"><h3>Documents</h3></div>
+            <div class="card-body">
+              <div class="metric-grid compact">
+                <div class="metric"><strong>${project.contracts.length}</strong><span>contract docs</span></div>
+                <div class="metric"><strong>${project.library.length}</strong><span>library items</span></div>
+                <div class="metric"><strong>${(project.contracts.reduce((s, d) => s + (d.text || "").length, 0) + project.library.reduce((s, d) => s + (d.text || "").length, 0)).toLocaleString()}</strong><span>chars indexed</span></div>
+              </div>
+              <div class="quick-link-row">
+                <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/contract" data-nav>Open contract</a>
+                <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/library" data-nav>Open library</a>
+                <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/assistant" data-nav>Open assistant</a>
+              </div>
+            </div>
+          </section>
+          <section class="card span-all">
+            <div class="card-head"><h3>Recent conversations</h3></div>
+            <div class="card-body">
+              ${recentChats.length === 0
+                ? EmptyState("No conversations yet.", "Open the assistant or any agent to start a conversation in this project.")
+                : `<div class="recent-list">${recentChats.map(([key, h]) => recentChatRow(project, key, h)).join("")}</div>`}
+            </div>
+          </section>
+        </div>
+      </div>
+    `);
+  }
+
+  function recentChatRow(project, key, h) {
+    let label, href;
+    if (key === "assistant") { label = "Assistant"; href = `/sopal-v2/projects/${project.id}/assistant`; }
+    else if (key.startsWith("agent:")) {
+      const [, agentKey, mode] = key.split(":");
+      label = `${AGENT_LABELS[agentKey] || agentKey} · ${mode}`;
+      href = `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=${mode}`;
+    } else { label = key; href = `/sopal-v2/projects/${project.id}/assistant`; }
+    const last = h.messages[h.messages.length - 1] || {};
+    return `<a class="recent-item" href="${href}" data-nav>
+      <strong>${escapeHtml(label)}</strong>
+      <span class="muted">${escapeHtml((last.content || "").slice(0, 130))}${(last.content || "").length > 130 ? "…" : ""}</span>
+    </a>`;
+  }
+
+  function bindProjectActions(projectId) {
+    document.querySelector("[data-edit-project]")?.addEventListener("click", () => openProjectModal(projectId));
+    document.querySelectorAll("[data-delete-project]").forEach((b) => b.addEventListener("click", () => {
+      if (!confirm("Delete this project and all its conversations and context?")) return;
+      deleteProject(b.dataset.deleteProject);
+      navigate("/sopal-v2/projects");
+    }));
+  }
+
+  function notFoundPage() {
+    return PageBody(`<div class="page-shell">${EmptyState("Project not found.", "It may have been deleted. Return to the project list.", `<a class="ghost-button compact" href="/sopal-v2/projects" data-nav>Open projects</a>`)}</div>`);
+  }
+
+  function ContextPage(projectId, bucket) {
+    const project = getProject(projectId);
+    if (!project) return notFoundPage();
+    const items = project[bucket] || [];
+    const labels = bucket === "contracts" ? { single: "Contract", title: "Contract documents", helper: "Paste contract clauses or extract text from PDF/DOCX/TXT. The assistant and every agent in this project will see this content." } : { single: "Project document", title: "Project library", helper: "Paste correspondence, RFIs, claims, schedules, programme notes — or extract from PDF/DOCX/TXT." };
+    setTimeout(() => bindContextManager(projectId, bucket), 0);
+    return PageBody(`
+      <div class="page-shell">
+        <h1 class="page-title">${escapeHtml(labels.title)}</h1>
+        <p class="page-sub">${escapeHtml(labels.helper)} Stored in this browser only.</p>
+        <div class="context-grid">
+          <div class="card">
+            <div class="card-head"><h3>Add ${escapeHtml(labels.single.toLowerCase())}</h3></div>
+            <form class="card-body context-form" data-context-form="${bucket}">
+              <label class="span-2">Label<input class="text-input" name="name" placeholder="e.g. Head contract — clauses 1-12"></label>
+              <label class="span-2">Paste text<textarea class="text-area" name="text" rows="8" placeholder="Paste clauses, correspondence, claim text, schedule text, or facts."></textarea></label>
+              <div class="file-zone span-2">
+                <label class="file-zone-label">${ICON.upload}<span>Click or drop to extract from PDF / DOCX / TXT</span><input type="file" data-context-file accept=".pdf,.docx,.txt"></label>
+                <div class="muted file-status" data-context-file-status>No file selected.</div>
+              </div>
+              <button class="dark-button span-2" type="submit">${ICON.plus}<span>Add to project</span></button>
+            </form>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h3>Saved (${items.length})</h3></div>${items.length ? `<button class="ghost-button compact danger" type="button" data-clear-context="${bucket}">Clear all</button>` : ""}</div>
+            <div class="card-body context-list">
+              ${items.length === 0 ? EmptyState(`No ${labels.single.toLowerCase()} yet.`, "Add pasted or extracted text to make agents context-aware.") : items.map((item, i) => `
+                <article class="context-item">
+                  <div class="context-item-head">
+                    <strong>${escapeHtml(item.name)}</strong>
+                    <span class="muted">${item.text.length.toLocaleString()} chars · ${escapeHtml(item.source || "pasted")}</span>
+                  </div>
+                  <details><summary>Preview</summary><pre>${escapeHtml(item.text.slice(0, 2000))}${item.text.length > 2000 ? "\n…" : ""}</pre></details>
+                  <div class="context-item-actions">
+                    <button class="ghost-button compact" type="button" data-copy-text="${attr(item.text.slice(0, 8000))}">${ICON.copy}<span>Copy</span></button>
+                    <button class="ghost-button compact danger" type="button" data-remove-context="${attr(bucket)}:${i}">Remove</button>
+                  </div>
+                </article>`).join("")}
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+
+  function bindContextManager(projectId, bucket) {
     const form = document.querySelector(`[data-context-form="${bucket}"]`);
     if (!form) return;
     const fileInput = form.querySelector("[data-context-file]");
@@ -1117,113 +1486,178 @@
       event.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
       if (!data.text || !String(data.text).trim()) return;
-      workspace[bucket].push({
-        name: String(data.name || extracted?.filename || "Untitled context"),
+      const project = getProject(projectId);
+      if (!project) return;
+      project[bucket].push({
+        name: String(data.name || extracted?.filename || "Untitled"),
         text: String(data.text).trim(),
         source: extracted ? "extracted file + paste" : "pasted",
-        createdAt: new Date().toISOString(),
+        addedAt: new Date().toISOString(),
       });
-      saveWorkspace();
+      saveProject(project);
       render();
     });
   }
 
-  function allContextText() {
-    const contractText = workspace.contracts.map((d) => `Contract: ${d.name}\n${d.text}`).join("\n\n---\n\n");
-    const libraryText = workspace.library.map((d) => `Project document: ${d.name}\n${d.text}`).join("\n\n---\n\n");
+  /* ---------- Project Assistant + Agents (Astruct-inspired chat) ---------- */
+
+  function projectContextString(project) {
+    const contractText = project.contracts.map((d) => `Contract: ${d.name}\n${d.text}`).join("\n\n---\n\n");
+    const libraryText = project.library.map((d) => `Project document: ${d.name}\n${d.text}`).join("\n\n---\n\n");
     return [contractText, libraryText].filter(Boolean).join("\n\n===\n\n").slice(0, 40000);
   }
 
-  /* ---------- Agents ---------- */
+  function AssistantPage(projectId) {
+    const project = getProject(projectId);
+    if (!project) return notFoundPage();
+    const opts = {
+      project,
+      chatKey: "assistant",
+      endpoint: "/api/sopal-v2/chat",
+      title: project.name,
+      titleSub: "Project assistant",
+      placeholder: `Ask anything about ${project.name}…`,
+      starters: SCENARIO_STARTERS.assistant,
+      contextDefaultOn: project.contracts.length + project.library.length > 0,
+    };
+    setTimeout(() => bindChatPanel(opts), 0);
+    return PageBody(ChatPage(opts));
+  }
 
-  function AgentPage(agentKey) {
+  function AgentPage(projectId, agentKey) {
+    const project = getProject(projectId);
+    if (!project) return notFoundPage();
+    if (!AGENT_KEYS.includes(agentKey)) return notFoundPage();
     const params = new URLSearchParams(window.location.search);
     const mode = params.get("mode") === "draft" ? "draft" : "review";
-    const label = agentLabels[agentKey] || "Agent";
-    const starters = scenarioStarters[`${agentKey}:${mode}`] || [];
-    return `
-      <div class="agent-layout">
-        <section class="panel agent-brief">
-          <div class="panel-header">
-            <div><h2>${escapeHtml(label)}</h2><p>${escapeHtml(agentDescriptions[agentKey] || "")}</p></div>
-            <div class="mode-tabs" role="tablist" aria-label="Agent mode">
-              <button class="mode-tab ${mode === "review" ? "active" : ""}" data-go="/sopal-v2/agents/${agentKey}?mode=review" type="button">Review</button>
-              <button class="mode-tab ${mode === "draft" ? "active" : ""}" data-go="/sopal-v2/agents/${agentKey}?mode=draft" type="button">Draft</button>
-            </div>
-          </div>
-          <div class="panel-body helper-grid">
-            <div>
-              <strong>What to include</strong>
-              <ul>${(includeLists[agentKey] || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
-            </div>
-            <div>
-              <strong>Quick starters</strong>
-              <div class="chip-row">
-                ${starters.map((s) => `<button class="chip" type="button" data-starter="${escapeHtml(s)}">${escapeHtml(s.length > 80 ? s.slice(0, 78) + "…" : s)}</button>`).join("")}
-              </div>
-            </div>
-          </div>
-        </section>
-        ${ChatPanel({
-          endpoint: "/api/sopal-v2/agent",
-          agentType: agentKey,
-          mode,
-          placeholder: mode === "review"
-            ? "Paste the document, key dates, contract clauses, and facts to review."
-            : "Describe what needs drafting and paste the relevant project/contract facts.",
-          emptyTitle: `${label} — ${mode === "review" ? "Review" : "Draft"}`,
-          emptyBody: "Submit pasted/extracted material for an AI response. Toggle local project context if relevant.",
-        })}
-      </div>`;
+    const opts = {
+      project,
+      chatKey: `agent:${agentKey}:${mode}`,
+      endpoint: "/api/sopal-v2/agent",
+      agentKey,
+      mode,
+      title: AGENT_LABELS[agentKey],
+      titleSub: AGENT_DESCRIPTIONS[agentKey],
+      placeholder: mode === "review"
+        ? "Paste the document, key dates, contract clauses, and facts you want reviewed."
+        : "Describe what needs drafting and paste the relevant project / contract facts.",
+      starters: SCENARIO_STARTERS[mode] || [],
+      contextDefaultOn: project.contracts.length + project.library.length > 0,
+      includeList: INCLUDE_LISTS[agentKey] || [],
+    };
+    setTimeout(() => bindChatPanel(opts), 0);
+    return PageBody(ChatPage(opts));
   }
 
-  /* ---------- Chat panel ---------- */
-
-  function ChatPanel(options) {
-    const id = `chat-${Math.random().toString(36).slice(2)}`;
-    setTimeout(() => bindChatPanel(id, options), 0);
-    const contextAvailable = workspace.contracts.length + workspace.library.length > 0;
-    const key = chatKey(options);
-    const history = (chatHistory[key] && chatHistory[key].messages) || [];
-    return `
-      <section class="chat-panel" id="${id}" data-chat-key="${escapeHtml(key)}">
-        <div class="message-area" data-message-area>
-          <div class="message-stack" data-messages>
-            ${history.length ? history.map((m) => renderMessage(m.role === "user" ? "You" : "Sopal", m.content, m.role, m.role === "assistant")).join("") : EmptyState(options.emptyTitle || "No conversation yet.", options.emptyBody || "Start with typed instructions or pasted text.")}
+  function ChatPage(opts) {
+    const { project, agentKey, mode, includeList, starters } = opts;
+    const chat = projectChat(project, opts.chatKey);
+    const isEmpty = !chat.messages.length;
+    const modeTabs = agentKey ? `
+      <div class="mode-tabs" role="tablist" aria-label="Agent mode">
+        <button class="mode-tab ${mode === "review" ? "active" : ""}" type="button" data-go="/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=review">Review</button>
+        <button class="mode-tab ${mode === "draft" ? "active" : ""}" type="button" data-go="/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft">Draft</button>
+      </div>` : "";
+    const helperPanel = agentKey ? `
+      <aside class="helper-panel">
+        <div class="helper-card">
+          <h4>What to include</h4>
+          <ul>${(includeList || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>
+        </div>
+        <div class="helper-card">
+          <h4>Project context</h4>
+          <p class="muted">${project.contracts.length} contract doc${project.contracts.length === 1 ? "" : "s"} · ${project.library.length} library item${project.library.length === 1 ? "" : "s"}</p>
+          <div class="helper-actions">
+            <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/contract" data-nav>Manage contract</a>
+            <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/library" data-nav>Manage library</a>
           </div>
         </div>
-        <form class="composer" data-chat-form>
-          <div class="composer-inner">
-            <div class="composer-options">
-              <label class="check"><input type="checkbox" name="useContext" ${contextAvailable ? "checked" : ""} ${contextAvailable ? "" : "disabled"}> Project context (${workspace.contracts.length + workspace.library.length})</label>
-              <label class="file-inline"><span class="ghost-button compact">Attach file</span><input type="file" data-chat-file accept=".pdf,.docx,.txt"></label>
-              <span class="muted" data-chat-file-status></span>
-            </div>
-            <textarea class="text-area auto-grow" name="message" placeholder="${escapeHtml(options.placeholder || "Type your message")}" rows="3"></textarea>
-            <div class="composer-footer">
-              <span class="kbd-hint muted">⌘/Ctrl + Enter to send</span>
-              <div>
-                <button class="ghost-button compact" type="button" data-clear-chat>Clear</button>
-                <button class="send-button" type="submit">Send</button>
-              </div>
-            </div>
-            <div class="status-line" data-status></div>
-          </div>
-        </form>
-      </section>`;
+      </aside>` : "";
+
+    const header = `
+      <div class="chat-page-head">
+        <div>
+          <h1 class="page-title">${escapeHtml(opts.title)}</h1>
+          <p class="page-sub">${escapeHtml(opts.titleSub)}</p>
+        </div>
+        ${modeTabs}
+      </div>`;
+
+    return `
+      <div class="page-shell chat-shell">
+        ${header}
+        <div class="chat-layout ${agentKey ? "with-helper" : ""}">
+          <section class="chat-pane" data-chat-pane>
+            ${isEmpty ? renderEmptyComposer(opts) : renderActiveChat(opts, chat)}
+          </section>
+          ${helperPanel}
+        </div>
+      </div>
+    `;
   }
 
-  function bindChatPanel(id, options) {
-    const panel = document.getElementById(id);
-    if (!panel) return;
-    const form = panel.querySelector("[data-chat-form]");
-    const messageArea = panel.querySelector("[data-message-area]");
-    const messages = panel.querySelector("[data-messages]");
-    const status = panel.querySelector("[data-status]");
+  function renderEmptyComposer(opts) {
+    const { project, starters, placeholder, contextDefaultOn } = opts;
+    return `
+      <div class="chat-empty">
+        <h2 class="chat-empty-title">${escapeHtml(opts.agentKey ? AGENT_LABELS[opts.agentKey] : "Sopal")}</h2>
+        <p class="chat-empty-sub">${escapeHtml(opts.titleSub)}</p>
+        ${composerCard(opts, /* compact */ false, contextDefaultOn)}
+        <div class="starter-chips">
+          ${(starters || []).map((s) => `<button class="starter-chip" type="button" data-starter="${attr(s)}">${escapeHtml(s)}</button>`).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderActiveChat(opts, chat) {
+    return `
+      <div class="chat-stream-wrap">
+        <div class="chat-stream" data-message-area>
+          <div class="message-stack" data-messages>
+            ${chat.messages.map((m) => renderMessage(m.role, m.content, m.role === "assistant")).join("")}
+          </div>
+        </div>
+      </div>
+      ${composerCard(opts, /* compact */ true, opts.contextDefaultOn)}
+    `;
+  }
+
+  function composerCard(opts, compact, contextOn) {
+    const { project } = opts;
+    const ctxCount = project.contracts.length + project.library.length;
+    const baseCls = compact ? "composer-active" : "composer-card";
+    return `
+      <form class="${baseCls}" data-chat-form>
+        <div class="composer-row">
+          <button class="icon-button" type="button" data-attach-trigger title="Attach file">${ICON.paperclip}</button>
+          <textarea class="text-area auto-grow" name="message" rows="${compact ? 1 : 3}" placeholder="${attr(opts.placeholder || "Type a message…")}"></textarea>
+          <button class="send-button" type="submit" aria-label="Send">${ICON.send}</button>
+          <input type="file" hidden data-chat-file accept=".pdf,.docx,.txt">
+        </div>
+        <div class="composer-meta">
+          <label class="check"><input type="checkbox" name="useContext" ${ctxCount ? (contextOn ? "checked" : "") : "disabled"}><span>Project context (${ctxCount})</span></label>
+          <span class="muted" data-chat-file-status></span>
+          <span class="muted kbd-hint">⌘ / Ctrl + Enter to send</span>
+        </div>
+      </form>`;
+  }
+
+  function bindChatPanel(opts) {
+    const pane = document.querySelector("[data-chat-pane]");
+    if (!pane) return;
+    bindChatForm(pane, opts);
+  }
+
+  function bindChatForm(pane, opts) {
+    const form = pane.querySelector("[data-chat-form]");
+    if (!form) return;
     const textarea = form.elements.message;
-    const fileInput = panel.querySelector("[data-chat-file]");
-    const fileStatus = panel.querySelector("[data-chat-file-status]");
-    const key = panel.dataset.chatKey;
+    const fileInput = form.querySelector("[data-chat-file]");
+    const fileStatus = form.querySelector("[data-chat-file-status]");
+    const messages = pane.querySelector("[data-messages]");
+    const messageArea = pane.querySelector("[data-message-area]");
+
     let extractedFile = null;
 
     autoGrow(textarea);
@@ -1235,6 +1669,13 @@
       }
     });
 
+    pane.querySelectorAll("[data-starter]").forEach((b) => b.addEventListener("click", () => {
+      textarea.value = b.dataset.starter;
+      autoGrow(textarea);
+      textarea.focus();
+    }));
+
+    pane.querySelector("[data-attach-trigger]")?.addEventListener("click", () => fileInput?.click());
     fileInput?.addEventListener("change", async (event) => {
       const file = event.target.files && event.target.files[0];
       if (!file) return;
@@ -1253,228 +1694,321 @@
       }
     });
 
-    panel.querySelector("[data-clear-chat]")?.addEventListener("click", () => {
-      delete chatHistory[key];
-      saveChatHistory();
-      messages.innerHTML = EmptyState(options.emptyTitle || "No conversation yet.", options.emptyBody || "Start with typed instructions or pasted text.");
-      status.textContent = "";
-    });
-
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const message = textarea.value.trim();
-      if (!message) { status.textContent = "Enter text before sending."; return; }
+      if (!message) return;
 
-      // Append to UI + history
-      if (messages.querySelector(".empty-state")) messages.innerHTML = "";
-      messages.insertAdjacentHTML("beforeend", renderMessage("You", message, "user"));
+      const project = getProject(opts.project.id);
+      if (!project) return;
+      const chat = projectChat(project, opts.chatKey);
+      const wasEmpty = chat.messages.length === 0;
+
+      chat.messages.push({ role: "user", content: message, at: Date.now() });
+      chat.updatedAt = Date.now();
+      saveProject(project);
+
+      // If the chat was empty we need to morph the empty composer into the active layout.
+      if (wasEmpty) {
+        pane.innerHTML = renderActiveChat({ ...opts, contextDefaultOn: form.elements.useContext.checked }, chat);
+        bindChatForm(pane, opts);
+        return continueGeneration(pane, opts, message, form.elements.useContext.checked, extractedFile);
+      }
+
+      // Active layout already in DOM — append messages directly.
       const placeholderId = `msg-${Math.random().toString(36).slice(2)}`;
+      messages.insertAdjacentHTML("beforeend", renderMessage("user", message));
       messages.insertAdjacentHTML("beforeend", `
-        <div class="message assistant" id="${placeholderId}">
-          <div class="avatar">S</div>
-          <div class="message-body">
-            <div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Sopal is thinking…</span></div>
-          </div>
+        <div class="message msg-assistant" id="${placeholderId}">
+          <div class="message-body"><div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Sopal is working…</span></div></div>
         </div>`);
-      scrollMessagesToBottom(messageArea);
-
-      const userEntry = { role: "user", content: message, at: Date.now() };
-      chatHistory[key] = chatHistory[key] || { messages: [] };
-      chatHistory[key].messages.push(userEntry);
-      chatHistory[key].updatedAt = Date.now();
-      saveChatHistory();
-
       textarea.value = "";
       autoGrow(textarea);
-      status.textContent = "";
-
-      const useContext = form.elements.useContext && form.elements.useContext.checked;
-      const projectContext = useContext ? allContextText() : "";
+      scrollToBottom(messageArea);
 
       try {
-        const response = await fetch(options.endpoint, {
-          method: "POST",
-          headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
-          credentials: "include",
-          body: JSON.stringify({
-            agentType: options.agentType || null,
-            mode: options.mode || null,
-            message,
-            projectContext,
-            files: extractedFile ? [{ name: extractedFile.filename, characters: extractedFile.characters }] : [],
-          }),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.detail || data.error || "AI request failed");
-
-        const assistantEntry = { role: "assistant", content: data.answer || "", at: Date.now() };
-        chatHistory[key].messages.push(assistantEntry);
-        chatHistory[key].updatedAt = Date.now();
-        saveChatHistory();
-
+        const data = await callAi(opts, message, form.elements.useContext.checked, extractedFile, project);
+        chat.messages.push({ role: "assistant", content: data.answer || "", at: Date.now() });
+        chat.updatedAt = Date.now();
+        saveProject(project);
         const placeholder = document.getElementById(placeholderId);
-        if (placeholder) placeholder.outerHTML = renderMessage("Sopal", data.answer || "", "assistant", true);
-        status.textContent = "";
-        scrollMessagesToBottom(messageArea);
+        if (placeholder) placeholder.outerHTML = renderMessage("assistant", data.answer || "", true);
+        scrollToBottom(messageArea);
       } catch (error) {
         const placeholder = document.getElementById(placeholderId);
-        const errMsg = error.message || "AI request failed";
-        if (placeholder) placeholder.outerHTML = `<div class="message assistant"><div class="avatar">S</div><div class="message-body"><div class="error-banner">${escapeHtml(errMsg)}</div></div></div>`;
-        scrollMessagesToBottom(messageArea);
+        const msg = error.message || "AI request failed";
+        if (placeholder) placeholder.outerHTML = `<div class="message msg-assistant"><div class="message-body"><div class="error-banner">${escapeHtml(msg)}</div></div></div>`;
+        scrollToBottom(messageArea);
       }
     });
   }
 
-  function autoGrow(textarea) {
-    textarea.style.height = "auto";
-    const max = 280;
-    textarea.style.height = `${Math.min(max, textarea.scrollHeight)}px`;
+  async function continueGeneration(pane, opts, message, useContext, extractedFile) {
+    const messages = pane.querySelector("[data-messages]");
+    const messageArea = pane.querySelector("[data-message-area]");
+    const placeholderId = `msg-${Math.random().toString(36).slice(2)}`;
+    if (messages) {
+      messages.insertAdjacentHTML("beforeend", `
+        <div class="message msg-assistant" id="${placeholderId}">
+          <div class="message-body"><div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Sopal is working…</span></div></div>
+        </div>`);
+      scrollToBottom(messageArea);
+    }
+    try {
+      const project = getProject(opts.project.id);
+      const data = await callAi(opts, message, useContext, extractedFile, project);
+      const chat = projectChat(project, opts.chatKey);
+      chat.messages.push({ role: "assistant", content: data.answer || "", at: Date.now() });
+      chat.updatedAt = Date.now();
+      saveProject(project);
+      const placeholder = document.getElementById(placeholderId);
+      if (placeholder) placeholder.outerHTML = renderMessage("assistant", data.answer || "", true);
+      scrollToBottom(messageArea);
+    } catch (error) {
+      const placeholder = document.getElementById(placeholderId);
+      const msg = error.message || "AI request failed";
+      if (placeholder) placeholder.outerHTML = `<div class="message msg-assistant"><div class="message-body"><div class="error-banner">${escapeHtml(msg)}</div></div></div>`;
+      scrollToBottom(messageArea);
+    }
   }
 
-  function scrollMessagesToBottom(area) {
-    if (!area) return;
-    requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+  async function callAi(opts, message, useContext, extractedFile, project) {
+    const projectContext = useContext && project ? projectContextString(project) : "";
+    const projectMeta = project ? `Project: ${project.name}\nContract form: ${project.contractForm}${project.reference ? `\nReference: ${project.reference}` : ""}${project.claimant || project.respondent ? `\nParties: ${project.claimant || "(claimant)"} v ${project.respondent || "(respondent)"}` : ""}\nUser is: ${project.userIsParty || "claimant"}` : "";
+    const fullContext = [projectMeta, projectContext].filter(Boolean).join("\n\n---\n\n");
+    const response = await fetch(opts.endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        agentType: opts.agentKey || null,
+        mode: opts.mode || null,
+        message,
+        projectContext: fullContext,
+        files: extractedFile ? [{ name: extractedFile.filename, characters: extractedFile.characters }] : [],
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.detail || data.error || "AI request failed");
+    return data;
   }
 
-  function renderMessage(name, content, role, withActions) {
-    const body = role === "assistant" ? renderMarkdown(content) : `<p>${escapeHtml(content).replace(/\n/g, "<br>")}</p>`;
-    return `<div class="message ${role}">
-      <div class="avatar">${role === "assistant" ? "S" : "You"}</div>
+  function renderMessage(role, content, withActions) {
+    if (role === "user") {
+      const safe = escapeHtml(content || "").replace(/\n/g, "<br>");
+      return `<div class="message msg-user"><div class="bubble">${safe}</div></div>`;
+    }
+    return `<div class="message msg-assistant">
       <div class="message-body">
-        <div class="message-content" aria-label="${escapeHtml(name)} message">${body}</div>
-        ${withActions ? `<div class="message-actions">
-          <button class="ghost-button compact" data-copy-text="${escapeHtml(content)}" type="button">Copy</button>
-        </div>` : ""}
+        <div class="md">${renderMarkdown(content || "")}</div>
+        ${withActions ? `<div class="message-actions"><button class="ghost-button compact" type="button" data-copy-text="${attr(content || "")}">${ICON.copy}<span>Copy</span></button></div>` : ""}
       </div>
     </div>`;
   }
 
-  /* ---------- Sign in modal ---------- */
+  function autoGrow(textarea) {
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    const max = 220;
+    textarea.style.height = `${Math.min(max, textarea.scrollHeight)}px`;
+  }
+  function scrollToBottom(area) {
+    if (!area) return;
+    requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+  }
 
-  function openSignInModal() {
+  /* ---------- New / Edit project modal ---------- */
+
+  function openProjectModal(editId) {
+    const editing = editId ? getProject(editId) : null;
     modal = {
       render: () => `
         <div class="modal-backdrop" data-modal-backdrop>
-          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-            <div class="modal-header">
-              <h2 id="modal-title">Sign in to Sopal</h2>
-              <button class="ghost-button compact" type="button" data-modal-close aria-label="Close">×</button>
+          <div class="modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+              <h2>${editing ? "Edit project" : "New project"}</h2>
+              <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
             </div>
-            <form class="modal-body" data-sign-in-form>
-              <label>Email<input class="text-input" type="email" name="username" autocomplete="email" required autofocus></label>
-              <label>Password<input class="text-input" type="password" name="password" autocomplete="current-password" required></label>
-              <div class="modal-error" data-modal-error hidden></div>
+            <form class="modal-body" data-project-form>
+              <label>Project name<input class="text-input" name="name" required value="${attr(editing?.name || "")}" placeholder="e.g. Queen Street Tower"></label>
+              <div class="row-2">
+                <label>Claimant<input class="text-input" name="claimant" value="${attr(editing?.claimant || "")}" placeholder="e.g. Acme Builders Pty Ltd"></label>
+                <label>Respondent<input class="text-input" name="respondent" value="${attr(editing?.respondent || "")}" placeholder="e.g. ABC Developments Pty Ltd"></label>
+              </div>
+              <div class="row-2">
+                <label>Contract form
+                  <select class="select-input" name="contractForm">
+                    ${CONTRACT_FORMS.map((f) => `<option value="${attr(f)}" ${editing && editing.contractForm === f ? "selected" : ""}>${escapeHtml(f)}</option>`).join("")}
+                  </select>
+                </label>
+                <label>Reference / contract no.<input class="text-input" name="reference" value="${attr(editing?.reference || "")}" placeholder="e.g. PO-2024-014"></label>
+              </div>
+              <div class="row-2">
+                <label class="span-all">You act for
+                  <div class="radio-group">
+                    <label class="radio-option"><input type="radio" name="userIsParty" value="claimant" ${(!editing || editing.userIsParty === "claimant") ? "checked" : ""}>The claimant</label>
+                    <label class="radio-option"><input type="radio" name="userIsParty" value="respondent" ${editing && editing.userIsParty === "respondent" ? "checked" : ""}>The respondent</label>
+                  </div>
+                </label>
+              </div>
               <div class="modal-actions">
-                <a class="link-button" href="https://sopal.com.au/login" target="_blank" rel="noopener">Create account</a>
-                <button class="dark-button" type="submit">Sign in</button>
+                <button class="ghost-button" type="button" data-modal-close>Cancel</button>
+                <button class="dark-button" type="submit">${editing ? "Save changes" : "Create project"}</button>
               </div>
             </form>
           </div>
         </div>`,
       bind: (rootEl) => {
-        const closeFn = () => { modal = null; render(); };
-        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) closeFn(); });
-        rootEl.querySelector("[data-modal-close]")?.addEventListener("click", closeFn);
-        rootEl.querySelector("[data-sign-in-form]")?.addEventListener("submit", async (event) => {
+        const close = () => { modal = null; render(); };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        rootEl.querySelector("[data-project-form]")?.addEventListener("submit", (event) => {
           event.preventDefault();
-          const form = event.currentTarget;
-          const error = form.querySelector("[data-modal-error]");
-          error.hidden = true;
-          const fd = new FormData(form);
-          const body = new URLSearchParams();
-          body.set("username", fd.get("username") || "");
-          body.set("password", fd.get("password") || "");
-          form.querySelector("button[type=submit]").disabled = true;
-          try {
-            const r = await fetch("/purchase-login", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body, credentials: "include" });
-            const data = await r.json().catch(() => ({}));
-            if (!r.ok) throw new Error(data.detail || "Sign in failed");
-            if (!data.access_token) throw new Error("No access token returned");
-            localStorage.setItem(TOKEN_KEY, data.access_token);
-            await refreshAuth();
+          const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+          if (editing) {
+            const project = getProject(editing.id);
+            Object.assign(project, {
+              name: (data.name || "").trim() || project.name,
+              claimant: (data.claimant || "").trim(),
+              respondent: (data.respondent || "").trim(),
+              contractForm: data.contractForm,
+              reference: (data.reference || "").trim(),
+              userIsParty: data.userIsParty || "claimant",
+            });
+            saveProject(project);
             modal = null;
             render();
-          } catch (e) {
-            error.textContent = e.message || "Sign in failed";
-            error.hidden = false;
-            form.querySelector("button[type=submit]").disabled = false;
+          } else {
+            const project = createProject(data);
+            modal = null;
+            navigate(`/sopal-v2/projects/${project.id}/overview`);
           }
         });
-        document.addEventListener("keydown", function escListener(ev) {
-          if (ev.key === "Escape") { document.removeEventListener("keydown", escListener); closeFn(); }
+        document.addEventListener("keydown", function handler(ev) {
+          if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); }
         });
       },
     };
     render();
   }
 
-  /* ---------- Shell + render ---------- */
+  /* ---------- Page resolver ---------- */
 
   function pageForRoute(route) {
-    if (route === "home") return HomePage();
-    const parts = route.split("/");
-    if (parts[0] === "research") return ResearchPage(parts[1]);
-    if (parts[0] === "tools") return ToolPage(parts[1]);
-    if (parts[0] === "projects") return ProjectPage(parts[1]);
-    if (parts[0] === "agents") return AgentPage(parts[1]);
-    return HomePage();
+    if (route === "home") return { crumbs: [], body: HomePage() };
+    const parts = route.split("/").filter(Boolean);
+
+    if (parts[0] === "research") {
+      if (parts[1] === "decisions") return { crumbs: [{ label: "Decision search" }], body: DecisionsPage() };
+      if (parts[1] === "adjudicators") return { crumbs: [{ label: "Adjudicator statistics" }], body: AdjudicatorsPage() };
+      return { crumbs: [{ label: "Research" }], body: notFoundPage() };
+    }
+    if (parts[0] === "tools") {
+      if (parts[1] === "due-date-calculator") return { crumbs: [{ label: "Due date calculator" }], body: DueDatePage() };
+      if (parts[1] === "interest-calculator") return { crumbs: [{ label: "Interest calculator" }], body: InterestPage() };
+      return { crumbs: [{ label: "Tools" }], body: notFoundPage() };
+    }
+    if (parts[0] === "projects") {
+      if (!parts[1]) return { crumbs: [{ label: "Your projects" }], body: ProjectsListPage() };
+      const projectId = parts[1];
+      const project = getProject(projectId);
+      const projectCrumb = project ? { label: project.name, href: `/sopal-v2/projects/${projectId}/overview` } : { label: "Project" };
+      const head = [{ label: "Projects", href: "/sopal-v2/projects" }, projectCrumb];
+      if (project) selectProject(projectId);
+      const sub = parts[2] || "overview";
+      if (sub === "overview") return { crumbs: head.concat([{ label: "Overview" }]), body: ProjectOverviewPage(projectId) };
+      if (sub === "contract") return { crumbs: head.concat([{ label: "Contract" }]), body: ContextPage(projectId, "contracts") };
+      if (sub === "library") return { crumbs: head.concat([{ label: "Project library" }]), body: ContextPage(projectId, "library") };
+      if (sub === "assistant") return { crumbs: head.concat([{ label: "Assistant" }]), body: AssistantPage(projectId) };
+      if (sub === "agents") {
+        const agentKey = parts[3];
+        if (!agentKey || !AGENT_KEYS.includes(agentKey)) return { crumbs: head.concat([{ label: "Agents" }]), body: notFoundPage() };
+        return { crumbs: head.concat([{ label: AGENT_LABELS[agentKey] }]), body: AgentPage(projectId, agentKey) };
+      }
+      return { crumbs: head, body: notFoundPage() };
+    }
+    return { crumbs: [], body: HomePage() };
   }
 
-  function SopalV2Shell(route) {
+  /* ---------- Shell + render ---------- */
+
+  function Shell() {
+    const route = cleanPath();
+    const { crumbs, body } = pageForRoute(route);
     return `
-      <div class="sopal-shell">
+      <div class="sopal-shell ${sidebarOpen ? "drawer-open" : ""}">
         ${Sidebar()}
-        <main class="main">
-          ${MainHeader(route)}
-          <div class="content">${pageForRoute(route)}</div>
-          <footer class="footer-disclaimer">Sopal assists with legal and contract analysis but does not replace professional legal advice.</footer>
-        </main>
+        <div class="main">
+          ${MainHeader(crumbs)}
+          ${body}
+        </div>
       </div>
       ${modal ? modal.render() : ""}
+      ${sidebarOpen ? `<div class="mobile-backdrop" data-toggle-sidebar></div>` : ""}
     `;
   }
 
   function bindShellEvents() {
-    document.querySelectorAll("[data-nav]").forEach((link) => link.addEventListener("click", (event) => {
-      const href = link.getAttribute("href");
+    document.querySelectorAll("[data-nav]").forEach((el) => el.addEventListener("click", (event) => {
+      const href = el.getAttribute("href");
       if (!href || !href.startsWith("/sopal-v2")) return;
       event.preventDefault();
       sidebarOpen = false;
+      projectMenuOpen = false;
       navigate(href);
     }));
-    document.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => navigate(b.getAttribute("data-go"))));
-    document.querySelector("[data-toggle-sidebar]")?.addEventListener("click", () => { sidebarOpen = !sidebarOpen; render(); });
-    document.querySelectorAll("[data-sign-in]").forEach((b) => b.addEventListener("click", openSignInModal));
-    document.querySelectorAll("[data-sign-out]").forEach((b) => b.addEventListener("click", signOut));
-    document.querySelectorAll("[data-starter]").forEach((b) => b.addEventListener("click", () => {
-      const ta = document.querySelector(".chat-panel textarea");
-      if (!ta) return;
-      ta.value = b.dataset.starter;
-      autoGrow(ta);
-      ta.focus();
+    document.querySelectorAll("[data-go]").forEach((el) => el.addEventListener("click", () => {
+      sidebarOpen = false;
+      navigate(el.getAttribute("data-go"));
+    }));
+    document.querySelectorAll("[data-toggle-sidebar]").forEach((el) => el.addEventListener("click", () => { sidebarOpen = !sidebarOpen; render(); }));
+    document.querySelectorAll("[data-new-project]").forEach((el) => el.addEventListener("click", () => openProjectModal(null)));
+    document.querySelector("[data-project-menu-toggle]")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      projectMenuOpen = !projectMenuOpen;
+      render();
+    });
+    document.querySelectorAll("[data-select-project]").forEach((el) => el.addEventListener("click", () => {
+      selectProject(el.dataset.selectProject);
+      projectMenuOpen = false;
+      navigate(`/sopal-v2/projects/${el.dataset.selectProject}/overview`);
     }));
     document.querySelectorAll("[data-remove-context]").forEach((b) => b.addEventListener("click", () => {
-      const [bucket, index] = b.dataset.removeContext.split(":");
-      workspace[bucket].splice(Number(index), 1);
-      saveWorkspace();
+      const [bucket, indexStr] = b.dataset.removeContext.split(":");
+      const route = cleanPath().split("/");
+      const projectId = route[1] === "projects" ? route[2] : null;
+      const project = getProject(projectId);
+      if (!project) return;
+      project[bucket].splice(Number(indexStr), 1);
+      saveProject(project);
       render();
     }));
     document.querySelectorAll("[data-clear-context]").forEach((b) => b.addEventListener("click", () => {
       if (!confirm(`Clear all ${b.dataset.clearContext}?`)) return;
-      workspace[b.dataset.clearContext] = [];
-      saveWorkspace();
+      const route = cleanPath().split("/");
+      const projectId = route[1] === "projects" ? route[2] : null;
+      const project = getProject(projectId);
+      if (!project) return;
+      project[b.dataset.clearContext] = [];
+      saveProject(project);
       render();
     }));
-    document.querySelectorAll("[data-toggle-context-preview]").forEach((b) => b.addEventListener("click", () => {
-      const target = document.querySelector("[data-context-preview]");
-      if (!target) return;
-      target.hidden = !target.hidden;
-    }));
+    document.addEventListener("click", closeProjectMenuOnOutside, { once: true });
     if (modal) modal.bind(document);
   }
 
+  function closeProjectMenuOnOutside(event) {
+    if (!projectMenuOpen) return;
+    const menu = document.querySelector(".project-menu");
+    const trigger = document.querySelector("[data-project-menu-toggle]");
+    if (menu && !menu.contains(event.target) && !trigger?.contains(event.target)) {
+      projectMenuOpen = false;
+      render();
+    }
+  }
+
   function render() {
-    root.innerHTML = SopalV2Shell(cleanPath());
+    root.innerHTML = Shell();
     bindShellEvents();
   }
 
@@ -1486,31 +2020,14 @@
 
   window.addEventListener("popstate", render);
   document.addEventListener("click", (event) => {
-    const copyButton = event.target.closest("[data-copy-text]");
-    if (copyButton) {
-      copyText(copyButton.dataset.copyText || "");
-      const original = copyButton.textContent;
-      copyButton.textContent = "Copied";
-      setTimeout(() => { copyButton.textContent = original; }, 1200);
-    }
-    const clickable = event.target.closest("[data-decision-id].clickable");
-    if (clickable && !event.target.closest("button,a,input")) {
-      const id = clickable.dataset.decisionId;
-      const title = clickable.dataset.title;
-      if (id) loadDecisionDetail(id, title);
-    }
-  });
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      const clickable = event.target.closest && event.target.closest("[data-decision-id].clickable");
-      if (clickable && document.activeElement === clickable) {
-        event.preventDefault();
-        loadDecisionDetail(clickable.dataset.decisionId, clickable.dataset.title);
-      }
+    const copyBtn = event.target.closest("[data-copy-text]");
+    if (copyBtn) {
+      copyText(copyBtn.dataset.copyText || "");
+      const original = copyBtn.innerHTML;
+      copyBtn.innerHTML = `${ICON.copy}<span>Copied</span>`;
+      setTimeout(() => { copyBtn.innerHTML = original; }, 1100);
     }
   });
 
-  // Initial render, then refresh auth in the background and re-render header.
   render();
-  refreshAuth().then(() => render());
 })();

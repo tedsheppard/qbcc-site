@@ -280,6 +280,116 @@ async def sopal_v2_chat(payload: SopalV2AgentRequest) -> dict[str, Any]:
     }
 
 
+@router.get("/search")
+async def sopal_v2_search(
+    q: str = "",
+    limit: int = 20,
+    offset: int = 0,
+    sort: str = "relevance",
+    startDate: str | None = None,
+    endDate: str | None = None,
+    minClaim: float | None = None,
+    maxClaim: float | None = None,
+) -> dict[str, Any]:
+    """v2-internal decision search. Same FTS as /search_fast, no auth gate.
+    Owner-controlled v2 sandbox; deferred import keeps routes/sopal_v2.py
+    importable at server boot."""
+    from server import con, preprocess_sqlite_query, normalize_query  # type: ignore
+    import sqlite3
+
+    q_norm = normalize_query(q or "")
+    nq2 = preprocess_sqlite_query(q_norm) if q_norm else ""
+
+    where_clauses: list[str] = [
+        "a.decision_date IS NOT NULL",
+        "a.decision_date != ''",
+        "LOWER(TRIM(a.decision_date)) != 'null'",
+        "a.claimant_name IS NOT NULL",
+        "a.claimant_name != ''",
+        "LOWER(TRIM(a.claimant_name)) != 'not specified'",
+    ]
+    sql_params: list[Any] = []
+
+    if nq2:
+        where_clauses.append("fts MATCH ?")
+        sql_params.append(nq2)
+    if startDate:
+        where_clauses.append("a.decision_date >= ?")
+        sql_params.append(startDate)
+    if endDate:
+        where_clauses.append("a.decision_date <= ?")
+        sql_params.append(endDate)
+    if minClaim is not None:
+        where_clauses.append("CAST(a.claimed_amount AS REAL) >= ?")
+        sql_params.append(minClaim)
+    if maxClaim is not None:
+        where_clauses.append("CAST(a.claimed_amount AS REAL) <= ?")
+        sql_params.append(maxClaim)
+
+    base_join = """
+        FROM fts
+        JOIN docs_fresh d ON fts.rowid = d.rowid
+        LEFT JOIN decision_details a ON d.ejs_id = a.ejs_id
+    """
+    where_sql = f"WHERE {' AND '.join(where_clauses)}"
+
+    if not q_norm and sort == "relevance":
+        sort = "newest"
+    order_clauses = {
+        "newest": "ORDER BY a.decision_date DESC",
+        "oldest": "ORDER BY a.decision_date ASC",
+        "claim_high": "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN -1 ELSE CAST(a.claimed_amount AS REAL) END DESC",
+        "claim_low": "ORDER BY CASE WHEN a.claimed_amount IS NULL OR a.claimed_amount = 'N/A' OR a.claimed_amount = '' THEN 9999999999 ELSE CAST(a.claimed_amount AS REAL) END ASC",
+        "adj_high": "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN -1 ELSE CAST(a.adjudicated_amount AS REAL) END DESC",
+        "adj_low": "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 9999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC",
+    }
+    order_clause = order_clauses.get(sort, "ORDER BY rank")
+
+    snippet_select = "snippet(fts, '<mark>', '</mark>', ' … ', 0, 30)" if nq2 else "substr(d.full_text, 1, 200) || '...'"
+
+    try:
+        total = con.execute(f"SELECT COUNT(DISTINCT fts.rowid) {base_join} {where_sql}", tuple(sql_params)).fetchone()[0]
+        sql = f"""
+            SELECT DISTINCT fts.rowid, {snippet_select} AS snippet,
+                   a.claimant_name, a.respondent_name, a.adjudicator_name,
+                   a.act_category, d.reference, d.pdf_path, d.ejs_id,
+                   a.claimed_amount, a.adjudicated_amount,
+                   a.decision_date
+            {base_join}
+            {where_sql}
+            {order_clause}
+            LIMIT ? OFFSET ?
+        """
+        rows = con.execute(sql, tuple(sql_params) + (limit, offset)).fetchall()
+    except sqlite3.OperationalError as exc:
+        raise HTTPException(status_code=500, detail=f"Search query failed: {exc}") from exc
+
+    items: list[dict[str, Any]] = []
+    for r in rows:
+        d = dict(r)
+        d["id"] = d.get("ejs_id", d.get("rowid"))
+        d["claimant"] = d.get("claimant_name")
+        d["respondent"] = d.get("respondent_name")
+        d["adjudicator"] = d.get("adjudicator_name")
+        d["decision_date_norm"] = d.get("decision_date")
+        d["act"] = d.get("act_category")
+        snippet_raw = r["snippet"]
+        if snippet_raw and len(snippet_raw) > 350:
+            truncated = snippet_raw[:300]
+            last_period = truncated.rfind(".")
+            last_space = truncated.rfind(" ")
+            if last_period > 200:
+                snippet_raw = truncated[: last_period + 1] + " ..."
+            elif last_space > 200:
+                snippet_raw = truncated[:last_space] + " ..."
+            else:
+                snippet_raw = truncated + " ..."
+        d["snippet"] = snippet_raw
+        items.append(d)
+
+    return {"total": total, "items": items}
+
+
 @router.post("/extract")
 async def sopal_v2_extract(file: UploadFile = File(...)) -> dict[str, Any]:
     """Extract text for the local Sopal v2 workspace without persisting files."""
