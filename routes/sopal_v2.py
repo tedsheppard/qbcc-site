@@ -334,43 +334,92 @@ async def sopal_v2_search(
         "adj_high": "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN -1 ELSE CAST(a.adjudicated_amount AS REAL) END DESC",
         "adj_low": "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 9999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC",
     }
-    # FTS5 bm25() must be selected from a query that's *directly* against the FTS
-    # virtual table — no DISTINCT, no JOIN. Pull rowid + bm25 + snippet there,
-    # then join the metadata tables to a derived "hits" subquery.
+    # bm25/rank can't be projected out of an FTS subquery either. Easiest path:
+    # do a two-step search — first a tiny FTS-only query to get matched rowids
+    # (and capture rank order if needed), then a regular JOIN to fetch the rows.
+    fts_params: list[Any] = []
     if nq2:
-        snippet_expr = "snippet(fts, '<mark>', '</mark>', ' … ', 0, 30)"
-        fts_subquery = f"SELECT rowid, bm25(fts) AS rscore, {snippet_expr} AS snippet FROM fts WHERE fts MATCH ?"
-        fts_params: list[Any] = [nq2]
+        # Pull a generous slice — we only display 20 at a time, but allow the
+        # outer filters (date range, claim caps) to whittle the set without
+        # forcing a second round-trip. 600 hits is plenty for a paged UI.
+        ranked_rows = con.execute(
+            "SELECT rowid FROM fts WHERE fts MATCH ? ORDER BY bm25(fts) LIMIT 600",
+            (nq2,),
+        ).fetchall()
+        rowids = [r[0] for r in ranked_rows]
+        if not rowids:
+            return {"total": 0, "items": []}
+        # Capture relevance order for later sort.
+        rowid_rank = {rid: idx for idx, rid in enumerate(rowids)}
     else:
-        fts_subquery = "SELECT rowid, 0 AS rscore, '' AS snippet FROM fts"
-        fts_params = []
+        rowids = None
+        rowid_rank = None
 
-    if sort == "relevance" and nq2:
-        order_clause = "ORDER BY hits.rscore"
+    if rowids is not None:
+        placeholders = ",".join("?" for _ in rowids)
+        rowid_clause = f"d.rowid IN ({placeholders})"
+        rowid_params = list(rowids)
     else:
-        order_clause = order_clauses.get(sort, "ORDER BY a.decision_date DESC")
+        rowid_clause = "1=1"
+        rowid_params = []
 
-    join_block = (
-        f"FROM ({fts_subquery}) AS hits "
-        f"JOIN docs_fresh d ON hits.rowid = d.rowid "
-        f"LEFT JOIN decision_details a ON d.ejs_id = a.ejs_id "
-        f"{outer_where}"
+    snippet_expr = (
+        "snippet(fts, '<mark>', '</mark>', ' … ', 0, 30)"
+        if nq2
+        else "substr(d.full_text, 1, 200) || '...'"
     )
 
+    if sort == "relevance" and nq2:
+        # We'll sort in Python using rowid_rank because SQLite would otherwise
+        # need a CASE-by-rowid construct to recreate bm25 ordering.
+        order_clause = "ORDER BY a.decision_date DESC"
+        post_sort = "relevance"
+    else:
+        order_clause = order_clauses.get(sort, "ORDER BY a.decision_date DESC")
+        post_sort = None
+
+    join_block = (
+        "FROM fts JOIN docs_fresh d ON fts.rowid = d.rowid "
+        "LEFT JOIN decision_details a ON d.ejs_id = a.ejs_id "
+    )
+    extra_clauses = [rowid_clause] + outer_clauses
+    where_sql = "WHERE " + " AND ".join(extra_clauses)
+    base_params = tuple(rowid_params + outer_params)
+
     try:
-        total = con.execute(f"SELECT COUNT(*) {join_block}", tuple(fts_params + outer_params)).fetchone()[0]
-        sql = f"""
-            SELECT hits.rowid,
-                   CASE WHEN hits.snippet = '' THEN substr(d.full_text, 1, 200) || '...' ELSE hits.snippet END AS snippet,
-                   a.claimant_name, a.respondent_name, a.adjudicator_name,
-                   a.act_category, d.reference, d.pdf_path, d.ejs_id,
-                   a.claimed_amount, a.adjudicated_amount,
-                   a.decision_date
-            {join_block}
-            {order_clause}
-            LIMIT ? OFFSET ?
-        """
-        rows = con.execute(sql, tuple(fts_params + outer_params) + (limit, offset)).fetchall()
+        total = con.execute(
+            f"SELECT COUNT(DISTINCT d.rowid) {join_block} {where_sql}",
+            base_params,
+        ).fetchone()[0]
+
+        if post_sort == "relevance":
+            # Fetch the full set in arbitrary order, sort by relevance in Python,
+            # then slice. The set is bounded by the 600-row cap above.
+            fetch_sql = f"""
+                SELECT DISTINCT d.rowid AS rowid, {snippet_expr} AS snippet,
+                       a.claimant_name, a.respondent_name, a.adjudicator_name,
+                       a.act_category, d.reference, d.pdf_path, d.ejs_id,
+                       a.claimed_amount, a.adjudicated_amount,
+                       a.decision_date
+                {join_block}
+                {where_sql}
+            """
+            rows = con.execute(fetch_sql, base_params).fetchall()
+            rows = sorted(rows, key=lambda r: rowid_rank.get(r["rowid"], 10**9))
+            rows = rows[offset:offset + limit]
+        else:
+            sql = f"""
+                SELECT DISTINCT d.rowid AS rowid, {snippet_expr} AS snippet,
+                       a.claimant_name, a.respondent_name, a.adjudicator_name,
+                       a.act_category, d.reference, d.pdf_path, d.ejs_id,
+                       a.claimed_amount, a.adjudicated_amount,
+                       a.decision_date
+                {join_block}
+                {where_sql}
+                {order_clause}
+                LIMIT ? OFFSET ?
+            """
+            rows = con.execute(sql, base_params + (limit, offset)).fetchall()
     except sqlite3.OperationalError as exc:
         raise HTTPException(status_code=500, detail=f"Search query failed: {exc}") from exc
 
