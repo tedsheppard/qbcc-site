@@ -314,7 +314,10 @@ def init_conv_db() -> sqlite3.Connection:
 # Defaults to the build owner so the dashboard isn't open to the public.
 ADMIN_EMAILS = {
     e.strip().lower()
-    for e in os.environ.get("BIF_ADMIN_EMAILS", "edwardsheppard5@gmail.com").split(",")
+    for e in os.environ.get(
+        "BIF_ADMIN_EMAILS",
+        "edwardsheppard5@gmail.com,ejsheppard@icloud.com,esheppard@tglaw.com.au",
+    ).split(",")
     if e.strip()
 }
 

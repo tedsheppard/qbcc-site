@@ -753,9 +753,14 @@ def _require_admin_email(request: Request) -> str:
     email = _decode_user_email_from_request(request)
     if not email:
         raise HTTPException(401, "Sign in required")
+    # Default allow-list mirrors server.ADMIN_EMAILS so any signed-in admin
+    # gets through, not just the single env-var default.
     allow = {
         e.strip().lower()
-        for e in os.environ.get("BIF_ADMIN_EMAILS", "edwardsheppard5@gmail.com").split(",")
+        for e in os.environ.get(
+            "BIF_ADMIN_EMAILS",
+            "edwardsheppard5@gmail.com,ejsheppard@icloud.com,esheppard@tglaw.com.au",
+        ).split(",")
         if e.strip()
     }
     if email.lower() not in allow:
