@@ -5346,7 +5346,7 @@ async def bifact_chat_health():
 
 # ---------- serve frontend with clean URLs ----------
 @app.get("/{path_name:path}")
-async def serve_html_page(path_name: str):
+async def serve_html_page(path_name: str, host: Optional[str] = Header(None)):
     # --- START OF NEW FIX ---
     # Ignore paths that are clearly intended for API endpoints
     # In the serve_html_page function
@@ -5362,6 +5362,13 @@ async def serve_html_page(path_name: str):
 
 
     if not path_name:
+        # Sopal v2 is isolated to the app subdomain root. Other hostnames keep
+        # serving the existing public homepage from site/index.html.
+        hostname = (host or "").split(":", 1)[0].lower()
+        if hostname == "app.sopal.com.au":
+            sopal_v2_path = os.path.join(SITE_DIR, "sopal-v2.html")
+            if os.path.exists(sopal_v2_path):
+                return FileResponse(sopal_v2_path, media_type="text/html")
         path_name = "index"
 
 
