@@ -334,26 +334,30 @@ async def sopal_v2_search(
         "adj_high": "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN -1 ELSE CAST(a.adjudicated_amount AS REAL) END DESC",
         "adj_low": "ORDER BY CASE WHEN a.adjudicated_amount IS NULL OR a.adjudicated_amount = 'N/A' OR a.adjudicated_amount = '' THEN 9999999999 ELSE CAST(a.adjudicated_amount AS REAL) END ASC",
     }
-    # bm25/rank can't be projected out of an FTS subquery either. Easiest path:
-    # do a two-step search — first a tiny FTS-only query to get matched rowids
-    # (and capture rank order if needed), then a regular JOIN to fetch the rows.
-    fts_params: list[Any] = []
+    # Two-step search: first run an FTS-only query for matching rowids (FTS5
+    # `rank` only works in a query directly against the FTS table). Then join
+    # the metadata tables. We cap the hit set at 600 because the UI paginates
+    # at 20.
+    rowid_rank: dict[int, int] = {}
+    rowids: list[int] | None
     if nq2:
-        # Pull a generous slice — we only display 20 at a time, but allow the
-        # outer filters (date range, claim caps) to whittle the set without
-        # forcing a second round-trip. 600 hits is plenty for a paged UI.
-        ranked_rows = con.execute(
-            "SELECT rowid FROM fts WHERE fts MATCH ? ORDER BY bm25(fts) LIMIT 600",
-            (nq2,),
-        ).fetchall()
-        rowids = [r[0] for r in ranked_rows]
+        try:
+            ranked = con.execute(
+                "SELECT rowid FROM fts WHERE fts MATCH ? ORDER BY rank LIMIT 600",
+                (nq2,),
+            ).fetchall()
+        except sqlite3.OperationalError:
+            # Fallback: no rank function available — accept fts rowid order.
+            ranked = con.execute(
+                "SELECT rowid FROM fts WHERE fts MATCH ? LIMIT 600",
+                (nq2,),
+            ).fetchall()
+        rowids = [r[0] for r in ranked]
         if not rowids:
             return {"total": 0, "items": []}
-        # Capture relevance order for later sort.
         rowid_rank = {rid: idx for idx, rid in enumerate(rowids)}
     else:
         rowids = None
-        rowid_rank = None
 
     if rowids is not None:
         placeholders = ",".join("?" for _ in rowids)
@@ -370,8 +374,6 @@ async def sopal_v2_search(
     )
 
     if sort == "relevance" and nq2:
-        # We'll sort in Python using rowid_rank because SQLite would otherwise
-        # need a CASE-by-rowid construct to recreate bm25 ordering.
         order_clause = "ORDER BY a.decision_date DESC"
         post_sort = "relevance"
     else:
@@ -393,8 +395,6 @@ async def sopal_v2_search(
         ).fetchone()[0]
 
         if post_sort == "relevance":
-            # Fetch the full set in arbitrary order, sort by relevance in Python,
-            # then slice. The set is bounded by the 600-row cap above.
             fetch_sql = f"""
                 SELECT DISTINCT d.rowid AS rowid, {snippet_expr} AS snippet,
                        a.claimant_name, a.respondent_name, a.adjudicator_name,
