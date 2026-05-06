@@ -253,6 +253,12 @@ app.include_router(_claim_check_router)
 app.include_router(_claim_check_redirect_router)
 # <<< claim-check feature
 
+# >>> Sopal v2 local prototype - isolated under /sopal-v2 and /api/sopal-v2
+from routes.sopal_v2 import page_router as _sopal_v2_page_router, router as _sopal_v2_router
+app.include_router(_sopal_v2_router)
+app.include_router(_sopal_v2_page_router)
+# <<< Sopal v2 local prototype
+
 # >>> SopalAI (Construction Law Research) — services/bif_research/api.py
 # Mounted at /ai. Brings its own /api/ask SSE endpoint, /api/usage,
 # /api/conversations, etc — all live under /ai/api/*. The SPA shell
@@ -285,7 +291,12 @@ except Exception as _e:
 # <<< SopalAI
 
 # --- UNIFIED USERS DATABASE CONNECTION ---
-PURCHASES_DB_PATH = "/var/data/adjudicator_purchases.db"
+PURCHASES_DB_PATH = (
+    "/var/data/adjudicator_purchases.db"
+    if _use_persistent
+    else os.path.join(ROOT, "_local_data", "adjudicator_purchases.db")
+)
+os.makedirs(os.path.dirname(PURCHASES_DB_PATH), exist_ok=True)
 purchases_con = sqlite3.connect(PURCHASES_DB_PATH, check_same_thread=False)
 purchases_con.row_factory = sqlite3.Row
 purchases_cur = purchases_con.cursor()
@@ -576,7 +587,12 @@ ADMIN_EMAILS = {
 
 
 # ---------------- LexiFile DB (separate from Sopal qbcc.db) ----------------
-LEXIFILE_DB_PATH = "/var/data/lexifile.db"
+LEXIFILE_DB_PATH = (
+    "/var/data/lexifile.db"
+    if _use_persistent
+    else os.path.join(ROOT, "_local_data", "lexifile.db")
+)
+os.makedirs(os.path.dirname(LEXIFILE_DB_PATH), exist_ok=True)
 lexi_con = sqlite3.connect(LEXIFILE_DB_PATH, check_same_thread=False)
 lexi_con.row_factory = sqlite3.Row
 
