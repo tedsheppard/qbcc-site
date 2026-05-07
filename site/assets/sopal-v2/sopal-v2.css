@@ -836,13 +836,30 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 8px;
 }
 
-.decision-text {
-  white-space: pre-wrap;
+.decision-meta-block {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px 16px;
+  padding: 12px 18px 4px;
+  border-top: 1px solid var(--main-border);
+  background: #fcfbf7;
   font-size: 12.5px;
+}
+.decision-meta-block > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.decision-meta-block dt { color: var(--muted-fg); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; margin: 0; }
+.decision-meta-block dd { margin: 0; font-size: 13px; font-weight: 600; color: var(--main-fg); overflow: hidden; text-overflow: ellipsis; }
+
+.decision-text {
+  font-size: 13px;
   line-height: 1.7;
   color: #2c2c2c;
   font-family: ui-serif, Georgia, "Times New Roman", serif;
 }
+.decision-text p {
+  margin: 0 0 12px;
+}
+.decision-text p:last-child { margin-bottom: 0; }
+.decision-text-trunc { margin: 14px 0 0; font-size: 12px; }
 
 /* Filters */
 .filters {

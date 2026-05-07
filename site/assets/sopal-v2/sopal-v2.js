@@ -690,7 +690,10 @@
           <div class="card-body results-list">${items.map(renderDecisionItem).join("")}</div>
           ${items.length < total ? `<div class="card-foot"><button class="ghost-button" type="button" data-load-more="${(offset || 0) + items.length}">Load more (${(total - ((offset || 0) + items.length)).toLocaleString()} remaining)</button></div>` : ""}
         </div>`;
-      mount.querySelectorAll("[data-decision-id]").forEach((el) => el.addEventListener("click", () => loadDecisionDetail(el.dataset.decisionId, el.dataset.title)));
+      mount.querySelectorAll("[data-decision-id]").forEach((el) => el.addEventListener("click", () => {
+        const meta = el.dataset.meta ? safeParseJson(el.dataset.meta) : null;
+        loadDecisionDetail(el.dataset.decisionId, el.dataset.title, meta);
+      }));
       const more = mount.querySelector("[data-load-more]");
       if (more) more.addEventListener("click", () => appendDecisionResults(params, Number(more.dataset.loadMore)));
     } catch (error) {
@@ -714,7 +717,10 @@
       list.insertAdjacentHTML("beforeend", items.map(renderDecisionItem).join(""));
       list.querySelectorAll("[data-decision-id]:not([data-bound])").forEach((el) => {
         el.dataset.bound = "1";
-        el.addEventListener("click", () => loadDecisionDetail(el.dataset.decisionId, el.dataset.title));
+        el.addEventListener("click", () => {
+          const meta = el.dataset.meta ? safeParseJson(el.dataset.meta) : null;
+          loadDecisionDetail(el.dataset.decisionId, el.dataset.title, meta);
+        });
       });
       const total = Number(data.total || 0);
       const newOffset = offset + items.length;
@@ -737,15 +743,30 @@
       money(item.claimed_amount) ? `${money(item.claimed_amount)} claimed` : "",
       money(item.adjudicated_amount) ? `${money(item.adjudicated_amount)} awarded` : "",
     ].filter(Boolean);
+    // Stash a tiny meta blob on the row so the detail panel can render a rich
+    // header without a second round-trip.
+    const detailMeta = JSON.stringify({
+      title, id,
+      claimant, respondent,
+      decisionDate: item.decision_date || item.decision_date_norm || "",
+      adjudicator: item.adjudicator_name || item.adjudicator || "",
+      act: item.act_category || item.act || "",
+      claimed: money(item.claimed_amount) || "",
+      awarded: money(item.adjudicated_amount) || "",
+    });
     return `
-      <article class="result-row" data-decision-id="${attr(id)}" data-title="${attr(title)}" tabindex="0">
+      <article class="result-row" data-decision-id="${attr(id)}" data-title="${attr(title)}" data-meta="${attr(detailMeta)}" tabindex="0">
         <h4>${escapeHtml(title)}</h4>
         <div class="result-meta">${meta.map((m) => `<span>${escapeHtml(m)}</span>`).join("")}</div>
         <p>${formatSnippet(item.snippet)}</p>
       </article>`;
   }
 
-  async function loadDecisionDetail(id, title) {
+  function safeParseJson(s) {
+    try { return JSON.parse(s); } catch { return null; }
+  }
+
+  async function loadDecisionDetail(id, title, meta) {
     const mount = document.getElementById("decision-detail");
     if (!mount || !id) return;
     mount.innerHTML = `<div class="card-head"><h3>${escapeHtml(title || "Decision")}</h3></div><div class="card-body">${skeletonRows()}</div>`;
@@ -754,17 +775,42 @@
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.detail || "Decision text failed");
       const text = (data.fullText || "").trim();
+      const metaHeader = meta ? renderDecisionMetaHeader(meta) : "";
       mount.innerHTML = `
         <div class="card-head">
           <div><h3>${escapeHtml(title || id)}</h3><p class="muted">${escapeHtml(id)}</p></div>
-          <button class="ghost-button compact" type="button" data-copy-text="${attr(text.slice(0, 8000))}">${ICON.copy}<span>Copy</span></button>
+          <button class="ghost-button compact" type="button" data-copy-text="${attr(text.slice(0, 8000))}" title="Copy decision text">${ICON.copy}<span>Copy</span></button>
         </div>
+        ${metaHeader}
         <div class="card-body">
-          ${text ? `<div class="decision-text">${escapeHtml(text.slice(0, 12000))}${text.length > 12000 ? "\n\n[Text truncated. The full record is in the Sopal database.]" : ""}</div>` : EmptyState("No text on file.", "This record has no extracted text.")}
+          ${text ? `<div class="decision-text">${formatDecisionText(text)}</div>${text.length > 12000 ? `<p class="muted decision-text-trunc">Text truncated to first 12,000 characters. ${text.length.toLocaleString()} chars total.</p>` : ""}` : EmptyState("No text on file.", "This record has no extracted text.")}
         </div>`;
     } catch (error) {
       mount.innerHTML = `<div class="error-banner">${escapeHtml(error.message || "Could not load decision text")}</div>`;
     }
+  }
+
+  function renderDecisionMetaHeader(meta) {
+    const rows = [
+      meta.decisionDate ? ["Decision date", meta.decisionDate] : null,
+      (meta.claimant || meta.respondent) ? ["Parties", `${escapeHtml(meta.claimant || "?")} v ${escapeHtml(meta.respondent || "?")}`] : null,
+      meta.adjudicator ? ["Adjudicator", meta.adjudicator] : null,
+      meta.act ? ["Act", meta.act] : null,
+      meta.claimed ? ["Claimed", meta.claimed] : null,
+      meta.awarded ? ["Awarded", meta.awarded] : null,
+    ].filter(Boolean);
+    if (!rows.length) return "";
+    return `<div class="decision-meta-block">
+      ${rows.map(([k, v]) => `<div><dt>${escapeHtml(k)}</dt><dd>${k === "Parties" ? v : escapeHtml(v)}</dd></div>`).join("")}
+    </div>`;
+  }
+
+  function formatDecisionText(text) {
+    // Decision text is already paragraph-broken by the OCR; preserve newlines
+    // and split into <p> blocks so it reads as prose, not a wall of pre.
+    const trimmed = (text || "").slice(0, 12000);
+    const paras = trimmed.split(/\n{2,}/).filter((p) => p.trim());
+    return paras.map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br>")}</p>`).join("");
   }
 
   /* ---------- Research: adjudicators ---------- */
