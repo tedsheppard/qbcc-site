@@ -898,7 +898,7 @@
     return PageBody(`
       <div class="page-shell">
         <h1 class="page-title">Due date calculator</h1>
-        <p class="page-sub">BIF Act business-day deadlines for adjudication timelines. Excludes weekends, QLD/local public holidays and the s 87 Christmas shutdown.</p>
+        <p class="page-sub">BIF Act business-day deadlines. Excludes weekends, QLD/local public holidays and the s 87 Christmas shutdown.</p>
         <div class="due-grid">
           <div class="scenario-list">
             ${DUE_DATE_SCENARIOS.map((s) => `
@@ -1486,6 +1486,17 @@ Total\t${formatCurrencyFull(total)}`;
     `);
   }
 
+  function plainPreview(text) {
+    // Strip markdown for inline previews so users see prose, not "## Heading".
+    return String(text || "")
+      .replace(/^#{1,6}\s+/gm, "")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/^\s*[-*]\s+/gm, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
   function recentChatRow(project, key, h) {
     let label, href;
     if (key === "assistant") { label = "Assistant"; href = `/sopal-v2/projects/${project.id}/assistant`; }
@@ -1495,9 +1506,10 @@ Total\t${formatCurrencyFull(total)}`;
       href = `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=${mode}`;
     } else { label = key; href = `/sopal-v2/projects/${project.id}/assistant`; }
     const last = h.messages[h.messages.length - 1] || {};
+    const preview = plainPreview(last.content || "");
     return `<a class="recent-item" href="${href}" data-nav>
       <strong>${escapeHtml(label)}</strong>
-      <span class="muted">${escapeHtml((last.content || "").slice(0, 130))}${(last.content || "").length > 130 ? "…" : ""}</span>
+      <span class="muted">${escapeHtml(preview.slice(0, 130))}${preview.length > 130 ? "…" : ""}</span>
     </a>`;
   }
 
@@ -2156,10 +2168,10 @@ Total\t${formatCurrencyFull(total)}`;
   }
 
   function ChatPage(opts) {
-    const { project, agentKey, mode, includeList, starters } = opts;
+    const { project, agentKey, mode, includeList, starters, draftOnly } = opts;
     const chat = projectChat(project, opts.chatKey);
     const isEmpty = !chat.messages.length;
-    const modeTabs = agentKey ? `
+    const modeTabs = (agentKey && !draftOnly) ? `
       <div class="mode-tabs" role="tablist" aria-label="Agent mode">
         <button class="mode-tab ${mode === "review" ? "active" : ""}" type="button" data-go="/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=review">Review</button>
         <button class="mode-tab ${mode === "draft" ? "active" : ""}" type="button" data-go="/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft">Draft</button>
