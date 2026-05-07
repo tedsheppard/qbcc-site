@@ -2152,18 +2152,21 @@ Total\t${formatCurrencyFull(total)}`;
     } catch {
       // fall through to markdown parse
     }
-    // Fallback: derive a single info-status check per title with the whole answer attached.
+    // Fallback: AI didn't return strict JSON. Surface that explicitly so the
+    // user understands the structured pills aren't real, and show the raw
+    // analysis the model produced so it isn't lost.
     const checks = checkTitles.map((title) => ({
       title,
       status: "info",
-      detail: "",
+      detail: "Couldn't parse a per-check status from the model output. See the raw analysis above.",
     }));
     return {
-      summary: text,
+      summary: "_The model didn't return strict structured JSON — showing its raw response below. Try Re-run if you want a structured analysis._\n\n" + (text || ""),
       checks,
       counts: { pass: 0, fail: 0, warn: 0, info: checks.length },
       recommendations: [],
       missing: [],
+      _fallback: true,
     };
   }
 
@@ -2178,18 +2181,18 @@ Total\t${formatCurrencyFull(total)}`;
       </div>` : "";
     const helperPanel = agentKey ? `
       <aside class="helper-panel">
-        <div class="helper-card">
-          <h4>What to include</h4>
+        <details class="helper-card" ${isEmpty ? "open" : ""}>
+          <summary>What to include</summary>
           <ul>${(includeList || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>
-        </div>
-        <div class="helper-card">
-          <h4>Project context</h4>
+        </details>
+        <details class="helper-card" ${isEmpty ? "open" : ""}>
+          <summary>Project context · ${project.contracts.length}/${project.library.length}</summary>
           <p class="muted">${project.contracts.length} contract doc${project.contracts.length === 1 ? "" : "s"} · ${project.library.length} library item${project.library.length === 1 ? "" : "s"}</p>
           <div class="helper-actions">
             <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/contract" data-nav>Manage contract</a>
             <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/library" data-nav>Manage library</a>
           </div>
-        </div>
+        </details>
       </aside>` : "";
 
     const header = `
@@ -2245,12 +2248,15 @@ Total\t${formatCurrencyFull(total)}`;
     const { project } = opts;
     const ctxCount = project.contracts.length + project.library.length;
     const baseCls = compact ? "composer-active" : "composer-card";
+    // Compact mode (mid-conversation) gets a short "Reply…" placeholder so it
+    // doesn't echo the verbose empty-state copy.
+    const placeholder = compact ? "Reply…" : (opts.placeholder || "Type a message…");
     return `
       <form class="${baseCls}" data-chat-form>
         <div class="composer-row">
-          <button class="icon-button" type="button" data-attach-trigger title="Attach file">${ICON.paperclip}</button>
-          <textarea class="text-area auto-grow" name="message" rows="${compact ? 1 : 3}" placeholder="${attr(opts.placeholder || "Type a message…")}"></textarea>
-          <button class="send-button" type="submit" aria-label="Send">${ICON.send}</button>
+          <button class="icon-button" type="button" data-attach-trigger title="Attach file" aria-label="Attach file">${ICON.paperclip}</button>
+          <textarea class="text-area auto-grow" name="message" rows="${compact ? 1 : 3}" placeholder="${attr(placeholder)}" aria-label="Message"></textarea>
+          <button class="send-button" type="submit" aria-label="Send message">${ICON.send}</button>
           <input type="file" hidden data-chat-file accept=".pdf,.docx,.txt">
         </div>
         <div class="composer-meta">
