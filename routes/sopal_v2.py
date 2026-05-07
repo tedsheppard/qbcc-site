@@ -390,23 +390,27 @@ async def sopal_v2_search(
     # the metadata tables. We cap the hit set at 600 because the UI paginates
     # at 20.
     rowid_rank: dict[int, int] = {}
+    rowid_snippet: dict[int, str] = {}
     rowids: list[int] | None
     if nq2:
+        # Capture snippet inside the FTS-only query so MATCH is in WHERE — that's
+        # the only context where snippet() is allowed to render highlights.
+        snippet_call = "snippet(fts, '<mark>', '</mark>', ' … ', 0, 30)"
         try:
             ranked = con.execute(
-                "SELECT rowid FROM fts WHERE fts MATCH ? ORDER BY rank LIMIT 600",
+                f"SELECT rowid, {snippet_call} AS snip FROM fts WHERE fts MATCH ? ORDER BY rank LIMIT 600",
                 (nq2,),
             ).fetchall()
         except sqlite3.OperationalError:
-            # Fallback: no rank function available — accept fts rowid order.
             ranked = con.execute(
-                "SELECT rowid FROM fts WHERE fts MATCH ? LIMIT 600",
+                f"SELECT rowid, {snippet_call} AS snip FROM fts WHERE fts MATCH ? LIMIT 600",
                 (nq2,),
             ).fetchall()
         rowids = [r[0] for r in ranked]
         if not rowids:
             return {"total": 0, "items": []}
-        rowid_rank = {rid: idx for idx, rid in enumerate(rowids)}
+        rowid_rank = {rid: idx for idx, (rid, _s) in enumerate(ranked)}
+        rowid_snippet = {rid: (snip or "") for rid, snip in ranked}
     else:
         rowids = None
 
@@ -483,7 +487,9 @@ async def sopal_v2_search(
         d["adjudicator"] = d.get("adjudicator_name")
         d["decision_date_norm"] = d.get("decision_date")
         d["act"] = d.get("act_category")
-        snippet_raw = r["snippet"]
+        # Prefer the highlighted snippet captured in the FTS-only first step;
+        # fall back to the placeholder snippet from the join query.
+        snippet_raw = rowid_snippet.get(d.get("rowid")) or r["snippet"] or ""
         if snippet_raw and len(snippet_raw) > 350:
             truncated = snippet_raw[:300]
             last_period = truncated.rfind(".")
