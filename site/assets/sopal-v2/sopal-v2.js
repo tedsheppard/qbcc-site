@@ -37,6 +37,106 @@
     "adjudication-application": "Review or draft adjudication application material — chronology, jurisdiction, entitlement, quantum, annexures.",
     "adjudication-response": "Review or draft adjudication response material — jurisdictional objections, payment schedule alignment, evidence.",
   };
+  // Agents in this set drop the Review tab entirely — you draft submissions,
+  // you don't structurally "review" your own draft adjudication piece the same
+  // way you review someone's payment claim. They go straight into Draft mode.
+  const DRAFT_ONLY_AGENTS = new Set(["adjudication-application", "adjudication-response"]);
+
+  // Per-agent review modes. Mirrors the live /claim-check checker — each mode
+  // is a distinct perspective ("about to serve" / "received") with its own
+  // checklist of structured items.
+  const AGENT_REVIEW_MODES = {
+    "payment-claims": [
+      { id: "serving", label: "About to serve", sub: "Check a payment claim before you serve it." },
+      { id: "received", label: "Received", sub: "Audit a payment claim served on you." },
+    ],
+    "payment-schedules": [
+      { id: "giving", label: "About to give", sub: "Check a payment schedule before issuing it." },
+      { id: "received", label: "Received", sub: "Audit a payment schedule served on you." },
+    ],
+    eots: [
+      { id: "serving", label: "About to serve", sub: "Stress-test an EOT notice or claim before you send it." },
+      { id: "received", label: "Received", sub: "Audit an EOT notice or claim served on you." },
+    ],
+    variations: [
+      { id: "serving", label: "About to serve", sub: "Check a variation notice or claim before you send it." },
+      { id: "received", label: "Received", sub: "Audit a variation notice or claim served on you." },
+    ],
+    "delay-costs": [
+      { id: "serving", label: "About to serve", sub: "Stress-test a delay cost / prolongation claim before you send it." },
+      { id: "received", label: "Received", sub: "Audit a delay cost claim served on you." },
+    ],
+  };
+
+  // Each review mode has a list of structured check categories. The AI must
+  // return its analysis broken across these so the right pane can render the
+  // claim-check style accordion. Keep titles tight so they fit one line.
+  const REVIEW_CHECKS = {
+    "payment-claims": [
+      "Is the document a valid payment claim?",
+      "Identification of the construction work or related goods/services",
+      "Amount claimed and basis for the amount",
+      "Reference date validity and repeat-claim risk",
+      "Service: who, when, how, evidence of service",
+      "Statutory endorsement / required content (s 68)",
+      "Supporting documents and evidence schedule",
+      "Practical amendments and next steps",
+    ],
+    "payment-schedules": [
+      "Was the schedule given within time (s 76 — 15 BD or contract)?",
+      "Scheduled amount and clarity",
+      "Reasons for withholding — adequacy and itemisation",
+      "Reasons not properly raised vs s 82(4) risk",
+      "Identification of the payment claim being responded to",
+      "Reservation of rights and standard endorsements",
+      "Adjudication-risk view (claimant vs respondent)",
+      "Practical amendments and next steps",
+    ],
+    eots: [
+      "Trigger event — qualifying delay event under the contract",
+      "Notice timing — did it meet the contractual deadline?",
+      "Causation — link between event and critical-path delay",
+      "Delay period — how it has been measured",
+      "Programme and float analysis evidence",
+      "Supporting documentation (correspondence, photos, RFIs)",
+      "Time-bar risk and waiver / estoppel arguments",
+      "Whether the claim should also raise variation or delay costs",
+    ],
+    variations: [
+      "Direction or instruction — is there a variation in fact?",
+      "Contractual basis (variation clause, scope, gateway)",
+      "Notice compliance — content and timing",
+      "Valuation method and rates / day-work substantiation",
+      "Time impact — separate EOT needed?",
+      "Supporting evidence (cost build-up, quotes, dockets)",
+      "Time-bar / waiver risk",
+      "Reservation of rights and next steps",
+    ],
+    "delay-costs": [
+      "Entitlement basis (contract clause, breach, prevention)",
+      "Compensable vs non-compensable delay periods",
+      "Causation and concurrent-delay analysis",
+      "Quantum methodology (preliminaries, Hudson, measured-mile)",
+      "Quantum substantiation (records, payroll, plant)",
+      "Overlap / duplication with EOT / variation claims",
+      "Notice compliance and time bars",
+      "Reservation of rights and next steps",
+    ],
+  };
+
+  const REVIEW_PROMPT_HINTS = {
+    "payment-claims:serving": "Paste the draft payment claim text. Include claimed amount, claim date, intended service date, contract reference, and any prior claim dates if relevant.",
+    "payment-claims:received": "Paste the payment claim text you received. Include the date and method of service, the contract reference, and any prior claims you've received from this claimant.",
+    "payment-schedules:giving": "Paste the draft schedule, the payment claim it responds to, the date the claim was received, and the relevant contract clauses.",
+    "payment-schedules:received": "Paste the schedule received, the original payment claim, and the contract clauses governing the response.",
+    "eots:serving": "Paste the draft EOT notice / claim, the contract EOT clause (e.g. cl 34), the trigger-event details, the notice date, and any programme analysis.",
+    "eots:received": "Paste the EOT notice / claim received, the contract EOT clause, your view on causation, and the programme analysis.",
+    "variations:serving": "Paste the draft variation notice / claim, the contract variation clause, the instruction or direction, and the cost / time impact build-up.",
+    "variations:received": "Paste the variation notice / claim received, the contract clause, the instruction or direction, and your view on entitlement.",
+    "delay-costs:serving": "Paste the draft delay cost / prolongation claim, the contract entitlement clause, causation facts, and the quantum build-up.",
+    "delay-costs:received": "Paste the delay cost claim received, the contract entitlement clause, your view on causation, and any concurrent delay arguments.",
+  };
+
   const INCLUDE_LISTS = {
     "payment-claims": ["Payment claim text", "Contract clauses", "Date served / received", "Reference date", "Prior claims if relevant", "Invoices and supporting schedules"],
     "payment-schedules": ["Payment claim being answered", "Draft / current schedule", "Scheduled amount", "Reasons for withholding", "Date claim received", "Contract payment clauses"],
@@ -1528,25 +1628,531 @@ Total\t${formatCurrencyFull(total)}`;
     const project = getProject(projectId);
     if (!project) return notFoundPage();
     if (!AGENT_KEYS.includes(agentKey)) return notFoundPage();
+
+    const draftOnly = DRAFT_ONLY_AGENTS.has(agentKey);
     const params = new URLSearchParams(window.location.search);
-    const mode = params.get("mode") === "draft" ? "draft" : "review";
-    const opts = {
-      project,
-      chatKey: `agent:${agentKey}:${mode}`,
-      endpoint: "/api/sopal-v2/agent",
-      agentKey,
-      mode,
-      title: AGENT_LABELS[agentKey],
-      titleSub: AGENT_DESCRIPTIONS[agentKey],
-      placeholder: mode === "review"
-        ? "Paste the document, key dates, contract clauses, and facts you want reviewed."
-        : "Describe what needs drafting and paste the relevant project / contract facts.",
-      starters: SCENARIO_STARTERS[mode] || [],
-      contextDefaultOn: project.contracts.length + project.library.length > 0,
-      includeList: INCLUDE_LISTS[agentKey] || [],
+    const requestedMode = params.get("mode");
+    const mode = draftOnly ? "draft" : (requestedMode === "draft" ? "draft" : "review");
+
+    if (mode === "draft") {
+      const opts = {
+        project,
+        chatKey: `agent:${agentKey}:draft`,
+        endpoint: "/api/sopal-v2/agent",
+        agentKey,
+        mode: "draft",
+        title: AGENT_LABELS[agentKey],
+        titleSub: AGENT_DESCRIPTIONS[agentKey],
+        placeholder: "Describe what needs drafting and paste the relevant project / contract facts.",
+        starters: SCENARIO_STARTERS.draft || [],
+        contextDefaultOn: project.contracts.length + project.library.length > 0,
+        includeList: INCLUDE_LISTS[agentKey] || [],
+        draftOnly,
+      };
+      setTimeout(() => bindChatPanel(opts), 0);
+      return PageBody(ChatPage(opts));
+    }
+
+    // Review = claim-check style workspace.
+    const submodes = AGENT_REVIEW_MODES[agentKey] || [];
+    const submodeId = params.get("submode");
+    const activeSubmode = submodes.find((m) => m.id === submodeId) || null;
+    setTimeout(() => bindReviewWorkspace(project, agentKey, activeSubmode), 0);
+    return PageBody(ReviewWorkspace(project, agentKey, activeSubmode));
+  }
+
+  function ReviewWorkspace(project, agentKey, submode) {
+    const submodes = AGENT_REVIEW_MODES[agentKey] || [];
+    const reviewKey = submode ? `review:${agentKey}:${submode.id}` : null;
+    const review = reviewKey && project.reviews ? project.reviews[reviewKey] : null;
+    const document = review?.document || null;
+    const analysis = review?.analysis || null;
+    const chat = reviewKey ? projectChat(project, `chat:${reviewKey}`) : null;
+
+    const draftHref = `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft`;
+    const modeBaseHref = `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=review`;
+
+    const head = `
+      <div class="chat-page-head">
+        <div>
+          <h1 class="page-title">${escapeHtml(AGENT_LABELS[agentKey])}</h1>
+          <p class="page-sub">${escapeHtml(AGENT_DESCRIPTIONS[agentKey] || "")}</p>
+        </div>
+        <div class="mode-tabs" role="tablist">
+          <button class="mode-tab active" type="button">Review</button>
+          <button class="mode-tab" type="button" data-go="${draftHref}">Draft</button>
+        </div>
+      </div>`;
+
+    if (!submode) {
+      return `
+        <div class="page-shell review-shell">
+          ${head}
+          <section class="review-mode-picker">
+            <h3>What are you reviewing?</h3>
+            <p class="muted">Pick the perspective. The checks are tailored to it.</p>
+            <div class="mode-tile-grid">
+              ${submodes.map((m) => `
+                <a class="mode-tile" href="${modeBaseHref}&submode=${m.id}" data-nav>
+                  <span class="mode-tile-icon">${m.id === "received" || m.id === "received" ? ICON.upload : ICON.file}</span>
+                  <span class="mode-tile-body">
+                    <strong>${escapeHtml(AGENT_LABELS[agentKey])} I'm ${m.label.toLowerCase()}</strong>
+                    <span class="muted">${escapeHtml(m.sub)}</span>
+                  </span>
+                </a>
+              `).join("")}
+            </div>
+          </section>
+        </div>`;
+    }
+
+    return `
+      <div class="page-shell review-shell">
+        ${head}
+        <div class="review-meta-bar">
+          <div class="review-meta-left">
+            <span class="muted">Mode:</span>
+            <strong>${escapeHtml(AGENT_LABELS[agentKey])} — ${escapeHtml(submode.label.toLowerCase())}</strong>
+            <a class="link-button small" href="${modeBaseHref}" data-nav>Change</a>
+          </div>
+        </div>
+        <div class="review-grid">
+          <div class="review-left">
+            <section class="card review-doc-card">
+              <div class="card-head">
+                <h3>Document</h3>
+                <button class="link-button small" type="button" data-toggle-paste>${document ? "Replace" : "Paste text instead"}</button>
+              </div>
+              <div class="card-body" data-doc-body>
+                ${renderDocumentInput(document)}
+              </div>
+            </section>
+            <section class="card review-chat-card">
+              <div class="card-head">
+                <h3>Ask about this document</h3>
+                <span class="muted">${reviewKey && analysis ? "Use the analysis on the right as you ask" : "Run an analysis first to ground the chat"}</span>
+              </div>
+              <div class="review-chat" data-chat-pane>
+                ${ChatPane(project, agentKey, submode, chat, !!document)}
+              </div>
+            </section>
+          </div>
+          <aside class="review-right">
+            <section class="card review-analysis-card">
+              <div class="card-head">
+                <h3>Analysis</h3>
+                ${analysis ? `<button class="ghost-button compact" type="button" data-rerun-analysis>Re-run</button>` : ""}
+              </div>
+              <div class="card-body" data-analysis-body>
+                ${renderAnalysis(agentKey, document, analysis, review?.status)}
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderDocumentInput(document) {
+    if (document) {
+      const preview = (document.text || "").slice(0, 1200);
+      return `
+        <div class="doc-loaded">
+          <div class="doc-loaded-head">
+            <strong>${escapeHtml(document.name || "Document")}</strong>
+            <span class="muted">${(document.text || "").length.toLocaleString()} characters · ${escapeHtml(document.source || "pasted")}</span>
+          </div>
+          <pre class="doc-preview">${escapeHtml(preview)}${(document.text || "").length > preview.length ? "\n…" : ""}</pre>
+        </div>`;
+    }
+    return `
+      <div class="doc-input">
+        <label class="upload-zone" data-upload-zone>
+          <input type="file" accept=".pdf,.docx,.txt" data-doc-file hidden>
+          <span class="upload-icon">${ICON.upload}</span>
+          <span class="upload-primary">Drop a PDF / DOCX / TXT here, or <span class="upload-browse">browse</span></span>
+          <span class="upload-sub muted">Held in memory only. Nothing is stored on the server.</span>
+        </label>
+        <details class="paste-fallback" data-paste-fallback>
+          <summary>Paste text instead</summary>
+          <textarea class="text-area" data-paste-input placeholder="Paste the document text here…" rows="6"></textarea>
+          <div class="paste-actions">
+            <span class="muted" data-paste-meta>0 characters</span>
+            <button class="dark-button" type="button" data-paste-submit disabled>Use this text</button>
+          </div>
+        </details>
+      </div>`;
+  }
+
+  function renderAnalysis(agentKey, document, analysis, status) {
+    if (!document) {
+      return EmptyState("Add a document to start.", "Upload or paste the document, then run the structured BIF Act / SOPA review.");
+    }
+    if (status === "running") {
+      const items = REVIEW_CHECKS[agentKey] || [];
+      return `
+        <div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Running ${items.length} structured checks…</span></div>
+        <ol class="check-list pending">${items.map((t) => `<li class="check-item pending"><span class="check-status">…</span><div class="check-body"><strong>${escapeHtml(t)}</strong></div></li>`).join("")}</ol>`;
+    }
+    if (!analysis) {
+      const items = REVIEW_CHECKS[agentKey] || [];
+      return `
+        <div class="analysis-action">
+          <button class="dark-button" type="button" data-run-analysis>${ICON.sparkles}<span>Run analysis</span></button>
+          <span class="muted">Will check ${items.length} items.</span>
+        </div>
+        <ol class="check-list pending">${items.map((t) => `<li class="check-item idle"><span class="check-status">○</span><div class="check-body"><strong>${escapeHtml(t)}</strong></div></li>`).join("")}</ol>`;
+    }
+    if (analysis.error) {
+      return `<div class="error-banner">${escapeHtml(analysis.error)}</div>
+        <button class="ghost-button compact" type="button" data-run-analysis>Try again</button>`;
+    }
+    const counts = analysis.counts || { fail: 0, warn: 0, info: 0, pass: 0 };
+    return `
+      <div class="analysis-summary">
+        <div class="summary-counts">
+          <span class="sc-pill sc-fail"><strong>${counts.fail}</strong> issues</span>
+          <span class="sc-pill sc-warn"><strong>${counts.warn}</strong> warnings</span>
+          <span class="sc-pill sc-info"><strong>${counts.info}</strong> need input</span>
+          <span class="sc-pill sc-pass"><strong>${counts.pass}</strong> passed</span>
+        </div>
+        ${analysis.summary ? `<div class="analysis-overview">${renderMarkdown(analysis.summary)}</div>` : ""}
+      </div>
+      <ol class="check-list">
+        ${(analysis.checks || []).map((c, i) => `
+          <li class="check-item ${c.status || "info"}">
+            <span class="check-status">${checkIcon(c.status)}</span>
+            <div class="check-body">
+              <strong>${escapeHtml(c.title || `Check ${i + 1}`)}</strong>
+              <div class="check-detail">${renderMarkdown(c.detail || "")}</div>
+            </div>
+          </li>
+        `).join("")}
+      </ol>
+      ${(analysis.recommendations || []).length ? `
+        <section class="analysis-block">
+          <h4>Recommendations</h4>
+          <ul>${analysis.recommendations.map((r) => `<li>${escapeHtml(r)}</li>`).join("")}</ul>
+        </section>` : ""}
+      ${(analysis.missing || []).length ? `
+        <section class="analysis-block">
+          <h4>Missing information to confirm</h4>
+          <ul>${analysis.missing.map((r) => `<li>${escapeHtml(r)}</li>`).join("")}</ul>
+        </section>` : ""}
+    `;
+  }
+
+  function checkIcon(status) {
+    if (status === "pass") return "✓";
+    if (status === "fail") return "✕";
+    if (status === "warn") return "!";
+    if (status === "info") return "?";
+    return "•";
+  }
+
+  function ChatPane(project, agentKey, submode, chat, hasDocument) {
+    const reviewKey = `review:${agentKey}:${submode.id}`;
+    const ctxCount = project.contracts.length + project.library.length;
+    const messagesHtml = (chat.messages || []).length
+      ? (chat.messages || []).map((m) => renderMessage(m.role, m.content, m.role === "assistant")).join("")
+      : EmptyState("No questions yet.", hasDocument
+          ? "Run the analysis or ask a question about the document."
+          : "Add a document to give the chat something to anchor to.");
+    return `
+      <div class="message-area review-message-area" data-message-area>
+        <div class="message-stack" data-messages>${messagesHtml}</div>
+      </div>
+      <form class="composer-active review-composer" data-chat-form data-review-key="${attr(reviewKey)}">
+        <div class="composer-row">
+          <textarea class="text-area auto-grow" name="message" rows="1" placeholder="${hasDocument ? "Ask about this document…" : "Add a document above to start the chat."}" ${hasDocument ? "" : "disabled"}></textarea>
+          <button class="send-button" type="submit" aria-label="Send" ${hasDocument ? "" : "disabled"}>${ICON.send}</button>
+        </div>
+        <div class="composer-meta">
+          <label class="check"><input type="checkbox" name="useContext" ${ctxCount ? "checked" : "disabled"}><span>Project context (${ctxCount})</span></label>
+          <span class="muted kbd-hint">⌘ / Ctrl + Enter to send</span>
+        </div>
+      </form>`;
+  }
+
+  function bindReviewWorkspace(project, agentKey, submode) {
+    if (!submode) return;
+    const docBody = document.querySelector("[data-doc-body]");
+    const analysisBody = document.querySelector("[data-analysis-body]");
+    const reviewKey = `review:${agentKey}:${submode.id}`;
+    const ensureReview = () => {
+      if (!project.reviews) project.reviews = {};
+      if (!project.reviews[reviewKey]) project.reviews[reviewKey] = { document: null, analysis: null, status: "idle" };
+      return project.reviews[reviewKey];
     };
-    setTimeout(() => bindChatPanel(opts), 0);
-    return PageBody(ChatPage(opts));
+
+    function refreshDoc() {
+      const r = ensureReview();
+      docBody.innerHTML = renderDocumentInput(r.document);
+      bindDocInput();
+    }
+
+    function refreshAnalysis() {
+      const r = ensureReview();
+      analysisBody.innerHTML = renderAnalysis(agentKey, r.document, r.analysis, r.status);
+      bindAnalysisActions();
+    }
+
+    function refreshChat() {
+      const pane = document.querySelector("[data-chat-pane]");
+      if (!pane) return;
+      const r = ensureReview();
+      const chat = projectChat(project, `chat:${reviewKey}`);
+      pane.innerHTML = ChatPane(project, agentKey, submode, chat, !!r.document);
+      bindReviewChatForm(pane);
+    }
+
+    function bindDocInput() {
+      const fileInput = docBody.querySelector("[data-doc-file]");
+      const dropzone = docBody.querySelector("[data-upload-zone]");
+      const pasteSection = docBody.querySelector("[data-paste-fallback]");
+      const pasteText = docBody.querySelector("[data-paste-input]");
+      const pasteSubmit = docBody.querySelector("[data-paste-submit]");
+      const pasteMeta = docBody.querySelector("[data-paste-meta]");
+
+      fileInput?.addEventListener("change", async () => {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+        await ingestFile(file);
+      });
+      dropzone?.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("drag-over"); });
+      dropzone?.addEventListener("dragleave", () => dropzone.classList.remove("drag-over"));
+      dropzone?.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("drag-over");
+        const file = e.dataTransfer?.files?.[0];
+        if (file) await ingestFile(file);
+      });
+
+      pasteText?.addEventListener("input", () => {
+        const len = (pasteText.value || "").length;
+        pasteMeta.textContent = `${len.toLocaleString()} characters`;
+        pasteSubmit.disabled = len < 30;
+      });
+      pasteSubmit?.addEventListener("click", () => {
+        const text = (pasteText.value || "").trim();
+        if (!text) return;
+        const r = ensureReview();
+        r.document = { name: "Pasted text", text, source: "pasted", addedAt: new Date().toISOString() };
+        r.analysis = null;
+        r.status = "idle";
+        saveProject(project);
+        refreshDoc();
+        refreshAnalysis();
+        refreshChat();
+      });
+
+      const replace = document.querySelector("[data-toggle-paste]");
+      if (replace) {
+        replace.onclick = () => {
+          const r = ensureReview();
+          if (r.document) {
+            r.document = null;
+            r.analysis = null;
+            r.status = "idle";
+            saveProject(project);
+            refreshDoc();
+            refreshAnalysis();
+            refreshChat();
+          } else {
+            pasteSection?.setAttribute("open", "");
+            pasteText?.focus();
+          }
+        };
+      }
+    }
+
+    async function ingestFile(file) {
+      const dropzone = docBody.querySelector("[data-upload-zone]");
+      if (dropzone) dropzone.querySelector(".upload-primary").textContent = `Extracting ${file.name}…`;
+      const fd = new FormData(); fd.append("file", file);
+      try {
+        const response = await fetch("/api/sopal-v2/extract", { method: "POST", body: fd, credentials: "include" });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || "Extraction failed");
+        const r = ensureReview();
+        r.document = { name: data.filename, text: data.text, source: "extracted", addedAt: new Date().toISOString() };
+        r.analysis = null;
+        r.status = "idle";
+        saveProject(project);
+        refreshDoc();
+        refreshAnalysis();
+        refreshChat();
+      } catch (error) {
+        const dz = docBody.querySelector("[data-upload-zone] .upload-primary");
+        if (dz) dz.textContent = error.message || "Extraction failed";
+      }
+    }
+
+    function bindAnalysisActions() {
+      const runBtn = analysisBody.querySelector("[data-run-analysis]");
+      if (runBtn) runBtn.addEventListener("click", runAnalysis);
+      const rerun = document.querySelector("[data-rerun-analysis]");
+      if (rerun) rerun.addEventListener("click", () => {
+        const r = ensureReview(); r.analysis = null; r.status = "idle"; saveProject(project); refreshAnalysis();
+      });
+    }
+
+    async function runAnalysis() {
+      const r = ensureReview();
+      if (!r.document) return;
+      r.status = "running";
+      saveProject(project);
+      refreshAnalysis();
+
+      const checks = REVIEW_CHECKS[agentKey] || [];
+      const projectMeta = `Project: ${project.name}\nContract form: ${project.contractForm}${project.reference ? `\nReference: ${project.reference}` : ""}\nUser is: ${project.userIsParty || "claimant"}`;
+      const ctxText = projectContextString(project);
+
+      try {
+        const response = await fetch("/api/sopal-v2/agent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            agentType: agentKey,
+            mode: "review",
+            reviewSubmode: submode.id,
+            checks,
+            structured: true,
+            message: `Review the document below.\n\nDocument:\n${r.document.text.slice(0, 60000)}`,
+            projectContext: [projectMeta, ctxText].filter(Boolean).join("\n\n---\n\n"),
+            files: [{ name: r.document.name, characters: r.document.text.length }],
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || data.error || "Analysis failed");
+        const parsed = parseStructuredAnalysis(data.answer || "", checks);
+        r.analysis = parsed;
+        r.status = "done";
+        saveProject(project);
+        refreshAnalysis();
+      } catch (error) {
+        r.status = "error";
+        r.analysis = { error: error.message || "Analysis failed" };
+        saveProject(project);
+        refreshAnalysis();
+      }
+    }
+
+    function bindReviewChatForm(pane) {
+      const form = pane.querySelector("[data-chat-form]");
+      if (!form) return;
+      const textarea = form.elements.message;
+      const messages = pane.querySelector("[data-messages]");
+      const messageArea = pane.querySelector("[data-message-area]");
+      autoGrow(textarea);
+      textarea.addEventListener("input", () => autoGrow(textarea));
+      textarea.addEventListener("keydown", (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          event.preventDefault();
+          form.requestSubmit();
+        }
+      });
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const message = textarea.value.trim();
+        if (!message) return;
+        const r = ensureReview();
+        if (!r.document) return;
+        const chat = projectChat(project, `chat:${reviewKey}`);
+        if (messages.querySelector(".empty-state")) messages.innerHTML = "";
+        messages.insertAdjacentHTML("beforeend", renderMessage("user", message));
+        const placeholderId = `msg-${Math.random().toString(36).slice(2)}`;
+        messages.insertAdjacentHTML("beforeend", `
+          <div class="message msg-assistant" id="${placeholderId}">
+            <div class="message-body"><div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Sopal is working…</span></div></div>
+          </div>`);
+        chat.messages.push({ role: "user", content: message, at: Date.now() });
+        chat.updatedAt = Date.now();
+        textarea.value = "";
+        autoGrow(textarea);
+        scrollToBottom(messageArea);
+
+        try {
+          const useContext = form.elements.useContext?.checked;
+          const projectMeta = `Project: ${project.name}\nContract form: ${project.contractForm}${project.reference ? `\nReference: ${project.reference}` : ""}`;
+          const ctxText = useContext ? projectContextString(project) : "";
+          const docBlock = `Document under review (${AGENT_LABELS[agentKey]} — ${submode.label.toLowerCase()}):\n${r.document.text.slice(0, 60000)}`;
+          const response = await fetch("/api/sopal-v2/agent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              agentType: agentKey,
+              mode: "review",
+              reviewSubmode: submode.id,
+              chatFollowup: true,
+              message,
+              projectContext: [projectMeta, ctxText, docBlock].filter(Boolean).join("\n\n---\n\n"),
+              files: [{ name: r.document.name, characters: r.document.text.length }],
+            }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.detail || data.error || "Reply failed");
+          chat.messages.push({ role: "assistant", content: data.answer || "", at: Date.now() });
+          chat.updatedAt = Date.now();
+          saveProject(project);
+          const placeholder = document.getElementById(placeholderId);
+          if (placeholder) placeholder.outerHTML = renderMessage("assistant", data.answer || "", true);
+          scrollToBottom(messageArea);
+        } catch (error) {
+          const placeholder = document.getElementById(placeholderId);
+          if (placeholder) placeholder.outerHTML = `<div class="message msg-assistant"><div class="message-body"><div class="error-banner">${escapeHtml(error.message || "Reply failed")}</div></div></div>`;
+          scrollToBottom(messageArea);
+        }
+      });
+    }
+
+    bindDocInput();
+    bindAnalysisActions();
+    const initialPane = document.querySelector("[data-chat-pane]");
+    if (initialPane) bindReviewChatForm(initialPane);
+  }
+
+  function parseStructuredAnalysis(text, checkTitles) {
+    // Try JSON first.
+    const trimmed = (text || "").trim();
+    try {
+      const start = trimmed.indexOf("{");
+      const end = trimmed.lastIndexOf("}");
+      if (start !== -1 && end > start) {
+        const json = JSON.parse(trimmed.slice(start, end + 1));
+        if (Array.isArray(json.checks)) {
+          const counts = { pass: 0, fail: 0, warn: 0, info: 0 };
+          json.checks.forEach((c) => {
+            const s = (c.status || "info").toLowerCase();
+            counts[s] = (counts[s] || 0) + 1;
+          });
+          return {
+            summary: json.summary || "",
+            checks: json.checks,
+            counts,
+            recommendations: Array.isArray(json.recommendations) ? json.recommendations : [],
+            missing: Array.isArray(json.missing) ? json.missing : [],
+          };
+        }
+      }
+    } catch {
+      // fall through to markdown parse
+    }
+    // Fallback: derive a single info-status check per title with the whole answer attached.
+    const checks = checkTitles.map((title) => ({
+      title,
+      status: "info",
+      detail: "",
+    }));
+    return {
+      summary: text,
+      checks,
+      counts: { pass: 0, fail: 0, warn: 0, info: checks.length },
+      recommendations: [],
+      missing: [],
+    };
   }
 
   function ChatPage(opts) {

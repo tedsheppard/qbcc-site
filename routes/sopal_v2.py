@@ -40,7 +40,13 @@ class SopalV2AgentRequest(BaseModel):
     mode: Literal["review", "draft"] | None = None
     message: str = Field(default="", max_length=120_000)
     files: list[dict[str, Any]] = Field(default_factory=list)
-    projectContext: str | None = Field(default=None, max_length=40_000)
+    projectContext: str | None = Field(default=None, max_length=120_000)
+    # Review-workspace fields. When `structured` is True the model must return
+    # strict JSON with the per-check breakdown the v2 UI renders.
+    structured: bool = False
+    reviewSubmode: str | None = Field(default=None, max_length=40)
+    checks: list[str] = Field(default_factory=list)
+    chatFollowup: bool = False
 
 
 AGENT_LABELS: dict[str, str] = {
@@ -179,6 +185,37 @@ def _current_date_context() -> str:
     return f"Current date: {now.strftime('%-d %B %Y')} (Australia/Brisbane)."
 
 
+REVIEW_STRUCTURED_FRAME = """You are running a structured BIF Act / SOPA review of the document the user pasted.
+Return ONLY a single JSON object — no surrounding prose, no Markdown fences.
+
+Schema:
+{
+  "summary": "2-4 sentence executive summary",
+  "checks": [
+    {
+      "title": "<exact check title from the list provided>",
+      "status": "pass" | "fail" | "warn" | "info",
+      "detail": "concise plain-English explanation, 2-5 sentences max, naming exact wording / clauses / dates from the document where possible. If the document doesn't address this check, set status to 'info' and explain what's needed."
+    }
+  ],
+  "recommendations": ["short imperative actions the user should take next"],
+  "missing": ["specific facts / documents you need to make a firm call"]
+}
+
+Status meanings:
+- pass = clearly compliant or in order
+- fail = clear non-compliance / fatal defect / strong adverse risk
+- warn = compliance arguable / risk worth fixing / unclear
+- info = the document is silent on this and the user must supply more material
+
+Cover EVERY check title in the order given. Do not invent extra checks. Use Australian English.
+Do not add a top-level "advice" field; do not add disclaimers; do not include code fences."""
+
+REVIEW_CHAT_FRAME = """You are answering a follow-up question about the document the user is reviewing.
+Ground every answer in the document text and the project context. Be concise, practical, and quote
+short snippets from the document when useful. Use Markdown."""
+
+
 def _build_messages(payload: SopalV2AgentRequest, *, assistant_only: bool = False) -> list[dict[str, str]]:
     message = (payload.message or "").strip()
     if not message:
@@ -200,7 +237,21 @@ def _build_messages(payload: SopalV2AgentRequest, *, assistant_only: bool = Fals
             raise HTTPException(status_code=400, detail="Unknown agent type")
         if mode not in {"review", "draft"}:
             raise HTTPException(status_code=400, detail="Mode must be review or draft")
-        task_prompt = AGENT_INSTRUCTIONS[(agent_key, mode)]
+        if payload.structured and mode == "review":
+            check_block = "\n".join(f"- {c}" for c in (payload.checks or []))
+            submode_line = f"\nReview perspective: {payload.reviewSubmode}" if payload.reviewSubmode else ""
+            task_prompt = (
+                AGENT_INSTRUCTIONS[(agent_key, mode)]
+                + "\n\n"
+                + REVIEW_STRUCTURED_FRAME
+                + submode_line
+                + "\n\nCheck titles to use verbatim:\n"
+                + check_block
+            )
+        elif payload.chatFollowup and mode == "review":
+            task_prompt = REVIEW_CHAT_FRAME
+        else:
+            task_prompt = AGENT_INSTRUCTIONS[(agent_key, mode)]
         label = AGENT_LABELS[agent_key]
 
     file_note = ""

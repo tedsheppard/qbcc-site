@@ -44,6 +44,10 @@
 
 html, body { min-height: 100%; margin: 0; }
 
+/* `display: flex` etc. on labels/cards would otherwise override the user-agent
+   `[hidden] { display: none }` rule. Keep the hidden attribute authoritative. */
+[hidden] { display: none !important; }
+
 body {
   background: var(--sidebar-bg);
   color: var(--main-fg);
@@ -1577,4 +1581,352 @@ a { color: inherit; text-decoration: none; }
   .modal-body .row-2 { grid-template-columns: 1fr; }
   .calc-result dl { grid-template-columns: 130px minmax(0, 1fr); }
   .chat-empty-title { font-size: 28px; }
+}
+
+/* ---------- Visual fixes (post v2 audit) ---------- */
+
+/* Sidebar "+ New context" was wrapping; let the icon and label stay on one line. */
+.new-project { white-space: nowrap; padding: 9px 10px; gap: 6px; }
+.dark-button, .ghost-button, .link-button, .send-button { white-space: nowrap; }
+
+/* Top-of-content page title was duplicating the header breadcrumb; visually
+   muted versions look cleaner. The h1 stays for SEO/structure but is smaller
+   in the page body when a breadcrumb is also above it. */
+.page-shell .page-title { font-size: 22px; }
+
+/* Decision search: search button was filling a 1fr grid track. Pin it. */
+.search-form .dark-button { width: 160px; justify-self: end; }
+.search-form .select-input { max-width: 220px; }
+
+/* Filters details was rendering as an empty bordered shell. Tidy it. */
+.filters {
+  margin-top: 0;
+  background: #fdfcf9;
+  border-radius: 9px;
+}
+.filters[open] { padding: 0 12px 12px; }
+.filters > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 4px;
+  font-weight: 600;
+  color: var(--main-fg);
+}
+.filters > summary::before {
+  content: "+";
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--main-border);
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--muted-fg);
+}
+.filters[open] > summary::before { content: "−"; }
+
+/* Adjudicator toolbar should be inline, not a 2-col grid. */
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.toolbar .text-input { flex: 1; min-width: 220px; }
+.toolbar .select-input { width: auto; min-width: 200px; }
+
+/* Adjudicator card was tall and sparse — tighten. */
+.adj-card { padding: 12px; gap: 2px; }
+.adj-card strong { font-size: 13.5px; }
+.adj-card-row { font-size: 11.5px; }
+
+/* When the right detail panel has no content yet, hide it on wide screens to
+   avoid wasting half a row. The .detail-panel.empty class is added by JS when
+   appropriate; the CSS-only equivalent is to dim the empty placeholder. */
+.detail-panel .empty-state { background: transparent; border-style: dashed; }
+
+/* Due-date Result panel was missing — make sure both calc-card and the result
+   are full-width inside the right column of due-grid. */
+#due-result:empty { display: none; }
+.calc-card .card-head .loc-row { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; text-transform: none; letter-spacing: 0; font-size: 12.5px; }
+.calc-card .card-head .loc-row select { padding: 4px 22px 4px 8px; height: 28px; font-size: 12.5px; }
+
+/* Hide the old "sopal.com.au" right-corner link that was floating with no
+   left-side content on the home page when there are no breadcrumbs. The
+   .header-right link still appears but stays muted. */
+.header-right .link-button.small { font-size: 12px; padding: 4px 8px; }
+
+/* ---------- Review workspace (claim-check pattern) ---------- */
+
+.review-shell { gap: 18px; }
+
+.review-mode-picker {
+  background: #fff;
+  border: 1px solid var(--main-border);
+  border-radius: 14px;
+  padding: 28px 28px 32px;
+}
+.review-mode-picker h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 650;
+}
+.review-mode-picker p { margin: 0 0 18px; color: var(--muted-fg); }
+
+.mode-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.mode-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--main-border);
+  border-radius: 12px;
+  background: #fff;
+  transition: background-color 0.12s, border-color 0.12s, transform 0.12s;
+  text-decoration: none;
+  color: var(--main-fg);
+}
+.mode-tile:hover {
+  background: #fafaf6;
+  border-color: var(--ring);
+  transform: translateY(-1px);
+}
+.mode-tile-icon {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  border-radius: 9px;
+  color: var(--main-fg);
+  flex-shrink: 0;
+}
+.mode-tile-icon svg { width: 18px; height: 18px; }
+.mode-tile-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mode-tile-body strong { font-size: 14px; font-weight: 650; }
+.mode-tile-body .muted { font-size: 12.5px; }
+
+.review-meta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fdfcf9;
+  border: 1px solid var(--main-border);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.review-meta-bar .review-meta-left { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.review-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.85fr);
+  gap: 16px;
+  align-items: start;
+  min-height: 70vh;
+}
+.review-left { display: flex; flex-direction: column; gap: 14px; }
+.review-right { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 76px; max-height: calc(100vh - 96px); overflow: auto; }
+.review-right .card { background: #fff; }
+
+.review-doc-card .card-body { padding: 14px 16px; }
+.review-chat-card .card-body, .review-chat-card .review-chat { display: contents; }
+.review-chat-card { display: flex; flex-direction: column; min-height: 360px; }
+.review-chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.review-chat .review-message-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  background: #fff;
+  min-height: 220px;
+}
+.review-chat .composer-active.review-composer {
+  margin: 0;
+  border-top: 1px solid var(--main-border);
+  border-radius: 0 0 12px 12px;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  box-shadow: none;
+}
+
+/* Document upload zone */
+.doc-input { display: flex; flex-direction: column; gap: 12px; }
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 6px;
+  padding: 28px 18px;
+  border: 1.5px dashed var(--main-border);
+  border-radius: 12px;
+  background: #fcfbf7;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  background: #f4f1ea;
+  border-color: var(--ring);
+}
+.upload-icon { display: inline-flex; color: var(--muted-fg); }
+.upload-icon svg { width: 28px; height: 28px; }
+.upload-primary { font-size: 14px; font-weight: 500; color: var(--main-fg); }
+.upload-browse { color: var(--focus); text-decoration: underline; }
+.upload-sub { font-size: 12px; }
+
+.paste-fallback summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 12.5px;
+  color: var(--muted-fg);
+  padding: 6px 0;
+}
+.paste-fallback summary::before {
+  content: "+";
+  display: inline-block;
+  width: 14px;
+  margin-right: 6px;
+  color: var(--muted-fg);
+}
+.paste-fallback[open] summary::before { content: "−"; }
+.paste-fallback summary::-webkit-details-marker { display: none; }
+.paste-fallback .text-area { min-height: 140px; }
+.paste-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  gap: 10px;
+}
+
+.doc-loaded { display: flex; flex-direction: column; gap: 10px; }
+.doc-loaded-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.doc-preview {
+  margin: 0;
+  padding: 12px;
+  background: var(--main-muted);
+  border: 1px solid var(--main-border);
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  max-height: 240px;
+  overflow: auto;
+}
+
+/* Analysis pane */
+.review-analysis-card { min-height: 360px; }
+.analysis-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.analysis-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.summary-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid;
+}
+.sc-pill strong { font-weight: 700; font-size: 13px; }
+.sc-pill.sc-pass { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.sc-pill.sc-fail { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+.sc-pill.sc-warn { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+.sc-pill.sc-info { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+.analysis-overview { font-size: 13px; line-height: 1.6; color: #2c2c2c; }
+.analysis-overview p { margin: 0 0 8px; }
+
+.check-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.check-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--main-border);
+  border-radius: 9px;
+  background: #fff;
+}
+.check-item.idle, .check-item.pending { background: #fbfaf6; }
+.check-item.pass { background: #f0fdf6; border-color: #bff0d4; }
+.check-item.fail { background: #fef4f4; border-color: #fbcfcf; }
+.check-item.warn { background: #fffaeb; border-color: #fde7a0; }
+.check-item.info { background: #f3f7ff; border-color: #c8d8f4; }
+.check-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  background: #fff;
+  border: 1px solid var(--main-border);
+  margin-top: 1px;
+}
+.check-item.pass .check-status { background: #34d399; color: #fff; border-color: #34d399; }
+.check-item.fail .check-status { background: #ef4444; color: #fff; border-color: #ef4444; }
+.check-item.warn .check-status { background: #f59e0b; color: #fff; border-color: #f59e0b; }
+.check-item.info .check-status { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+.check-item.idle .check-status, .check-item.pending .check-status { color: var(--muted-fg); }
+.check-body strong { display: block; font-size: 13px; font-weight: 650; line-height: 1.35; margin-bottom: 4px; }
+.check-detail { font-size: 12.5px; line-height: 1.55; color: #3a3a3a; }
+.check-detail p { margin: 0 0 6px; }
+.check-detail p:last-child { margin-bottom: 0; }
+
+.analysis-block { margin-top: 14px; }
+.analysis-block h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-fg);
+}
+.analysis-block ul { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.55; }
+.analysis-block li { margin-bottom: 4px; }
+
+/* Mobile: stack the review grid */
+@media (max-width: 1100px) {
+  .review-grid { grid-template-columns: 1fr; }
+  .review-right { position: static; max-height: none; }
 }
