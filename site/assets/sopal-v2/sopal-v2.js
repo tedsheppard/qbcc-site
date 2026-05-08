@@ -715,6 +715,29 @@
     return best;
   }
 
+  function resumePreviewFor(latest) {
+    if (!latest) return "";
+    const project = latest.project;
+    // Prefer the most recent assistant message from the review chat thread.
+    const chatKey = `chat:review:${latest.agentKey}:${latest.submodeId}`;
+    const chat = project.chats && project.chats[chatKey];
+    if (chat && Array.isArray(chat.messages)) {
+      for (let i = chat.messages.length - 1; i >= 0; i--) {
+        const m = chat.messages[i];
+        if (m && m.role === "assistant" && m.content) {
+          return plainPreview(m.content).slice(0, 130) + (plainPreview(m.content).length > 130 ? "…" : "");
+        }
+      }
+    }
+    // Fallback: the analysis summary itself.
+    const summary = latest.review && latest.review.analysis && latest.review.analysis.summary;
+    if (summary) {
+      const p = plainPreview(summary);
+      return p.slice(0, 130) + (p.length > 130 ? "…" : "");
+    }
+    return "";
+  }
+
   function HomePage() {
     const tools = workspaceNav();
     const projects = projectList();
@@ -730,12 +753,14 @@
             const submodeLabel = submode ? submode.label.toLowerCase() : lastReview.submodeId;
             const counts = lastReview.review.analysis.counts || { fail: 0, warn: 0, info: 0, pass: 0 };
             const href = `/sopal-v2/projects/${lastReview.project.id}/agents/${lastReview.agentKey}?mode=review&submode=${lastReview.submodeId}`;
+            const preview = resumePreviewFor(lastReview);
             return `
               <a class="resume-chip" href="${href}" data-nav>
                 <span class="resume-chip-icon">${ICON.sparkles}</span>
                 <span class="resume-chip-body">
                   <strong>Resume ${escapeHtml(AGENT_LABELS[lastReview.agentKey] || lastReview.agentKey)} · ${escapeHtml(submodeLabel)}</strong>
                   <span class="muted">${escapeHtml(lastReview.project.name)} — ${counts.fail || 0} issues · ${counts.warn || 0} warnings · ${counts.info || 0} need input</span>
+                  ${preview ? `<span class="resume-chip-preview">${escapeHtml(preview)}</span>` : ""}
                 </span>
                 <span class="resume-chip-chev">${ICON.chevRight}</span>
               </a>`;
@@ -2150,9 +2175,9 @@ Total\t${formatCurrencyFull(total)}`;
             <form class="card-body context-form" data-context-form="${bucket}">
               <label class="span-2">Label<input class="text-input" name="name" placeholder="e.g. Head contract — clauses 1-12"></label>
               <label class="span-2">Paste text<textarea class="text-area" name="text" rows="8" placeholder="Paste clauses, correspondence, claim text, schedule text, or facts."></textarea></label>
-              <div class="file-zone span-2">
-                <label class="file-zone-label">${ICON.upload}<span>Click or drop to extract from PDF / DOCX / TXT</span><input type="file" data-context-file accept=".pdf,.docx,.txt"></label>
-                <div class="muted file-status" data-context-file-status>No file selected.</div>
+              <div class="file-zone span-2" data-bulk-drop>
+                <label class="file-zone-label">${ICON.upload}<span>Click or drop one or more PDF / DOCX / TXT files — each becomes a separate entry</span><input type="file" data-context-file accept=".pdf,.docx,.txt" multiple></label>
+                <div class="muted file-status" data-context-file-status>No files selected.</div>
               </div>
               <div class="span-2 split-action" data-split-action hidden>
                 <button class="ghost-button compact" type="button" data-split-detect>${ICON.layers}<span>Detect clauses</span></button>
@@ -2252,24 +2277,83 @@ Total\t${formatCurrencyFull(total)}`;
       render();
     });
 
-    fileInput?.addEventListener("change", async () => {
-      const file = fileInput.files && fileInput.files[0];
-      if (!file) return;
-      status.textContent = "Extracting text…";
-      const fd = new FormData(); fd.append("file", file);
-      try {
-        const response = await fetch("/api/sopal-v2/extract", { method: "POST", body: fd, credentials: "include" });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.detail || "Extraction failed");
-        extracted = data;
-        if (!form.elements.name.value) form.elements.name.value = data.filename;
-        form.elements.text.value = [form.elements.text.value, data.text].filter(Boolean).join("\n\n");
-        status.textContent = `${data.filename}: ${data.characters.toLocaleString()} chars extracted${data.truncated ? " (truncated)" : ""}.`;
-        updateSplitVisibility();
-      } catch (error) {
-        status.textContent = error.message || "Extraction failed";
+    async function processFiles(files) {
+      const list = Array.from(files || []);
+      if (!list.length) return;
+      // Single file with no pasted text → fall through into the existing single-file
+      // flow so the user can review/edit before saving (preserves the existing UX).
+      if (list.length === 1 && !textarea.value.trim()) {
+        const file = list[0];
+        status.textContent = "Extracting text…";
+        const fd = new FormData(); fd.append("file", file);
+        try {
+          const response = await fetch("/api/sopal-v2/extract", { method: "POST", body: fd, credentials: "include" });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.detail || "Extraction failed");
+          extracted = data;
+          if (!form.elements.name.value) form.elements.name.value = data.filename;
+          form.elements.text.value = [form.elements.text.value, data.text].filter(Boolean).join("\n\n");
+          status.textContent = `${data.filename}: ${data.characters.toLocaleString()} chars extracted${data.truncated ? " (truncated)" : ""}.`;
+          updateSplitVisibility();
+        } catch (error) {
+          status.textContent = error.message || "Extraction failed";
+        }
+        return;
       }
-    });
+      // Multi-file: extract each in parallel, then save all as separate entries
+      // bypassing the form's text/name fields entirely.
+      status.textContent = `Extracting ${list.length} files…`;
+      const results = await Promise.all(list.map(async (file) => {
+        const fd = new FormData(); fd.append("file", file);
+        try {
+          const response = await fetch("/api/sopal-v2/extract", { method: "POST", body: fd, credentials: "include" });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.detail || "Extraction failed");
+          return { ok: true, data, file };
+        } catch (error) {
+          return { ok: false, file, message: error.message || "Extraction failed" };
+        }
+      }));
+      const project = getProject(projectId);
+      if (!project) return;
+      const stamp = new Date().toISOString();
+      const succeeded = results.filter((r) => r.ok);
+      const failed = results.filter((r) => !r.ok);
+      succeeded.forEach((r) => {
+        project[bucket].push({
+          name: r.data.filename || r.file.name || "Untitled",
+          text: r.data.text || "",
+          source: "extracted file (bulk)",
+          addedAt: stamp,
+        });
+      });
+      if (succeeded.length) saveProject(project);
+      const summary = `${succeeded.length} added${failed.length ? ` · ${failed.length} failed (${failed.map((f) => f.file.name).join(", ")})` : ""}`;
+      if (succeeded.length) {
+        status.textContent = summary;
+        render();
+      } else {
+        status.textContent = `All ${failed.length} extractions failed: ${failed.map((f) => `${f.file.name} (${f.message})`).join("; ")}`;
+      }
+    }
+
+    fileInput?.addEventListener("change", () => processFiles(fileInput.files));
+
+    const dropZone = form.querySelector("[data-bulk-drop]");
+    if (dropZone) {
+      ["dragenter", "dragover"].forEach((evt) => dropZone.addEventListener(evt, (event) => {
+        event.preventDefault();
+        dropZone.classList.add("drag-over");
+      }));
+      ["dragleave", "drop"].forEach((evt) => dropZone.addEventListener(evt, (event) => {
+        event.preventDefault();
+        dropZone.classList.remove("drag-over");
+      }));
+      dropZone.addEventListener("drop", (event) => {
+        const files = event.dataTransfer && event.dataTransfer.files;
+        if (files && files.length) processFiles(files);
+      });
+    }
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
@@ -3827,6 +3911,149 @@ Total\t${formatCurrencyFull(total)}`;
     render();
   }
 
+  /* ---------- In-project search (Cmd+F) ---------- */
+
+  function buildProjectSearchIndex(project) {
+    const items = [];
+    (project.contracts || []).forEach((d, i) => items.push({
+      kind: "contract", bucket: "contracts", index: i, name: d.name || "Untitled",
+      hay: `${d.name || ""}\n${d.text || ""}`.toLowerCase(),
+      preview: (d.text || "").slice(0, 200),
+    }));
+    (project.library || []).forEach((d, i) => items.push({
+      kind: "library", bucket: "library", index: i, name: d.name || "Untitled",
+      hay: `${d.name || ""}\n${d.text || ""}`.toLowerCase(),
+      preview: (d.text || "").slice(0, 200),
+    }));
+    Object.entries(project.chats || {}).forEach(([key, chat]) => {
+      if (!chat || !Array.isArray(chat.messages)) return;
+      const { label, href } = describeChatKey(project, key);
+      chat.messages.forEach((m, i) => {
+        if (!m || !m.content) return;
+        items.push({
+          kind: "chat", chatKey: key, msgIndex: i,
+          name: `${label} · ${m.role === "user" ? "you" : "Sopal"}`,
+          hay: (m.content || "").toLowerCase(),
+          preview: plainPreview(m.content).slice(0, 200),
+          href,
+        });
+      });
+    });
+    return items;
+  }
+
+  function searchProjectIndex(items, query) {
+    const q = query.trim().toLowerCase();
+    if (!q) return items.slice(0, 30);
+    const tokens = q.split(/\s+/);
+    return items
+      .map((it) => {
+        let score = 0;
+        for (const tok of tokens) {
+          const idx = it.hay.indexOf(tok);
+          if (idx === -1) return null;
+          score += 100 - Math.min(idx, 99);
+        }
+        return { ...it, _score: score };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b._score - a._score)
+      .slice(0, 30);
+  }
+
+  let projectSearchState = null;
+
+  function openProjectSearch() {
+    if (modal) return;
+    const project = currentProject();
+    if (!project) return;
+    const items = buildProjectSearchIndex(project);
+    projectSearchState = { query: "", index: 0, items, project };
+    modal = {
+      render: () => {
+        const visible = searchProjectIndex(projectSearchState.items, projectSearchState.query);
+        projectSearchState.visible = visible;
+        if (projectSearchState.index >= visible.length) projectSearchState.index = Math.max(0, visible.length - 1);
+        return `
+          <div class="modal-backdrop palette-backdrop" data-modal-backdrop>
+            <div class="palette" role="dialog" aria-modal="true">
+              <div class="palette-input-row">
+                <span class="palette-icon">${ICON.search}</span>
+                <input class="palette-input" type="text" data-project-search-input placeholder="Search ${escapeHtml(project.name)} — contracts, library, chats…" value="${attr(projectSearchState.query)}" autocomplete="off" spellcheck="false">
+                <span class="palette-kbd">esc</span>
+              </div>
+              <ol class="palette-list">
+                ${visible.length === 0 ? `<li class="palette-empty">No matches in this project.</li>` : visible.map((it, i) => `
+                  <li class="palette-item ${i === projectSearchState.index ? "active" : ""}" data-project-search-index="${i}">
+                    <span class="palette-section">${escapeHtml(it.kind)}</span>
+                    <span class="palette-label">${escapeHtml(it.name)}</span>
+                    <span class="palette-hint">${escapeHtml((it.preview || "").slice(0, 90))}${(it.preview || "").length > 90 ? "…" : ""}</span>
+                  </li>`).join("")}
+              </ol>
+            </div>
+          </div>`;
+      },
+      bind: (rootEl) => {
+        const close = () => { modal = null; projectSearchState = null; render(); };
+        const fire = (item) => {
+          if (!item) return;
+          modal = null;
+          projectSearchState = null;
+          if (item.kind === "contract" || item.kind === "library") {
+            navigate(item.kind === "contract"
+              ? `/sopal-v2/projects/${project.id}/contract`
+              : `/sopal-v2/projects/${project.id}/library`);
+            // Open the doc drawer for that item after navigation
+            setTimeout(() => openDocPreview(project.id, item.bucket, item.index), 250);
+          } else if (item.kind === "chat" && item.href) {
+            navigate(item.href);
+          }
+        };
+        const input = rootEl.querySelector("[data-project-search-input]");
+        if (input) {
+          input.focus();
+          input.setSelectionRange(input.value.length, input.value.length);
+          input.addEventListener("input", () => {
+            projectSearchState.query = input.value;
+            projectSearchState.index = 0;
+            const drawer = rootEl.querySelector(".palette");
+            if (drawer) {
+              const tmp = document.createElement("div");
+              tmp.innerHTML = modal.render();
+              drawer.innerHTML = tmp.querySelector(".palette").innerHTML;
+              const re = drawer.querySelector("[data-project-search-input]");
+              if (re) {
+                re.value = projectSearchState.query;
+                re.focus();
+                re.setSelectionRange(re.value.length, re.value.length);
+                bindList();
+              }
+            }
+          });
+        }
+        const bindList = () => {
+          rootEl.querySelectorAll("[data-project-search-index]").forEach((el) => {
+            el.addEventListener("mouseenter", () => {
+              projectSearchState.index = Number(el.dataset.projectSearchIndex);
+              rootEl.querySelectorAll(".palette-item").forEach((n) => n.classList.toggle("active", Number(n.dataset.projectSearchIndex) === projectSearchState.index));
+            });
+            el.addEventListener("click", () => fire(projectSearchState.visible[Number(el.dataset.projectSearchIndex)]));
+          });
+        };
+        bindList();
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        document.addEventListener("keydown", function handler(ev) {
+          if (!projectSearchState) { document.removeEventListener("keydown", handler); return; }
+          if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); return; }
+          if (ev.key === "ArrowDown") { ev.preventDefault(); projectSearchState.index = Math.min(projectSearchState.index + 1, projectSearchState.visible.length - 1); rootEl.querySelectorAll(".palette-item").forEach((n) => n.classList.toggle("active", Number(n.dataset.projectSearchIndex) === projectSearchState.index)); }
+          if (ev.key === "ArrowUp") { ev.preventDefault(); projectSearchState.index = Math.max(projectSearchState.index - 1, 0); rootEl.querySelectorAll(".palette-item").forEach((n) => n.classList.toggle("active", Number(n.dataset.projectSearchIndex) === projectSearchState.index)); }
+          if (ev.key === "Enter") { ev.preventDefault(); fire(projectSearchState.visible[projectSearchState.index]); document.removeEventListener("keydown", handler); }
+        });
+      },
+    };
+    render();
+  }
+
   /* ---------- Boot ---------- */
 
   window.addEventListener("popstate", render);
@@ -3834,6 +4061,13 @@ Total\t${formatCurrencyFull(total)}`;
     if ((ev.metaKey || ev.ctrlKey) && (ev.key === "k" || ev.key === "K")) {
       ev.preventDefault();
       openCommandPalette();
+    }
+    if ((ev.metaKey || ev.ctrlKey) && (ev.key === "f" || ev.key === "F")) {
+      // Only intercept when there's a current project to search.
+      if (currentProject()) {
+        ev.preventDefault();
+        openProjectSearch();
+      }
     }
     if ((ev.metaKey || ev.ctrlKey) && ev.key === "\\") {
       ev.preventDefault();
