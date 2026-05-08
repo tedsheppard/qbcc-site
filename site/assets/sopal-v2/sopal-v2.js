@@ -204,6 +204,7 @@
   let modal = null; // { render(): string, bind(root): void, close(): void }
   let projectMenuOpen = false;
   let sidebarOpen = false;
+  let projectSelection = new Set();
   let sidebarCollapsed = (() => {
     try { return localStorage.getItem("sopal-v2-sidebar-collapsed") === "1"; } catch (_) { return false; }
   })();
@@ -865,9 +866,12 @@
 
   function projectRow(p, opts) {
     const meta = [p.reference, p.contractForm, p.claimant ? `${p.claimant} v ${p.respondent || "?"}` : ""].filter(Boolean).join(" · ");
+    const isSelected = projectSelection.has(p.id);
+    const checkboxHtml = `<label class="project-row-check" onclick="event.stopPropagation()"><input type="checkbox" data-project-checkbox="${attr(p.id)}" ${isSelected ? "checked" : ""}></label>`;
     if (opts && opts.archived) {
       return `
-        <div class="project-row archived-row">
+        <div class="project-row archived-row ${isSelected ? "is-selected" : ""}">
+          ${checkboxHtml}
           <div class="project-row-icon">${ICON.folder}</div>
           <div class="project-row-text">
             <strong>${escapeHtml(p.name)}</strong>
@@ -878,7 +882,8 @@
         </div>`;
     }
     return `
-      <a class="project-row" href="/sopal-v2/projects/${attr(p.id)}/overview" data-nav>
+      <a class="project-row ${isSelected ? "is-selected" : ""}" href="/sopal-v2/projects/${attr(p.id)}/overview" data-nav>
+        ${checkboxHtml}
         <div class="project-row-icon">${ICON.file}</div>
         <div class="project-row-text">
           <strong>${escapeHtml(p.name)}</strong>
@@ -920,6 +925,13 @@
     store.savedSearches = store.savedSearches.filter((s) => s.id !== id);
     saveStore();
   }
+  function renameSavedDecisionSearch(id, label) {
+    if (!Array.isArray(store.savedSearches)) return;
+    const entry = store.savedSearches.find((s) => s.id === id);
+    if (!entry) return;
+    entry.label = (label || "").trim() || entry.label;
+    saveStore();
+  }
 
   function DecisionsPage() {
     const params = new URLSearchParams(window.location.search);
@@ -946,13 +958,24 @@
         if (entry) render();
       });
       document.querySelectorAll("[data-saved-search]").forEach((el) => el.addEventListener("click", (e) => {
-        if (e.target.closest("[data-delete-saved]")) return;
+        if (e.target.closest("[data-delete-saved], [data-rename-saved]")) return;
         navigate(`/sopal-v2/research/decisions?${el.dataset.savedSearch}`);
       }));
       document.querySelectorAll("[data-delete-saved]").forEach((el) => el.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
         deleteSavedDecisionSearch(el.dataset.deleteSaved);
+        render();
+      }));
+      document.querySelectorAll("[data-rename-saved]").forEach((el) => el.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const id = el.dataset.renameSaved;
+        const entry = (store.savedSearches || []).find((s) => s.id === id);
+        if (!entry) return;
+        const next = prompt("Rename saved search", entry.label);
+        if (next === null) return;
+        renameSavedDecisionSearch(id, next);
         render();
       }));
       if (q || params.toString()) fetchDecisionResults(params, 0);
@@ -989,6 +1012,7 @@
             ${saved.map((s) => `
               <button class="saved-search-chip" type="button" data-saved-search="${attr(s.qs)}">
                 <span class="saved-search-label">${escapeHtml(s.label)}</span>
+                <span class="saved-search-edit" data-rename-saved="${attr(s.id)}" title="Rename">✎</span>
                 <span class="saved-search-x" data-delete-saved="${attr(s.id)}" title="Remove">×</span>
               </button>`).join("")}
           </div>
@@ -1936,11 +1960,46 @@ Total\t${formatCurrencyFull(total)}`;
     const bytes = localStorageBytesUsed();
     const quotaApprox = 5 * 1024 * 1024; // browsers typically grant ~5MB to a single origin
     const pct = Math.min(100, Math.round((bytes / quotaApprox) * 100));
+    // Drop selections that are no longer on this view (e.g. tab switch).
+    const visibleIds = new Set(projects.map((p) => p.id));
+    for (const id of projectSelection) if (!visibleIds.has(id)) projectSelection.delete(id);
+    const selectedCount = projectSelection.size;
+    const allSelected = projects.length > 0 && projects.every((p) => projectSelection.has(p.id));
     setTimeout(() => {
       document.querySelectorAll("[data-restore-project]").forEach((b) => b.addEventListener("click", () => {
         restoreProject(b.dataset.restoreProject);
         render();
       }));
+      document.querySelectorAll("[data-project-checkbox]").forEach((cb) => cb.addEventListener("change", () => {
+        const id = cb.dataset.projectCheckbox;
+        if (cb.checked) projectSelection.add(id); else projectSelection.delete(id);
+        render();
+      }));
+      document.querySelector("[data-select-all-projects]")?.addEventListener("change", (event) => {
+        if (event.target.checked) projects.forEach((p) => projectSelection.add(p.id));
+        else projects.forEach((p) => projectSelection.delete(p.id));
+        render();
+      });
+      document.querySelector("[data-bulk-archive]")?.addEventListener("click", () => {
+        Array.from(projectSelection).forEach((id) => archiveProject(id));
+        projectSelection = new Set();
+        render();
+      });
+      document.querySelector("[data-bulk-restore]")?.addEventListener("click", () => {
+        Array.from(projectSelection).forEach((id) => restoreProject(id));
+        projectSelection = new Set();
+        render();
+      });
+      document.querySelector("[data-bulk-delete]")?.addEventListener("click", () => {
+        if (!confirm(`Permanently delete ${projectSelection.size} project${projectSelection.size === 1 ? "" : "s"}? This cannot be undone.`)) return;
+        Array.from(projectSelection).forEach((id) => deleteProject(id));
+        projectSelection = new Set();
+        render();
+      });
+      document.querySelector("[data-bulk-clear]")?.addEventListener("click", () => {
+        projectSelection = new Set();
+        render();
+      });
     }, 0);
     return PageBody(`
       <div class="page-shell">
@@ -1960,6 +2019,17 @@ Total\t${formatCurrencyFull(total)}`;
           <div class="tag-filter-row">
             <a class="tag-filter ${!categoryFilter ? "active" : ""}" href="/sopal-v2/projects${showArchived ? "?archived=1" : ""}" data-nav>All categories</a>
             ${categoriesPresent.map((c) => `<a class="tag-filter ${categoryFilter === c ? "active" : ""}" href="/sopal-v2/projects?${showArchived ? "archived=1&" : ""}category=${encodeURIComponent(c)}" data-nav>${escapeHtml(c)}</a>`).join("")}
+          </div>` : ""}
+        ${projects.length > 0 ? `
+          <div class="bulk-toolbar ${selectedCount ? "active" : ""}">
+            <label class="bulk-select-all"><input type="checkbox" data-select-all-projects ${allSelected ? "checked" : ""}><span>${selectedCount ? `${selectedCount} selected` : `Select all`}</span></label>
+            ${selectedCount ? `
+              ${showArchived
+                ? `<button class="ghost-button compact" type="button" data-bulk-restore>${ICON.arrowUpRight}<span>Restore</span></button>`
+                : `<button class="ghost-button compact" type="button" data-bulk-archive>${ICON.folder}<span>Archive</span></button>`}
+              <button class="ghost-button compact danger" type="button" data-bulk-delete>${ICON.trash}<span>Delete</span></button>
+              <button class="ghost-button compact" type="button" data-bulk-clear>Clear</button>
+            ` : ""}
           </div>` : ""}
         ${projects.length === 0 ? (showArchived ? `
           <div class="card-empty"><div class="card-empty-icon">${ICON.folder}</div><h4>No archived projects.</h4><p>Archive a project from its overview page to tuck it out of sight without deleting.</p></div>
@@ -2061,6 +2131,15 @@ Total\t${formatCurrencyFull(total)}`;
                 <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/library" data-nav>Open library</a>
                 <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/assistant" data-nav>Open assistant</a>
               </div>
+            </div>
+          </section>
+          <section class="card span-all project-notes-card">
+            <div class="card-head">
+              <h3>Notes</h3>
+              <span class="muted notes-status" data-notes-status></span>
+            </div>
+            <div class="card-body">
+              <textarea class="text-area notes-textarea" data-notes-input rows="5" placeholder="Free-form scratchpad — chronology, key dates, open questions. Saved automatically.">${escapeHtml(project.notes || "")}</textarea>
             </div>
           </section>
           <section class="card span-all">
@@ -2196,6 +2275,25 @@ Total\t${formatCurrencyFull(total)}`;
       restoreProject(b.dataset.restoreProject);
       render();
     }));
+    const notesInput = document.querySelector("[data-notes-input]");
+    if (notesInput) {
+      const status = document.querySelector("[data-notes-status]");
+      let notesTimer = null;
+      notesInput.addEventListener("input", () => {
+        if (status) status.textContent = "Saving…";
+        if (notesTimer) clearTimeout(notesTimer);
+        notesTimer = setTimeout(() => {
+          const proj = getProject(projectId);
+          if (!proj) return;
+          proj.notes = notesInput.value;
+          saveProject(proj);
+          if (status) {
+            status.textContent = "Saved";
+            setTimeout(() => { if (status) status.textContent = ""; }, 1500);
+          }
+        }, 400);
+      });
+    }
   }
 
   function duplicateProject(sourceId) {
