@@ -42,6 +42,55 @@
   --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.12);
 }
 
+[data-theme="dark"] {
+  --sidebar-bg: #181715;
+  --sidebar-fg: #ececea;
+  --sidebar-active: #262422;
+  --sidebar-active-fg: #ffffff;
+  --sidebar-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-divider: rgba(255, 255, 255, 0.08);
+
+  --main-panel: #1f1d1b;
+  --main-fg: #ececea;
+  --main-border: #2c2a27;
+  --main-muted: #25231f;
+  --muted-fg: #9b9994;
+  --soft-fg: #6b6963;
+
+  --accent: #2a2724;
+  --ring: #3a3633;
+  --focus: #34d399;
+
+  --button: #f5f2ed;
+  --button-hover: #ffffff;
+  --button-fg: #1a1a1a;
+
+  --danger: #fca5a5;
+  --danger-bg: rgba(185, 28, 28, 0.18);
+  --danger-border: rgba(252, 165, 165, 0.4);
+
+  --warn-bg: rgba(245, 158, 11, 0.12);
+  --warn-border: rgba(245, 158, 11, 0.35);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.55);
+}
+[data-theme="dark"] .palette,
+[data-theme="dark"] .modal,
+[data-theme="dark"] .doc-drawer { background: var(--main-panel); color: var(--main-fg); }
+[data-theme="dark"] .palette-input { color: var(--main-fg); }
+[data-theme="dark"] .palette-item.active,
+[data-theme="dark"] .palette-item:hover { background: rgba(255,255,255,0.06); }
+[data-theme="dark"] .doc-drawer-text { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.06); color: var(--main-fg); }
+[data-theme="dark"] .text-input,
+[data-theme="dark"] .text-area,
+[data-theme="dark"] .select-input { background: var(--main-muted); border-color: var(--ring); color: var(--main-fg); }
+[data-theme="dark"] .ghost-button:hover,
+[data-theme="dark"] .icon-button:hover { background: rgba(255,255,255,0.06); }
+[data-theme="dark"] .card { background: var(--main-panel); border-color: var(--main-border); }
+[data-theme="dark"] .recent-item:hover { background: rgba(255,255,255,0.04); }
+
 html, body { min-height: 100%; margin: 0; }
 /* Belt-and-braces: any single rogue element shouldn't make the page horizontally
    scrollable on phones. Set on body too because mobile Safari clips to body. */
@@ -2050,6 +2099,41 @@ a { color: inherit; text-decoration: none; }
 .recent-pin-btn:hover { color: #d97706; }
 .recent-item.is-pinned { border-left: 3px solid #f59e0b; padding-left: 13px; }
 .recent-item.is-pinned .recent-pin-btn { color: #d97706; }
+
+.storage-footer {
+  margin-top: 28px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--main-muted);
+  border: 1px solid var(--main-border);
+}
+.storage-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(0,0,0,0.06);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.storage-bar-fill {
+  height: 100%;
+  background: var(--focus, #1f6f5f);
+  transition: width 0.2s;
+}
+.storage-bar-fill.high { background: #f59e0b; }
+
+.category-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #c7d2fe;
+}
+[data-theme="dark"] .category-pill { background: rgba(99, 102, 241, 0.18); color: #c7d2fe; border-color: rgba(199, 210, 254, 0.3); }
 
 .split-action {
   display: flex;

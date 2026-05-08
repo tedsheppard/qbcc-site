@@ -213,6 +213,40 @@
     render();
   }
 
+  let theme = (() => {
+    try { return localStorage.getItem("sopal-v2-theme") === "dark" ? "dark" : "light"; } catch (_) { return "light"; }
+  })();
+  function applyTheme() {
+    if (theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
+    else document.documentElement.removeAttribute("data-theme");
+  }
+  function setTheme(value) {
+    theme = value === "dark" ? "dark" : "light";
+    try { localStorage.setItem("sopal-v2-theme", theme); } catch (_) {}
+    applyTheme();
+    render();
+  }
+  applyTheme();
+
+  const PROJECT_CATEGORIES = ["Head contract", "Subcontract", "Pre-dispute", "Active dispute", "Advice", "Other"];
+
+  function localStorageBytesUsed() {
+    let total = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key) || "";
+        total += (key || "").length + value.length;
+      }
+    } catch (_) {}
+    return total * 2; // chars are UTF-16
+  }
+  function formatBytes(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
   function emptyStore() { return { projects: {}, currentProjectId: null, recentDecisions: [] }; }
   function loadStore() {
     try {
@@ -674,6 +708,11 @@
           </nav>
         </div>
         <div class="header-right">
+          <button class="palette-hint-btn" type="button" data-toggle-theme title="${theme === "dark" ? "Switch to light theme" : "Switch to dark theme"} (⌘/Ctrl + Shift + D)" aria-label="Toggle theme">
+            ${theme === "dark"
+              ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>'
+              : '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'}
+          </button>
           <button class="palette-hint-btn" type="button" data-open-palette title="Open command palette">
             <span class="kbd-key">${navigator.platform && navigator.platform.toLowerCase().includes("mac") ? "⌘" : "Ctrl"}</span>
             <span class="kbd-key">K</span>
@@ -845,6 +884,7 @@
           <strong>${escapeHtml(p.name)}</strong>
           <span>${escapeHtml(meta || "Bespoke contract")}</span>
         </div>
+        ${p.category ? `<span class="category-pill">${escapeHtml(p.category)}</span>` : ""}
         <span class="status-pill">${p.contracts.length || 0} contract docs · ${p.library.length || 0} library</span>
         <span class="row-chev">${ICON.chevRight}</span>
       </a>
@@ -1887,9 +1927,15 @@ Total\t${formatCurrencyFull(total)}`;
   function ProjectsListPage() {
     const params = new URLSearchParams(window.location.search);
     const showArchived = params.get("archived") === "1";
+    const categoryFilter = params.get("category") || "";
     const active = projectList();
     const archived = archivedProjectList();
-    const projects = showArchived ? archived : active;
+    const baseList = showArchived ? archived : active;
+    const projects = categoryFilter ? baseList.filter((p) => (p.category || "Other") === categoryFilter) : baseList;
+    const categoriesPresent = Array.from(new Set(baseList.map((p) => p.category || "Other"))).filter(Boolean);
+    const bytes = localStorageBytesUsed();
+    const quotaApprox = 5 * 1024 * 1024; // browsers typically grant ~5MB to a single origin
+    const pct = Math.min(100, Math.round((bytes / quotaApprox) * 100));
     setTimeout(() => {
       document.querySelectorAll("[data-restore-project]").forEach((b) => b.addEventListener("click", () => {
         restoreProject(b.dataset.restoreProject);
@@ -1910,18 +1956,27 @@ Total\t${formatCurrencyFull(total)}`;
             <a class="projects-tab ${!showArchived ? "active" : ""}" href="/sopal-v2/projects" data-nav>Active${active.length ? ` · ${active.length}` : ""}</a>
             <a class="projects-tab ${showArchived ? "active" : ""}" href="/sopal-v2/projects?archived=1" data-nav>Archived${archived.length ? ` · ${archived.length}` : ""}</a>
           </div>` : ""}
+        ${categoriesPresent.length > 1 ? `
+          <div class="tag-filter-row">
+            <a class="tag-filter ${!categoryFilter ? "active" : ""}" href="/sopal-v2/projects${showArchived ? "?archived=1" : ""}" data-nav>All categories</a>
+            ${categoriesPresent.map((c) => `<a class="tag-filter ${categoryFilter === c ? "active" : ""}" href="/sopal-v2/projects?${showArchived ? "archived=1&" : ""}category=${encodeURIComponent(c)}" data-nav>${escapeHtml(c)}</a>`).join("")}
+          </div>` : ""}
         ${projects.length === 0 ? (showArchived ? `
           <div class="card-empty"><div class="card-empty-icon">${ICON.folder}</div><h4>No archived projects.</h4><p>Archive a project from its overview page to tuck it out of sight without deleting.</p></div>
         ` : `
           <div class="card-empty">
             <div class="card-empty-icon">${ICON.file}</div>
-            <h4>Create your first project</h4>
-            <p>Give it a name, the parties, the contract form. Then upload or paste the contract — the assistant and every agent will work in that project's context.</p>
+            <h4>${categoryFilter ? `No ${categoryFilter} projects` : "Create your first project"}</h4>
+            <p>${categoryFilter ? "Try a different category." : "Give it a name, the parties, the contract form. Then upload or paste the contract — the assistant and every agent will work in that project's context."}</p>
             <div class="card-empty-actions">
               <button class="dark-button" type="button" data-new-project>Create project</button>
               <label class="ghost-button" title="Import a sopal-*.json export">${ICON.upload}<span>Import from JSON</span><input type="file" data-import-project accept="application/json,.json" hidden></label>
             </div>
           </div>`) : `<div class="project-list">${projects.map((p) => projectRow(p, { archived: showArchived })).join("")}</div>`}
+        <footer class="storage-footer">
+          <div class="storage-bar"><div class="storage-bar-fill ${pct >= 80 ? "high" : ""}" style="width:${pct}%"></div></div>
+          <p class="muted">${formatBytes(bytes)} of ~${formatBytes(quotaApprox)} local browser storage used (${pct}%). Sopal v2 stores all project data in this browser only — no server account.</p>
+        </footer>
       </div>
     `);
   }
@@ -3655,6 +3710,13 @@ Total\t${formatCurrencyFull(total)}`;
                 <label>Reference / contract no.<input class="text-input" name="reference" value="${attr(editing?.reference || "")}" placeholder="e.g. PO-2024-014"></label>
               </div>
               <div class="row-2">
+                <label class="span-all">Category
+                  <select class="select-input" name="category">
+                    ${PROJECT_CATEGORIES.map((c) => `<option value="${attr(c)}" ${(editing?.category || "Head contract") === c ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}
+                  </select>
+                </label>
+              </div>
+              <div class="row-2">
                 <label class="span-all">You act for
                   <div class="radio-group">
                     <label class="radio-option"><input type="radio" name="userIsParty" value="claimant" ${(!editing || editing.userIsParty === "claimant") ? "checked" : ""}>The claimant</label>
@@ -3685,12 +3747,15 @@ Total\t${formatCurrencyFull(total)}`;
               contractForm: data.contractForm,
               reference: (data.reference || "").trim(),
               userIsParty: data.userIsParty || "claimant",
+              category: data.category || project.category || "Other",
             });
             saveProject(project);
             modal = null;
             render();
           } else {
             const project = createProject(data);
+            project.category = data.category || "Head contract";
+            saveProject(project);
             modal = null;
             navigate(`/sopal-v2/projects/${project.id}/overview`);
           }
@@ -3793,6 +3858,7 @@ Total\t${formatCurrencyFull(total)}`;
     document.querySelectorAll("[data-toggle-sidebar]").forEach((el) => el.addEventListener("click", () => { sidebarOpen = !sidebarOpen; render(); }));
     document.querySelectorAll("[data-toggle-collapse]").forEach((el) => el.addEventListener("click", () => setSidebarCollapsed(!sidebarCollapsed)));
     document.querySelectorAll("[data-open-palette]").forEach((el) => el.addEventListener("click", () => openCommandPalette()));
+    document.querySelectorAll("[data-toggle-theme]").forEach((el) => el.addEventListener("click", () => setTheme(theme === "dark" ? "light" : "dark")));
     document.querySelectorAll("[data-open-whatsnew]").forEach((el) => el.addEventListener("click", () => openWhatsNew()));
     document.querySelectorAll("[data-toggle-pin-thread]").forEach((el) => el.addEventListener("click", (event) => {
       event.preventDefault();
@@ -4280,6 +4346,10 @@ Total\t${formatCurrencyFull(total)}`;
     if ((ev.metaKey || ev.ctrlKey) && ev.key === "\\") {
       ev.preventDefault();
       setSidebarCollapsed(!sidebarCollapsed);
+    }
+    if ((ev.metaKey || ev.ctrlKey) && ev.shiftKey && (ev.key === "d" || ev.key === "D")) {
+      ev.preventDefault();
+      setTheme(theme === "dark" ? "light" : "dark");
     }
     if (ev.key === "?" && !ev.metaKey && !ev.ctrlKey && !ev.altKey) {
       const tag = (ev.target && ev.target.tagName) || "";
