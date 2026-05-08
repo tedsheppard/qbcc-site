@@ -256,6 +256,34 @@
     if (store.currentProjectId === id) store.currentProjectId = projectList()[0]?.id || null;
     saveStore();
   }
+  function seedSampleProject() {
+    // Onboarding shortcut for the empty-home state. Creates a fictional but
+    // realistic project so a first-time user can immediately try every agent
+    // without hand-typing setup. Drops the user straight into the assistant
+    // page so they can see project context working.
+    const project = createProject({
+      name: "Queen Street Tower — Stage 2 (sample)",
+      claimant: "Acme Builders Pty Ltd",
+      respondent: "QH Group Pty Ltd",
+      contractForm: "AS 4902",
+      reference: "PO-2024-014",
+      userIsParty: "claimant",
+    });
+    project.contracts = [{
+      name: "Head contract — extension of time clause",
+      text: "Clause 34.3 — Extension of time. The Contractor must, within 10 business days of becoming aware of a delay event qualifying for an extension of time under clause 34.2, give the Superintendent written notice setting out the cause and likely effect of the delay. Failure to give notice within that period is a bar to any extension of time claim.",
+      source: "sample",
+      addedAt: new Date().toISOString(),
+    }];
+    project.library = [{
+      name: "RFI 014 — Latent ground condition",
+      text: "RFI 014 (4 May 2026): During pile installation for Building B on 28 April 2026 the Contractor encountered fill below the predicted soft-clay layer that was not characterised in the geotechnical report. Pile design assumptions no longer valid. Awaiting structural engineer's redesign.",
+      source: "sample",
+      addedAt: new Date().toISOString(),
+    }];
+    saveProject(project);
+    navigate(`/sopal-v2/projects/${project.id}/overview`);
+  }
   function projectChat(p, key) {
     if (!p.chats[key]) p.chats[key] = { messages: [] };
     return p.chats[key];
@@ -579,7 +607,11 @@
               <div class="card-empty-icon">${ICON.file}</div>
               <h4>Create your first project</h4>
               <p>Add the contract details, paste in clauses or upload your contract — Sopal then runs every agent (Payment Claims, EOTs, Adjudication etc.) inside that project's context.</p>
-              <button class="dark-button" type="button" data-new-project>Create project</button>
+              <div class="card-empty-actions">
+                <button class="dark-button" type="button" data-new-project>Create project</button>
+                <button class="ghost-button" type="button" data-seed-sample>Try a sample project</button>
+              </div>
+              <p class="muted card-empty-hint">The sample is a fictional Queen Street Tower head contract under AS 4902 — pre-loaded with a contract clause and an RFI so you can immediately try the agents.</p>
             </div>
           ` : `
             <div class="project-list">
@@ -766,6 +798,68 @@
     try { return JSON.parse(s); } catch { return null; }
   }
 
+  // Standalone deep-link page so users can share /sopal-v2/research/decisions/{ejs_id}
+  function DecisionDetailPage(decisionId) {
+    setTimeout(() => loadDeepDecision(decisionId), 0);
+    return PageBody(`
+      <div class="page-shell">
+        <a class="link-button small" href="/sopal-v2/research/decisions" data-nav>← Back to decision search</a>
+        <section id="decision-detail" class="card detail-panel" style="position:static;max-height:none;">${skeletonRows()}</section>
+      </div>
+    `);
+  }
+
+  async function loadDeepDecision(decisionId) {
+    // First try to enrich with metadata via a quick search by decision id
+    // (the decision-text endpoint returns text only).
+    try {
+      const r = await fetch(`/api/sopal-v2/search?q=${encodeURIComponent(decisionId)}&limit=1`, { credentials: "include" });
+      const data = await r.json().catch(() => ({}));
+      const hit = (data.items || []).find((it) => (it.ejs_id || it.id) === decisionId) || (data.items || [])[0];
+      let meta = null;
+      let title = decisionId;
+      if (hit) {
+        const claimant = hit.claimant_name || hit.claimant || "";
+        const respondent = hit.respondent_name || hit.respondent || "";
+        title = [claimant, respondent].filter(Boolean).join(" v ") || decisionId;
+        meta = {
+          title, id: decisionId,
+          claimant, respondent,
+          decisionDate: hit.decision_date || hit.decision_date_norm || "",
+          adjudicator: hit.adjudicator_name || hit.adjudicator || "",
+          act: hit.act_category || hit.act || "",
+          claimed: money(hit.claimed_amount) || "",
+          awarded: money(hit.adjudicated_amount) || "",
+        };
+      }
+      await loadDecisionDetail(decisionId, title, meta);
+    } catch (error) {
+      const mount = document.getElementById("decision-detail");
+      if (mount) mount.innerHTML = `<div class="error-banner">${escapeHtml(error.message || "Could not load decision")}</div>`;
+    }
+  }
+
+  function AdjudicatorDetailPage(name) {
+    setTimeout(() => loadDeepAdjudicator(name), 0);
+    return PageBody(`
+      <div class="page-shell">
+        <a class="link-button small" href="/sopal-v2/research/adjudicators" data-nav>← Back to adjudicator statistics</a>
+        <section id="adj-detail" class="card detail-panel" style="position:static;max-height:none;">${skeletonRows()}</section>
+      </div>
+    `);
+  }
+
+  async function loadDeepAdjudicator(name) {
+    // Need the adjudicators list for the summary (avg award rate, fee shares).
+    if (!window.__sopalAdjudicators) {
+      try {
+        const r = await fetch("/api/adjudicators", { credentials: "include" });
+        window.__sopalAdjudicators = await r.json().catch(() => []);
+      } catch { window.__sopalAdjudicators = []; }
+    }
+    await loadAdjudicatorDetail(name);
+  }
+
   async function loadDecisionDetail(id, title, meta) {
     const mount = document.getElementById("decision-detail");
     if (!mount || !id) return;
@@ -779,7 +873,10 @@
       mount.innerHTML = `
         <div class="card-head">
           <div><h3>${escapeHtml(title || id)}</h3><p class="muted">${escapeHtml(id)}</p></div>
-          <button class="ghost-button compact" type="button" data-copy-text="${attr(text.slice(0, 8000))}" title="Copy decision text">${ICON.copy}<span>Copy</span></button>
+          <div class="panel-actions">
+            <a class="link-button small" href="/sopal-v2/research/decisions/${encodeURIComponent(id)}" data-nav title="Shareable link to this decision">Open page</a>
+            <button class="ghost-button compact" type="button" data-copy-text="${attr(text.slice(0, 8000))}" title="Copy decision text">${ICON.copy}<span>Copy</span></button>
+          </div>
         </div>
         ${metaHeader}
         <div class="card-body">
@@ -2569,8 +2666,26 @@ Total\t${formatCurrencyFull(total)}`;
     const parts = route.split("/").filter(Boolean);
 
     if (parts[0] === "research") {
-      if (parts[1] === "decisions") return { crumbs: [{ label: "Decision search" }], body: DecisionsPage() };
-      if (parts[1] === "adjudicators") return { crumbs: [{ label: "Adjudicator statistics" }], body: AdjudicatorsPage() };
+      if (parts[1] === "decisions") {
+        if (parts[2]) {
+          const decisionId = parts[2];
+          return {
+            crumbs: [{ label: "Decision search", href: "/sopal-v2/research/decisions" }, { label: decisionId }],
+            body: DecisionDetailPage(decisionId),
+          };
+        }
+        return { crumbs: [{ label: "Decision search" }], body: DecisionsPage() };
+      }
+      if (parts[1] === "adjudicators") {
+        if (parts[2]) {
+          const name = decodeURIComponent(parts[2]);
+          return {
+            crumbs: [{ label: "Adjudicator statistics", href: "/sopal-v2/research/adjudicators" }, { label: name }],
+            body: AdjudicatorDetailPage(name),
+          };
+        }
+        return { crumbs: [{ label: "Adjudicator statistics" }], body: AdjudicatorsPage() };
+      }
       return { crumbs: [{ label: "Research" }], body: notFoundPage() };
     }
     if (parts[0] === "tools") {
@@ -2633,6 +2748,7 @@ Total\t${formatCurrencyFull(total)}`;
     }));
     document.querySelectorAll("[data-toggle-sidebar]").forEach((el) => el.addEventListener("click", () => { sidebarOpen = !sidebarOpen; render(); }));
     document.querySelectorAll("[data-new-project]").forEach((el) => el.addEventListener("click", () => openProjectModal(null)));
+    document.querySelectorAll("[data-seed-sample]").forEach((el) => el.addEventListener("click", () => seedSampleProject()));
     document.querySelector("[data-project-menu-toggle]")?.addEventListener("click", (event) => {
       event.stopPropagation();
       projectMenuOpen = !projectMenuOpen;
