@@ -328,14 +328,19 @@
   function getProject(id) { return id ? store.projects[id] || null : null; }
   function projectList(opts) {
     const includeArchived = !!(opts && opts.includeArchived);
-    return Object.values(store.projects)
-      .filter((p) => includeArchived || !p.archived)
-      .sort((a, b) => {
-        const fa = a.favourite ? 1 : 0;
-        const fb = b.favourite ? 1 : 0;
-        if (fa !== fb) return fb - fa;
-        return (b.updatedAt || 0) - (a.updatedAt || 0);
-      });
+    const sort = (opts && opts.sort) || "favourites";
+    const list = Object.values(store.projects).filter((p) => includeArchived || !p.archived);
+    const compareUpdated = (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0);
+    if (sort === "name") return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    if (sort === "category") return list.sort((a, b) => ((a.category || "Other").localeCompare(b.category || "Other")) || compareUpdated(a, b));
+    if (sort === "recent") return list.sort(compareUpdated);
+    // default 'favourites': favourited first, then most-recent
+    return list.sort((a, b) => {
+      const fa = a.favourite ? 1 : 0;
+      const fb = b.favourite ? 1 : 0;
+      if (fa !== fb) return fb - fa;
+      return compareUpdated(a, b);
+    });
   }
   function toggleProjectFavourite(id) {
     const p = getProject(id);
@@ -1818,7 +1823,7 @@
   }
 
   function renderDateResult(result) {
-    const copyText = `${result.title}: ${formatDate(result.finalDate)}\n${result.basis}`;
+    const copyText = `${result.title}: ${formatDate(result.finalDate)}\n${result.basis}\nStart date: ${formatDate(result.startDate)}\nBusiness-day period: ${result.days}\nNon-business days skipped: ${summariseSkipped(result.skipped)}`;
     return `<div class="calc-result">
       <span class="calc-result-tag">${escapeHtml(result.title)}</span>
       <strong>${escapeHtml(formatDate(result.finalDate))}</strong>
@@ -1828,7 +1833,10 @@
         <dt>Business-day period</dt><dd>${result.days}</dd>
         <dt>Non-business days skipped</dt><dd>${escapeHtml(summariseSkipped(result.skipped))}</dd>
       </dl>
-      <button class="ghost-button compact" type="button" data-copy-text="${attr(copyText)}">${ICON.copy}<span>Copy</span></button>
+      <div class="result-actions">
+        <button class="ghost-button compact" type="button" data-copy-text="${attr(copyText)}">${ICON.copy}<span>Copy</span></button>
+        ${projectList().length ? `<button class="ghost-button compact" type="button" data-save-calc-to-project="due-date" data-calc-payload="${attr(JSON.stringify({ kind: "due-date", title: `${result.title}: ${formatDate(result.finalDate)}`, body: copyText }))}">${ICON.layers}<span>Save to project</span></button>` : ""}
+      </div>
     </div>`;
   }
 
@@ -2001,7 +2009,10 @@ Total\t${formatCurrencyFull(total)}`;
           </tbody>
         </table>
         <div class="result-total"><span>Total payable</span><strong>${formatCurrencyFull(total)}</strong></div>
-        <button class="ghost-button compact" type="button" data-copy-text="${attr(copy)}">${ICON.copy}<span>Copy results</span></button>
+        <div class="result-actions">
+          <button class="ghost-button compact" type="button" data-copy-text="${attr(copy)}">${ICON.copy}<span>Copy results</span></button>
+          ${projectList().length ? `<button class="ghost-button compact" type="button" data-save-calc-to-project="interest" data-calc-payload="${attr(JSON.stringify({ kind: "interest", title: `Interest on ${formatCurrencyFull(result.principal)} (${result.days} days)`, body: copy }))}">${ICON.layers}<span>Save to project</span></button>` : ""}
+        </div>
         ${breakdown}
       </div>`;
   }
@@ -2012,7 +2023,8 @@ Total\t${formatCurrencyFull(total)}`;
     const params = new URLSearchParams(window.location.search);
     const showArchived = params.get("archived") === "1";
     const categoryFilter = params.get("category") || "";
-    const active = projectList();
+    const sort = params.get("sort") || "favourites";
+    const active = projectList({ sort });
     const archived = archivedProjectList();
     const baseList = showArchived ? archived : active;
     const projects = categoryFilter ? baseList.filter((p) => (p.category || "Other") === categoryFilter) : baseList;
@@ -2060,12 +2072,23 @@ Total\t${formatCurrencyFull(total)}`;
         projectSelection = new Set();
         render();
       });
+      document.querySelector("[data-project-sort]")?.addEventListener("change", (event) => {
+        const next = new URLSearchParams(window.location.search);
+        next.set("sort", event.target.value);
+        navigate(`/sopal-v2/projects?${next.toString()}`);
+      });
     }, 0);
     return PageBody(`
       <div class="page-shell">
         <div class="page-head">
           <div><h1 class="page-title">${showArchived ? "Archived projects" : "Your projects"}</h1><p class="page-sub">Each project is one construction contract — head contract or subcontract.</p></div>
           <div class="page-actions">
+            <select class="select-input compact" data-project-sort title="Sort projects">
+              <option value="favourites" ${sort === "favourites" ? "selected" : ""}>Favourites first</option>
+              <option value="recent" ${sort === "recent" ? "selected" : ""}>Most recent</option>
+              <option value="name" ${sort === "name" ? "selected" : ""}>Name A–Z</option>
+              <option value="category" ${sort === "category" ? "selected" : ""}>Category</option>
+            </select>
             <label class="ghost-button compact" title="Import a sopal-*.json export">${ICON.upload}<span>Import</span><input type="file" data-import-project accept="application/json,.json" hidden></label>
             <button class="dark-button" type="button" data-new-project>${ICON.plus}<span>New project</span></button>
           </div>
@@ -3783,10 +3806,14 @@ Total\t${formatCurrencyFull(total)}`;
       const safe = escapeHtml(content || "").replace(/\n/g, "<br>");
       return `<div class="message msg-user"><div class="bubble">${enrichCitations(safe)}</div></div>`;
     }
+    const project = currentProject();
     return `<div class="message msg-assistant">
       <div class="message-body">
         <div class="md">${enrichCitations(renderMarkdown(content || ""))}</div>
-        ${withActions ? `<div class="message-actions"><button class="ghost-button compact" type="button" data-copy-text="${attr(content || "")}">${ICON.copy}<span>Copy</span></button></div>` : ""}
+        ${withActions ? `<div class="message-actions">
+          <button class="ghost-button compact" type="button" data-copy-text="${attr(content || "")}">${ICON.copy}<span>Copy</span></button>
+          ${project ? `<button class="ghost-button compact" type="button" data-save-msg-as-note="${attr(project.id)}" data-msg-text="${attr(content || "")}" title="Append this message to the project notes">${ICON.layers}<span>Save as note</span></button>` : ""}
+        </div>` : ""}
       </div>
     </div>`;
   }
@@ -3914,6 +3941,70 @@ Total\t${formatCurrencyFull(total)}`;
       },
     };
     render();
+  }
+
+  function openSaveCalcModal(payload) {
+    const projects = projectList();
+    if (!projects.length) return;
+    const defaultName = payload.title || "Calculation";
+    modal = {
+      render: () => `
+        <div class="modal-backdrop" data-modal-backdrop>
+          <div class="modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+              <h2>Save calculation to project</h2>
+              <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
+            </div>
+            <form class="modal-body" data-save-calc-form>
+              <label class="span-2">Project<select class="select-input" name="projectId" required>
+                ${projects.map((p) => `<option value="${attr(p.id)}" ${p.id === store.currentProjectId ? "selected" : ""}>${escapeHtml(p.name)}</option>`).join("")}
+              </select></label>
+              <label class="span-2">Library item name<input class="text-input" name="name" value="${attr(defaultName)}" required></label>
+              <p class="muted">The calculation summary will be saved as a library item in the selected project.</p>
+              <div class="modal-actions">
+                <button class="ghost-button" type="button" data-modal-close>Cancel</button>
+                <button class="dark-button" type="submit">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>`,
+      bind: (rootEl) => {
+        const close = () => { modal = null; render(); };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        rootEl.querySelector("[data-save-calc-form]")?.addEventListener("submit", (event) => {
+          event.preventDefault();
+          const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+          const project = getProject(data.projectId);
+          if (!project) { close(); return; }
+          project.library.push({
+            name: data.name || defaultName,
+            text: payload.body || "",
+            source: payload.kind === "interest" ? "interest-calculator" : "due-date-calculator",
+            addedAt: new Date().toISOString(),
+            tags: ["Calculation"],
+          });
+          saveProject(project);
+          modal = null;
+          render();
+        });
+      },
+    };
+    render();
+  }
+
+  function saveMessageAsNote(projectId, text, btn) {
+    const project = getProject(projectId);
+    if (!project || !text) return;
+    const stamp = new Date().toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    const block = `\n\n--- Note saved ${stamp} ---\n${text}`;
+    project.notes = (project.notes || "") + block;
+    saveProject(project);
+    if (btn) {
+      const original = btn.innerHTML;
+      btn.innerHTML = `${ICON.layers}<span>Saved</span>`;
+      setTimeout(() => { btn.innerHTML = original; }, 1100);
+    }
   }
 
   function openProjectModal(editId) {
@@ -4604,6 +4695,19 @@ Total\t${formatCurrencyFull(total)}`;
       const original = copyBtn.innerHTML;
       copyBtn.innerHTML = `${ICON.copy}<span>Copied</span>`;
       setTimeout(() => { copyBtn.innerHTML = original; }, 1100);
+    }
+    const saveCalc = event.target.closest("[data-save-calc-to-project]");
+    if (saveCalc) {
+      try {
+        const payload = JSON.parse(saveCalc.dataset.calcPayload || "{}");
+        openSaveCalcModal(payload);
+      } catch (_) {}
+    }
+    const noteBtn = event.target.closest("[data-save-msg-as-note]");
+    if (noteBtn) {
+      const projectId = noteBtn.dataset.saveMsgAsNote;
+      const text = noteBtn.dataset.msgText || "";
+      saveMessageAsNote(projectId, text, noteBtn);
     }
   });
 
