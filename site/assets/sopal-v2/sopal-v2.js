@@ -2026,7 +2026,7 @@ Total\t${formatCurrencyFull(total)}`;
           <span class="sc-pill sc-info"><strong>${counts.info}</strong> need input</span>
           <span class="sc-pill sc-pass"><strong>${counts.pass}</strong> passed</span>
         </div>
-        ${analysis.summary ? `<div class="analysis-overview">${renderMarkdown(analysis.summary)}</div>` : ""}
+        ${analysis.summary ? `<blockquote class="analysis-overview">${renderMarkdown(analysis.summary)}</blockquote>` : ""}
       </div>
       <ol class="check-list">
         ${(analysis.checks || []).map((c, i) => `
@@ -2040,17 +2040,53 @@ Total\t${formatCurrencyFull(total)}`;
         `).join("")}
       </ol>
       ${(analysis.recommendations || []).length ? `
-        <section class="analysis-block">
-          <h4>Recommendations</h4>
-          <ul>${analysis.recommendations.map((r) => `<li>${escapeHtml(r)}</li>`).join("")}</ul>
+        <section class="analysis-block analysis-block-recs">
+          <header><span class="analysis-block-icon">${ICON.sparkles}</span><h4>Recommended next steps</h4></header>
+          <ol>${analysis.recommendations.map((r) => `<li>${escapeHtml(r)}</li>`).join("")}</ol>
         </section>` : ""}
       ${(analysis.missing || []).length ? `
-        <section class="analysis-block">
-          <h4>Missing information to confirm</h4>
+        <section class="analysis-block analysis-block-missing">
+          <header><span class="analysis-block-icon">${ICON.file}</span><h4>Information to gather</h4></header>
           <ul>${analysis.missing.map((r) => `<li>${escapeHtml(r)}</li>`).join("")}</ul>
         </section>` : ""}
     `;
   }
+
+  // Per-agent quick-question chips that appear in the review chat empty state
+  // once an analysis has run. Tailored to each agent so the suggestions feel
+  // sharp instead of generic.
+  const REVIEW_CHAT_SUGGESTIONS = {
+    "payment-claims": [
+      "Why is the reference date warning a risk?",
+      "What evidence am I missing for the claim amount?",
+      "Draft a corrective endorsement under s 68 BIF Act.",
+      "Re-run the review pretending the claim is served via email only.",
+    ],
+    "payment-schedules": [
+      "Are any reasons too vague to survive adjudication?",
+      "What withholding reasons would I need before s 82(4)?",
+      "Draft an itemised reasons table from this schedule.",
+      "Compare these reasons against the claim items.",
+    ],
+    eots: [
+      "Is the notice within the contractual deadline?",
+      "What programme evidence do I need next?",
+      "Draft a reservation of rights for the EOT notice.",
+      "Should this also raise variations or delay costs?",
+    ],
+    variations: [
+      "Is there a clear instruction or only a clarification?",
+      "What's the time-bar risk on this variation?",
+      "Draft the valuation paragraph with a Schedule of Rates fallback.",
+      "What evidence supports the cost build-up?",
+    ],
+    "delay-costs": [
+      "Is there overlap with EOT or variation claims?",
+      "What's the cleanest causation argument here?",
+      "Draft a prolongation cost table by week.",
+      "What contemporaneous records do I need?",
+    ],
+  };
 
   function checkIcon(status) {
     if (status === "pass") return "✓";
@@ -2063,11 +2099,31 @@ Total\t${formatCurrencyFull(total)}`;
   function ChatPane(project, agentKey, submode, chat, hasDocument) {
     const reviewKey = `review:${agentKey}:${submode.id}`;
     const ctxCount = project.contracts.length + project.library.length;
+    const review = project.reviews && project.reviews[reviewKey];
+    const hasAnalysis = !!(review && review.analysis && !review.analysis.error);
+    const suggestions = (REVIEW_CHAT_SUGGESTIONS[agentKey] || []).slice(0, 4);
+
+    let emptyHtml;
+    if (!hasDocument) {
+      emptyHtml = EmptyState("No questions yet.", "Add a document above to give the chat something to anchor to.");
+    } else if (!hasAnalysis) {
+      emptyHtml = EmptyState("No questions yet.", "Run the analysis on the right, or ask anything about the document below.");
+    } else {
+      // Doc + analysis present → offer per-agent suggestion chips.
+      emptyHtml = `
+        <div class="empty-state review-empty-with-suggestions">
+          <strong>Ask a follow-up</strong>
+          <p>The analysis is grounded in this document — chase a specific item or draft an amendment.</p>
+          <div class="chip-row">
+            ${suggestions.map((s) => `<button class="chip" type="button" data-chip="${attr(s)}">${escapeHtml(s)}</button>`).join("")}
+          </div>
+        </div>`;
+    }
+
     const messagesHtml = (chat.messages || []).length
       ? (chat.messages || []).map((m) => renderMessage(m.role, m.content, m.role === "assistant")).join("")
-      : EmptyState("No questions yet.", hasDocument
-          ? "Run the analysis or ask a question about the document."
-          : "Add a document to give the chat something to anchor to.");
+      : emptyHtml;
+
     return `
       <div class="message-area review-message-area" data-message-area>
         <div class="message-stack" data-messages>${messagesHtml}</div>
@@ -2263,6 +2319,12 @@ Total\t${formatCurrencyFull(total)}`;
           form.requestSubmit();
         }
       });
+      // Suggestion chips: clicking one fills the composer and focuses it.
+      pane.querySelectorAll("[data-chip]").forEach((b) => b.addEventListener("click", () => {
+        textarea.value = b.dataset.chip;
+        autoGrow(textarea);
+        textarea.focus();
+      }));
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const message = textarea.value.trim();

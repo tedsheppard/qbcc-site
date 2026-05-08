@@ -2235,3 +2235,97 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 620px) {
   .recent-decisions-grid { grid-template-columns: 1fr; }
 }
+
+/* Analysis block visual treatment — recommendations and missing-info now read
+   as actionable lists, not bare ULs. */
+.analysis-block {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--main-border);
+  border-radius: 10px;
+  background: #fff;
+}
+.analysis-block header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.analysis-block h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-fg);
+}
+.analysis-block-icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+.analysis-block-icon svg { width: 14px; height: 14px; }
+
+.analysis-block-recs {
+  background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 80%);
+  border-color: #bbf7d0;
+}
+.analysis-block-recs .analysis-block-icon { background: #34d399; color: #fff; }
+.analysis-block-recs h4 { color: #065f46; }
+.analysis-block-recs ol {
+  margin: 0;
+  padding-left: 22px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #134e3a;
+}
+.analysis-block-recs li { margin-bottom: 6px; }
+.analysis-block-recs li::marker { color: #047857; font-weight: 700; }
+
+.analysis-block-missing {
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 80%);
+  border-color: #bfdbfe;
+}
+.analysis-block-missing .analysis-block-icon { background: #3b82f6; color: #fff; }
+.analysis-block-missing h4 { color: #1e3a8a; }
+.analysis-block-missing ul {
+  margin: 0;
+  padding-left: 22px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #1e3a52;
+}
+.analysis-block-missing li { margin-bottom: 4px; }
+
+/* Subtler styling for the analysis summary blockquote. */
+.analysis-overview {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--ring);
+  background: var(--main-muted);
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  color: #2c2c2c;
+  line-height: 1.55;
+}
+.analysis-overview p { margin: 0 0 6px; }
+.analysis-overview p:last-child { margin-bottom: 0; }
+.analysis-overview h3, .analysis-overview h4 {
+  font-size: 13px;
+  font-weight: 650;
+  margin: 4px 0;
+}
+
+/* Suggestion chips inside review chat empty state. */
+.review-empty-with-suggestions { gap: 8px; }
+.review-empty-with-suggestions .chip-row { margin-top: 6px; }
+.review-empty-with-suggestions .chip {
+  font-size: 12.5px;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.4;
+  padding: 8px 12px;
+}
