@@ -2297,6 +2297,9 @@ Total\t${formatCurrencyFull(total)}`;
         r.status = "done";
         saveProject(project);
         refreshAnalysis();
+        // Re-render the chat pane too — the empty-state chips depend on
+        // analysis being present.
+        refreshChat();
       } catch (error) {
         r.status = "error";
         r.analysis = { error: error.message || "Analysis failed" };
