@@ -1736,6 +1736,27 @@ Total\t${formatCurrencyFull(total)}`;
       .trim();
   }
 
+  function describeChatKey(project, key) {
+    if (key === "assistant") return { label: "Assistant", href: `/sopal-v2/projects/${project.id}/assistant` };
+    if (key.startsWith("chat:review:")) {
+      const [, , agentKey, submodeId] = key.split(":");
+      const submode = (AGENT_REVIEW_MODES[agentKey] || []).find((m) => m.id === submodeId);
+      const submodeLabel = submode ? submode.label.toLowerCase() : submodeId;
+      return {
+        label: `${AGENT_LABELS[agentKey] || agentKey} · ${submodeLabel}`,
+        href: `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=review&submode=${submodeId}`,
+      };
+    }
+    if (key.startsWith("agent:")) {
+      const [, agentKey, mode] = key.split(":");
+      return {
+        label: `${AGENT_LABELS[agentKey] || agentKey} · ${mode}`,
+        href: `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=${mode}`,
+      };
+    }
+    return { label: key, href: `/sopal-v2/projects/${project.id}/assistant` };
+  }
+
   function sidebarRecentThreads(project) {
     const threads = Object.entries(project.chats || {})
       .filter(([, c]) => Array.isArray(c.messages) && c.messages.length > 0)
@@ -1745,13 +1766,7 @@ Total\t${formatCurrencyFull(total)}`;
     return `
       <div class="nav-subgroup-title">Recent threads</div>
       ${threads.map(([key, h]) => {
-        let label, href;
-        if (key === "assistant") { label = "Assistant"; href = `/sopal-v2/projects/${project.id}/assistant`; }
-        else if (key.startsWith("agent:")) {
-          const [, agentKey, mode] = key.split(":");
-          label = `${AGENT_LABELS[agentKey] || agentKey} · ${mode}`;
-          href = `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=${mode}`;
-        } else { label = key; href = `/sopal-v2/projects/${project.id}/assistant`; }
+        const { label, href } = describeChatKey(project, key);
         const last = h.messages[h.messages.length - 1] || {};
         const preview = plainPreview(last.content || "");
         return `<a class="nav-thread" href="${href}" data-nav title="${attr(preview)}">
@@ -1763,13 +1778,7 @@ Total\t${formatCurrencyFull(total)}`;
   }
 
   function recentChatRow(project, key, h) {
-    let label, href;
-    if (key === "assistant") { label = "Assistant"; href = `/sopal-v2/projects/${project.id}/assistant`; }
-    else if (key.startsWith("agent:")) {
-      const [, agentKey, mode] = key.split(":");
-      label = `${AGENT_LABELS[agentKey] || agentKey} · ${mode}`;
-      href = `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=${mode}`;
-    } else { label = key; href = `/sopal-v2/projects/${project.id}/assistant`; }
+    const { label, href } = describeChatKey(project, key);
     const last = h.messages[h.messages.length - 1] || {};
     const preview = plainPreview(last.content || "");
     return `<a class="recent-item" href="${href}" data-nav>
