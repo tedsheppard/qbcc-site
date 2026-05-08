@@ -90,6 +90,43 @@
 [data-theme="dark"] .icon-button:hover { background: rgba(255,255,255,0.06); }
 [data-theme="dark"] .card { background: var(--main-panel); border-color: var(--main-border); }
 [data-theme="dark"] .recent-item:hover { background: rgba(255,255,255,0.04); }
+[data-theme="dark"] .tile { background: var(--main-panel); border-color: var(--main-border); color: var(--main-fg); }
+[data-theme="dark"] .tile:hover { background: rgba(255,255,255,0.04); border-color: var(--ring); }
+[data-theme="dark"] .tile-icon { background: rgba(255,255,255,0.06); color: var(--main-fg); }
+[data-theme="dark"] .project-row { background: var(--main-panel); border-color: var(--main-border); color: var(--main-fg); }
+[data-theme="dark"] .project-row:hover { background: rgba(255,255,255,0.04); }
+[data-theme="dark"] .home-hero { background: var(--main-panel); border-color: var(--main-border); }
+[data-theme="dark"] .home-hero h2 { color: var(--main-fg); }
+[data-theme="dark"] .recent-decision-card { background: var(--main-panel); border-color: var(--main-border); color: var(--main-fg); }
+[data-theme="dark"] .recent-decision-card:hover { background: rgba(255,255,255,0.04); }
+[data-theme="dark"] .nav-thread-preview,
+[data-theme="dark"] .doc-list-meta,
+[data-theme="dark"] .palette-section,
+[data-theme="dark"] .palette-hint,
+[data-theme="dark"] .doc-mention-meta { color: var(--soft-fg); }
+[data-theme="dark"] .resume-chip { background: linear-gradient(135deg, rgba(16,185,129,0.18) 0%, rgba(34,197,94,0.12) 100%); border-color: rgba(167,243,208,0.3); }
+[data-theme="dark"] .resume-chip-body strong { color: #d1fae5; }
+[data-theme="dark"] .resume-chip-body .muted,
+[data-theme="dark"] .resume-chip-preview { color: #d1fae5; }
+[data-theme="dark"] .doc-list a,
+[data-theme="dark"] .pinned-row .doc-list a { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.06); color: var(--main-fg); }
+[data-theme="dark"] .doc-list a:hover { background: rgba(255,255,255,0.07); }
+[data-theme="dark"] .pinned-row { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); }
+[data-theme="dark"] .pinned-row-title { color: #fbbf24; }
+[data-theme="dark"] .analysis-overview,
+[data-theme="dark"] .doc-drawer-text,
+[data-theme="dark"] .whatsnew-entry p { color: var(--main-fg); }
+[data-theme="dark"] .citation-chip { background: rgba(99,102,241,0.18); color: #c7d2fe; border-color: rgba(199,210,254,0.3); }
+[data-theme="dark"] .citation-unknown { background: rgba(255,255,255,0.05); color: var(--muted-fg); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .doc-tag { background: rgba(99,102,241,0.18); color: #c7d2fe; border-color: rgba(199,210,254,0.3); }
+[data-theme="dark"] .ref-tag { background: rgba(99,102,241,0.18); color: #c7d2fe; border-color: rgba(199,210,254,0.3); }
+[data-theme="dark"] .tag-filter { background: rgba(255,255,255,0.04); color: var(--soft-fg); }
+[data-theme="dark"] .tag-filter.active { background: var(--main-fg); color: var(--main-panel); }
+[data-theme="dark"] .tag-filter:hover { background: rgba(255,255,255,0.08); color: var(--main-fg); }
+[data-theme="dark"] .check-item.idle .check-status,
+[data-theme="dark"] .check-item.pending .check-status { color: var(--soft-fg); }
+[data-theme="dark"] .file-zone-label { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); color: var(--soft-fg); }
+[data-theme="dark"] .file-zone-label:hover { background: rgba(255,255,255,0.06); border-color: var(--ring); color: var(--main-fg); }
 
 html, body { min-height: 100%; margin: 0; }
 /* Belt-and-braces: any single rogue element shouldn't make the page horizontally
