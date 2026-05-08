@@ -767,11 +767,43 @@
 
   /* ---------- Research: Decision search ---------- */
 
+  function decisionSearchLabel(params) {
+    const q = params.get("q") || "any decision";
+    const filters = ["startDate", "endDate", "minClaim", "maxClaim"].filter((k) => params.get(k));
+    return filters.length ? `${q} · ${filters.length} filter${filters.length === 1 ? "" : "s"}` : q;
+  }
+  function paramsKeyDecisions(params) {
+    return ["q", "sort", "startDate", "endDate", "minClaim", "maxClaim"].map((k) => `${k}=${params.get(k) || ""}`).join("&");
+  }
+  function getSavedDecisionSearches() {
+    return Array.isArray(store.savedSearches) ? store.savedSearches : [];
+  }
+  function saveCurrentDecisionSearch(params) {
+    if (!Array.isArray(store.savedSearches)) store.savedSearches = [];
+    const key = paramsKeyDecisions(params);
+    if (!params.get("q") && !["startDate", "endDate", "minClaim", "maxClaim"].some((k) => params.get(k))) return null;
+    if (store.savedSearches.find((s) => s.key === key)) return null;
+    const entry = { id: `s_${Math.random().toString(36).slice(2, 8)}`, key, qs: params.toString(), label: decisionSearchLabel(params), savedAt: Date.now() };
+    store.savedSearches.unshift(entry);
+    store.savedSearches = store.savedSearches.slice(0, 12);
+    saveStore();
+    return entry;
+  }
+  function deleteSavedDecisionSearch(id) {
+    if (!Array.isArray(store.savedSearches)) return;
+    store.savedSearches = store.savedSearches.filter((s) => s.id !== id);
+    saveStore();
+  }
+
   function DecisionsPage() {
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q") || "";
     const sort = params.get("sort") || "relevance";
     const filtersOn = ["startDate", "endDate", "minClaim", "maxClaim"].some((k) => params.get(k));
+    const saved = getSavedDecisionSearches();
+    const canSave = !!q || filtersOn;
+    const currentKey = paramsKeyDecisions(params);
+    const alreadySaved = saved.some((s) => s.key === currentKey);
     setTimeout(() => {
       const form = document.querySelector("[data-decision-search]");
       if (form) form.addEventListener("submit", (event) => {
@@ -783,6 +815,20 @@
         ["startDate", "endDate", "minClaim", "maxClaim"].forEach((k) => { if (data.get(k)) next.set(k, data.get(k)); });
         navigate(`/sopal-v2/research/decisions?${next.toString()}`);
       });
+      document.querySelector("[data-save-search]")?.addEventListener("click", () => {
+        const entry = saveCurrentDecisionSearch(params);
+        if (entry) render();
+      });
+      document.querySelectorAll("[data-saved-search]").forEach((el) => el.addEventListener("click", (e) => {
+        if (e.target.closest("[data-delete-saved]")) return;
+        navigate(`/sopal-v2/research/decisions?${el.dataset.savedSearch}`);
+      }));
+      document.querySelectorAll("[data-delete-saved]").forEach((el) => el.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        deleteSavedDecisionSearch(el.dataset.deleteSaved);
+        render();
+      }));
       if (q || params.toString()) fetchDecisionResults(params, 0);
     }, 0);
 
@@ -798,6 +844,7 @@
               ${["relevance","newest","oldest","claim_high","claim_low","adj_high","adj_low"].map((s) => `<option value="${s}" ${sort===s?"selected":""}>${labelSort(s)}</option>`).join("")}
             </select>
             <button class="dark-button" type="submit">Search</button>
+            ${canSave ? `<button class="ghost-button compact" type="button" data-save-search ${alreadySaved ? "disabled" : ""}>${alreadySaved ? "Saved" : "Save search"}</button>` : ""}
             <details class="filters" ${filtersOn ? "open" : ""}>
               <summary>Filters${filtersOn ? " · active" : ""}</summary>
               <div class="filters-grid">
@@ -809,6 +856,17 @@
             </details>
           </form>
         </div>
+
+        ${saved.length ? `
+          <div class="saved-search-row">
+            <span class="saved-search-eyebrow">Saved searches</span>
+            ${saved.map((s) => `
+              <button class="saved-search-chip" type="button" data-saved-search="${attr(s.qs)}">
+                <span class="saved-search-label">${escapeHtml(s.label)}</span>
+                <span class="saved-search-x" data-delete-saved="${attr(s.id)}" title="Remove">×</span>
+              </button>`).join("")}
+          </div>
+        ` : ""}
 
         <div class="research-grid">
           <section id="decision-results">${q ? skeletonRows() : EmptyState("Enter a search.", "Try an adjudicator name, a party, a section reference, or keywords from a decision.")}</section>
@@ -1951,6 +2009,10 @@ Total\t${formatCurrencyFull(total)}`;
                 <label class="file-zone-label">${ICON.upload}<span>Click or drop to extract from PDF / DOCX / TXT</span><input type="file" data-context-file accept=".pdf,.docx,.txt"></label>
                 <div class="muted file-status" data-context-file-status>No file selected.</div>
               </div>
+              <div class="span-2 split-action" data-split-action hidden>
+                <button class="ghost-button compact" type="button" data-split-detect>${ICON.layers}<span>Detect clauses</span></button>
+                <span class="muted split-status" data-split-status></span>
+              </div>
               <button class="dark-button span-2" type="submit">${ICON.plus}<span>Add to project</span></button>
             </form>
           </div>
@@ -1979,12 +2041,72 @@ Total\t${formatCurrencyFull(total)}`;
     `);
   }
 
+  function detectClauseSections(text) {
+    if (!text) return [];
+    // Match common contract clause / section / part headers at the start of a line:
+    //   "Clause 41.2 Heading", "Section 12 Heading", "12. Heading"
+    const re = /(?:^|\n)\s*((?:Clause|Cl\.?|Section|Sec\.?|Part)\s+\d+(?:\.\d+)*[A-Za-z]?\b[^\n]{0,120})/gi;
+    const points = [];
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      points.push({ index: m.index + m[0].indexOf(m[1]), header: m[1].trim() });
+    }
+    if (points.length < 2) return [];
+    const sections = [];
+    for (let i = 0; i < points.length; i++) {
+      const start = points[i].index;
+      const end = i + 1 < points.length ? points[i + 1].index : text.length;
+      const body = text.slice(start, end).trim();
+      const header = points[i].header.replace(/\s+/g, " ").slice(0, 100);
+      sections.push({ name: header, text: body });
+    }
+    return sections;
+  }
+
   function bindContextManager(projectId, bucket) {
     const form = document.querySelector(`[data-context-form="${bucket}"]`);
     if (!form) return;
     const fileInput = form.querySelector("[data-context-file]");
     const status = form.querySelector("[data-context-file-status]");
+    const textarea = form.querySelector("textarea[name=text]");
+    const splitAction = form.querySelector("[data-split-action]");
+    const splitStatus = form.querySelector("[data-split-status]");
     let extracted = null;
+    let detected = null;
+
+    const updateSplitVisibility = () => {
+      if (!splitAction) return;
+      const text = textarea?.value || "";
+      const candidates = detectClauseSections(text);
+      const enable = candidates.length >= 2;
+      splitAction.toggleAttribute("hidden", !enable);
+      detected = enable ? candidates : null;
+      if (splitStatus) splitStatus.textContent = enable ? `${candidates.length} clause sections detected` : "";
+      const splitBtn = form.querySelector("[data-split-detect]");
+      if (splitBtn) {
+        splitBtn.innerHTML = `${ICON.layers}<span>Split into ${candidates.length} items</span>`;
+      }
+    };
+
+    textarea?.addEventListener("input", updateSplitVisibility);
+
+    form.querySelector("[data-split-detect]")?.addEventListener("click", () => {
+      if (!detected || !detected.length) return;
+      const project = getProject(projectId);
+      if (!project) return;
+      const stamp = new Date().toISOString();
+      detected.forEach((s) => {
+        project[bucket].push({
+          name: s.name,
+          text: s.text,
+          source: extracted ? "extracted file + split" : "split",
+          addedAt: stamp,
+        });
+      });
+      saveProject(project);
+      render();
+    });
+
     fileInput?.addEventListener("change", async () => {
       const file = fileInput.files && fileInput.files[0];
       if (!file) return;
@@ -1998,6 +2120,7 @@ Total\t${formatCurrencyFull(total)}`;
         if (!form.elements.name.value) form.elements.name.value = data.filename;
         form.elements.text.value = [form.elements.text.value, data.text].filter(Boolean).join("\n\n");
         status.textContent = `${data.filename}: ${data.characters.toLocaleString()} chars extracted${data.truncated ? " (truncated)" : ""}.`;
+        updateSplitVisibility();
       } catch (error) {
         status.textContent = error.message || "Extraction failed";
       }
@@ -2017,6 +2140,7 @@ Total\t${formatCurrencyFull(total)}`;
       saveProject(project);
       render();
     });
+    updateSplitVisibility();
   }
 
   /* ---------- Project Assistant + Agents (Astruct-inspired chat) ---------- */
@@ -3260,9 +3384,169 @@ Total\t${formatCurrencyFull(total)}`;
     if (navigator.clipboard) navigator.clipboard.writeText(text || "").catch(() => {});
   }
 
+  /* ---------- Cmd+K command palette ---------- */
+
+  function buildPaletteItems() {
+    const items = [];
+    const project = currentProject();
+    const projects = projectList();
+    const lastReview = findLatestReview();
+
+    // Actions
+    items.push({ section: "Action", label: "New project", hint: "Create a fresh project", run: () => openProjectModal(null) });
+    items.push({ section: "Action", label: "Import project (JSON)", hint: "Round-trip a sopal-*.json export", run: () => {
+      const inp = document.querySelector("[data-import-project]");
+      if (inp) inp.click(); else navigate("/sopal-v2/projects");
+    }});
+    if (lastReview) {
+      const submode = (AGENT_REVIEW_MODES[lastReview.agentKey] || []).find((m) => m.id === lastReview.submodeId);
+      const submodeLabel = submode ? submode.label.toLowerCase() : lastReview.submodeId;
+      items.push({
+        section: "Action",
+        label: `Resume ${AGENT_LABELS[lastReview.agentKey] || lastReview.agentKey} · ${submodeLabel}`,
+        hint: lastReview.project.name,
+        run: () => navigate(`/sopal-v2/projects/${lastReview.project.id}/agents/${lastReview.agentKey}?mode=review&submode=${lastReview.submodeId}`),
+      });
+    }
+
+    // Workspace tools
+    workspaceNav().forEach((t) => items.push({ section: "Tool", label: t.label, hint: "Workspace tool", run: () => navigate(t.href) }));
+    items.push({ section: "Tool", label: "Home", hint: "Sopal v2 home", run: () => navigate("/sopal-v2") });
+    items.push({ section: "Tool", label: "Your projects", hint: "All projects", run: () => navigate("/sopal-v2/projects") });
+
+    // Projects
+    projects.slice(0, 12).forEach((p) => {
+      items.push({ section: "Project", label: `Open ${p.name}`, hint: [p.reference, p.contractForm].filter(Boolean).join(" · ") || "Project overview", run: () => navigate(`/sopal-v2/projects/${p.id}/overview`) });
+    });
+
+    // Current project's agents
+    if (project) {
+      AGENT_KEYS.forEach((key) => {
+        items.push({ section: "Agent", label: `${AGENT_LABELS[key]} · review`, hint: project.name, run: () => navigate(`/sopal-v2/projects/${project.id}/agents/${key}?mode=review`) });
+        items.push({ section: "Agent", label: `${AGENT_LABELS[key]} · draft`, hint: project.name, run: () => navigate(`/sopal-v2/projects/${project.id}/agents/${key}?mode=draft`) });
+      });
+    }
+
+    // Recent decisions
+    (store.recentDecisions || []).slice(0, 6).forEach((d) => {
+      items.push({ section: "Recent decision", label: d.title || d.id, hint: [d.decisionDate, d.adjudicator].filter(Boolean).join(" · "), run: () => navigate(`/sopal-v2/research/decisions/${encodeURIComponent(d.id)}`) });
+    });
+    return items;
+  }
+
+  function filterPaletteItems(items, query) {
+    const q = query.trim().toLowerCase();
+    if (!q) return items.slice(0, 30);
+    const tokens = q.split(/\s+/);
+    return items
+      .map((item) => {
+        const hay = `${item.section} ${item.label} ${item.hint || ""}`.toLowerCase();
+        let score = 0;
+        for (const tok of tokens) {
+          const idx = hay.indexOf(tok);
+          if (idx === -1) return null;
+          score += 100 - idx; // earlier match scores higher
+        }
+        return { ...item, _score: score };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b._score - a._score)
+      .slice(0, 30);
+  }
+
+  let paletteState = null;
+
+  function openCommandPalette() {
+    if (modal) return; // don't stack
+    paletteState = { query: "", index: 0, allItems: buildPaletteItems() };
+    modal = {
+      render: () => {
+        const visible = filterPaletteItems(paletteState.allItems, paletteState.query);
+        paletteState.visible = visible;
+        if (paletteState.index >= visible.length) paletteState.index = Math.max(0, visible.length - 1);
+        return `
+          <div class="modal-backdrop palette-backdrop" data-modal-backdrop>
+            <div class="palette" role="dialog" aria-modal="true">
+              <div class="palette-input-row">
+                <span class="palette-icon">${ICON.search}</span>
+                <input class="palette-input" type="text" data-palette-input placeholder="Search projects, agents, tools, decisions…" value="${attr(paletteState.query)}" autocomplete="off" spellcheck="false">
+                <span class="palette-kbd">esc</span>
+              </div>
+              <ol class="palette-list">
+                ${visible.length === 0 ? `<li class="palette-empty">No matches.</li>` : visible.map((it, i) => `
+                  <li class="palette-item ${i === paletteState.index ? "active" : ""}" data-palette-index="${i}">
+                    <span class="palette-section">${escapeHtml(it.section)}</span>
+                    <span class="palette-label">${escapeHtml(it.label)}</span>
+                    ${it.hint ? `<span class="palette-hint">${escapeHtml(it.hint)}</span>` : ""}
+                  </li>`).join("")}
+              </ol>
+            </div>
+          </div>`;
+      },
+      bind: (rootEl) => {
+        const close = () => { modal = null; paletteState = null; render(); };
+        const fire = (item) => {
+          if (!item) return;
+          modal = null;
+          paletteState = null;
+          item.run();
+        };
+        const input = rootEl.querySelector("[data-palette-input]");
+        if (input) {
+          input.focus();
+          input.setSelectionRange(input.value.length, input.value.length);
+          input.addEventListener("input", () => {
+            paletteState.query = input.value;
+            paletteState.index = 0;
+            // Re-render only the inner list to keep input focus.
+            const drawer = rootEl.querySelector(".palette");
+            if (drawer) {
+              const tmp = document.createElement("div");
+              tmp.innerHTML = modal.render();
+              const newPalette = tmp.querySelector(".palette");
+              drawer.innerHTML = newPalette.innerHTML;
+              const re = drawer.querySelector("[data-palette-input]");
+              if (re) {
+                re.value = paletteState.query;
+                re.focus();
+                re.setSelectionRange(re.value.length, re.value.length);
+                bindList();
+              }
+            }
+          });
+        }
+        const bindList = () => {
+          rootEl.querySelectorAll("[data-palette-index]").forEach((el) => {
+            el.addEventListener("mouseenter", () => {
+              paletteState.index = Number(el.dataset.paletteIndex);
+              rootEl.querySelectorAll(".palette-item").forEach((n) => n.classList.toggle("active", Number(n.dataset.paletteIndex) === paletteState.index));
+            });
+            el.addEventListener("click", () => fire(paletteState.visible[Number(el.dataset.paletteIndex)]));
+          });
+        };
+        bindList();
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        document.addEventListener("keydown", function handler(ev) {
+          if (!paletteState) { document.removeEventListener("keydown", handler); return; }
+          if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); return; }
+          if (ev.key === "ArrowDown") { ev.preventDefault(); paletteState.index = Math.min(paletteState.index + 1, paletteState.visible.length - 1); rootEl.querySelectorAll(".palette-item").forEach((n) => n.classList.toggle("active", Number(n.dataset.paletteIndex) === paletteState.index)); }
+          if (ev.key === "ArrowUp") { ev.preventDefault(); paletteState.index = Math.max(paletteState.index - 1, 0); rootEl.querySelectorAll(".palette-item").forEach((n) => n.classList.toggle("active", Number(n.dataset.paletteIndex) === paletteState.index)); }
+          if (ev.key === "Enter") { ev.preventDefault(); fire(paletteState.visible[paletteState.index]); document.removeEventListener("keydown", handler); }
+        });
+      },
+    };
+    render();
+  }
+
   /* ---------- Boot ---------- */
 
   window.addEventListener("popstate", render);
+  window.addEventListener("keydown", (ev) => {
+    if ((ev.metaKey || ev.ctrlKey) && (ev.key === "k" || ev.key === "K")) {
+      ev.preventDefault();
+      openCommandPalette();
+    }
+  });
   document.addEventListener("click", (event) => {
     const copyBtn = event.target.closest("[data-copy-text]");
     if (copyBtn) {
