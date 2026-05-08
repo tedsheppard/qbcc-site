@@ -634,6 +634,10 @@
           </nav>
         </div>
         <div class="header-right">
+          <button class="palette-hint-btn" type="button" data-open-palette title="Open command palette">
+            <span class="kbd-key">${navigator.platform && navigator.platform.toLowerCase().includes("mac") ? "⌘" : "Ctrl"}</span>
+            <span class="kbd-key">K</span>
+          </button>
           <a class="link-button small" href="https://sopal.com.au" target="_blank" rel="noopener">sopal.com.au</a>
         </div>
       </header>
@@ -2288,7 +2292,7 @@ Total\t${formatCurrencyFull(total)}`;
                 ${analysis ? `<button class="ghost-button compact" type="button" data-rerun-analysis>Re-run</button>` : ""}
               </div>
               <div class="card-body" data-analysis-body>
-                ${renderAnalysis(agentKey, document, analysis, review?.status)}
+                ${renderAnalysis(agentKey, document, analysis, review?.status, review)}
               </div>
             </section>
           </aside>
@@ -2360,7 +2364,7 @@ Total\t${formatCurrencyFull(total)}`;
     ].filter(Boolean).join("\n\n");
   }
 
-  function renderAnalysis(agentKey, document, analysis, status) {
+  function renderAnalysis(agentKey, document, analysis, status, review) {
     if (!document) {
       return EmptyState("Add a document to start.", "Upload or paste the document, then run the structured BIF Act / SOPA review.");
     }
@@ -2385,6 +2389,7 @@ Total\t${formatCurrencyFull(total)}`;
     }
     const counts = analysis.counts || { fail: 0, warn: 0, info: 0, pass: 0 };
     const md = analysisToMarkdown(agentKey, document, analysis);
+    const history = (review && Array.isArray(review.history)) ? review.history : [];
     return `
       <div class="analysis-summary">
         <div class="analysis-summary-row">
@@ -2396,6 +2401,20 @@ Total\t${formatCurrencyFull(total)}`;
           </div>
           <button class="ghost-button compact analysis-copy-btn" type="button" data-copy-text="${attr(md)}" title="Copy this review as markdown">${ICON.copy}<span>Copy as markdown</span></button>
         </div>
+        ${history.length ? `
+          <div class="analysis-history-row">
+            <span class="muted">Previous runs:</span>
+            <select class="select-input compact" data-restore-history>
+              <option value="-1" selected>Current run</option>
+              ${history.map((h, i) => {
+                const c = (h.analysis && h.analysis.counts) || { fail: 0, warn: 0, info: 0, pass: 0 };
+                const date = h.savedAt ? new Date(h.savedAt) : null;
+                const stamp = date && !isNaN(date) ? date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : `Run ${i + 1}`;
+                return `<option value="${i}">${escapeHtml(stamp)} — ${c.fail || 0} issues · ${c.warn || 0} warnings · ${c.pass || 0} passed</option>`;
+              }).join("")}
+            </select>
+          </div>
+        ` : ""}
         ${analysis.summary ? `<blockquote class="analysis-overview">${renderMarkdown(analysis.summary)}</blockquote>` : ""}
       </div>
       <ol class="check-list">
@@ -2529,7 +2548,7 @@ Total\t${formatCurrencyFull(total)}`;
 
     function refreshAnalysis() {
       const r = ensureReview();
-      analysisBody.innerHTML = renderAnalysis(agentKey, r.document, r.analysis, r.status);
+      analysisBody.innerHTML = renderAnalysis(agentKey, r.document, r.analysis, r.status, r);
       bindAnalysisActions();
     }
 
@@ -2629,7 +2648,30 @@ Total\t${formatCurrencyFull(total)}`;
       if (runBtn) runBtn.addEventListener("click", runAnalysis);
       const rerun = document.querySelector("[data-rerun-analysis]");
       if (rerun) rerun.addEventListener("click", () => {
-        const r = ensureReview(); r.analysis = null; r.status = "idle"; saveProject(project); refreshAnalysis();
+        const r = ensureReview();
+        // Preserve the current run as a history entry so the user can compare.
+        if (r.analysis && !r.analysis.error) {
+          if (!Array.isArray(r.history)) r.history = [];
+          r.history.unshift({ analysis: r.analysis, savedAt: Date.now() });
+          r.history = r.history.slice(0, 5);
+        }
+        r.analysis = null;
+        r.status = "idle";
+        saveProject(project);
+        refreshAnalysis();
+      });
+      document.querySelector("[data-restore-history]")?.addEventListener("change", (event) => {
+        const idx = Number(event.target.value);
+        if (Number.isNaN(idx) || idx < 0) return;
+        const r = ensureReview();
+        if (!Array.isArray(r.history) || !r.history[idx]) return;
+        // Swap current with the selected history entry so the user can flip back.
+        const swap = r.history[idx];
+        const prev = r.analysis;
+        r.history[idx] = { analysis: prev, savedAt: r.history[idx].savedAt || Date.now() };
+        r.analysis = swap.analysis;
+        saveProject(project);
+        refreshAnalysis();
       });
     }
 
@@ -2888,14 +2930,18 @@ Total\t${formatCurrencyFull(total)}`;
       <form class="${baseCls}" data-chat-form>
         <div class="composer-row">
           <button class="icon-button" type="button" data-attach-trigger title="Attach file" aria-label="Attach file">${ICON.paperclip}</button>
-          <textarea class="text-area auto-grow" name="message" rows="${compact ? 1 : 3}" placeholder="${attr(placeholder)}" aria-label="Message"></textarea>
+          <div class="composer-textarea-wrap">
+            <textarea class="text-area auto-grow" name="message" rows="${compact ? 1 : 3}" placeholder="${attr(placeholder)}" aria-label="Message"></textarea>
+            <div class="doc-mention-pop" data-mention-pop hidden></div>
+          </div>
           <button class="send-button" type="submit" aria-label="Send message">${ICON.send}</button>
           <input type="file" hidden data-chat-file accept=".pdf,.docx,.txt">
         </div>
         <div class="composer-meta">
           <label class="check"><input type="checkbox" name="useContext" ${ctxCount ? (contextOn ? "checked" : "") : "disabled"}><span>Project context (${ctxCount})</span></label>
           <span class="muted" data-chat-file-status></span>
-          <span class="muted kbd-hint">⌘ / Ctrl + Enter to send</span>
+          <span class="muted ref-tags" data-ref-tags></span>
+          <span class="muted kbd-hint">@ to reference a doc · ⌘/Ctrl + Enter to send</span>
         </div>
       </form>`;
   }
@@ -2914,12 +2960,105 @@ Total\t${formatCurrencyFull(total)}`;
     const fileStatus = form.querySelector("[data-chat-file-status]");
     const messages = pane.querySelector("[data-messages]");
     const messageArea = pane.querySelector("[data-message-area]");
+    const mentionPop = form.querySelector("[data-mention-pop]");
+    const refTagsEl = form.querySelector("[data-ref-tags]");
 
     let extractedFile = null;
+    const referencedDocs = []; // { name, text, bucket }
+    let mention = null; // { atIndex, query, items, sel }
+
+    function refreshRefTags() {
+      if (!refTagsEl) return;
+      if (!referencedDocs.length) { refTagsEl.innerHTML = ""; return; }
+      refTagsEl.innerHTML = `Refs: ${referencedDocs.map((d) => `<span class="ref-tag">@${escapeHtml(d.name)}</span>`).join(" ")}`;
+    }
+
+    function projectDocs() {
+      const project = getProject(opts.project.id);
+      if (!project) return [];
+      const out = [];
+      (project.contracts || []).forEach((d, i) => out.push({ ...d, bucket: "contracts", _i: i }));
+      (project.library || []).forEach((d, i) => out.push({ ...d, bucket: "library", _i: i }));
+      return out;
+    }
+
+    function closeMention() {
+      mention = null;
+      mentionPop.hidden = true;
+      mentionPop.innerHTML = "";
+    }
+
+    function renderMention() {
+      if (!mention) return;
+      const all = projectDocs();
+      const q = mention.query.toLowerCase();
+      const items = q
+        ? all.filter((d) => (d.name || "").toLowerCase().includes(q)).slice(0, 8)
+        : all.slice(0, 8);
+      mention.items = items;
+      if (mention.sel >= items.length) mention.sel = Math.max(0, items.length - 1);
+      mentionPop.hidden = false;
+      mentionPop.innerHTML = items.length === 0
+        ? `<div class="doc-mention-empty">No matching documents.</div>`
+        : items.map((d, i) => `
+            <button class="doc-mention-row ${i === mention.sel ? "active" : ""}" type="button" data-mention-pick="${i}">
+              <span class="doc-mention-bucket">${d.bucket === "contracts" ? "Contract" : "Library"}</span>
+              <span class="doc-mention-name">${escapeHtml(d.name || "Untitled")}</span>
+              <span class="doc-mention-meta">${(d.text || "").length.toLocaleString()} chars</span>
+            </button>`).join("");
+      mentionPop.querySelectorAll("[data-mention-pick]").forEach((el) => el.addEventListener("click", () => {
+        pickMention(Number(el.dataset.mentionPick));
+      }));
+    }
+
+    function pickMention(idx) {
+      if (!mention || !mention.items || !mention.items[idx]) return;
+      const doc = mention.items[idx];
+      const before = textarea.value.slice(0, mention.atIndex);
+      const after = textarea.value.slice(textarea.selectionStart);
+      const token = `[@${doc.name}] `;
+      textarea.value = before + token + after;
+      const caret = (before + token).length;
+      textarea.setSelectionRange(caret, caret);
+      if (!referencedDocs.some((d) => d.name === doc.name && d.bucket === doc.bucket)) {
+        referencedDocs.push({ name: doc.name, text: doc.text || "", bucket: doc.bucket });
+      }
+      refreshRefTags();
+      autoGrow(textarea);
+      closeMention();
+      textarea.focus();
+    }
+
+    function maybeStartMention() {
+      const caret = textarea.selectionStart;
+      const before = textarea.value.slice(0, caret);
+      const at = before.lastIndexOf("@");
+      if (at < 0) { closeMention(); return; }
+      // Only treat as mention if @ is at start or preceded by whitespace
+      const prev = at === 0 ? " " : before[at - 1];
+      if (!/\s/.test(prev) && at !== 0) { closeMention(); return; }
+      const after = before.slice(at + 1);
+      if (/\s/.test(after)) { closeMention(); return; }
+      mention = mention || { atIndex: at, query: "", items: [], sel: 0 };
+      mention.atIndex = at;
+      mention.query = after;
+      renderMention();
+    }
 
     autoGrow(textarea);
-    textarea.addEventListener("input", () => autoGrow(textarea));
+    textarea.addEventListener("input", () => { autoGrow(textarea); maybeStartMention(); });
+    textarea.addEventListener("blur", () => { setTimeout(closeMention, 150); });
     textarea.addEventListener("keydown", (event) => {
+      if (mention && !mentionPop.hidden) {
+        if (event.key === "ArrowDown") { event.preventDefault(); mention.sel = Math.min(mention.sel + 1, mention.items.length - 1); renderMention(); return; }
+        if (event.key === "ArrowUp") { event.preventDefault(); mention.sel = Math.max(mention.sel - 1, 0); renderMention(); return; }
+        if (event.key === "Enter" && !(event.metaKey || event.ctrlKey)) {
+          event.preventDefault();
+          pickMention(mention.sel);
+          return;
+        }
+        if (event.key === "Escape") { event.preventDefault(); closeMention(); return; }
+      }
       if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
         event.preventDefault();
         form.requestSubmit();
@@ -2965,11 +3104,13 @@ Total\t${formatCurrencyFull(total)}`;
       chat.updatedAt = Date.now();
       saveProject(project);
 
+      const refsSnapshot = referencedDocs.slice();
+
       // If the chat was empty we need to morph the empty composer into the active layout.
       if (wasEmpty) {
         pane.innerHTML = renderActiveChat({ ...opts, contextDefaultOn: form.elements.useContext.checked }, chat);
         bindChatForm(pane, opts);
-        return continueGeneration(pane, opts, message, form.elements.useContext.checked, extractedFile);
+        return continueGeneration(pane, opts, message, form.elements.useContext.checked, extractedFile, refsSnapshot);
       }
 
       // Active layout already in DOM — append messages directly.
@@ -2980,11 +3121,13 @@ Total\t${formatCurrencyFull(total)}`;
           <div class="message-body"><div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Sopal is working…</span></div></div>
         </div>`);
       textarea.value = "";
+      referencedDocs.length = 0;
+      refreshRefTags();
       autoGrow(textarea);
       scrollToBottom(messageArea);
 
       try {
-        const data = await callAi(opts, message, form.elements.useContext.checked, extractedFile, project);
+        const data = await callAi(opts, message, form.elements.useContext.checked, extractedFile, project, refsSnapshot);
         chat.messages.push({ role: "assistant", content: data.answer || "", at: Date.now() });
         chat.updatedAt = Date.now();
         saveProject(project);
@@ -3000,7 +3143,7 @@ Total\t${formatCurrencyFull(total)}`;
     });
   }
 
-  async function continueGeneration(pane, opts, message, useContext, extractedFile) {
+  async function continueGeneration(pane, opts, message, useContext, extractedFile, refs) {
     const messages = pane.querySelector("[data-messages]");
     const messageArea = pane.querySelector("[data-message-area]");
     const placeholderId = `msg-${Math.random().toString(36).slice(2)}`;
@@ -3013,7 +3156,7 @@ Total\t${formatCurrencyFull(total)}`;
     }
     try {
       const project = getProject(opts.project.id);
-      const data = await callAi(opts, message, useContext, extractedFile, project);
+      const data = await callAi(opts, message, useContext, extractedFile, project, refs);
       const chat = projectChat(project, opts.chatKey);
       chat.messages.push({ role: "assistant", content: data.answer || "", at: Date.now() });
       chat.updatedAt = Date.now();
@@ -3029,10 +3172,13 @@ Total\t${formatCurrencyFull(total)}`;
     }
   }
 
-  async function callAi(opts, message, useContext, extractedFile, project) {
+  async function callAi(opts, message, useContext, extractedFile, project, refs) {
     const projectContext = useContext && project ? projectContextString(project) : "";
     const projectMeta = project ? `Project: ${project.name}\nContract form: ${project.contractForm}${project.reference ? `\nReference: ${project.reference}` : ""}${project.claimant || project.respondent ? `\nParties: ${project.claimant || "(claimant)"} v ${project.respondent || "(respondent)"}` : ""}\nUser is: ${project.userIsParty || "claimant"}` : "";
-    const fullContext = [projectMeta, projectContext].filter(Boolean).join("\n\n---\n\n");
+    const refsBlock = (refs || []).length
+      ? "Referenced documents (the user @-mentioned these):\n\n" + refs.map((d) => `[@${d.name}]\n${(d.text || "").slice(0, 18000)}`).join("\n\n---\n\n")
+      : "";
+    const fullContext = [projectMeta, projectContext, refsBlock].filter(Boolean).join("\n\n---\n\n");
     const response = await fetch(opts.endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -3309,6 +3455,7 @@ Total\t${formatCurrencyFull(total)}`;
       navigate(el.getAttribute("data-go"));
     }));
     document.querySelectorAll("[data-toggle-sidebar]").forEach((el) => el.addEventListener("click", () => { sidebarOpen = !sidebarOpen; render(); }));
+    document.querySelectorAll("[data-open-palette]").forEach((el) => el.addEventListener("click", () => openCommandPalette()));
     document.querySelectorAll("[data-new-project]").forEach((el) => el.addEventListener("click", () => openProjectModal(null)));
     document.querySelectorAll("[data-seed-sample]").forEach((el) => el.addEventListener("click", () => seedSampleProject()));
     document.querySelectorAll("[data-import-project]").forEach((input) => input.addEventListener("change", async (event) => {
