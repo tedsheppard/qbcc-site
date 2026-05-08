@@ -940,13 +940,15 @@ a { color: inherit; text-decoration: none; }
 }
 .project-row {
   display: grid;
-  grid-template-columns: 40px 1fr auto auto;
+  grid-template-columns: auto 40px 1fr auto auto auto;
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
   border: 1px solid var(--main-border);
   border-radius: 11px;
   background: #fff;
+  text-decoration: none;
+  color: inherit;
   transition: background-color 0.12s, border-color 0.12s;
 }
 .project-row:hover {
@@ -2994,20 +2996,22 @@ a { color: inherit; text-decoration: none; }
     gap: 14px;
   }
 
-  /* Project row: stack icon+text on top, status pill on bottom — no overflow. */
+  /* Project row: stack check+icon+text on top, status pill on bottom — no overflow. */
   .project-row {
-    grid-template-columns: 36px minmax(0, 1fr);
+    grid-template-columns: auto 36px minmax(0, 1fr);
     grid-template-rows: auto auto;
     grid-template-areas:
-      "icon text"
-      "meta meta";
+      "check icon text"
+      "meta meta meta";
     gap: 6px 12px;
     padding: 12px 14px;
   }
+  .project-row-check { grid-area: check; }
   .project-row-icon { grid-area: icon; width: 32px; height: 32px; }
   .project-row-icon svg { width: 14px; height: 14px; }
   .project-row-text { grid-area: text; }
-  .project-row .status-pill {
+  .project-row .status-pill,
+  .project-row .category-pill {
     grid-area: meta;
     justify-self: start;
     white-space: normal;
