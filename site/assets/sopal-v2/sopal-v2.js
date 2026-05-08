@@ -171,6 +171,51 @@
     ],
   };
 
+  const AGENT_QUICK_ACTIONS = {
+    "payment-claims": [
+      "Draft a payment claim for [scope] valued at $[amount] for [period].",
+      "Audit a payment claim served on me — what are the strongest jurisdictional objections?",
+      "Suggest s 68 BIF Act endorsement wording for this claim.",
+      "Compare this claim against the prior claim — what's new or repeated?",
+    ],
+    "payment-schedules": [
+      "Draft a payment schedule responding to a $[amount] claim, scheduled at $[amount].",
+      "Itemise the reasons for withholding in a 4-column table.",
+      "Stress-test the reasons against s 82(4) BIF Act risk.",
+      "Check timing — was the schedule given within s 76 (15 BD or contract)?",
+    ],
+    eots: [
+      "Draft an EOT notice citing clause [#] for [delay event].",
+      "Stress-test this EOT for time-bar and causation risks.",
+      "List the contemporaneous records I need to support the claim.",
+      "Should this also raise a variation or delay cost claim?",
+    ],
+    variations: [
+      "Draft a variation notice for [scope change] valued at $[amount].",
+      "Was there a clear instruction or only clarification?",
+      "Build a valuation paragraph using Schedule of Rates as a fallback.",
+      "Identify the strongest time-bar / waiver risk on this variation.",
+    ],
+    "delay-costs": [
+      "Draft a delay cost / prolongation claim for [period] of [N] working days.",
+      "Build a prolongation cost table by week with preliminaries.",
+      "Identify overlap with EOT or variation claims.",
+      "What's the cleanest causation argument here?",
+    ],
+    "adjudication-application": [
+      "Draft an adjudication application structure responding to a $0 schedule.",
+      "Build a chronology of the dispute from claim service to schedule.",
+      "List the evidence bundle I need to attach.",
+      "Frame the strongest jurisdictional argument upfront.",
+    ],
+    "adjudication-response": [
+      "Draft an adjudication response structure with jurisdictional objections first.",
+      "Itemise the reasons already raised vs new reasons (s 82(4)).",
+      "Build a quantum response table item-by-item.",
+      "Identify points of merit weakness in the application.",
+    ],
+  };
+
   // QLD public holidays + regional show holidays — copied from the live Sopal due-date calculator.
   const HOLIDAYS = {
     qld: [
@@ -285,7 +330,18 @@
     const includeArchived = !!(opts && opts.includeArchived);
     return Object.values(store.projects)
       .filter((p) => includeArchived || !p.archived)
-      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+      .sort((a, b) => {
+        const fa = a.favourite ? 1 : 0;
+        const fb = b.favourite ? 1 : 0;
+        if (fa !== fb) return fb - fa;
+        return (b.updatedAt || 0) - (a.updatedAt || 0);
+      });
+  }
+  function toggleProjectFavourite(id) {
+    const p = getProject(id);
+    if (!p) return;
+    p.favourite = !p.favourite;
+    saveStore();
   }
   function archivedProjectList() {
     return Object.values(store.projects).filter((p) => p.archived).sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
@@ -655,9 +711,12 @@
               ${projectMenuOpen ? `
                 <div class="project-menu" role="menu">
                   ${projects.map((p) => `
+                    <div class="project-menu-row-wrap">
+                      <button class="project-menu-row-fav" type="button" data-toggle-favourite="${attr(p.id)}" title="${p.favourite ? "Unfavourite" : "Favourite"}">${p.favourite ? "★" : "☆"}</button>
                     <button class="project-menu-row ${p.id === store.currentProjectId ? "active" : ""}" type="button" data-select-project="${attr(p.id)}">
                       <span class="truncate">${escapeHtml(p.name)}</span>
-                    </button>`).join("")}
+                    </button>
+                    </div>`).join("")}
                   <div class="project-menu-divider"></div>
                   <button class="project-menu-row create" type="button" data-new-project>${ICON.plus}<span>New project</span></button>
                 </div>` : ""}
@@ -882,13 +941,14 @@
         </div>`;
     }
     return `
-      <a class="project-row ${isSelected ? "is-selected" : ""}" href="/sopal-v2/projects/${attr(p.id)}/overview" data-nav>
+      <a class="project-row ${isSelected ? "is-selected" : ""} ${p.favourite ? "is-favourite" : ""}" href="/sopal-v2/projects/${attr(p.id)}/overview" data-nav>
         ${checkboxHtml}
         <div class="project-row-icon">${ICON.file}</div>
         <div class="project-row-text">
-          <strong>${escapeHtml(p.name)}</strong>
+          <strong>${escapeHtml(p.name)}${p.favourite ? ' <span class="fav-star">★</span>' : ""}</strong>
           <span>${escapeHtml(meta || "Bespoke contract")}</span>
         </div>
+        <button class="project-row-fav" type="button" data-toggle-favourite="${attr(p.id)}" onclick="event.stopPropagation(); event.preventDefault();" title="${p.favourite ? "Unfavourite" : "Favourite"}">${p.favourite ? "★" : "☆"}</button>
         ${p.category ? `<span class="category-pill">${escapeHtml(p.category)}</span>` : ""}
         <span class="status-pill">${p.contracts.length || 0} contract docs · ${p.library.length || 0} library</span>
         <span class="row-chev">${ICON.chevRight}</span>
@@ -2623,7 +2683,7 @@ Total\t${formatCurrencyFull(total)}`;
         title: AGENT_LABELS[agentKey],
         titleSub: AGENT_DESCRIPTIONS[agentKey],
         placeholder: "Describe what needs drafting and paste the relevant project / contract facts.",
-        starters: SCENARIO_STARTERS.draft || [],
+        starters: AGENT_QUICK_ACTIONS[agentKey] || SCENARIO_STARTERS.draft || [],
         contextDefaultOn: project.contracts.length + project.library.length > 0,
         includeList: INCLUDE_LISTS[agentKey] || [],
         draftOnly,
@@ -2763,6 +2823,73 @@ Total\t${formatCurrencyFull(total)}`;
       </div>`;
   }
 
+  function openPrintAnalysis(agentKey, document, analysis, project) {
+    const counts = analysis.counts || { fail: 0, warn: 0, info: 0, pass: 0 };
+    const symbol = (s) => s === "pass" ? "✓" : s === "fail" ? "✕" : s === "warn" ? "!" : s === "info" ? "?" : "•";
+    const win = window.open("", "_blank");
+    if (!win) {
+      alert("Could not open print view. Please allow popups for this site and try again.");
+      return;
+    }
+    const safe = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const heading = `${AGENT_LABELS[agentKey] || agentKey} review${project ? ` — ${project.name}` : ""}`;
+    const today = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    const checksHtml = (analysis.checks || []).map((c, i) => `
+      <article class="print-check ${c.status || "info"}">
+        <h3><span class="print-check-status">${symbol(c.status)}</span> ${safe(c.title || `Check ${i + 1}`)}</h3>
+        <div class="print-check-detail">${safe(c.detail || "").split(/\n+/).map((p) => `<p>${p}</p>`).join("")}</div>
+      </article>`).join("");
+    win.document.write(`
+      <!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe(heading)}</title>
+      <style>
+        :root { color-scheme: light; }
+        body { font-family: Inter, -apple-system, "Segoe UI", sans-serif; color: #1a1a1a; max-width: 760px; margin: 32px auto; padding: 0 24px; line-height: 1.55; font-size: 13.5px; }
+        h1 { font-size: 22px; margin: 0 0 4px; }
+        h2 { font-size: 16px; margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e8e5e0; }
+        h3 { font-size: 14px; margin: 14px 0 6px; }
+        .print-meta { color: #6b6b6b; font-size: 12.5px; margin-bottom: 18px; }
+        .print-summary { background: #f7f5f1; border-left: 3px solid #1a1a1a; padding: 12px 14px; border-radius: 4px; }
+        .print-counts { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 0; font-size: 12px; font-weight: 600; }
+        .print-count-pill { padding: 3px 9px; border-radius: 999px; border: 1px solid; }
+        .print-count-pill.fail { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+        .print-count-pill.warn { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+        .print-count-pill.info { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+        .print-count-pill.pass { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+        .print-check { margin: 12px 0 16px; page-break-inside: avoid; }
+        .print-check.fail h3 { color: #991b1b; }
+        .print-check.warn h3 { color: #92400e; }
+        .print-check.info h3 { color: #1e40af; }
+        .print-check.pass h3 { color: #047857; }
+        .print-check-status { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+        .print-check-detail p { margin: 4px 0; }
+        .print-list { padding-left: 20px; margin: 8px 0; }
+        .print-list li { margin: 4px 0; }
+        .print-foot { margin-top: 36px; padding-top: 12px; border-top: 1px solid #e8e5e0; color: #9b9994; font-size: 11.5px; }
+        .print-actions { display: flex; gap: 8px; margin-bottom: 16px; padding: 8px 12px; background: #f7f5f1; border-radius: 6px; }
+        .print-actions button { font: inherit; padding: 6px 12px; border-radius: 5px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; }
+        @media print { .print-actions { display: none; } body { margin: 0 auto; max-width: none; padding: 0 16px; } }
+      </style></head><body>
+        <div class="print-actions">
+          <button onclick="window.print()">Print</button>
+          <button onclick="window.close()">Close</button>
+        </div>
+        <h1>${safe(heading)}</h1>
+        <p class="print-meta">${document?.name ? `<strong>Document:</strong> ${safe(document.name)}<br>` : ""}<strong>Generated:</strong> ${safe(today)}${project?.reference ? ` &middot; <strong>Ref:</strong> ${safe(project.reference)}` : ""}${project?.contractForm ? ` &middot; <strong>Contract:</strong> ${safe(project.contractForm)}` : ""}</p>
+        ${analysis.summary ? `<h2>Summary</h2><div class="print-summary">${safe(analysis.summary).split(/\n+/).map((p) => `<p>${p}</p>`).join("")}</div>` : ""}
+        <div class="print-counts">
+          <span class="print-count-pill fail">${counts.fail || 0} issues</span>
+          <span class="print-count-pill warn">${counts.warn || 0} warnings</span>
+          <span class="print-count-pill info">${counts.info || 0} need input</span>
+          <span class="print-count-pill pass">${counts.pass || 0} passed</span>
+        </div>
+        ${checksHtml ? `<h2>Checks</h2>${checksHtml}` : ""}
+        ${(analysis.recommendations || []).length ? `<h2>Recommended next steps</h2><ol class="print-list">${analysis.recommendations.map((r) => `<li>${safe(r)}</li>`).join("")}</ol>` : ""}
+        ${(analysis.missing || []).length ? `<h2>Information to gather</h2><ul class="print-list">${analysis.missing.map((m) => `<li>${safe(m)}</li>`).join("")}</ul>` : ""}
+        <p class="print-foot">Generated by Sopal v2 — sopal.com.au</p>
+      </body></html>`);
+    win.document.close();
+  }
+
   function analysisToMarkdown(agentKey, document, analysis) {
     if (!analysis) return "";
     const project = currentProject();
@@ -2831,6 +2958,7 @@ Total\t${formatCurrencyFull(total)}`;
             <span class="sc-pill sc-pass"><strong>${counts.pass}</strong> passed</span>
           </div>
           <button class="ghost-button compact analysis-copy-btn" type="button" data-copy-text="${attr(md)}" title="Copy this review as markdown">${ICON.copy}<span>Copy as markdown</span></button>
+          <button class="ghost-button compact analysis-print-btn" type="button" data-print-analysis title="Open a clean print-friendly view">${ICON.file}<span>Print</span></button>
         </div>
         ${history.length ? `
           <div class="analysis-history-row">
@@ -3090,6 +3218,11 @@ Total\t${formatCurrencyFull(total)}`;
         r.status = "idle";
         saveProject(project);
         refreshAnalysis();
+      });
+      document.querySelector("[data-print-analysis]")?.addEventListener("click", () => {
+        const r = ensureReview();
+        if (!r.analysis || r.analysis.error) return;
+        openPrintAnalysis(agentKey, r.document, r.analysis, project);
       });
       document.querySelector("[data-restore-history]")?.addEventListener("change", (event) => {
         const idx = Number(event.target.value);
@@ -3991,6 +4124,12 @@ Total\t${formatCurrencyFull(total)}`;
       selectProject(el.dataset.selectProject);
       projectMenuOpen = false;
       navigate(`/sopal-v2/projects/${el.dataset.selectProject}/overview`);
+    }));
+    document.querySelectorAll("[data-toggle-favourite]").forEach((el) => el.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleProjectFavourite(el.dataset.toggleFavourite);
+      render();
     }));
     // cleanPath() strips "/sopal-v2/" so segment 0 is "projects" and segment 1
     // is the project id. Earlier code mistakenly read route[1]==="projects"
