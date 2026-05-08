@@ -167,6 +167,30 @@ a { color: inherit; text-decoration: none; }
 }
 .nav-item-sub { padding-left: 26px; font-size: 12.5px; }
 .nav-item.small { font-size: 12.5px; }
+
+.nav-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--sidebar-fg);
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+.nav-thread:hover { background: var(--sidebar-hover); border-color: rgba(0,0,0,0.05); }
+.nav-thread-label { font-size: 12px; font-weight: 600; line-height: 1.25; }
+.nav-thread-preview {
+  font-size: 11.5px;
+  color: var(--muted-fg, #6b6b6b);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .nav-icon {
   display: inline-flex;
   width: 16px;
@@ -949,6 +973,46 @@ a { color: inherit; text-decoration: none; }
   gap: 10px;
 }
 .metric-grid.compact { gap: 8px; margin-bottom: 14px; }
+
+.doc-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.doc-list-col { display: flex; flex-direction: column; gap: 6px; }
+.doc-list-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-fg, #6b6b6b);
+}
+.doc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.doc-list li { margin: 0; }
+.doc-list a {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.05);
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+.doc-list a:hover { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
+.doc-list-name {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  word-break: break-word;
+}
+.doc-list-meta {
+  font-size: 11.5px;
+  color: var(--muted-fg, #6b6b6b);
+}
 .metric {
   padding: 10px 12px;
   border: 1px solid var(--main-border);

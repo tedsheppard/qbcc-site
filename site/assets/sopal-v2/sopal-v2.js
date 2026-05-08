@@ -559,6 +559,7 @@
                   <span class="nav-icon">${item.icon}</span>
                   <span class="nav-label">${escapeHtml(item.label)}</span>
                 </a>`).join("")}
+              ${sidebarRecentThreads(project)}
             ` : ""}
           `}
         </div>
@@ -1664,6 +1665,24 @@ Total\t${formatCurrencyFull(total)}`;
                 <div class="metric"><strong>${project.library.length}</strong><span>library items</span></div>
                 <div class="metric"><strong>${(project.contracts.reduce((s, d) => s + (d.text || "").length, 0) + project.library.reduce((s, d) => s + (d.text || "").length, 0)).toLocaleString()}</strong><span>chars indexed</span></div>
               </div>
+              ${project.contracts.length || project.library.length ? `
+                <div class="doc-list-grid">
+                  ${project.contracts.length ? `
+                    <div class="doc-list-col">
+                      <div class="doc-list-title">Contract</div>
+                      <ul class="doc-list">
+                        ${docListEntries(project.contracts).map((d) => `<li><a href="/sopal-v2/projects/${attr(project.id)}/contract" data-nav><span class="doc-list-name">${escapeHtml(d.name || "Untitled")}</span><span class="doc-list-meta">${escapeHtml(formatDocMeta(d))}</span></a></li>`).join("")}
+                      </ul>
+                    </div>` : ""}
+                  ${project.library.length ? `
+                    <div class="doc-list-col">
+                      <div class="doc-list-title">Library</div>
+                      <ul class="doc-list">
+                        ${docListEntries(project.library).map((d) => `<li><a href="/sopal-v2/projects/${attr(project.id)}/library" data-nav><span class="doc-list-name">${escapeHtml(d.name || "Untitled")}</span><span class="doc-list-meta">${escapeHtml(formatDocMeta(d))}</span></a></li>`).join("")}
+                      </ul>
+                    </div>` : ""}
+                </div>
+              ` : ""}
               <div class="quick-link-row">
                 <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/contract" data-nav>Open contract</a>
                 <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/library" data-nav>Open library</a>
@@ -1684,6 +1703,26 @@ Total\t${formatCurrencyFull(total)}`;
     `);
   }
 
+  function docListEntries(docs) {
+    return [...(docs || [])]
+      .map((d, i) => ({ ...d, _i: i }))
+      .sort((a, b) => {
+        const ta = Date.parse(a.addedAt || "") || a._i;
+        const tb = Date.parse(b.addedAt || "") || b._i;
+        return tb - ta;
+      })
+      .slice(0, 3);
+  }
+
+  function formatDocMeta(d) {
+    const len = (d.text || "").length;
+    const date = d.addedAt ? new Date(d.addedAt) : null;
+    const parts = [];
+    if (date && !isNaN(date)) parts.push(date.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+    if (len) parts.push(`${len.toLocaleString()} chars`);
+    return parts.join(" · ");
+  }
+
   function plainPreview(text) {
     // Strip markdown for inline previews so users see prose, not "## Heading".
     return String(text || "")
@@ -1693,6 +1732,32 @@ Total\t${formatCurrencyFull(total)}`;
       .replace(/^\s*[-*]\s+/gm, "")
       .replace(/\s+/g, " ")
       .trim();
+  }
+
+  function sidebarRecentThreads(project) {
+    const threads = Object.entries(project.chats || {})
+      .filter(([, c]) => Array.isArray(c.messages) && c.messages.length > 0)
+      .sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0))
+      .slice(0, 3);
+    if (!threads.length) return "";
+    return `
+      <div class="nav-subgroup-title">Recent threads</div>
+      ${threads.map(([key, h]) => {
+        let label, href;
+        if (key === "assistant") { label = "Assistant"; href = `/sopal-v2/projects/${project.id}/assistant`; }
+        else if (key.startsWith("agent:")) {
+          const [, agentKey, mode] = key.split(":");
+          label = `${AGENT_LABELS[agentKey] || agentKey} · ${mode}`;
+          href = `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=${mode}`;
+        } else { label = key; href = `/sopal-v2/projects/${project.id}/assistant`; }
+        const last = h.messages[h.messages.length - 1] || {};
+        const preview = plainPreview(last.content || "");
+        return `<a class="nav-thread" href="${href}" data-nav title="${attr(preview)}">
+          <span class="nav-thread-label">${escapeHtml(label)}</span>
+          <span class="nav-thread-preview">${escapeHtml(preview.slice(0, 64))}${preview.length > 64 ? "…" : ""}</span>
+        </a>`;
+      }).join("")}
+    `;
   }
 
   function recentChatRow(project, key, h) {
