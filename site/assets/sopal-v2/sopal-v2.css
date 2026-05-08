@@ -43,6 +43,10 @@
 }
 
 html, body { min-height: 100%; margin: 0; }
+/* Belt-and-braces: any single rogue element shouldn't make the page horizontally
+   scrollable on phones. Set on body too because mobile Safari clips to body. */
+html, body { overflow-x: hidden; }
+.sopal-shell { max-width: 100%; }
 
 /* `display: flex` etc. on labels/cards would otherwise override the user-agent
    `[hidden] { display: none }` rule. Keep the hidden attribute authoritative. */
@@ -774,14 +778,27 @@ a { color: inherit; text-decoration: none; }
 }
 .project-row-icon svg { width: 16px; height: 16px; }
 .project-row-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.project-row-text strong { font-size: 14px; font-weight: 650; }
-.project-row-text span { color: var(--muted-fg); font-size: 12.5px; }
+.project-row-text strong {
+  font-size: 14px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-row-text span {
+  color: var(--muted-fg);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .status-pill {
   font-size: 11.5px;
   padding: 3px 8px;
   border-radius: 999px;
   background: var(--accent);
   color: var(--muted-fg);
+  white-space: nowrap;
 }
 .row-chev { color: var(--muted-fg); display: inline-flex; }
 .row-chev svg { width: 16px; height: 16px; }
@@ -1998,4 +2015,153 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 1100px) {
   .review-grid { grid-template-columns: 1fr; }
   .review-right { position: static; max-height: none; }
+}
+
+/* ---------- Mobile (≤620px) — proper phone layout ---------- */
+@media (max-width: 620px) {
+  /* Tighten the main pane so content uses the full viewport width. */
+  .main { border-top-left-radius: 0; box-shadow: none; }
+  .main-header {
+    height: 52px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .breadcrumb { font-size: 12.5px; gap: 4px; }
+  .breadcrumb .crumb,
+  .breadcrumb .crumb-sep { white-space: nowrap; }
+  .breadcrumb .crumb {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+  }
+  .header-right .link-button { display: none; }
+
+  .page-shell {
+    width: 100%;
+    padding: 16px 14px 56px;
+    gap: 14px;
+  }
+
+  /* Project row: stack icon+text on top, status pill on bottom — no overflow. */
+  .project-row {
+    grid-template-columns: 36px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "icon text"
+      "meta meta";
+    gap: 6px 12px;
+    padding: 12px 14px;
+  }
+  .project-row-icon { grid-area: icon; width: 32px; height: 32px; }
+  .project-row-icon svg { width: 14px; height: 14px; }
+  .project-row-text { grid-area: text; }
+  .project-row .status-pill {
+    grid-area: meta;
+    justify-self: start;
+    white-space: normal;
+    line-height: 1.4;
+  }
+  .project-row .row-chev { display: none; }
+
+  /* Home hero: lighter padding so it doesn't dominate the viewport. */
+  .home-hero { padding: 18px 16px; }
+  .home-hero h2 { font-size: 19px; }
+  .home-hero p { font-size: 13.5px; }
+  .home-hero .dark-button { width: 100%; justify-content: center; }
+
+  /* Tile grid: full-width, looser tap target. */
+  .tile-grid, .home-tiles { grid-template-columns: 1fr; gap: 8px; }
+  .tile { padding: 12px 14px; min-height: auto; }
+
+  /* Section heads: stack title and action button. */
+  .page-head, .section-head.row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .page-head .dark-button,
+  .section-head.row .dark-button { width: 100%; justify-content: center; }
+
+  .page-title { font-size: 20px; }
+  .page-sub { font-size: 13px; }
+
+  /* Decision search: search form readable and stacked. */
+  .search-form {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .search-form .span-2,
+  .search-form .span-all { grid-column: 1; }
+  .search-form .dark-button { width: 100%; justify-self: stretch; }
+  .search-form .select-input { max-width: none; }
+  .filters-grid { grid-template-columns: 1fr; }
+  .research-grid, .stats-grid-shell { grid-template-columns: 1fr; gap: 12px; }
+
+  /* Adjudicator + result cards: padding tightened. */
+  .result-row { padding: 12px 14px; }
+  .adj-card { padding: 11px 12px; }
+  .adj-grid { grid-template-columns: 1fr; }
+
+  /* Decision detail: header pieces wrap onto rows. */
+  .decision-meta-block { padding: 10px 14px 4px; gap: 6px 12px; }
+  .decision-meta-block dd { font-size: 12.5px; }
+
+  /* Calculators stacked. */
+  .due-grid, .interest-grid, .tool-grid { grid-template-columns: 1fr; gap: 12px; }
+  .scenario-list { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .calc-form { grid-template-columns: 1fr; }
+  .calc-form .span-2, .calc-form .span-all { grid-column: 1; }
+
+  /* Project workspace: collapse the 2-column grid. */
+  .project-grid { grid-template-columns: 1fr; gap: 12px; }
+  .context-grid { grid-template-columns: 1fr; gap: 12px; }
+  .context-form { grid-template-columns: 1fr; }
+  .context-form .span-2, .context-form .span-all { grid-column: 1; }
+
+  /* Chat: full-bleed, helper panel BELOW the chat (not above as the broader
+     ≤980 rule had it via order: -1). */
+  .chat-layout, .chat-layout.with-helper {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .helper-panel { order: 0; }
+  .chat-pane { min-height: 60vh; }
+  .chat-empty { padding: 28px 16px; }
+  .chat-empty-title { font-size: 24px; }
+  .composer-card { width: 100%; border-radius: 14px; }
+  .composer-card textarea, .composer-active textarea { font-size: 16px; }
+  /* iOS won't zoom on focus when the input is ≥16px font-size */
+  .text-input, .select-input, .text-area { font-size: 16px; }
+  .composer-meta { font-size: 11.5px; gap: 8px; }
+  .composer-meta .kbd-hint { display: none; }
+
+  /* Review workspace columns stack. */
+  .review-grid { grid-template-columns: 1fr; gap: 12px; }
+  .review-right { position: static; max-height: none; }
+
+  /* Mode tabs: stretch full width. */
+  .mode-tabs { display: flex; width: 100%; }
+  .mode-tab { flex: 1; }
+
+  /* Modal: full-bleed-ish on phones. */
+  .modal { border-radius: 14px; }
+  .modal-body .row-2 { grid-template-columns: 1fr; }
+  .modal-body .span-all { grid-column: 1; }
+
+  /* Result tables on calculators wrap better. */
+  .result-table td { padding: 6px 0; font-size: 12.5px; }
+  .result-total { font-size: 14px; }
+  .result-total strong { font-size: 16px; }
+
+  /* Sidebar drawer: don't be wider than the viewport. */
+  .sopal-sidebar { width: min(280px, 86vw); }
+  .nav-item { font-size: 14px; padding: 10px 12px; }
+}
+
+/* Smaller phones — keep header readable. */
+@media (max-width: 380px) {
+  .home-tiles { grid-template-columns: 1fr; }
+  .breadcrumb { font-size: 12px; }
+  .page-title { font-size: 18px; }
+  .home-hero h2 { font-size: 18px; }
 }

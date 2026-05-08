@@ -2643,10 +2643,13 @@ Total\t${formatCurrencyFull(total)}`;
       projectMenuOpen = false;
       navigate(`/sopal-v2/projects/${el.dataset.selectProject}/overview`);
     }));
+    // cleanPath() strips "/sopal-v2/" so segment 0 is "projects" and segment 1
+    // is the project id. Earlier code mistakenly read route[1]==="projects"
+    // which silently no-op'd Remove and Clear-all on Library + Contracts.
     document.querySelectorAll("[data-remove-context]").forEach((b) => b.addEventListener("click", () => {
       const [bucket, indexStr] = b.dataset.removeContext.split(":");
       const route = cleanPath().split("/");
-      const projectId = route[1] === "projects" ? route[2] : null;
+      const projectId = route[0] === "projects" ? route[1] : null;
       const project = getProject(projectId);
       if (!project) return;
       project[bucket].splice(Number(indexStr), 1);
@@ -2656,7 +2659,7 @@ Total\t${formatCurrencyFull(total)}`;
     document.querySelectorAll("[data-clear-context]").forEach((b) => b.addEventListener("click", () => {
       if (!confirm(`Clear all ${b.dataset.clearContext}?`)) return;
       const route = cleanPath().split("/");
-      const projectId = route[1] === "projects" ? route[2] : null;
+      const projectId = route[0] === "projects" ? route[1] : null;
       const project = getProject(projectId);
       if (!project) return;
       project[b.dataset.clearContext] = [];
