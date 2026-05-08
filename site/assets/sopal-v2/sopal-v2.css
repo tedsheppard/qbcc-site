@@ -1825,6 +1825,113 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 8px;
 }
 
+.pin-badge {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #fef3c7;
+  color: #92400e;
+  vertical-align: middle;
+}
+
+.doc-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+  align-items: center;
+}
+.doc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #c7d2fe;
+}
+.doc-tag-x {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  margin-left: 2px;
+}
+.doc-tag-add {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.tag-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 18px 0;
+}
+.tag-filter {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.04);
+  color: var(--muted-fg, #6b6b6b);
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.tag-filter:hover { background: rgba(0,0,0,0.08); }
+.tag-filter.active { background: #1f2937; color: #fff; }
+
+.context-item.is-pinned { border-left: 3px solid #f59e0b; padding-left: 10px; }
+.doc-pin-on { background: #fef3c7 !important; border-color: #f59e0b !important; color: #92400e !important; }
+
+.citation-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #c7d2fe;
+  cursor: pointer;
+  margin: 0 2px;
+  font-family: inherit;
+  vertical-align: baseline;
+}
+.citation-chip:hover { background: #e0e7ff; }
+.citation-unknown { background: rgba(0,0,0,0.04); color: var(--muted-fg, #6b6b6b); border-color: rgba(0,0,0,0.08); cursor: default; }
+
+.pinned-row {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+.pinned-row-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #92400e;
+  margin-bottom: 6px;
+}
+.pinned-row-title svg { width: 14px; height: 14px; }
+.pinned-row .doc-list a { background: #fff; }
+
 .split-action {
   display: flex;
   align-items: center;

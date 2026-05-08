@@ -1965,20 +1965,31 @@ Total\t${formatCurrencyFull(total)}`;
                 <div class="metric"><strong>${project.library.length}</strong><span>library items</span></div>
                 <div class="metric"><strong>${(project.contracts.reduce((s, d) => s + (d.text || "").length, 0) + project.library.reduce((s, d) => s + (d.text || "").length, 0)).toLocaleString()}</strong><span>chars indexed</span></div>
               </div>
+              ${(() => {
+                const pinned = [
+                  ...(project.contracts || []).map((d, i) => ({ ...d, bucket: "contracts", _i: i })).filter((d) => d.pinned),
+                  ...(project.library || []).map((d, i) => ({ ...d, bucket: "library", _i: i })).filter((d) => d.pinned),
+                ];
+                return pinned.length ? `
+                  <div class="pinned-row">
+                    <div class="pinned-row-title">${ICON.layers}<span>Pinned (always in chat context)</span></div>
+                    <ul class="doc-list">${pinned.map((d) => `<li><a href="/sopal-v2/projects/${attr(project.id)}/${d.bucket === "contracts" ? "contract" : "library"}" data-doc-preview="${attr(project.id)}:${d.bucket}:${d._i}"><span class="doc-list-name">${escapeHtml(d.name || "Untitled")}</span><span class="doc-list-meta">${d.bucket === "contracts" ? "Contract" : "Library"} · ${escapeHtml(formatDocMeta(d))}</span></a></li>`).join("")}</ul>
+                  </div>` : "";
+              })()}
               ${project.contracts.length || project.library.length ? `
                 <div class="doc-list-grid">
                   ${project.contracts.length ? `
                     <div class="doc-list-col">
                       <div class="doc-list-title">Contract</div>
                       <ul class="doc-list">
-                        ${docListEntries(project.contracts).map((d) => `<li><a href="/sopal-v2/projects/${attr(project.id)}/contract" data-doc-preview="${attr(project.id)}:contracts:${d._i}"><span class="doc-list-name">${escapeHtml(d.name || "Untitled")}</span><span class="doc-list-meta">${escapeHtml(formatDocMeta(d))}</span></a></li>`).join("")}
+                        ${docListEntries(project.contracts).map((d) => `<li><a href="/sopal-v2/projects/${attr(project.id)}/contract" data-doc-preview="${attr(project.id)}:contracts:${d._i}"><span class="doc-list-name">${escapeHtml(d.name || "Untitled")}${d.pinned ? ` <span class="pin-badge">PINNED</span>` : ""}</span><span class="doc-list-meta">${escapeHtml(formatDocMeta(d))}</span></a></li>`).join("")}
                       </ul>
                     </div>` : ""}
                   ${project.library.length ? `
                     <div class="doc-list-col">
                       <div class="doc-list-title">Library</div>
                       <ul class="doc-list">
-                        ${docListEntries(project.library).map((d) => `<li><a href="/sopal-v2/projects/${attr(project.id)}/library" data-doc-preview="${attr(project.id)}:library:${d._i}"><span class="doc-list-name">${escapeHtml(d.name || "Untitled")}</span><span class="doc-list-meta">${escapeHtml(formatDocMeta(d))}</span></a></li>`).join("")}
+                        ${docListEntries(project.library).map((d) => `<li><a href="/sopal-v2/projects/${attr(project.id)}/library" data-doc-preview="${attr(project.id)}:library:${d._i}"><span class="doc-list-name">${escapeHtml(d.name || "Untitled")}${d.pinned ? ` <span class="pin-badge">PINNED</span>` : ""}</span><span class="doc-list-meta">${escapeHtml(formatDocMeta(d))}</span></a></li>`).join("")}
                       </ul>
                     </div>` : ""}
                 </div>
@@ -2162,7 +2173,11 @@ Total\t${formatCurrencyFull(total)}`;
   function ContextPage(projectId, bucket) {
     const project = getProject(projectId);
     if (!project) return notFoundPage();
-    const items = project[bucket] || [];
+    const allItems = project[bucket] || [];
+    const params = new URLSearchParams(window.location.search);
+    const tagFilter = params.get("tag") || "";
+    const items = tagFilter ? allItems.filter((it) => (it.tags || []).includes(tagFilter)) : allItems;
+    const allTags = Array.from(new Set(allItems.flatMap((it) => it.tags || []))).sort();
     const labels = bucket === "contracts" ? { single: "Contract", title: "Contract documents", helper: "Paste contract clauses or extract text from PDF/DOCX/TXT. The assistant and every agent in this project will see this content." } : { single: "Project document", title: "Project library", helper: "Paste correspondence, RFIs, claims, schedules, programme notes — or extract from PDF/DOCX/TXT." };
     setTimeout(() => bindContextManager(projectId, bucket), 0);
     return PageBody(`
@@ -2187,23 +2202,32 @@ Total\t${formatCurrencyFull(total)}`;
             </form>
           </div>
           <div class="card">
-            <div class="card-head"><div><h3>Saved (${items.length})</h3></div>${items.length ? `<button class="ghost-button compact danger" type="button" data-clear-context="${bucket}">Clear all</button>` : ""}</div>
+            <div class="card-head"><div><h3>Saved (${items.length}${tagFilter ? ` of ${allItems.length}` : ""})</h3></div>${allItems.length ? `<button class="ghost-button compact danger" type="button" data-clear-context="${bucket}">Clear all</button>` : ""}</div>
+            ${allTags.length ? `
+              <div class="tag-filter-row">
+                <a class="tag-filter ${!tagFilter ? "active" : ""}" href="/sopal-v2/projects/${attr(projectId)}/${bucket === "contracts" ? "contract" : "library"}" data-nav>All</a>
+                ${allTags.map((t) => `<a class="tag-filter ${tagFilter === t ? "active" : ""}" href="/sopal-v2/projects/${attr(projectId)}/${bucket === "contracts" ? "contract" : "library"}?tag=${encodeURIComponent(t)}" data-nav>${escapeHtml(t)}</a>`).join("")}
+              </div>` : ""}
             <div class="card-body context-list">
-              ${items.length === 0 ? EmptyState(`No ${labels.single.toLowerCase()} yet.`, "Add pasted or extracted text to make agents context-aware.") : items.map((item, i) => `
-                <article class="context-item">
+              ${items.length === 0 ? EmptyState(tagFilter ? `No ${labels.single.toLowerCase()} with tag '${tagFilter}'.` : `No ${labels.single.toLowerCase()} yet.`, tagFilter ? "Try a different tag or clear the filter." : "Add pasted or extracted text to make agents context-aware.") : items.map((item) => {
+                const i = allItems.indexOf(item);
+                return `
+                <article class="context-item ${item.pinned ? "is-pinned" : ""}">
                   <div class="context-item-head">
                     <button class="context-item-title-btn" type="button" data-doc-preview="${attr(projectId)}:${bucket}:${i}" title="Open document preview">
                       <strong>${escapeHtml(item.name)}</strong>
                     </button>
-                    <span class="muted">${item.text.length.toLocaleString()} chars · ${escapeHtml(item.source || "pasted")}</span>
+                    <span class="muted">${item.text.length.toLocaleString()} chars · ${escapeHtml(item.source || "pasted")}${item.pinned ? ` · <span class="pin-badge">PINNED</span>` : ""}</span>
                   </div>
+                  ${(item.tags || []).length ? `<div class="doc-tag-row">${item.tags.map((t) => `<span class="doc-tag">${escapeHtml(t)}</span>`).join("")}</div>` : ""}
                   <details><summary>Preview</summary><pre>${escapeHtml(item.text.slice(0, 2000))}${item.text.length > 2000 ? "\n…" : ""}</pre></details>
                   <div class="context-item-actions">
                     <button class="ghost-button compact" type="button" data-doc-preview="${attr(projectId)}:${bucket}:${i}">${ICON.arrowUpRight}<span>Open / edit</span></button>
                     <button class="ghost-button compact" type="button" data-copy-text="${attr(item.text.slice(0, 8000))}">${ICON.copy}<span>Copy</span></button>
                     <button class="ghost-button compact danger" type="button" data-remove-context="${attr(bucket)}:${i}">Remove</button>
                   </div>
-                </article>`).join("")}
+                </article>`;
+              }).join("")}
             </div>
           </div>
         </div>
@@ -2374,10 +2398,16 @@ Total\t${formatCurrencyFull(total)}`;
 
   /* ---------- Project Assistant + Agents (Astruct-inspired chat) ---------- */
 
-  function projectContextString(project) {
-    const contractText = project.contracts.map((d) => `Contract: ${d.name}\n${d.text}`).join("\n\n---\n\n");
-    const libraryText = project.library.map((d) => `Project document: ${d.name}\n${d.text}`).join("\n\n---\n\n");
+  function projectContextString(project, opts) {
+    const pinnedOnly = !!(opts && opts.pinnedOnly);
+    const contracts = pinnedOnly ? (project.contracts || []).filter((d) => d.pinned) : (project.contracts || []);
+    const library = pinnedOnly ? (project.library || []).filter((d) => d.pinned) : (project.library || []);
+    const contractText = contracts.map((d) => `Contract: ${d.name}${d.pinned ? " (pinned)" : ""}\n${d.text}`).join("\n\n---\n\n");
+    const libraryText = library.map((d) => `Project document: ${d.name}${d.pinned ? " (pinned)" : ""}\n${d.text}`).join("\n\n---\n\n");
     return [contractText, libraryText].filter(Boolean).join("\n\n===\n\n").slice(0, 40000);
+  }
+  function projectHasPinnedDocs(project) {
+    return (project.contracts || []).some((d) => d.pinned) || (project.library || []).some((d) => d.pinned);
   }
 
   function AssistantPage(projectId) {
@@ -3398,7 +3428,9 @@ Total\t${formatCurrencyFull(total)}`;
   }
 
   async function callAi(opts, message, useContext, extractedFile, project, refs) {
-    const projectContext = useContext && project ? projectContextString(project) : "";
+    const projectContext = project
+      ? (useContext ? projectContextString(project) : projectContextString(project, { pinnedOnly: true }))
+      : "";
     const projectMeta = project ? `Project: ${project.name}\nContract form: ${project.contractForm}${project.reference ? `\nReference: ${project.reference}` : ""}${project.claimant || project.respondent ? `\nParties: ${project.claimant || "(claimant)"} v ${project.respondent || "(respondent)"}` : ""}\nUser is: ${project.userIsParty || "claimant"}` : "";
     const refsBlock = (refs || []).length
       ? "Referenced documents (the user @-mentioned these):\n\n" + refs.map((d) => `[@${d.name}]\n${(d.text || "").slice(0, 18000)}`).join("\n\n---\n\n")
@@ -3421,14 +3453,30 @@ Total\t${formatCurrencyFull(total)}`;
     return data;
   }
 
+  function enrichCitations(html) {
+    const project = currentProject();
+    if (!project) return html;
+    // Build a name → {bucket, index} lookup once per call.
+    const lookup = new Map();
+    (project.contracts || []).forEach((d, i) => { if (d.name) lookup.set(d.name.toLowerCase(), { bucket: "contracts", index: i, name: d.name }); });
+    (project.library || []).forEach((d, i) => { if (d.name) lookup.set(d.name.toLowerCase(), { bucket: "library", index: i, name: d.name }); });
+    if (lookup.size === 0) return html;
+    return html.replace(/\[@([^\]]{1,120})\]/g, (full, raw) => {
+      const key = raw.trim().toLowerCase();
+      const hit = lookup.get(key);
+      if (!hit) return `<span class="citation-chip citation-unknown">@${escapeHtml(raw)}</span>`;
+      return `<button type="button" class="citation-chip" data-doc-preview="${attr(project.id)}:${attr(hit.bucket)}:${hit.index}" title="Open ${escapeHtml(hit.name)}">@${escapeHtml(hit.name)}</button>`;
+    });
+  }
+
   function renderMessage(role, content, withActions) {
     if (role === "user") {
       const safe = escapeHtml(content || "").replace(/\n/g, "<br>");
-      return `<div class="message msg-user"><div class="bubble">${safe}</div></div>`;
+      return `<div class="message msg-user"><div class="bubble">${enrichCitations(safe)}</div></div>`;
     }
     return `<div class="message msg-assistant">
       <div class="message-body">
-        <div class="md">${renderMarkdown(content || "")}</div>
+        <div class="md">${enrichCitations(renderMarkdown(content || ""))}</div>
         ${withActions ? `<div class="message-actions"><button class="ghost-button compact" type="button" data-copy-text="${attr(content || "")}">${ICON.copy}<span>Copy</span></button></div>` : ""}
       </div>
     </div>`;
@@ -3461,11 +3509,18 @@ Total\t${formatCurrencyFull(total)}`;
           <aside class="doc-drawer" role="dialog" aria-modal="true" aria-labelledby="docDrawerTitle">
             <header class="doc-drawer-head">
               <div class="doc-drawer-head-text">
-                <p class="doc-drawer-eyebrow">${bucket === "contracts" ? "Contract" : "Library"}</p>
+                <p class="doc-drawer-eyebrow">${bucket === "contracts" ? "Contract" : "Library"}${doc.pinned ? ` · <span class="pin-badge">PINNED</span>` : ""}</p>
                 ${editing
                   ? `<input class="text-input doc-drawer-name-input" type="text" data-doc-edit-name value="${attr(doc.name || "")}" placeholder="Document name">`
                   : `<h2 id="docDrawerTitle">${escapeHtml(doc.name || "Untitled")}</h2>`}
                 <p class="doc-drawer-meta muted">${escapeHtml(formatDocMeta(doc) || "—")}${doc.source ? ` · ${escapeHtml(doc.source)}` : ""}</p>
+                <div class="doc-tag-row" data-tag-row>
+                  ${(doc.tags || []).map((t) => `<span class="doc-tag">${escapeHtml(t)}<button class="doc-tag-x" type="button" data-doc-tag-remove="${attr(t)}" aria-label="Remove tag">×</button></span>`).join("")}
+                  <select class="select-input compact doc-tag-add" data-doc-tag-add>
+                    <option value="">+ Add tag</option>
+                    ${["RFI", "Variation", "Notice", "Programme", "Schedule", "Correspondence", "Other"].filter((t) => !(doc.tags || []).includes(t)).map((t) => `<option value="${attr(t)}">${escapeHtml(t)}</option>`).join("")}
+                  </select>
+                </div>
               </div>
               <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
             </header>
@@ -3481,6 +3536,7 @@ Total\t${formatCurrencyFull(total)}`;
                 <button class="ghost-button compact" type="button" data-doc-edit-cancel>Cancel</button>
                 <button class="dark-button compact" type="button" data-doc-edit-save>Save changes</button>
               ` : `
+                <button class="ghost-button compact ${doc.pinned ? "doc-pin-on" : ""}" type="button" data-doc-pin title="${doc.pinned ? "Unpin from chat context" : "Pin so this doc is always sent to chat as context"}">${ICON.layers}<span>${doc.pinned ? "Unpin" : "Pin"}</span></button>
                 <button class="ghost-button compact" type="button" data-copy-text="${attr(doc.text || "")}">${ICON.copy}<span>Copy text</span></button>
                 <button class="ghost-button compact" type="button" data-doc-edit-start>${ICON.settings}<span>Edit</span></button>
                 <a class="ghost-button compact" href="${dest}" data-doc-drawer-open data-nav>${ICON.arrowUpRight}<span>${destLabel}</span></a>
@@ -3495,6 +3551,38 @@ Total\t${formatCurrencyFull(total)}`;
         rootEl.querySelector("[data-doc-drawer-open]")?.addEventListener("click", () => { modal = null; });
         rootEl.querySelector("[data-doc-edit-start]")?.addEventListener("click", () => { editing = true; render(); });
         rootEl.querySelector("[data-doc-edit-cancel]")?.addEventListener("click", () => { editing = false; render(); });
+        rootEl.querySelector("[data-doc-pin]")?.addEventListener("click", () => {
+          const proj = getProject(projectId);
+          const target = proj && (proj[bucket] || [])[index];
+          if (!proj || !target) return;
+          target.pinned = !target.pinned;
+          target.updatedAt = new Date().toISOString();
+          saveProject(proj);
+          Object.assign(doc, target);
+          render();
+        });
+        rootEl.querySelectorAll("[data-doc-tag-remove]").forEach((b) => b.addEventListener("click", () => {
+          const proj = getProject(projectId);
+          const target = proj && (proj[bucket] || [])[index];
+          if (!proj || !target) return;
+          target.tags = (target.tags || []).filter((t) => t !== b.dataset.docTagRemove);
+          target.updatedAt = new Date().toISOString();
+          saveProject(proj);
+          Object.assign(doc, target);
+          render();
+        }));
+        rootEl.querySelector("[data-doc-tag-add]")?.addEventListener("change", (event) => {
+          const tag = event.target.value;
+          if (!tag) return;
+          const proj = getProject(projectId);
+          const target = proj && (proj[bucket] || [])[index];
+          if (!proj || !target) return;
+          target.tags = Array.from(new Set([...(target.tags || []), tag]));
+          target.updatedAt = new Date().toISOString();
+          saveProject(proj);
+          Object.assign(doc, target);
+          render();
+        });
         rootEl.querySelector("[data-doc-edit-save]")?.addEventListener("click", () => {
           const proj = getProject(projectId);
           const target = proj && (proj[bucket] || [])[index];
