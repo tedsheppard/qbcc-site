@@ -746,8 +746,13 @@
     return PageBody(`
       <div class="home-shell">
         <section class="home-hero">
-          <h2>Welcome to Sopal v2</h2>
-          <p>Search adjudication decisions, run BIF Act calculators, and manage SOPA workflows project by project.</p>
+          <div class="home-hero-row">
+            <div>
+              <h2>Welcome to Sopal v2</h2>
+              <p>Search adjudication decisions, run BIF Act calculators, and manage SOPA workflows project by project.</p>
+            </div>
+            <button class="ghost-button compact whatsnew-btn" type="button" data-open-whatsnew title="See recent feature releases">${ICON.sparkles}<span>What's new</span></button>
+          </div>
           ${lastReview ? (() => {
             const submode = (AGENT_REVIEW_MODES[lastReview.agentKey] || []).find((m) => m.id === lastReview.submodeId);
             const submodeLabel = submode ? submode.label.toLowerCase() : lastReview.submodeId;
@@ -1924,10 +1929,12 @@ Total\t${formatCurrencyFull(total)}`;
   function ProjectOverviewPage(projectId) {
     const project = getProject(projectId);
     if (!project) return notFoundPage();
-    const recentChats = Object.entries(project.chats || {})
-      .filter(([, c]) => Array.isArray(c.messages) && c.messages.length > 0)
-      .sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0))
-      .slice(0, 5);
+    const allChats = Object.entries(project.chats || {})
+      .filter(([, c]) => Array.isArray(c.messages) && c.messages.length > 0);
+    const recentChats = [
+      ...allChats.filter(([, c]) => c.pinned).sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0)),
+      ...allChats.filter(([, c]) => !c.pinned).sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0)),
+    ].slice(0, 5);
     setTimeout(() => bindProjectActions(projectId), 0);
     return PageBody(`
       <div class="page-shell">
@@ -2045,6 +2052,15 @@ Total\t${formatCurrencyFull(total)}`;
       .trim();
   }
 
+  function togglePinThread(projectId, chatKey) {
+    const project = getProject(projectId);
+    if (!project || !project.chats || !project.chats[chatKey]) return;
+    const chat = project.chats[chatKey];
+    chat.pinned = !chat.pinned;
+    saveProject(project);
+    render();
+  }
+
   function describeChatKey(project, key) {
     if (key === "assistant") return { label: "Assistant", href: `/sopal-v2/projects/${project.id}/assistant` };
     if (key.startsWith("chat:review:")) {
@@ -2067,22 +2083,26 @@ Total\t${formatCurrencyFull(total)}`;
   }
 
   function sidebarRecentThreads(project) {
-    const threads = Object.entries(project.chats || {})
-      .filter(([, c]) => Array.isArray(c.messages) && c.messages.length > 0)
-      .sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0))
-      .slice(0, 3);
-    if (!threads.length) return "";
-    return `
-      <div class="nav-subgroup-title">Recent threads</div>
-      ${threads.map(([key, h]) => {
-        const { label, href } = describeChatKey(project, key);
-        const last = h.messages[h.messages.length - 1] || {};
-        const preview = plainPreview(last.content || "");
-        return `<a class="nav-thread" href="${href}" data-nav title="${attr(preview)}">
+    const all = Object.entries(project.chats || {})
+      .filter(([, c]) => Array.isArray(c.messages) && c.messages.length > 0);
+    if (!all.length) return "";
+    const pinned = all.filter(([, c]) => c.pinned).sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0));
+    const recent = all.filter(([, c]) => !c.pinned).sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0)).slice(0, 3);
+    const renderRow = ([key, h], isPinned) => {
+      const { label, href } = describeChatKey(project, key);
+      const last = h.messages[h.messages.length - 1] || {};
+      const preview = plainPreview(last.content || "");
+      return `<a class="nav-thread ${isPinned ? "is-pinned" : ""}" href="${href}" data-nav title="${attr(preview)}">
+        <span class="nav-thread-row">
           <span class="nav-thread-label">${escapeHtml(label)}</span>
-          <span class="nav-thread-preview">${escapeHtml(preview.slice(0, 64))}${preview.length > 64 ? "…" : ""}</span>
-        </a>`;
-      }).join("")}
+          <button class="nav-thread-pin" type="button" data-toggle-pin-thread="${attr(key)}" data-project-id="${attr(project.id)}" title="${isPinned ? "Unpin thread" : "Pin thread"}">${isPinned ? "★" : "☆"}</button>
+        </span>
+        <span class="nav-thread-preview">${escapeHtml(preview.slice(0, 64))}${preview.length > 64 ? "…" : ""}</span>
+      </a>`;
+    };
+    return `
+      ${pinned.length ? `<div class="nav-subgroup-title">Pinned threads</div>${pinned.map((t) => renderRow(t, true)).join("")}` : ""}
+      ${recent.length ? `<div class="nav-subgroup-title">Recent threads</div>${recent.map((t) => renderRow(t, false)).join("")}` : ""}
     `;
   }
 
@@ -2090,8 +2110,11 @@ Total\t${formatCurrencyFull(total)}`;
     const { label, href } = describeChatKey(project, key);
     const last = h.messages[h.messages.length - 1] || {};
     const preview = plainPreview(last.content || "");
-    return `<a class="recent-item" href="${href}" data-nav>
-      <strong>${escapeHtml(label)}</strong>
+    return `<a class="recent-item ${h.pinned ? "is-pinned" : ""}" href="${href}" data-nav>
+      <div class="recent-item-row">
+        <strong>${escapeHtml(label)}</strong>
+        <button class="recent-pin-btn" type="button" data-toggle-pin-thread="${attr(key)}" data-project-id="${attr(project.id)}" title="${h.pinned ? "Unpin thread" : "Pin thread"}">${h.pinned ? "★" : "☆"}</button>
+      </div>
       <span class="muted">${escapeHtml(preview.slice(0, 130))}${preview.length > 130 ? "…" : ""}</span>
     </a>`;
   }
@@ -3770,6 +3793,12 @@ Total\t${formatCurrencyFull(total)}`;
     document.querySelectorAll("[data-toggle-sidebar]").forEach((el) => el.addEventListener("click", () => { sidebarOpen = !sidebarOpen; render(); }));
     document.querySelectorAll("[data-toggle-collapse]").forEach((el) => el.addEventListener("click", () => setSidebarCollapsed(!sidebarCollapsed)));
     document.querySelectorAll("[data-open-palette]").forEach((el) => el.addEventListener("click", () => openCommandPalette()));
+    document.querySelectorAll("[data-open-whatsnew]").forEach((el) => el.addEventListener("click", () => openWhatsNew()));
+    document.querySelectorAll("[data-toggle-pin-thread]").forEach((el) => el.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      togglePinThread(el.dataset.projectId, el.dataset.togglePinThread);
+    }));
     document.querySelectorAll("[data-new-project]").forEach((el) => el.addEventListener("click", () => openProjectModal(null)));
     document.querySelectorAll("[data-seed-sample]").forEach((el) => el.addEventListener("click", () => seedSampleProject()));
     document.querySelectorAll("[data-import-project]").forEach((input) => input.addEventListener("change", async (event) => {
@@ -4142,6 +4171,97 @@ Total\t${formatCurrencyFull(total)}`;
     render();
   }
 
+  /* ---------- Keyboard shortcut overlay ---------- */
+
+  const SHORTCUTS = [
+    { keys: ["⌘/Ctrl", "K"], label: "Open command palette", group: "Navigation" },
+    { keys: ["⌘/Ctrl", "F"], label: "Search within current project", group: "Navigation" },
+    { keys: ["⌘/Ctrl", "\\"], label: "Collapse / expand sidebar", group: "Navigation" },
+    { keys: ["?"], label: "Show this cheat sheet", group: "Navigation" },
+    { keys: ["Esc"], label: "Close any modal / drawer / palette", group: "Navigation" },
+    { keys: ["⌘/Ctrl", "Enter"], label: "Send chat message from any composer", group: "Chat" },
+    { keys: ["@"], label: "Reference a project doc inline (in chat)", group: "Chat" },
+    { keys: ["↑", "↓"], label: "Navigate items in palette / search", group: "Lists" },
+    { keys: ["Enter"], label: "Open / fire selected item in palette / search", group: "Lists" },
+  ];
+
+  function openShortcutOverlay() {
+    if (modal) return;
+    const grouped = {};
+    SHORTCUTS.forEach((s) => { if (!grouped[s.group]) grouped[s.group] = []; grouped[s.group].push(s); });
+    modal = {
+      render: () => `
+        <div class="modal-backdrop" data-modal-backdrop>
+          <div class="modal shortcut-modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+              <h2>Keyboard shortcuts</h2>
+              <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
+            </div>
+            <div class="modal-body shortcut-body">
+              ${Object.entries(grouped).map(([group, items]) => `
+                <section class="shortcut-group">
+                  <div class="shortcut-group-title">${escapeHtml(group)}</div>
+                  <ul class="shortcut-list">
+                    ${items.map((s) => `<li class="shortcut-row"><span class="shortcut-keys">${s.keys.map((k) => `<kbd>${escapeHtml(k)}</kbd>`).join('<span class="shortcut-plus">+</span>')}</span><span class="shortcut-label">${escapeHtml(s.label)}</span></li>`).join("")}
+                  </ul>
+                </section>`).join("")}
+            </div>
+          </div>
+        </div>`,
+      bind: (rootEl) => {
+        const close = () => { modal = null; render(); };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        document.addEventListener("keydown", function handler(ev) {
+          if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); }
+        });
+      },
+    };
+    render();
+  }
+
+  /* ---------- What's new modal ---------- */
+
+  const WHATS_NEW = [
+    { date: "May 2026", title: "Pinned context, citations, doc tags", body: "Pin a contract or library doc and it's always sent to chat as context — even with the project-context box unchecked. Assistant replies that mention [@DocName] now render as clickable chips. Tag any doc as RFI / Variation / Notice / Programme and filter the lists by tag." },
+    { date: "May 2026", title: "Bulk upload + in-project search", body: "Drag many files into the contract or library list at once — each becomes its own entry. ⌘/Ctrl+F opens a fast project-wide search across contracts, library and chat threads." },
+    { date: "May 2026", title: "Project archive + duplicate + JSON export/import", body: "Tuck old projects out of sight without losing them. Clone a project's contract + library into a fresh project. Round-trip the whole project to JSON for backup." },
+    { date: "May 2026", title: "Command palette (⌘K) + saved searches + clause splitter", body: "Jump to any project, agent, decision or tool from a single fuzzy palette. Save Decision Search queries as one-click chips. Paste a contract and split it into one entry per Clause / Section automatically." },
+    { date: "May 2026", title: "Doc preview drawer + edit-in-drawer + Resume CTA", body: "Open any doc in a side drawer (with Edit / Pin / Copy). The home page surfaces a Resume chip with a one-line preview of where you left off." },
+    { date: "May 2026", title: "Copy analysis as markdown + per-message copy + analysis history", body: "One click copies a structured review (summary + checks + recs + gaps) as clean markdown. Every assistant message has a Copy button. Re-run preserves prior runs in a Previous-runs dropdown." },
+  ];
+
+  function openWhatsNew() {
+    if (modal) return;
+    modal = {
+      render: () => `
+        <div class="modal-backdrop" data-modal-backdrop>
+          <div class="modal whatsnew-modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+              <h2>What's new in Sopal v2</h2>
+              <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
+            </div>
+            <div class="modal-body whatsnew-body">
+              ${WHATS_NEW.map((entry) => `
+                <article class="whatsnew-entry">
+                  <header><span class="whatsnew-date">${escapeHtml(entry.date)}</span><h3>${escapeHtml(entry.title)}</h3></header>
+                  <p>${escapeHtml(entry.body)}</p>
+                </article>`).join("")}
+            </div>
+          </div>
+        </div>`,
+      bind: (rootEl) => {
+        const close = () => { modal = null; render(); try { localStorage.setItem("sopal-v2-whatsnew-seen", String(Date.now())); } catch (_) {} };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        document.addEventListener("keydown", function handler(ev) {
+          if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); }
+        });
+      },
+    };
+    render();
+  }
+
   /* ---------- Boot ---------- */
 
   window.addEventListener("popstate", render);
@@ -4160,6 +4280,14 @@ Total\t${formatCurrencyFull(total)}`;
     if ((ev.metaKey || ev.ctrlKey) && ev.key === "\\") {
       ev.preventDefault();
       setSidebarCollapsed(!sidebarCollapsed);
+    }
+    if (ev.key === "?" && !ev.metaKey && !ev.ctrlKey && !ev.altKey) {
+      const tag = (ev.target && ev.target.tagName) || "";
+      const isEditable = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (ev.target && ev.target.isContentEditable);
+      if (!isEditable) {
+        ev.preventDefault();
+        openShortcutOverlay();
+      }
     }
   });
   document.addEventListener("click", (event) => {

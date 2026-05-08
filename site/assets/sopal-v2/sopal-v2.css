@@ -1932,6 +1932,125 @@ a { color: inherit; text-decoration: none; }
 .pinned-row-title svg { width: 14px; height: 14px; }
 .pinned-row .doc-list a { background: #fff; }
 
+.home-hero-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.whatsnew-btn {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.shortcut-modal { width: min(560px, 100%); }
+.shortcut-body {
+  padding: 12px 20px 20px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 14px !important;
+}
+.shortcut-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-fg, #6b6b6b);
+  margin-bottom: 6px;
+}
+.shortcut-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+.shortcut-row:hover { background: rgba(0,0,0,0.03); }
+.shortcut-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 130px;
+}
+.shortcut-keys kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-bottom-width: 2px;
+  font-size: 11px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 600;
+  color: var(--main-fg, #1a1a1a);
+}
+.shortcut-plus { font-size: 11px; color: var(--muted-fg, #6b6b6b); }
+.shortcut-label { font-size: 13px; }
+
+.whatsnew-modal { width: min(620px, 100%); }
+.whatsnew-body {
+  padding: 8px 20px 20px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 18px !important;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.whatsnew-entry { padding: 4px 0; }
+.whatsnew-entry header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.whatsnew-entry h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.whatsnew-date {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-fg, #6b6b6b);
+}
+.whatsnew-entry p { margin: 0; font-size: 13px; line-height: 1.55; color: #2c2c2c; }
+
+.nav-thread-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.nav-thread-pin {
+  background: transparent;
+  border: 0;
+  padding: 0 2px;
+  font-size: 13px;
+  color: #d97706;
+  cursor: pointer;
+  line-height: 1;
+}
+.nav-thread.is-pinned { background: rgba(245, 158, 11, 0.06); }
+.nav-thread.is-pinned .nav-thread-pin { color: #d97706; }
+.nav-thread:not(.is-pinned) .nav-thread-pin { color: rgba(0,0,0,0.25); }
+.nav-thread:not(.is-pinned) .nav-thread-pin:hover { color: #d97706; }
+
+.recent-item-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.recent-pin-btn {
+  background: transparent;
+  border: 0;
+  padding: 0 2px;
+  font-size: 14px;
+  color: rgba(0,0,0,0.25);
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.recent-pin-btn:hover { color: #d97706; }
+.recent-item.is-pinned { border-left: 3px solid #f59e0b; padding-left: 13px; }
+.recent-item.is-pinned .recent-pin-btn { color: #d97706; }
+
 .split-action {
   display: flex;
   align-items: center;
