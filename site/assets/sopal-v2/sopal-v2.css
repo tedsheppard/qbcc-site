@@ -1716,6 +1716,34 @@ a { color: inherit; text-decoration: none; }
   border-top: 1px solid rgba(0,0,0,0.06);
   background: rgba(0,0,0,0.015);
 }
+.doc-drawer-head-text { flex: 1; min-width: 0; }
+.doc-drawer-name-input {
+  font-size: 15px;
+  font-weight: 600;
+  width: 100%;
+  margin-top: 2px;
+}
+.doc-drawer-text-input {
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
+  font-size: 12.5px;
+  line-height: 1.55;
+  width: 100%;
+  min-height: 320px;
+  resize: vertical;
+}
+.context-item-title-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  display: inline-flex;
+}
+.context-item-title-btn:hover strong { text-decoration: underline; text-underline-offset: 3px; }
+.context-item-title-btn strong { font-size: 14px; }
 @media (max-width: 620px) {
   .doc-drawer { width: 100%; }
   .doc-drawer-head, .doc-drawer-body, .doc-drawer-foot { padding-left: 16px; padding-right: 16px; }

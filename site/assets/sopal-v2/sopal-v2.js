@@ -1718,6 +1718,7 @@ Total\t${formatCurrencyFull(total)}`;
           <div><h1 class="page-title">${escapeHtml(project.name)}</h1><p class="page-sub">${escapeHtml([project.reference, project.contractForm, [project.claimant, project.respondent].filter(Boolean).join(" v ")].filter(Boolean).join(" · ") || "Bespoke contract")}</p></div>
           <div class="page-actions">
             <button class="ghost-button compact" type="button" data-edit-project>Edit details</button>
+            <button class="ghost-button compact" type="button" data-duplicate-project="${attr(project.id)}" title="Clone this project's contract + library into a new project (no chats / reviews)">${ICON.copy}<span>Duplicate</span></button>
             <button class="ghost-button compact" type="button" data-export-project="${attr(project.id)}" title="Download a JSON snapshot of this project">${ICON.download || ICON.file}<span>Export</span></button>
             <button class="ghost-button compact danger" type="button" data-delete-project="${attr(project.id)}">${ICON.trash}<span>Delete</span></button>
           </div>
@@ -1874,6 +1875,36 @@ Total\t${formatCurrencyFull(total)}`;
     document.querySelectorAll("[data-export-project]").forEach((b) => b.addEventListener("click", () => {
       exportProject(b.dataset.exportProject);
     }));
+    document.querySelectorAll("[data-duplicate-project]").forEach((b) => b.addEventListener("click", () => {
+      const cloned = duplicateProject(b.dataset.duplicateProject);
+      if (cloned) navigate(`/sopal-v2/projects/${cloned.id}/overview`);
+    }));
+  }
+
+  function duplicateProject(sourceId) {
+    const source = getProject(sourceId);
+    if (!source) return null;
+    const id = newProjectId();
+    const now = Date.now();
+    const cloned = {
+      id,
+      name: `${source.name} (copy)`,
+      claimant: source.claimant || "",
+      respondent: source.respondent || "",
+      contractForm: source.contractForm || "Bespoke",
+      reference: source.reference || "",
+      userIsParty: source.userIsParty || "claimant",
+      contracts: (source.contracts || []).map((d) => ({ ...d, addedAt: new Date().toISOString() })),
+      library: (source.library || []).map((d) => ({ ...d, addedAt: new Date().toISOString() })),
+      chats: {},
+      reviews: {},
+      createdAt: now,
+      updatedAt: now,
+    };
+    store.projects[id] = cloned;
+    store.currentProjectId = id;
+    saveStore();
+    return cloned;
   }
 
   function exportProject(projectId) {
@@ -1929,11 +1960,14 @@ Total\t${formatCurrencyFull(total)}`;
               ${items.length === 0 ? EmptyState(`No ${labels.single.toLowerCase()} yet.`, "Add pasted or extracted text to make agents context-aware.") : items.map((item, i) => `
                 <article class="context-item">
                   <div class="context-item-head">
-                    <strong>${escapeHtml(item.name)}</strong>
+                    <button class="context-item-title-btn" type="button" data-doc-preview="${attr(projectId)}:${bucket}:${i}" title="Open document preview">
+                      <strong>${escapeHtml(item.name)}</strong>
+                    </button>
                     <span class="muted">${item.text.length.toLocaleString()} chars · ${escapeHtml(item.source || "pasted")}</span>
                   </div>
                   <details><summary>Preview</summary><pre>${escapeHtml(item.text.slice(0, 2000))}${item.text.length > 2000 ? "\n…" : ""}</pre></details>
                   <div class="context-item-actions">
+                    <button class="ghost-button compact" type="button" data-doc-preview="${attr(projectId)}:${bucket}:${i}">${ICON.arrowUpRight}<span>Open / edit</span></button>
                     <button class="ghost-button compact" type="button" data-copy-text="${attr(item.text.slice(0, 8000))}">${ICON.copy}<span>Copy</span></button>
                     <button class="ghost-button compact danger" type="button" data-remove-context="${attr(bucket)}:${i}">Remove</button>
                   </div>
@@ -2925,24 +2959,37 @@ Total\t${formatCurrencyFull(total)}`;
     if (!doc) return;
     const dest = bucket === "contracts" ? `/sopal-v2/projects/${project.id}/contract` : `/sopal-v2/projects/${project.id}/library`;
     const destLabel = bucket === "contracts" ? "Open in Contract" : "Open in Project Library";
+    let editing = false;
     modal = {
       render: () => `
         <div class="modal-backdrop" data-modal-backdrop>
           <aside class="doc-drawer" role="dialog" aria-modal="true" aria-labelledby="docDrawerTitle">
             <header class="doc-drawer-head">
-              <div>
+              <div class="doc-drawer-head-text">
                 <p class="doc-drawer-eyebrow">${bucket === "contracts" ? "Contract" : "Library"}</p>
-                <h2 id="docDrawerTitle">${escapeHtml(doc.name || "Untitled")}</h2>
+                ${editing
+                  ? `<input class="text-input doc-drawer-name-input" type="text" data-doc-edit-name value="${attr(doc.name || "")}" placeholder="Document name">`
+                  : `<h2 id="docDrawerTitle">${escapeHtml(doc.name || "Untitled")}</h2>`}
                 <p class="doc-drawer-meta muted">${escapeHtml(formatDocMeta(doc) || "—")}${doc.source ? ` · ${escapeHtml(doc.source)}` : ""}</p>
               </div>
               <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
             </header>
             <div class="doc-drawer-body">
-              ${doc.text ? `<pre class="doc-drawer-text">${escapeHtml(doc.text)}</pre>` : `<p class="muted">This document has no text content.</p>`}
+              ${editing
+                ? `<textarea class="text-area doc-drawer-text-input" data-doc-edit-text rows="20" placeholder="Paste or edit the document text">${escapeHtml(doc.text || "")}</textarea>`
+                : doc.text
+                  ? `<pre class="doc-drawer-text">${escapeHtml(doc.text)}</pre>`
+                  : `<p class="muted">This document has no text content.</p>`}
             </div>
             <footer class="doc-drawer-foot">
-              <button class="ghost-button compact" type="button" data-copy-text="${attr(doc.text || "")}">${ICON.copy}<span>Copy text</span></button>
-              <a class="ghost-button compact" href="${dest}" data-doc-drawer-open data-nav>${ICON.arrowUpRight}<span>${destLabel}</span></a>
+              ${editing ? `
+                <button class="ghost-button compact" type="button" data-doc-edit-cancel>Cancel</button>
+                <button class="dark-button compact" type="button" data-doc-edit-save>Save changes</button>
+              ` : `
+                <button class="ghost-button compact" type="button" data-copy-text="${attr(doc.text || "")}">${ICON.copy}<span>Copy text</span></button>
+                <button class="ghost-button compact" type="button" data-doc-edit-start>${ICON.settings}<span>Edit</span></button>
+                <a class="ghost-button compact" href="${dest}" data-doc-drawer-open data-nav>${ICON.arrowUpRight}<span>${destLabel}</span></a>
+              `}
             </footer>
           </aside>
         </div>`,
@@ -2951,6 +2998,24 @@ Total\t${formatCurrencyFull(total)}`;
         rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
         rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
         rootEl.querySelector("[data-doc-drawer-open]")?.addEventListener("click", () => { modal = null; });
+        rootEl.querySelector("[data-doc-edit-start]")?.addEventListener("click", () => { editing = true; render(); });
+        rootEl.querySelector("[data-doc-edit-cancel]")?.addEventListener("click", () => { editing = false; render(); });
+        rootEl.querySelector("[data-doc-edit-save]")?.addEventListener("click", () => {
+          const proj = getProject(projectId);
+          const target = proj && (proj[bucket] || [])[index];
+          if (!proj || !target) { modal = null; render(); return; }
+          const newName = (rootEl.querySelector("[data-doc-edit-name]")?.value || "").trim();
+          const newText = rootEl.querySelector("[data-doc-edit-text]")?.value || "";
+          target.name = newName || target.name;
+          target.text = newText;
+          target.updatedAt = new Date().toISOString();
+          saveProject(proj);
+          editing = false;
+          // Refresh the closed-over `doc` reference for the next render so
+          // the view mode shows the new content.
+          Object.assign(doc, target);
+          render();
+        });
         document.addEventListener("keydown", function handler(ev) {
           if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); }
         });
