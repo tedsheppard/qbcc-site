@@ -297,6 +297,22 @@
       .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
   function attr(value) { return escapeHtml(value); }
+
+  // FastAPI returns three error shapes: {detail:"string"}, {detail:[Pydantic]},
+  // and {error:"string"}. Format all three as a single readable line so the
+  // chat error banner doesn't render "[object Object]".
+  function describeApiError(data, fallback) {
+    if (!data) return fallback || "Request failed";
+    if (typeof data.detail === "string") return data.detail;
+    if (Array.isArray(data.detail)) {
+      return data.detail.map((d) => {
+        const where = (d.loc || []).filter((part) => part !== "body").join(" / ") || "request";
+        return `${where}: ${d.msg}`;
+      }).join("; ");
+    }
+    if (typeof data.error === "string") return data.error;
+    return fallback || "Request failed";
+  }
   function pct(n) { return `${Number(n || 0).toFixed(1)}%`; }
   function formatCurrencyCompact(n) {
     const num = Number(n || 0);
@@ -709,7 +725,7 @@
     try {
       const response = await fetch(`/api/sopal-v2/search?${qs.toString()}`, { credentials: "include" });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.detail || data.error || "Search failed");
+      if (!response.ok) throw new Error(describeApiError(data, "Search failed"));
       const items = Array.isArray(data.items) ? data.items : [];
       const total = Number(data.total || items.length);
       if (!items.length) {
@@ -945,7 +961,7 @@
     try {
       const response = await fetch("/api/adjudicators", { credentials: "include" });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.detail || data.error || "Adjudicator endpoint failed");
+      if (!response.ok) throw new Error(describeApiError(data, "Adjudicator endpoint failed"));
       window.__sopalAdjudicators = Array.isArray(data) ? data : [];
       renderAdjudicators();
       document.querySelector("[data-adj-filter]")?.addEventListener("input", renderAdjudicators);
@@ -990,7 +1006,7 @@
     try {
       const response = await fetch(`/api/adjudicator/${encodeURIComponent(name)}`, { credentials: "include" });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.detail || data.error || "Adjudicator detail failed");
+      if (!response.ok) throw new Error(describeApiError(data, "Adjudicator detail failed"));
       const decisions = Array.isArray(data) ? data : [];
       const summary = (window.__sopalAdjudicators || []).find((x) => x.name === name) || {};
       const claimedSum = decisions.reduce((s, d) => s + (Number(d.claimAmount) || 0), 0);
@@ -2180,7 +2196,7 @@ Total\t${formatCurrencyFull(total)}`;
           }),
         });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.detail || data.error || "Analysis failed");
+        if (!response.ok) throw new Error(describeApiError(data, "Analysis failed"));
         const parsed = parseStructuredAnalysis(data.answer || "", checks);
         r.analysis = parsed;
         r.status = "done";
@@ -2248,7 +2264,7 @@ Total\t${formatCurrencyFull(total)}`;
             }),
           });
           const data = await response.json().catch(() => ({}));
-          if (!response.ok) throw new Error(data.detail || data.error || "Reply failed");
+          if (!response.ok) throw new Error(describeApiError(data, "Reply failed"));
           chat.messages.push({ role: "assistant", content: data.answer || "", at: Date.now() });
           chat.updatedAt = Date.now();
           saveProject(project);
@@ -2556,7 +2572,7 @@ Total\t${formatCurrencyFull(total)}`;
       }),
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.detail || data.error || "AI request failed");
+    if (!response.ok) throw new Error(describeApiError(data, "AI request failed"));
     return data;
   }
 
