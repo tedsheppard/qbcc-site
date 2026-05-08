@@ -278,6 +278,46 @@
     if (store.currentProjectId === id) store.currentProjectId = projectList()[0]?.id || null;
     saveStore();
   }
+
+  function sanitiseImportedDoc(d) {
+    if (!d || typeof d !== "object") return null;
+    return {
+      name: String(d.name || "Untitled"),
+      text: String(d.text || ""),
+      source: String(d.source || "imported"),
+      addedAt: typeof d.addedAt === "string" ? d.addedAt : new Date().toISOString(),
+    };
+  }
+
+  function importProjectFromJson(text) {
+    let payload;
+    try { payload = JSON.parse(text); } catch (_) { throw new Error("That file isn't valid JSON."); }
+    const incoming = payload && typeof payload === "object" && payload.project ? payload.project : payload;
+    if (!incoming || typeof incoming !== "object" || typeof incoming.name !== "string") {
+      throw new Error("File doesn't look like a Sopal project export.");
+    }
+    const id = newProjectId();
+    const now = Date.now();
+    const project = {
+      id,
+      name: incoming.name.trim().slice(0, 200) || "Imported project",
+      claimant: String(incoming.claimant || "").trim(),
+      respondent: String(incoming.respondent || "").trim(),
+      contractForm: String(incoming.contractForm || "Bespoke"),
+      reference: String(incoming.reference || "").trim(),
+      userIsParty: incoming.userIsParty === "respondent" ? "respondent" : "claimant",
+      contracts: Array.isArray(incoming.contracts) ? incoming.contracts.map(sanitiseImportedDoc).filter(Boolean) : [],
+      library: Array.isArray(incoming.library) ? incoming.library.map(sanitiseImportedDoc).filter(Boolean) : [],
+      chats: incoming.chats && typeof incoming.chats === "object" ? incoming.chats : {},
+      reviews: incoming.reviews && typeof incoming.reviews === "object" ? incoming.reviews : {},
+      createdAt: typeof incoming.createdAt === "number" ? incoming.createdAt : now,
+      updatedAt: now,
+    };
+    store.projects[id] = project;
+    store.currentProjectId = id;
+    saveStore();
+    return project;
+  }
   function seedSampleProject() {
     // Onboarding shortcut for the empty-home state. Creates a fictional but
     // realistic project so a first-time user can immediately try every agent
@@ -616,15 +656,46 @@
 
   /* ---------- Home ---------- */
 
+  function findLatestReview() {
+    let best = null;
+    for (const project of Object.values(store.projects || {})) {
+      for (const [key, review] of Object.entries(project.reviews || {})) {
+        if (!review || !review.analysis || review.analysis.error) continue;
+        const ts = review.updatedAt || review.analysis.updatedAt || project.updatedAt || 0;
+        if (!best || ts > best.ts) {
+          const parts = key.split(":"); // review:agentKey:submodeId
+          best = { ts, project, agentKey: parts[1], submodeId: parts[2], review };
+        }
+      }
+    }
+    return best;
+  }
+
   function HomePage() {
     const tools = workspaceNav();
     const projects = projectList();
     const recent = (store.recentDecisions || []).slice(0, 6);
+    const lastReview = findLatestReview();
     return PageBody(`
       <div class="home-shell">
         <section class="home-hero">
           <h2>Welcome to Sopal v2</h2>
           <p>Search adjudication decisions, run BIF Act calculators, and manage SOPA workflows project by project.</p>
+          ${lastReview ? (() => {
+            const submode = (AGENT_REVIEW_MODES[lastReview.agentKey] || []).find((m) => m.id === lastReview.submodeId);
+            const submodeLabel = submode ? submode.label.toLowerCase() : lastReview.submodeId;
+            const counts = lastReview.review.analysis.counts || { fail: 0, warn: 0, info: 0, pass: 0 };
+            const href = `/sopal-v2/projects/${lastReview.project.id}/agents/${lastReview.agentKey}?mode=review&submode=${lastReview.submodeId}`;
+            return `
+              <a class="resume-chip" href="${href}" data-nav>
+                <span class="resume-chip-icon">${ICON.sparkles}</span>
+                <span class="resume-chip-body">
+                  <strong>Resume ${escapeHtml(AGENT_LABELS[lastReview.agentKey] || lastReview.agentKey)} · ${escapeHtml(submodeLabel)}</strong>
+                  <span class="muted">${escapeHtml(lastReview.project.name)} — ${counts.fail || 0} issues · ${counts.warn || 0} warnings · ${counts.info || 0} need input</span>
+                </span>
+                <span class="resume-chip-chev">${ICON.chevRight}</span>
+              </a>`;
+          })() : ""}
         </section>
 
         ${recent.length ? `
@@ -1613,14 +1684,20 @@ Total\t${formatCurrencyFull(total)}`;
       <div class="page-shell">
         <div class="page-head">
           <div><h1 class="page-title">Your projects</h1><p class="page-sub">Each project is one construction contract — head contract or subcontract.</p></div>
-          <button class="dark-button" type="button" data-new-project>${ICON.plus}<span>New project</span></button>
+          <div class="page-actions">
+            <label class="ghost-button compact" title="Import a sopal-*.json export">${ICON.upload}<span>Import</span><input type="file" data-import-project accept="application/json,.json" hidden></label>
+            <button class="dark-button" type="button" data-new-project>${ICON.plus}<span>New project</span></button>
+          </div>
         </div>
         ${projects.length === 0 ? `
           <div class="card-empty">
             <div class="card-empty-icon">${ICON.file}</div>
             <h4>Create your first project</h4>
             <p>Give it a name, the parties, the contract form. Then upload or paste the contract — the assistant and every agent will work in that project's context.</p>
-            <button class="dark-button" type="button" data-new-project>Create project</button>
+            <div class="card-empty-actions">
+              <button class="dark-button" type="button" data-new-project>Create project</button>
+              <label class="ghost-button" title="Import a sopal-*.json export">${ICON.upload}<span>Import from JSON</span><input type="file" data-import-project accept="application/json,.json" hidden></label>
+            </div>
           </div>
         ` : `<div class="project-list">${projects.map((p) => projectRow(p)).join("")}</div>`}
       </div>
@@ -1673,14 +1750,14 @@ Total\t${formatCurrencyFull(total)}`;
                     <div class="doc-list-col">
                       <div class="doc-list-title">Contract</div>
                       <ul class="doc-list">
-                        ${docListEntries(project.contracts).map((d) => `<li><a href="/sopal-v2/projects/${attr(project.id)}/contract" data-nav><span class="doc-list-name">${escapeHtml(d.name || "Untitled")}</span><span class="doc-list-meta">${escapeHtml(formatDocMeta(d))}</span></a></li>`).join("")}
+                        ${docListEntries(project.contracts).map((d) => `<li><a href="/sopal-v2/projects/${attr(project.id)}/contract" data-doc-preview="${attr(project.id)}:contracts:${d._i}"><span class="doc-list-name">${escapeHtml(d.name || "Untitled")}</span><span class="doc-list-meta">${escapeHtml(formatDocMeta(d))}</span></a></li>`).join("")}
                       </ul>
                     </div>` : ""}
                   ${project.library.length ? `
                     <div class="doc-list-col">
                       <div class="doc-list-title">Library</div>
                       <ul class="doc-list">
-                        ${docListEntries(project.library).map((d) => `<li><a href="/sopal-v2/projects/${attr(project.id)}/library" data-nav><span class="doc-list-name">${escapeHtml(d.name || "Untitled")}</span><span class="doc-list-meta">${escapeHtml(formatDocMeta(d))}</span></a></li>`).join("")}
+                        ${docListEntries(project.library).map((d) => `<li><a href="/sopal-v2/projects/${attr(project.id)}/library" data-doc-preview="${attr(project.id)}:library:${d._i}"><span class="doc-list-name">${escapeHtml(d.name || "Untitled")}</span><span class="doc-list-meta">${escapeHtml(formatDocMeta(d))}</span></a></li>`).join("")}
                       </ul>
                     </div>` : ""}
                 </div>
@@ -2841,6 +2918,47 @@ Total\t${formatCurrencyFull(total)}`;
 
   /* ---------- New / Edit project modal ---------- */
 
+  function openDocPreview(projectId, bucket, index) {
+    const project = getProject(projectId);
+    if (!project) return;
+    const doc = (project[bucket] || [])[index];
+    if (!doc) return;
+    const dest = bucket === "contracts" ? `/sopal-v2/projects/${project.id}/contract` : `/sopal-v2/projects/${project.id}/library`;
+    const destLabel = bucket === "contracts" ? "Open in Contract" : "Open in Project Library";
+    modal = {
+      render: () => `
+        <div class="modal-backdrop" data-modal-backdrop>
+          <aside class="doc-drawer" role="dialog" aria-modal="true" aria-labelledby="docDrawerTitle">
+            <header class="doc-drawer-head">
+              <div>
+                <p class="doc-drawer-eyebrow">${bucket === "contracts" ? "Contract" : "Library"}</p>
+                <h2 id="docDrawerTitle">${escapeHtml(doc.name || "Untitled")}</h2>
+                <p class="doc-drawer-meta muted">${escapeHtml(formatDocMeta(doc) || "—")}${doc.source ? ` · ${escapeHtml(doc.source)}` : ""}</p>
+              </div>
+              <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
+            </header>
+            <div class="doc-drawer-body">
+              ${doc.text ? `<pre class="doc-drawer-text">${escapeHtml(doc.text)}</pre>` : `<p class="muted">This document has no text content.</p>`}
+            </div>
+            <footer class="doc-drawer-foot">
+              <button class="ghost-button compact" type="button" data-copy-text="${attr(doc.text || "")}">${ICON.copy}<span>Copy text</span></button>
+              <a class="ghost-button compact" href="${dest}" data-doc-drawer-open data-nav>${ICON.arrowUpRight}<span>${destLabel}</span></a>
+            </footer>
+          </aside>
+        </div>`,
+      bind: (rootEl) => {
+        const close = () => { modal = null; render(); };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        rootEl.querySelector("[data-doc-drawer-open]")?.addEventListener("click", () => { modal = null; });
+        document.addEventListener("keydown", function handler(ev) {
+          if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); }
+        });
+      },
+    };
+    render();
+  }
+
   function openProjectModal(editId) {
     const editing = editId ? getProject(editId) : null;
     modal = {
@@ -3004,6 +3122,23 @@ Total\t${formatCurrencyFull(total)}`;
     document.querySelectorAll("[data-toggle-sidebar]").forEach((el) => el.addEventListener("click", () => { sidebarOpen = !sidebarOpen; render(); }));
     document.querySelectorAll("[data-new-project]").forEach((el) => el.addEventListener("click", () => openProjectModal(null)));
     document.querySelectorAll("[data-seed-sample]").forEach((el) => el.addEventListener("click", () => seedSampleProject()));
+    document.querySelectorAll("[data-import-project]").forEach((input) => input.addEventListener("change", async (event) => {
+      const file = event.currentTarget.files && event.currentTarget.files[0];
+      event.currentTarget.value = "";
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const project = importProjectFromJson(text);
+        navigate(`/sopal-v2/projects/${project.id}/overview`);
+      } catch (err) {
+        alert(`Import failed: ${err.message}`);
+      }
+    }));
+    document.querySelectorAll("[data-doc-preview]").forEach((el) => el.addEventListener("click", (event) => {
+      event.preventDefault();
+      const [projectId, bucket, indexStr] = el.dataset.docPreview.split(":");
+      openDocPreview(projectId, bucket, Number(indexStr));
+    }));
     document.querySelector("[data-project-menu-toggle]")?.addEventListener("click", (event) => {
       event.stopPropagation();
       projectMenuOpen = !projectMenuOpen;
