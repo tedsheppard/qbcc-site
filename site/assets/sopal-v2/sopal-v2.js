@@ -204,6 +204,14 @@
   let modal = null; // { render(): string, bind(root): void, close(): void }
   let projectMenuOpen = false;
   let sidebarOpen = false;
+  let sidebarCollapsed = (() => {
+    try { return localStorage.getItem("sopal-v2-sidebar-collapsed") === "1"; } catch (_) { return false; }
+  })();
+  function setSidebarCollapsed(value) {
+    sidebarCollapsed = !!value;
+    try { localStorage.setItem("sopal-v2-sidebar-collapsed", sidebarCollapsed ? "1" : "0"); } catch (_) {}
+    render();
+  }
 
   function emptyStore() { return { projects: {}, currentProjectId: null, recentDecisions: [] }; }
   function loadStore() {
@@ -238,7 +246,34 @@
   }
 
   function getProject(id) { return id ? store.projects[id] || null : null; }
-  function projectList() { return Object.values(store.projects).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)); }
+  function projectList(opts) {
+    const includeArchived = !!(opts && opts.includeArchived);
+    return Object.values(store.projects)
+      .filter((p) => includeArchived || !p.archived)
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  }
+  function archivedProjectList() {
+    return Object.values(store.projects).filter((p) => p.archived).sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
+  }
+  function archiveProject(id) {
+    const p = getProject(id);
+    if (!p) return;
+    p.archived = true;
+    p.archivedAt = Date.now();
+    if (store.currentProjectId === id) {
+      const next = projectList()[0];
+      store.currentProjectId = next ? next.id : null;
+    }
+    saveStore();
+  }
+  function restoreProject(id) {
+    const p = getProject(id);
+    if (!p) return;
+    p.archived = false;
+    delete p.archivedAt;
+    p.updatedAt = Date.now();
+    saveStore();
+  }
   function currentProject() { return getProject(store.currentProjectId); }
   function selectProject(id) {
     if (!store.projects[id]) return;
@@ -505,6 +540,7 @@
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
     chevDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
     chevRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>',
+    chevLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>',
     settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>',
     upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8 12 3 7 8"/><path d="M12 3v12"/></svg>',
@@ -548,8 +584,12 @@
     const project = currentProject();
     const projects = projectList();
     return `
-      <aside class="sopal-sidebar ${sidebarOpen ? "open" : ""}">
-        <div class="sidebar-brand"><a href="/sopal-v2" data-nav>Sopal</a><span class="brand-pill">v2</span></div>
+      <aside class="sopal-sidebar ${sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}">
+        <div class="sidebar-brand">
+          <a href="/sopal-v2" data-nav>Sopal</a>
+          <span class="brand-pill">v2</span>
+          <button class="sidebar-collapse-btn" type="button" data-toggle-collapse aria-label="${sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}" title="${sidebarCollapsed ? "Expand sidebar (⌘\\)" : "Collapse sidebar (⌘\\)"}">${sidebarCollapsed ? ICON.chevRight : ICON.chevLeft || ICON.close}</button>
+        </div>
 
         <div class="sidebar-scroll">
           <div class="nav-group-title">Workspace</div>
@@ -754,8 +794,20 @@
     `);
   }
 
-  function projectRow(p) {
+  function projectRow(p, opts) {
     const meta = [p.reference, p.contractForm, p.claimant ? `${p.claimant} v ${p.respondent || "?"}` : ""].filter(Boolean).join(" · ");
+    if (opts && opts.archived) {
+      return `
+        <div class="project-row archived-row">
+          <div class="project-row-icon">${ICON.folder}</div>
+          <div class="project-row-text">
+            <strong>${escapeHtml(p.name)}</strong>
+            <span>${escapeHtml(meta || "Bespoke contract")}</span>
+          </div>
+          <span class="status-pill">${p.contracts.length || 0} contract docs · ${p.library.length || 0} library</span>
+          <button class="ghost-button compact" type="button" data-restore-project="${attr(p.id)}">${ICON.arrowUpRight}<span>Restore</span></button>
+        </div>`;
+    }
     return `
       <a class="project-row" href="/sopal-v2/projects/${attr(p.id)}/overview" data-nav>
         <div class="project-row-icon">${ICON.file}</div>
@@ -1066,15 +1118,77 @@
           <div class="panel-actions">
             <a class="link-button small" href="/sopal-v2/research/decisions/${encodeURIComponent(id)}" data-nav title="Shareable link to this decision">Open page</a>
             <button class="ghost-button compact" type="button" data-copy-text="${attr(text.slice(0, 8000))}" title="Copy decision text">${ICON.copy}<span>Copy</span></button>
+            ${projectList().length ? `<button class="ghost-button compact" type="button" data-save-decision="${attr(id)}" data-decision-title="${attr(title || id)}" title="Save this decision to a project's library">${ICON.layers}<span>Save to project</span></button>` : ""}
           </div>
         </div>
         ${metaHeader}
         <div class="card-body">
           ${text ? `<div class="decision-text">${formatDecisionText(text)}</div>${text.length > 12000 ? `<p class="muted decision-text-trunc">Text truncated to first 12,000 characters. ${text.length.toLocaleString()} chars total.</p>` : ""}` : EmptyState("No text on file.", "This record has no extracted text.")}
         </div>`;
+      mount.querySelector("[data-save-decision]")?.addEventListener("click", () => {
+        openSaveDecisionModal({ id, title, meta, text });
+      });
     } catch (error) {
       mount.innerHTML = `<div class="error-banner">${escapeHtml(error.message || "Could not load decision text")}</div>`;
     }
+  }
+
+  function openSaveDecisionModal({ id, title, meta, text }) {
+    const projects = projectList();
+    if (!projects.length) return;
+    const defaultName = `Decision: ${title || id}`;
+    modal = {
+      render: () => `
+        <div class="modal-backdrop" data-modal-backdrop>
+          <div class="modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+              <h2>Save to project library</h2>
+              <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
+            </div>
+            <form class="modal-body" data-save-decision-form>
+              <label class="span-2">Project<select class="select-input" name="projectId" required>
+                ${projects.map((p) => `<option value="${attr(p.id)}" ${p.id === store.currentProjectId ? "selected" : ""}>${escapeHtml(p.name)}</option>`).join("")}
+              </select></label>
+              <label class="span-2">Library item name<input class="text-input" name="name" value="${attr(defaultName)}" required></label>
+              <p class="muted">The decision text and metadata will be saved as a library item in the selected project.</p>
+              <div class="modal-actions">
+                <button class="ghost-button" type="button" data-modal-close>Cancel</button>
+                <button class="dark-button" type="submit">Save to project</button>
+              </div>
+            </form>
+          </div>
+        </div>`,
+      bind: (rootEl) => {
+        const close = () => { modal = null; render(); };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        rootEl.querySelector("[data-save-decision-form]")?.addEventListener("submit", (event) => {
+          event.preventDefault();
+          const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+          const project = getProject(data.projectId);
+          if (!project) { close(); return; }
+          const metaLines = [
+            meta?.decisionDate ? `Date: ${meta.decisionDate}` : "",
+            meta?.adjudicator ? `Adjudicator: ${meta.adjudicator}` : "",
+            (meta?.claimant || meta?.respondent) ? `Parties: ${meta?.claimant || "?"} v ${meta?.respondent || "?"}` : "",
+            meta?.claimed ? `Claimed: ${meta.claimed}` : "",
+            meta?.awarded ? `Awarded: ${meta.awarded}` : "",
+            `Decision id: ${id}`,
+          ].filter(Boolean).join("\n");
+          const body = `${metaLines}\n\n---\n\n${text || ""}`;
+          project.library.push({
+            name: data.name || defaultName,
+            text: body,
+            source: `decision:${id}`,
+            addedAt: new Date().toISOString(),
+          });
+          saveProject(project);
+          modal = null;
+          render();
+        });
+      },
+    };
+    render();
   }
 
   function renderDecisionMetaHeader(meta) {
@@ -1741,17 +1855,34 @@ Total\t${formatCurrencyFull(total)}`;
   /* ---------- Project workspace ---------- */
 
   function ProjectsListPage() {
-    const projects = projectList();
+    const params = new URLSearchParams(window.location.search);
+    const showArchived = params.get("archived") === "1";
+    const active = projectList();
+    const archived = archivedProjectList();
+    const projects = showArchived ? archived : active;
+    setTimeout(() => {
+      document.querySelectorAll("[data-restore-project]").forEach((b) => b.addEventListener("click", () => {
+        restoreProject(b.dataset.restoreProject);
+        render();
+      }));
+    }, 0);
     return PageBody(`
       <div class="page-shell">
         <div class="page-head">
-          <div><h1 class="page-title">Your projects</h1><p class="page-sub">Each project is one construction contract — head contract or subcontract.</p></div>
+          <div><h1 class="page-title">${showArchived ? "Archived projects" : "Your projects"}</h1><p class="page-sub">Each project is one construction contract — head contract or subcontract.</p></div>
           <div class="page-actions">
             <label class="ghost-button compact" title="Import a sopal-*.json export">${ICON.upload}<span>Import</span><input type="file" data-import-project accept="application/json,.json" hidden></label>
             <button class="dark-button" type="button" data-new-project>${ICON.plus}<span>New project</span></button>
           </div>
         </div>
-        ${projects.length === 0 ? `
+        ${(active.length || archived.length) ? `
+          <div class="projects-tabs">
+            <a class="projects-tab ${!showArchived ? "active" : ""}" href="/sopal-v2/projects" data-nav>Active${active.length ? ` · ${active.length}` : ""}</a>
+            <a class="projects-tab ${showArchived ? "active" : ""}" href="/sopal-v2/projects?archived=1" data-nav>Archived${archived.length ? ` · ${archived.length}` : ""}</a>
+          </div>` : ""}
+        ${projects.length === 0 ? (showArchived ? `
+          <div class="card-empty"><div class="card-empty-icon">${ICON.folder}</div><h4>No archived projects.</h4><p>Archive a project from its overview page to tuck it out of sight without deleting.</p></div>
+        ` : `
           <div class="card-empty">
             <div class="card-empty-icon">${ICON.file}</div>
             <h4>Create your first project</h4>
@@ -1760,8 +1891,7 @@ Total\t${formatCurrencyFull(total)}`;
               <button class="dark-button" type="button" data-new-project>Create project</button>
               <label class="ghost-button" title="Import a sopal-*.json export">${ICON.upload}<span>Import from JSON</span><input type="file" data-import-project accept="application/json,.json" hidden></label>
             </div>
-          </div>
-        ` : `<div class="project-list">${projects.map((p) => projectRow(p)).join("")}</div>`}
+          </div>`) : `<div class="project-list">${projects.map((p) => projectRow(p, { archived: showArchived })).join("")}</div>`}
       </div>
     `);
   }
@@ -1782,6 +1912,9 @@ Total\t${formatCurrencyFull(total)}`;
             <button class="ghost-button compact" type="button" data-edit-project>Edit details</button>
             <button class="ghost-button compact" type="button" data-duplicate-project="${attr(project.id)}" title="Clone this project's contract + library into a new project (no chats / reviews)">${ICON.copy}<span>Duplicate</span></button>
             <button class="ghost-button compact" type="button" data-export-project="${attr(project.id)}" title="Download a JSON snapshot of this project">${ICON.download || ICON.file}<span>Export</span></button>
+            ${project.archived
+              ? `<button class="ghost-button compact" type="button" data-restore-project="${attr(project.id)}">${ICON.arrowUpRight}<span>Restore</span></button>`
+              : `<button class="ghost-button compact" type="button" data-archive-project="${attr(project.id)}" title="Hide this project from your active list">${ICON.folder}<span>Archive</span></button>`}
             <button class="ghost-button compact danger" type="button" data-delete-project="${attr(project.id)}">${ICON.trash}<span>Delete</span></button>
           </div>
         </div>
@@ -1940,6 +2073,14 @@ Total\t${formatCurrencyFull(total)}`;
     document.querySelectorAll("[data-duplicate-project]").forEach((b) => b.addEventListener("click", () => {
       const cloned = duplicateProject(b.dataset.duplicateProject);
       if (cloned) navigate(`/sopal-v2/projects/${cloned.id}/overview`);
+    }));
+    document.querySelectorAll("[data-archive-project]").forEach((b) => b.addEventListener("click", () => {
+      archiveProject(b.dataset.archiveProject);
+      navigate("/sopal-v2/projects");
+    }));
+    document.querySelectorAll("[data-restore-project]").forEach((b) => b.addEventListener("click", () => {
+      restoreProject(b.dataset.restoreProject);
+      render();
     }));
   }
 
@@ -3455,6 +3596,7 @@ Total\t${formatCurrencyFull(total)}`;
       navigate(el.getAttribute("data-go"));
     }));
     document.querySelectorAll("[data-toggle-sidebar]").forEach((el) => el.addEventListener("click", () => { sidebarOpen = !sidebarOpen; render(); }));
+    document.querySelectorAll("[data-toggle-collapse]").forEach((el) => el.addEventListener("click", () => setSidebarCollapsed(!sidebarCollapsed)));
     document.querySelectorAll("[data-open-palette]").forEach((el) => el.addEventListener("click", () => openCommandPalette()));
     document.querySelectorAll("[data-new-project]").forEach((el) => el.addEventListener("click", () => openProjectModal(null)));
     document.querySelectorAll("[data-seed-sample]").forEach((el) => el.addEventListener("click", () => seedSampleProject()));
@@ -3692,6 +3834,10 @@ Total\t${formatCurrencyFull(total)}`;
     if ((ev.metaKey || ev.ctrlKey) && (ev.key === "k" || ev.key === "K")) {
       ev.preventDefault();
       openCommandPalette();
+    }
+    if ((ev.metaKey || ev.ctrlKey) && ev.key === "\\") {
+      ev.preventDefault();
+      setSidebarCollapsed(!sidebarCollapsed);
     }
   });
   document.addEventListener("click", (event) => {
