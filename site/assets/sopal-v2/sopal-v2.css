@@ -2001,11 +2001,19 @@ a { color: inherit; text-decoration: none; }
   gap: 12px;
   margin-bottom: 14px;
 }
+.analysis-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .summary-counts {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
+.analysis-copy-btn { flex-shrink: 0; }
 .sc-pill {
   display: inline-flex;
   align-items: center;
