@@ -2026,14 +2026,30 @@ a { color: inherit; text-decoration: none; }
     padding: 0 12px;
     gap: 8px;
   }
-  .breadcrumb { font-size: 12.5px; gap: 4px; }
+  /* Single-line breadcrumb on phones — only show the LAST crumb so we don't
+     wrap the header to two lines on long project names. The earlier
+     crumbs collapse to a "..." prefix instead. */
+  .breadcrumb {
+    font-size: 12.5px;
+    gap: 4px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    min-width: 0;
+    flex: 1;
+  }
   .breadcrumb .crumb,
-  .breadcrumb .crumb-sep { white-space: nowrap; }
-  .breadcrumb .crumb {
+  .breadcrumb .crumb-sep { white-space: nowrap; flex-shrink: 0; }
+  .breadcrumb .crumb.current {
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 140px;
+    flex: 1;
+    min-width: 0;
   }
+  /* Hide every crumb and separator EXCEPT the current page on phones — and
+     swap in a back-arrow on the very first separator slot to act as
+     visual "back" affordance. */
+  .breadcrumb .crumb:not(.current),
+  .breadcrumb .crumb-sep { display: none; }
   .header-right .link-button { display: none; }
 
   .page-shell {
@@ -2072,6 +2088,17 @@ a { color: inherit; text-decoration: none; }
   /* Tile grid: full-width, looser tap target. */
   .tile-grid, .home-tiles { grid-template-columns: 1fr; gap: 8px; }
   .tile { padding: 12px 14px; min-height: auto; }
+
+  /* Metric grids (project overview / adjudicator detail / home metrics) stack
+     into 2 columns on phone — 3 columns squashed text. */
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-grid.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric strong { font-size: 17px; }
+  .metric label { font-size: 11px; }
+
+  /* Quick-link row inside project overview — three buttons, stack vertically. */
+  .quick-link-row { flex-direction: column; }
+  .quick-link-row .ghost-button { width: 100%; justify-content: center; }
 
   /* Section heads: stack title and action button. */
   .page-head, .section-head.row {
