@@ -205,15 +205,37 @@
   let projectMenuOpen = false;
   let sidebarOpen = false;
 
-  function emptyStore() { return { projects: {}, currentProjectId: null }; }
+  function emptyStore() { return { projects: {}, currentProjectId: null, recentDecisions: [] }; }
   function loadStore() {
     try {
       const parsed = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
-      if (parsed && parsed.projects) return parsed;
+      if (parsed && parsed.projects) {
+        if (!Array.isArray(parsed.recentDecisions)) parsed.recentDecisions = [];
+        return parsed;
+      }
     } catch {}
     return emptyStore();
   }
   function saveStore() { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+
+  // Track decisions the user has opened so the home page can surface them.
+  function trackRecentDecision(meta) {
+    if (!meta || !meta.id) return;
+    if (!Array.isArray(store.recentDecisions)) store.recentDecisions = [];
+    const existing = store.recentDecisions.findIndex((d) => d.id === meta.id);
+    if (existing !== -1) store.recentDecisions.splice(existing, 1);
+    store.recentDecisions.unshift({
+      id: meta.id,
+      title: meta.title || meta.id,
+      decisionDate: meta.decisionDate || "",
+      adjudicator: meta.adjudicator || "",
+      claimed: meta.claimed || "",
+      awarded: meta.awarded || "",
+      visitedAt: Date.now(),
+    });
+    store.recentDecisions = store.recentDecisions.slice(0, 8);
+    saveStore();
+  }
 
   function getProject(id) { return id ? store.projects[id] || null : null; }
   function projectList() { return Object.values(store.projects).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)); }
@@ -595,12 +617,28 @@
   function HomePage() {
     const tools = workspaceNav();
     const projects = projectList();
+    const recent = (store.recentDecisions || []).slice(0, 6);
     return PageBody(`
       <div class="home-shell">
         <section class="home-hero">
           <h2>Welcome to Sopal v2</h2>
           <p>Search adjudication decisions, run BIF Act calculators, and manage SOPA workflows project by project.</p>
         </section>
+
+        ${recent.length ? `
+          <section class="home-section">
+            <div class="section-head"><h3>Recently viewed decisions</h3><p>Pick up where you left off.</p></div>
+            <div class="recent-decisions-grid">
+              ${recent.map((d) => `
+                <a class="recent-decision-card" href="/sopal-v2/research/decisions/${encodeURIComponent(d.id)}" data-nav>
+                  <strong>${escapeHtml(d.title || d.id)}</strong>
+                  <span class="muted">${[d.decisionDate, d.adjudicator].filter(Boolean).map((s) => escapeHtml(s)).join(" · ")}</span>
+                  ${d.claimed || d.awarded ? `<span class="muted">${[d.claimed && `${escapeHtml(d.claimed)} claimed`, d.awarded && `${escapeHtml(d.awarded)} awarded`].filter(Boolean).join(" · ")}</span>` : ""}
+                </a>
+              `).join("")}
+            </div>
+          </section>
+        ` : ""}
 
         <section class="home-section">
           <div class="section-head"><h3>Workspace tools</h3><p>Available everywhere — no project required.</p></div>
@@ -879,6 +917,7 @@
   async function loadDecisionDetail(id, title, meta) {
     const mount = document.getElementById("decision-detail");
     if (!mount || !id) return;
+    if (meta) trackRecentDecision({ ...meta, id, title: title || meta.title || id });
     mount.innerHTML = `<div class="card-head"><h3>${escapeHtml(title || "Decision")}</h3></div><div class="card-body">${skeletonRows()}</div>`;
     try {
       const response = await fetch(`/api/decision-text/${encodeURIComponent(id)}`, { credentials: "include" });

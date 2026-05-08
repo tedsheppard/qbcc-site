@@ -220,12 +220,11 @@ a { color: inherit; text-decoration: none; }
 .project-switcher-trigger .chev svg { width: 14px; height: 14px; }
 
 .project-menu {
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  top: calc(100% - 4px);
-  z-index: 60;
-  margin: 0;
+  /* Inline expansion — pushes the per-project nav down rather than overlapping
+     it. Avoids the click-confusion that came from the popover sitting on top
+     of Overview / Contract / Library / Assistant items. */
+  position: static;
+  margin: 6px 0 4px;
   padding: 6px;
   background: #fff;
   border: 1px solid var(--main-border);
@@ -1482,14 +1481,15 @@ a { color: inherit; text-decoration: none; }
 }
 .message-body .md > *:first-child { margin-top: 0; }
 .message-body .md > *:last-child { margin-bottom: 0; }
-.message-body .md p { margin: 0 0 10px; }
-.message-body .md h3 { font-size: 15.5px; font-weight: 650; margin: 16px 0 8px; }
-.message-body .md h4 { font-size: 14px; font-weight: 650; margin: 14px 0 6px; }
+.message-body .md p { margin: 0 0 8px; line-height: 1.55; }
+.message-body .md h3 { font-size: 15px; font-weight: 650; margin: 14px 0 6px; }
+.message-body .md h4 { font-size: 13.5px; font-weight: 650; margin: 12px 0 4px; }
 .message-body .md ul, .message-body .md ol {
-  margin: 6px 0 12px;
-  padding-left: 22px;
+  margin: 4px 0 8px;
+  padding-left: 20px;
 }
-.message-body .md li { margin-bottom: 4px; }
+.message-body .md li { margin-bottom: 2px; line-height: 1.5; }
+.message-body .md li > p { margin: 0 0 4px; }
 .message-body .md code {
   background: var(--accent);
   padding: 1px 6px;
@@ -2198,4 +2198,40 @@ a { color: inherit; text-decoration: none; }
   .breadcrumb { font-size: 12px; }
   .page-title { font-size: 18px; }
   .home-hero h2 { font-size: 18px; }
+}
+
+/* Recently-viewed decisions on home — return-visitor convenience. */
+.recent-decisions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.recent-decision-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--main-border);
+  border-radius: 10px;
+  color: var(--main-fg);
+  transition: background-color 0.12s, border-color 0.12s;
+}
+.recent-decision-card:hover {
+  background: #fafaf6;
+  border-color: var(--ring);
+}
+.recent-decision-card strong {
+  font-size: 13.5px;
+  font-weight: 650;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.recent-decision-card .muted { font-size: 12px; }
+
+@media (max-width: 620px) {
+  .recent-decisions-grid { grid-template-columns: 1fr; }
 }
