@@ -3165,6 +3165,8 @@ Total\t${formatCurrencyFull(total)}`;
               <button class="ghost-button compact" type="button" data-aa-export-soe>${ICON.download}<span>Export evidence index</span></button>
               <button class="ghost-button compact" type="button" data-aa-print-master>${ICON.file}<span>Print master</span></button>
               <button class="ghost-button compact" type="button" data-aa-copy-master>${ICON.copy}<span>Copy as Markdown</span></button>
+              <button class="ghost-button compact" type="button" data-aa-draft-all title="Run a draft pass for every thread that has answered RFIs but isn't drafted yet">${ICON.sparkles}<span>Draft all</span></button>
+              <span class="aa-draft-all-status-inline" data-aa-draft-all-status hidden></span>
             </div>
           </div>
           <div class="card-body">
@@ -3635,6 +3637,7 @@ Total\t${formatCurrencyFull(total)}`;
         setTimeout(() => { btn.innerHTML = original; }, 1100);
       }
     });
+    document.querySelector("[data-aa-draft-all]")?.addEventListener("click", () => runDraftAll(project, aa));
     bindAATocLinks();
   }
 
