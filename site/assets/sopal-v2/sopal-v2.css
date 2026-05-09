@@ -3199,6 +3199,15 @@ a { color: inherit; text-decoration: none; }
   gap: 8px;
   flex-wrap: wrap;
 }
+.aa-progress-pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--main-muted);
+  border: 1px solid var(--main-border);
+  color: var(--main-fg);
+}
 .aa-deadline-pill {
   font-size: 12px;
   font-weight: 600;

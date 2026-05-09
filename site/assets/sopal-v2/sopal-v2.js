@@ -2939,6 +2939,13 @@ Total\t${formatCurrencyFull(total)}`;
 
     const deadlineMeta = aaDeadlineMeta(aa.deadline);
     const warnings = (aa.parseWarnings || []);
+    // Progress = drafted threads / total threads. Threads are the two shared
+    // (jurisdictional + general) plus one per dispute. Surfaced in the header
+    // so the user can see at a glance how close the application is to ready.
+    const allThreads = [aa.jurisdictionalRfis, aa.generalRfis].concat((aa.disputes || []).map((d) => d.rfis ? { submissions: d.submissions || "" } : { submissions: "" }));
+    const draftedThreads = allThreads.filter((t) => (t.submissions || "").length > 60).length;
+    const totalThreads = allThreads.length;
+    const progressPct = totalThreads ? Math.round((draftedThreads / totalThreads) * 100) : 0;
     return PageBody(`
       <div class="page-shell aa-shell">
         <div class="chat-page-head">
@@ -2947,6 +2954,7 @@ Total\t${formatCurrencyFull(total)}`;
             <p class="page-sub">Guided drafter — intake, dispute mapping, RFIs per item, live master document.</p>
           </div>
           <div class="aa-header-actions">
+            ${aa.stage !== "intake" ? `<span class="aa-progress-pill" title="Drafted threads">${draftedThreads}/${totalThreads} drafted · ${progressPct}%</span>` : ""}
             ${aa.stage !== "intake" ? `<button class="ghost-button compact" type="button" data-aa-back-stage>← Back a stage</button>` : ""}
             ${deadlineMeta ? `<span class="aa-deadline-pill ${deadlineMeta.cls}" title="Lodgement deadline">${deadlineMeta.label}</span>` : ""}
             <button class="ghost-button compact danger" type="button" data-aa-reset>Reset</button>
