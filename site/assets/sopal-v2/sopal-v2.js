@@ -3816,18 +3816,29 @@ Total\t${formatCurrencyFull(total)}`;
       btn.disabled = true;
       btn.innerHTML = `<span class="thinking-dots"><i></i><i></i><i></i></span><span>Parsing…</span>`;
       try {
-        const response = await fetch("/api/sopal-v2/complex/aa/parse-documents", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            paymentClaimText: pc.text,
-            paymentScheduleText: ps && ps.text ? ps.text : "",
-            s79Scenario: aa.s79Scenario || "less-than-claimed",
-            projectMeta: { name: project.name, claimant: project.claimant, respondent: project.respondent, contractForm: project.contractForm, reference: project.reference },
-          }),
-        });
-        const data = await response.json().catch(() => ({}));
+        const ctrl = new AbortController();
+        const timeoutId = setTimeout(() => ctrl.abort(), 120_000);
+        let response, data;
+        try {
+          response = await fetch("/api/sopal-v2/complex/aa/parse-documents", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              paymentClaimText: pc.text,
+              paymentScheduleText: ps && ps.text ? ps.text : "",
+              s79Scenario: aa.s79Scenario || "less-than-claimed",
+              projectMeta: { name: project.name, claimant: project.claimant, respondent: project.respondent, contractForm: project.contractForm, reference: project.reference },
+            }),
+            signal: ctrl.signal,
+          });
+          data = await response.json().catch(() => ({}));
+        } catch (err) {
+          if (err.name === "AbortError") throw new Error("Parsing took too long (over 120s). Try smaller documents or paste the key sections instead.");
+          throw err;
+        } finally {
+          clearTimeout(timeoutId);
+        }
         if (!response.ok) throw new Error(describeApiError(data, "Parse failed"));
         // Seed AA from the extract.
         aa.parties.claimant = data.parties?.claimant || project.claimant || "";
@@ -4102,13 +4113,24 @@ Total\t${formatCurrencyFull(total)}`;
         libraryDocs: (project.library || []).slice(0, 8).map((d) => ({ name: d.name || "Library", text: (d.text || "").slice(0, 18_000) })),
         projectMeta: { name: project.name, contractForm: project.contractForm },
       };
-      const response = await fetch("/api/sopal-v2/complex/aa/engine", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json().catch(() => ({}));
+      const ctrl = new AbortController();
+      const timeoutId = setTimeout(() => ctrl.abort(), 90_000);
+      let response, data;
+      try {
+        response = await fetch("/api/sopal-v2/complex/aa/engine", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+          signal: ctrl.signal,
+        });
+        data = await response.json().catch(() => ({}));
+      } catch (err) {
+        if (err.name === "AbortError") throw new Error("Sopal took too long to respond (over 90s). Try again.");
+        throw err;
+      } finally {
+        clearTimeout(timeoutId);
+      }
       if (!response.ok) throw new Error(describeApiError(data, "Engine call failed"));
       // Apply patches.
       if (data.appendRfi) {
