@@ -3146,6 +3146,8 @@ Total\t${formatCurrencyFull(total)}`;
             <h3>Stage 5 — Final review &amp; lodgement</h3>
             <div class="aa-review-actions">
               <button class="dark-button" type="button" data-aa-export>${ICON.download}<span>Export master .doc</span></button>
+              <button class="ghost-button compact" type="button" data-aa-export-statdecs>${ICON.download}<span>Export combined stat dec</span></button>
+              <button class="ghost-button compact" type="button" data-aa-export-soe>${ICON.download}<span>Export evidence index</span></button>
             </div>
           </div>
           <div class="card-body">
@@ -3550,23 +3552,81 @@ Total\t${formatCurrencyFull(total)}`;
       }
     });
     document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
-      const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`;
-      const blob = new Blob([
-        '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
-        '<head><meta charset="UTF-8"><title>',
-        escapeHtml(project.name),
-        ' — Adjudication Application</title></head><body>',
-        renderAAMaster(project, aa),
-        '</body></html>',
-      ], { type: "application/msword" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`,
+        `${escapeHtml(project.name)} — Adjudication Application`,
+        renderAAMaster(project, aa));
+    });
+    document.querySelector("[data-aa-export-statdecs]")?.addEventListener("click", () => {
+      aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-statutory-declaration.doc`,
+        `${escapeHtml(project.name)} — Statutory Declaration`,
+        renderAAStatDecCompilation(project, aa));
+    });
+    document.querySelector("[data-aa-export-soe]")?.addEventListener("click", () => {
+      aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-evidence-index.doc`,
+        `${escapeHtml(project.name)} — Index of Supporting Evidence`,
+        renderAAEvidenceIndex(project, aa));
     });
     bindAATocLinks();
+  }
+
+  function aaDownloadDoc(filename, title, body) {
+    const blob = new Blob([
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
+      '<head><meta charset="UTF-8"><title>', title, '</title></head><body>',
+      body,
+      '</body></html>',
+    ], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function renderAAStatDecCompilation(project, aa) {
+    const dep = aa.parties.claimant || project.claimant || "[Deponent]";
+    const out = [];
+    out.push(`<h1>Statutory Declaration</h1>`);
+    out.push(`<p>I, [name], of [address], [occupation], do solemnly and sincerely declare that:</p>`);
+    out.push(`<p>1. I am authorised to make this declaration on behalf of ${escapeHtml(dep)} (the <strong>Claimant</strong>) in support of the Adjudication Application made under the Building Industry Fairness (Security of Payment) Act 2017 (Qld) in respect of the matter known as ${escapeHtml(aa.contractReference || project.reference || "[Contract reference]")}.</p>`);
+    out.push(`<p>2. The matters declared below are within my own knowledge except where otherwise stated, and where stated to be on information and belief, I believe them to be true.</p>`);
+    let para = 3;
+    function addThread(label, content) {
+      const text = (content || "").trim();
+      if (!text) return;
+      out.push(`<h3>${escapeHtml(label)}</h3>`);
+      // Renumber inline first-person paragraphs into the master numbering.
+      const html = renderMarkdown(text);
+      out.push(html);
+      para += 1;
+    }
+    addThread("Jurisdictional facts", aa.jurisdictionalRfis.statDecContent);
+    addThread("Background facts", aa.generalRfis.statDecContent);
+    (aa.disputes || []).forEach((d) => addThread(`Item — ${d.item || "Item"}`, d.statDecContent));
+    out.push(`<h3>Declaration</h3>`);
+    out.push(`<p>And I make this solemn declaration conscientiously believing the same to be true and by virtue of the provisions of the <em>Oaths Act 1867</em> (Qld).</p>`);
+    out.push(`<p>Declared at [place] in the State of Queensland on [date].</p>`);
+    out.push(`<p>........................................<br>[Deponent name]<br>Before me:<br>........................................<br>[JP / Solicitor / Commissioner for Declarations]</p>`);
+    return out.join("\n");
+  }
+
+  function renderAAEvidenceIndex(project, aa) {
+    const all = [];
+    function addRows(label, items) {
+      (items || []).forEach((e) => all.push({ label, e }));
+    }
+    addRows("Jurisdictional", aa.jurisdictionalRfis.evidenceIndex);
+    addRows("Background", aa.generalRfis.evidenceIndex);
+    (aa.disputes || []).forEach((d) => addRows(d.item || "Item", d.evidenceIndex));
+    if (!all.length) return `<h1>Index of Supporting Evidence</h1><p><em>(No exhibits indexed yet.)</em></p>`;
+    return `<h1>Index of Supporting Evidence</h1>
+      <table>
+        <thead><tr><th>Ref</th><th>Description</th><th>Cross-reference</th><th>Thread</th></tr></thead>
+        <tbody>
+          ${all.map(({ label, e }) => `<tr><td><strong>${escapeHtml(e.ref || "")}</strong></td><td>${escapeHtml(e.desc || "")}</td><td>${escapeHtml(e.location || "")}</td><td>${escapeHtml(label)}</td></tr>`).join("")}
+        </tbody>
+      </table>`;
   }
 
   function bindAAIntake(project, aa) {
@@ -3776,21 +3836,9 @@ Total\t${formatCurrencyFull(total)}`;
     document.querySelector("[data-aa-draft-all]")?.addEventListener("click", () => runDraftAll(project, aa));
     bindAATocLinks();
     document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
-      const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`;
-      const blob = new Blob([
-        '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
-        '<head><meta charset="UTF-8"><title>',
-        escapeHtml(project.name),
-        ' — Adjudication Application</title></head><body>',
-        renderAAMaster(project, aa),
-        '</body></html>',
-      ], { type: "application/msword" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`,
+        `${escapeHtml(project.name)} — Adjudication Application`,
+        renderAAMaster(project, aa));
     });
   }
 
