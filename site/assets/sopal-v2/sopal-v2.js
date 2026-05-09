@@ -4620,6 +4620,11 @@ Total\t${formatCurrencyFull(total)}`;
         contractDocs: (project.contracts || []).slice(0, 6).map((d) => ({ name: d.name || "Contract", text: (d.text || "").slice(0, 25_000) })),
         libraryDocs: (project.library || []).slice(0, 8).map((d) => ({ name: d.name || "Library", text: (d.text || "").slice(0, 18_000) })),
         projectMeta: { name: project.name, contractForm: project.contractForm },
+        // Surface the cover-page extras (ABN, addresses, contract date,
+        // site address, ANA) so the engine can include them in introductions /
+        // background threads where useful, instead of leaving [bracketed
+        // placeholders]. Stripped of empty fields.
+        coverMeta: Object.fromEntries(Object.entries(aa.coverMeta || {}).filter(([, v]) => typeof v === "string" && v.trim().length > 0)),
       };
       const ctrl = new AbortController();
       const timeoutId = setTimeout(() => ctrl.abort(), 90_000);

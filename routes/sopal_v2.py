@@ -591,6 +591,10 @@ class AAEngineRequest(BaseModel):
     contractDocs: list[dict[str, Any]] = Field(default_factory=list)
     libraryDocs: list[dict[str, Any]] = Field(default_factory=list)
     projectMeta: dict[str, Any] = Field(default_factory=dict)
+    # Cover-page extras (ABN, contact details, contract date, site address,
+    # ANA, etc.). Optional — only forwarded for context where the engine can
+    # use them (introduction / background threads). Empty dict is fine.
+    coverMeta: dict[str, Any] = Field(default_factory=dict)
 
 
 AA_ISSUE_TYPE_RFI_HINTS: dict[str, str] = {
@@ -828,6 +832,42 @@ async def aa_engine(payload: AAEngineRequest) -> dict[str, Any]:
     contract_block = _format_docs(payload.contractDocs, "Contract documents (uploaded by user)", 25_000, 60_000)
     library_block = _format_docs(payload.libraryDocs, "Project library (correspondence / programme / claims / schedules)", 18_000, 50_000)
 
+    # Cover-page extras the user filled in (ABN, addresses, contract date,
+    # site address, ANA). Optional — fold them into the matter context only
+    # when present, so the engine can reference them in introduction /
+    # background threads where useful, instead of leaving placeholders.
+    cover_meta_lines: list[str] = []
+    cm = payload.coverMeta or {}
+    cm_label_map = [
+        ("contractDate", "Contract executed on"),
+        ("siteAddress", "Project / site address"),
+        ("claimantAbn", "Claimant ABN"),
+        ("claimantAddress", "Claimant address"),
+        ("claimantContact", "Claimant contact"),
+        ("claimantPhone", "Claimant phone"),
+        ("claimantEmail", "Claimant email"),
+        ("respondentAbn", "Respondent ABN"),
+        ("respondentAddress", "Respondent address"),
+        ("respondentContact", "Respondent contact"),
+        ("respondentPhone", "Respondent phone"),
+        ("respondentEmail", "Respondent email"),
+        ("ana", "Authorised Nominating Authority"),
+        ("anaReference", "ANA reference"),
+        ("pcDate", "Payment claim served"),
+        ("psDate", "Payment schedule served"),
+        ("applicationDate", "Application date"),
+    ]
+    for k, label in cm_label_map:
+        v = cm.get(k)
+        if isinstance(v, str) and v.strip():
+            cover_meta_lines.append(f"- {label}: {v.strip()[:200]}")
+    cover_meta_block = (
+        "Cover-page extras the user has confirmed (use in introduction / background submissions where natural — DO NOT invent these if they are not listed):\n"
+        + "\n".join(cover_meta_lines)
+        if cover_meta_lines else
+        "Cover-page extras: (none provided — leave [bracketed placeholders] in the draft for any field you want)"
+    )
+
     user_content = (
         f"Mode: {payload.mode}\n\n"
         f"{thread_brief}\n\n"
@@ -842,6 +882,7 @@ async def aa_engine(payload: AAEngineRequest) -> dict[str, Any]:
         f"- Claimed amount: {payload.claimedAmount}\n"
         f"- Scheduled amount: {payload.scheduledAmount}\n"
         f"- s 82(4) PS reasons universe: {payload.psReasonsUniverse[:8000] or '(empty — no PS in this scenario)'}\n\n"
+        f"{cover_meta_block}\n\n"
         f"Definitions (shared):\n{definitions_lines}\n\n"
         f"{contract_block}\n\n"
         f"{library_block}\n\n"
