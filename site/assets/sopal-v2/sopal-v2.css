@@ -3361,13 +3361,69 @@ a { color: inherit; text-decoration: none; }
 .aa-cell-multi { resize: vertical; min-height: 36px; }
 .aa-cell-num { text-align: right; }
 
-/* Stage 3+ — three-pane workspace */
+/* Stage 3+ — three-pane workspace (legacy CSS retained in case any code
+   path still renders the original 3-pane variant). */
 .aa-three-pane {
   display: grid;
   grid-template-columns: minmax(220px, 260px) minmax(0, 1fr) minmax(0, 1.3fr);
   gap: 14px;
   align-items: stretch;
   min-height: calc(100vh - 320px);
+}
+
+/* New 2-pane layout: items nav (left) + RFI chat (centre).
+   The master document moved to a fullscreen modal accessed from the
+   workspace toolbar — gives the chat much more horizontal room. */
+.aa-workspace-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px 0;
+  flex-wrap: wrap;
+}
+.aa-two-pane {
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  min-height: calc(100vh - 340px);
+}
+@media (max-width: 1024px) {
+  .aa-two-pane { grid-template-columns: 1fr; min-height: 0; }
+}
+
+/* Fullscreen master document modal */
+.aa-master-modal {
+  width: min(1100px, 96vw);
+  max-width: 1100px;
+  height: min(90vh, 920px);
+  display: flex;
+  flex-direction: column;
+}
+.aa-master-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.aa-master-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.aa-master-modal-body {
+  flex: 1;
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.aa-master-modal .aa-master-body {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0;
 }
 .aa-disputes-nav { padding: 0; display: flex; flex-direction: column; }
 .aa-disputes-list { padding: 8px; overflow-y: auto; flex: 1; gap: 4px; display: flex; flex-direction: column; }

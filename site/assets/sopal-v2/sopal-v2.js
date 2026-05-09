@@ -3258,7 +3258,12 @@ Total\t${formatCurrencyFull(total)}`;
     const definitionsCount = Object.keys(aa.definitions || {}).length;
 
     return `
-      <div class="aa-three-pane">
+      <div class="aa-workspace-toolbar">
+        <button class="dark-button compact" type="button" data-aa-open-master>${ICON.file}<span>View master document</span></button>
+        <button class="ghost-button compact" type="button" data-aa-draft-all title="Run a draft pass for every thread that has answered RFIs but isn't drafted yet">${ICON.sparkles}<span>Draft all</span></button>
+        <span class="aa-draft-all-status-inline" data-aa-draft-all-status hidden></span>
+      </div>
+      <div class="aa-two-pane">
         <aside class="aa-disputes-nav card">
           <div class="card-head"><h3>Items</h3></div>
           <div class="card-body aa-disputes-list">
@@ -3314,20 +3319,86 @@ Total\t${formatCurrencyFull(total)}`;
               ? `<button class="ghost-button compact danger aa-rfi-reset" type="button" data-aa-reset-thread>Reset this thread</button>` : ""}
           </footer>
         </section>
-        <aside class="aa-master-pane card">
-          <div class="card-head">
-            <h3>Master document</h3>
-            <div class="aa-master-actions">
-              <button class="ghost-button compact" type="button" data-aa-draft-all title="Run a draft pass for every thread that has at least one answered RFI">${ICON.sparkles}<span>Draft all</span></button>
-              <button class="ghost-button compact" type="button" data-aa-rebuild>Rebuild</button>
-              <button class="ghost-button compact" type="button" data-aa-export>${ICON.download}<span>Export .doc</span></button>
-            </div>
-          </div>
-          <div class="aa-master-body" data-aa-master>${renderAAMaster(project, aa)}</div>
-          <div class="aa-master-foot" data-aa-draft-all-status hidden></div>
-        </aside>
       </div>
     `;
+  }
+
+  // Fullscreen master document modal — opened from the workspace toolbar.
+  // Reuses renderAAMaster and bindAATocLinks. Includes all the export
+  // actions in one place so the user can review + download in flow.
+  function openAAMasterModal(project, aa) {
+    modal = {
+      render: () => `
+        <div class="modal-backdrop" data-modal-backdrop>
+          <div class="modal aa-master-modal" role="dialog" aria-modal="true">
+            <div class="modal-head aa-master-modal-head">
+              <h2>Master document</h2>
+              <div class="aa-master-modal-actions">
+                <button class="dark-button compact" type="button" data-aa-export>${ICON.download}<span>Export .doc</span></button>
+                <button class="ghost-button compact" type="button" data-aa-export-statdecs>${ICON.download}<span>Stat dec</span></button>
+                <button class="ghost-button compact" type="button" data-aa-export-soe>${ICON.download}<span>Evidence index</span></button>
+                <button class="ghost-button compact" type="button" data-aa-print-master>${ICON.file}<span>Print</span></button>
+                <button class="ghost-button compact" type="button" data-aa-copy-master>${ICON.copy}<span>Copy as Markdown</span></button>
+                <button class="ghost-button compact" type="button" data-aa-rebuild>Rebuild</button>
+                <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
+              </div>
+            </div>
+            <div class="modal-body aa-master-modal-body">
+              <div class="aa-master-body" data-aa-master>${renderAAMaster(project, aa)}</div>
+            </div>
+          </div>
+        </div>`,
+      bind: (rootEl) => {
+        const close = () => { modal = null; render(); };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        rootEl.querySelector("[data-aa-rebuild]")?.addEventListener("click", () => {
+          const mount = rootEl.querySelector("[data-aa-master]");
+          if (mount) { mount.innerHTML = renderAAMaster(project, aa); bindAATocLinks(); }
+        });
+        rootEl.querySelector("[data-aa-export]")?.addEventListener("click", () => {
+          aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`,
+            `${escapeHtml(project.name)} — Adjudication Application`,
+            renderAAMaster(project, aa));
+        });
+        rootEl.querySelector("[data-aa-export-statdecs]")?.addEventListener("click", () => {
+          aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-statutory-declaration.doc`,
+            `${escapeHtml(project.name)} — Statutory Declaration`,
+            renderAAStatDecCompilation(project, aa));
+        });
+        rootEl.querySelector("[data-aa-export-soe]")?.addEventListener("click", () => {
+          aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-evidence-index.doc`,
+            `${escapeHtml(project.name)} — Index of Supporting Evidence`,
+            renderAAEvidenceIndex(project, aa));
+        });
+        rootEl.querySelector("[data-aa-print-master]")?.addEventListener("click", () => {
+          const win = window.open("", "_blank", "noopener");
+          if (!win) { alert("Could not open the print preview. Please allow popups for this site and try again."); return; }
+          win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(project.name)} — Adjudication Application</title>
+            <style>body{font-family:"Source Serif Pro",Georgia,"Times New Roman",serif;font-size:12.5pt;line-height:1.55;color:#1a1a1a;max-width:760px;margin:28px auto;padding:0 24px}h1{font-size:20pt;text-align:center;margin:0 0 14px}h2{font-size:14pt;margin:22px 0 8px;padding-bottom:4px;border-bottom:1px solid #ccc}h3{font-size:12pt;margin:14px 0 6px}p{margin:0 0 10px}table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:11pt}th,td{border:1px solid #999;padding:4px 6px;text-align:left;vertical-align:top}th{background:#f0ece4}.aa-toc{background:#f5f2ed;border:1px solid #ddd;border-radius:6px;padding:12px 16px;margin:0 0 22px;font-family:-apple-system,"Segoe UI",sans-serif;font-size:11pt}.aa-toc-link{display:flex;gap:8px;padding:2px 0;color:#1a1a1a;text-decoration:none}.aa-toc-num{flex:0 0 36px;font-weight:600}.aa-toc-indent-1{padding-left:22px}.aa-issue-tag{display:inline-block;font-size:9pt;padding:1px 6px;margin-left:6px;background:#e0e7ff;border-radius:999px}.print-actions{display:flex;gap:8px;margin:0 0 18px}.print-actions button{font:inherit;padding:6px 14px;border-radius:6px;border:1px solid #aaa;background:#fff;cursor:pointer}@media print{.print-actions{display:none}body{margin:0;padding:0 18px;max-width:none}}</style>
+            </head><body>
+              <div class="print-actions"><button onclick="window.print()">Print</button><button onclick="window.close()">Close</button></div>
+              ${renderAAMaster(project, aa)}
+            </body></html>`);
+          win.document.close();
+        });
+        rootEl.querySelector("[data-aa-copy-master]")?.addEventListener("click", () => {
+          copyText(aaMasterToMarkdown(project, aa));
+          const btn = rootEl.querySelector("[data-aa-copy-master]");
+          if (btn) {
+            const original = btn.innerHTML;
+            btn.innerHTML = `${ICON.copy}<span>Copied</span>`;
+            setTimeout(() => { btn.innerHTML = original; }, 1100);
+          }
+        });
+        bindAATocLinks();
+        // Close on Escape.
+        document.addEventListener("keydown", function handler(ev) {
+          if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); }
+        });
+      },
+    };
+    render();
   }
 
   function renderAAMaster(project, aa) {
@@ -4010,6 +4081,22 @@ Total\t${formatCurrencyFull(total)}`;
     document.querySelector("[data-aa-toggle-definitions]")?.addEventListener("click", () => openAADefinitionsModal(project, aa));
     document.querySelector("[data-aa-view-artifacts]")?.addEventListener("click", () => openAAArtifactsModal(project, aa));
     document.querySelector("[data-aa-draft-all]")?.addEventListener("click", () => runDraftAll(project, aa));
+    document.querySelector("[data-aa-open-master]")?.addEventListener("click", () => openAAMasterModal(project, aa));
+    // Auto-fire the first RFI on a freshly-opened thread so the user
+    // doesn't have to click 'Ask first RFI'. Gated by autoAskedAt to avoid
+    // spamming if the user navigates away and back, or if the first RFI
+    // call is in flight.
+    const ctx = aaActiveThread(aa);
+    if (ctx && ctx.thread && (ctx.thread.rounds || []).length === 0 && !ctx.thread.autoAskedAt && !ctx.thread.submissions) {
+      ctx.thread.autoAskedAt = Date.now();
+      saveProject(project);
+      // Fire and forget — render() inside aaCallEngine's caller will pick up
+      // the new RFI when it lands.
+      (async () => {
+        await aaCallEngine(project, aa, "rfi-next");
+        render();
+      })();
+    }
     bindAATocLinks();
     document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
       aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`,
