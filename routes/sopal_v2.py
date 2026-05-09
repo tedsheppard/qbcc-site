@@ -591,19 +591,102 @@ class AAEngineRequest(BaseModel):
     projectMeta: dict[str, Any] = Field(default_factory=dict)
 
 
+AA_ISSUE_TYPE_RFI_HINTS: dict[str, str] = {
+    "variation": (
+        "Variation-specific RFI priorities (ask one focused question at a time, in this rough order):\n"
+        "1. Was a written direction or instruction given (date, author, mode — email / instruction notice / drawing rev)?\n"
+        "2. Was the variation directed under the contract's variation clause? Which clause?\n"
+        "3. How does the varied scope differ from the original contract scope?\n"
+        "4. How is the variation valued — Schedule of Rates, day-work, lump sum, contractor's rates? Is the build-up available?\n"
+        "5. What is the time impact, and is a separate EOT being claimed?\n"
+        "6. Time-bar / waiver risk — did the contractor give the contractually required notice within time?"
+    ),
+    "eot": (
+        "EOT-specific RFI priorities:\n"
+        "1. What is the qualifying cause of delay? Cite the contract clause that lists it.\n"
+        "2. When did the contractor first become aware of the cause?\n"
+        "3. Was contractual notice given within the prescribed period (date, content, recipient)?\n"
+        "4. What is the impact on the critical path — what programme analysis supports the period claimed?\n"
+        "5. Are there concurrent or parallel delays caused by the contractor? How are they apportioned?\n"
+        "6. What mitigation steps were taken?"
+    ),
+    "delay-costs": (
+        "Delay-cost / prolongation-specific RFI priorities:\n"
+        "1. What is the entitlement basis — contract clause, breach, prevention principle?\n"
+        "2. What is the compensable delay period? How is it bounded against any non-compensable periods?\n"
+        "3. What quantum methodology applies — preliminaries, Hudson, Emden, measured-mile?\n"
+        "4. What records support the quantum — payroll, plant logs, subcontractor invoices, off-site overhead allocation?\n"
+        "5. Is there overlap with EOT or variation claims (avoid double recovery)?\n"
+        "6. Was contractual notice of the cost claim given within time?"
+    ),
+    "defects": (
+        "Defect / set-off RFI priorities:\n"
+        "1. Was a defect notice issued? Date, content, particulars given.\n"
+        "2. What is the precise nature and location of the alleged defect? Is photographic / inspection evidence available?\n"
+        "3. How is the rectification cost quantified — quotes, actual rectification, contract rates?\n"
+        "4. Was the contractor given a contractually-compliant opportunity to rectify before the respondent engaged others?\n"
+        "5. Is the alleged defect actually a defect, or a design / scope dispute?"
+    ),
+    "set-off": (
+        "Set-off RFI priorities:\n"
+        "1. Contractual basis for the set-off — clause cited.\n"
+        "2. Particulars of the underlying claim being set off (date, amount, basis).\n"
+        "3. Notice / particulars given to the contractor under the contract before the set-off was applied.\n"
+        "4. Is the set-off amount quantified or merely asserted?"
+    ),
+    "retention": (
+        "Retention RFI priorities:\n"
+        "1. Contractual basis for the retention — clause cited.\n"
+        "2. Has the trigger for release of retention been met (Practical Completion, end of DLP, certificate)?\n"
+        "3. Has any retention been substituted by an unconditional undertaking?\n"
+        "4. Have any defects on which retention is being held been particularised?"
+    ),
+    "prevention": (
+        "Prevention principle RFI priorities:\n"
+        "1. What act or omission of the principal is alleged to have prevented timely completion?\n"
+        "2. Was the act / omission a 'qualifying' cause of delay under the contract, or one for which the contract bars an extension?\n"
+        "3. What programme analysis demonstrates the act / omission delayed the critical path?\n"
+        "4. Was contractual notice given despite the prevention argument?"
+    ),
+    "scope": (
+        "Scope-dispute RFI priorities:\n"
+        "1. What is the relevant contract scope — drawings, specifications, schedule of rates?\n"
+        "2. Why does the contractor say the disputed work is outside the scope? Why does the respondent say it is within?\n"
+        "3. Is there a written instruction / direction that converts the work into a variation?"
+    ),
+    "valuation": (
+        "Valuation RFI priorities:\n"
+        "1. What rates source applies — Schedule of Rates, market rate, contractor's quote, day-work?\n"
+        "2. What is the build-up showing labour / plant / materials / overheads / margin?\n"
+        "3. What supporting documents are available — quotes, invoices, dockets, time sheets?\n"
+        "4. Has the respondent itemised any disagreement with the build-up?"
+    ),
+    "other": (
+        "Generic per-item RFI guidance:\n"
+        "1. What is the contractual basis for the entitlement?\n"
+        "2. What are the relevant facts and dates?\n"
+        "3. What records or correspondence support the claim?\n"
+        "4. What is the quantum methodology and supporting documents?"
+    ),
+}
+
+
 def _aa_thread_brief(payload: AAEngineRequest) -> str:
     if payload.threadKind == "dispute" and payload.dispute:
         d = payload.dispute
+        issue = (d.get("issueType") or "other").strip()
+        hints = AA_ISSUE_TYPE_RFI_HINTS.get(issue, AA_ISSUE_TYPE_RFI_HINTS["other"])
         return (
             f"Thread: PER-ITEM DISPUTE — '{d.get('item') or payload.threadLabel}'\n"
-            f"Issue type: {d.get('issueType') or 'other'}\n"
+            f"Issue type: {issue}\n"
             f"Status: {d.get('status') or 'disputed'}\n"
             f"Claimed: {d.get('claimed') or 0}\n"
             f"Scheduled: {d.get('scheduled') or 0}\n"
             f"Description: {d.get('description') or ''}\n"
             f"Respondent's reasons (from PS): {d.get('psReasons') or ''}\n\n"
             "STRICT SCOPE: Every RFI and every line of submissions you produce must be about THIS specific item only. "
-            "Do not ask jurisdictional questions here. Do not ask about other items. Do not draft general background here."
+            "Do not ask jurisdictional questions here. Do not ask about other items. Do not draft general background here.\n\n"
+            f"{hints}"
         )
     if payload.threadKind == "shared" and "jurisdiction" in payload.threadLabel.lower():
         return (
