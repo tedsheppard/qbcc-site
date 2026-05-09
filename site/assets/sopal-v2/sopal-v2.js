@@ -3060,6 +3060,7 @@ Total\t${formatCurrencyFull(total)}`;
     ];
     const activeKey = aa.activeKey || navItems[0].key;
     const active = navItems.find((n) => n.key === activeKey) || navItems[0];
+    const definitionsCount = Object.keys(aa.definitions || {}).length;
 
     return `
       <div class="aa-three-pane">
@@ -3071,13 +3072,20 @@ Total\t${formatCurrencyFull(total)}`;
               const rounds = itemAA.rounds.length;
               const answered = itemAA.rounds.filter((r) => r.answer).length;
               const ready = itemAA.submissions && itemAA.submissions.length > 60;
+              const status = ready ? "drafted" : (rounds > 0 && answered === rounds ? "answered" : (rounds > 0 ? "in-progress" : "idle"));
               return `
-                <button class="aa-nav-item ${n.key === activeKey ? "active" : ""}" type="button" data-aa-select="${attr(n.key)}">
-                  <span class="aa-nav-label">${escapeHtml(n.label)}</span>
+                <button class="aa-nav-item aa-nav-${status} ${n.key === activeKey ? "active" : ""}" type="button" data-aa-select="${attr(n.key)}">
+                  <span class="aa-nav-row">
+                    <span class="aa-nav-label">${escapeHtml(n.label)}</span>
+                    ${ready ? '<span class="aa-nav-dot ok" title="Drafted">✓</span>' : (rounds > 0 ? '<span class="aa-nav-dot in-progress" title="In progress">●</span>' : '<span class="aa-nav-dot idle" title="Not started">○</span>')}
+                  </span>
                   <span class="aa-nav-meta muted">${rounds === 0 ? "Not started" : `${answered}/${rounds} answered`}${ready ? " · drafted" : ""}</span>
                 </button>`;
             }).join("")}
           </div>
+          <footer class="aa-disputes-foot">
+            <button class="ghost-button compact" type="button" data-aa-toggle-definitions>${ICON.book}<span>Definitions${definitionsCount ? ` (${definitionsCount})` : ""}</span></button>
+          </footer>
         </aside>
         <section class="aa-rfi-pane card">
           <div class="card-head">
@@ -3161,6 +3169,94 @@ Total\t${formatCurrencyFull(total)}`;
       </nav>`;
 
     return tocHtml + sections.join("\n");
+  }
+
+  function openAADefinitionsModal(project, aa) {
+    if (!aa.definitions) aa.definitions = {};
+    const entries = () => Object.entries(aa.definitions || {});
+    function listHtml() {
+      if (!entries().length) {
+        return `<p class="muted">No defined terms yet. As Sopal drafts each thread it'll add the capitalised terms it introduces (e.g. "Contract", "Project", "Variation Notice"). You can also add or edit terms here directly.</p>`;
+      }
+      return `<div class="aa-defs-list">${entries().map(([term, def]) => `
+        <div class="aa-def-row" data-aa-def-row="${attr(term)}">
+          <input class="text-input aa-def-term" data-aa-def-term value="${attr(term)}">
+          <textarea class="text-area aa-def-meaning" data-aa-def-meaning rows="2">${escapeHtml(def)}</textarea>
+          <button class="ghost-button compact danger" type="button" data-aa-def-delete title="Remove">${ICON.trash}</button>
+        </div>`).join("")}</div>`;
+    }
+    modal = {
+      render: () => `
+        <div class="modal-backdrop" data-modal-backdrop>
+          <div class="modal aa-defs-modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+              <h2>Definitions</h2>
+              <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
+            </div>
+            <div class="modal-body">
+              <p class="muted">Defined terms are passed to every per-thread engine call so Sopal uses them consistently across the master document.</p>
+              <div data-aa-defs-list-host>${listHtml()}</div>
+              <form class="aa-def-add-row" data-aa-def-add-form>
+                <input class="text-input" name="term" placeholder="New term (e.g. Contract)">
+                <input class="text-input" name="def" placeholder="Definition (e.g. the AS 4902 head contract dated 12 March 2025)">
+                <button class="dark-button" type="submit">${ICON.plus}<span>Add</span></button>
+              </form>
+            </div>
+          </div>
+        </div>`,
+      bind: (rootEl) => {
+        const close = () => { modal = null; render(); };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+
+        function rerenderList() {
+          const host = rootEl.querySelector("[data-aa-defs-list-host]");
+          if (host) host.innerHTML = listHtml();
+          bindRowEvents();
+        }
+        function bindRowEvents() {
+          rootEl.querySelectorAll("[data-aa-def-row]").forEach((row) => {
+            const oldTerm = row.dataset.aaDefRow;
+            const termInput = row.querySelector("[data-aa-def-term]");
+            const meaningInput = row.querySelector("[data-aa-def-meaning]");
+            const onChange = () => {
+              const newTerm = termInput.value.trim();
+              const newDef = meaningInput.value;
+              if (!newTerm) return;
+              if (newTerm !== oldTerm) {
+                delete aa.definitions[oldTerm];
+                row.dataset.aaDefRow = newTerm;
+              }
+              aa.definitions[newTerm] = newDef;
+              saveProject(project);
+            };
+            termInput.addEventListener("change", onChange);
+            meaningInput.addEventListener("input", onChange);
+            row.querySelector("[data-aa-def-delete]")?.addEventListener("click", () => {
+              delete aa.definitions[oldTerm];
+              saveProject(project);
+              rerenderList();
+            });
+          });
+        }
+        rootEl.querySelector("[data-aa-def-add-form]")?.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const f = e.currentTarget;
+          const t = f.elements.term.value.trim();
+          const d = f.elements.def.value.trim();
+          if (!t) return;
+          aa.definitions[t] = d;
+          saveProject(project);
+          f.reset();
+          rerenderList();
+        });
+        document.addEventListener("keydown", function handler(ev) {
+          if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); }
+        });
+        bindRowEvents();
+      },
+    };
+    render();
   }
 
   function bindAATocLinks() {
@@ -3397,6 +3493,7 @@ Total\t${formatCurrencyFull(total)}`;
         bindAATocLinks();
       }
     });
+    document.querySelector("[data-aa-toggle-definitions]")?.addEventListener("click", () => openAADefinitionsModal(project, aa));
     bindAATocLinks();
     document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
       const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`;
