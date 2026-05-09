@@ -3225,14 +3225,17 @@ Total\t${formatCurrencyFull(total)}`;
               const rounds = itemAA.rounds.length;
               const answered = itemAA.rounds.filter((r) => r.answer).length;
               const ready = itemAA.submissions && itemAA.submissions.length > 60;
-              const status = ready ? "drafted" : (rounds > 0 && answered === rounds ? "answered" : (rounds > 0 ? "in-progress" : "idle"));
+              const engineReady = !!itemAA.isReady;
+              const status = ready ? "drafted" : (engineReady ? "ready-to-draft" : (rounds > 0 && answered === rounds ? "answered" : (rounds > 0 ? "in-progress" : "idle")));
               return `
                 <button class="aa-nav-item aa-nav-${status} ${n.key === activeKey ? "active" : ""}" type="button" data-aa-select="${attr(n.key)}">
                   <span class="aa-nav-row">
                     <span class="aa-nav-label">${escapeHtml(n.label)}</span>
-                    ${ready ? '<span class="aa-nav-dot ok" title="Drafted">✓</span>' : (rounds > 0 ? '<span class="aa-nav-dot in-progress" title="In progress">●</span>' : '<span class="aa-nav-dot idle" title="Not started">○</span>')}
+                    ${ready ? '<span class="aa-nav-dot ok" title="Drafted">✓</span>'
+                      : engineReady ? '<span class="aa-nav-dot ready" title="Sopal has enough info — click Draft this item">⚡</span>'
+                      : (rounds > 0 ? '<span class="aa-nav-dot in-progress" title="In progress">●</span>' : '<span class="aa-nav-dot idle" title="Not started">○</span>')}
                   </span>
-                  <span class="aa-nav-meta muted">${rounds === 0 ? "Not started" : `${answered}/${rounds} answered`}${ready ? " · drafted" : ""}</span>
+                  <span class="aa-nav-meta muted">${rounds === 0 ? "Not started" : `${answered}/${rounds} answered`}${ready ? " · drafted" : (engineReady ? " · ready to draft" : "")}</span>
                 </button>`;
             }).join("")}
           </div>
@@ -3262,9 +3265,11 @@ Total\t${formatCurrencyFull(total)}`;
           </div>
           <footer class="aa-rfi-footer">
             <button class="ghost-button compact" type="button" data-aa-next-rfi>${ICON.sparkles}<span>${(active.thread.rounds || []).length === 0 ? "Ask first RFI" : "Ask another RFI"}</span></button>
-            ${active.kind === "dispute" ? `<button class="ghost-button compact" type="button" data-aa-draft-item="${attr(active.dispute ? active.dispute.id : "")}">Draft this item now</button>` : ""}
+            <button class="ghost-button compact" type="button" data-aa-draft-thread>Draft this thread now</button>
             ${(active.thread.evidenceIndex && active.thread.evidenceIndex.length) || (active.thread.statDecContent || "").length > 30
               ? `<button class="ghost-button compact" type="button" data-aa-view-artifacts>View evidence + stat dec</button>` : ""}
+            ${(active.thread.rounds || []).length > 0 || (active.thread.submissions || "").length > 0
+              ? `<button class="ghost-button compact danger aa-rfi-reset" type="button" data-aa-reset-thread>Reset this thread</button>` : ""}
           </footer>
         </section>
         <aside class="aa-master-pane card">
@@ -3824,6 +3829,23 @@ Total\t${formatCurrencyFull(total)}`;
       await aaCallEngine(project, aa, "draft");
       render();
     });
+    document.querySelector("[data-aa-draft-thread]")?.addEventListener("click", async () => {
+      await aaCallEngine(project, aa, "draft");
+      render();
+    });
+    document.querySelector("[data-aa-reset-thread]")?.addEventListener("click", () => {
+      const ctx = aaActiveThread(aa);
+      if (!ctx || !ctx.thread) return;
+      const label = ctx.label || "this thread";
+      if (!confirm(`Reset ${label}? This clears the RFIs, draft submissions, evidence index and stat-dec content for this thread. Other threads are not affected.`)) return;
+      ctx.thread.rounds = [];
+      ctx.thread.submissions = "";
+      ctx.thread.evidenceIndex = [];
+      ctx.thread.statDecContent = "";
+      ctx.thread.isReady = false;
+      saveProject(project);
+      render();
+    });
     document.querySelector("[data-aa-rebuild]")?.addEventListener("click", () => {
       const mount = document.querySelector("[data-aa-master]");
       if (mount) {
@@ -3966,6 +3988,9 @@ Total\t${formatCurrencyFull(total)}`;
       if (Array.isArray(data.evidenceIndex)) ctx.thread.evidenceIndex = data.evidenceIndex;
       if (typeof data.statDecContent === "string") ctx.thread.statDecContent = data.statDecContent;
       if (data.definitions) Object.assign(aa.definitions, data.definitions);
+      // The engine signals when it has enough to draft this thread without
+      // more RFIs. Persist so the items nav can surface it.
+      ctx.thread.isReady = !!data.isReady;
       saveProject(project);
     } catch (error) {
       // Surface the engine error inline next to the thinking row instead of

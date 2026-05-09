@@ -3404,7 +3404,11 @@ a { color: inherit; text-decoration: none; }
 }
 .aa-nav-dot.idle        { color: var(--muted-fg); }
 .aa-nav-dot.in-progress { color: #d97706; }
+.aa-nav-dot.ready       { color: #1d4ed8; background: rgba(99,102,241,0.15); font-weight: 700; }
 .aa-nav-dot.ok          { color: #fff; background: #047857; font-weight: 700; }
+.aa-nav-ready-to-draft .aa-nav-meta { color: #1d4ed8; }
+[data-theme="dark"] .aa-nav-dot.ready { color: #93c5fd; background: rgba(99,102,241,0.25); }
+[data-theme="dark"] .aa-nav-ready-to-draft .aa-nav-meta { color: #93c5fd; }
 .aa-nav-item.active .aa-nav-dot.idle,
 .aa-nav-item.active .aa-nav-dot.in-progress { color: rgba(255,255,255,0.78); }
 
