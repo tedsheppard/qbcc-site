@@ -895,7 +895,6 @@
     const tools = toolsNav();
     const projects = projectList();
     const recent = (store.recentDecisions || []).slice(0, 6);
-    const lastReview = findLatestReview();
     return PageBody(`
       <div class="home-shell">
         <section class="home-hero">
@@ -906,23 +905,6 @@
             </div>
             <button class="ghost-button compact whatsnew-btn" type="button" data-open-whatsnew title="See recent feature releases">${ICON.sparkles}<span>What's new</span></button>
           </div>
-          ${lastReview ? (() => {
-            const submode = (AGENT_REVIEW_MODES[lastReview.agentKey] || []).find((m) => m.id === lastReview.submodeId);
-            const submodeLabel = submode ? submode.label.toLowerCase() : lastReview.submodeId;
-            const counts = lastReview.review.analysis.counts || { fail: 0, warn: 0, info: 0, pass: 0 };
-            const href = `/sopal-v2/projects/${lastReview.project.id}/agents/${lastReview.agentKey}?mode=review&submode=${lastReview.submodeId}`;
-            const preview = resumePreviewFor(lastReview);
-            return `
-              <a class="resume-chip" href="${href}" data-nav>
-                <span class="resume-chip-icon">${ICON.sparkles}</span>
-                <span class="resume-chip-body">
-                  <strong>Resume ${escapeHtml(AGENT_LABELS[lastReview.agentKey] || lastReview.agentKey)} · ${escapeHtml(submodeLabel)}</strong>
-                  <span class="muted">${escapeHtml(lastReview.project.name)} — ${counts.fail || 0} issues · ${counts.warn || 0} warnings · ${counts.info || 0} need input</span>
-                  ${preview ? `<span class="resume-chip-preview">${escapeHtml(preview)}</span>` : ""}
-                </span>
-                <span class="resume-chip-chev">${ICON.chevRight}</span>
-              </a>`;
-          })() : ""}
         </section>
 
         ${recent.length ? `
@@ -6009,24 +5991,12 @@ Total\t${formatCurrencyFull(total)}`;
     const items = [];
     const project = currentProject();
     const projects = projectList();
-    const lastReview = findLatestReview();
-
     // Actions
     items.push({ section: "Action", label: "New project", hint: "Create a fresh project", run: () => openProjectModal(null) });
     items.push({ section: "Action", label: "Import project (JSON)", hint: "Round-trip a sopal-*.json export", run: () => {
       const inp = document.querySelector("[data-import-project]");
       if (inp) inp.click(); else navigate("/sopal-v2/projects");
     }});
-    if (lastReview) {
-      const submode = (AGENT_REVIEW_MODES[lastReview.agentKey] || []).find((m) => m.id === lastReview.submodeId);
-      const submodeLabel = submode ? submode.label.toLowerCase() : lastReview.submodeId;
-      items.push({
-        section: "Action",
-        label: `Resume ${AGENT_LABELS[lastReview.agentKey] || lastReview.agentKey} · ${submodeLabel}`,
-        hint: lastReview.project.name,
-        run: () => navigate(`/sopal-v2/projects/${lastReview.project.id}/agents/${lastReview.agentKey}?mode=review&submode=${lastReview.submodeId}`),
-      });
-    }
 
     // Workspace tools
     workspaceNav().forEach((t) => items.push({ section: "Tool", label: t.label, hint: "Workspace tool", run: () => navigate(t.href) }));
@@ -6038,11 +6008,14 @@ Total\t${formatCurrencyFull(total)}`;
       items.push({ section: "Project", label: `Open ${p.name}`, hint: [p.reference, p.contractForm].filter(Boolean).join(" · ") || "Project overview", run: () => navigate(`/sopal-v2/projects/${p.id}/overview`) });
     });
 
-    // Current project's agents
+    // Current project's drafting agents (all draft-only now — go straight
+    // into the Word-style editor) and complex agents.
     if (project) {
-      AGENT_KEYS.forEach((key) => {
-        items.push({ section: "Agent", label: `${AGENT_LABELS[key]} · review`, hint: project.name, run: () => navigate(`/sopal-v2/projects/${project.id}/agents/${key}?mode=review`) });
-        items.push({ section: "Agent", label: `${AGENT_LABELS[key]} · draft`, hint: project.name, run: () => navigate(`/sopal-v2/projects/${project.id}/agents/${key}?mode=draft`) });
+      DRAFTING_AGENT_KEYS.forEach((key) => {
+        items.push({ section: "Drafting agent", label: AGENT_LABELS[key], hint: project.name, run: () => navigate(`/sopal-v2/projects/${project.id}/agents/${key}`) });
+      });
+      COMPLEX_AGENT_KEYS.forEach((key) => {
+        items.push({ section: "Complex agent", label: COMPLEX_AGENT_LABELS[key], hint: project.name, run: () => navigate(`/sopal-v2/projects/${project.id}/complex/${key}`) });
       });
     }
 
