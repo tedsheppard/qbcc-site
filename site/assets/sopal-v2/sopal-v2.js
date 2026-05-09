@@ -2932,10 +2932,33 @@ Total\t${formatCurrencyFull(total)}`;
       saveProject(project);
     }
     // Backfill: older state may not have s79Scenario.
-    if (!project.complexApps["adjudication-application"].s79Scenario) {
-      project.complexApps["adjudication-application"].s79Scenario = "less-than-claimed";
+    const aa = project.complexApps["adjudication-application"];
+    if (!aa.s79Scenario) {
+      aa.s79Scenario = "less-than-claimed";
     }
-    return project.complexApps["adjudication-application"];
+    // Migrate any per-dispute artefact fields that were stored at the top
+    // level of the dispute (older shape) into the canonical d.rfis location
+    // (where the engine writes and where the items nav reads). This makes
+    // master / stat-dec / evidence-index reads consistent.
+    let migrated = false;
+    (aa.disputes || []).forEach((d) => {
+      if (!d.rfis || !Array.isArray(d.rfis.rounds)) {
+        d.rfis = { rounds: [], submissions: "", evidenceIndex: [], statDecContent: "", isReady: false };
+        migrated = true;
+      }
+      ["submissions", "evidenceIndex", "statDecContent", "isReady"].forEach((k) => {
+        if (d[k] !== undefined && (d.rfis[k] === undefined || d.rfis[k] === "" || (Array.isArray(d.rfis[k]) && d.rfis[k].length === 0))) {
+          d.rfis[k] = d[k];
+          migrated = true;
+        }
+        if (d[k] !== undefined) {
+          delete d[k];
+          migrated = true;
+        }
+      });
+    });
+    if (migrated) saveProject(project);
+    return aa;
   }
 
   function newDisputeId() { return `d_${Math.random().toString(36).slice(2, 8)}`; }
@@ -2971,7 +2994,7 @@ Total\t${formatCurrencyFull(total)}`;
     // Progress = drafted threads / total threads. Threads are the two shared
     // (jurisdictional + general) plus one per dispute. Surfaced in the header
     // so the user can see at a glance how close the application is to ready.
-    const allThreads = [aa.jurisdictionalRfis, aa.generalRfis].concat((aa.disputes || []).map((d) => d.rfis ? { submissions: d.submissions || "" } : { submissions: "" }));
+    const allThreads = [aa.jurisdictionalRfis, aa.generalRfis].concat((aa.disputes || []).map((d) => d.rfis || { submissions: "" }));
     const draftedThreads = allThreads.filter((t) => (t.submissions || "").length > 60).length;
     const totalThreads = allThreads.length;
     const progressPct = totalThreads ? Math.round((draftedThreads / totalThreads) * 100) : 0;
@@ -3151,7 +3174,7 @@ Total\t${formatCurrencyFull(total)}`;
     const drafted = navItems.filter((n) => n.thread && n.thread.submissions && n.thread.submissions.length > 60).length;
     const total = navItems.length;
     const evidence = [];
-    aa.disputes.forEach((d) => (d.evidenceIndex || []).forEach((e) => evidence.push(e)));
+    aa.disputes.forEach((d) => ((d.rfis && d.rfis.evidenceIndex) || []).forEach((e) => evidence.push(e)));
     const scenarioId = aa.s79Scenario || "less-than-claimed";
     const scenario = AA_S79_SCENARIOS.find((s) => s.id === scenarioId) || AA_S79_SCENARIOS[0];
     return `
@@ -3336,7 +3359,8 @@ Total\t${formatCurrencyFull(total)}`;
         const slug = `dispute-${d.id}`;
         toc.push({ id: id(slug), num: `4.${i + 1}`, label: d.item || "Item", indent: 1 });
         sections.push(`<h3 id="${id(slug)}">4.${i + 1} ${escapeHtml(d.item || "Item")}${d.issueType ? ` <span class="aa-issue-tag">${escapeHtml(AA_ISSUE_TYPE_LABELS[d.issueType] || d.issueType)}</span>` : ""}</h3>`);
-        sections.push(d.submissions || "<p><em>(Drafted once enough RFIs are answered.)</em></p>");
+        const subs = (d.rfis && d.rfis.submissions) || "";
+        sections.push(subs || "<p><em>(Drafted once enough RFIs are answered.)</em></p>");
       });
     }
     if (aa.disputes.length) {
@@ -3360,7 +3384,7 @@ Total\t${formatCurrencyFull(total)}`;
     toc.push({ id: id("conclusion"), num: aa.disputes.length ? "6" : "5", label: "Conclusion and amount sought", indent: 0 });
     sections.push(`<h2 id="${id("conclusion")}">${aa.disputes.length ? "6" : "5"}. Conclusion and amount sought</h2><p>For the reasons set out above, the Claimant respectfully seeks an adjudicated amount of ${formatCurrencyFull(aa.claimedAmount || 0)}.</p>`);
     const evidence = [];
-    aa.disputes.forEach((d) => (d.evidenceIndex || []).forEach((e) => evidence.push(e)));
+    aa.disputes.forEach((d) => ((d.rfis && d.rfis.evidenceIndex) || []).forEach((e) => evidence.push(e)));
     const evidenceNum = aa.disputes.length ? "7" : "6";
     toc.push({ id: id("evidence"), num: evidenceNum, label: "Index of supporting evidence", indent: 0 });
     sections.push(`<h2 id="${id("evidence")}">${evidenceNum}. Index of supporting evidence</h2>${evidence.length ? `<ol>${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong> — ${escapeHtml(e.desc || "")}${e.location ? ` (${escapeHtml(e.location)})` : ""}</li>`).join("")}</ol>` : "<p><em>(No exhibits indexed yet.)</em></p>"}`);
@@ -3730,7 +3754,7 @@ Total\t${formatCurrencyFull(total)}`;
     }
     addThread("Jurisdictional facts", aa.jurisdictionalRfis.statDecContent);
     addThread("Background facts", aa.generalRfis.statDecContent);
-    (aa.disputes || []).forEach((d) => addThread(`Item — ${d.item || "Item"}`, d.statDecContent));
+    (aa.disputes || []).forEach((d) => addThread(`Item — ${d.item || "Item"}`, (d.rfis && d.rfis.statDecContent) || ""));
     out.push(`<h3>Declaration</h3>`);
     out.push(`<p>And I make this solemn declaration conscientiously believing the same to be true and by virtue of the provisions of the <em>Oaths Act 1867</em> (Qld).</p>`);
     out.push(`<p>Declared at [place] in the State of Queensland on [date].</p>`);
@@ -3745,7 +3769,7 @@ Total\t${formatCurrencyFull(total)}`;
     }
     addRows("Jurisdictional", aa.jurisdictionalRfis.evidenceIndex);
     addRows("Background", aa.generalRfis.evidenceIndex);
-    (aa.disputes || []).forEach((d) => addRows(d.item || "Item", d.evidenceIndex));
+    (aa.disputes || []).forEach((d) => addRows(d.item || "Item", (d.rfis && d.rfis.evidenceIndex) || []));
     if (!all.length) return `<h1>Index of Supporting Evidence</h1><p><em>(No exhibits indexed yet.)</em></p>`;
     return `<h1>Index of Supporting Evidence</h1>
       <table>
@@ -3858,10 +3882,7 @@ Total\t${formatCurrencyFull(total)}`;
           psReasons: li.psReasons || "",
           status: li.status || "disputed",
           issueType: li.issueType || "other",
-          rfis: { rounds: [] },
-          submissions: "",
-          evidenceIndex: [],
-          statDecContent: "",
+          rfis: { rounds: [], submissions: "", evidenceIndex: [], statDecContent: "", isReady: false },
           updatedAt: Date.now(),
         }));
         aa.stage = "dispute-table";
@@ -3901,7 +3922,7 @@ Total\t${formatCurrencyFull(total)}`;
         id: newDisputeId(),
         item: "", description: "", claimed: 0, scheduled: 0,
         psReasons: "", status: "disputed", issueType: "other",
-        rfis: { rounds: [] }, submissions: "", evidenceIndex: [], statDecContent: "",
+        rfis: { rounds: [], submissions: "", evidenceIndex: [], statDecContent: "", isReady: false },
         updatedAt: Date.now(),
       });
       saveProject(project);
