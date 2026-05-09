@@ -4831,25 +4831,45 @@ Total\t${formatCurrencyFull(total)}`;
   // Cover-meta editor — small form for the bordered cover-page tables.
   function openAACoverMetaModal(project, aa, returnToMaster) {
     const c = aa.coverMeta || {};
-    const fields = [
-      { key: "applicationDate", label: "Application date", placeholder: "e.g. 12 May 2026" },
-      { key: "ana", label: "Authorised Nominating Authority", placeholder: "e.g. Adjudicate Today" },
-      { key: "anaReference", label: "ANA reference", placeholder: "e.g. ATO-12345" },
-      { key: "contractDate", label: "Contract executed on", placeholder: "e.g. 12 March 2025" },
-      { key: "siteAddress", label: "Project / site address", placeholder: "e.g. 123 Sample St, Brisbane QLD 4000" },
-      { key: "pcDate", label: "Payment claim served on", placeholder: "e.g. 5 March 2026" },
-      { key: "psDate", label: "Payment schedule served on", placeholder: "e.g. 19 March 2026 (or N/A)" },
-      { key: "claimantAbn", label: "Claimant ABN", placeholder: "e.g. 12 345 678 901" },
-      { key: "claimantContact", label: "Claimant contact (name, role)", placeholder: "" },
-      { key: "claimantAddress", label: "Claimant address", placeholder: "" },
-      { key: "claimantPhone", label: "Claimant phone", placeholder: "" },
-      { key: "claimantEmail", label: "Claimant email", placeholder: "" },
-      { key: "respondentAbn", label: "Respondent ABN", placeholder: "e.g. 12 345 678 901" },
-      { key: "respondentContact", label: "Respondent contact (name, role)", placeholder: "" },
-      { key: "respondentAddress", label: "Respondent address", placeholder: "" },
-      { key: "respondentPhone", label: "Respondent phone", placeholder: "" },
-      { key: "respondentEmail", label: "Respondent email", placeholder: "" },
+    // Grouped so the modal reads as "application context → claimant →
+    // respondent" rather than 17 mixed fields.
+    const groups = [
+      {
+        title: "Application context",
+        fields: [
+          { key: "applicationDate", label: "Application date", placeholder: "e.g. 12 May 2026" },
+          { key: "ana", label: "Authorised Nominating Authority", placeholder: "e.g. Adjudicate Today" },
+          { key: "anaReference", label: "ANA reference", placeholder: "e.g. ATO-12345" },
+          { key: "contractDate", label: "Contract executed on", placeholder: "e.g. 12 March 2025" },
+          { key: "siteAddress", label: "Project / site address", placeholder: "e.g. 123 Sample St, Brisbane QLD 4000" },
+          { key: "pcDate", label: "Payment claim served on", placeholder: "e.g. 5 March 2026" },
+          { key: "psDate", label: "Payment schedule served on", placeholder: "e.g. 19 March 2026 (or N/A)" },
+        ],
+      },
+      {
+        title: "Claimant",
+        fields: [
+          { key: "claimantAbn", label: "ABN", placeholder: "e.g. 12 345 678 901" },
+          { key: "claimantContact", label: "Contact (name, role)", placeholder: "" },
+          { key: "claimantAddress", label: "Address", placeholder: "" },
+          { key: "claimantPhone", label: "Phone", placeholder: "" },
+          { key: "claimantEmail", label: "Email", placeholder: "" },
+        ],
+      },
+      {
+        title: "Respondent",
+        fields: [
+          { key: "respondentAbn", label: "ABN", placeholder: "e.g. 12 345 678 901" },
+          { key: "respondentContact", label: "Contact (name, role)", placeholder: "" },
+          { key: "respondentAddress", label: "Address", placeholder: "" },
+          { key: "respondentPhone", label: "Phone", placeholder: "" },
+          { key: "respondentEmail", label: "Email", placeholder: "" },
+        ],
+      },
     ];
+    // Flat list still used by the save handler — the order of the groups
+    // above must reach every key the legacy field array used to.
+    const fields = groups.flatMap((g) => g.fields);
     modal = {
       render: () => `
         <div class="modal-backdrop" data-modal-backdrop>
@@ -4860,14 +4880,17 @@ Total\t${formatCurrencyFull(total)}`;
             </div>
             <div class="modal-body">
               <p class="muted aa-edit-hint">These fields populate the bordered tables on the master document's cover page. Leave blank to omit the row.</p>
-              <div class="aa-cover-grid">
-                ${fields.map((f) => `
-                  <label class="aa-cover-field">
-                    <span>${escapeHtml(f.label)}</span>
-                    <input class="text-input" data-aa-cover-key="${attr(f.key)}" type="text" value="${attr(c[f.key] || "")}" placeholder="${attr(f.placeholder || "")}">
-                  </label>
-                `).join("")}
-              </div>
+              ${groups.map((g) => `
+                <h4 class="aa-cover-group-title">${escapeHtml(g.title)}</h4>
+                <div class="aa-cover-grid">
+                  ${g.fields.map((f) => `
+                    <label class="aa-cover-field">
+                      <span>${escapeHtml(f.label)}</span>
+                      <input class="text-input" data-aa-cover-key="${attr(f.key)}" type="text" value="${attr(c[f.key] || "")}" placeholder="${attr(f.placeholder || "")}">
+                    </label>
+                  `).join("")}
+                </div>
+              `).join("")}
             </div>
             <div class="modal-foot aa-edit-foot">
               <span class="spacer"></span>

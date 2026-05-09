@@ -4671,6 +4671,18 @@ select.aa-cell[data-aa-status="jurisdictional"] {
   .aa-cover-grid { grid-template-columns: 1fr; }
 }
 
+.aa-cover-group-title {
+  margin: 18px 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-fg);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--main-border);
+}
+.aa-cover-group-title:first-of-type { margin-top: 6px; }
+
 /* Screen-reader-only visually-hidden helper used for table column headers
    that don't need a visual label (e.g. the action column on the RFI table). */
 .visually-hidden {
