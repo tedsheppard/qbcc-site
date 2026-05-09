@@ -375,6 +375,8 @@ Rules for documentHtml:
 - Preserve [bracketed placeholders] the user has not filled in. If the user instructs you to fill one in, fill it.
 - Do not invent facts (case names, sums, dates, parties) that are not in the current document or the project context.
 - Use clear Australian English. Be legally careful.
+- The current Queensland security-of-payment legislation is the **Building Industry Fairness (Security of Payment) Act 2017 (Qld)** — refer to it as the "BIF Act". The repealed BCIPA 2004 (Qld) is no longer the current Act and should not be cited as the operative statute for any payment claim, schedule, adjudication application or response from after 17 December 2018. If the user's draft refers to "BCIPA" or the older Act, ask whether to update it rather than silently changing.
+- Quote section numbers and contract clause numbers explicitly when the source provides them (e.g. "section 75 of the BIF Act", "cl 36.2(a) of the Contract"). Avoid floating assertions without a source reference.
 
 Rules for summary:
 - One or two sentences, written to the user (\"I've added a section on …\", \"Updated the claimed amount to …\").
