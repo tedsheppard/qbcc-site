@@ -3533,37 +3533,120 @@ a { color: inherit; text-decoration: none; }
 }
 
 .aa-rfi-pane { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.aa-rfi-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.aa-rfi-round-count {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-fg);
+  background: var(--main-muted);
+  border: 1px solid var(--main-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
 .aa-rfi-stream {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  padding: 14px 16px;
 }
-.aa-rfi-round {
-  border: 1px solid var(--main-border);
-  border-radius: 9px;
-  padding: 12px 14px;
+.aa-rfi-empty {
+  margin: 8px 0;
+}
+
+/* RFI table — replaces the chat-style stream. One row per RFI, with the
+   most recent unanswered row showing a textarea + Submit button. The Edit
+   button on answered rows clears the answer so the user can refine. */
+.aa-rfi-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  table-layout: fixed;
+}
+.aa-rfi-table thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-fg);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--main-border);
+  background: var(--main-panel);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.aa-rfi-table tbody td {
+  padding: 10px;
+  border-bottom: 1px solid var(--main-border);
+  vertical-align: top;
   background: var(--main-panel);
 }
-.aa-rfi-q { font-size: 13.5px; line-height: 1.5; }
-.aa-rfi-q strong { color: var(--main-fg); }
-.aa-rfi-a {
-  margin-top: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: rgba(16,185,129,0.06);
-  border: 1px solid rgba(16,185,129,0.18);
+.aa-rfi-table tbody tr.answered td { background: rgba(16,185,129,0.04); }
+.aa-rfi-table tbody tr.pending td { background: var(--main-muted); }
+.aa-rfi-table tbody tr:last-child td { border-bottom: none; }
+.aa-rfi-col-num { width: 78px; }
+.aa-rfi-col-q   { width: 38%; }
+.aa-rfi-col-a   { width: auto; }
+.aa-rfi-col-act { width: 96px; text-align: right; }
+.aa-rfi-num {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--main-fg);
+  background: var(--accent);
+  border: 1px solid var(--main-border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  display: inline-block;
+}
+.aa-rfi-table .aa-rfi-col-q p { margin: 0 0 6px; }
+.aa-rfi-table .aa-rfi-col-q p:last-child { margin-bottom: 0; }
+.aa-rfi-table .aa-rfi-col-q ol,
+.aa-rfi-table .aa-rfi-col-q ul { margin: 4px 0 6px; padding-left: 18px; }
+.aa-rfi-answer-view {
   font-size: 13px;
   line-height: 1.5;
 }
-.aa-rfi-a .muted { font-size: 11px; }
+.aa-rfi-answer-text p { margin: 0 0 6px; }
+.aa-rfi-answer-text p:last-child { margin-bottom: 0; }
 .aa-rfi-answer-form {
-  margin-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  margin: 0;
+}
+.aa-rfi-answer-input {
+  width: 100%;
+  min-height: 44px;
+  font-size: 13px;
+  resize: vertical;
+}
+@media (max-width: 720px) {
+  .aa-rfi-table, .aa-rfi-table thead, .aa-rfi-table tbody, .aa-rfi-table tr, .aa-rfi-table td, .aa-rfi-table th { display: block; }
+  .aa-rfi-table thead { display: none; }
+  .aa-rfi-table tbody tr {
+    border: 1px solid var(--main-border);
+    border-radius: 9px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .aa-rfi-table tbody td {
+    border-bottom: 1px solid var(--main-border);
+    padding: 10px 12px;
+  }
+  .aa-rfi-table tbody td:last-child { border-bottom: none; }
+  .aa-rfi-col-num { width: 100%; }
+  .aa-rfi-col-act { width: 100%; text-align: left; }
 }
 .aa-rfi-thinking {
   display: inline-flex;
@@ -4493,4 +4576,18 @@ a { color: inherit; text-decoration: none; }
 }
 @media (max-width: 720px) {
   .aa-cover-grid { grid-template-columns: 1fr; }
+}
+
+/* Screen-reader-only visually-hidden helper used for table column headers
+   that don't need a visual label (e.g. the action column on the RFI table). */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }

@@ -3317,24 +3317,47 @@ Total\t${formatCurrencyFull(total)}`;
           </footer>
         </aside>
         <section class="aa-rfi-pane card">
-          <div class="card-head">
-            <h3>${escapeHtml(active.label)}</h3>
-            <span class="muted">${active.kind === "dispute" ? "Per-item RFI thread" : "Shared RFI thread"}</span>
+          <div class="card-head aa-rfi-head">
+            <div>
+              <h3>${escapeHtml(active.label)}</h3>
+              <span class="muted">${active.kind === "dispute" ? "Per-item RFIs" : "Shared RFIs"}${active.kind === "dispute" && active.dispute ? ` · ${escapeHtml(AA_ISSUE_TYPE_LABELS[active.dispute.issueType] || active.dispute.issueType || "Item")}` : ""}</span>
+            </div>
+            ${(active.thread.rounds || []).length > 0
+              ? `<span class="aa-rfi-round-count" title="Total RFIs raised in this thread">${(active.thread.rounds || []).length} RFI${(active.thread.rounds || []).length === 1 ? "" : "s"}</span>`
+              : ""}
           </div>
           <div class="aa-rfi-stream" data-aa-rfi-stream>
             ${(active.thread.rounds || []).length === 0
-              ? `<div class="empty-state"><strong>Ready when you are.</strong><p>Click <em>Ask first RFI</em> below to have Sopal generate the first targeted question for this ${active.kind === "dispute" ? "dispute" : "thread"}.</p></div>`
-              : (active.thread.rounds || []).map((r, i) => `
-                  <div class="aa-rfi-round">
-                    <div class="aa-rfi-q"><strong>RFI ${i + 1}.</strong> ${renderMarkdown(r.question || "")}</div>
-                    ${r.answer
-                      ? `<div class="aa-rfi-a"><span class="muted">Your answer:</span><div>${renderMarkdown(r.answer)}</div></div>`
-                      : `<form class="aa-rfi-answer-form" data-aa-rfi-answer="${i}">
-                           <textarea class="text-area auto-grow" name="answer" rows="3" placeholder="Type your answer to RFI ${i + 1}…"></textarea>
-                           <button class="dark-button compact" type="submit">Submit answer</button>
-                         </form>`}
-                  </div>
-                `).join("")}
+              ? `<div class="empty-state aa-rfi-empty"><strong>Ready when you are.</strong><p>Click <em>Ask first RFI</em> below — Sopal will generate the first targeted question for this ${active.kind === "dispute" ? "dispute" : "thread"} and add it as a row in the table.</p></div>`
+              : `<table class="aa-rfi-table">
+                   <thead>
+                     <tr>
+                       <th class="aa-rfi-col-num" scope="col">#</th>
+                       <th class="aa-rfi-col-q" scope="col">Sopal's question</th>
+                       <th class="aa-rfi-col-a" scope="col">Your response</th>
+                       <th class="aa-rfi-col-act" scope="col"><span class="visually-hidden">Action</span></th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     ${(active.thread.rounds || []).map((r, i) => `
+                       <tr class="aa-rfi-row ${r.answer ? "answered" : "pending"}" data-aa-rfi-row="${i}">
+                         <td class="aa-rfi-col-num"><span class="aa-rfi-num">RFI ${i + 1}</span></td>
+                         <td class="aa-rfi-col-q">${renderMarkdown(r.question || "")}</td>
+                         <td class="aa-rfi-col-a">
+                           ${r.answer
+                             ? `<div class="aa-rfi-answer-view" data-aa-rfi-answer-view="${i}"><div class="aa-rfi-answer-text">${renderMarkdown(r.answer)}</div></div>`
+                             : `<form class="aa-rfi-answer-form" data-aa-rfi-answer="${i}">
+                                  <textarea class="text-area auto-grow aa-rfi-answer-input" name="answer" rows="2" placeholder="Type your answer to RFI ${i + 1}…"></textarea>
+                                </form>`}
+                         </td>
+                         <td class="aa-rfi-col-act">
+                           ${r.answer
+                             ? `<button class="ghost-button compact" type="button" data-aa-rfi-edit="${i}" title="Edit your answer">Edit</button>`
+                             : `<button class="dark-button compact" type="button" data-aa-rfi-submit="${i}">Submit</button>`}
+                         </td>
+                       </tr>`).join("")}
+                   </tbody>
+                 </table>`}
           </div>
           <footer class="aa-rfi-footer">
             <button class="ghost-button compact" type="button" data-aa-next-rfi>${ICON.sparkles}<span>${(active.thread.rounds || []).length === 0 ? "Ask first RFI" : "Ask another RFI"}</span></button>
@@ -4276,23 +4299,66 @@ Total\t${formatCurrencyFull(total)}`;
       saveProject(project);
       render();
     }));
+    // Submit an RFI answer. The submit button now lives in a separate <td>
+    // from the form (table layout), so we wire submit-by-button explicitly
+    // in addition to native form submit (which still fires if the user hits
+    // Cmd/Ctrl+Enter inside the textarea).
+    const submitRfiAnswer = async (idx) => {
+      const form = document.querySelector(`[data-aa-rfi-answer="${idx}"]`);
+      if (!form) return;
+      const ans = (form.elements.answer && form.elements.answer.value || "").trim();
+      if (!ans) return;
+      const ctx = aaActiveThread(aa);
+      const round = ctx.thread.rounds[idx];
+      if (!round) return;
+      round.answer = ans;
+      round.answeredAt = Date.now();
+      saveProject(project);
+      // After the user answers, ask the server to either generate the next
+      // RFI for this thread or to draft this item. We default to "next RFI"
+      // unless this was the per-item thread's answer to "ready to draft?".
+      await aaCallEngine(project, aa, "rfi-followup");
+      render();
+    };
     document.querySelectorAll("[data-aa-rfi-answer]").forEach((form) => {
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const idx = Number(form.dataset.aaRfiAnswer);
-        const ans = form.elements.answer.value.trim();
-        if (!ans) return;
+        await submitRfiAnswer(Number(form.dataset.aaRfiAnswer));
+      });
+      // Allow Cmd/Ctrl+Enter inside the textarea to submit, since the actual
+      // Submit button is in another <td> outside the form.
+      const ta = form.querySelector("textarea[name='answer']");
+      if (ta) {
+        ta.addEventListener("keydown", (event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+            event.preventDefault();
+            submitRfiAnswer(Number(form.dataset.aaRfiAnswer));
+          }
+        });
+      }
+    });
+    document.querySelectorAll("[data-aa-rfi-submit]").forEach((b) => {
+      b.addEventListener("click", () => submitRfiAnswer(Number(b.dataset.aaRfiSubmit)));
+    });
+    // Edit a previously-answered RFI: clear the saved answer so the next
+    // render shows the textarea + submit button again, with the prior text
+    // pre-filled so the user can refine rather than retype.
+    document.querySelectorAll("[data-aa-rfi-edit]").forEach((b) => {
+      b.addEventListener("click", () => {
+        const idx = Number(b.dataset.aaRfiEdit);
         const ctx = aaActiveThread(aa);
         const round = ctx.thread.rounds[idx];
         if (!round) return;
-        round.answer = ans;
-        round.answeredAt = Date.now();
+        const previous = round.answer || "";
+        round.answer = "";
+        round.answeredAt = null;
+        round._editPrev = previous;
         saveProject(project);
-        // After the user answers, ask the server to either generate the next
-        // RFI for this thread or to draft this item. We default to "next RFI"
-        // unless this was the per-item thread's answer to "ready to draft?".
-        await aaCallEngine(project, aa, "rfi-followup");
         render();
+        // After re-render, find the textarea for this row and prefill it.
+        const form = document.querySelector(`[data-aa-rfi-answer="${idx}"]`);
+        const ta = form && form.querySelector("textarea[name='answer']");
+        if (ta) { ta.value = previous; ta.focus(); }
       });
     });
     document.querySelector("[data-aa-next-rfi]")?.addEventListener("click", async () => {
