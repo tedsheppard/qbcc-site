@@ -55,6 +55,7 @@ AGENT_LABELS: dict[str, str] = {
     "eots": "EOTs",
     "variations": "Variations",
     "delay-costs": "Delay Costs",
+    "general-correspondence": "General Correspondence",
     "adjudication-application": "Adjudication Application",
     "adjudication-response": "Adjudication Response",
 }
@@ -163,6 +164,16 @@ AGENT_INSTRUCTIONS: dict[tuple[str, str], str] = {
         "Draft an adjudication response structure and content based on the payment schedule, application, contract, "
         "and evidence. Include jurisdictional objections, response to each claim item, evidentiary references, and "
         "reasons previously raised. "
+        + DRAFT_OUTPUT_FRAME
+    ),
+    ("general-correspondence", "draft"): (
+        "Draft general project correspondence (letter / email / notice / RFI / show-cause / suspension / default / "
+        "reservation of rights / chase-up / settlement). Identify the document type from the user's instructions, "
+        "use professional Australian English suitable for a construction-contract context, and ground every factual "
+        "statement in the project context if provided. Include: a clear subject line, an opening that identifies the "
+        "contract / project, the substantive body, any contractual or statutory references the user supplied, and a "
+        "professional sign-off block with bracketed placeholders for sender details. If specific contract clauses "
+        "have not been supplied, leave bracketed placeholders rather than inventing clause numbers. "
         + DRAFT_OUTPUT_FRAME
     ),
 }
@@ -324,6 +335,54 @@ async def sopal_v2_agent(payload: SopalV2AgentRequest) -> dict[str, Any]:
 @router.post("/chat")
 async def sopal_v2_chat(payload: SopalV2AgentRequest) -> dict[str, Any]:
     result = _complete(_build_messages(payload, assistant_only=True))
+    return {
+        "answer": result["content"],
+        "model": result.get("model"),
+        "lowConfidence": result.get("low_confidence", False),
+    }
+
+
+# Project-less research chat surfaced by the Research Agent in the v2 sidebar.
+# Different system prompt focus from /chat (which is the project assistant) —
+# this one is for general construction-law / SOPA / BIF Act questions.
+class SopalV2ResearchRequest(BaseModel):
+    message: str = Field(default="", max_length=120_000)
+    history: list[dict[str, Any]] = Field(default_factory=list)
+
+
+RESEARCH_SYSTEM_PROMPT = """You are Sopal Research, a research-only assistant for Australian construction-law and security-of-payment questions. Focus on the BIF Act 2017 (Qld), BCIPA (where it still applies pre-transition), the QBCC Act, common law principles relevant to construction contracts, and adjudication strategy.
+
+Be practical, precise, and cite section numbers where relevant. Do NOT invent case names, decision references, or statistics — if you don't know, say so. Distinguish current Queensland law (BIF Act) from the repealed BCIPA. Use clear Australian English.
+
+For questions about specific decisions: explain that the user can use the Decision search tool in Sopal to look up real decisions, and offer to interpret the legal principles instead. Do not fabricate decision summaries.
+
+Format the answer in clean Markdown with headings, bullets, and tables where useful. Add a short note that Sopal Research assists with legal analysis but does not replace professional legal advice."""
+
+
+@router.post("/research")
+async def sopal_v2_research(payload: SopalV2ResearchRequest) -> dict[str, Any]:
+    message = (payload.message or "").strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Message is required")
+
+    messages: list[dict[str, str]] = [
+        {"role": "system", "content": RESEARCH_SYSTEM_PROMPT + "\n\n" + _current_date_context()},
+    ]
+    # Replay the prior turns so the model can answer follow-ups, capped to the
+    # most-recent ~20 messages (the client also caps; this is defence-in-depth).
+    history = payload.history[-20:] if payload.history else []
+    for turn in history:
+        role = (turn.get("role") or "").strip()
+        content = str(turn.get("content") or "").strip()
+        if role in {"user", "assistant"} and content:
+            messages.append({"role": role, "content": content[:60_000]})
+
+    # If the latest message wasn't already in history, append it. Otherwise it
+    # was already added via history replay.
+    if not (history and (history[-1].get("role") == "user") and ((history[-1].get("content") or "").strip() == message)):
+        messages.append({"role": "user", "content": message})
+
+    result = _complete(messages)
     return {
         "answer": result["content"],
         "model": result.get("model"),

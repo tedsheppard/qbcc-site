@@ -16,8 +16,20 @@
     "eots",
     "variations",
     "delay-costs",
+    "general-correspondence",
     "adjudication-application",
     "adjudication-response",
+  ];
+  // Order in which drafting agents appear inside a project's sidebar. Keep
+  // adjudication-application / response off this list — they're still routable
+  // for any old saved chats but no longer surfaced in the v2 sidebar nav.
+  const DRAFTING_AGENT_KEYS = [
+    "payment-claims",
+    "payment-schedules",
+    "eots",
+    "variations",
+    "delay-costs",
+    "general-correspondence",
   ];
   const AGENT_LABELS = {
     "payment-claims": "Payment Claims",
@@ -25,6 +37,7 @@
     eots: "EOTs",
     variations: "Variations",
     "delay-costs": "Delay Costs",
+    "general-correspondence": "General Correspondence",
     "adjudication-application": "Adjudication Application",
     "adjudication-response": "Adjudication Response",
   };
@@ -34,13 +47,19 @@
     eots: "Review or draft extension of time notices and claims — contract notice, causation, critical delay, evidence.",
     variations: "Review or draft variation notices and claims — direction, scope, valuation, time/cost impact, evidence.",
     "delay-costs": "Review or draft delay cost / prolongation / disruption claims — entitlement, causation, quantum.",
+    "general-correspondence": "Draft general project correspondence — letters, emails, notices, RFIs, show-cause, suspension, default.",
     "adjudication-application": "Review or draft adjudication application material — chronology, jurisdiction, entitlement, quantum, annexures.",
     "adjudication-response": "Review or draft adjudication response material — jurisdictional objections, payment schedule alignment, evidence.",
   };
-  // Agents in this set drop the Review tab entirely — you draft submissions,
-  // you don't structurally "review" your own draft adjudication piece the same
-  // way you review someone's payment claim. They go straight into Draft mode.
-  const DRAFT_ONLY_AGENTS = new Set(["adjudication-application", "adjudication-response"]);
+  // Agents in this set drop the Review tab entirely — they're drafting-only.
+  // Adjudication application/response — you draft submissions, you don't
+  // structurally "review" your own draft submission. General correspondence —
+  // it's a free-form drafting tool with no structured "review" perspective.
+  const DRAFT_ONLY_AGENTS = new Set([
+    "adjudication-application",
+    "adjudication-response",
+    "general-correspondence",
+  ]);
 
   // Per-agent review modes. Mirrors the live /claim-check checker — each mode
   // is a distinct perspective ("about to serve" / "received") with its own
@@ -143,6 +162,7 @@
     eots: ["Contract EOT clause", "Delay event", "Notice date", "Delay period", "Programme / critical path facts", "Supporting correspondence / photos"],
     variations: ["Contract variation clause", "Instruction or direction", "Changed scope", "Notice date", "Valuation material", "Time impact facts"],
     "delay-costs": ["Entitlement clause", "Delay event and period", "Causation facts", "Quantum calculation", "Notice correspondence", "Overlap / duplication checks"],
+    "general-correspondence": ["Type of letter or email", "Recipient and sender", "Key facts to convey", "Contract clause references", "Supporting documents", "Tone (firm, conciliatory, formal)"],
     "adjudication-application": ["Payment claim", "Payment schedule", "Contract", "Chronology", "Evidence bundle", "Quantum / supporting calculations"],
     "adjudication-response": ["Application", "Payment schedule", "Contract", "Jurisdictional objections", "Evidence responding to each item", "Reasons already raised"],
   };
@@ -213,6 +233,12 @@
       "Itemise the reasons already raised vs new reasons (s 82(4)).",
       "Build a quantum response table item-by-item.",
       "Identify points of merit weakness in the application.",
+    ],
+    "general-correspondence": [
+      "Draft a show-cause notice for failure to proceed under clause [#].",
+      "Draft a reservation-of-rights letter responding to [the other party]'s [letter / claim].",
+      "Draft an email serving the attached document on the [respondent / superintendent].",
+      "Draft a polite chase-up letter for an outstanding payment under the contract.",
     ],
   };
 
@@ -652,19 +678,30 @@
     download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
   };
 
-  function workspaceNav() {
+  function researchNav() {
     return [
       { label: "Decision Search", href: "/sopal-v2/research/decisions", icon: ICON.search },
       { label: "Adjudicator Statistics", href: "/sopal-v2/research/adjudicators", icon: ICON.users },
+      { label: "Research Agent", href: "/sopal-v2/research/agent", icon: ICON.sparkles },
+    ];
+  }
+  function toolsNav() {
+    return [
+      { label: "Payment Claim Reviewer", href: "/sopal-v2/tools/payment-claim-reviewer", icon: ICON.file },
+      { label: "Payment Schedule Reviewer", href: "/sopal-v2/tools/payment-schedule-reviewer", icon: ICON.file },
       { label: "Due Date Calculator", href: "/sopal-v2/tools/due-date-calculator", icon: ICON.calendar },
       { label: "Interest Calculator", href: "/sopal-v2/tools/interest-calculator", icon: ICON.coins },
     ];
+  }
+  // Kept for back-compat with Cmd+K palette items / home tiles that still call
+  // it. Returns the union of research + tools navs.
+  function workspaceNav() {
+    return researchNav().concat(toolsNav());
   }
 
   function projectSubNav(projectId) {
     const base = `/sopal-v2/projects/${projectId}`;
     return [
-      { label: "Overview", href: `${base}/overview`, icon: ICON.home },
       { label: "Contract", href: `${base}/contract`, icon: ICON.file },
       { label: "Project Library", href: `${base}/library`, icon: ICON.folder },
       { label: "Assistant", href: `${base}/assistant`, icon: ICON.chat },
@@ -673,7 +710,7 @@
 
   function projectAgentNav(projectId) {
     const base = `/sopal-v2/projects/${projectId}/agents`;
-    return AGENT_KEYS.map((key) => ({ label: AGENT_LABELS[key], href: `${base}/${key}`, icon: ICON.sparkles }));
+    return DRAFTING_AGENT_KEYS.map((key) => ({ label: AGENT_LABELS[key], href: `${base}/${key}`, icon: ICON.sparkles }));
   }
 
   function Sidebar() {
@@ -688,8 +725,17 @@
         </div>
 
         <div class="sidebar-scroll">
-          <div class="nav-group-title">Workspace</div>
-          ${workspaceNav().map((item) => `
+          <div class="nav-group-title">Research</div>
+          ${researchNav().map((item) => `
+            <a class="nav-item ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
+              <span class="nav-icon">${item.icon}</span>
+              <span class="nav-label">${escapeHtml(item.label)}</span>
+            </a>`).join("")}
+
+          <div class="nav-divider"></div>
+
+          <div class="nav-group-title">Tools</div>
+          ${toolsNav().map((item) => `
             <a class="nav-item ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
               <span class="nav-icon">${item.icon}</span>
               <span class="nav-label">${escapeHtml(item.label)}</span>
@@ -733,7 +779,7 @@
                   <span class="nav-icon">${item.icon}</span>
                   <span class="nav-label">${escapeHtml(item.label)}</span>
                 </a>`).join("")}
-              <div class="nav-subgroup-title">Agents</div>
+              <div class="nav-subgroup-title">Drafting agents</div>
               ${projectAgentNav(project.id).map((item) => `
                 <a class="nav-item nav-item-sub ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
                   <span class="nav-icon">${item.icon}</span>
@@ -843,7 +889,8 @@
   }
 
   function HomePage() {
-    const tools = workspaceNav();
+    const research = researchNav();
+    const tools = toolsNav();
     const projects = projectList();
     const recent = (store.recentDecisions || []).slice(0, 6);
     const lastReview = findLatestReview();
@@ -892,7 +939,18 @@
         ` : ""}
 
         <section class="home-section">
-          <div class="section-head"><h3>Workspace tools</h3><p>Available everywhere — no project required.</p></div>
+          <div class="section-head"><h3>Research</h3><p>Search decisions, look up adjudicators, ask the research agent.</p></div>
+          <div class="tile-grid">
+            ${research.map((t) => `
+              <a class="tile" href="${t.href}" data-nav>
+                <span class="tile-icon">${t.icon}</span>
+                <strong>${escapeHtml(t.label)}</strong>
+              </a>`).join("")}
+          </div>
+        </section>
+
+        <section class="home-section">
+          <div class="section-head"><h3>Tools</h3><p>Standalone utilities — no project required.</p></div>
           <div class="tile-grid">
             ${tools.map((t) => `
               <a class="tile" href="${t.href}" data-nav>
@@ -4090,6 +4148,559 @@ Total\t${formatCurrencyFull(total)}`;
     render();
   }
 
+  /* ---------- Research Agent (project-less chat) ---------- */
+
+  // Project-less, non-persistent chat backed by /api/sopal-v2/research. Stores
+  // its own message stack in localStorage under store.researchChat so the
+  // conversation survives reloads but doesn't pollute the project list.
+  const RESEARCH_STARTERS = [
+    "What are the key BIF Act time bars I should remember?",
+    "When can a respondent rely on s 82(4) to refuse new reasons?",
+    "Walk me through the difference between BIF Act and BCIPA.",
+    "What's a recent decision on reference date validity?",
+    "When is a contract \"silent\" on the time for payment?",
+  ];
+
+  function getResearchChat() {
+    if (!store.researchChat || !Array.isArray(store.researchChat.messages)) {
+      store.researchChat = { messages: [] };
+    }
+    return store.researchChat;
+  }
+
+  function ResearchAgentPage() {
+    const chat = getResearchChat();
+    setTimeout(bindResearchAgent, 0);
+    const isEmpty = chat.messages.length === 0;
+    return PageBody(`
+      <div class="page-shell chat-shell">
+        <div class="chat-page-head">
+          <div>
+            <h1 class="page-title">Research agent</h1>
+            <p class="page-sub">Ask construction-law / SOPA / BIF Act research questions. No project required.</p>
+          </div>
+          ${chat.messages.length ? `<button class="ghost-button compact" type="button" data-clear-research>${ICON.trash}<span>Clear conversation</span></button>` : ""}
+        </div>
+        <div class="chat-layout">
+          <section class="chat-pane" data-chat-pane>
+            ${isEmpty ? `
+              <div class="chat-empty">
+                <h2 class="chat-empty-title">Sopal research agent</h2>
+                <p class="chat-empty-sub">Ask anything about the BIF Act, BCIPA, adjudication strategy, or specific decisions.</p>
+                ${standaloneComposer({ placeholder: "Ask a research question…", compact: false })}
+                <div class="starter-chips">
+                  ${RESEARCH_STARTERS.map((s) => `<button class="starter-chip" type="button" data-starter="${attr(s)}">${escapeHtml(s)}</button>`).join("")}
+                </div>
+              </div>
+            ` : `
+              <div class="chat-stream-wrap">
+                <div class="chat-stream" data-message-area>
+                  <div class="message-stack" data-messages>
+                    ${chat.messages.map((m) => renderMessage(m.role, m.content, m.role === "assistant")).join("")}
+                  </div>
+                </div>
+              </div>
+              ${standaloneComposer({ placeholder: "Reply…", compact: true })}
+            `}
+          </section>
+        </div>
+      </div>
+    `);
+  }
+
+  // Composer used by research agent + standalone reviewers (no project context
+  // checkbox, since these tools never have a project).
+  function standaloneComposer(opts) {
+    const cls = opts.compact ? "composer-active" : "composer-card";
+    return `
+      <form class="${cls}" data-research-form>
+        <div class="composer-row">
+          <textarea class="text-area auto-grow" name="message" rows="${opts.compact ? 1 : 3}" placeholder="${attr(opts.placeholder || "Type a message…")}" aria-label="Message"></textarea>
+          <button class="send-button" type="submit" aria-label="Send">${ICON.send}</button>
+        </div>
+        <div class="composer-meta">
+          <span class="muted kbd-hint">⌘ / Ctrl + Enter to send</span>
+        </div>
+      </form>`;
+  }
+
+  function bindResearchAgent() {
+    const pane = document.querySelector("[data-chat-pane]");
+    if (!pane) return;
+    const form = pane.querySelector("[data-research-form]");
+    if (!form) return;
+    const textarea = form.elements.message;
+    autoGrow(textarea);
+    textarea.addEventListener("input", () => autoGrow(textarea));
+    textarea.addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+    pane.querySelectorAll("[data-starter]").forEach((b) => b.addEventListener("click", () => {
+      textarea.value = b.dataset.starter;
+      autoGrow(textarea);
+      textarea.focus();
+    }));
+    document.querySelector("[data-clear-research]")?.addEventListener("click", () => {
+      if (!confirm("Clear the research conversation?")) return;
+      store.researchChat = { messages: [] };
+      saveStore();
+      render();
+    });
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const message = textarea.value.trim();
+      if (!message) return;
+      const chat = getResearchChat();
+      const wasEmpty = chat.messages.length === 0;
+      chat.messages.push({ role: "user", content: message, at: Date.now() });
+      saveStore();
+
+      if (wasEmpty) {
+        // Re-render so the empty composer is replaced by the active stream.
+        render();
+        // Continue generation against the just-rendered stream.
+        return continueResearchGeneration(message);
+      }
+
+      const messages = pane.querySelector("[data-messages]");
+      const messageArea = pane.querySelector("[data-message-area]");
+      const placeholderId = `msg-${Math.random().toString(36).slice(2)}`;
+      messages.insertAdjacentHTML("beforeend", renderMessage("user", message));
+      messages.insertAdjacentHTML("beforeend", `
+        <div class="message msg-assistant" id="${placeholderId}">
+          <div class="message-body"><div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Sopal is researching…</span></div></div>
+        </div>`);
+      textarea.value = "";
+      autoGrow(textarea);
+      scrollToBottom(messageArea);
+
+      try {
+        const data = await callResearch(message);
+        chat.messages.push({ role: "assistant", content: data.answer || "", at: Date.now() });
+        saveStore();
+        const placeholder = document.getElementById(placeholderId);
+        if (placeholder) placeholder.outerHTML = renderMessage("assistant", data.answer || "", true);
+        scrollToBottom(messageArea);
+      } catch (error) {
+        const placeholder = document.getElementById(placeholderId);
+        if (placeholder) placeholder.outerHTML = `<div class="message msg-assistant"><div class="message-body"><div class="error-banner">${escapeHtml(error.message || "Request failed")}</div></div></div>`;
+        scrollToBottom(messageArea);
+      }
+    });
+  }
+
+  async function continueResearchGeneration(message) {
+    const pane = document.querySelector("[data-chat-pane]");
+    if (!pane) return;
+    const messages = pane.querySelector("[data-messages]");
+    const messageArea = pane.querySelector("[data-message-area]");
+    const placeholderId = `msg-${Math.random().toString(36).slice(2)}`;
+    if (messages) {
+      messages.insertAdjacentHTML("beforeend", `
+        <div class="message msg-assistant" id="${placeholderId}">
+          <div class="message-body"><div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Sopal is researching…</span></div></div>
+        </div>`);
+      scrollToBottom(messageArea);
+    }
+    try {
+      const data = await callResearch(message);
+      const chat = getResearchChat();
+      chat.messages.push({ role: "assistant", content: data.answer || "", at: Date.now() });
+      saveStore();
+      const placeholder = document.getElementById(placeholderId);
+      if (placeholder) placeholder.outerHTML = renderMessage("assistant", data.answer || "", true);
+      scrollToBottom(messageArea);
+    } catch (error) {
+      const placeholder = document.getElementById(placeholderId);
+      if (placeholder) placeholder.outerHTML = `<div class="message msg-assistant"><div class="message-body"><div class="error-banner">${escapeHtml(error.message || "Request failed")}</div></div></div>`;
+      scrollToBottom(messageArea);
+    }
+  }
+
+  async function callResearch(message) {
+    // Send the prior turns so the model can follow up. Capped to keep payloads
+    // sane; we trim back to the most-recent ~20 messages.
+    const chat = getResearchChat();
+    const history = (chat.messages || []).slice(-20).map((m) => ({ role: m.role, content: m.content }));
+    const response = await fetch("/api/sopal-v2/research", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ message, history }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(describeApiError(data, "Research request failed"));
+    return data;
+  }
+
+  /* ---------- Standalone reviewers (Tools → Payment Claim/Schedule Reviewer) ---------- */
+
+  // Project-less variant of the project review workflow. State is stored in
+  // store.standaloneReviews[agentKey] so each reviewer remembers the last
+  // uploaded document + analysis between page navigations.
+  function getStandaloneReview(agentKey) {
+    if (!store.standaloneReviews || typeof store.standaloneReviews !== "object") {
+      store.standaloneReviews = {};
+    }
+    if (!store.standaloneReviews[agentKey]) {
+      store.standaloneReviews[agentKey] = { document: null, analysis: null, status: "idle", submode: null };
+    }
+    return store.standaloneReviews[agentKey];
+  }
+
+  function StandaloneReviewerPage(agentKey) {
+    if (!REVIEW_CHECKS[agentKey]) return notFoundPage();
+    const review = getStandaloneReview(agentKey);
+    const submodes = AGENT_REVIEW_MODES[agentKey] || [];
+    const params = new URLSearchParams(window.location.search);
+    const submodeId = params.get("submode") || review.submode || null;
+    const activeSubmode = submodes.find((m) => m.id === submodeId) || null;
+    setTimeout(() => bindStandaloneReviewer(agentKey, activeSubmode), 0);
+
+    const baseHref = agentKey === "payment-claims"
+      ? "/sopal-v2/tools/payment-claim-reviewer"
+      : "/sopal-v2/tools/payment-schedule-reviewer";
+    const title = agentKey === "payment-claims" ? "Payment claim reviewer" : "Payment schedule reviewer";
+    const sub = agentKey === "payment-claims"
+      ? "Upload or paste a payment claim. Sopal runs a structured BIF Act / SOPA review. No project required."
+      : "Upload or paste a payment schedule. Sopal runs a structured BIF Act / SOPA review. No project required.";
+
+    const head = `
+      <div class="chat-page-head">
+        <div>
+          <h1 class="page-title">${escapeHtml(title)}</h1>
+          <p class="page-sub">${escapeHtml(sub)}</p>
+        </div>
+      </div>`;
+
+    if (!activeSubmode) {
+      return `
+        <div class="page-shell review-shell">
+          ${head}
+          <section class="review-mode-picker">
+            <h3>What are you reviewing?</h3>
+            <p class="muted">Pick the perspective. The checks are tailored to it.</p>
+            <div class="mode-tile-grid">
+              ${submodes.map((m) => `
+                <a class="mode-tile" href="${baseHref}?submode=${m.id}" data-nav>
+                  <span class="mode-tile-icon">${m.id === "received" ? ICON.upload : ICON.file}</span>
+                  <span class="mode-tile-body">
+                    <strong>I'm ${escapeHtml(m.label.toLowerCase())}</strong>
+                    <span class="muted">${escapeHtml(m.sub)}</span>
+                  </span>
+                </a>
+              `).join("")}
+            </div>
+          </section>
+        </div>`;
+    }
+
+    return `
+      <div class="page-shell review-shell">
+        ${head}
+        <div class="review-meta-bar">
+          <div class="review-meta-left">
+            <span class="muted">Mode:</span>
+            <strong>${escapeHtml(activeSubmode.label)}</strong>
+            <a class="link-button small" href="${baseHref}" data-nav>Change</a>
+          </div>
+        </div>
+        <div class="review-grid">
+          <div class="review-left">
+            <section class="card review-doc-card">
+              <div class="card-head">
+                <h3>Document</h3>
+                <button class="link-button small" type="button" data-toggle-paste>${review.document ? "Replace" : "Paste text instead"}</button>
+              </div>
+              <div class="card-body" data-doc-body>
+                ${renderDocumentInput(review.document)}
+              </div>
+            </section>
+            <section class="card review-chat-card">
+              <div class="card-head">
+                <h3>Ask about this document</h3>
+                <span class="muted">${review.analysis ? "Use the analysis on the right as you ask" : "Run an analysis first to ground the chat"}</span>
+              </div>
+              <div class="review-chat" data-chat-pane>
+                ${standaloneReviewChatPane(agentKey, activeSubmode, !!review.document)}
+              </div>
+            </section>
+          </div>
+          <aside class="review-right">
+            <section class="card review-analysis-card">
+              <div class="card-head">
+                <h3>Analysis</h3>
+                ${review.analysis ? `<button class="ghost-button compact" type="button" data-rerun-analysis>Re-run</button>` : ""}
+              </div>
+              <div class="card-body" data-analysis-body>
+                ${renderAnalysis(agentKey, review.document, review.analysis, review.status, review)}
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    `;
+  }
+
+  function standaloneReviewChatPane(agentKey, submode, hasDocument) {
+    const review = getStandaloneReview(agentKey);
+    if (!review.chat || !Array.isArray(review.chat.messages)) review.chat = { messages: [] };
+    const suggestions = (REVIEW_CHAT_SUGGESTIONS[agentKey] || []).slice(0, 4);
+    let emptyHtml;
+    if (!hasDocument) {
+      emptyHtml = EmptyState("No questions yet.", "Add a document above to give the chat something to anchor to.");
+    } else if (!review.analysis) {
+      emptyHtml = EmptyState("No questions yet.", "Run the analysis on the right, or ask anything about the document below.");
+    } else {
+      emptyHtml = `
+        <div class="empty-state review-empty-with-suggestions">
+          <strong>Ask a follow-up</strong>
+          <p>The analysis is grounded in this document — chase a specific item or draft an amendment.</p>
+          <div class="chip-row">
+            ${suggestions.map((s) => `<button class="chip" type="button" data-chip="${attr(s)}">${escapeHtml(s)}</button>`).join("")}
+          </div>
+        </div>`;
+    }
+    const messagesHtml = (review.chat.messages || []).length
+      ? review.chat.messages.map((m) => renderMessage(m.role, m.content, m.role === "assistant")).join("")
+      : emptyHtml;
+    return `
+      <div class="message-area review-message-area" data-message-area>
+        <div class="message-stack" data-messages>${messagesHtml}</div>
+      </div>
+      <form class="composer-active review-composer" data-standalone-chat-form>
+        <div class="composer-row">
+          <textarea class="text-area auto-grow" name="message" rows="1" placeholder="${hasDocument ? "Ask about this document…" : "Add a document above to start the chat."}" ${hasDocument ? "" : "disabled"}></textarea>
+          <button class="send-button" type="submit" aria-label="Send" ${hasDocument ? "" : "disabled"}>${ICON.send}</button>
+        </div>
+        <div class="composer-meta">
+          <span class="muted kbd-hint">⌘ / Ctrl + Enter to send</span>
+        </div>
+      </form>`;
+  }
+
+  function bindStandaloneReviewer(agentKey, submode) {
+    if (!submode) return;
+    const review = getStandaloneReview(agentKey);
+    review.submode = submode.id;
+    saveStore();
+    const docBody = document.querySelector("[data-doc-body]");
+    const analysisBody = document.querySelector("[data-analysis-body]");
+
+    function refreshDoc() {
+      docBody.innerHTML = renderDocumentInput(review.document);
+      bindDocInput();
+    }
+    function refreshAnalysis() {
+      analysisBody.innerHTML = renderAnalysis(agentKey, review.document, review.analysis, review.status, review);
+      bindAnalysisActions();
+    }
+    function refreshChat() {
+      const pane = document.querySelector("[data-chat-pane]");
+      if (!pane) return;
+      pane.innerHTML = standaloneReviewChatPane(agentKey, submode, !!review.document);
+      bindReviewChatForm(pane);
+    }
+
+    function bindDocInput() {
+      const fileInput = docBody.querySelector("[data-doc-file]");
+      const dropzone = docBody.querySelector("[data-upload-zone]");
+      const pasteSection = docBody.querySelector("[data-paste-fallback]");
+      const pasteText = docBody.querySelector("[data-paste-input]");
+      const pasteSubmit = docBody.querySelector("[data-paste-submit]");
+      const pasteMeta = docBody.querySelector("[data-paste-meta]");
+
+      fileInput?.addEventListener("change", async () => {
+        const file = fileInput.files && fileInput.files[0];
+        if (file) await ingestFile(file);
+      });
+      dropzone?.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("drag-over"); });
+      dropzone?.addEventListener("dragleave", () => dropzone.classList.remove("drag-over"));
+      dropzone?.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("drag-over");
+        const file = e.dataTransfer?.files?.[0];
+        if (file) await ingestFile(file);
+      });
+
+      pasteText?.addEventListener("input", () => {
+        const len = (pasteText.value || "").length;
+        pasteMeta.textContent = `${len.toLocaleString()} characters`;
+        pasteSubmit.disabled = len < 30;
+      });
+      pasteSubmit?.addEventListener("click", () => {
+        const text = (pasteText.value || "").trim();
+        if (!text) return;
+        review.document = { name: "Pasted text", text, source: "pasted", addedAt: new Date().toISOString() };
+        review.analysis = null;
+        review.status = "idle";
+        review.chat = { messages: [] };
+        saveStore();
+        refreshDoc(); refreshAnalysis(); refreshChat();
+      });
+
+      const replace = document.querySelector("[data-toggle-paste]");
+      if (replace) {
+        replace.onclick = () => {
+          if (review.document) {
+            review.document = null;
+            review.analysis = null;
+            review.status = "idle";
+            review.chat = { messages: [] };
+            saveStore();
+            refreshDoc(); refreshAnalysis(); refreshChat();
+          } else {
+            pasteSection?.setAttribute("open", "");
+            pasteText?.focus();
+          }
+        };
+      }
+    }
+
+    async function ingestFile(file) {
+      const dropzone = docBody.querySelector("[data-upload-zone]");
+      if (dropzone) dropzone.querySelector(".upload-primary").textContent = `Extracting ${file.name}…`;
+      const fd = new FormData(); fd.append("file", file);
+      try {
+        const response = await fetch("/api/sopal-v2/extract", { method: "POST", body: fd, credentials: "include" });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(describeApiError(data, "Extraction failed"));
+        review.document = { name: data.filename, text: data.text, source: "extracted", addedAt: new Date().toISOString() };
+        review.analysis = null;
+        review.status = "idle";
+        review.chat = { messages: [] };
+        saveStore();
+        refreshDoc(); refreshAnalysis(); refreshChat();
+      } catch (error) {
+        const dz = docBody.querySelector("[data-upload-zone] .upload-primary");
+        if (dz) dz.textContent = error.message || "Extraction failed";
+      }
+    }
+
+    function bindAnalysisActions() {
+      const runBtn = analysisBody.querySelector("[data-run-analysis]");
+      if (runBtn) runBtn.addEventListener("click", runAnalysis);
+      const rerun = document.querySelector("[data-rerun-analysis]");
+      if (rerun) rerun.addEventListener("click", () => {
+        review.analysis = null; review.status = "idle"; saveStore(); refreshAnalysis();
+      });
+      const printBtn = analysisBody.querySelector("[data-print-analysis]");
+      if (printBtn) printBtn.addEventListener("click", () => {
+        if (review.analysis) openPrintAnalysis(agentKey, review.document, review.analysis, null);
+      });
+    }
+
+    async function runAnalysis() {
+      if (!review.document) return;
+      review.status = "running";
+      saveStore();
+      refreshAnalysis();
+      const checks = REVIEW_CHECKS[agentKey] || [];
+      try {
+        const response = await fetch("/api/sopal-v2/agent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            agentType: agentKey,
+            mode: "review",
+            reviewSubmode: submode.id,
+            checks,
+            structured: true,
+            message: `Review the document below.\n\nDocument:\n${review.document.text.slice(0, 60000)}`,
+            files: [{ name: review.document.name, characters: review.document.text.length }],
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(describeApiError(data, "Analysis failed"));
+        review.analysis = parseStructuredAnalysis(data.answer || "", checks);
+        review.status = "done";
+        saveStore();
+        refreshAnalysis();
+      } catch (error) {
+        review.status = "error";
+        review.analysis = { error: error.message || "Analysis failed" };
+        saveStore();
+        refreshAnalysis();
+      }
+    }
+
+    function bindReviewChatForm(pane) {
+      const form = pane.querySelector("[data-standalone-chat-form]");
+      if (!form) return;
+      const textarea = form.elements.message;
+      const messages = pane.querySelector("[data-messages]");
+      const messageArea = pane.querySelector("[data-message-area]");
+      autoGrow(textarea);
+      textarea.addEventListener("input", () => autoGrow(textarea));
+      textarea.addEventListener("keydown", (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          event.preventDefault();
+          form.requestSubmit();
+        }
+      });
+      pane.querySelectorAll("[data-chip]").forEach((b) => b.addEventListener("click", () => {
+        textarea.value = b.dataset.chip;
+        autoGrow(textarea);
+        textarea.focus();
+      }));
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const message = textarea.value.trim();
+        if (!message || !review.document) return;
+        if (!review.chat || !Array.isArray(review.chat.messages)) review.chat = { messages: [] };
+        if (messages.querySelector(".empty-state")) messages.innerHTML = "";
+        messages.insertAdjacentHTML("beforeend", renderMessage("user", message));
+        const placeholderId = `msg-${Math.random().toString(36).slice(2)}`;
+        messages.insertAdjacentHTML("beforeend", `
+          <div class="message msg-assistant" id="${placeholderId}">
+            <div class="message-body"><div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Sopal is working…</span></div></div>
+          </div>`);
+        review.chat.messages.push({ role: "user", content: message, at: Date.now() });
+        textarea.value = "";
+        autoGrow(textarea);
+        scrollToBottom(messageArea);
+
+        try {
+          const docBlock = `Document under review (${AGENT_LABELS[agentKey]} — ${submode.label.toLowerCase()}):\n${review.document.text.slice(0, 60000)}`;
+          const response = await fetch("/api/sopal-v2/agent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              agentType: agentKey,
+              mode: "review",
+              reviewSubmode: submode.id,
+              chatFollowup: true,
+              message,
+              projectContext: docBlock,
+              files: [{ name: review.document.name, characters: review.document.text.length }],
+            }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(describeApiError(data, "Reply failed"));
+          review.chat.messages.push({ role: "assistant", content: data.answer || "", at: Date.now() });
+          saveStore();
+          const placeholder = document.getElementById(placeholderId);
+          if (placeholder) placeholder.outerHTML = renderMessage("assistant", data.answer || "", true);
+          scrollToBottom(messageArea);
+        } catch (error) {
+          const placeholder = document.getElementById(placeholderId);
+          if (placeholder) placeholder.outerHTML = `<div class="message msg-assistant"><div class="message-body"><div class="error-banner">${escapeHtml(error.message || "Reply failed")}</div></div></div>`;
+          scrollToBottom(messageArea);
+        }
+      });
+    }
+
+    bindDocInput();
+    bindAnalysisActions();
+    const initialPane = document.querySelector("[data-chat-pane]");
+    if (initialPane) bindReviewChatForm(initialPane);
+  }
+
   /* ---------- Page resolver ---------- */
 
   function pageForRoute(route) {
@@ -4117,11 +4728,14 @@ Total\t${formatCurrencyFull(total)}`;
         }
         return { crumbs: [{ label: "Adjudicator statistics" }], body: AdjudicatorsPage() };
       }
+      if (parts[1] === "agent") return { crumbs: [{ label: "Research agent" }], body: ResearchAgentPage() };
       return { crumbs: [{ label: "Research" }], body: notFoundPage() };
     }
     if (parts[0] === "tools") {
       if (parts[1] === "due-date-calculator") return { crumbs: [{ label: "Due date calculator" }], body: DueDatePage() };
       if (parts[1] === "interest-calculator") return { crumbs: [{ label: "Interest calculator" }], body: InterestPage() };
+      if (parts[1] === "payment-claim-reviewer") return { crumbs: [{ label: "Payment claim reviewer" }], body: StandaloneReviewerPage("payment-claims") };
+      if (parts[1] === "payment-schedule-reviewer") return { crumbs: [{ label: "Payment schedule reviewer" }], body: StandaloneReviewerPage("payment-schedules") };
       return { crumbs: [{ label: "Tools" }], body: notFoundPage() };
     }
     if (parts[0] === "projects") {
