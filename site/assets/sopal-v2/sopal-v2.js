@@ -1357,12 +1357,14 @@
       if (!response.ok) throw new Error(data.detail || "Decision text failed");
       const text = (data.fullText || "").trim();
       const metaHeader = meta ? renderDecisionMetaHeader(meta) : "";
+      const citation = formatDecisionCitation(title, id, meta);
       mount.innerHTML = `
         <div class="card-head">
           <div><h3>${escapeHtml(title || id)}</h3><p class="muted">${escapeHtml(id)}</p></div>
           <div class="panel-actions">
             <a class="link-button small" href="/sopal-v2/research/decisions/${encodeURIComponent(id)}" data-nav title="Shareable link to this decision">Open page</a>
-            <button class="ghost-button compact" type="button" data-copy-text="${attr(text.slice(0, 8000))}" title="Copy decision text">${ICON.copy}<span>Copy</span></button>
+            <button class="ghost-button compact" type="button" data-copy-text="${attr(citation)}" title="Copy a short citation for this decision">${ICON.copy}<span>Copy citation</span></button>
+            <button class="ghost-button compact" type="button" data-copy-text="${attr(text.slice(0, 8000))}" title="Copy decision text">${ICON.copy}<span>Copy text</span></button>
             ${projectList().length ? `<button class="ghost-button compact" type="button" data-save-decision="${attr(id)}" data-decision-title="${attr(title || id)}" title="Save this decision to a project's library">${ICON.layers}<span>Save to project</span></button>` : ""}
           </div>
         </div>
@@ -1434,6 +1436,19 @@
       },
     };
     render();
+  }
+
+  function formatDecisionCitation(title, id, meta) {
+    // Sopal corpus is QLD adjudication decisions and historical BCIPA
+    // matters. Citations are typically informal — adjudicator name and the
+    // decision date are the useful identifiers — but we preserve the EJS id
+    // so the reader can pull it back up in Sopal.
+    const t = (title || "").trim();
+    const dt = meta?.decisionDate ? ` (${meta.decisionDate})` : "";
+    const adj = meta?.adjudicator ? ` — Adjudicator ${meta.adjudicator}` : "";
+    const act = meta?.act ? ` [${meta.act}]` : "";
+    const ref = id ? ` [${id}]` : "";
+    return `${t}${dt}${adj}${act}${ref}`.trim();
   }
 
   function renderDecisionMetaHeader(meta) {
