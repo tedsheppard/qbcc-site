@@ -751,15 +751,42 @@ Return STRICT JSON with this shape:
   "isReady":           true|false      // whether this thread is "drafted enough" to advance.
 }
 
+DRAFTING STYLE — voice and rhythm:
+- Voice is restrained, professional and measured. Assertive on substance ("the Claimant rejects", "the Respondent's contention is plainly wrong", "is not sustainable") but never theatrical, never sarcastic, never colloquial.
+- Defer to the adjudicator's role: "the Adjudicator is invited to find …", "the Adjudicator should determine …", "with respect", "the Claimant respectfully submits".
+- Concede the opponent's good points where they are good: "the Claimant accepts that …", "to that extent the Claimant agrees". A measured concession strengthens the rest of the submissions.
+- Australian English throughout. BIF Act not BCIPA. Do NOT call BCIPA the BIF Act.
+
+DRAFTING STYLE — paragraph and clause craft:
+- Numbered paragraphs at the top level. Use <p><strong>1.1</strong> …</p>, <p><strong>1.2</strong> …</p>. Each paragraph addresses ONE proposition. Aim for 1–4 sentences per paragraph; never wall-of-text.
+- Multi-strand answers go into sub-paragraphs (a)(b)(c) and (i)(ii)(iii) using nested HTML lists or indented <p> blocks. The reader should be able to scan the structure.
+- ANCHOR every assertion. Every factual claim should reference a paragraph number, contract clause, document name, statutory provision or authority — e.g. "cl 36.2(a) of the Contract", "the Payment Schedule at [4]", "s 75(2) of the BIF Act", "Tab 3 of this Application". Floating assertions are weak.
+- Direct quotes from contract clauses or statutes are short, indented, and (where relevant) marked "(emphasis added)" if the Claimant has added emphasis.
+
+DRAFTING STYLE — defined terms:
+- Use the shared Definitions consistently throughout (the Claimant, the Respondent, the Contract, the Payment Claim, the Payment Schedule, the BIF Act, the Reference Date). Define a term once and reuse it — never alternate between "the contractor" and "the Claimant".
+- New defined Terms you introduce should be capitalised and quoted on first use, then added to the definitions dict so other threads can reuse them.
+
+DRAFTING STYLE — concession-management language (use sparingly, where appropriate):
+- Where the Claimant has not addressed every line of the Respondent's reasoning: "Where the Claimant has not replied directly to a particular submission of the Respondent, that is not to be taken as any admission or concession."
+- For matters not addressed in the interests of brevity: "In the interests of brevity the Claimant does not propose to respond to every allegation. Any matter not addressed should not be taken to have been admitted."
+
+DRAFTING STYLE — opening signpost:
+- Where the thread is per-item, open with a short Introduction (one or two paragraphs) that identifies the item, its claimed and scheduled amounts, and the Respondent's reasons (with paragraph references back to the Payment Schedule).
+- For overarching threads, open with the scope of what this part will address ("In this part the Claimant addresses …").
+
+DRAFTING STYLE — closing signpost:
+- Each thread ends with a short Conclusion / Summary stating, in one or two sentences, what the Adjudicator should find on this issue. For per-item threads, restate the precise dollar figure the Claimant submits should be allowed.
+
 Rules:
-- Submissions are professional adjudication application submissions: assertive, evidence-anchored, structured around the respondent's PS reasons (s 82(4) ceiling), citation-light but precise where used. Use numbered paragraphs in HTML (<p><strong>1.</strong> …</p>). Do NOT use generic templates — adapt to this matter.
+- Submissions are professional adjudication application submissions: assertive, evidence-anchored, structured around the respondent's PS reasons (s 82(4) ceiling), citation-light but precise where used.
 - HEADING HIERARCHY: do NOT use <h1> or <h2> in submissionsHtml — those are reserved for the master document's top-level section numbering (e.g. '2. Jurisdiction', '4.1 Variation V14'). Use <h3> for top-level subheadings within your submissions and <h4> for any finer divisions. Do NOT repeat the section title (the master assembler supplies it).
+- Do NOT use generic templates — adapt to this matter. Length and depth fluid: a thin item gets a short reply; a substantive item gets a fuller reply.
 - Do NOT invent facts. If a fact isn't supplied, leave a [bracketed placeholder] in the submissions and add another RFI to fill it.
 - For per-item threads: focus the submissions on THIS item only. The master assembler stitches all items together.
 - For jurisdictional thread: produce a structured set of jurisdictional submissions with subheadings per s 64 / s 67 / s 68 / s 69 / s 75 / s 76 / s 79 / s 88 as applicable.
 - For general thread: produce parties / background / contract / project facts.
 - Definitions you introduce (defined Terms in capitalised quoted form) should also be added to the definitions dict.
-- Australian English. BIF Act not BCIPA. Distinguish current QLD law from BCIPA; do not call BCIPA the BIF Act.
 - USE THE PROVIDED CONTRACT + LIBRARY DOCS. When the user has uploaded contract clauses or correspondence, quote / cite them directly in submissions where useful — e.g. 'cl 36 of the Contract provides that …' — instead of emitting [bracketed placeholders]. Only fall back to placeholders when the relevant fact genuinely isn't in any of the provided docs. Don't invent — paraphrase what is in the docs faithfully.
 - Return only the JSON object. No commentary. No code fences."""
 
@@ -891,6 +918,127 @@ def _aa_safe_parse_engine_output(raw: str, fallback_submissions: str) -> dict[st
         "definitions": {},
         "isReady": False,
     }
+
+
+# ---------------- AA exec-summary pass ----------------
+# After the per-item threads have been drafted, run one consolidated pass that
+# distils the headlines into a 4-6 paragraph executive summary suitable for the
+# top of the master document. Kept separate from the engine so it can be re-run
+# cheaply when an item is re-drafted or a new item is added.
+class AAExecSummaryRequest(BaseModel):
+    parties: dict[str, Any] = Field(default_factory=dict)
+    contractReference: str = ""
+    referenceDate: str = ""
+    claimedAmount: float = 0
+    scheduledAmount: float = 0
+    s79Scenario: str = Field(default="less-than-claimed", max_length=40)
+    threadDigest: list[dict[str, Any]] = Field(default_factory=list)
+    projectMeta: dict[str, Any] = Field(default_factory=dict)
+
+
+AA_EXEC_SUMMARY_SYSTEM_PROMPT = """You are Sopal Complex Agent — Adjudication Application. You write the EXECUTIVE SUMMARY that sits near the top of an adjudication application master document.
+
+You will receive:
+- Matter context (parties, claimed/scheduled, reference date, contract).
+- The active s 79 BIF Act scenario.
+- A digest of every drafted thread (label, issue type, claimed, scheduled, headline of the Claimant's position).
+
+Write a SHORT executive summary in HTML — 4 to 6 numbered paragraphs that:
+1. State the application in one sentence (who, against whom, payment claim amount, scheduled amount, s 79(2)(a)/(b)/(c) basis).
+2. Frame the dispute at a high level (what the Claimant is, what the project is, what the Respondent's position is at the broadest level).
+3. Identify any threshold / jurisdictional issues briefly (only if the digest shows a jurisdictional thread is in play).
+4. Summarise the substantive items in one or two paragraphs — group like with like (variations, EOTs, delay costs, defects). Refer to specific items by their label (e.g. "Variation V14"). Do NOT regurgitate the per-item sections; this is a tour at altitude.
+5. State the relief sought — the precise dollar amount the Claimant submits the Adjudicator should determine.
+
+Style:
+- Restrained, professional, measured. Same voice and rhythm as the per-item submissions.
+- Numbered HTML paragraphs <p><strong>1.</strong> …</p>.
+- Use the defined Terms (the Claimant, the Respondent, the Contract, the Payment Claim, the Payment Schedule).
+- Australian English. BIF Act, not BCIPA.
+- HEADING HIERARCHY: do NOT emit <h1> or <h2>. The master assembler supplies the section heading. You may use a single <h3> sub-heading sparingly if the summary genuinely needs one.
+- Do NOT invent facts. If a number isn't in the digest, leave it out rather than guess.
+
+Return STRICT JSON: { "summaryHtml": "..." }
+No commentary. No code fences."""
+
+
+@router.post("/complex/aa/exec-summary")
+async def aa_exec_summary(payload: AAExecSummaryRequest) -> dict[str, Any]:
+    scenario_id = (payload.s79Scenario or "less-than-claimed").strip()
+    if scenario_id not in AA_S79_FRAMING:
+        scenario_id = "less-than-claimed"
+    scenario_block = AA_S79_FRAMING[scenario_id]
+
+    digest_lines: list[str] = []
+    for entry in payload.threadDigest or []:
+        label = (entry.get("label") or "").strip()[:200]
+        kind = (entry.get("kind") or "").strip()[:40]
+        issue = (entry.get("issueType") or "").strip()[:40]
+        claimed = entry.get("claimed") or 0
+        scheduled = entry.get("scheduled") or 0
+        status = (entry.get("status") or "").strip()[:40]
+        headline = (entry.get("headline") or "").strip()[:1500]
+        digest_lines.append(
+            f"- [{kind}] {label} (issue: {issue}, status: {status}, claimed: {claimed}, scheduled: {scheduled})\n"
+            f"  Headline: {headline}"
+        )
+    digest_block = "\n".join(digest_lines) or "(no drafted threads supplied)"
+
+    user_content = (
+        f"Matter context:\n"
+        f"- Project: {payload.projectMeta.get('name') or ''}\n"
+        f"- Contract form: {payload.projectMeta.get('contractForm') or ''}\n"
+        f"- Claimant: {payload.parties.get('claimant') or ''}\n"
+        f"- Respondent: {payload.parties.get('respondent') or ''}\n"
+        f"- Contract reference: {payload.contractReference or ''}\n"
+        f"- Reference date: {payload.referenceDate or ''}\n"
+        f"- Claimed amount: {payload.claimedAmount}\n"
+        f"- Scheduled amount: {payload.scheduledAmount}\n\n"
+        f"{scenario_block}\n\n"
+        f"Drafted thread digest:\n{digest_block}"
+    )
+
+    messages = [
+        {"role": "system", "content": BASE_SYSTEM_PROMPT + "\n\n" + _current_date_context() + "\n\n" + AA_EXEC_SUMMARY_SYSTEM_PROMPT},
+        {"role": "user", "content": user_content},
+    ]
+    result = _complete(messages)
+    raw = (result.get("content") or "").strip()
+    if raw.startswith("```"):
+        raw = raw.split("```", 2)[-1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip().rstrip("`").strip()
+
+    import json as _json
+    import re as _re
+
+    start = raw.find("{")
+    end = raw.rfind("}")
+    summary_html = ""
+    if start != -1 and end > start:
+        candidate = raw[start : end + 1]
+        try:
+            parsed = _json.loads(candidate)
+            summary_html = parsed.get("summaryHtml") or ""
+        except Exception:
+            try:
+                cleaned = _re.sub(r",\s*([}\]])", r"\1", candidate)
+                parsed = _json.loads(cleaned)
+                summary_html = parsed.get("summaryHtml") or ""
+            except Exception:
+                summary_html = ""
+    if not summary_html:
+        # Degraded fallback: treat the whole response as HTML so the user at
+        # least sees something they can edit, rather than throwing 502.
+        body = raw
+        if body.startswith("```"):
+            body = body.split("```", 2)[-1].lstrip()
+            if body.startswith("json"):
+                body = body[4:].lstrip()
+            body = body.rstrip("`").strip()
+        summary_html = body
+    return {"summaryHtml": summary_html}
 
 
 # Project-less research chat surfaced by the Research Agent in the v2 sidebar.

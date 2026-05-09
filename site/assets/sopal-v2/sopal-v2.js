@@ -2936,6 +2936,30 @@ Total\t${formatCurrencyFull(total)}`;
     if (!aa.s79Scenario) {
       aa.s79Scenario = "less-than-claimed";
     }
+    // Backfill: master-document optional sections + cover-page meta.
+    // All of these are FLUID — they only render in the master if they have
+    // content. Storage is here so the user can edit them at any time without
+    // re-running an engine pass.
+    if (!aa.coverMeta || typeof aa.coverMeta !== "object") {
+      aa.coverMeta = {
+        applicationDate: "",
+        ana: "",
+        anaReference: "",
+        pcDate: "",
+        psDate: "",
+        claimantAddress: "",
+        claimantContact: "",
+        claimantEmail: "",
+        claimantPhone: "",
+        respondentAddress: "",
+        respondentContact: "",
+        respondentEmail: "",
+        respondentPhone: "",
+      };
+    }
+    if (typeof aa.introductionHtml !== "string") aa.introductionHtml = "";
+    if (typeof aa.execSummaryHtml !== "string") aa.execSummaryHtml = "";
+    if (typeof aa.overarchingHtml !== "string") aa.overarchingHtml = "";
     // Migrate any per-dispute artefact fields that were stored at the top
     // level of the dispute (older shape) into the canonical d.rfis location
     // (where the engine writes and where the items nav reads). This makes
@@ -3199,8 +3223,10 @@ Total\t${formatCurrencyFull(total)}`;
                 <li>${aa.documents.paymentClaim ? "✓" : "○"} Payment Claim ingested</li>
                 <li>${scenario.psOptional ? "—" : (aa.documents.paymentSchedule ? "✓" : "○")} Payment Schedule ${scenario.psOptional ? "(not required for this scenario)" : "ingested"}</li>
                 <li>${aa.disputes.length ? "✓" : "○"} Dispute table populated (${aa.disputes.length} item${aa.disputes.length === 1 ? "" : "s"})</li>
-                <li>${(aa.jurisdictionalRfis.submissions || "").length > 60 ? "✓" : "○"} Jurisdictional submissions drafted</li>
-                <li>${(aa.generalRfis.submissions || "").length > 60 ? "✓" : "○"} Background drafted</li>
+                <li>${(aa.jurisdictionalRfis.submissions || "").length > 60 ? "✓" : "○"} Jurisdictional submissions drafted <span class="muted">(optional — only render if there's a jurisdictional issue)</span></li>
+                <li>${((aa.introductionHtml || "").length > 60 || (aa.generalRfis.submissions || "").length > 60) ? "✓" : "○"} Introduction / background drafted <span class="muted">(optional)</span></li>
+                <li>${(aa.execSummaryHtml || "").length > 60 ? "✓" : "○"} Executive summary drafted <span class="muted">(optional — generate from the master modal)</span></li>
+                <li>${(aa.overarchingHtml || "").length > 60 ? "✓" : "○"} Overarching arguments drafted <span class="muted">(optional)</span></li>
                 <li>${drafted}/${total} threads drafted overall</li>
                 <li>${evidence.length ? "✓" : "○"} Index of supporting evidence (${evidence.length} item${evidence.length === 1 ? "" : "s"})</li>
                 <li>${aa.deadline ? `✓ Lodgement deadline set (${escapeHtml(aa.deadline)})` : "○ Lodgement deadline not set"}</li>
@@ -3334,6 +3360,12 @@ Total\t${formatCurrencyFull(total)}`;
             <div class="modal-head aa-master-modal-head">
               <h2>Master document</h2>
               <div class="aa-master-modal-actions">
+                <button class="ghost-button compact" type="button" data-aa-edit-cover>Cover page</button>
+                <button class="ghost-button compact" type="button" data-aa-edit-intro>Introduction</button>
+                <button class="ghost-button compact" type="button" data-aa-gen-summary>${ICON.sparkles}<span data-aa-gen-summary-label>${aa.execSummaryHtml ? "Re-generate summary" : "Generate summary"}</span></button>
+                <button class="ghost-button compact" type="button" data-aa-edit-summary>Edit summary</button>
+                <button class="ghost-button compact" type="button" data-aa-edit-overarching>Overarching</button>
+                <span class="aa-master-actions-sep"></span>
                 <button class="dark-button compact" type="button" data-aa-export>${ICON.download}<span>Export .doc</span></button>
                 <button class="ghost-button compact" type="button" data-aa-export-statdecs>${ICON.download}<span>Stat dec</span></button>
                 <button class="ghost-button compact" type="button" data-aa-export-soe>${ICON.download}<span>Evidence index</span></button>
@@ -3352,9 +3384,66 @@ Total\t${formatCurrencyFull(total)}`;
         const close = () => { modal = null; render(); };
         rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
         rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
-        rootEl.querySelector("[data-aa-rebuild]")?.addEventListener("click", () => {
+        function refreshMasterPane() {
           const mount = rootEl.querySelector("[data-aa-master]");
           if (mount) { mount.innerHTML = renderAAMaster(project, aa); bindAATocLinks(); }
+          const lbl = rootEl.querySelector("[data-aa-gen-summary-label]");
+          if (lbl) lbl.textContent = aa.execSummaryHtml ? "Re-generate summary" : "Generate summary";
+        }
+        rootEl.querySelector("[data-aa-rebuild]")?.addEventListener("click", refreshMasterPane);
+        // Section editors. Each one closes the master modal, opens the editor
+        // sub-modal, and the sub-modal saves back to aa state. The master
+        // modal is re-opened by the user when they're done editing.
+        rootEl.querySelector("[data-aa-edit-cover]")?.addEventListener("click", () => {
+          openAACoverMetaModal(project, aa);
+        });
+        rootEl.querySelector("[data-aa-edit-intro]")?.addEventListener("click", () => {
+          openAAEditModal({
+            project, aa, mode: "html",
+            title: "Introduction",
+            hint: "Short overview of project, parties, contract execution, and what brought the matter to adjudication. Renders as the second section of the master if populated. If left blank the general / background RFI thread submissions will be used in its place.",
+            getValue: () => aa.introductionHtml || "",
+            setValue: (v) => { aa.introductionHtml = v; },
+          });
+        });
+        rootEl.querySelector("[data-aa-edit-summary]")?.addEventListener("click", () => {
+          openAAEditModal({
+            project, aa, mode: "html",
+            title: "Executive summary",
+            hint: "Sits near the top of the master document. Use 'Generate summary' to draft this from the per-item threads, or hand-edit here.",
+            getValue: () => aa.execSummaryHtml || "",
+            setValue: (v) => { aa.execSummaryHtml = v; },
+          });
+        });
+        rootEl.querySelector("[data-aa-edit-overarching]")?.addEventListener("click", () => {
+          openAAEditModal({
+            project, aa, mode: "html",
+            title: "Overarching arguments",
+            hint: "Cross-cutting arguments that don't fit a single per-item section — prevention principle, estoppel, waiver, contract construction, repudiation. Optional: leave blank to omit this section from the master.",
+            getValue: () => aa.overarchingHtml || "",
+            setValue: (v) => { aa.overarchingHtml = v; },
+          });
+        });
+        rootEl.querySelector("[data-aa-gen-summary]")?.addEventListener("click", async () => {
+          const btn = rootEl.querySelector("[data-aa-gen-summary]");
+          const originalLabel = btn ? btn.innerHTML : "";
+          if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<span class="thinking-dots"><i></i><i></i><i></i></span><span>Generating…</span>`;
+          }
+          try {
+            await aaCallExecSummary(project, aa);
+            refreshMasterPane();
+          } catch (err) {
+            alert(err.message || "Could not generate the executive summary. Please try again.");
+          } finally {
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = originalLabel;
+              const lbl = btn.querySelector("[data-aa-gen-summary-label]");
+              if (lbl) lbl.textContent = aa.execSummaryHtml ? "Re-generate summary" : "Generate summary";
+            }
+          }
         });
         rootEl.querySelector("[data-aa-export]")?.addEventListener("click", () => {
           aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`,
@@ -3402,63 +3491,188 @@ Total\t${formatCurrencyFull(total)}`;
   }
 
   function renderAAMaster(project, aa) {
-    // Build the section list first with stable IDs so we can render a live
-    // table-of-contents that scrolls the master pane to each section.
+    // Master document is FLUID: only render sections that have content.
+    // Required: cover page (always), conclusion (always).
+    // Optional (only render when populated): introduction, exec summary,
+    // jurisdiction, overarching arguments, per-item submissions, evidence index.
+    //
+    // Section numbering is dynamic — we count up only for sections we actually
+    // render. The ToC + h2/h3 IDs use a stable slug, but the "1.", "2.", etc.
+    // is computed at render time so adding/removing an optional section keeps
+    // numbering tight.
     const toc = [];
     function id(slug) { return `aa-sec-${slug}`; }
     const sections = [];
-    sections.push(`<h1>Adjudication Application</h1>`);
-    toc.push({ id: id("parties"), num: "1", label: "Parties", indent: 0 });
+    let sectionCounter = 0;
+    function nextNum() { sectionCounter += 1; return String(sectionCounter); }
+    function hasHtmlContent(html) {
+      if (!html) return false;
+      const stripped = String(html).replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+      return stripped.length > 0;
+    }
+
     const scenarioId = aa.s79Scenario || "less-than-claimed";
     const scenario = AA_S79_SCENARIOS.find((s) => s.id === scenarioId) || AA_S79_SCENARIOS[0];
-    sections.push(`<h2 id="${id("parties")}">1. Parties</h2>
-      <p><strong>Claimant:</strong> ${escapeHtml(aa.parties.claimant || project.claimant || "[Claimant]")}<br>
-      <strong>Respondent:</strong> ${escapeHtml(aa.parties.respondent || project.respondent || "[Respondent]")}<br>
-      <strong>Contract reference:</strong> ${escapeHtml(aa.contractReference || project.reference || "[Contract reference]")}<br>
-      <strong>Reference date:</strong> ${escapeHtml(aa.referenceDate || "[Reference date]")}<br>
-      <strong>Claimed amount:</strong> ${formatCurrencyFull(aa.claimedAmount || 0)}<br>
-      <strong>Scheduled amount:</strong> ${formatCurrencyFull(aa.scheduledAmount || 0)}<br>
-      <strong>s 79 BIF Act scenario:</strong> ${escapeHtml(scenario.label)}</p>`);
-    toc.push({ id: id("jurisdiction"), num: "2", label: "Jurisdiction", indent: 0 });
-    sections.push(`<h2 id="${id("jurisdiction")}">2. Jurisdiction</h2>${aa.jurisdictionalRfis.submissions || "<p><em>(Jurisdictional submissions will appear here once the jurisdictional RFI thread is drafted.)</em></p>"}`);
-    toc.push({ id: id("background"), num: "3", label: "Background", indent: 0 });
-    sections.push(`<h2 id="${id("background")}">3. Background</h2>${aa.generalRfis.submissions || "<p><em>(Background will appear here once the general RFI thread is drafted.)</em></p>"}`);
-    if (aa.disputes.length) {
-      toc.push({ id: id("disputes"), num: "4", label: "Submissions on disputed items", indent: 0 });
-      sections.push(`<h2 id="${id("disputes")}">4. Submissions on disputed items</h2>`);
+    const cover = aa.coverMeta || {};
+    const claimantName = aa.parties.claimant || project.claimant || "[Claimant]";
+    const respondentName = aa.parties.respondent || project.respondent || "[Respondent]";
+    const contractRef = aa.contractReference || project.reference || "[Contract reference]";
+    const refDate = aa.referenceDate || "[Reference date]";
+    const claimed = Number(aa.claimedAmount || 0);
+    const scheduled = Number(aa.scheduledAmount || 0);
+    const inDispute = Math.max(0, claimed - scheduled);
+
+    // ---- Cover page (always) ----
+    // Modelled on the layout commonly used for QLD adjudication applications:
+    // formal title, opening line citing s 21 BIF Act, then bordered tables for
+    // CLAIMANT and RESPONDENT details and a third table for application meta.
+    const opener = scenarioId === "no-schedule"
+      ? "This Adjudication Application is made by the Claimant under section 79(2)(a) of the Building Industry Fairness (Security of Payment) Act 2017 (Qld) (the <strong>BIF Act</strong>)."
+      : scenarioId === "scheduled-but-unpaid"
+      ? "This Adjudication Application is made by the Claimant under section 79(2)(c) of the Building Industry Fairness (Security of Payment) Act 2017 (Qld) (the <strong>BIF Act</strong>)."
+      : "This Adjudication Application is made by the Claimant under section 79(2)(b) of the Building Industry Fairness (Security of Payment) Act 2017 (Qld) (the <strong>BIF Act</strong>).";
+    const psBlockRows = scenarioId === "no-schedule"
+      ? `<tr><th>Payment schedule</th><td>No payment schedule received (s 79(2)(a))</td></tr>`
+      : `<tr><th>Payment schedule</th><td>${cover.psDate ? `Served ${escapeHtml(cover.psDate)}. ` : ""}Scheduled amount: ${formatCurrencyFull(scheduled)}</td></tr>`;
+    sections.push(`<div class="aa-cover">
+      <h1 class="aa-cover-title">ADJUDICATION APPLICATION</h1>
+      <p class="aa-cover-opener">${opener}</p>
+      <h3 class="aa-cover-section">Claimant details</h3>
+      <table class="aa-cover-table">
+        <tr><th>Name</th><td>${escapeHtml(claimantName)}</td></tr>
+        ${cover.claimantContact ? `<tr><th>Contact</th><td>${escapeHtml(cover.claimantContact)}</td></tr>` : ""}
+        ${cover.claimantAddress ? `<tr><th>Address</th><td>${escapeHtml(cover.claimantAddress)}</td></tr>` : ""}
+        ${cover.claimantPhone ? `<tr><th>Phone</th><td>${escapeHtml(cover.claimantPhone)}</td></tr>` : ""}
+        ${cover.claimantEmail ? `<tr><th>Email</th><td>${escapeHtml(cover.claimantEmail)}</td></tr>` : ""}
+      </table>
+      <h3 class="aa-cover-section">Respondent details</h3>
+      <table class="aa-cover-table">
+        <tr><th>Name</th><td>${escapeHtml(respondentName)}</td></tr>
+        ${cover.respondentContact ? `<tr><th>Contact</th><td>${escapeHtml(cover.respondentContact)}</td></tr>` : ""}
+        ${cover.respondentAddress ? `<tr><th>Address</th><td>${escapeHtml(cover.respondentAddress)}</td></tr>` : ""}
+        ${cover.respondentPhone ? `<tr><th>Phone</th><td>${escapeHtml(cover.respondentPhone)}</td></tr>` : ""}
+        ${cover.respondentEmail ? `<tr><th>Email</th><td>${escapeHtml(cover.respondentEmail)}</td></tr>` : ""}
+      </table>
+      <h3 class="aa-cover-section">Application details</h3>
+      <table class="aa-cover-table">
+        <tr><th>Contract reference</th><td>${escapeHtml(contractRef)}</td></tr>
+        <tr><th>Reference date</th><td>${escapeHtml(refDate)}</td></tr>
+        ${cover.pcDate ? `<tr><th>Payment claim served</th><td>${escapeHtml(cover.pcDate)}</td></tr>` : ""}
+        <tr><th>Payment claim amount</th><td>${formatCurrencyFull(claimed)}</td></tr>
+        ${psBlockRows}
+        <tr><th>Amount in dispute</th><td>${formatCurrencyFull(inDispute || claimed)}</td></tr>
+        <tr><th>s 79 BIF Act basis</th><td>${escapeHtml(scenario.label)}</td></tr>
+        ${cover.ana ? `<tr><th>Authorised Nominating Authority</th><td>${escapeHtml(cover.ana)}${cover.anaReference ? ` (ref: ${escapeHtml(cover.anaReference)})` : ""}</td></tr>` : ""}
+        ${cover.applicationDate ? `<tr><th>Application date</th><td>${escapeHtml(cover.applicationDate)}</td></tr>` : ""}
+      </table>
+    </div>`);
+
+    // ---- Introduction (optional) ----
+    // Hierarchy: prefer the explicit aa.introductionHtml if the user has typed
+    // one in the master modal; otherwise fall back to the general / background
+    // RFI thread submissions (which is the natural slot for project + parties +
+    // contract execution background).
+    const introHtml = hasHtmlContent(aa.introductionHtml)
+      ? aa.introductionHtml
+      : (hasHtmlContent(aa.generalRfis && aa.generalRfis.submissions) ? aa.generalRfis.submissions : "");
+    if (hasHtmlContent(introHtml)) {
+      const num = nextNum();
+      toc.push({ id: id("introduction"), num, label: "Introduction", indent: 0 });
+      sections.push(`<h2 id="${id("introduction")}">${num}. Introduction</h2>${introHtml}`);
+    }
+
+    // ---- Executive summary (optional) ----
+    if (hasHtmlContent(aa.execSummaryHtml)) {
+      const num = nextNum();
+      toc.push({ id: id("exec-summary"), num, label: "Executive summary", indent: 0 });
+      sections.push(`<h2 id="${id("exec-summary")}">${num}. Executive summary</h2>${aa.execSummaryHtml}`);
+    }
+
+    // ---- Jurisdiction (optional) ----
+    if (hasHtmlContent(aa.jurisdictionalRfis && aa.jurisdictionalRfis.submissions)) {
+      const num = nextNum();
+      toc.push({ id: id("jurisdiction"), num, label: "Jurisdiction", indent: 0 });
+      sections.push(`<h2 id="${id("jurisdiction")}">${num}. Jurisdiction</h2>${aa.jurisdictionalRfis.submissions}`);
+    }
+
+    // ---- Overarching arguments (optional) ----
+    if (hasHtmlContent(aa.overarchingHtml)) {
+      const num = nextNum();
+      toc.push({ id: id("overarching"), num, label: "Overarching arguments", indent: 0 });
+      sections.push(`<h2 id="${id("overarching")}">${num}. Overarching arguments</h2>${aa.overarchingHtml}`);
+    }
+
+    // ---- Per-item submissions (optional, but the heart of most AAs) ----
+    if ((aa.disputes || []).length) {
+      const itemsNum = nextNum();
+      toc.push({ id: id("disputes"), num: itemsNum, label: "Submissions on disputed items", indent: 0 });
+      sections.push(`<h2 id="${id("disputes")}">${itemsNum}. Submissions on disputed items</h2>`);
       aa.disputes.forEach((d, i) => {
         const slug = `dispute-${d.id}`;
-        toc.push({ id: id(slug), num: `4.${i + 1}`, label: d.item || "Item", indent: 1 });
-        sections.push(`<h3 id="${id(slug)}">4.${i + 1} ${escapeHtml(d.item || "Item")}${d.issueType ? ` <span class="aa-issue-tag">${escapeHtml(AA_ISSUE_TYPE_LABELS[d.issueType] || d.issueType)}</span>` : ""}</h3>`);
+        const subNum = `${itemsNum}.${i + 1}`;
+        toc.push({ id: id(slug), num: subNum, label: d.item || "Item", indent: 1 });
+        sections.push(`<h3 id="${id(slug)}">${subNum} ${escapeHtml(d.item || "Item")}${d.issueType ? ` <span class="aa-issue-tag">${escapeHtml(AA_ISSUE_TYPE_LABELS[d.issueType] || d.issueType)}</span>` : ""}</h3>`);
+        // Per-item summary mini-table — claimed / scheduled / in dispute /
+        // PS reasons. Renders even when the thread hasn't been drafted yet so
+        // the master always shows "what's at issue here" at a glance.
+        const itemClaimed = Number(d.claimed || 0);
+        const itemScheduled = Number(d.scheduled || 0);
+        const itemInDispute = Math.max(0, itemClaimed - itemScheduled);
+        const psReasonsHtml = d.psReasons ? `<tr><th>Respondent's reasons (PS)</th><td>${escapeHtml(d.psReasons)}</td></tr>` : "";
+        sections.push(`<table class="aa-item-meta">
+          <tr><th>Claimed</th><td>${formatCurrencyFull(itemClaimed)}</td></tr>
+          <tr><th>Scheduled</th><td>${formatCurrencyFull(itemScheduled)}</td></tr>
+          <tr><th>In dispute</th><td>${formatCurrencyFull(itemInDispute)}</td></tr>
+          ${psReasonsHtml}
+        </table>`);
         const subs = (d.rfis && d.rfis.submissions) || "";
-        sections.push(subs || "<p><em>(Drafted once enough RFIs are answered.)</em></p>");
+        sections.push(subs || "<p><em>(The Claimant's submissions on this item will appear here once the per-item RFI thread is drafted.)</em></p>");
       });
-    }
-    if (aa.disputes.length) {
-      toc.push({ id: id("quantum"), num: "5", label: "Quantum summary", indent: 0 });
+
+      // ---- Quantum summary (only when there are items with non-zero claimed/scheduled) ----
       const totalClaimed = aa.disputes.reduce((s, d) => s + Number(d.claimed || 0), 0);
       const totalScheduled = aa.disputes.reduce((s, d) => s + Number(d.scheduled || 0), 0);
-      sections.push(`<h2 id="${id("quantum")}">5. Quantum summary</h2>
-        <table>
-          <thead><tr><th>Item</th><th>Claimed</th><th>Scheduled</th><th>In dispute</th></tr></thead>
-          <tbody>
-            ${aa.disputes.map((d) => {
-              const claimed = Number(d.claimed || 0);
-              const scheduled = Number(d.scheduled || 0);
-              const inDispute = Math.max(0, claimed - scheduled);
-              return `<tr><td>${escapeHtml(d.item || "Item")}</td><td>${formatCurrencyFull(claimed)}</td><td>${formatCurrencyFull(scheduled)}</td><td>${formatCurrencyFull(inDispute)}</td></tr>`;
-            }).join("")}
-            <tr><td><strong>Totals</strong></td><td><strong>${formatCurrencyFull(totalClaimed)}</strong></td><td><strong>${formatCurrencyFull(totalScheduled)}</strong></td><td><strong>${formatCurrencyFull(Math.max(0, totalClaimed - totalScheduled))}</strong></td></tr>
-          </tbody>
-        </table>`);
+      if (totalClaimed > 0 || totalScheduled > 0) {
+        const qNum = nextNum();
+        toc.push({ id: id("quantum"), num: qNum, label: "Quantum summary", indent: 0 });
+        sections.push(`<h2 id="${id("quantum")}">${qNum}. Quantum summary</h2>
+          <table>
+            <thead><tr><th>Item</th><th>Claimed</th><th>Scheduled</th><th>In dispute</th></tr></thead>
+            <tbody>
+              ${aa.disputes.map((d) => {
+                const c = Number(d.claimed || 0);
+                const s = Number(d.scheduled || 0);
+                const inD = Math.max(0, c - s);
+                return `<tr><td>${escapeHtml(d.item || "Item")}</td><td>${formatCurrencyFull(c)}</td><td>${formatCurrencyFull(s)}</td><td>${formatCurrencyFull(inD)}</td></tr>`;
+              }).join("")}
+              <tr><td><strong>Totals</strong></td><td><strong>${formatCurrencyFull(totalClaimed)}</strong></td><td><strong>${formatCurrencyFull(totalScheduled)}</strong></td><td><strong>${formatCurrencyFull(Math.max(0, totalClaimed - totalScheduled))}</strong></td></tr>
+            </tbody>
+          </table>`);
+      }
     }
-    toc.push({ id: id("conclusion"), num: aa.disputes.length ? "6" : "5", label: "Conclusion and amount sought", indent: 0 });
-    sections.push(`<h2 id="${id("conclusion")}">${aa.disputes.length ? "6" : "5"}. Conclusion and amount sought</h2><p>For the reasons set out above, the Claimant respectfully seeks an adjudicated amount of ${formatCurrencyFull(aa.claimedAmount || 0)}.</p>`);
+
+    // ---- Conclusion (always) ----
+    // Single, direct paragraph in the NZ-doc style: "In the premises of the
+    // above, the Claimant respectfully submits that the Adjudicator should
+    // determine that the Respondent is liable to pay the Claimant the sum of
+    // $X (excluding GST)." Adapts to a less-than-claimed scenario by saying
+    // "the adjudicated amount" rather than "the full Payment Claim amount" —
+    // the user can edit this freely in the master modal.
+    const conclusionNum = nextNum();
+    toc.push({ id: id("conclusion"), num: conclusionNum, label: "Conclusion", indent: 0 });
+    sections.push(`<h2 id="${id("conclusion")}">${conclusionNum}. Conclusion</h2>
+      <p>In the premises of the above, the Claimant respectfully submits that the Adjudicator should determine that the Respondent is liable to pay the Claimant the sum of <strong>${formatCurrencyFull(claimed)}</strong>${scheduled > 0 ? `, less the amount of ${formatCurrencyFull(scheduled)} already scheduled by the Respondent (resulting in an amount in dispute of ${formatCurrencyFull(inDispute)})` : ""}, together with interest under section 90 of the BIF Act and the Adjudicator's fees as the Adjudicator sees fit.</p>`);
+
+    // ---- Evidence index (optional) ----
     const evidence = [];
-    aa.disputes.forEach((d) => ((d.rfis && d.rfis.evidenceIndex) || []).forEach((e) => evidence.push(e)));
-    const evidenceNum = aa.disputes.length ? "7" : "6";
-    toc.push({ id: id("evidence"), num: evidenceNum, label: "Index of supporting evidence", indent: 0 });
-    sections.push(`<h2 id="${id("evidence")}">${evidenceNum}. Index of supporting evidence</h2>${evidence.length ? `<ol>${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong> — ${escapeHtml(e.desc || "")}${e.location ? ` (${escapeHtml(e.location)})` : ""}</li>`).join("")}</ol>` : "<p><em>(No exhibits indexed yet.)</em></p>"}`);
+    (aa.disputes || []).forEach((d) => ((d.rfis && d.rfis.evidenceIndex) || []).forEach((e) => evidence.push(e)));
+    if (aa.jurisdictionalRfis && Array.isArray(aa.jurisdictionalRfis.evidenceIndex)) aa.jurisdictionalRfis.evidenceIndex.forEach((e) => evidence.push(e));
+    if (aa.generalRfis && Array.isArray(aa.generalRfis.evidenceIndex)) aa.generalRfis.evidenceIndex.forEach((e) => evidence.push(e));
+    if (evidence.length) {
+      const eNum = nextNum();
+      toc.push({ id: id("evidence"), num: eNum, label: "Index of supporting evidence", indent: 0 });
+      sections.push(`<h2 id="${id("evidence")}">${eNum}. Index of supporting evidence</h2><ol>${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong> — ${escapeHtml(e.desc || "")}${e.location ? ` (${escapeHtml(e.location)})` : ""}</li>`).join("")}</ol>`);
+    }
 
     const tocHtml = `
       <nav class="aa-toc" aria-label="Master document contents">
@@ -4272,6 +4486,199 @@ Total\t${formatCurrencyFull(total)}`;
       const t = document.getElementById("aa-thinking");
       if (t) t.remove();
     }
+  }
+
+  // Drives the master document's "Generate executive summary" action.
+  // Builds a digest of every drafted thread and sends it to the backend,
+  // which produces a 4-6 paragraph HTML summary suitable for the top of the
+  // master. Cheap to re-run when an item is re-drafted.
+  async function aaCallExecSummary(project, aa) {
+    const digest = [];
+    function headlineFromHtml(html) {
+      // Strip tags and grab the first ~600 chars — enough for the model to
+      // understand the thread's punchline without bloating the prompt.
+      const txt = String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      return txt.slice(0, 600);
+    }
+    if (aa.jurisdictionalRfis && (aa.jurisdictionalRfis.submissions || "").length) {
+      digest.push({
+        kind: "jurisdictional",
+        label: "Jurisdiction",
+        issueType: "jurisdiction",
+        status: "in-issue",
+        claimed: 0,
+        scheduled: 0,
+        headline: headlineFromHtml(aa.jurisdictionalRfis.submissions),
+      });
+    }
+    (aa.disputes || []).forEach((d) => {
+      const subs = (d.rfis && d.rfis.submissions) || "";
+      if (!subs && !d.psReasons) return;
+      digest.push({
+        kind: "dispute",
+        label: d.item || "Item",
+        issueType: d.issueType || "other",
+        status: d.status || "disputed",
+        claimed: Number(d.claimed || 0),
+        scheduled: Number(d.scheduled || 0),
+        headline: headlineFromHtml(subs) || (d.psReasons ? `Respondent's reasons: ${d.psReasons}` : ""),
+      });
+    });
+
+    const payload = {
+      parties: aa.parties || {},
+      contractReference: aa.contractReference || "",
+      referenceDate: aa.referenceDate || "",
+      claimedAmount: Number(aa.claimedAmount || 0),
+      scheduledAmount: Number(aa.scheduledAmount || 0),
+      s79Scenario: aa.s79Scenario || "less-than-claimed",
+      threadDigest: digest,
+      projectMeta: { name: project.name, contractForm: project.contractForm },
+    };
+    const ctrl = new AbortController();
+    const timeoutId = setTimeout(() => ctrl.abort(), 90_000);
+    try {
+      const response = await fetch("/api/sopal-v2/complex/aa/exec-summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+        signal: ctrl.signal,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(describeApiError(data, "Could not generate the executive summary"));
+      const html = (data && data.summaryHtml) || "";
+      if (!html) throw new Error("The executive summary came back empty. Try again.");
+      aa.execSummaryHtml = html;
+      saveProject(project);
+      return html;
+    } catch (err) {
+      if (err.name === "AbortError") throw new Error("Sopal took too long to generate the executive summary (over 90s). Try again.");
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  // Generic "edit any HTML field on the AA matter" modal. Used for the cover
+  // meta, introduction, exec summary edits and overarching arguments. Keeps
+  // the AA matter fluid — the user can hand-edit any optional section without
+  // running the engine.
+  function openAAEditModal({ project, aa, title, hint, getValue, setValue, mode }) {
+    const initial = getValue() || "";
+    modal = {
+      render: () => `
+        <div class="modal-backdrop" data-modal-backdrop>
+          <div class="modal aa-edit-modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+              <h2>${escapeHtml(title)}</h2>
+              <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
+            </div>
+            <div class="modal-body">
+              ${hint ? `<p class="muted aa-edit-hint">${escapeHtml(hint)}</p>` : ""}
+              ${mode === "html"
+                ? `<div class="aa-edit-html" contenteditable="true" data-aa-edit-html>${initial || "<p></p>"}</div>`
+                : `<textarea class="text-area auto-grow" data-aa-edit-textarea rows="12" placeholder="Type or paste content here…">${escapeHtml(initial)}</textarea>`}
+            </div>
+            <div class="modal-foot aa-edit-foot">
+              <button class="ghost-button compact" type="button" data-aa-edit-clear>Clear</button>
+              <span class="spacer"></span>
+              <button class="ghost-button compact" type="button" data-modal-close>Cancel</button>
+              <button class="dark-button compact" type="button" data-aa-edit-save>Save</button>
+            </div>
+          </div>
+        </div>`,
+      bind: (rootEl) => {
+        const close = () => { modal = null; render(); };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        rootEl.querySelector("[data-aa-edit-clear]")?.addEventListener("click", () => {
+          if (mode === "html") {
+            const ed = rootEl.querySelector("[data-aa-edit-html]");
+            if (ed) ed.innerHTML = "<p></p>";
+          } else {
+            const t = rootEl.querySelector("[data-aa-edit-textarea]");
+            if (t) t.value = "";
+          }
+        });
+        rootEl.querySelector("[data-aa-edit-save]")?.addEventListener("click", () => {
+          if (mode === "html") {
+            const ed = rootEl.querySelector("[data-aa-edit-html]");
+            const html = ed ? ed.innerHTML.trim() : "";
+            // Treat an empty <p></p> shell as cleared content
+            const stripped = html.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+            setValue(stripped ? html : "");
+          } else {
+            const t = rootEl.querySelector("[data-aa-edit-textarea]");
+            setValue((t && t.value) || "");
+          }
+          saveProject(project);
+          close();
+        });
+      },
+    };
+    render();
+  }
+
+  // Cover-meta editor — small form for the bordered cover-page tables.
+  function openAACoverMetaModal(project, aa) {
+    const c = aa.coverMeta || {};
+    const fields = [
+      { key: "applicationDate", label: "Application date", placeholder: "e.g. 12 May 2026" },
+      { key: "ana", label: "Authorised Nominating Authority", placeholder: "e.g. Adjudicate Today" },
+      { key: "anaReference", label: "ANA reference", placeholder: "e.g. ATO-12345" },
+      { key: "pcDate", label: "Payment claim served on", placeholder: "e.g. 5 March 2026" },
+      { key: "psDate", label: "Payment schedule served on", placeholder: "e.g. 19 March 2026 (or N/A)" },
+      { key: "claimantContact", label: "Claimant contact (name, role)", placeholder: "" },
+      { key: "claimantAddress", label: "Claimant address", placeholder: "" },
+      { key: "claimantPhone", label: "Claimant phone", placeholder: "" },
+      { key: "claimantEmail", label: "Claimant email", placeholder: "" },
+      { key: "respondentContact", label: "Respondent contact (name, role)", placeholder: "" },
+      { key: "respondentAddress", label: "Respondent address", placeholder: "" },
+      { key: "respondentPhone", label: "Respondent phone", placeholder: "" },
+      { key: "respondentEmail", label: "Respondent email", placeholder: "" },
+    ];
+    modal = {
+      render: () => `
+        <div class="modal-backdrop" data-modal-backdrop>
+          <div class="modal aa-cover-modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+              <h2>Cover page details</h2>
+              <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
+            </div>
+            <div class="modal-body">
+              <p class="muted aa-edit-hint">These fields populate the bordered tables on the master document's cover page. Leave blank to omit the row.</p>
+              <div class="aa-cover-grid">
+                ${fields.map((f) => `
+                  <label class="aa-cover-field">
+                    <span>${escapeHtml(f.label)}</span>
+                    <input class="text-input" data-aa-cover-key="${attr(f.key)}" type="text" value="${attr(c[f.key] || "")}" placeholder="${attr(f.placeholder || "")}">
+                  </label>
+                `).join("")}
+              </div>
+            </div>
+            <div class="modal-foot aa-edit-foot">
+              <span class="spacer"></span>
+              <button class="ghost-button compact" type="button" data-modal-close>Cancel</button>
+              <button class="dark-button compact" type="button" data-aa-cover-save>Save</button>
+            </div>
+          </div>
+        </div>`,
+      bind: (rootEl) => {
+        const close = () => { modal = null; render(); };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        rootEl.querySelector("[data-aa-cover-save]")?.addEventListener("click", () => {
+          if (!aa.coverMeta) aa.coverMeta = {};
+          rootEl.querySelectorAll("[data-aa-cover-key]").forEach((inp) => {
+            aa.coverMeta[inp.dataset.aaCoverKey] = (inp.value || "").trim();
+          });
+          saveProject(project);
+          close();
+        });
+      },
+    };
+    render();
   }
 
   /* ---------- Drafting workspace (Word-style editor + AI chat) ---------- */
