@@ -3163,6 +3163,7 @@ Total\t${formatCurrencyFull(total)}`;
             <p class="muted">Edit the rows. Merge or split where the PC artificially divides one dispute. Set the issue type so the RFIs are tailored. Lock to advance.</p>
           </div>
           <div class="aa-table-actions">
+            <button class="ghost-button compact" type="button" data-aa-edit-matter title="Edit the parties, contract reference and reference date that the engine and master document use">${ICON.settings}<span>Matter details</span></button>
             <button class="ghost-button compact" type="button" data-aa-add-row>${ICON.plus}<span>Add row</span></button>
             <button class="dark-button" type="button" data-aa-lock-table>Lock dispute table →</button>
           </div>
@@ -4308,6 +4309,61 @@ Total\t${formatCurrencyFull(total)}`;
       saveProject(project);
       render();
     });
+    document.querySelector("[data-aa-edit-matter]")?.addEventListener("click", () => openAAMatterDetailsModal(project, aa));
+  }
+
+  // Edit core matter fields the parser populated. These drive the cover
+  // page, the engine prompt, and the dispute-table summary, so they need
+  // to be editable independently of the cover-page extras (ABN, contact,
+  // etc.) which live in openAACoverMetaModal.
+  function openAAMatterDetailsModal(project, aa) {
+    const fields = [
+      { key: "claimant", label: "Claimant (full legal name)", get: () => aa.parties.claimant || "", set: (v) => { aa.parties.claimant = v; } },
+      { key: "respondent", label: "Respondent (full legal name)", get: () => aa.parties.respondent || "", set: (v) => { aa.parties.respondent = v; } },
+      { key: "contractReference", label: "Contract reference", get: () => aa.contractReference || "", set: (v) => { aa.contractReference = v; }, placeholder: "e.g. HC-2025-12 / PO-9988 / contract dated 12 March 2025" },
+      { key: "referenceDate", label: "Reference date", get: () => aa.referenceDate || "", set: (v) => { aa.referenceDate = v; }, placeholder: "YYYY-MM-DD or 31 March 2026" },
+    ];
+    modal = {
+      render: () => `
+        <div class="modal-backdrop" data-modal-backdrop>
+          <div class="modal aa-cover-modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+              <h2>Matter details</h2>
+              <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
+            </div>
+            <div class="modal-body">
+              <p class="muted aa-edit-hint">These are the core fields the engine and master document use. Edit if the parser got something wrong, or to clean up names (e.g. "Acme" → "Acme Builders Pty Ltd"). Leave blank to fall back to the project-level value.</p>
+              <div class="aa-cover-grid">
+                ${fields.map((f) => `
+                  <label class="aa-cover-field">
+                    <span>${escapeHtml(f.label)}</span>
+                    <input class="text-input" data-aa-matter-key="${attr(f.key)}" type="text" value="${attr(f.get())}" placeholder="${attr(f.placeholder || "")}">
+                  </label>
+                `).join("")}
+              </div>
+            </div>
+            <div class="modal-foot aa-edit-foot">
+              <span class="spacer"></span>
+              <button class="ghost-button compact" type="button" data-modal-close>Cancel</button>
+              <button class="dark-button compact" type="button" data-aa-matter-save>Save</button>
+            </div>
+          </div>
+        </div>`,
+      bind: (rootEl) => {
+        const close = () => { modal = null; render(); };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        rootEl.querySelector("[data-aa-matter-save]")?.addEventListener("click", () => {
+          rootEl.querySelectorAll("[data-aa-matter-key]").forEach((inp) => {
+            const f = fields.find((x) => x.key === inp.dataset.aaMatterKey);
+            if (f) f.set((inp.value || "").trim());
+          });
+          saveProject(project);
+          close();
+        });
+      },
+    };
+    render();
   }
 
   function aaActiveThread(aa) {
