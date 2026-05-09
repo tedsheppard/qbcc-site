@@ -3255,8 +3255,8 @@ Total\t${formatCurrencyFull(total)}`;
       <tr data-aa-row="${attr(d.id)}">
         <td><input class="aa-cell" data-aa-cell="item" value="${attr(d.item || "")}"></td>
         <td><textarea class="aa-cell aa-cell-multi" data-aa-cell="description" rows="2">${escapeHtml(d.description || "")}</textarea></td>
-        <td><input class="aa-cell aa-cell-num" type="number" data-aa-cell="claimed" value="${attr(d.claimed || 0)}"></td>
-        <td><input class="aa-cell aa-cell-num" type="number" data-aa-cell="scheduled" value="${attr(d.scheduled || 0)}"></td>
+        <td><span class="aa-currency-cell"><span class="aa-currency-prefix">$</span><input class="aa-cell aa-cell-num" type="number" min="0" step="1" data-aa-cell="claimed" value="${attr(d.claimed || 0)}" aria-label="Claimed amount in dollars"></span></td>
+        <td><span class="aa-currency-cell"><span class="aa-currency-prefix">$</span><input class="aa-cell aa-cell-num" type="number" min="0" step="1" data-aa-cell="scheduled" value="${attr(d.scheduled || 0)}" aria-label="Scheduled amount in dollars"></span></td>
         <td>
           <select class="aa-cell" data-aa-cell="status">
             ${AA_DISPUTE_STATUSES.map((s) => `<option value="${s}" ${d.status === s ? "selected" : ""}>${s}</option>`).join("")}
