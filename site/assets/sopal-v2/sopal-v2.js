@@ -3255,11 +3255,13 @@ Total\t${formatCurrencyFull(total)}`;
           <div class="card-head">
             <h3>Master document</h3>
             <div class="aa-master-actions">
+              <button class="ghost-button compact" type="button" data-aa-draft-all title="Run a draft pass for every thread that has at least one answered RFI">${ICON.sparkles}<span>Draft all</span></button>
               <button class="ghost-button compact" type="button" data-aa-rebuild>Rebuild</button>
               <button class="ghost-button compact" type="button" data-aa-export>${ICON.download}<span>Export .doc</span></button>
             </div>
           </div>
           <div class="aa-master-body" data-aa-master>${renderAAMaster(project, aa)}</div>
+          <div class="aa-master-foot" data-aa-draft-all-status hidden></div>
         </aside>
       </div>
     `;
@@ -3757,6 +3759,7 @@ Total\t${formatCurrencyFull(total)}`;
     });
     document.querySelector("[data-aa-toggle-definitions]")?.addEventListener("click", () => openAADefinitionsModal(project, aa));
     document.querySelector("[data-aa-view-artifacts]")?.addEventListener("click", () => openAAArtifactsModal(project, aa));
+    document.querySelector("[data-aa-draft-all]")?.addEventListener("click", () => runDraftAll(project, aa));
     bindAATocLinks();
     document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
       const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`;
@@ -3775,6 +3778,90 @@ Total\t${formatCurrencyFull(total)}`;
       a.click();
       URL.revokeObjectURL(url);
     });
+  }
+
+  // Run engine.draft for every thread that has at least one answered RFI
+  // and isn't already drafted. Threads run in parallel — each landing
+  // patches its own thread state. The master pane refreshes once at the
+  // end. Status line in the master footer reports running / N drafted /
+  // M failed live.
+  async function runDraftAll(project, aa) {
+    const candidates = [];
+    function addCandidate(kind, key, thread, dispute) {
+      const answered = (thread.rounds || []).filter((r) => r.answer).length;
+      const drafted = (thread.submissions || "").length > 60;
+      if (answered === 0) return;          // no facts yet — skip
+      if (drafted) return;                  // already drafted — skip
+      candidates.push({ kind, key, thread, dispute });
+    }
+    addCandidate("shared", "jurisdictional", aa.jurisdictionalRfis, null);
+    addCandidate("shared", "general", aa.generalRfis, null);
+    (aa.disputes || []).forEach((d) => addCandidate("dispute", `dispute:${d.id}`, d.rfis, d));
+
+    const status = document.querySelector("[data-aa-draft-all-status]");
+    function setStatus(html) { if (status) { status.hidden = false; status.innerHTML = html; } }
+    function clearStatus() { if (status) { status.hidden = true; status.innerHTML = ""; } }
+
+    if (!candidates.length) {
+      setStatus(`<span class="muted">Nothing to draft yet — answer at least one RFI on a thread first.</span>`);
+      setTimeout(clearStatus, 4000);
+      return;
+    }
+    setStatus(`<span class="thinking-dots"><i></i><i></i><i></i></span><span>Drafting ${candidates.length} thread${candidates.length === 1 ? "" : "s"} in parallel…</span>`);
+
+    let done = 0;
+    let failed = 0;
+    const results = await Promise.all(candidates.map(async (c) => {
+      try {
+        const payload = {
+          mode: "draft",
+          threadKind: c.kind,
+          threadLabel: c.kind === "dispute" ? (c.dispute && c.dispute.item) || "" : (c.key === "jurisdictional" ? "Jurisdictional" : "Background / General"),
+          disputeId: c.kind === "dispute" ? (c.dispute && c.dispute.id) : null,
+          dispute: c.dispute || null,
+          rounds: c.thread.rounds || [],
+          existingSubmissions: c.thread.submissions || "",
+          parties: aa.parties,
+          contractReference: aa.contractReference,
+          referenceDate: aa.referenceDate,
+          claimedAmount: aa.claimedAmount,
+          scheduledAmount: aa.scheduledAmount,
+          psReasonsUniverse: aa.psReasonsUniverse,
+          s79Scenario: aa.s79Scenario || "less-than-claimed",
+          definitions: aa.definitions,
+          projectMeta: { name: project.name, contractForm: project.contractForm },
+        };
+        const response = await fetch("/api/sopal-v2/complex/aa/engine", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(describeApiError(data, "Engine call failed"));
+        if (data.submissionsHtml) c.thread.submissions = data.submissionsHtml;
+        if (Array.isArray(data.evidenceIndex)) c.thread.evidenceIndex = data.evidenceIndex;
+        if (typeof data.statDecContent === "string") c.thread.statDecContent = data.statDecContent;
+        if (data.definitions) Object.assign(aa.definitions, data.definitions);
+        done += 1;
+      } catch (_err) {
+        failed += 1;
+      }
+      // Re-render the master pane after each thread lands so progress is
+      // visible without waiting for the whole batch.
+      const mount = document.querySelector("[data-aa-master]");
+      if (mount) { mount.innerHTML = renderAAMaster(project, aa); bindAATocLinks(); }
+      setStatus(`<span class="thinking-dots"><i></i><i></i><i></i></span><span>${done + failed}/${candidates.length} done · ${done} drafted${failed ? ` · ${failed} failed` : ""}</span>`);
+      saveProject(project);
+    }));
+    if (failed) {
+      setStatus(`<span class="muted">Drafted ${done} of ${candidates.length}. ${failed} failed — try Draft again on the affected items.</span>`);
+    } else {
+      setStatus(`<span class="muted">Drafted ${done} of ${candidates.length}.</span>`);
+    }
+    // Re-render the whole shell so the items-nav status dots update.
+    setTimeout(() => render(), 600);
+    return results;
   }
 
   async function aaCallEngine(project, aa, mode) {

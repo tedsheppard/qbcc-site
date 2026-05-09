@@ -3522,7 +3522,15 @@ a { color: inherit; text-decoration: none; }
 }
 
 .aa-master-pane { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
-.aa-master-actions { display: flex; gap: 6px; }
+.aa-master-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.aa-master-foot {
+  border-top: 1px solid var(--main-border);
+  padding: 8px 14px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .aa-master-body {
   flex: 1;
   overflow-y: auto;
