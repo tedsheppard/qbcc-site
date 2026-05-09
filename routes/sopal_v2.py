@@ -751,6 +751,7 @@ Return STRICT JSON with this shape:
 
 Rules:
 - Submissions are professional adjudication application submissions: assertive, evidence-anchored, structured around the respondent's PS reasons (s 82(4) ceiling), citation-light but precise where used. Use numbered paragraphs in HTML (<p><strong>1.</strong> …</p>). Do NOT use generic templates — adapt to this matter.
+- HEADING HIERARCHY: do NOT use <h1> or <h2> in submissionsHtml — those are reserved for the master document's top-level section numbering (e.g. '2. Jurisdiction', '4.1 Variation V14'). Use <h3> for top-level subheadings within your submissions and <h4> for any finer divisions. Do NOT repeat the section title (the master assembler supplies it).
 - Do NOT invent facts. If a fact isn't supplied, leave a [bracketed placeholder] in the submissions and add another RFI to fill it.
 - For per-item threads: focus the submissions on THIS item only. The master assembler stitches all items together.
 - For jurisdictional thread: produce a structured set of jurisdictional submissions with subheadings per s 64 / s 67 / s 68 / s 69 / s 75 / s 76 / s 79 / s 88 as applicable.
@@ -804,16 +805,7 @@ async def aa_engine(payload: AAEngineRequest) -> dict[str, Any]:
             raw = raw[4:]
         raw = raw.strip().rstrip("`").strip()
 
-    import json as _json
-
-    start = raw.find("{")
-    end = raw.rfind("}")
-    if start == -1 or end <= start:
-        raise HTTPException(status_code=502, detail="Could not parse the engine output as JSON")
-    try:
-        parsed = _json.loads(raw[start : end + 1])
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Could not parse the engine output: {exc}") from exc
+    parsed = _aa_safe_parse_engine_output(raw, payload.existingSubmissions or "")
 
     return {
         "appendRfi": parsed.get("appendRfi") if parsed.get("appendRfi") else None,
@@ -822,6 +814,53 @@ async def aa_engine(payload: AAEngineRequest) -> dict[str, Any]:
         "statDecContent": parsed.get("statDecContent") or "",
         "definitions": parsed.get("definitions") or {},
         "isReady": bool(parsed.get("isReady")),
+    }
+
+
+def _aa_safe_parse_engine_output(raw: str, fallback_submissions: str) -> dict[str, Any]:
+    """Parse the engine's JSON envelope, tolerating common model quirks.
+
+    Tries strict JSON first, then progressively-more-forgiving fallbacks so
+    a single malformed comma doesn't blow up the whole turn. If the model
+    returned no JSON at all we treat the entire blob as submissionsHtml so
+    the user at least sees the model's draft.
+    """
+    import json as _json
+    import re as _re
+
+    start = raw.find("{")
+    end = raw.rfind("}")
+
+    # Pass 1: strict JSON between the first { and last }.
+    if start != -1 and end > start:
+        candidate = raw[start : end + 1]
+        try:
+            return _json.loads(candidate)
+        except Exception:
+            pass
+        # Pass 2: try removing trailing commas (a common model error).
+        try:
+            cleaned = _re.sub(r",\s*([}\]])", r"\1", candidate)
+            return _json.loads(cleaned)
+        except Exception:
+            pass
+
+    # Pass 3: degraded — treat whatever the model produced as the new
+    # submissionsHtml. Strip any leading/trailing code fences. This keeps the
+    # workflow flowing rather than throwing 502 on a single quote-escape slip.
+    body = raw.strip()
+    if body.startswith("```"):
+        body = body.split("```", 2)[-1].lstrip()
+        if body.startswith("json"):
+            body = body[4:].lstrip()
+        body = body.rstrip("`").strip()
+    return {
+        "appendRfi": None,
+        "submissionsHtml": body or fallback_submissions or "",
+        "evidenceIndex": [],
+        "statDecContent": "",
+        "definitions": {},
+        "isReady": False,
     }
 
 
