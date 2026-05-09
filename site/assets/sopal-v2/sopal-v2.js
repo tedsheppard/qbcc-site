@@ -3118,6 +3118,7 @@ Total\t${formatCurrencyFull(total)}`;
               <button class="dark-button" type="button" data-aa-parse>${ICON.sparkles}<span>Parse documents</span></button>
               <span class="muted aa-intake-help">Parsing extracts the parties, amounts, claim line items, and (if a PS was given) the respondent's reasons. You'll review and edit the result on the next stage.</span>
             </div>
+            <div class="aa-intake-error" data-aa-parse-error role="alert" hidden></div>
           </div>
         </div>
       </section>
@@ -4172,12 +4173,27 @@ Total\t${formatCurrencyFull(total)}`;
       const pc = aa.documents.paymentClaim;
       const ps = aa.documents.paymentSchedule;
       const scenario = AA_S79_SCENARIOS.find((s) => s.id === (aa.s79Scenario || "less-than-claimed")) || AA_S79_SCENARIOS[0];
+      // Inline error helper — surface validation + runtime errors next to the
+      // Parse button instead of an alert() that loses context the moment it
+      // closes. Auto-clears on the next click.
+      const errEl = document.querySelector("[data-aa-parse-error]");
+      const showErr = (msg) => {
+        if (!errEl) { alert(msg); return; }
+        errEl.textContent = msg;
+        errEl.hidden = false;
+      };
+      const clearErr = () => {
+        if (!errEl) return;
+        errEl.textContent = "";
+        errEl.hidden = true;
+      };
+      clearErr();
       if (!pc || !pc.text) {
-        alert("Add the Payment Claim before parsing.");
+        showErr("Add the Payment Claim before parsing — drop a PDF / DOCX / TXT into the Payment Claim slot, or paste the text directly.");
         return;
       }
       if (!scenario.psOptional && (!ps || !ps.text)) {
-        alert("This s 79 scenario requires a Payment Schedule. Either paste it in or switch the scenario to 'No payment schedule received'.");
+        showErr("This s 79 scenario requires a Payment Schedule. Either paste it in or switch the scenario to 'No payment schedule received and no payment made'.");
         return;
       }
       btn.disabled = true;
@@ -4232,7 +4248,7 @@ Total\t${formatCurrencyFull(total)}`;
         saveProject(project);
         render();
       } catch (error) {
-        alert(error.message || "Parse failed");
+        showErr(error.message || "Parse failed — please try again or paste the document text directly into the slots.");
         btn.disabled = false;
         btn.innerHTML = `${ICON.sparkles}<span>Parse documents</span>`;
       }
