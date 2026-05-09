@@ -486,6 +486,20 @@
       library: Array.isArray(incoming.library) ? incoming.library.map(sanitiseImportedDoc).filter(Boolean) : [],
       chats: incoming.chats && typeof incoming.chats === "object" ? incoming.chats : {},
       reviews: incoming.reviews && typeof incoming.reviews === "object" ? incoming.reviews : {},
+      // Drafting agents' Word-style draft state (per agent: html + chat).
+      drafts: incoming.drafts && typeof incoming.drafts === "object" ? incoming.drafts : {},
+      // Complex agent state (Adjudication Application workflow: stage,
+      // s79Scenario, parsed PC/PS, disputes, RFIs, definitions, etc.).
+      complexApps: incoming.complexApps && typeof incoming.complexApps === "object" ? incoming.complexApps : {},
+      // Project notes — narrative running log surfaced by the drafting/
+      // assistant chats' 'Save as note' button.
+      notes: typeof incoming.notes === "string" ? incoming.notes : "",
+      // Pinned chat threads in the sidebar's recents.
+      pinnedThreads: Array.isArray(incoming.pinnedThreads) ? incoming.pinnedThreads : [],
+      // Per-agent saved review state (when the project's review-mode
+      // workspace was used). Kept for back-compat.
+      category: typeof incoming.category === "string" ? incoming.category : "",
+      favourite: !!incoming.favourite,
       createdAt: typeof incoming.createdAt === "number" ? incoming.createdAt : now,
       updatedAt: now,
     };
