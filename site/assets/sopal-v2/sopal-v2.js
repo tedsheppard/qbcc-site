@@ -475,34 +475,6 @@
     saveStore();
     return project;
   }
-  function seedSampleProject() {
-    // Onboarding shortcut for the empty-home state. Creates a fictional but
-    // realistic project so a first-time user can immediately try every agent
-    // without hand-typing setup. Drops the user straight into the assistant
-    // page so they can see project context working.
-    const project = createProject({
-      name: "Queen Street Tower — Stage 2 (sample)",
-      claimant: "Acme Builders Pty Ltd",
-      respondent: "QH Group Pty Ltd",
-      contractForm: "AS 4902",
-      reference: "PO-2024-014",
-      userIsParty: "claimant",
-    });
-    project.contracts = [{
-      name: "Head contract — extension of time clause",
-      text: "Clause 34.3 — Extension of time. The Contractor must, within 10 business days of becoming aware of a delay event qualifying for an extension of time under clause 34.2, give the Superintendent written notice setting out the cause and likely effect of the delay. Failure to give notice within that period is a bar to any extension of time claim.",
-      source: "sample",
-      addedAt: new Date().toISOString(),
-    }];
-    project.library = [{
-      name: "RFI 014 — Latent ground condition",
-      text: "RFI 014 (4 May 2026): During pile installation for Building B on 28 April 2026 the Contractor encountered fill below the predicted soft-clay layer that was not characterised in the geotechnical report. Pile design assumptions no longer valid. Awaiting structural engineer's redesign.",
-      source: "sample",
-      addedAt: new Date().toISOString(),
-    }];
-    saveProject(project);
-    navigate(`/sopal-v2/projects/${project.id}/overview`);
-  }
   function projectChat(p, key) {
     if (!p.chats[key]) p.chats[key] = { messages: [] };
     return p.chats[key];
@@ -971,11 +943,7 @@
               <div class="card-empty-icon">${ICON.file}</div>
               <h4>Create your first project</h4>
               <p>Add the contract details, paste in clauses or upload your contract — Sopal then runs every agent (Payment Claims, EOTs, Adjudication etc.) inside that project's context.</p>
-              <div class="card-empty-actions">
-                <button class="dark-button" type="button" data-new-project>Create project</button>
-                <button class="ghost-button" type="button" data-seed-sample>Try a sample project</button>
-              </div>
-              <p class="muted card-empty-hint">The sample is a fictional Queen Street Tower head contract under AS 4902 — pre-loaded with a contract clause and an RFI so you can immediately try the agents.</p>
+              <button class="dark-button" type="button" data-new-project>Create project</button>
             </div>
           ` : `
             <div class="project-list">
@@ -2506,7 +2474,7 @@ Total\t${formatCurrencyFull(total)}`;
           <div class="card">
             <div class="card-head"><h3>Add ${escapeHtml(labels.single.toLowerCase())}</h3></div>
             <form class="card-body context-form" data-context-form="${bucket}">
-              <label class="span-2">Label<input class="text-input" name="name" placeholder="e.g. Head contract — clauses 1-12"></label>
+              <label class="span-2">Label<input class="text-input" name="name" placeholder="Document label"></label>
               <label class="span-2">Paste text<textarea class="text-area" name="text" rows="8" placeholder="Paste clauses, correspondence, claim text, schedule text, or facts."></textarea></label>
               <div class="file-zone span-2" data-bulk-drop>
                 <label class="file-zone-label">${ICON.upload}<span>Click or drop one or more PDF / DOCX / TXT files — each becomes a separate entry</span><input type="file" data-context-file accept=".pdf,.docx,.txt" multiple></label>
@@ -4077,10 +4045,10 @@ Total\t${formatCurrencyFull(total)}`;
               <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
             </div>
             <form class="modal-body" data-project-form>
-              <label>Project name<input class="text-input" name="name" required value="${attr(editing?.name || "")}" placeholder="e.g. Queen Street Tower"></label>
+              <label>Project name<input class="text-input" name="name" required value="${attr(editing?.name || "")}" placeholder="Project name"></label>
               <div class="row-2">
-                <label>Claimant<input class="text-input" name="claimant" value="${attr(editing?.claimant || "")}" placeholder="e.g. Acme Builders Pty Ltd"></label>
-                <label>Respondent<input class="text-input" name="respondent" value="${attr(editing?.respondent || "")}" placeholder="e.g. ABC Developments Pty Ltd"></label>
+                <label>Claimant<input class="text-input" name="claimant" value="${attr(editing?.claimant || "")}" placeholder="Claimant name"></label>
+                <label>Respondent<input class="text-input" name="respondent" value="${attr(editing?.respondent || "")}" placeholder="Respondent name"></label>
               </div>
               <div class="row-2">
                 <label>Contract form
@@ -4088,7 +4056,7 @@ Total\t${formatCurrencyFull(total)}`;
                     ${CONTRACT_FORMS.map((f) => `<option value="${attr(f)}" ${editing && editing.contractForm === f ? "selected" : ""}>${escapeHtml(f)}</option>`).join("")}
                   </select>
                 </label>
-                <label>Reference / contract no.<input class="text-input" name="reference" value="${attr(editing?.reference || "")}" placeholder="e.g. PO-2024-014"></label>
+                <label>Reference / contract no.<input class="text-input" name="reference" value="${attr(editing?.reference || "")}" placeholder="Reference or contract no."></label>
               </div>
               <div class="row-2">
                 <label class="span-all">Category
@@ -4803,7 +4771,6 @@ Total\t${formatCurrencyFull(total)}`;
       togglePinThread(el.dataset.projectId, el.dataset.togglePinThread);
     }));
     document.querySelectorAll("[data-new-project]").forEach((el) => el.addEventListener("click", () => openProjectModal(null)));
-    document.querySelectorAll("[data-seed-sample]").forEach((el) => el.addEventListener("click", () => seedSampleProject()));
     document.querySelectorAll("[data-import-project]").forEach((input) => input.addEventListener("change", async (event) => {
       const file = event.currentTarget.files && event.currentTarget.files[0];
       event.currentTarget.value = "";
