@@ -1070,7 +1070,9 @@
         renameSavedDecisionSearch(id, next);
         render();
       }));
-      if (q || params.toString()) fetchDecisionResults(params, 0);
+      const initialPage = Math.max(1, parseInt(params.get("page") || "1", 10) || 1);
+      const initialOffset = (initialPage - 1) * 20;
+      if (q || params.toString()) fetchDecisionResults(params, initialOffset);
     }, 0);
 
     return PageBody(`
@@ -1078,16 +1080,19 @@
         <h1 class="page-title">Decision search</h1>
         <p class="page-sub">Searches Sopal's adjudication decision database. Results render here — no jumps to the live site.</p>
 
-        <div class="card">
-          <form class="search-form" data-decision-search>
-            <input class="text-input span-all" name="q" type="search" value="${attr(q)}" placeholder="Adjudicator, party, section, keywords…" autofocus>
-            <select class="select-input" name="sort">
-              ${["relevance","newest","oldest","claim_high","claim_low","adj_high","adj_low"].map((s) => `<option value="${s}" ${sort===s?"selected":""}>${labelSort(s)}</option>`).join("")}
-            </select>
+        <form class="search-form-v2" data-decision-search>
+          <div class="search-row-main">
+            <input class="text-input" name="q" type="search" value="${attr(q)}" placeholder="Adjudicator, party, section, keywords…" autofocus>
             <button class="dark-button" type="submit">Search</button>
-            ${canSave ? `<button class="ghost-button compact" type="button" data-save-search ${alreadySaved ? "disabled" : ""}>${alreadySaved ? "Saved" : "Save search"}</button>` : ""}
-            <details class="filters" ${filtersOn ? "open" : ""}>
-              <summary>Filters${filtersOn ? " · active" : ""}</summary>
+          </div>
+          <div class="search-row-meta">
+            <label class="search-meta-label">Sort
+              <select class="select-input compact" name="sort">
+                ${["relevance","newest","oldest","claim_high","claim_low","adj_high","adj_low"].map((s) => `<option value="${s}" ${sort===s?"selected":""}>${labelSort(s)}</option>`).join("")}
+              </select>
+            </label>
+            <details class="filters-v2" ${filtersOn ? "open" : ""}>
+              <summary><span class="filters-toggle-label">Filters${filtersOn ? " · active" : ""}</span></summary>
               <div class="filters-grid">
                 <label>From<input class="text-input" name="startDate" type="date" value="${attr(params.get("startDate") || "")}"></label>
                 <label>To<input class="text-input" name="endDate" type="date" value="${attr(params.get("endDate") || "")}"></label>
@@ -1095,8 +1100,9 @@
                 <label>Max claimed<input class="text-input" name="maxClaim" type="number" step="1000" value="${attr(params.get("maxClaim") || "")}"></label>
               </div>
             </details>
-          </form>
-        </div>
+            ${canSave ? `<button class="ghost-button compact" type="button" data-save-search ${alreadySaved ? "disabled" : ""}>${alreadySaved ? "Saved" : "Save search"}</button>` : ""}
+          </div>
+        </form>
 
         ${saved.length ? `
           <div class="saved-search-row">
@@ -1126,12 +1132,63 @@
     return `<div class="card"><div class="card-body"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></div>`;
   }
 
+  // Build the page-selector control rendered at the top and the bottom of
+  // the results list. Returns "" when there's only a single page worth of
+  // results so we don't show a pointless lone "1" pill.
+  function buildPagination(currentPage, total, pageSize) {
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (totalPages <= 1) return "";
+    const items = [];
+    function add(p) { items.push(p); }
+    function addEllipsis() { items.push("…"); }
+    // Compact 1 … (cur-1) (cur) (cur+1) … N pattern, with the cur window
+    // expanding to the edges so we never render two adjacent ellipses.
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) add(i);
+    } else {
+      add(1);
+      if (currentPage > 4) addEllipsis();
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) add(i);
+      if (currentPage < totalPages - 3) addEllipsis();
+      add(totalPages);
+    }
+    const prevDisabled = currentPage === 1;
+    const nextDisabled = currentPage === totalPages;
+    return `
+      <nav class="pager" aria-label="Pagination">
+        <button class="pager-btn pager-step" type="button" data-page="${currentPage - 1}" ${prevDisabled ? "disabled aria-disabled='true'" : ""}>← Prev</button>
+        ${items.map((it) => it === "…"
+          ? `<span class="pager-ellipsis" aria-hidden="true">…</span>`
+          : `<button class="pager-btn ${it === currentPage ? "active" : ""}" type="button" data-page="${it}" ${it === currentPage ? "aria-current='page'" : ""}>${it}</button>`
+        ).join("")}
+        <button class="pager-btn pager-step" type="button" data-page="${currentPage + 1}" ${nextDisabled ? "disabled aria-disabled='true'" : ""}>Next →</button>
+        <span class="pager-meta muted">Page ${currentPage.toLocaleString()} of ${totalPages.toLocaleString()} · ${total.toLocaleString()} result${total === 1 ? "" : "s"}</span>
+      </nav>`;
+  }
+
+  function bindPagination(mount, params) {
+    mount.querySelectorAll(".pager [data-page]").forEach((btn) => {
+      if (btn.disabled) return;
+      btn.addEventListener("click", () => {
+        const targetPage = Number(btn.dataset.page);
+        if (!targetPage || targetPage < 1) return;
+        const next = new URLSearchParams(params);
+        if (targetPage === 1) next.delete("page");
+        else next.set("page", String(targetPage));
+        navigate(`/sopal-v2/research/decisions?${next.toString()}`);
+      });
+    });
+  }
+
   async function fetchDecisionResults(params, offset) {
     const mount = document.getElementById("decision-results");
     if (!mount) return;
     mount.innerHTML = skeletonRows();
+    const pageSize = 20;
     const qs = new URLSearchParams(params);
-    qs.set("limit", "20");
+    qs.set("limit", String(pageSize));
     qs.set("offset", String(offset || 0));
     try {
       const response = await fetch(`/api/sopal-v2/search?${qs.toString()}`, { credentials: "include" });
@@ -1143,50 +1200,27 @@
         mount.innerHTML = EmptyState("No decisions match.", "Adjust your query or filters.");
         return;
       }
+      const currentPage = Math.floor((offset || 0) / pageSize) + 1;
+      const pagerHtml = buildPagination(currentPage, total, pageSize);
       mount.innerHTML = `
-        <div class="card">
-          <div class="card-head"><h3>${total.toLocaleString()} result${total === 1 ? "" : "s"}</h3></div>
-          <div class="card-body results-list">${items.map(renderDecisionItem).join("")}</div>
-          ${items.length < total ? `<div class="card-foot"><button class="ghost-button" type="button" data-load-more="${(offset || 0) + items.length}">Load more (${(total - ((offset || 0) + items.length)).toLocaleString()} remaining)</button></div>` : ""}
+        <div class="results-shell">
+          <div class="results-head">
+            <h3>${total.toLocaleString()} result${total === 1 ? "" : "s"}</h3>
+            ${pagerHtml ? `<div class="pager-wrap pager-top">${pagerHtml}</div>` : ""}
+          </div>
+          <div class="results-list">${items.map(renderDecisionItem).join("")}</div>
+          ${pagerHtml ? `<div class="pager-wrap pager-bottom">${pagerHtml}</div>` : ""}
         </div>`;
       mount.querySelectorAll("[data-decision-id]").forEach((el) => el.addEventListener("click", () => {
         const meta = el.dataset.meta ? safeParseJson(el.dataset.meta) : null;
         loadDecisionDetail(el.dataset.decisionId, el.dataset.title, meta);
       }));
-      const more = mount.querySelector("[data-load-more]");
-      if (more) more.addEventListener("click", () => appendDecisionResults(params, Number(more.dataset.loadMore)));
+      bindPagination(mount, params);
+      // Scroll the results back to the top when the page changes so the user
+      // doesn't land deep in the previous page's tail.
+      mount.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (error) {
       mount.innerHTML = `<div class="error-banner">${escapeHtml(error.message || "Search failed")}</div>`;
-    }
-  }
-
-  async function appendDecisionResults(params, offset) {
-    const mount = document.getElementById("decision-results");
-    if (!mount) return;
-    const list = mount.querySelector(".results-list");
-    const foot = mount.querySelector(".card-foot");
-    const qs = new URLSearchParams(params);
-    qs.set("limit", "20");
-    qs.set("offset", String(offset));
-    try {
-      const response = await fetch(`/api/sopal-v2/search?${qs.toString()}`, { credentials: "include" });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.detail || "Search failed");
-      const items = Array.isArray(data.items) ? data.items : [];
-      list.insertAdjacentHTML("beforeend", items.map(renderDecisionItem).join(""));
-      list.querySelectorAll("[data-decision-id]:not([data-bound])").forEach((el) => {
-        el.dataset.bound = "1";
-        el.addEventListener("click", () => {
-          const meta = el.dataset.meta ? safeParseJson(el.dataset.meta) : null;
-          loadDecisionDetail(el.dataset.decisionId, el.dataset.title, meta);
-        });
-      });
-      const total = Number(data.total || 0);
-      const newOffset = offset + items.length;
-      if (newOffset >= total || !items.length) { if (foot) foot.remove(); }
-      else if (foot) foot.querySelector("[data-load-more]").dataset.loadMore = String(newOffset);
-    } catch (error) {
-      if (foot) foot.innerHTML = `<div class="error-banner">${escapeHtml(error.message)}</div>`;
     }
   }
 
