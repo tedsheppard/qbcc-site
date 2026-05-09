@@ -3080,6 +3080,7 @@ Total\t${formatCurrencyFull(total)}`;
             <span><strong>Reference date:</strong> ${escapeHtml(aa.referenceDate || "—")}</span>
             <span><strong>Claimed:</strong> ${formatCurrencyCompact(aa.claimedAmount)}</span>
             <span><strong>Scheduled:</strong> ${formatCurrencyCompact(aa.scheduledAmount)}</span>
+            <span><strong>s 79 scenario:</strong> ${escapeHtml((AA_S79_SCENARIOS.find((s) => s.id === (aa.s79Scenario || "less-than-claimed")) || AA_S79_SCENARIOS[0]).label)}</span>
           </div>
           <table class="aa-table">
             <thead>
