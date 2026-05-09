@@ -446,6 +446,238 @@ async def sopal_v2_edit_draft(payload: SopalV2EditDraftRequest) -> dict[str, Any
     }
 
 
+# Complex Agent — Adjudication Application. See
+# docs/complex-adjudication-application-plan.md for the full architecture.
+# v1 ships two endpoints: a deterministic-shaped document parser (for the
+# Stage 1 → 2 transition) and a single "engine" that handles RFI generation,
+# follow-ups, and per-thread drafting.
+class AAParseRequest(BaseModel):
+    paymentClaimText: str = Field(default="", max_length=300_000)
+    paymentScheduleText: str = Field(default="", max_length=300_000)
+    projectMeta: dict[str, Any] = Field(default_factory=dict)
+
+
+AA_PARSE_SYSTEM_PROMPT = """You are extracting a structured snapshot of a Queensland BIF Act adjudication matter from the Payment Claim and Payment Schedule documents the user has supplied.
+
+Return STRICT JSON with exactly this shape:
+{
+  "parties":            { "claimant": "...", "respondent": "..." },
+  "contractReference":  "string",
+  "referenceDate":      "YYYY-MM-DD or empty string",
+  "claimedAmount":      number,
+  "scheduledAmount":    number,
+  "lineItems": [
+    {
+      "label":       "short label, eg 'Variation V14'",
+      "description": "one to three sentence description from the PC",
+      "claimed":     number,
+      "scheduled":   number,
+      "psReasons":   "verbatim or close-paraphrase of the respondent's reasons for any difference, from the PS",
+      "status":      "disputed" | "admitted" | "partial" | "jurisdictional",
+      "issueType":   "variation" | "eot" | "delay-costs" | "defects" | "set-off" | "retention" | "prevention" | "scope" | "valuation" | "other"
+    }
+  ],
+  "psReasonsUniverse":  "all of the respondent's reasons concatenated — this is the s 82(4) ceiling of arguments the respondent can later run",
+  "warnings": [{ "code": "string", "message": "human-readable" }]
+}
+
+Rules:
+- Do NOT invent line items, parties, dates, or dollar amounts. If a field isn't in the documents, leave it empty / 0 / [].
+- The PS may schedule the claim at $0 and offer reasons; capture every reason against the PC item it relates to where you can.
+- If the PS appears to be silent or missing, return scheduledAmount = 0 and add a warning {"code":"ps-missing","message":"No payment schedule was identified — the application route is the no-schedule path under s 79."}.
+- If the reference date appears to be in the future, add a warning {"code":"ref-date-future","message":"..."}.
+- Use Australian English. Numbers are plain numbers (no $ symbols, no commas).
+- Return only the JSON object. No commentary. No code fences."""
+
+
+@router.post("/complex/aa/parse-documents")
+async def aa_parse_documents(payload: AAParseRequest) -> dict[str, Any]:
+    pc = (payload.paymentClaimText or "").strip()
+    ps = (payload.paymentScheduleText or "").strip()
+    if not pc:
+        raise HTTPException(status_code=400, detail="Payment Claim text is required")
+    if not ps:
+        raise HTTPException(status_code=400, detail="Payment Schedule text is required")
+
+    project_meta = payload.projectMeta or {}
+    project_block = (
+        f"Project: {project_meta.get('name') or '[unnamed]'}\n"
+        f"Contract form: {project_meta.get('contractForm') or '[unspecified]'}\n"
+        f"Claimant (project record): {project_meta.get('claimant') or ''}\n"
+        f"Respondent (project record): {project_meta.get('respondent') or ''}\n"
+    )
+
+    user_content = (
+        project_block
+        + "\nPAYMENT CLAIM:\n"
+        + pc[:120_000]
+        + "\n\nPAYMENT SCHEDULE:\n"
+        + ps[:120_000]
+    )
+
+    messages = [
+        {"role": "system", "content": BASE_SYSTEM_PROMPT + "\n\n" + _current_date_context() + "\n\n" + AA_PARSE_SYSTEM_PROMPT},
+        {"role": "user", "content": user_content},
+    ]
+    result = _complete(messages)
+    raw = (result.get("content") or "").strip()
+    if raw.startswith("```"):
+        raw = raw.split("```", 2)[-1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip().rstrip("`").strip()
+
+    import json as _json
+
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start == -1 or end <= start:
+        raise HTTPException(status_code=502, detail="Could not parse the model output as JSON")
+    try:
+        parsed = _json.loads(raw[start : end + 1])
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Could not parse the model output: {exc}") from exc
+    return parsed
+
+
+# ---------------- AA engine ----------------
+class AAEngineRequest(BaseModel):
+    mode: str = Field(default="rfi-next", max_length=40)
+    threadKind: str = Field(default="shared", max_length=20)
+    threadLabel: str = Field(default="", max_length=200)
+    disputeId: str | None = None
+    dispute: dict[str, Any] | None = None
+    rounds: list[dict[str, Any]] = Field(default_factory=list)
+    existingSubmissions: str = Field(default="", max_length=120_000)
+    parties: dict[str, Any] = Field(default_factory=dict)
+    contractReference: str = ""
+    referenceDate: str = ""
+    claimedAmount: float = 0
+    scheduledAmount: float = 0
+    psReasonsUniverse: str = ""
+    definitions: dict[str, Any] = Field(default_factory=dict)
+    projectMeta: dict[str, Any] = Field(default_factory=dict)
+
+
+def _aa_thread_brief(payload: AAEngineRequest) -> str:
+    if payload.threadKind == "dispute" and payload.dispute:
+        d = payload.dispute
+        return (
+            f"Thread: per-item dispute — '{d.get('item') or payload.threadLabel}'\n"
+            f"Issue type: {d.get('issueType') or 'other'}\n"
+            f"Status: {d.get('status') or 'disputed'}\n"
+            f"Claimed: {d.get('claimed') or 0}\n"
+            f"Scheduled: {d.get('scheduled') or 0}\n"
+            f"Description: {d.get('description') or ''}\n"
+            f"Respondent's reasons (from PS): {d.get('psReasons') or ''}"
+        )
+    if payload.threadKind == "shared" and "jurisdiction" in payload.threadLabel.lower():
+        return "Thread: shared — Jurisdictional. Cover s 64 / s 67 / s 68 / s 69 / s 75 / s 76 / s 79 / s 88 BIF Act items."
+    return f"Thread: shared — {payload.threadLabel}."
+
+
+def _aa_rounds_brief(rounds: list[dict[str, Any]]) -> str:
+    lines = []
+    for i, r in enumerate(rounds, start=1):
+        lines.append(f"RFI {i} (asked): {r.get('question') or ''}")
+        lines.append(f"RFI {i} (answer): {r.get('answer') or '(unanswered)'}")
+    return "\n".join(lines) if lines else "No RFIs yet."
+
+
+AA_ENGINE_SYSTEM_PROMPT = """You are Sopal Complex Agent — Adjudication Application. You run the iterative lawyer workflow for a single RFI thread on a Queensland BIF Act adjudication application.
+
+You will receive context for ONE thread at a time:
+- A short brief (which thread, jurisdictional / general / per-item dispute).
+- The matter context (parties, claimed / scheduled, reference date, contract reference, the respondent's full reasons universe from the PS).
+- The full RFI Q&A history for this thread.
+- The current draft submissions HTML for this thread (may be empty).
+- The shared definitions dictionary.
+
+You will be asked to do ONE of:
+- mode = "rfi-next": Ask the next targeted RFI question for this thread. Be specific, lawyer-grade, and tailored to the thread (issue-type aware for per-item disputes). Do NOT ask multi-part questions in one shot — one focused question at a time.
+- mode = "rfi-followup": A user just answered the latest RFI. Either (a) ask another follow-up RFI if you still need information, or (b) re-draft the submissions HTML for this thread now that you have enough.
+- mode = "draft": Draft / re-draft the submissions HTML for this thread using everything you have, even if some RFIs are unanswered (note any gaps in the draft as bracketed placeholders).
+
+Return STRICT JSON with this shape:
+{
+  "appendRfi":         "string|null",  // a new RFI question to append. null if you didn't ask one.
+  "submissionsHtml":   "string",       // the FULL updated submissions HTML for THIS thread (may be empty).
+  "evidenceIndex":     [{ "ref": "SOE-1", "desc": "...", "location": "para 4.1.3" }],
+  "statDecContent":    "string",
+  "definitions":       { "term": "definition" },
+  "isReady":           true|false      // whether this thread is "drafted enough" to advance.
+}
+
+Rules:
+- Submissions are professional adjudication application submissions: assertive, evidence-anchored, structured around the respondent's PS reasons (s 82(4) ceiling), citation-light but precise where used. Use numbered paragraphs in HTML (<p><strong>1.</strong> …</p>). Do NOT use generic templates — adapt to this matter.
+- Do NOT invent facts. If a fact isn't supplied, leave a [bracketed placeholder] in the submissions and add another RFI to fill it.
+- For per-item threads: focus the submissions on THIS item only. The master assembler stitches all items together.
+- For jurisdictional thread: produce a structured set of jurisdictional submissions with subheadings per s 64 / s 67 / s 68 / s 69 / s 75 / s 76 / s 79 / s 88 as applicable.
+- For general thread: produce parties / background / contract / project facts.
+- Definitions you introduce (defined Terms in capitalised quoted form) should also be added to the definitions dict.
+- Australian English. BIF Act not BCIPA. Distinguish current QLD law from BCIPA; do not call BCIPA the BIF Act.
+- Return only the JSON object. No commentary. No code fences."""
+
+
+@router.post("/complex/aa/engine")
+async def aa_engine(payload: AAEngineRequest) -> dict[str, Any]:
+    if payload.mode not in {"rfi-next", "rfi-followup", "draft"}:
+        raise HTTPException(status_code=400, detail="Unknown engine mode")
+
+    thread_brief = _aa_thread_brief(payload)
+    rounds_brief = _aa_rounds_brief(payload.rounds)
+    definitions_lines = "\n".join(f"- {k}: {v}" for k, v in (payload.definitions or {}).items()) or "(none yet)"
+    user_content = (
+        f"Mode: {payload.mode}\n\n"
+        f"{thread_brief}\n\n"
+        f"Matter context:\n"
+        f"- Project: {payload.projectMeta.get('name') or ''}\n"
+        f"- Contract form: {payload.projectMeta.get('contractForm') or ''}\n"
+        f"- Claimant: {payload.parties.get('claimant') or ''}\n"
+        f"- Respondent: {payload.parties.get('respondent') or ''}\n"
+        f"- Contract reference: {payload.contractReference or ''}\n"
+        f"- Reference date: {payload.referenceDate or ''}\n"
+        f"- Claimed amount: {payload.claimedAmount}\n"
+        f"- Scheduled amount: {payload.scheduledAmount}\n"
+        f"- s 82(4) PS reasons universe: {payload.psReasonsUniverse[:8000]}\n\n"
+        f"Definitions (shared):\n{definitions_lines}\n\n"
+        f"RFI history for this thread:\n{rounds_brief}\n\n"
+        f"Current draft submissions HTML for this thread (may be empty):\n{payload.existingSubmissions[:60_000]}"
+    )
+
+    messages = [
+        {"role": "system", "content": BASE_SYSTEM_PROMPT + "\n\n" + _current_date_context() + "\n\n" + AA_ENGINE_SYSTEM_PROMPT},
+        {"role": "user", "content": user_content},
+    ]
+    result = _complete(messages)
+    raw = (result.get("content") or "").strip()
+    if raw.startswith("```"):
+        raw = raw.split("```", 2)[-1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip().rstrip("`").strip()
+
+    import json as _json
+
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start == -1 or end <= start:
+        raise HTTPException(status_code=502, detail="Could not parse the engine output as JSON")
+    try:
+        parsed = _json.loads(raw[start : end + 1])
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Could not parse the engine output: {exc}") from exc
+
+    return {
+        "appendRfi": parsed.get("appendRfi") if parsed.get("appendRfi") else None,
+        "submissionsHtml": parsed.get("submissionsHtml") or payload.existingSubmissions or "",
+        "evidenceIndex": parsed.get("evidenceIndex") or [],
+        "statDecContent": parsed.get("statDecContent") or "",
+        "definitions": parsed.get("definitions") or {},
+        "isReady": bool(parsed.get("isReady")),
+    }
+
+
 # Project-less research chat surfaced by the Research Agent in the v2 sidebar.
 # Different system prompt focus from /chat (which is the project assistant) —
 # this one is for general construction-law / SOPA / BIF Act questions.

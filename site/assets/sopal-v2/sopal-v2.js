@@ -31,6 +31,19 @@
     "delay-costs",
     "general-correspondence",
   ];
+
+  // Complex agents are multi-stage workflows with their own page logic —
+  // not simple chat / drafting agents. v1 has just the Adjudication
+  // Application drafter (see docs/complex-adjudication-application-plan.md).
+  const COMPLEX_AGENT_KEYS = [
+    "adjudication-application",
+  ];
+  const COMPLEX_AGENT_LABELS = {
+    "adjudication-application": "Adjudication Application",
+  };
+  const COMPLEX_AGENT_DESCRIPTIONS = {
+    "adjudication-application": "Guided multi-stage adjudication application drafter — intake, dispute table, RFIs, parallel item drafting, live master document.",
+  };
   const AGENT_LABELS = {
     "payment-claims": "Payment Claims",
     "payment-schedules": "Payment Schedules",
@@ -51,14 +64,20 @@
     "adjudication-application": "Review or draft adjudication application material — chronology, jurisdiction, entitlement, quantum, annexures.",
     "adjudication-response": "Review or draft adjudication response material — jurisdictional objections, payment schedule alignment, evidence.",
   };
-  // Agents in this set drop the Review tab entirely — they're drafting-only.
-  // Adjudication application/response — you draft submissions, you don't
-  // structurally "review" your own draft submission. General correspondence —
-  // it's a free-form drafting tool with no structured "review" perspective.
+  // Every agent in the Drafting Agents sidebar group is drafting-only — the
+  // Review/Draft mode picker only made sense when these doubled as document
+  // reviewers, but reviewing received documents now lives in the standalone
+  // Tools (Payment Claim Reviewer / Payment Schedule Reviewer). Drafting
+  // agents go straight into the Word-style doc editor + AI chat workspace.
   const DRAFT_ONLY_AGENTS = new Set([
+    "payment-claims",
+    "payment-schedules",
+    "eots",
+    "variations",
+    "delay-costs",
+    "general-correspondence",
     "adjudication-application",
     "adjudication-response",
-    "general-correspondence",
   ]);
 
   // Per-agent review modes. Mirrors the live /claim-check checker — each mode
@@ -684,6 +703,10 @@
     const base = `/sopal-v2/projects/${projectId}/agents`;
     return DRAFTING_AGENT_KEYS.map((key) => ({ label: AGENT_LABELS[key], href: `${base}/${key}`, icon: ICON.sparkles }));
   }
+  function projectComplexAgentNav(projectId) {
+    const base = `/sopal-v2/projects/${projectId}/complex`;
+    return COMPLEX_AGENT_KEYS.map((key) => ({ label: COMPLEX_AGENT_LABELS[key], href: `${base}/${key}`, icon: ICON.layers }));
+  }
 
   function Sidebar() {
     const project = currentProject();
@@ -753,6 +776,12 @@
                 </a>`).join("")}
               <div class="nav-subgroup-title">Drafting agents</div>
               ${projectAgentNav(project.id).map((item) => `
+                <a class="nav-item nav-item-sub ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
+                  <span class="nav-icon">${item.icon}</span>
+                  <span class="nav-label">${escapeHtml(item.label)}</span>
+                </a>`).join("")}
+              <div class="nav-subgroup-title">Complex agents</div>
+              ${projectComplexAgentNav(project.id).map((item) => `
                 <a class="nav-item nav-item-sub ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
                   <span class="nav-icon">${item.icon}</span>
                   <span class="nav-label">${escapeHtml(item.label)}</span>
@@ -2805,6 +2834,590 @@ Total\t${formatCurrencyFull(total)}`;
     };
     setTimeout(() => bindChatPanel(opts), 0);
     return PageBody(ChatPage(opts));
+  }
+
+  /* ---------- Complex Agent: Adjudication Application ----------
+     Multi-stage workflow:
+       intake → dispute-table → rfi → draft → review
+     See docs/complex-adjudication-application-plan.md for the full plan.
+     v1 ships the end-to-end skeleton: paste PC+PS, parse, lock the
+     dispute table, work each dispute via AI-driven RFIs, watch the
+     master document assemble live, export to .doc. Phase B layers in
+     numbering, ToC, exec summary, definitions panel, deadline timer. */
+
+  const AA_STAGES = [
+    { id: "intake",        label: "Intake" },
+    { id: "dispute-table", label: "Dispute Table" },
+    { id: "rfi",           label: "RFI" },
+    { id: "draft",         label: "Draft" },
+    { id: "review",        label: "Review" },
+  ];
+
+  const AA_ISSUE_TYPES = [
+    "variation", "eot", "delay-costs", "defects",
+    "set-off", "retention", "prevention", "scope",
+    "valuation", "other",
+  ];
+  const AA_ISSUE_TYPE_LABELS = {
+    variation: "Variation",
+    eot: "EOT",
+    "delay-costs": "Delay costs",
+    defects: "Defects / set-off",
+    "set-off": "Set-off",
+    retention: "Retention",
+    prevention: "Prevention principle",
+    scope: "Scope",
+    valuation: "Valuation",
+    other: "Other",
+  };
+  const AA_DISPUTE_STATUSES = ["disputed", "admitted", "partial", "jurisdictional"];
+
+  function getComplexAA(project) {
+    if (!project.complexApps) project.complexApps = {};
+    if (!project.complexApps["adjudication-application"]) {
+      project.complexApps["adjudication-application"] = {
+        stage: "intake",
+        deadline: null,
+        documents: { paymentClaim: null, paymentSchedule: null },
+        psReasonsUniverse: "",
+        parties: { claimant: "", respondent: "" },
+        contractReference: "",
+        referenceDate: "",
+        claimedAmount: 0,
+        scheduledAmount: 0,
+        disputes: [],
+        jurisdictionalRfis: { rounds: [], submissions: "", evidenceIndex: [], statDecContent: "" },
+        generalRfis: { rounds: [], submissions: "", evidenceIndex: [], statDecContent: "" },
+        definitions: {},
+        activeKey: null,
+        updatedAt: Date.now(),
+      };
+      saveProject(project);
+    }
+    return project.complexApps["adjudication-application"];
+  }
+
+  function newDisputeId() { return `d_${Math.random().toString(36).slice(2, 8)}`; }
+
+  function ComplexAdjudicationPage(projectId) {
+    const project = getProject(projectId);
+    if (!project) return notFoundPage();
+    const aa = getComplexAA(project);
+    setTimeout(() => bindComplexAA(project), 0);
+
+    const stageIdx = AA_STAGES.findIndex((s) => s.id === aa.stage);
+    const stageBar = `
+      <div class="aa-stage-bar">
+        ${AA_STAGES.map((s, i) => `
+          <div class="aa-stage ${i < stageIdx ? "done" : ""} ${i === stageIdx ? "active" : ""}">
+            <span class="aa-stage-num">${i + 1}</span>
+            <span class="aa-stage-label">${escapeHtml(s.label)}</span>
+          </div>
+        `).join("")}
+      </div>`;
+
+    let body = "";
+    if (aa.stage === "intake") body = renderAAIntake(aa);
+    else if (aa.stage === "dispute-table") body = renderAADisputeTable(aa);
+    else body = renderAAWorkspace(project, aa);
+
+    return PageBody(`
+      <div class="page-shell aa-shell">
+        <div class="chat-page-head">
+          <div>
+            <h1 class="page-title">Adjudication Application</h1>
+            <p class="page-sub">Guided drafter — intake, dispute mapping, RFIs per item, live master document.</p>
+          </div>
+          <div class="aa-header-actions">
+            ${aa.stage !== "intake" ? `<button class="ghost-button compact" type="button" data-aa-back-stage>← Back a stage</button>` : ""}
+            ${aa.deadline ? `<span class="aa-deadline-pill">Lodge by ${escapeHtml(aa.deadline)}</span>` : ""}
+            <button class="ghost-button compact danger" type="button" data-aa-reset>Reset</button>
+          </div>
+        </div>
+        ${stageBar}
+        ${body}
+      </div>
+    `);
+  }
+
+  function renderAAIntake(aa) {
+    const pc = aa.documents.paymentClaim;
+    const ps = aa.documents.paymentSchedule;
+    return `
+      <section class="aa-intake card">
+        <div class="card-head">
+          <div>
+            <h3>Stage 1 — Document intake</h3>
+            <p class="muted">Paste or upload the Payment Claim and Payment Schedule. Sopal extracts the parties, amounts, line items, and the respondent's reasons for withholding.</p>
+          </div>
+        </div>
+        <div class="card-body aa-intake-grid">
+          <div class="aa-doc-slot">
+            <label class="aa-doc-label">Payment Claim</label>
+            <div class="file-zone">
+              <label class="file-zone-label">${ICON.upload}<span>Click or drop a PDF / DOCX / TXT</span><input type="file" data-aa-file="paymentClaim" accept=".pdf,.docx,.txt"></label>
+              <div class="muted file-status" data-aa-file-status-paymentClaim>${pc ? `${escapeHtml(pc.name)} · ${pc.text.length.toLocaleString()} chars` : "No file selected."}</div>
+            </div>
+            <textarea class="text-area" data-aa-text="paymentClaim" rows="8" placeholder="Or paste the payment claim text here…">${escapeHtml(pc ? pc.text : "")}</textarea>
+          </div>
+          <div class="aa-doc-slot">
+            <label class="aa-doc-label">Payment Schedule</label>
+            <div class="file-zone">
+              <label class="file-zone-label">${ICON.upload}<span>Click or drop a PDF / DOCX / TXT</span><input type="file" data-aa-file="paymentSchedule" accept=".pdf,.docx,.txt"></label>
+              <div class="muted file-status" data-aa-file-status-paymentSchedule>${ps ? `${escapeHtml(ps.name)} · ${ps.text.length.toLocaleString()} chars` : "No file selected."}</div>
+            </div>
+            <textarea class="text-area" data-aa-text="paymentSchedule" rows="8" placeholder="Or paste the payment schedule text here…">${escapeHtml(ps ? ps.text : "")}</textarea>
+          </div>
+          <div class="aa-intake-meta">
+            <label>Lodgement deadline (optional)
+              <input class="text-input" type="date" data-aa-deadline value="${attr(aa.deadline || "")}">
+            </label>
+          </div>
+          <div class="aa-intake-actions">
+            <button class="dark-button" type="button" data-aa-parse>${ICON.sparkles}<span>Parse documents</span></button>
+            <span class="muted aa-intake-help">Parsing extracts the parties, amounts, claim line items, and the respondent's reasons. You'll review and edit the result on the next stage.</span>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderAADisputeTable(aa) {
+    return `
+      <section class="aa-dispute-table card">
+        <div class="card-head">
+          <div>
+            <h3>Stage 2 — Dispute table</h3>
+            <p class="muted">Edit the rows. Merge or split where the PC artificially divides one dispute. Set the issue type so the RFIs are tailored. Lock to advance.</p>
+          </div>
+          <div class="aa-table-actions">
+            <button class="ghost-button compact" type="button" data-aa-add-row>${ICON.plus}<span>Add row</span></button>
+            <button class="dark-button" type="button" data-aa-lock-table>Lock dispute table →</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="aa-extract-summary">
+            <span><strong>Claimant:</strong> ${escapeHtml(aa.parties.claimant || "—")}</span>
+            <span><strong>Respondent:</strong> ${escapeHtml(aa.parties.respondent || "—")}</span>
+            <span><strong>Reference date:</strong> ${escapeHtml(aa.referenceDate || "—")}</span>
+            <span><strong>Claimed:</strong> ${formatCurrencyCompact(aa.claimedAmount)}</span>
+            <span><strong>Scheduled:</strong> ${formatCurrencyCompact(aa.scheduledAmount)}</span>
+          </div>
+          <table class="aa-table">
+            <thead>
+              <tr>
+                <th class="aa-col-item">Item</th>
+                <th>Description</th>
+                <th class="aa-col-money">Claimed</th>
+                <th class="aa-col-money">Scheduled</th>
+                <th class="aa-col-status">Status</th>
+                <th class="aa-col-issue">Issue type</th>
+                <th>Respondent's reasons (PS)</th>
+                <th class="aa-col-actions"></th>
+              </tr>
+            </thead>
+            <tbody data-aa-table-body>
+              ${aa.disputes.map((d) => renderAARow(d)).join("")}
+            </tbody>
+          </table>
+          ${aa.disputes.length === 0 ? EmptyState("No items extracted.", "Click 'Add row' to add a dispute manually.") : ""}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderAARow(d) {
+    return `
+      <tr data-aa-row="${attr(d.id)}">
+        <td><input class="aa-cell" data-aa-cell="item" value="${attr(d.item || "")}"></td>
+        <td><textarea class="aa-cell aa-cell-multi" data-aa-cell="description" rows="2">${escapeHtml(d.description || "")}</textarea></td>
+        <td><input class="aa-cell aa-cell-num" type="number" data-aa-cell="claimed" value="${attr(d.claimed || 0)}"></td>
+        <td><input class="aa-cell aa-cell-num" type="number" data-aa-cell="scheduled" value="${attr(d.scheduled || 0)}"></td>
+        <td>
+          <select class="aa-cell" data-aa-cell="status">
+            ${AA_DISPUTE_STATUSES.map((s) => `<option value="${s}" ${d.status === s ? "selected" : ""}>${s}</option>`).join("")}
+          </select>
+        </td>
+        <td>
+          <select class="aa-cell" data-aa-cell="issueType">
+            ${AA_ISSUE_TYPES.map((t) => `<option value="${t}" ${d.issueType === t ? "selected" : ""}>${escapeHtml(AA_ISSUE_TYPE_LABELS[t])}</option>`).join("")}
+          </select>
+        </td>
+        <td><textarea class="aa-cell aa-cell-multi" data-aa-cell="psReasons" rows="2">${escapeHtml(d.psReasons || "")}</textarea></td>
+        <td><button class="ghost-button compact danger" type="button" data-aa-delete-row title="Delete row">${ICON.trash}</button></td>
+      </tr>
+    `;
+  }
+
+  function renderAAWorkspace(project, aa) {
+    const navItems = [
+      { key: "jurisdictional", label: "Jurisdictional", thread: aa.jurisdictionalRfis, kind: "shared" },
+      { key: "general", label: "Background / General", thread: aa.generalRfis, kind: "shared" },
+      ...aa.disputes.map((d) => ({ key: `dispute:${d.id}`, label: d.item || d.id, thread: d.rfis, kind: "dispute", dispute: d })),
+    ];
+    const activeKey = aa.activeKey || navItems[0].key;
+    const active = navItems.find((n) => n.key === activeKey) || navItems[0];
+
+    return `
+      <div class="aa-three-pane">
+        <aside class="aa-disputes-nav card">
+          <div class="card-head"><h3>Items</h3></div>
+          <div class="card-body aa-disputes-list">
+            ${navItems.map((n) => {
+              const itemAA = n.thread && Array.isArray(n.thread.rounds) ? n.thread : { rounds: [] };
+              const rounds = itemAA.rounds.length;
+              const answered = itemAA.rounds.filter((r) => r.answer).length;
+              const ready = itemAA.submissions && itemAA.submissions.length > 60;
+              return `
+                <button class="aa-nav-item ${n.key === activeKey ? "active" : ""}" type="button" data-aa-select="${attr(n.key)}">
+                  <span class="aa-nav-label">${escapeHtml(n.label)}</span>
+                  <span class="aa-nav-meta muted">${rounds === 0 ? "Not started" : `${answered}/${rounds} answered`}${ready ? " · drafted" : ""}</span>
+                </button>`;
+            }).join("")}
+          </div>
+        </aside>
+        <section class="aa-rfi-pane card">
+          <div class="card-head">
+            <h3>${escapeHtml(active.label)}</h3>
+            <span class="muted">${active.kind === "dispute" ? "Per-item RFI thread" : "Shared RFI thread"}</span>
+          </div>
+          <div class="aa-rfi-stream" data-aa-rfi-stream>
+            ${(active.thread.rounds || []).length === 0
+              ? `<div class="empty-state"><strong>Ready when you are.</strong><p>Click <em>Ask first RFI</em> below to have Sopal generate the first targeted question for this ${active.kind === "dispute" ? "dispute" : "thread"}.</p></div>`
+              : (active.thread.rounds || []).map((r, i) => `
+                  <div class="aa-rfi-round">
+                    <div class="aa-rfi-q"><strong>RFI ${i + 1}.</strong> ${renderMarkdown(r.question || "")}</div>
+                    ${r.answer
+                      ? `<div class="aa-rfi-a"><span class="muted">Your answer:</span><div>${renderMarkdown(r.answer)}</div></div>`
+                      : `<form class="aa-rfi-answer-form" data-aa-rfi-answer="${i}">
+                           <textarea class="text-area auto-grow" name="answer" rows="3" placeholder="Type your answer to RFI ${i + 1}…"></textarea>
+                           <button class="dark-button compact" type="submit">Submit answer</button>
+                         </form>`}
+                  </div>
+                `).join("")}
+          </div>
+          <footer class="aa-rfi-footer">
+            <button class="ghost-button compact" type="button" data-aa-next-rfi>${ICON.sparkles}<span>${(active.thread.rounds || []).length === 0 ? "Ask first RFI" : "Ask another RFI"}</span></button>
+            ${active.kind === "dispute" ? `<button class="ghost-button compact" type="button" data-aa-draft-item="${attr(active.dispute ? active.dispute.id : "")}">Draft this item now</button>` : ""}
+          </footer>
+        </section>
+        <aside class="aa-master-pane card">
+          <div class="card-head">
+            <h3>Master document</h3>
+            <div class="aa-master-actions">
+              <button class="ghost-button compact" type="button" data-aa-rebuild>Rebuild</button>
+              <button class="ghost-button compact" type="button" data-aa-export>${ICON.download}<span>Export .doc</span></button>
+            </div>
+          </div>
+          <div class="aa-master-body" data-aa-master>${renderAAMaster(project, aa)}</div>
+        </aside>
+      </div>
+    `;
+  }
+
+  function renderAAMaster(project, aa) {
+    const sections = [];
+    sections.push(`<h1>Adjudication Application</h1>`);
+    sections.push(`<h2>1. Parties</h2>
+      <p><strong>Claimant:</strong> ${escapeHtml(aa.parties.claimant || project.claimant || "[Claimant]")}<br>
+      <strong>Respondent:</strong> ${escapeHtml(aa.parties.respondent || project.respondent || "[Respondent]")}<br>
+      <strong>Contract reference:</strong> ${escapeHtml(aa.contractReference || project.reference || "[Contract reference]")}<br>
+      <strong>Reference date:</strong> ${escapeHtml(aa.referenceDate || "[Reference date]")}<br>
+      <strong>Claimed amount:</strong> ${formatCurrencyFull(aa.claimedAmount || 0)}<br>
+      <strong>Scheduled amount:</strong> ${formatCurrencyFull(aa.scheduledAmount || 0)}</p>`);
+    sections.push(`<h2>2. Jurisdiction</h2>${aa.jurisdictionalRfis.submissions || "<p><em>(Jurisdictional submissions will appear here once the jurisdictional RFI thread is drafted.)</em></p>"}`);
+    sections.push(`<h2>3. Background</h2>${aa.generalRfis.submissions || "<p><em>(Background will appear here once the general RFI thread is drafted.)</em></p>"}`);
+    if (aa.disputes.length) {
+      sections.push(`<h2>4. Submissions on disputed items</h2>`);
+      aa.disputes.forEach((d, i) => {
+        sections.push(`<h3>4.${i + 1} ${escapeHtml(d.item || "Item")}${d.issueType ? ` <span class="aa-issue-tag">${escapeHtml(AA_ISSUE_TYPE_LABELS[d.issueType] || d.issueType)}</span>` : ""}</h3>`);
+        sections.push(d.submissions || "<p><em>(Drafted once enough RFIs are answered.)</em></p>");
+      });
+    }
+    sections.push(`<h2>5. Conclusion and amount sought</h2><p>For the reasons set out above, the Claimant respectfully seeks an adjudicated amount of ${formatCurrencyFull(aa.claimedAmount || 0)}.</p>`);
+    const evidence = [];
+    aa.disputes.forEach((d) => (d.evidenceIndex || []).forEach((e) => evidence.push(e)));
+    sections.push(`<h2>6. Index of supporting evidence</h2>${evidence.length ? `<ol>${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong> — ${escapeHtml(e.desc || "")}${e.location ? ` (${escapeHtml(e.location)})` : ""}</li>`).join("")}</ol>` : "<p><em>(No exhibits indexed yet.)</em></p>"}`);
+    return sections.join("\n");
+  }
+
+  /* ---------- Complex AA — wiring ---------- */
+
+  function bindComplexAA(project) {
+    const aa = getComplexAA(project);
+
+    document.querySelectorAll("[data-aa-back-stage]").forEach((b) => b.addEventListener("click", () => {
+      const idx = AA_STAGES.findIndex((s) => s.id === aa.stage);
+      if (idx > 0) {
+        aa.stage = AA_STAGES[idx - 1].id;
+        saveProject(project);
+        render();
+      }
+    }));
+    document.querySelectorAll("[data-aa-reset]").forEach((b) => b.addEventListener("click", () => {
+      if (!confirm("Reset the entire adjudication application workflow? All extracted items, RFIs, and drafts will be cleared.")) return;
+      delete project.complexApps["adjudication-application"];
+      saveProject(project);
+      render();
+    }));
+
+    if (aa.stage === "intake") return bindAAIntake(project, aa);
+    if (aa.stage === "dispute-table") return bindAADisputeTable(project, aa);
+    return bindAAWorkspace(project, aa);
+  }
+
+  function bindAAIntake(project, aa) {
+    function setText(slot, text, name) {
+      aa.documents[slot] = text ? { name: name || aa.documents[slot]?.name || "Pasted text", text } : null;
+      aa.updatedAt = Date.now();
+      saveProject(project);
+    }
+    document.querySelectorAll("[data-aa-text]").forEach((ta) => {
+      ta.addEventListener("input", () => {
+        const slot = ta.dataset.aaText;
+        setText(slot, ta.value, aa.documents[slot]?.name || "Pasted text");
+      });
+    });
+    document.querySelectorAll("[data-aa-file]").forEach((input) => {
+      input.addEventListener("change", async () => {
+        const slot = input.dataset.aaFile;
+        const status = document.querySelector(`[data-aa-file-status-${slot}]`);
+        const file = input.files && input.files[0];
+        if (!file) return;
+        if (status) status.textContent = `Extracting ${file.name}…`;
+        const fd = new FormData();
+        fd.append("file", file);
+        try {
+          const response = await fetch("/api/sopal-v2/extract", { method: "POST", body: fd, credentials: "include" });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(describeApiError(data, "Extraction failed"));
+          setText(slot, data.text, data.filename);
+          if (status) status.textContent = `${data.filename} · ${(data.characters || 0).toLocaleString()} chars`;
+          const ta = document.querySelector(`[data-aa-text="${slot}"]`);
+          if (ta) ta.value = data.text;
+        } catch (error) {
+          if (status) status.textContent = error.message || "Extraction failed";
+        }
+      });
+    });
+    const deadlineInput = document.querySelector("[data-aa-deadline]");
+    if (deadlineInput) deadlineInput.addEventListener("change", () => {
+      aa.deadline = deadlineInput.value || null;
+      saveProject(project);
+    });
+    document.querySelector("[data-aa-parse]")?.addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      const pc = aa.documents.paymentClaim;
+      const ps = aa.documents.paymentSchedule;
+      if (!pc || !pc.text || !ps || !ps.text) {
+        alert("Add both the Payment Claim and the Payment Schedule before parsing.");
+        return;
+      }
+      btn.disabled = true;
+      btn.innerHTML = `<span class="thinking-dots"><i></i><i></i><i></i></span><span>Parsing…</span>`;
+      try {
+        const response = await fetch("/api/sopal-v2/complex/aa/parse-documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            paymentClaimText: pc.text,
+            paymentScheduleText: ps.text,
+            projectMeta: { name: project.name, claimant: project.claimant, respondent: project.respondent, contractForm: project.contractForm, reference: project.reference },
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(describeApiError(data, "Parse failed"));
+        // Seed AA from the extract.
+        aa.parties.claimant = data.parties?.claimant || project.claimant || "";
+        aa.parties.respondent = data.parties?.respondent || project.respondent || "";
+        aa.contractReference = data.contractReference || project.reference || "";
+        aa.referenceDate = data.referenceDate || "";
+        aa.claimedAmount = Number(data.claimedAmount || 0);
+        aa.scheduledAmount = Number(data.scheduledAmount || 0);
+        aa.psReasonsUniverse = data.psReasonsUniverse || "";
+        aa.disputes = (Array.isArray(data.lineItems) ? data.lineItems : []).map((li) => ({
+          id: newDisputeId(),
+          item: li.label || "",
+          description: li.description || "",
+          claimed: Number(li.claimed || li.amount || 0),
+          scheduled: Number(li.scheduled || 0),
+          psReasons: li.psReasons || "",
+          status: li.status || "disputed",
+          issueType: li.issueType || "other",
+          rfis: { rounds: [] },
+          submissions: "",
+          evidenceIndex: [],
+          statDecContent: "",
+          updatedAt: Date.now(),
+        }));
+        aa.stage = "dispute-table";
+        saveProject(project);
+        render();
+      } catch (error) {
+        alert(error.message || "Parse failed");
+        btn.disabled = false;
+        btn.innerHTML = `${ICON.sparkles}<span>Parse documents</span>`;
+      }
+    });
+  }
+
+  function bindAADisputeTable(project, aa) {
+    document.querySelectorAll("[data-aa-row]").forEach((row) => {
+      const id = row.dataset.aaRow;
+      const dispute = aa.disputes.find((d) => d.id === id);
+      if (!dispute) return;
+      row.querySelectorAll("[data-aa-cell]").forEach((el) => {
+        el.addEventListener("input", () => {
+          const field = el.dataset.aaCell;
+          const value = el.tagName === "SELECT" ? el.value : (field === "claimed" || field === "scheduled" ? Number(el.value || 0) : el.value);
+          dispute[field] = value;
+          dispute.updatedAt = Date.now();
+          saveProject(project);
+        });
+      });
+      row.querySelector("[data-aa-delete-row]")?.addEventListener("click", () => {
+        if (!confirm("Delete this dispute row?")) return;
+        aa.disputes = aa.disputes.filter((d) => d.id !== id);
+        saveProject(project);
+        render();
+      });
+    });
+    document.querySelector("[data-aa-add-row]")?.addEventListener("click", () => {
+      aa.disputes.push({
+        id: newDisputeId(),
+        item: "", description: "", claimed: 0, scheduled: 0,
+        psReasons: "", status: "disputed", issueType: "other",
+        rfis: { rounds: [] }, submissions: "", evidenceIndex: [], statDecContent: "",
+        updatedAt: Date.now(),
+      });
+      saveProject(project);
+      render();
+    });
+    document.querySelector("[data-aa-lock-table]")?.addEventListener("click", () => {
+      if (!aa.disputes.length) {
+        if (!confirm("No disputed items in the table — lock anyway? You can come back and add items later.")) return;
+      }
+      aa.stage = "rfi";
+      saveProject(project);
+      render();
+    });
+  }
+
+  function aaActiveThread(aa) {
+    const key = aa.activeKey || "jurisdictional";
+    if (key === "jurisdictional") return { kind: "shared", thread: aa.jurisdictionalRfis, label: "Jurisdictional", id: null };
+    if (key === "general") return { kind: "shared", thread: aa.generalRfis, label: "Background / General", id: null };
+    if (key.startsWith("dispute:")) {
+      const id = key.split(":", 2)[1];
+      const d = aa.disputes.find((x) => x.id === id);
+      if (d) return { kind: "dispute", thread: d.rfis, dispute: d, label: d.item || id, id };
+    }
+    return { kind: "shared", thread: aa.jurisdictionalRfis, label: "Jurisdictional", id: null };
+  }
+
+  function bindAAWorkspace(project, aa) {
+    document.querySelectorAll("[data-aa-select]").forEach((b) => b.addEventListener("click", () => {
+      aa.activeKey = b.dataset.aaSelect;
+      saveProject(project);
+      render();
+    }));
+    document.querySelectorAll("[data-aa-rfi-answer]").forEach((form) => {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const idx = Number(form.dataset.aaRfiAnswer);
+        const ans = form.elements.answer.value.trim();
+        if (!ans) return;
+        const ctx = aaActiveThread(aa);
+        const round = ctx.thread.rounds[idx];
+        if (!round) return;
+        round.answer = ans;
+        round.answeredAt = Date.now();
+        saveProject(project);
+        // After the user answers, ask the server to either generate the next
+        // RFI for this thread or to draft this item. We default to "next RFI"
+        // unless this was the per-item thread's answer to "ready to draft?".
+        await aaCallEngine(project, aa, "rfi-followup");
+        render();
+      });
+    });
+    document.querySelector("[data-aa-next-rfi]")?.addEventListener("click", async () => {
+      await aaCallEngine(project, aa, "rfi-next");
+      render();
+    });
+    document.querySelector("[data-aa-draft-item]")?.addEventListener("click", async () => {
+      await aaCallEngine(project, aa, "draft");
+      render();
+    });
+    document.querySelector("[data-aa-rebuild]")?.addEventListener("click", () => {
+      const mount = document.querySelector("[data-aa-master]");
+      if (mount) mount.innerHTML = renderAAMaster(project, aa);
+    });
+    document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
+      const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`;
+      const blob = new Blob([
+        '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
+        '<head><meta charset="UTF-8"><title>',
+        escapeHtml(project.name),
+        ' — Adjudication Application</title></head><body>',
+        renderAAMaster(project, aa),
+        '</body></html>',
+      ], { type: "application/msword" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  async function aaCallEngine(project, aa, mode) {
+    const ctx = aaActiveThread(aa);
+    // Show a transient thinking indicator on the active stream.
+    const stream = document.querySelector("[data-aa-rfi-stream]");
+    if (stream) stream.insertAdjacentHTML("beforeend", `<div class="aa-rfi-thinking" id="aa-thinking"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Sopal is working…</span></div>`);
+    try {
+      const payload = {
+        mode,
+        threadKind: ctx.kind,
+        threadLabel: ctx.label,
+        disputeId: ctx.id,
+        dispute: ctx.dispute || null,
+        rounds: ctx.thread.rounds || [],
+        existingSubmissions: ctx.thread.submissions || "",
+        parties: aa.parties,
+        contractReference: aa.contractReference,
+        referenceDate: aa.referenceDate,
+        claimedAmount: aa.claimedAmount,
+        scheduledAmount: aa.scheduledAmount,
+        psReasonsUniverse: aa.psReasonsUniverse,
+        definitions: aa.definitions,
+        projectMeta: { name: project.name, contractForm: project.contractForm },
+      };
+      const response = await fetch("/api/sopal-v2/complex/aa/engine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(describeApiError(data, "Engine call failed"));
+      // Apply patches.
+      if (data.appendRfi) {
+        ctx.thread.rounds.push({ question: data.appendRfi, answer: null, askedAt: Date.now(), answeredAt: null });
+      }
+      if (data.submissionsHtml) ctx.thread.submissions = data.submissionsHtml;
+      if (Array.isArray(data.evidenceIndex)) ctx.thread.evidenceIndex = data.evidenceIndex;
+      if (typeof data.statDecContent === "string") ctx.thread.statDecContent = data.statDecContent;
+      if (data.definitions) Object.assign(aa.definitions, data.definitions);
+      saveProject(project);
+    } catch (error) {
+      alert(error.message || "Engine call failed");
+    } finally {
+      const t = document.getElementById("aa-thinking");
+      if (t) t.remove();
+    }
   }
 
   /* ---------- Drafting workspace (Word-style editor + AI chat) ---------- */
@@ -5225,6 +5838,14 @@ Total\t${formatCurrencyFull(total)}`;
         const agentKey = parts[3];
         if (!agentKey || !AGENT_KEYS.includes(agentKey)) return { crumbs: head.concat([{ label: "Agents" }]), body: notFoundPage() };
         return { crumbs: head.concat([{ label: AGENT_LABELS[agentKey] }]), body: AgentPage(projectId, agentKey) };
+      }
+      if (sub === "complex") {
+        const complexKey = parts[3];
+        if (!complexKey || !COMPLEX_AGENT_KEYS.includes(complexKey)) return { crumbs: head.concat([{ label: "Complex agents" }]), body: notFoundPage() };
+        if (complexKey === "adjudication-application") {
+          return { crumbs: head.concat([{ label: COMPLEX_AGENT_LABELS[complexKey] }]), body: ComplexAdjudicationPage(projectId) };
+        }
+        return { crumbs: head.concat([{ label: COMPLEX_AGENT_LABELS[complexKey] }]), body: notFoundPage() };
       }
       return { crumbs: head, body: notFoundPage() };
     }
