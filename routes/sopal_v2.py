@@ -563,16 +563,42 @@ def _aa_thread_brief(payload: AAEngineRequest) -> str:
     if payload.threadKind == "dispute" and payload.dispute:
         d = payload.dispute
         return (
-            f"Thread: per-item dispute — '{d.get('item') or payload.threadLabel}'\n"
+            f"Thread: PER-ITEM DISPUTE — '{d.get('item') or payload.threadLabel}'\n"
             f"Issue type: {d.get('issueType') or 'other'}\n"
             f"Status: {d.get('status') or 'disputed'}\n"
             f"Claimed: {d.get('claimed') or 0}\n"
             f"Scheduled: {d.get('scheduled') or 0}\n"
             f"Description: {d.get('description') or ''}\n"
-            f"Respondent's reasons (from PS): {d.get('psReasons') or ''}"
+            f"Respondent's reasons (from PS): {d.get('psReasons') or ''}\n\n"
+            "STRICT SCOPE: Every RFI and every line of submissions you produce must be about THIS specific item only. "
+            "Do not ask jurisdictional questions here. Do not ask about other items. Do not draft general background here."
         )
     if payload.threadKind == "shared" and "jurisdiction" in payload.threadLabel.lower():
-        return "Thread: shared — Jurisdictional. Cover s 64 / s 67 / s 68 / s 69 / s 75 / s 76 / s 79 / s 88 BIF Act items."
+        return (
+            "Thread: SHARED — JURISDICTIONAL.\n\n"
+            "STRICT SCOPE: Every RFI and every line of submissions you produce must be a JURISDICTIONAL question or "
+            "submission only — i.e. about whether the adjudicator has jurisdiction to decide this application at all. "
+            "DO NOT ask about the substantive merits of any disputed item (variations, EOTs, delay costs, defects, "
+            "valuation). Those have their own per-item threads.\n\n"
+            "Jurisdictional topics, in priority order:\n"
+            "1. Construction contract — does the contract fall within s 64 BIF Act?\n"
+            "2. Reference date — is the date relied on in the PC valid under the contract / s 67?\n"
+            "3. Claimant not excluded — s 88 (excluded persons / second-tier subcontractors / commercial vs domestic).\n"
+            "4. PC content compliance — did the PC identify the work, claim an amount, and request payment (s 68)?\n"
+            "5. PC service — when, by what method, evidence of service.\n"
+            "6. PS content & timing — when received, within s 76 window, content compliance with s 69.\n"
+            "7. Application within the s 79 window — calculation of the deadline.\n"
+            "8. ANA selection — which ANA, eligibility.\n"
+            "Ask one focused JURISDICTIONAL question at a time."
+        )
+    if payload.threadKind == "shared" and ("general" in payload.threadLabel.lower() or "background" in payload.threadLabel.lower()):
+        return (
+            "Thread: SHARED — BACKGROUND / GENERAL.\n\n"
+            "STRICT SCOPE: Every RFI here must establish background facts that frame the master document — project, "
+            "parties' relationship, contract execution, key personnel, defined terms the user wants used throughout, "
+            "lodgement deadline. DO NOT ask about jurisdiction (that has its own thread). DO NOT ask about the "
+            "substantive merits of any disputed item (those have their own per-item threads). One focused question at a time."
+        )
     return f"Thread: shared — {payload.threadLabel}."
 
 

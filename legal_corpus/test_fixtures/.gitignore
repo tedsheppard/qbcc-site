@@ -1,0 +1,9 @@
+# Test-fixture binaries are reproducible from
+# scripts/fetch_public_contracts.sh — keep them out of the repo so we
+# don't bloat history with re-fetched government PDFs / DOCX. The README
+# and the per-source source.txt notes ARE committed so the catalogue is
+# always discoverable.
+*.pdf
+*.docx
+*.doc
+*.zip

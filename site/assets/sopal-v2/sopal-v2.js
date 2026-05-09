@@ -2921,6 +2921,8 @@ Total\t${formatCurrencyFull(total)}`;
     else if (aa.stage === "dispute-table") body = renderAADisputeTable(aa);
     else body = renderAAWorkspace(project, aa);
 
+    const deadlineMeta = aaDeadlineMeta(aa.deadline);
+    const warnings = (aa.parseWarnings || []);
     return PageBody(`
       <div class="page-shell aa-shell">
         <div class="chat-page-head">
@@ -2930,14 +2932,33 @@ Total\t${formatCurrencyFull(total)}`;
           </div>
           <div class="aa-header-actions">
             ${aa.stage !== "intake" ? `<button class="ghost-button compact" type="button" data-aa-back-stage>← Back a stage</button>` : ""}
-            ${aa.deadline ? `<span class="aa-deadline-pill">Lodge by ${escapeHtml(aa.deadline)}</span>` : ""}
+            ${deadlineMeta ? `<span class="aa-deadline-pill ${deadlineMeta.cls}" title="Lodgement deadline">${deadlineMeta.label}</span>` : ""}
             <button class="ghost-button compact danger" type="button" data-aa-reset>Reset</button>
           </div>
         </div>
         ${stageBar}
+        ${warnings.length ? `<div class="aa-warnings">${warnings.map((w) => `<div class="aa-warning"><strong>${escapeHtml(w.code || "warning")}</strong> ${escapeHtml(w.message || "")}</div>`).join("")}</div>` : ""}
         ${body}
       </div>
     `);
+  }
+
+  function aaDeadlineMeta(iso) {
+    if (!iso) return null;
+    const d = new Date(`${iso}T00:00:00`);
+    if (isNaN(d.getTime())) return null;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((d - now) / 86400000);
+    let cls = "ok";
+    let label = "";
+    if (diffDays < 0) { cls = "overdue"; label = `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? "" : "s"}`; }
+    else if (diffDays === 0) { cls = "urgent"; label = "Lodge TODAY"; }
+    else if (diffDays <= 5) { cls = "urgent"; label = `Lodge in ${diffDays} day${diffDays === 1 ? "" : "s"}`; }
+    else if (diffDays <= 14) { cls = "soon"; label = `Lodge in ${diffDays} days`; }
+    else { cls = "ok"; label = `Lodge in ${diffDays} days`; }
+    const formatted = d.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    return { cls, label: `${label} · ${formatted}` };
   }
 
   function renderAAIntake(aa) {
@@ -3236,6 +3257,7 @@ Total\t${formatCurrencyFull(total)}`;
         aa.claimedAmount = Number(data.claimedAmount || 0);
         aa.scheduledAmount = Number(data.scheduledAmount || 0);
         aa.psReasonsUniverse = data.psReasonsUniverse || "";
+        aa.parseWarnings = Array.isArray(data.warnings) ? data.warnings : [];
         aa.disputes = (Array.isArray(data.lineItems) ? data.lineItems : []).map((li) => ({
           id: newDisputeId(),
           item: li.label || "",
@@ -5967,6 +5989,14 @@ Total\t${formatCurrencyFull(total)}`;
   function render() {
     root.innerHTML = Shell();
     bindShellEvents();
+    // Keep the currently-active sidebar item visible. With Drafting Agents
+    // (6) + Complex Agents (1+) the sidebar can overflow on common viewport
+    // heights — without this the user lands on a route whose nav item is
+    // below the fold.
+    requestAnimationFrame(() => {
+      const active = document.querySelector(".sidebar-scroll .nav-item.active");
+      if (active) active.scrollIntoView({ block: "nearest", inline: "nearest" });
+    });
   }
 
   function copyText(text) {

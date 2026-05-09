@@ -3195,10 +3195,34 @@ a { color: inherit; text-decoration: none; }
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(245,158,11,0.12);
+  border: 1px solid;
+}
+.aa-deadline-pill.ok       { background: rgba(16,185,129,0.10); border-color: rgba(16,185,129,0.35); color: #047857; }
+.aa-deadline-pill.soon     { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.35); color: #92400e; }
+.aa-deadline-pill.urgent   { background: rgba(220,38,38,0.10);  border-color: rgba(220,38,38,0.40);  color: #991b1b; }
+.aa-deadline-pill.overdue  { background: rgba(220,38,38,0.18);  border-color: rgba(220,38,38,0.55);  color: #7f1d1d; }
+[data-theme="dark"] .aa-deadline-pill.ok      { color: #6ee7b7; }
+[data-theme="dark"] .aa-deadline-pill.soon    { color: #fbbf24; }
+[data-theme="dark"] .aa-deadline-pill.urgent,
+[data-theme="dark"] .aa-deadline-pill.overdue { color: #fca5a5; }
+
+.aa-warnings { display: flex; flex-direction: column; gap: 6px; }
+.aa-warning {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(245,158,11,0.10);
   border: 1px solid rgba(245,158,11,0.35);
+  font-size: 12.5px;
   color: #92400e;
 }
+.aa-warning strong {
+  display: inline-block;
+  margin-right: 6px;
+  text-transform: uppercase;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+[data-theme="dark"] .aa-warning { color: #fbbf24; }
 
 /* Stage 1 — intake */
 .aa-intake-grid {
