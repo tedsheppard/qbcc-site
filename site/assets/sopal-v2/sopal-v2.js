@@ -3289,12 +3289,31 @@ Total\t${formatCurrencyFull(total)}`;
         sections.push(d.submissions || "<p><em>(Drafted once enough RFIs are answered.)</em></p>");
       });
     }
-    toc.push({ id: id("conclusion"), num: "5", label: "Conclusion and amount sought", indent: 0 });
-    sections.push(`<h2 id="${id("conclusion")}">5. Conclusion and amount sought</h2><p>For the reasons set out above, the Claimant respectfully seeks an adjudicated amount of ${formatCurrencyFull(aa.claimedAmount || 0)}.</p>`);
+    if (aa.disputes.length) {
+      toc.push({ id: id("quantum"), num: "5", label: "Quantum summary", indent: 0 });
+      const totalClaimed = aa.disputes.reduce((s, d) => s + Number(d.claimed || 0), 0);
+      const totalScheduled = aa.disputes.reduce((s, d) => s + Number(d.scheduled || 0), 0);
+      sections.push(`<h2 id="${id("quantum")}">5. Quantum summary</h2>
+        <table>
+          <thead><tr><th>Item</th><th>Claimed</th><th>Scheduled</th><th>In dispute</th></tr></thead>
+          <tbody>
+            ${aa.disputes.map((d) => {
+              const claimed = Number(d.claimed || 0);
+              const scheduled = Number(d.scheduled || 0);
+              const inDispute = Math.max(0, claimed - scheduled);
+              return `<tr><td>${escapeHtml(d.item || "Item")}</td><td>${formatCurrencyFull(claimed)}</td><td>${formatCurrencyFull(scheduled)}</td><td>${formatCurrencyFull(inDispute)}</td></tr>`;
+            }).join("")}
+            <tr><td><strong>Totals</strong></td><td><strong>${formatCurrencyFull(totalClaimed)}</strong></td><td><strong>${formatCurrencyFull(totalScheduled)}</strong></td><td><strong>${formatCurrencyFull(Math.max(0, totalClaimed - totalScheduled))}</strong></td></tr>
+          </tbody>
+        </table>`);
+    }
+    toc.push({ id: id("conclusion"), num: aa.disputes.length ? "6" : "5", label: "Conclusion and amount sought", indent: 0 });
+    sections.push(`<h2 id="${id("conclusion")}">${aa.disputes.length ? "6" : "5"}. Conclusion and amount sought</h2><p>For the reasons set out above, the Claimant respectfully seeks an adjudicated amount of ${formatCurrencyFull(aa.claimedAmount || 0)}.</p>`);
     const evidence = [];
     aa.disputes.forEach((d) => (d.evidenceIndex || []).forEach((e) => evidence.push(e)));
-    toc.push({ id: id("evidence"), num: "6", label: "Index of supporting evidence", indent: 0 });
-    sections.push(`<h2 id="${id("evidence")}">6. Index of supporting evidence</h2>${evidence.length ? `<ol>${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong> — ${escapeHtml(e.desc || "")}${e.location ? ` (${escapeHtml(e.location)})` : ""}</li>`).join("")}</ol>` : "<p><em>(No exhibits indexed yet.)</em></p>"}`);
+    const evidenceNum = aa.disputes.length ? "7" : "6";
+    toc.push({ id: id("evidence"), num: evidenceNum, label: "Index of supporting evidence", indent: 0 });
+    sections.push(`<h2 id="${id("evidence")}">${evidenceNum}. Index of supporting evidence</h2>${evidence.length ? `<ol>${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong> — ${escapeHtml(e.desc || "")}${e.location ? ` (${escapeHtml(e.location)})` : ""}</li>`).join("")}</ol>` : "<p><em>(No exhibits indexed yet.)</em></p>"}`);
 
     const tocHtml = `
       <nav class="aa-toc" aria-label="Master document contents">
