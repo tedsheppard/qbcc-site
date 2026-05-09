@@ -819,10 +819,11 @@
           </nav>
         </div>
         <div class="header-right">
-          <button class="palette-hint-btn" type="button" data-toggle-theme title="${theme === "dark" ? "Switch to light theme" : "Switch to dark theme"} (⌘/Ctrl + Shift + D)" aria-label="Toggle theme">
+          <button class="palette-hint-btn theme-toggle-btn" type="button" data-toggle-theme title="${theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} (⌘/Ctrl + Shift + D)" aria-label="Toggle theme">
             ${theme === "dark"
               ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>'
               : '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'}
+            <span class="theme-toggle-label">${theme === "dark" ? "Light" : "Dark"}</span>
           </button>
           <button class="palette-hint-btn" type="button" data-open-palette title="Open command palette">
             <span class="kbd-key">${navigator.platform && navigator.platform.toLowerCase().includes("mac") ? "⌘" : "Ctrl"}</span>
