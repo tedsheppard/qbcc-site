@@ -3405,6 +3405,31 @@ a { color: inherit; text-decoration: none; }
 }
 .aa-disputes-foot .ghost-button { width: 100%; justify-content: center; }
 
+.aa-artifacts-modal { max-width: 720px; width: 100%; }
+.aa-artifacts-body section { padding: 12px 0; border-bottom: 1px solid var(--main-border); }
+.aa-artifacts-body section:last-child { border-bottom: 0; }
+.aa-artifacts-body h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-fg);
+}
+.aa-artifact-list { padding-left: 20px; margin: 0; font-size: 13px; line-height: 1.55; }
+.aa-artifact-list li { margin: 3px 0; }
+.aa-statdec {
+  padding: 12px 14px;
+  background: rgba(0,0,0,0.03);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.aa-artifact-actions { margin-top: 10px; }
+[data-theme="dark"] .aa-statdec { background: rgba(255,255,255,0.04); }
+
 .aa-defs-modal { max-width: 640px; width: 100%; }
 .aa-defs-list { display: flex; flex-direction: column; gap: 6px; max-height: 340px; overflow-y: auto; padding-right: 2px; }
 .aa-def-row {

@@ -3238,6 +3238,8 @@ Total\t${formatCurrencyFull(total)}`;
           <footer class="aa-rfi-footer">
             <button class="ghost-button compact" type="button" data-aa-next-rfi>${ICON.sparkles}<span>${(active.thread.rounds || []).length === 0 ? "Ask first RFI" : "Ask another RFI"}</span></button>
             ${active.kind === "dispute" ? `<button class="ghost-button compact" type="button" data-aa-draft-item="${attr(active.dispute ? active.dispute.id : "")}">Draft this item now</button>` : ""}
+            ${(active.thread.evidenceIndex && active.thread.evidenceIndex.length) || (active.thread.statDecContent || "").length > 30
+              ? `<button class="ghost-button compact" type="button" data-aa-view-artifacts>View evidence + stat dec</button>` : ""}
           </footer>
         </section>
         <aside class="aa-master-pane card">
@@ -3385,6 +3387,60 @@ Total\t${formatCurrencyFull(total)}`;
           if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); }
         });
         bindRowEvents();
+      },
+    };
+    render();
+  }
+
+  function openAAArtifactsModal(project, aa) {
+    const ctx = aaActiveThread(aa);
+    const evidence = ctx.thread.evidenceIndex || [];
+    const statDec = ctx.thread.statDecContent || "";
+    modal = {
+      render: () => `
+        <div class="modal-backdrop" data-modal-backdrop>
+          <div class="modal aa-artifacts-modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+              <h2>${escapeHtml(ctx.label)} — supporting artefacts</h2>
+              <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
+            </div>
+            <div class="modal-body aa-artifacts-body">
+              <section>
+                <h4>Evidence index for this thread</h4>
+                ${evidence.length
+                  ? `<ul class="aa-artifact-list">${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong> — ${escapeHtml(e.desc || "")}${e.location ? ` <span class="muted">(${escapeHtml(e.location)})</span>` : ""}</li>`).join("")}</ul>`
+                  : `<p class="muted">No exhibits indexed for this thread yet. Sopal adds them as you draft.</p>`}
+              </section>
+              <section>
+                <h4>Statutory declaration content for this thread</h4>
+                ${statDec
+                  ? `<div class="aa-statdec">${renderMarkdown(statDec)}</div><div class="aa-artifact-actions"><button class="ghost-button compact" type="button" data-aa-statdec-export>${ICON.download}<span>Export this stat dec section as .doc</span></button></div>`
+                  : `<p class="muted">No stat-dec content drafted for this thread yet. Sopal adds first-person factual statements as you draft each item.</p>`}
+              </section>
+            </div>
+          </div>
+        </div>`,
+      bind: (rootEl) => {
+        const close = () => { modal = null; render(); };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        rootEl.querySelector("[data-aa-statdec-export]")?.addEventListener("click", () => {
+          const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-statdec-${ctx.id || ctx.kind}.doc`;
+          const html = `<h1>Statutory declaration — ${escapeHtml(ctx.label)}</h1>${renderMarkdown(statDec)}`;
+          const blob = new Blob([
+            '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
+            '<head><meta charset="UTF-8"></head><body>', html, '</body></html>',
+          ], { type: "application/msword" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+        document.addEventListener("keydown", function handler(ev) {
+          if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); }
+        });
       },
     };
     render();
@@ -3672,6 +3728,7 @@ Total\t${formatCurrencyFull(total)}`;
       }
     });
     document.querySelector("[data-aa-toggle-definitions]")?.addEventListener("click", () => openAADefinitionsModal(project, aa));
+    document.querySelector("[data-aa-view-artifacts]")?.addEventListener("click", () => openAAArtifactsModal(project, aa));
     bindAATocLinks();
     document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
       const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`;
