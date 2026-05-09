@@ -588,6 +588,8 @@ class AAEngineRequest(BaseModel):
     psReasonsUniverse: str = ""
     s79Scenario: str = Field(default="less-than-claimed", max_length=40)
     definitions: dict[str, Any] = Field(default_factory=dict)
+    contractDocs: list[dict[str, Any]] = Field(default_factory=list)
+    libraryDocs: list[dict[str, Any]] = Field(default_factory=list)
     projectMeta: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -758,6 +760,7 @@ Rules:
 - For general thread: produce parties / background / contract / project facts.
 - Definitions you introduce (defined Terms in capitalised quoted form) should also be added to the definitions dict.
 - Australian English. BIF Act not BCIPA. Distinguish current QLD law from BCIPA; do not call BCIPA the BIF Act.
+- USE THE PROVIDED CONTRACT + LIBRARY DOCS. When the user has uploaded contract clauses or correspondence, quote / cite them directly in submissions where useful — e.g. 'cl 36 of the Contract provides that …' — instead of emitting [bracketed placeholders]. Only fall back to placeholders when the relevant fact genuinely isn't in any of the provided docs. Don't invent — paraphrase what is in the docs faithfully.
 - Return only the JSON object. No commentary. No code fences."""
 
 
@@ -774,6 +777,30 @@ async def aa_engine(payload: AAEngineRequest) -> dict[str, Any]:
         scenario_id = "less-than-claimed"
     scenario_block = AA_S79_FRAMING[scenario_id]
 
+    # Stitch the project's uploaded contract + library docs into the prompt
+    # so the model can quote actual contract clauses + correspondence rather
+    # than emitting [bracketed placeholders]. Total cap to keep latency sane.
+    def _format_docs(docs: list[dict[str, Any]], label: str, per_doc_cap: int, total_cap: int) -> str:
+        if not docs:
+            return f"{label}: (none uploaded)"
+        out: list[str] = [label + ":"]
+        running = 0
+        for d in docs:
+            name = (d.get("name") or "Untitled").strip()[:200]
+            text = (d.get("text") or "").strip()
+            if not text:
+                continue
+            text = text[:per_doc_cap]
+            if running + len(text) > total_cap:
+                out.append(f"- {name} (omitted — total cap reached)")
+                continue
+            running += len(text)
+            out.append(f"--- {name} ---\n{text}")
+        return "\n".join(out)
+
+    contract_block = _format_docs(payload.contractDocs, "Contract documents (uploaded by user)", 25_000, 60_000)
+    library_block = _format_docs(payload.libraryDocs, "Project library (correspondence / programme / claims / schedules)", 18_000, 50_000)
+
     user_content = (
         f"Mode: {payload.mode}\n\n"
         f"{thread_brief}\n\n"
@@ -789,6 +816,8 @@ async def aa_engine(payload: AAEngineRequest) -> dict[str, Any]:
         f"- Scheduled amount: {payload.scheduledAmount}\n"
         f"- s 82(4) PS reasons universe: {payload.psReasonsUniverse[:8000] or '(empty — no PS in this scenario)'}\n\n"
         f"Definitions (shared):\n{definitions_lines}\n\n"
+        f"{contract_block}\n\n"
+        f"{library_block}\n\n"
         f"RFI history for this thread:\n{rounds_brief}\n\n"
         f"Current draft submissions HTML for this thread (may be empty):\n{payload.existingSubmissions[:60_000]}"
     )

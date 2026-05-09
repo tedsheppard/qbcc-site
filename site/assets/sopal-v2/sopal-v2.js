@@ -3913,6 +3913,8 @@ Total\t${formatCurrencyFull(total)}`;
           psReasonsUniverse: aa.psReasonsUniverse,
           s79Scenario: aa.s79Scenario || "less-than-claimed",
           definitions: aa.definitions,
+          contractDocs: (project.contracts || []).slice(0, 6).map((d) => ({ name: d.name || "Contract", text: (d.text || "").slice(0, 25_000) })),
+          libraryDocs: (project.library || []).slice(0, 8).map((d) => ({ name: d.name || "Library", text: (d.text || "").slice(0, 18_000) })),
           projectMeta: { name: project.name, contractForm: project.contractForm },
         };
         const response = await fetch("/api/sopal-v2/complex/aa/engine", {
@@ -3970,6 +3972,12 @@ Total\t${formatCurrencyFull(total)}`;
         psReasonsUniverse: aa.psReasonsUniverse,
         s79Scenario: aa.s79Scenario || "less-than-claimed",
         definitions: aa.definitions,
+        // Surface the project's uploaded Contract + Project Library docs so
+        // the AI can quote real contract clauses in submissions instead of
+        // emitting [bracketed placeholders]. Capped per-doc + total to keep
+        // the payload sane.
+        contractDocs: (project.contracts || []).slice(0, 6).map((d) => ({ name: d.name || "Contract", text: (d.text || "").slice(0, 25_000) })),
+        libraryDocs: (project.library || []).slice(0, 8).map((d) => ({ name: d.name || "Library", text: (d.text || "").slice(0, 18_000) })),
         projectMeta: { name: project.name, contractForm: project.contractForm },
       };
       const response = await fetch("/api/sopal-v2/complex/aa/engine", {
