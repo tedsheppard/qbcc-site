@@ -1071,7 +1071,7 @@
         render();
       }));
       const initialPage = Math.max(1, parseInt(params.get("page") || "1", 10) || 1);
-      const initialOffset = (initialPage - 1) * 20;
+      const initialOffset = (initialPage - 1) * 10;
       if (q || params.toString()) fetchDecisionResults(params, initialOffset);
     }, 0);
 
@@ -1186,7 +1186,7 @@
     const mount = document.getElementById("decision-results");
     if (!mount) return;
     mount.innerHTML = skeletonRows();
-    const pageSize = 20;
+    const pageSize = 10;
     const qs = new URLSearchParams(params);
     qs.set("limit", String(pageSize));
     qs.set("offset", String(offset || 0));
@@ -1463,6 +1463,12 @@
     `);
   }
 
+  // Adjudicator list paginates client-side over the cached /api/adjudicators
+  // result. State is module-local so filter/sort changes can reset back to the
+  // first page without a URL round-trip.
+  let adjListPage = 1;
+  const ADJ_PAGE_SIZE = 10;
+
   async function fetchAdjudicators() {
     const mount = document.getElementById("adj-results");
     if (!mount) return;
@@ -1471,12 +1477,24 @@
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(describeApiError(data, "Adjudicator endpoint failed"));
       window.__sopalAdjudicators = Array.isArray(data) ? data : [];
+      adjListPage = 1;
       renderAdjudicators();
-      document.querySelector("[data-adj-filter]")?.addEventListener("input", renderAdjudicators);
-      document.querySelector("[data-adj-sort]")?.addEventListener("change", renderAdjudicators);
+      document.querySelector("[data-adj-filter]")?.addEventListener("input", () => { adjListPage = 1; renderAdjudicators(); });
+      document.querySelector("[data-adj-sort]")?.addEventListener("change", () => { adjListPage = 1; renderAdjudicators(); });
     } catch (error) {
       mount.innerHTML = `<div class="error-banner">${escapeHtml(error.message || "Could not load adjudicators")}</div>`;
     }
+  }
+
+  function bindInPagePager(scope, onPage) {
+    scope.querySelectorAll(".pager [data-page]").forEach((btn) => {
+      if (btn.disabled) return;
+      btn.addEventListener("click", () => {
+        const target = Number(btn.dataset.page);
+        if (!target || target < 1) return;
+        onPage(target);
+      });
+    });
   }
 
   function renderAdjudicators() {
@@ -1494,18 +1512,42 @@
       awarded: b.totalAwardedAmount - a.totalAwardedAmount,
       zeroes: (b.zeroAwardCount || 0) - (a.zeroAwardCount || 0),
     }[sort]));
-    mount.innerHTML = items.length
-      ? `<div class="adj-grid">${items.slice(0, 80).map((item) => `
+    if (!items.length) {
+      mount.innerHTML = EmptyState("No adjudicators match.", "Clear or change the filter.");
+      return;
+    }
+    const total = items.length;
+    const totalPages = Math.max(1, Math.ceil(total / ADJ_PAGE_SIZE));
+    if (adjListPage > totalPages) adjListPage = totalPages;
+    if (adjListPage < 1) adjListPage = 1;
+    const start = (adjListPage - 1) * ADJ_PAGE_SIZE;
+    const pageItems = items.slice(start, start + ADJ_PAGE_SIZE);
+    const pagerHtml = buildPagination(adjListPage, total, ADJ_PAGE_SIZE);
+    mount.innerHTML = `
+      <div class="results-shell">
+        <div class="results-head">
+          <h3>${total.toLocaleString()} adjudicator${total === 1 ? "" : "s"}</h3>
+          ${pagerHtml ? `<div class="pager-wrap pager-top">${pagerHtml}</div>` : ""}
+        </div>
+        <div class="adj-grid">${pageItems.map((item) => `
           <button class="adj-card" type="button" data-adjudicator="${attr(item.name)}">
             <strong>${escapeHtml(item.name)}</strong>
             <span class="muted">${item.totalDecisions} decisions</span>
             <div class="adj-card-row">${formatCurrencyCompact(item.totalClaimAmount)} claimed</div>
             <div class="adj-card-row">${formatCurrencyCompact(item.totalAwardedAmount)} awarded</div>
             <span class="rate-pill">${pct(item.avgAwardRate)} avg award</span>
-          </button>`).join("")}</div>`
-      : EmptyState("No adjudicators match.", "Clear or change the filter.");
+          </button>`).join("")}</div>
+        ${pagerHtml ? `<div class="pager-wrap pager-bottom">${pagerHtml}</div>` : ""}
+      </div>`;
     mount.querySelectorAll("[data-adjudicator]").forEach((b) => b.addEventListener("click", () => loadAdjudicatorDetail(b.dataset.adjudicator)));
+    bindInPagePager(mount, (target) => { adjListPage = target; renderAdjudicators(); });
   }
+
+  // Module-local state so the detail panel can paginate without leaking
+  // through the URL.
+  let adjDetailPage = 1;
+  let adjDetailDecisions = [];
+  let adjDetailName = "";
 
   async function loadAdjudicatorDetail(name) {
     const mount = document.getElementById("adj-detail");
@@ -1515,38 +1557,57 @@
       const response = await fetch(`/api/adjudicator/${encodeURIComponent(name)}`, { credentials: "include" });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(describeApiError(data, "Adjudicator detail failed"));
-      const decisions = Array.isArray(data) ? data : [];
-      const summary = (window.__sopalAdjudicators || []).find((x) => x.name === name) || {};
-      const claimedSum = decisions.reduce((s, d) => s + (Number(d.claimAmount) || 0), 0);
-      const awardedSum = decisions.reduce((s, d) => s + (Number(d.awardedAmount) || 0), 0);
-      const zeroes = decisions.filter((d) => Number(d.awardedAmount) === 0).length;
-      mount.innerHTML = `
-        <div class="card-head"><div><h3>${escapeHtml(name)}</h3><p class="muted">${decisions.length} decision${decisions.length === 1 ? "" : "s"}</p></div></div>
-        <div class="card-body">
-          <div class="metric-grid compact">
-            <div class="metric"><strong>${decisions.length}</strong><span>decisions</span></div>
-            <div class="metric"><strong>${formatCurrencyCompact(claimedSum)}</strong><span>total claimed</span></div>
-            <div class="metric"><strong>${formatCurrencyCompact(awardedSum)}</strong><span>total awarded</span></div>
-            <div class="metric"><strong>${pct(summary.avgAwardRate || 0)}</strong><span>avg award rate</span></div>
-            <div class="metric"><strong>${zeroes}</strong><span>$0 awards</span></div>
-            <div class="metric"><strong>${pct(summary.avgClaimantFeeProportion || 0)}</strong><span>claimant fee share</span></div>
-          </div>
-          <div class="mini-list">
-            ${decisions.slice(0, 30).map((d) => `
-              <article class="mini-item" ${d.id ? `data-decision-id="${attr(d.id)}" data-title="${attr(d.title || "")}" tabindex="0"` : ""}>
-                <strong>${escapeHtml(d.title || "Decision")}</strong>
-                <span class="muted">${escapeHtml(shortDate(d.date) || "")}${d.outcome ? ` · ${escapeHtml(d.outcome)}` : ""}${d.projectType ? ` · ${escapeHtml(d.projectType)}` : ""}</span>
-                <span class="muted">claimed ${formatCurrencyCompact(d.claimAmount)} · awarded ${formatCurrencyCompact(d.awardedAmount)}</span>
-              </article>`).join("")}
-            ${decisions.length > 30 ? `<div class="muted">${decisions.length - 30} more not shown.</div>` : ""}
-          </div>
-        </div>`;
-      mount.querySelectorAll("[data-decision-id]").forEach((el) => el.addEventListener("click", () => {
-        navigate(`/sopal-v2/research/decisions?q=${encodeURIComponent(el.dataset.title || "")}`);
-      }));
+      adjDetailDecisions = Array.isArray(data) ? data : [];
+      adjDetailName = name;
+      adjDetailPage = 1;
+      renderAdjudicatorDetail();
     } catch (error) {
       mount.innerHTML = `<div class="error-banner">${escapeHtml(error.message || "Could not load adjudicator")}</div>`;
     }
+  }
+
+  function renderAdjudicatorDetail() {
+    const mount = document.getElementById("adj-detail");
+    if (!mount) return;
+    const decisions = adjDetailDecisions;
+    const name = adjDetailName;
+    const summary = (window.__sopalAdjudicators || []).find((x) => x.name === name) || {};
+    const claimedSum = decisions.reduce((s, d) => s + (Number(d.claimAmount) || 0), 0);
+    const awardedSum = decisions.reduce((s, d) => s + (Number(d.awardedAmount) || 0), 0);
+    const zeroes = decisions.filter((d) => Number(d.awardedAmount) === 0).length;
+    const total = decisions.length;
+    const totalPages = Math.max(1, Math.ceil(total / ADJ_PAGE_SIZE));
+    if (adjDetailPage > totalPages) adjDetailPage = totalPages;
+    if (adjDetailPage < 1) adjDetailPage = 1;
+    const start = (adjDetailPage - 1) * ADJ_PAGE_SIZE;
+    const pageItems = decisions.slice(start, start + ADJ_PAGE_SIZE);
+    const pagerHtml = buildPagination(adjDetailPage, total, ADJ_PAGE_SIZE);
+    mount.innerHTML = `
+      <div class="card-head"><div><h3>${escapeHtml(name)}</h3><p class="muted">${total} decision${total === 1 ? "" : "s"}</p></div></div>
+      <div class="card-body">
+        <div class="metric-grid compact">
+          <div class="metric"><strong>${total}</strong><span>decisions</span></div>
+          <div class="metric"><strong>${formatCurrencyCompact(claimedSum)}</strong><span>total claimed</span></div>
+          <div class="metric"><strong>${formatCurrencyCompact(awardedSum)}</strong><span>total awarded</span></div>
+          <div class="metric"><strong>${pct(summary.avgAwardRate || 0)}</strong><span>avg award rate</span></div>
+          <div class="metric"><strong>${zeroes}</strong><span>$0 awards</span></div>
+          <div class="metric"><strong>${pct(summary.avgClaimantFeeProportion || 0)}</strong><span>claimant fee share</span></div>
+        </div>
+        ${pagerHtml ? `<div class="pager-wrap pager-top">${pagerHtml}</div>` : ""}
+        <div class="mini-list">
+          ${pageItems.map((d) => `
+            <article class="mini-item" ${d.id ? `data-decision-id="${attr(d.id)}" data-title="${attr(d.title || "")}" tabindex="0"` : ""}>
+              <strong>${escapeHtml(d.title || "Decision")}</strong>
+              <span class="muted">${escapeHtml(shortDate(d.date) || "")}${d.outcome ? ` · ${escapeHtml(d.outcome)}` : ""}${d.projectType ? ` · ${escapeHtml(d.projectType)}` : ""}</span>
+              <span class="muted">claimed ${formatCurrencyCompact(d.claimAmount)} · awarded ${formatCurrencyCompact(d.awardedAmount)}</span>
+            </article>`).join("")}
+        </div>
+        ${pagerHtml ? `<div class="pager-wrap pager-bottom">${pagerHtml}</div>` : ""}
+      </div>`;
+    mount.querySelectorAll("[data-decision-id]").forEach((el) => el.addEventListener("click", () => {
+      navigate(`/sopal-v2/research/decisions?q=${encodeURIComponent(el.dataset.title || "")}`);
+    }));
+    bindInPagePager(mount, (target) => { adjDetailPage = target; renderAdjudicatorDetail(); });
   }
 
   /* ---------- Tools: due date calculator (mirrors live Sopal layout) ---------- */
@@ -1565,7 +1626,6 @@
     return PageBody(`
       <div class="page-shell">
         <h1 class="page-title">Due date calculator</h1>
-        <p class="page-sub">BIF Act business-day deadlines. Excludes weekends, QLD/local public holidays and the s 87 Christmas shutdown.</p>
         <div class="due-grid">
           <div class="scenario-list">
             ${DUE_DATE_SCENARIOS.map((s) => `
@@ -2747,6 +2807,407 @@ Total\t${formatCurrencyFull(total)}`;
     return PageBody(ChatPage(opts));
   }
 
+  /* ---------- Drafting workspace (Word-style editor + AI chat) ---------- */
+
+  // Starter templates per drafting agent. The editor is a contenteditable div
+  // that takes raw HTML, so each template is HTML with bracketed placeholders
+  // the user (or the AI) fills in. New project drafts initialise from these
+  // templates the first time the user opens that drafting agent.
+  const AGENT_TEMPLATES = {
+    "payment-claims": `
+      <h1>Payment Claim</h1>
+      <p><strong>Claimant:</strong> [Claimant name]<br>
+      <strong>Respondent:</strong> [Respondent name]<br>
+      <strong>Project:</strong> [Project name]<br>
+      <strong>Contract reference:</strong> [Contract / PO no.]<br>
+      <strong>Reference date:</strong> [DD Month YYYY]<br>
+      <strong>Date served:</strong> [DD Month YYYY]</p>
+      <h2>Amount claimed</h2>
+      <p><strong>$[Amount] (incl. GST)</strong></p>
+      <h2>Identification of the construction work / related goods &amp; services</h2>
+      <p>[Describe the construction work or related goods and services to which this claim relates, by reference to the contract scope and the period worked.]</p>
+      <h2>Breakdown</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Description</th><th>Amount (excl. GST)</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>[Item description]</td><td>$[Amount]</td></tr>
+          <tr><td>2</td><td>[Item description]</td><td>$[Amount]</td></tr>
+        </tbody>
+      </table>
+      <h2>Statutory endorsement</h2>
+      <p>This is a payment claim made under section 75 of the Building Industry Fairness (Security of Payment) Act 2017 (Qld).</p>
+      <h2>Service</h2>
+      <p>Served on [Respondent name] on [DD Month YYYY] by [email / post / hand].</p>
+      <p>Signed,<br>
+      [Signatory name]<br>
+      [Position]<br>
+      [Claimant name]</p>
+    `,
+    "payment-schedules": `
+      <h1>Payment Schedule</h1>
+      <p><strong>Respondent (issuer):</strong> [Respondent name]<br>
+      <strong>Claimant:</strong> [Claimant name]<br>
+      <strong>Project:</strong> [Project name]<br>
+      <strong>Payment claim being responded to:</strong> Claim dated [DD Month YYYY], received on [DD Month YYYY]</p>
+      <h2>Scheduled amount</h2>
+      <p><strong>$[Amount] (incl. GST)</strong></p>
+      <h2>Reasons for any difference</h2>
+      <p>[Itemise the reasons for any difference between the claimed amount and the scheduled amount. Each reason should identify the disputed item, the basis under the contract or BIF Act, and the supporting facts / documents.]</p>
+      <table>
+        <thead><tr><th>Claim item</th><th>Claimed</th><th>Scheduled</th><th>Reason for withholding</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>$[Amount]</td><td>$[Amount]</td><td>[Reason]</td></tr>
+        </tbody>
+      </table>
+      <h2>Reservation of rights</h2>
+      <p>Nothing in this payment schedule is to be taken as an admission of liability or a waiver of any defence or right under the contract or at law.</p>
+      <p>Signed,<br>
+      [Signatory name]<br>
+      [Position]<br>
+      [Respondent name]</p>
+    `,
+    "eots": `
+      <h1>Notice of Extension of Time</h1>
+      <p><strong>From:</strong> [Contractor name]<br>
+      <strong>To:</strong> [Superintendent / Principal name]<br>
+      <strong>Project:</strong> [Project name]<br>
+      <strong>Contract:</strong> [Contract reference]<br>
+      <strong>Notice date:</strong> [DD Month YYYY]</p>
+      <h2>1. Qualifying cause of delay</h2>
+      <p>[Describe the qualifying cause of delay relied on, identifying the contractual provision and the underlying facts.]</p>
+      <h2>2. When the Contractor became aware</h2>
+      <p>The Contractor became aware of the cause of delay on [DD Month YYYY].</p>
+      <h2>3. Likely effect on progress</h2>
+      <p>[Describe the likely effect on the critical path and the date for practical completion. Reference programme analysis where available.]</p>
+      <h2>4. Estimated extension claimed</h2>
+      <p>[N] working days, extending the date for practical completion from [date] to [date].</p>
+      <h2>5. Supporting documents</h2>
+      <ul>
+        <li>[Programme analysis]</li>
+        <li>[Contemporaneous correspondence]</li>
+        <li>[Photographs / site records]</li>
+      </ul>
+      <h2>6. Reservation of rights</h2>
+      <p>This notice is given under clause [#] of the Contract. The Contractor reserves all other rights under the Contract and at law including, without limitation, claims for delay costs and variations.</p>
+      <p>Signed,<br>
+      [Signatory name]<br>
+      [Position]<br>
+      [Contractor name]</p>
+    `,
+    "variations": `
+      <h1>Notice / Claim of Variation</h1>
+      <p><strong>From:</strong> [Contractor name]<br>
+      <strong>To:</strong> [Superintendent / Principal name]<br>
+      <strong>Project:</strong> [Project name]<br>
+      <strong>Contract:</strong> [Contract reference]<br>
+      <strong>Notice date:</strong> [DD Month YYYY]</p>
+      <h2>1. Direction or change relied on</h2>
+      <p>[Describe the direction, instruction or change in scope relied on, with date and the person who gave it.]</p>
+      <h2>2. Contractual basis</h2>
+      <p>This claim is made under clause [#] of the Contract.</p>
+      <h2>3. Description of the varied work</h2>
+      <p>[Describe the varied work and how it differs from the original contract scope.]</p>
+      <h2>4. Valuation</h2>
+      <p>[Set out the proposed valuation method and amount. Reference the Schedule of Rates / quotes / day-work records as applicable.]</p>
+      <p><strong>Variation value:</strong> $[Amount] (excl. GST)</p>
+      <h2>5. Time impact</h2>
+      <p>[State whether the variation is expected to affect the date for practical completion. If yes, a separate EOT notice is given / will follow.]</p>
+      <h2>6. Supporting documents</h2>
+      <ul>
+        <li>[Cost build-up]</li>
+        <li>[Quotes / invoices]</li>
+        <li>[Site records / dockets]</li>
+      </ul>
+      <p>Signed,<br>
+      [Signatory name]<br>
+      [Position]<br>
+      [Contractor name]</p>
+    `,
+    "delay-costs": `
+      <h1>Claim for Delay Costs / Prolongation</h1>
+      <p><strong>From:</strong> [Contractor name]<br>
+      <strong>To:</strong> [Superintendent / Principal name]<br>
+      <strong>Project:</strong> [Project name]<br>
+      <strong>Contract:</strong> [Contract reference]<br>
+      <strong>Claim date:</strong> [DD Month YYYY]</p>
+      <h2>1. Entitlement basis</h2>
+      <p>[Cite the contract clause or common-law basis on which the delay costs are claimed.]</p>
+      <h2>2. Compensable delay period</h2>
+      <p>The compensable delay period is [N] working days, from [start date] to [end date].</p>
+      <h2>3. Causation</h2>
+      <p>[Identify the qualifying cause(s) of delay, the link to the critical path, and any concurrent-delay analysis.]</p>
+      <h2>4. Quantum</h2>
+      <table>
+        <thead><tr><th>Cost head</th><th>Rate</th><th>Period</th><th>Amount</th></tr></thead>
+        <tbody>
+          <tr><td>Site preliminaries</td><td>$[Rate/day]</td><td>[N] days</td><td>$[Amount]</td></tr>
+          <tr><td>Off-site overheads</td><td>[Hudson / Emden / measured]</td><td>[N] days</td><td>$[Amount]</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Total claimed:</strong> $[Amount] (excl. GST)</p>
+      <h2>5. Supporting records</h2>
+      <ul>
+        <li>[Programme / float analysis]</li>
+        <li>[Payroll, plant and subcontractor records]</li>
+        <li>[Contemporaneous correspondence]</li>
+      </ul>
+      <p>Signed,<br>
+      [Signatory name]<br>
+      [Position]<br>
+      [Contractor name]</p>
+    `,
+    "general-correspondence": `
+      <h1>[Letter / Email title]</h1>
+      <p><strong>From:</strong> [Sender name, position, company]<br>
+      <strong>To:</strong> [Recipient name, position, company]<br>
+      <strong>Project:</strong> [Project name]<br>
+      <strong>Contract:</strong> [Contract reference]<br>
+      <strong>Date:</strong> [DD Month YYYY]</p>
+      <p>Dear [Recipient name],</p>
+      <p>[Opening paragraph identifying the contract and the matter being addressed.]</p>
+      <p>[Substantive body — facts, contractual references, and any action requested.]</p>
+      <p>[Closing paragraph — reservation of rights as appropriate.]</p>
+      <p>Yours sincerely,<br>
+      [Signatory name]<br>
+      [Position]<br>
+      [Company]</p>
+    `,
+    "adjudication-application": `
+      <h1>Adjudication Application</h1>
+      <p>[Use the structure: jurisdiction, statutory framework, contract background, payment claim, payment schedule, issues, entitlement, quantum, anticipated objections, evidence schedule.]</p>
+    `,
+    "adjudication-response": `
+      <h1>Adjudication Response</h1>
+      <p>[Use the structure: jurisdictional objections, response to each item of the application, evidence already raised in the schedule, evidence schedule.]</p>
+    `,
+  };
+
+  function getProjectDraft(project, agentKey) {
+    if (!project.drafts) project.drafts = {};
+    if (!project.drafts[agentKey]) {
+      project.drafts[agentKey] = {
+        html: (AGENT_TEMPLATES[agentKey] || "<p>[Start drafting…]</p>").trim(),
+        chat: { messages: [] },
+        updatedAt: Date.now(),
+      };
+      saveProject(project);
+    }
+    if (!project.drafts[agentKey].chat || !Array.isArray(project.drafts[agentKey].chat.messages)) {
+      project.drafts[agentKey].chat = { messages: [] };
+    }
+    return project.drafts[agentKey];
+  }
+
+  function DraftingWorkspace(project, agentKey, draftOnly) {
+    const draft = getProjectDraft(project, agentKey);
+    const reviewHref = `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=review`;
+    const tabs = draftOnly ? "" : `
+      <div class="mode-tabs" role="tablist">
+        <button class="mode-tab" type="button" data-go="${reviewHref}">Review</button>
+        <button class="mode-tab active" type="button">Draft</button>
+      </div>`;
+    const head = `
+      <div class="chat-page-head">
+        <div>
+          <h1 class="page-title">${escapeHtml(AGENT_LABELS[agentKey])}</h1>
+          <p class="page-sub">${escapeHtml(AGENT_DESCRIPTIONS[agentKey] || "")}</p>
+        </div>
+        ${tabs}
+      </div>`;
+
+    const ctxCount = project.contracts.length + project.library.length;
+    return `
+      <div class="page-shell drafting-shell">
+        ${head}
+        <div class="drafting-toolbar">
+          <div class="drafting-toolbar-left">
+            <button class="ghost-button compact" type="button" data-doc-cmd="bold" title="Bold (⌘B)"><strong>B</strong></button>
+            <button class="ghost-button compact" type="button" data-doc-cmd="italic" title="Italic (⌘I)"><em>I</em></button>
+            <button class="ghost-button compact" type="button" data-doc-cmd="underline" title="Underline (⌘U)"><u>U</u></button>
+            <span class="toolbar-sep"></span>
+            <button class="ghost-button compact" type="button" data-doc-block="h1" title="Heading 1">H1</button>
+            <button class="ghost-button compact" type="button" data-doc-block="h2" title="Heading 2">H2</button>
+            <button class="ghost-button compact" type="button" data-doc-block="p" title="Paragraph">¶</button>
+            <button class="ghost-button compact" type="button" data-doc-cmd="insertUnorderedList" title="Bulleted list">•</button>
+            <button class="ghost-button compact" type="button" data-doc-cmd="insertOrderedList" title="Numbered list">1.</button>
+          </div>
+          <div class="drafting-toolbar-right">
+            <span class="muted drafting-savestate" data-drafting-savestate>Saved</span>
+            <button class="ghost-button compact" type="button" data-doc-copy>${ICON.copy}<span>Copy HTML</span></button>
+            <button class="ghost-button compact" type="button" data-doc-download>${ICON.download}<span>Download .doc</span></button>
+            <button class="ghost-button compact danger" type="button" data-doc-reset title="Reset to blank template">Reset</button>
+          </div>
+        </div>
+        <div class="drafting-grid">
+          <section class="drafting-doc-card card">
+            <div class="drafting-editor" contenteditable="true" data-drafting-editor spellcheck="true">${draft.html}</div>
+          </section>
+          <aside class="drafting-chat-card card">
+            <header class="drafting-chat-head">
+              <h3>Ask the agent to edit the draft</h3>
+              <span class="muted">Sopal will rewrite the document on the left.</span>
+            </header>
+            <div class="drafting-chat-stream" data-drafting-chat-stream>
+              ${draft.chat.messages.length === 0
+                ? `<div class="empty-state"><strong>Tell Sopal what to change.</strong><p>Try "Set the claimed amount to $487,250", "Add a section reserving rights to delay costs", or "Tighten the language on the statutory endorsement".</p></div>`
+                : draft.chat.messages.map((m) => renderMessage(m.role, m.content, m.role === "assistant")).join("")}
+            </div>
+            <form class="drafting-chat-form" data-drafting-chat-form>
+              <div class="composer-row">
+                <textarea class="text-area auto-grow" name="message" rows="2" placeholder="Tell Sopal what to change in the draft…"></textarea>
+                <button class="send-button" type="submit" aria-label="Send">${ICON.send}</button>
+              </div>
+              <div class="composer-meta">
+                <label class="check"><input type="checkbox" name="useContext" ${ctxCount ? "checked" : "disabled"}><span>Project context (${ctxCount})</span></label>
+                <span class="muted kbd-hint">⌘ / Ctrl + Enter to apply</span>
+              </div>
+            </form>
+          </aside>
+        </div>
+      </div>
+    `;
+  }
+
+  function bindDraftingWorkspace(project, agentKey, draftOnly) {
+    const editor = document.querySelector("[data-drafting-editor]");
+    const saveState = document.querySelector("[data-drafting-savestate]");
+    const stream = document.querySelector("[data-drafting-chat-stream]");
+    const form = document.querySelector("[data-drafting-chat-form]");
+    if (!editor || !form) return;
+
+    const draft = getProjectDraft(project, agentKey);
+    let saveTimer = null;
+    function persist() {
+      draft.html = editor.innerHTML;
+      draft.updatedAt = Date.now();
+      saveProject(project);
+      if (saveState) saveState.textContent = "Saved";
+    }
+    function scheduleSave() {
+      if (saveState) saveState.textContent = "Saving…";
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(persist, 600);
+    }
+
+    editor.addEventListener("input", scheduleSave);
+    editor.addEventListener("blur", () => { clearTimeout(saveTimer); persist(); });
+
+    // Toolbar — uses the legacy execCommand API, which is sufficient for
+    // basic Bold/Italic/Underline/lists in a contenteditable div. Block-type
+    // changes (H1/H2/P) use formatBlock.
+    document.querySelectorAll("[data-doc-cmd]").forEach((btn) => btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      editor.focus();
+      document.execCommand(btn.dataset.docCmd, false, null);
+      scheduleSave();
+    }));
+    document.querySelectorAll("[data-doc-block]").forEach((btn) => btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      editor.focus();
+      document.execCommand("formatBlock", false, btn.dataset.docBlock);
+      scheduleSave();
+    }));
+
+    document.querySelector("[data-doc-copy]")?.addEventListener("click", () => {
+      copyText(editor.innerHTML);
+    });
+    document.querySelector("[data-doc-download]")?.addEventListener("click", () => {
+      // Word opens .doc files containing HTML directly. Wrap the editor HTML in
+      // a minimal HTML envelope and trigger a download.
+      const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-${agentKey}.doc`;
+      const blob = new Blob([
+        '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
+        '<head><meta charset="UTF-8"><title>',
+        escapeHtml(project.name),
+        '</title></head><body>',
+        editor.innerHTML,
+        '</body></html>',
+      ], { type: "application/msword" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+    document.querySelector("[data-doc-reset]")?.addEventListener("click", () => {
+      if (!confirm("Reset this draft back to the blank template? The current content will be lost.")) return;
+      const tpl = (AGENT_TEMPLATES[agentKey] || "<p>[Start drafting…]</p>").trim();
+      editor.innerHTML = tpl;
+      draft.html = tpl;
+      draft.chat = { messages: [] };
+      saveProject(project);
+      render();
+    });
+
+    const textarea = form.elements.message;
+    autoGrow(textarea);
+    textarea.addEventListener("input", () => autoGrow(textarea));
+    textarea.addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const message = textarea.value.trim();
+      if (!message) return;
+
+      // Persist current editor HTML before sending so anything the user typed
+      // since the last autosave is included in the request.
+      persist();
+
+      if (stream.querySelector(".empty-state")) stream.innerHTML = "";
+      stream.insertAdjacentHTML("beforeend", renderMessage("user", message));
+      const placeholderId = `msg-${Math.random().toString(36).slice(2)}`;
+      stream.insertAdjacentHTML("beforeend", `
+        <div class="message msg-assistant" id="${placeholderId}">
+          <div class="message-body"><div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Sopal is rewriting the draft…</span></div></div>
+        </div>`);
+      draft.chat.messages.push({ role: "user", content: message, at: Date.now() });
+      textarea.value = "";
+      autoGrow(textarea);
+      stream.scrollTop = stream.scrollHeight;
+
+      try {
+        const useContext = form.elements.useContext?.checked;
+        const projectContext = useContext ? projectContextString(project) : "";
+        const projectMeta = `Project: ${project.name}\nContract form: ${project.contractForm}${project.reference ? `\nReference: ${project.reference}` : ""}${project.claimant || project.respondent ? `\nParties: ${project.claimant || "(claimant)"} v ${project.respondent || "(respondent)"}` : ""}\nUser is: ${project.userIsParty || "claimant"}`;
+        const response = await fetch("/api/sopal-v2/agent/edit-draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            agentType: agentKey,
+            currentDocumentHtml: draft.html,
+            message,
+            projectContext: [projectMeta, projectContext].filter(Boolean).join("\n\n---\n\n"),
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(describeApiError(data, "Edit failed"));
+        const updatedHtml = (data.documentHtml || "").trim();
+        if (updatedHtml) {
+          editor.innerHTML = updatedHtml;
+          draft.html = updatedHtml;
+        }
+        const summary = (data.summary || "Updated the draft.").trim();
+        draft.chat.messages.push({ role: "assistant", content: summary, at: Date.now() });
+        draft.updatedAt = Date.now();
+        saveProject(project);
+        const placeholder = document.getElementById(placeholderId);
+        if (placeholder) placeholder.outerHTML = renderMessage("assistant", summary, true);
+        stream.scrollTop = stream.scrollHeight;
+      } catch (error) {
+        const placeholder = document.getElementById(placeholderId);
+        if (placeholder) placeholder.outerHTML = `<div class="message msg-assistant"><div class="message-body"><div class="error-banner">${escapeHtml(error.message || "Edit failed")}</div></div></div>`;
+        stream.scrollTop = stream.scrollHeight;
+      }
+    });
+  }
+
   function AgentPage(projectId, agentKey) {
     const project = getProject(projectId);
     if (!project) return notFoundPage();
@@ -2758,22 +3219,10 @@ Total\t${formatCurrencyFull(total)}`;
     const mode = draftOnly ? "draft" : (requestedMode === "draft" ? "draft" : "review");
 
     if (mode === "draft") {
-      const opts = {
-        project,
-        chatKey: `agent:${agentKey}:draft`,
-        endpoint: "/api/sopal-v2/agent",
-        agentKey,
-        mode: "draft",
-        title: AGENT_LABELS[agentKey],
-        titleSub: AGENT_DESCRIPTIONS[agentKey],
-        placeholder: "Describe what needs drafting and paste the relevant project / contract facts.",
-        starters: AGENT_QUICK_ACTIONS[agentKey] || SCENARIO_STARTERS.draft || [],
-        contextDefaultOn: project.contracts.length + project.library.length > 0,
-        includeList: INCLUDE_LISTS[agentKey] || [],
-        draftOnly,
-      };
-      setTimeout(() => bindChatPanel(opts), 0);
-      return PageBody(ChatPage(opts));
+      // Drafting workspace: a Word-style editor on the left with a starter
+      // template, an AI chat on the right that can rewrite the document.
+      setTimeout(() => bindDraftingWorkspace(project, agentKey, draftOnly), 0);
+      return PageBody(DraftingWorkspace(project, agentKey, draftOnly));
     }
 
     // Review = claim-check style workspace.
@@ -2807,38 +3256,35 @@ Total\t${formatCurrencyFull(total)}`;
         </div>
       </div>`;
 
+    // Persistent mode tab-strip — visible whether or not a submode is picked,
+    // so the user always sees both perspectives and can switch with one click.
+    const modeStrip = `
+      <div class="mode-strip">
+        <span class="mode-strip-label muted">What are you reviewing?</span>
+        ${submodes.map((m) => `
+          <a class="mode-strip-tab ${submode && m.id === submode.id ? "active" : ""}" href="${modeBaseHref}&submode=${m.id}" data-nav>
+            <span class="mode-strip-icon">${m.id === "received" ? ICON.upload : ICON.file}</span>
+            <span class="mode-strip-body">
+              <strong>I'm ${escapeHtml(m.label.toLowerCase())}</strong>
+              <span class="muted">${escapeHtml(m.sub)}</span>
+            </span>
+          </a>
+        `).join("")}
+      </div>`;
+
     if (!submode) {
       return `
         <div class="page-shell review-shell">
           ${head}
-          <section class="review-mode-picker">
-            <h3>What are you reviewing?</h3>
-            <p class="muted">Pick the perspective. The checks are tailored to it.</p>
-            <div class="mode-tile-grid">
-              ${submodes.map((m) => `
-                <a class="mode-tile" href="${modeBaseHref}&submode=${m.id}" data-nav>
-                  <span class="mode-tile-icon">${m.id === "received" || m.id === "received" ? ICON.upload : ICON.file}</span>
-                  <span class="mode-tile-body">
-                    <strong>${escapeHtml(AGENT_LABELS[agentKey])} I'm ${m.label.toLowerCase()}</strong>
-                    <span class="muted">${escapeHtml(m.sub)}</span>
-                  </span>
-                </a>
-              `).join("")}
-            </div>
-          </section>
+          ${modeStrip}
+          <p class="muted review-pick-hint">Pick a perspective above. The checks below are tailored to it.</p>
         </div>`;
     }
 
     return `
       <div class="page-shell review-shell">
         ${head}
-        <div class="review-meta-bar">
-          <div class="review-meta-left">
-            <span class="muted">Mode:</span>
-            <strong>${escapeHtml(AGENT_LABELS[agentKey])} — ${escapeHtml(submode.label.toLowerCase())}</strong>
-            <a class="link-button small" href="${modeBaseHref}" data-nav>Change</a>
-          </div>
-        </div>
+        ${modeStrip}
         <div class="review-grid">
           <div class="review-left">
             <section class="card review-doc-card">
@@ -4156,13 +4602,26 @@ Total\t${formatCurrencyFull(total)}`;
   // Project-less, non-persistent chat backed by /api/sopal-v2/research. Stores
   // its own message stack in localStorage under store.researchChat so the
   // conversation survives reloads but doesn't pollute the project list.
-  const RESEARCH_STARTERS = [
-    "What are the key BIF Act time bars I should remember?",
-    "When can a respondent rely on s 82(4) to refuse new reasons?",
-    "Walk me through the difference between BIF Act and BCIPA.",
-    "What's a recent decision on reference date validity?",
-    "When is a contract \"silent\" on the time for payment?",
+
+  // Jurisdictions Sopal can scope the research agent to. Only QLD has full
+  // legislation + decision-corpus support today; the others surface a banner
+  // that explains they're degraded ("general knowledge only").
+  const JURISDICTIONS = [
+    { id: "qld", label: "QLD", full: "Queensland", supported: true },
+    { id: "nsw", label: "NSW", full: "New South Wales", supported: false },
+    { id: "vic", label: "VIC", full: "Victoria", supported: false },
+    { id: "wa", label: "WA", full: "Western Australia", supported: false },
+    { id: "sa", label: "SA", full: "South Australia", supported: false },
   ];
+
+  function getResearchJurisdiction() {
+    const id = (store.researchJurisdiction || "qld").toLowerCase();
+    return JURISDICTIONS.find((j) => j.id === id) || JURISDICTIONS[0];
+  }
+  function setResearchJurisdiction(id) {
+    store.researchJurisdiction = id;
+    saveStore();
+  }
 
   function getResearchChat() {
     if (!store.researchChat || !Array.isArray(store.researchChat.messages)) {
@@ -4173,27 +4632,37 @@ Total\t${formatCurrencyFull(total)}`;
 
   function ResearchAgentPage() {
     const chat = getResearchChat();
+    const jur = getResearchJurisdiction();
     setTimeout(bindResearchAgent, 0);
     const isEmpty = chat.messages.length === 0;
+    const jurisdictionPicker = `
+      <div class="jurisdiction-bar">
+        <span class="muted">Jurisdiction</span>
+        <div class="jurisdiction-tabs" role="tablist">
+          ${JURISDICTIONS.map((j) => `
+            <button class="jurisdiction-tab ${j.id === jur.id ? "active" : ""} ${j.supported ? "" : "limited"}" type="button" data-jurisdiction="${attr(j.id)}" title="${j.full}${j.supported ? "" : " — limited support (general knowledge only)"}">
+              ${escapeHtml(j.label)}${j.supported ? "" : '<span class="jurisdiction-tag" aria-label="Limited support">·</span>'}
+            </button>`).join("")}
+        </div>
+        ${jur.supported ? "" : `<span class="jurisdiction-warn muted">${escapeHtml(jur.full)} sources aren't yet integrated. Answers rely on general knowledge only — verify against the local act before relying.</span>`}
+      </div>`;
     return PageBody(`
       <div class="page-shell chat-shell">
         <div class="chat-page-head">
           <div>
             <h1 class="page-title">Research agent</h1>
-            <p class="page-sub">Ask construction-law / SOPA / BIF Act research questions. No project required.</p>
+            <p class="page-sub">Ask construction-law / SOPA research questions. No project required.</p>
           </div>
           ${chat.messages.length ? `<button class="ghost-button compact" type="button" data-clear-research>${ICON.trash}<span>Clear conversation</span></button>` : ""}
         </div>
+        ${jurisdictionPicker}
         <div class="chat-layout">
           <section class="chat-pane" data-chat-pane>
             ${isEmpty ? `
               <div class="chat-empty">
                 <h2 class="chat-empty-title">Sopal research agent</h2>
-                <p class="chat-empty-sub">Ask anything about the BIF Act, BCIPA, adjudication strategy, or specific decisions.</p>
+                <p class="chat-empty-sub">Ask anything about ${escapeHtml(jur.full)} construction law, SOPA, or specific decisions.</p>
                 ${standaloneComposer({ placeholder: "Ask a research question…", compact: false })}
-                <div class="starter-chips">
-                  ${RESEARCH_STARTERS.map((s) => `<button class="starter-chip" type="button" data-starter="${attr(s)}">${escapeHtml(s)}</button>`).join("")}
-                </div>
               </div>
             ` : `
               <div class="chat-stream-wrap">
@@ -4241,10 +4710,11 @@ Total\t${formatCurrencyFull(total)}`;
         form.requestSubmit();
       }
     });
-    pane.querySelectorAll("[data-starter]").forEach((b) => b.addEventListener("click", () => {
-      textarea.value = b.dataset.starter;
-      autoGrow(textarea);
-      textarea.focus();
+    document.querySelectorAll("[data-jurisdiction]").forEach((b) => b.addEventListener("click", () => {
+      const id = b.dataset.jurisdiction;
+      if (!id || id === getResearchJurisdiction().id) return;
+      setResearchJurisdiction(id);
+      render();
     }));
     document.querySelector("[data-clear-research]")?.addEventListener("click", () => {
       if (!confirm("Clear the research conversation?")) return;
@@ -4325,14 +4795,17 @@ Total\t${formatCurrencyFull(total)}`;
 
   async function callResearch(message) {
     // Send the prior turns so the model can follow up. Capped to keep payloads
-    // sane; we trim back to the most-recent ~20 messages.
+    // sane; we trim back to the most-recent ~20 messages. Jurisdiction is
+    // included so the server prompt can scope the answer (and warn loudly when
+    // the chosen jurisdiction isn't fully integrated yet).
     const chat = getResearchChat();
+    const jur = getResearchJurisdiction();
     const history = (chat.messages || []).slice(-20).map((m) => ({ role: m.role, content: m.content }));
     const response = await fetch("/api/sopal-v2/research", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify({ message, history, jurisdiction: jur.id }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(describeApiError(data, "Research request failed"));
@@ -4379,38 +4852,33 @@ Total\t${formatCurrencyFull(total)}`;
         </div>
       </div>`;
 
+    const modeStrip = `
+      <div class="mode-strip">
+        <span class="mode-strip-label muted">What are you reviewing?</span>
+        ${submodes.map((m) => `
+          <a class="mode-strip-tab ${activeSubmode && m.id === activeSubmode.id ? "active" : ""}" href="${baseHref}?submode=${m.id}" data-nav>
+            <span class="mode-strip-icon">${m.id === "received" ? ICON.upload : ICON.file}</span>
+            <span class="mode-strip-body">
+              <strong>I'm ${escapeHtml(m.label.toLowerCase())}</strong>
+              <span class="muted">${escapeHtml(m.sub)}</span>
+            </span>
+          </a>
+        `).join("")}
+      </div>`;
+
     if (!activeSubmode) {
       return `
         <div class="page-shell review-shell">
           ${head}
-          <section class="review-mode-picker">
-            <h3>What are you reviewing?</h3>
-            <p class="muted">Pick the perspective. The checks are tailored to it.</p>
-            <div class="mode-tile-grid">
-              ${submodes.map((m) => `
-                <a class="mode-tile" href="${baseHref}?submode=${m.id}" data-nav>
-                  <span class="mode-tile-icon">${m.id === "received" ? ICON.upload : ICON.file}</span>
-                  <span class="mode-tile-body">
-                    <strong>I'm ${escapeHtml(m.label.toLowerCase())}</strong>
-                    <span class="muted">${escapeHtml(m.sub)}</span>
-                  </span>
-                </a>
-              `).join("")}
-            </div>
-          </section>
+          ${modeStrip}
+          <p class="muted review-pick-hint">Pick a perspective above. The checks are tailored to it.</p>
         </div>`;
     }
 
     return `
       <div class="page-shell review-shell">
         ${head}
-        <div class="review-meta-bar">
-          <div class="review-meta-left">
-            <span class="muted">Mode:</span>
-            <strong>${escapeHtml(activeSubmode.label)}</strong>
-            <a class="link-button small" href="${baseHref}" data-nav>Change</a>
-          </div>
-        </div>
+        ${modeStrip}
         <div class="review-grid">
           <div class="review-left">
             <section class="card review-doc-card">

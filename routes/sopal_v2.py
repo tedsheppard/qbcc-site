@@ -342,21 +342,166 @@ async def sopal_v2_chat(payload: SopalV2AgentRequest) -> dict[str, Any]:
     }
 
 
+# Drafting-workspace endpoint. Drafting agents in the v2 sidebar render a
+# Word-style editor on the left and an AI chat on the right; this endpoint is
+# the bridge — the client sends the current document HTML plus the user's
+# instruction, the model returns the FULL updated document HTML plus a one
+# or two sentence summary that's surfaced in the chat stream.
+class SopalV2EditDraftRequest(BaseModel):
+    agentType: str = Field(default="", max_length=80)
+    currentDocumentHtml: str = Field(default="", max_length=300_000)
+    message: str = Field(default="", max_length=120_000)
+    projectContext: str | None = Field(default=None, max_length=120_000)
+
+
+EDIT_DRAFT_SYSTEM_PROMPT = """You are Sopal Drafting, editing a construction-law / SOPA / BIF Act draft document on the user's behalf.
+
+You will receive:
+1. The CURRENT DOCUMENT (HTML) — the user's working draft, including their existing edits.
+2. A user instruction describing the change(s) they want applied.
+3. Optional project context (parties, contract form, contract clauses, library documents).
+
+You must return STRICT JSON with exactly two fields:
+{
+  "documentHtml": "...",   // The FULL UPDATED document HTML — not a diff, not a snippet.
+  "summary": "..."          // One or two sentence plain-English summary of what you changed.
+}
+
+Rules for documentHtml:
+- Return the WHOLE document, not a fragment. The client replaces the editor's content with this string.
+- Keep the same structural elements the user is using (h1, h2, p, table, ul, ol, strong, em, br).
+- Do NOT add inline styles, scripts, or non-document elements.
+- Preserve the user's existing wording wherever possible. Only change what the instruction asks for.
+- Preserve [bracketed placeholders] the user has not filled in. If the user instructs you to fill one in, fill it.
+- Do not invent facts (case names, sums, dates, parties) that are not in the current document or the project context.
+- Use clear Australian English. Be legally careful.
+
+Rules for summary:
+- One or two sentences, written to the user (\"I've added a section on …\", \"Updated the claimed amount to …\").
+- No code fences, no JSON, no Markdown headings.
+
+Return only the JSON object. No surrounding prose, no code fences."""
+
+
+@router.post("/agent/edit-draft")
+async def sopal_v2_edit_draft(payload: SopalV2EditDraftRequest) -> dict[str, Any]:
+    agent_key = (payload.agentType or "").strip()
+    if agent_key not in AGENT_LABELS:
+        raise HTTPException(status_code=400, detail="Unknown agent type")
+    message = (payload.message or "").strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Message is required")
+    document_html = (payload.currentDocumentHtml or "").strip()
+    if not document_html:
+        raise HTTPException(status_code=400, detail="Current document is required")
+
+    label = AGENT_LABELS[agent_key]
+    project_context = (payload.projectContext or "").strip()
+    context_block = f"\n\nProject context provided by user:\n{project_context}" if project_context else ""
+
+    user_content = (
+        f"Drafting workspace: {label}\n\n"
+        f"User instruction:\n{message}\n\n"
+        f"CURRENT DOCUMENT (HTML):\n{document_html[:200_000]}"
+        f"{context_block}"
+    )
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                BASE_SYSTEM_PROMPT
+                + "\n\n"
+                + _current_date_context()
+                + "\n\n"
+                + EDIT_DRAFT_SYSTEM_PROMPT
+            ),
+        },
+        {"role": "user", "content": user_content},
+    ]
+
+    result = _complete(messages)
+    raw = (result.get("content") or "").strip()
+    # Tolerate the occasional code-fence wrapper from the model.
+    if raw.startswith("```"):
+        raw = raw.split("```", 2)[-1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip().rstrip("`").strip()
+    try:
+        import json as _json
+
+        start = raw.find("{")
+        end = raw.rfind("}")
+        if start == -1 or end <= start:
+            raise ValueError("No JSON object found in model output")
+        parsed = _json.loads(raw[start : end + 1])
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(status_code=502, detail=f"Could not parse drafting agent output: {exc}") from exc
+
+    return {
+        "documentHtml": parsed.get("documentHtml") or "",
+        "summary": parsed.get("summary") or "Updated the draft.",
+        "model": result.get("model"),
+    }
+
+
 # Project-less research chat surfaced by the Research Agent in the v2 sidebar.
 # Different system prompt focus from /chat (which is the project assistant) —
 # this one is for general construction-law / SOPA / BIF Act questions.
 class SopalV2ResearchRequest(BaseModel):
     message: str = Field(default="", max_length=120_000)
     history: list[dict[str, Any]] = Field(default_factory=list)
+    jurisdiction: str | None = Field(default="qld", max_length=8)
 
 
-RESEARCH_SYSTEM_PROMPT = """You are Sopal Research, a research-only assistant for Australian construction-law and security-of-payment questions. Focus on the BIF Act 2017 (Qld), BCIPA (where it still applies pre-transition), the QBCC Act, common law principles relevant to construction contracts, and adjudication strategy.
+RESEARCH_SYSTEM_PROMPT_BASE = """You are Sopal Research, a research-only assistant for Australian construction-law and security-of-payment questions.
 
-Be practical, precise, and cite section numbers where relevant. Do NOT invent case names, decision references, or statistics — if you don't know, say so. Distinguish current Queensland law (BIF Act) from the repealed BCIPA. Use clear Australian English.
+Be practical, precise, and cite section numbers where relevant. Do NOT invent case names, decision references, or statistics — if you don't know, say so. Use clear Australian English.
 
 For questions about specific decisions: explain that the user can use the Decision search tool in Sopal to look up real decisions, and offer to interpret the legal principles instead. Do not fabricate decision summaries.
 
 Format the answer in clean Markdown with headings, bullets, and tables where useful. Add a short note that Sopal Research assists with legal analysis but does not replace professional legal advice."""
+
+# Jurisdiction-specific framing. Sopal's decision corpus + structured agent
+# prompts are QLD-only today; for the other states we explicitly tell the
+# model it lacks integrated case data and must rely on general knowledge.
+RESEARCH_JURISDICTION_FRAMING: dict[str, str] = {
+    "qld": (
+        "Active jurisdiction: Queensland. Apply the Building Industry Fairness (Security of Payment) Act 2017 (Qld) "
+        "(\"BIF Act\") to current matters. Distinguish it from the repealed Building and Construction Industry "
+        "Payments Act 2004 (Qld) (\"BCIPA\") — do NOT call BCIPA the BIF Act. Use current QLD section numbering."
+    ),
+    "nsw": (
+        "Active jurisdiction: New South Wales. Apply the Building and Construction Industry Security of Payment Act "
+        "1999 (NSW). Note: Sopal's decision corpus is QLD-only — you do NOT have access to NSW-specific decisions, "
+        "so do not fabricate them. Answer from general knowledge of the NSW Act, flag any answer that would normally "
+        "rely on case law as needing verification, and recommend the user check NSW Caselaw / NCAT / Supreme Court "
+        "decisions directly."
+    ),
+    "vic": (
+        "Active jurisdiction: Victoria. Apply the Building and Construction Industry Security of Payment Act 2002 "
+        "(Vic). Note: Sopal's decision corpus is QLD-only — you do NOT have access to VIC-specific decisions, so do "
+        "not fabricate them. Answer from general knowledge of the Vic Act, flag any answer that would normally rely "
+        "on case law as needing verification, and recommend the user check VCAT / Supreme Court Vic / VBA decisions "
+        "directly."
+    ),
+    "wa": (
+        "Active jurisdiction: Western Australia. Apply the Building and Construction Industry (Security of Payment) "
+        "Act 2021 (WA) for matters arising on or after 1 August 2022, and the Construction Contracts Act 2004 (WA) "
+        "for older matters where it still applies. Note: Sopal's decision corpus is QLD-only — you do NOT have "
+        "access to WA-specific decisions, so do not fabricate them. Answer from general knowledge of the WA regime, "
+        "flag any answer that would normally rely on case law as needing verification, and recommend the user check "
+        "SAT WA / Supreme Court WA decisions directly."
+    ),
+    "sa": (
+        "Active jurisdiction: South Australia. Apply the Building and Construction Industry Security of Payment Act "
+        "2009 (SA). Note: Sopal's decision corpus is QLD-only — you do NOT have access to SA-specific decisions, so "
+        "do not fabricate them. Answer from general knowledge of the SA Act, flag any answer that would normally "
+        "rely on case law as needing verification, and recommend the user check SACAT / Supreme Court SA decisions "
+        "directly."
+    ),
+}
 
 
 @router.post("/research")
@@ -365,8 +510,12 @@ async def sopal_v2_research(payload: SopalV2ResearchRequest) -> dict[str, Any]:
     if not message:
         raise HTTPException(status_code=400, detail="Message is required")
 
+    jur = (payload.jurisdiction or "qld").strip().lower()
+    framing = RESEARCH_JURISDICTION_FRAMING.get(jur, RESEARCH_JURISDICTION_FRAMING["qld"])
+    system_prompt = RESEARCH_SYSTEM_PROMPT_BASE + "\n\n" + framing
+
     messages: list[dict[str, str]] = [
-        {"role": "system", "content": RESEARCH_SYSTEM_PROMPT + "\n\n" + _current_date_context()},
+        {"role": "system", "content": system_prompt + "\n\n" + _current_date_context()},
     ]
     # Replay the prior turns so the model can answer follow-ups, capped to the
     # most-recent ~20 messages (the client also caps; this is defence-in-depth).
