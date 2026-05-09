@@ -3764,12 +3764,20 @@ a { color: inherit; text-decoration: none; }
 /* Stage 5 — Review */
 .aa-review {
   display: grid;
-  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
   gap: 14px;
   align-items: stretch;
   min-height: calc(100vh - 320px);
 }
 .aa-review-summary { display: flex; flex-direction: column; }
+.aa-review-summary .card-head {
+  /* The summary column is narrow and the action row has 6+ buttons, so stack
+     vertically here instead of inheriting the default left-title / right-actions
+     row. Buttons wrap to additional lines when the column is too narrow. */
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
 .aa-review-summary .card-body { display: flex; flex-direction: column; gap: 18px; }
 .aa-review-checklist h4,
 .aa-review-scenario h4 {
@@ -3785,10 +3793,22 @@ a { color: inherit; text-decoration: none; }
 .aa-review-scenario p { margin: 0; font-size: 13px; line-height: 1.5; }
 .aa-review-master { display: flex; flex-direction: column; padding: 0; }
 .aa-review-master .aa-master-body { flex: 1; }
-.aa-review-actions { display: flex; gap: 8px; }
+.aa-review-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.aa-review-actions > button {
+  /* Compact buttons fit two-per-row in the narrow summary column. */
+  flex: 1 1 calc(50% - 3px);
+  justify-content: flex-start;
+  white-space: nowrap;
+}
 
 @media (max-width: 1024px) {
   .aa-review { grid-template-columns: 1fr; min-height: 0; }
+  .aa-review-summary .card-head { flex-direction: row; align-items: flex-start; }
+  .aa-review-actions > button { flex: 0 0 auto; }
 }
 
 /* Adjudicator toolbar should be inline, not a 2-col grid. */
