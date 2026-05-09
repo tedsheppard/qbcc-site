@@ -3791,7 +3791,21 @@ Total\t${formatCurrencyFull(total)}`;
       if (data.definitions) Object.assign(aa.definitions, data.definitions);
       saveProject(project);
     } catch (error) {
-      alert(error.message || "Engine call failed");
+      // Surface the engine error inline next to the thinking row instead of
+      // bouncing an alert — keeps the workflow flowing and lets the user
+      // retry with one click.
+      if (stream) {
+        const t = document.getElementById("aa-thinking");
+        if (t) t.remove();
+        stream.insertAdjacentHTML("beforeend", `<div class="error-banner aa-rfi-error">${escapeHtml(error.message || "Engine call failed")}<button class="ghost-button compact aa-rfi-retry" type="button">Retry</button></div>`);
+        const retry = stream.querySelector(".aa-rfi-error:last-child .aa-rfi-retry");
+        if (retry) retry.addEventListener("click", () => {
+          retry.closest(".aa-rfi-error").remove();
+          aaCallEngine(project, aa, mode).then(() => render());
+        });
+      } else {
+        alert(error.message || "Engine call failed");
+      }
     } finally {
       const t = document.getElementById("aa-thinking");
       if (t) t.remove();

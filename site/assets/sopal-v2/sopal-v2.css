@@ -3405,6 +3405,15 @@ a { color: inherit; text-decoration: none; }
 }
 .aa-disputes-foot .ghost-button { width: 100%; justify-content: center; }
 
+.aa-rfi-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+.aa-rfi-retry { white-space: nowrap; }
+
 .aa-artifacts-modal { max-width: 720px; width: 100%; }
 .aa-artifacts-body section { padding: 12px 0; border-bottom: 1px solid var(--main-border); }
 .aa-artifacts-body section:last-child { border-bottom: 0; }
