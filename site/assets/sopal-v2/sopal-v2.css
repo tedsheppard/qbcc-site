@@ -142,6 +142,7 @@
 [data-theme="dark"] .crumb { color: var(--muted-fg); }
 [data-theme="dark"] .crumb a, [data-theme="dark"] a.crumb { color: var(--soft-fg); }
 [data-theme="dark"] .crumb.current { color: var(--main-fg); }
+[data-theme="dark"] .main-header { background: rgba(31, 29, 27, 0.92); border-bottom-color: var(--main-border); }
 [data-theme="dark"] .palette-hint-btn { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: var(--main-fg); }
 [data-theme="dark"] .palette-hint-btn:hover { background: rgba(255,255,255,0.1); }
 [data-theme="dark"] .kbd-key { color: var(--soft-fg); }
