@@ -2947,16 +2947,22 @@ Total\t${formatCurrencyFull(total)}`;
         anaReference: "",
         pcDate: "",
         psDate: "",
+        claimantAbn: "",
         claimantAddress: "",
         claimantContact: "",
         claimantEmail: "",
         claimantPhone: "",
+        respondentAbn: "",
         respondentAddress: "",
         respondentContact: "",
         respondentEmail: "",
         respondentPhone: "",
       };
     }
+    // Backfill ABN fields on existing projects so the cover modal and master
+    // table render the rows when the user fills them in.
+    if (aa.coverMeta && typeof aa.coverMeta.claimantAbn !== "string") aa.coverMeta.claimantAbn = "";
+    if (aa.coverMeta && typeof aa.coverMeta.respondentAbn !== "string") aa.coverMeta.respondentAbn = "";
     if (typeof aa.introductionHtml !== "string") aa.introductionHtml = "";
     if (typeof aa.execSummaryHtml !== "string") aa.execSummaryHtml = "";
     if (typeof aa.overarchingHtml !== "string") aa.overarchingHtml = "";
@@ -3568,6 +3574,7 @@ Total\t${formatCurrencyFull(total)}`;
       <h3 class="aa-cover-section">Claimant details</h3>
       <table class="aa-cover-table">
         <tr><th>Name</th><td>${escapeHtml(claimantName)}</td></tr>
+        ${cover.claimantAbn ? `<tr><th>ABN</th><td>${escapeHtml(cover.claimantAbn)}</td></tr>` : ""}
         ${cover.claimantContact ? `<tr><th>Contact</th><td>${escapeHtml(cover.claimantContact)}</td></tr>` : ""}
         ${cover.claimantAddress ? `<tr><th>Address</th><td>${escapeHtml(cover.claimantAddress)}</td></tr>` : ""}
         ${cover.claimantPhone ? `<tr><th>Phone</th><td>${escapeHtml(cover.claimantPhone)}</td></tr>` : ""}
@@ -3576,6 +3583,7 @@ Total\t${formatCurrencyFull(total)}`;
       <h3 class="aa-cover-section">Respondent details</h3>
       <table class="aa-cover-table">
         <tr><th>Name</th><td>${escapeHtml(respondentName)}</td></tr>
+        ${cover.respondentAbn ? `<tr><th>ABN</th><td>${escapeHtml(cover.respondentAbn)}</td></tr>` : ""}
         ${cover.respondentContact ? `<tr><th>Contact</th><td>${escapeHtml(cover.respondentContact)}</td></tr>` : ""}
         ${cover.respondentAddress ? `<tr><th>Address</th><td>${escapeHtml(cover.respondentAddress)}</td></tr>` : ""}
         ${cover.respondentPhone ? `<tr><th>Phone</th><td>${escapeHtml(cover.respondentPhone)}</td></tr>` : ""}
@@ -4756,10 +4764,12 @@ Total\t${formatCurrencyFull(total)}`;
       { key: "anaReference", label: "ANA reference", placeholder: "e.g. ATO-12345" },
       { key: "pcDate", label: "Payment claim served on", placeholder: "e.g. 5 March 2026" },
       { key: "psDate", label: "Payment schedule served on", placeholder: "e.g. 19 March 2026 (or N/A)" },
+      { key: "claimantAbn", label: "Claimant ABN", placeholder: "e.g. 12 345 678 901" },
       { key: "claimantContact", label: "Claimant contact (name, role)", placeholder: "" },
       { key: "claimantAddress", label: "Claimant address", placeholder: "" },
       { key: "claimantPhone", label: "Claimant phone", placeholder: "" },
       { key: "claimantEmail", label: "Claimant email", placeholder: "" },
+      { key: "respondentAbn", label: "Respondent ABN", placeholder: "e.g. 12 345 678 901" },
       { key: "respondentContact", label: "Respondent contact (name, role)", placeholder: "" },
       { key: "respondentAddress", label: "Respondent address", placeholder: "" },
       { key: "respondentPhone", label: "Respondent phone", placeholder: "" },
