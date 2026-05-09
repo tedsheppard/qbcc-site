@@ -454,10 +454,34 @@ async def sopal_v2_edit_draft(payload: SopalV2EditDraftRequest) -> dict[str, Any
 class AAParseRequest(BaseModel):
     paymentClaimText: str = Field(default="", max_length=300_000)
     paymentScheduleText: str = Field(default="", max_length=300_000)
+    s79Scenario: str = Field(default="less-than-claimed", max_length=40)
     projectMeta: dict[str, Any] = Field(default_factory=dict)
 
 
-AA_PARSE_SYSTEM_PROMPT = """You are extracting a structured snapshot of a Queensland BIF Act adjudication matter from the Payment Claim and Payment Schedule documents the user has supplied.
+AA_S79_FRAMING: dict[str, str] = {
+    "no-schedule": (
+        "S 79 SCENARIO: 'No payment schedule received and no payment made' — s 79(2)(a). "
+        "There is NO Payment Schedule. Treat every line item in the Payment Claim as DISPUTED for the purposes of this "
+        "structured extract; psReasons should be empty for each item. Set scheduledAmount = 0. The application timing "
+        "is 30 BD after the LATER of (i) the day the amount became payable under the contract; or (ii) the last day "
+        "a payment schedule could have been given (15 BD after the PC). psReasonsUniverse should be empty."
+    ),
+    "less-than-claimed": (
+        "S 79 SCENARIO: 'Schedule received — scheduled amount LESS than claimed' — s 79(2)(b). The PS schedules a "
+        "lower amount than the PC and offers reasons. Capture every reason against the line item it relates to. "
+        "Application timing is 30 BD after receipt of the PS."
+    ),
+    "scheduled-but-unpaid": (
+        "S 79 SCENARIO: 'Schedule received — scheduled amount EQUAL to claim, but not paid' — s 79(2)(c). The PS "
+        "scheduled the full amount (or part of it) but the respondent has not paid the scheduled amount by the due "
+        "date. Mark items 'disputed' on the basis of non-payment, not on the basis of valuation. psReasons may be "
+        "empty (the dispute is timing, not amount). Application timing is 20 BD after the day on which payment was "
+        "due under the contract."
+    ),
+}
+
+
+AA_PARSE_SYSTEM_PROMPT = """You are extracting a structured snapshot of a Queensland BIF Act adjudication matter from the documents the user has supplied.
 
 Return STRICT JSON with exactly this shape:
 {
@@ -472,19 +496,18 @@ Return STRICT JSON with exactly this shape:
       "description": "one to three sentence description from the PC",
       "claimed":     number,
       "scheduled":   number,
-      "psReasons":   "verbatim or close-paraphrase of the respondent's reasons for any difference, from the PS",
+      "psReasons":   "verbatim or close-paraphrase of the respondent's reasons for any difference, from the PS (empty for the no-schedule scenario)",
       "status":      "disputed" | "admitted" | "partial" | "jurisdictional",
       "issueType":   "variation" | "eot" | "delay-costs" | "defects" | "set-off" | "retention" | "prevention" | "scope" | "valuation" | "other"
     }
   ],
-  "psReasonsUniverse":  "all of the respondent's reasons concatenated — this is the s 82(4) ceiling of arguments the respondent can later run",
+  "psReasonsUniverse":  "all of the respondent's reasons concatenated — this is the s 82(4) ceiling of arguments the respondent can later run (empty for the no-schedule scenario)",
   "warnings": [{ "code": "string", "message": "human-readable" }]
 }
 
 Rules:
 - Do NOT invent line items, parties, dates, or dollar amounts. If a field isn't in the documents, leave it empty / 0 / [].
-- The PS may schedule the claim at $0 and offer reasons; capture every reason against the PC item it relates to where you can.
-- If the PS appears to be silent or missing, return scheduledAmount = 0 and add a warning {"code":"ps-missing","message":"No payment schedule was identified — the application route is the no-schedule path under s 79."}.
+- The active s 79 scenario is given to you in the user message — apply the framing accordingly.
 - If the reference date appears to be in the future, add a warning {"code":"ref-date-future","message":"..."}.
 - Use Australian English. Numbers are plain numbers (no $ symbols, no commas).
 - Return only the JSON object. No commentary. No code fences."""
@@ -496,8 +519,11 @@ async def aa_parse_documents(payload: AAParseRequest) -> dict[str, Any]:
     ps = (payload.paymentScheduleText or "").strip()
     if not pc:
         raise HTTPException(status_code=400, detail="Payment Claim text is required")
-    if not ps:
-        raise HTTPException(status_code=400, detail="Payment Schedule text is required")
+    scenario = (payload.s79Scenario or "less-than-claimed").strip()
+    if scenario not in AA_S79_FRAMING:
+        scenario = "less-than-claimed"
+    if scenario != "no-schedule" and not ps:
+        raise HTTPException(status_code=400, detail="Payment Schedule text is required for this scenario")
 
     project_meta = payload.projectMeta or {}
     project_block = (
@@ -509,10 +535,15 @@ async def aa_parse_documents(payload: AAParseRequest) -> dict[str, Any]:
 
     user_content = (
         project_block
-        + "\nPAYMENT CLAIM:\n"
+        + "\n"
+        + AA_S79_FRAMING[scenario]
+        + "\n\nPAYMENT CLAIM:\n"
         + pc[:120_000]
-        + "\n\nPAYMENT SCHEDULE:\n"
-        + ps[:120_000]
+        + (
+            "\n\nPAYMENT SCHEDULE:\n" + ps[:120_000]
+            if ps
+            else "\n\nPAYMENT SCHEDULE: (none received — s 79(2)(a) scenario)"
+        )
     )
 
     messages = [
@@ -555,6 +586,7 @@ class AAEngineRequest(BaseModel):
     claimedAmount: float = 0
     scheduledAmount: float = 0
     psReasonsUniverse: str = ""
+    s79Scenario: str = Field(default="less-than-claimed", max_length=40)
     definitions: dict[str, Any] = Field(default_factory=dict)
     projectMeta: dict[str, Any] = Field(default_factory=dict)
 
@@ -653,9 +685,15 @@ async def aa_engine(payload: AAEngineRequest) -> dict[str, Any]:
     thread_brief = _aa_thread_brief(payload)
     rounds_brief = _aa_rounds_brief(payload.rounds)
     definitions_lines = "\n".join(f"- {k}: {v}" for k, v in (payload.definitions or {}).items()) or "(none yet)"
+    scenario_id = (payload.s79Scenario or "less-than-claimed").strip()
+    if scenario_id not in AA_S79_FRAMING:
+        scenario_id = "less-than-claimed"
+    scenario_block = AA_S79_FRAMING[scenario_id]
+
     user_content = (
         f"Mode: {payload.mode}\n\n"
         f"{thread_brief}\n\n"
+        f"{scenario_block}\n\n"
         f"Matter context:\n"
         f"- Project: {payload.projectMeta.get('name') or ''}\n"
         f"- Contract form: {payload.projectMeta.get('contractForm') or ''}\n"
@@ -665,7 +703,7 @@ async def aa_engine(payload: AAEngineRequest) -> dict[str, Any]:
         f"- Reference date: {payload.referenceDate or ''}\n"
         f"- Claimed amount: {payload.claimedAmount}\n"
         f"- Scheduled amount: {payload.scheduledAmount}\n"
-        f"- s 82(4) PS reasons universe: {payload.psReasonsUniverse[:8000]}\n\n"
+        f"- s 82(4) PS reasons universe: {payload.psReasonsUniverse[:8000] or '(empty — no PS in this scenario)'}\n\n"
         f"Definitions (shared):\n{definitions_lines}\n\n"
         f"RFI history for this thread:\n{rounds_brief}\n\n"
         f"Current draft submissions HTML for this thread (may be empty):\n{payload.existingSubmissions[:60_000]}"

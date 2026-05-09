@@ -3168,9 +3168,18 @@ a { color: inherit; text-decoration: none; }
   border-radius: 7px;
   font-size: 12.5px;
   color: var(--muted-fg);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background-color 0.12s, color 0.12s;
 }
+.aa-stage:hover { background: rgba(0,0,0,0.04); color: var(--main-fg); }
 .aa-stage.done { color: var(--main-fg); }
 .aa-stage.active { background: var(--main-fg); color: var(--main-panel); font-weight: 600; }
+.aa-stage.active:hover { background: var(--main-fg); }
+[data-theme="dark"] .aa-stage:hover { background: rgba(255,255,255,0.06); }
 .aa-stage-num {
   display: inline-flex;
   width: 20px;
@@ -3247,6 +3256,45 @@ a { color: inherit; text-decoration: none; }
   .aa-intake-grid { grid-template-columns: 1fr; }
   .aa-intake-meta, .aa-intake-actions { grid-column: span 1; }
 }
+
+/* Stage 1 — s 79 scenario picker */
+.aa-s79-picker {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  background: var(--main-muted);
+  border-radius: 10px;
+}
+.aa-s79-picker .aa-doc-label { display: block; }
+.aa-s79-help { margin: 4px 0 12px; font-size: 12.5px; }
+.aa-s79-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 8px;
+}
+.aa-s79-option {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--main-panel);
+  border: 1px solid var(--main-border);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: border-color 0.12s, background-color 0.12s;
+}
+.aa-s79-option:hover { border-color: var(--ring); }
+.aa-s79-option.active {
+  border-color: var(--main-fg);
+  background: var(--main-fg);
+  color: var(--main-panel);
+}
+.aa-s79-option.active .muted { color: rgba(255,255,255,0.78); }
+.aa-s79-option input[type="radio"] { margin-top: 3px; }
+.aa-s79-body { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.aa-s79-body strong { font-size: 13px; font-weight: 600; }
+.aa-s79-body .muted { font-size: 11.5px; line-height: 1.4; }
+
+.aa-doc-help { margin: 0 0 6px; font-size: 12px; }
+.aa-doc-slot-optional textarea { background: rgba(0,0,0,0.02); }
 
 /* Stage 2 — dispute table */
 .aa-dispute-table .card-head { align-items: flex-start; }
@@ -3508,6 +3556,36 @@ a { color: inherit; text-decoration: none; }
     min-height: 0;
   }
   .aa-disputes-nav, .aa-rfi-pane, .aa-master-pane { min-height: 360px; }
+}
+
+/* Stage 5 — Review */
+.aa-review {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  min-height: calc(100vh - 320px);
+}
+.aa-review-summary { display: flex; flex-direction: column; }
+.aa-review-summary .card-body { display: flex; flex-direction: column; gap: 18px; }
+.aa-review-checklist h4,
+.aa-review-scenario h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-fg);
+}
+.aa-review-checklist ul { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.65; }
+.aa-review-checklist li { padding: 1px 0; }
+.aa-review-scenario p { margin: 0; font-size: 13px; line-height: 1.5; }
+.aa-review-master { display: flex; flex-direction: column; padding: 0; }
+.aa-review-master .aa-master-body { flex: 1; }
+.aa-review-actions { display: flex; gap: 8px; }
+
+@media (max-width: 1024px) {
+  .aa-review { grid-template-columns: 1fr; min-height: 0; }
 }
 
 /* Adjudicator toolbar should be inline, not a 2-col grid. */

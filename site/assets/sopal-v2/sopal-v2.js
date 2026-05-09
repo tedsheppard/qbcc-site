@@ -2835,6 +2835,31 @@ Total\t${formatCurrencyFull(total)}`;
     { id: "review",        label: "Review" },
   ];
 
+  // Section 79 BIF Act sets out three timing scenarios for an adjudication
+  // application. The picker drives downstream behaviour (PS optional,
+  // jurisdictional submissions adjusted, deadline arithmetic, master doc
+  // copy). Definitions taken straight from the Act.
+  const AA_S79_SCENARIOS = [
+    {
+      id: "no-schedule",
+      label: "No payment schedule received and no payment made",
+      sub: "s 79(2)(a) — 30 BD after the LATER of (i) day amount became payable; or (ii) last day a schedule could have been given (15 BD after PC).",
+      psOptional: true,
+    },
+    {
+      id: "less-than-claimed",
+      label: "Schedule received — scheduled amount LESS than claimed",
+      sub: "s 79(2)(b) — 30 BD after receipt of the payment schedule.",
+      psOptional: false,
+    },
+    {
+      id: "scheduled-but-unpaid",
+      label: "Schedule received — scheduled amount EQUAL to claim, but not paid",
+      sub: "s 79(2)(c) — 20 BD after the day on which payment is due under the contract.",
+      psOptional: false,
+    },
+  ];
+
   const AA_ISSUE_TYPES = [
     "variation", "eot", "delay-costs", "defects",
     "set-off", "retention", "prevention", "scope",
@@ -2860,6 +2885,7 @@ Total\t${formatCurrencyFull(total)}`;
       project.complexApps["adjudication-application"] = {
         stage: "intake",
         deadline: null,
+        s79Scenario: "less-than-claimed",
         documents: { paymentClaim: null, paymentSchedule: null },
         psReasonsUniverse: "",
         parties: { claimant: "", respondent: "" },
@@ -2876,6 +2902,10 @@ Total\t${formatCurrencyFull(total)}`;
       };
       saveProject(project);
     }
+    // Backfill: older state may not have s79Scenario.
+    if (!project.complexApps["adjudication-application"].s79Scenario) {
+      project.complexApps["adjudication-application"].s79Scenario = "less-than-claimed";
+    }
     return project.complexApps["adjudication-application"];
   }
 
@@ -2888,19 +2918,23 @@ Total\t${formatCurrencyFull(total)}`;
     setTimeout(() => bindComplexAA(project), 0);
 
     const stageIdx = AA_STAGES.findIndex((s) => s.id === aa.stage);
+    // Stages are click-to-jump. The user can preview any stage at any time;
+    // earlier "lock" semantics removed. Stages are visually marked as done
+    // (passed) / active / available so the path is still suggested.
     const stageBar = `
-      <div class="aa-stage-bar">
+      <div class="aa-stage-bar" role="tablist">
         ${AA_STAGES.map((s, i) => `
-          <div class="aa-stage ${i < stageIdx ? "done" : ""} ${i === stageIdx ? "active" : ""}">
+          <button class="aa-stage ${i < stageIdx ? "done" : ""} ${i === stageIdx ? "active" : ""}" type="button" data-aa-jump="${attr(s.id)}" aria-selected="${i === stageIdx ? "true" : "false"}">
             <span class="aa-stage-num">${i + 1}</span>
             <span class="aa-stage-label">${escapeHtml(s.label)}</span>
-          </div>
+          </button>
         `).join("")}
       </div>`;
 
     let body = "";
     if (aa.stage === "intake") body = renderAAIntake(aa);
     else if (aa.stage === "dispute-table") body = renderAADisputeTable(aa);
+    else if (aa.stage === "review") body = renderAAReview(project, aa);
     else body = renderAAWorkspace(project, aa);
 
     const deadlineMeta = aaDeadlineMeta(aa.deadline);
@@ -2946,39 +2980,60 @@ Total\t${formatCurrencyFull(total)}`;
   function renderAAIntake(aa) {
     const pc = aa.documents.paymentClaim;
     const ps = aa.documents.paymentSchedule;
+    const scenarioId = aa.s79Scenario || "less-than-claimed";
+    const scenario = AA_S79_SCENARIOS.find((s) => s.id === scenarioId) || AA_S79_SCENARIOS[0];
     return `
       <section class="aa-intake card">
         <div class="card-head">
           <div>
             <h3>Stage 1 — Document intake</h3>
-            <p class="muted">Paste or upload the Payment Claim and Payment Schedule. Sopal extracts the parties, amounts, line items, and the respondent's reasons for withholding.</p>
+            <p class="muted">Paste or upload the Payment Claim (and the Payment Schedule, where one was given). Sopal extracts the parties, amounts, line items, and the respondent's reasons.</p>
           </div>
         </div>
-        <div class="card-body aa-intake-grid">
-          <div class="aa-doc-slot">
-            <label class="aa-doc-label">Payment Claim</label>
-            <div class="file-zone">
-              <label class="file-zone-label">${ICON.upload}<span>Click or drop a PDF / DOCX / TXT</span><input type="file" data-aa-file="paymentClaim" accept=".pdf,.docx,.txt"></label>
-              <div class="muted file-status" data-aa-file-status-paymentClaim>${pc ? `${escapeHtml(pc.name)} · ${pc.text.length.toLocaleString()} chars` : "No file selected."}</div>
+        <div class="card-body">
+          <div class="aa-s79-picker">
+            <label class="aa-doc-label">s 79 BIF Act scenario</label>
+            <p class="muted aa-s79-help">Pick the scenario that applies. This drives whether a payment schedule is required, the s 79 deadline calculation, and the jurisdictional submissions.</p>
+            <div class="aa-s79-options">
+              ${AA_S79_SCENARIOS.map((s) => `
+                <label class="aa-s79-option ${scenarioId === s.id ? "active" : ""}">
+                  <input type="radio" name="aa-s79" value="${attr(s.id)}" ${scenarioId === s.id ? "checked" : ""}>
+                  <span class="aa-s79-body">
+                    <strong>${escapeHtml(s.label)}</strong>
+                    <span class="muted">${escapeHtml(s.sub)}</span>
+                  </span>
+                </label>
+              `).join("")}
             </div>
-            <textarea class="text-area" data-aa-text="paymentClaim" rows="8" placeholder="Or paste the payment claim text here…">${escapeHtml(pc ? pc.text : "")}</textarea>
           </div>
-          <div class="aa-doc-slot">
-            <label class="aa-doc-label">Payment Schedule</label>
-            <div class="file-zone">
-              <label class="file-zone-label">${ICON.upload}<span>Click or drop a PDF / DOCX / TXT</span><input type="file" data-aa-file="paymentSchedule" accept=".pdf,.docx,.txt"></label>
-              <div class="muted file-status" data-aa-file-status-paymentSchedule>${ps ? `${escapeHtml(ps.name)} · ${ps.text.length.toLocaleString()} chars` : "No file selected."}</div>
+
+          <div class="aa-intake-grid">
+            <div class="aa-doc-slot">
+              <label class="aa-doc-label">Payment Claim</label>
+              <div class="file-zone">
+                <label class="file-zone-label">${ICON.upload}<span>Click or drop a PDF / DOCX / TXT</span><input type="file" data-aa-file="paymentClaim" accept=".pdf,.docx,.txt"></label>
+                <div class="muted file-status" data-aa-file-status-paymentClaim>${pc ? `${escapeHtml(pc.name)} · ${pc.text.length.toLocaleString()} chars` : "No file selected."}</div>
+              </div>
+              <textarea class="text-area" data-aa-text="paymentClaim" rows="8" placeholder="Or paste the payment claim text here…">${escapeHtml(pc ? pc.text : "")}</textarea>
             </div>
-            <textarea class="text-area" data-aa-text="paymentSchedule" rows="8" placeholder="Or paste the payment schedule text here…">${escapeHtml(ps ? ps.text : "")}</textarea>
-          </div>
-          <div class="aa-intake-meta">
-            <label>Lodgement deadline (optional)
-              <input class="text-input" type="date" data-aa-deadline value="${attr(aa.deadline || "")}">
-            </label>
-          </div>
-          <div class="aa-intake-actions">
-            <button class="dark-button" type="button" data-aa-parse>${ICON.sparkles}<span>Parse documents</span></button>
-            <span class="muted aa-intake-help">Parsing extracts the parties, amounts, claim line items, and the respondent's reasons. You'll review and edit the result on the next stage.</span>
+            <div class="aa-doc-slot ${scenario.psOptional ? "aa-doc-slot-optional" : ""}">
+              <label class="aa-doc-label">Payment Schedule${scenario.psOptional ? " (none received — optional)" : ""}</label>
+              ${scenario.psOptional ? `<p class="muted aa-doc-help">No PS was given by the respondent in the s 76 window. Leave this blank — Sopal will frame the application accordingly.</p>` : ""}
+              <div class="file-zone">
+                <label class="file-zone-label">${ICON.upload}<span>Click or drop a PDF / DOCX / TXT</span><input type="file" data-aa-file="paymentSchedule" accept=".pdf,.docx,.txt"></label>
+                <div class="muted file-status" data-aa-file-status-paymentSchedule>${ps ? `${escapeHtml(ps.name)} · ${ps.text.length.toLocaleString()} chars` : "No file selected."}</div>
+              </div>
+              <textarea class="text-area" data-aa-text="paymentSchedule" rows="8" placeholder="${scenario.psOptional ? "(Leave blank if no PS was received.)" : "Or paste the payment schedule text here…"}">${escapeHtml(ps ? ps.text : "")}</textarea>
+            </div>
+            <div class="aa-intake-meta">
+              <label>Lodgement deadline (optional)
+                <input class="text-input" type="date" data-aa-deadline value="${attr(aa.deadline || "")}">
+              </label>
+            </div>
+            <div class="aa-intake-actions">
+              <button class="dark-button" type="button" data-aa-parse>${ICON.sparkles}<span>Parse documents</span></button>
+              <span class="muted aa-intake-help">Parsing extracts the parties, amounts, claim line items, and (if a PS was given) the respondent's reasons. You'll review and edit the result on the next stage.</span>
+            </div>
           </div>
         </div>
       </section>
@@ -2986,6 +3041,26 @@ Total\t${formatCurrencyFull(total)}`;
   }
 
   function renderAADisputeTable(aa) {
+    const noParse = !aa.parties.claimant && !aa.parties.respondent && aa.claimedAmount === 0 && aa.disputes.length === 0;
+    if (noParse) {
+      return `
+        <section class="aa-dispute-table card">
+          <div class="card-head">
+            <div>
+              <h3>Stage 2 — Dispute table</h3>
+              <p class="muted">Once you parse the PC and PS in Stage 1, the line items appear here as an editable dispute table. You can also build it manually.</p>
+            </div>
+            <div class="aa-table-actions">
+              <button class="ghost-button compact" type="button" data-aa-jump="intake">← Go to Intake</button>
+              <button class="ghost-button compact" type="button" data-aa-add-row>${ICON.plus}<span>Add row manually</span></button>
+            </div>
+          </div>
+          <div class="card-body">
+            ${EmptyState("No items yet.", "Either parse the PC + PS in Stage 1, or click 'Add row manually' to build the dispute table by hand.")}
+          </div>
+        </section>
+      `;
+    }
     return `
       <section class="aa-dispute-table card">
         <div class="card-head">
@@ -3024,6 +3099,59 @@ Total\t${formatCurrencyFull(total)}`;
             </tbody>
           </table>
           ${aa.disputes.length === 0 ? EmptyState("No items extracted.", "Click 'Add row' to add a dispute manually.") : ""}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderAAReview(project, aa) {
+    const navItems = [
+      { key: "jurisdictional", label: "Jurisdictional", thread: aa.jurisdictionalRfis },
+      { key: "general", label: "Background / General", thread: aa.generalRfis },
+      ...aa.disputes.map((d) => ({ key: `dispute:${d.id}`, label: d.item || d.id, thread: d.rfis })),
+    ];
+    const drafted = navItems.filter((n) => n.thread && n.thread.submissions && n.thread.submissions.length > 60).length;
+    const total = navItems.length;
+    const evidence = [];
+    aa.disputes.forEach((d) => (d.evidenceIndex || []).forEach((e) => evidence.push(e)));
+    const scenarioId = aa.s79Scenario || "less-than-claimed";
+    const scenario = AA_S79_SCENARIOS.find((s) => s.id === scenarioId) || AA_S79_SCENARIOS[0];
+    return `
+      <section class="aa-review">
+        <div class="card aa-review-summary">
+          <div class="card-head">
+            <h3>Stage 5 — Final review &amp; lodgement</h3>
+            <div class="aa-review-actions">
+              <button class="dark-button" type="button" data-aa-export>${ICON.download}<span>Export master .doc</span></button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="aa-review-checklist">
+              <h4>Lodgement checklist</h4>
+              <ul>
+                <li>${aa.documents.paymentClaim ? "✓" : "○"} Payment Claim ingested</li>
+                <li>${scenario.psOptional ? "—" : (aa.documents.paymentSchedule ? "✓" : "○")} Payment Schedule ${scenario.psOptional ? "(not required for this scenario)" : "ingested"}</li>
+                <li>${aa.disputes.length ? "✓" : "○"} Dispute table populated (${aa.disputes.length} item${aa.disputes.length === 1 ? "" : "s"})</li>
+                <li>${(aa.jurisdictionalRfis.submissions || "").length > 60 ? "✓" : "○"} Jurisdictional submissions drafted</li>
+                <li>${(aa.generalRfis.submissions || "").length > 60 ? "✓" : "○"} Background drafted</li>
+                <li>${drafted}/${total} threads drafted overall</li>
+                <li>${evidence.length ? "✓" : "○"} Index of supporting evidence (${evidence.length} item${evidence.length === 1 ? "" : "s"})</li>
+                <li>${aa.deadline ? `✓ Lodgement deadline set (${escapeHtml(aa.deadline)})` : "○ Lodgement deadline not set"}</li>
+              </ul>
+            </div>
+            <div class="aa-review-scenario">
+              <h4>s 79 scenario</h4>
+              <p><strong>${escapeHtml(scenario.label)}</strong><br>
+              <span class="muted">${escapeHtml(scenario.sub)}</span></p>
+            </div>
+          </div>
+        </div>
+        <div class="card aa-review-master">
+          <div class="card-head">
+            <h3>Master document preview</h3>
+            <button class="ghost-button compact" type="button" data-aa-rebuild>Rebuild</button>
+          </div>
+          <div class="aa-master-body" data-aa-master>${renderAAMaster(project, aa)}</div>
         </div>
       </section>
     `;
@@ -3134,13 +3262,16 @@ Total\t${formatCurrencyFull(total)}`;
     const sections = [];
     sections.push(`<h1>Adjudication Application</h1>`);
     toc.push({ id: id("parties"), num: "1", label: "Parties", indent: 0 });
+    const scenarioId = aa.s79Scenario || "less-than-claimed";
+    const scenario = AA_S79_SCENARIOS.find((s) => s.id === scenarioId) || AA_S79_SCENARIOS[0];
     sections.push(`<h2 id="${id("parties")}">1. Parties</h2>
       <p><strong>Claimant:</strong> ${escapeHtml(aa.parties.claimant || project.claimant || "[Claimant]")}<br>
       <strong>Respondent:</strong> ${escapeHtml(aa.parties.respondent || project.respondent || "[Respondent]")}<br>
       <strong>Contract reference:</strong> ${escapeHtml(aa.contractReference || project.reference || "[Contract reference]")}<br>
       <strong>Reference date:</strong> ${escapeHtml(aa.referenceDate || "[Reference date]")}<br>
       <strong>Claimed amount:</strong> ${formatCurrencyFull(aa.claimedAmount || 0)}<br>
-      <strong>Scheduled amount:</strong> ${formatCurrencyFull(aa.scheduledAmount || 0)}</p>`);
+      <strong>Scheduled amount:</strong> ${formatCurrencyFull(aa.scheduledAmount || 0)}<br>
+      <strong>s 79 BIF Act scenario:</strong> ${escapeHtml(scenario.label)}</p>`);
     toc.push({ id: id("jurisdiction"), num: "2", label: "Jurisdiction", indent: 0 });
     sections.push(`<h2 id="${id("jurisdiction")}">2. Jurisdiction</h2>${aa.jurisdictionalRfis.submissions || "<p><em>(Jurisdictional submissions will appear here once the jurisdictional RFI thread is drafted.)</em></p>"}`);
     toc.push({ id: id("background"), num: "3", label: "Background", indent: 0 });
@@ -3290,6 +3421,13 @@ Total\t${formatCurrencyFull(total)}`;
         render();
       }
     }));
+    document.querySelectorAll("[data-aa-jump]").forEach((b) => b.addEventListener("click", () => {
+      const id = b.dataset.aaJump;
+      if (!id || id === aa.stage) return;
+      aa.stage = id;
+      saveProject(project);
+      render();
+    }));
     document.querySelectorAll("[data-aa-reset]").forEach((b) => b.addEventListener("click", () => {
       if (!confirm("Reset the entire adjudication application workflow? All extracted items, RFIs, and drafts will be cleared.")) return;
       delete project.complexApps["adjudication-application"];
@@ -3299,7 +3437,36 @@ Total\t${formatCurrencyFull(total)}`;
 
     if (aa.stage === "intake") return bindAAIntake(project, aa);
     if (aa.stage === "dispute-table") return bindAADisputeTable(project, aa);
+    if (aa.stage === "review") return bindAAReview(project, aa);
     return bindAAWorkspace(project, aa);
+  }
+
+  function bindAAReview(project, aa) {
+    document.querySelector("[data-aa-rebuild]")?.addEventListener("click", () => {
+      const mount = document.querySelector("[data-aa-master]");
+      if (mount) {
+        mount.innerHTML = renderAAMaster(project, aa);
+        bindAATocLinks();
+      }
+    });
+    document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
+      const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`;
+      const blob = new Blob([
+        '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
+        '<head><meta charset="UTF-8"><title>',
+        escapeHtml(project.name),
+        ' — Adjudication Application</title></head><body>',
+        renderAAMaster(project, aa),
+        '</body></html>',
+      ], { type: "application/msword" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+    bindAATocLinks();
   }
 
   function bindAAIntake(project, aa) {
@@ -3341,12 +3508,22 @@ Total\t${formatCurrencyFull(total)}`;
       aa.deadline = deadlineInput.value || null;
       saveProject(project);
     });
+    document.querySelectorAll('input[name="aa-s79"]').forEach((r) => r.addEventListener("change", () => {
+      aa.s79Scenario = r.value;
+      saveProject(project);
+      render();
+    }));
     document.querySelector("[data-aa-parse]")?.addEventListener("click", async (e) => {
       const btn = e.currentTarget;
       const pc = aa.documents.paymentClaim;
       const ps = aa.documents.paymentSchedule;
-      if (!pc || !pc.text || !ps || !ps.text) {
-        alert("Add both the Payment Claim and the Payment Schedule before parsing.");
+      const scenario = AA_S79_SCENARIOS.find((s) => s.id === (aa.s79Scenario || "less-than-claimed")) || AA_S79_SCENARIOS[0];
+      if (!pc || !pc.text) {
+        alert("Add the Payment Claim before parsing.");
+        return;
+      }
+      if (!scenario.psOptional && (!ps || !ps.text)) {
+        alert("This s 79 scenario requires a Payment Schedule. Either paste it in or switch the scenario to 'No payment schedule received'.");
         return;
       }
       btn.disabled = true;
@@ -3358,7 +3535,8 @@ Total\t${formatCurrencyFull(total)}`;
           credentials: "include",
           body: JSON.stringify({
             paymentClaimText: pc.text,
-            paymentScheduleText: ps.text,
+            paymentScheduleText: ps && ps.text ? ps.text : "",
+            s79Scenario: aa.s79Scenario || "less-than-claimed",
             projectMeta: { name: project.name, claimant: project.claimant, respondent: project.respondent, contractForm: project.contractForm, reference: project.reference },
           }),
         });
@@ -3534,6 +3712,7 @@ Total\t${formatCurrencyFull(total)}`;
         claimedAmount: aa.claimedAmount,
         scheduledAmount: aa.scheduledAmount,
         psReasonsUniverse: aa.psReasonsUniverse,
+        s79Scenario: aa.s79Scenario || "less-than-claimed",
         definitions: aa.definitions,
         projectMeta: { name: project.name, contractForm: project.contractForm },
       };
