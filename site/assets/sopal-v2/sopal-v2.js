@@ -3122,6 +3122,7 @@ Total\t${formatCurrencyFull(total)}`;
               <label>Lodgement deadline (optional)
                 <input class="text-input" type="date" data-aa-deadline value="${attr(aa.deadline || "")}">
               </label>
+              <a class="link-button small aa-intake-deadline-link" href="/sopal-v2/tools/due-date-calculator?scenario=adjudicationApp" data-nav title="Open the Due Date Calculator to compute the s 79 BIF Act deadline from the scenario + key dates">Calculate from dates →</a>
             </div>
             <div class="aa-intake-actions">
               <button class="dark-button" type="button" data-aa-parse>${ICON.sparkles}<span>Parse documents</span></button>
