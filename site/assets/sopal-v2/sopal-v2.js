@@ -2945,6 +2945,8 @@ Total\t${formatCurrencyFull(total)}`;
         applicationDate: "",
         ana: "",
         anaReference: "",
+        contractDate: "",
+        siteAddress: "",
         pcDate: "",
         psDate: "",
         claimantAbn: "",
@@ -2959,10 +2961,11 @@ Total\t${formatCurrencyFull(total)}`;
         respondentPhone: "",
       };
     }
-    // Backfill ABN fields on existing projects so the cover modal and master
-    // table render the rows when the user fills them in.
-    if (aa.coverMeta && typeof aa.coverMeta.claimantAbn !== "string") aa.coverMeta.claimantAbn = "";
-    if (aa.coverMeta && typeof aa.coverMeta.respondentAbn !== "string") aa.coverMeta.respondentAbn = "";
+    // Backfill optional fields on existing projects so the cover modal and
+    // master table render the rows when the user fills them in.
+    ["claimantAbn", "respondentAbn", "contractDate", "siteAddress"].forEach((k) => {
+      if (aa.coverMeta && typeof aa.coverMeta[k] !== "string") aa.coverMeta[k] = "";
+    });
     if (typeof aa.introductionHtml !== "string") aa.introductionHtml = "";
     if (typeof aa.execSummaryHtml !== "string") aa.execSummaryHtml = "";
     if (typeof aa.overarchingHtml !== "string") aa.overarchingHtml = "";
@@ -3592,6 +3595,8 @@ Total\t${formatCurrencyFull(total)}`;
       <h3 class="aa-cover-section">Application details</h3>
       <table class="aa-cover-table">
         <tr><th>Contract reference</th><td>${escapeHtml(contractRef)}</td></tr>
+        ${cover.contractDate ? `<tr><th>Contract executed</th><td>${escapeHtml(cover.contractDate)}</td></tr>` : ""}
+        ${cover.siteAddress ? `<tr><th>Project / site</th><td>${escapeHtml(cover.siteAddress)}</td></tr>` : ""}
         <tr><th>Reference date</th><td>${escapeHtml(refDate)}</td></tr>
         ${cover.pcDate ? `<tr><th>Payment claim served</th><td>${escapeHtml(cover.pcDate)}</td></tr>` : ""}
         <tr><th>Payment claim amount</th><td>${formatCurrencyFull(claimed)}</td></tr>
@@ -4762,6 +4767,8 @@ Total\t${formatCurrencyFull(total)}`;
       { key: "applicationDate", label: "Application date", placeholder: "e.g. 12 May 2026" },
       { key: "ana", label: "Authorised Nominating Authority", placeholder: "e.g. Adjudicate Today" },
       { key: "anaReference", label: "ANA reference", placeholder: "e.g. ATO-12345" },
+      { key: "contractDate", label: "Contract executed on", placeholder: "e.g. 12 March 2025" },
+      { key: "siteAddress", label: "Project / site address", placeholder: "e.g. 123 Sample St, Brisbane QLD 4000" },
       { key: "pcDate", label: "Payment claim served on", placeholder: "e.g. 5 March 2026" },
       { key: "psDate", label: "Payment schedule served on", placeholder: "e.g. 19 March 2026 (or N/A)" },
       { key: "claimantAbn", label: "Claimant ABN", placeholder: "e.g. 12 345 678 901" },
