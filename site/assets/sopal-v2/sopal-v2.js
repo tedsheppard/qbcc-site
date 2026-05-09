@@ -3119,29 +3119,66 @@ Total\t${formatCurrencyFull(total)}`;
   }
 
   function renderAAMaster(project, aa) {
+    // Build the section list first with stable IDs so we can render a live
+    // table-of-contents that scrolls the master pane to each section.
+    const toc = [];
+    function id(slug) { return `aa-sec-${slug}`; }
     const sections = [];
     sections.push(`<h1>Adjudication Application</h1>`);
-    sections.push(`<h2>1. Parties</h2>
+    toc.push({ id: id("parties"), num: "1", label: "Parties", indent: 0 });
+    sections.push(`<h2 id="${id("parties")}">1. Parties</h2>
       <p><strong>Claimant:</strong> ${escapeHtml(aa.parties.claimant || project.claimant || "[Claimant]")}<br>
       <strong>Respondent:</strong> ${escapeHtml(aa.parties.respondent || project.respondent || "[Respondent]")}<br>
       <strong>Contract reference:</strong> ${escapeHtml(aa.contractReference || project.reference || "[Contract reference]")}<br>
       <strong>Reference date:</strong> ${escapeHtml(aa.referenceDate || "[Reference date]")}<br>
       <strong>Claimed amount:</strong> ${formatCurrencyFull(aa.claimedAmount || 0)}<br>
       <strong>Scheduled amount:</strong> ${formatCurrencyFull(aa.scheduledAmount || 0)}</p>`);
-    sections.push(`<h2>2. Jurisdiction</h2>${aa.jurisdictionalRfis.submissions || "<p><em>(Jurisdictional submissions will appear here once the jurisdictional RFI thread is drafted.)</em></p>"}`);
-    sections.push(`<h2>3. Background</h2>${aa.generalRfis.submissions || "<p><em>(Background will appear here once the general RFI thread is drafted.)</em></p>"}`);
+    toc.push({ id: id("jurisdiction"), num: "2", label: "Jurisdiction", indent: 0 });
+    sections.push(`<h2 id="${id("jurisdiction")}">2. Jurisdiction</h2>${aa.jurisdictionalRfis.submissions || "<p><em>(Jurisdictional submissions will appear here once the jurisdictional RFI thread is drafted.)</em></p>"}`);
+    toc.push({ id: id("background"), num: "3", label: "Background", indent: 0 });
+    sections.push(`<h2 id="${id("background")}">3. Background</h2>${aa.generalRfis.submissions || "<p><em>(Background will appear here once the general RFI thread is drafted.)</em></p>"}`);
     if (aa.disputes.length) {
-      sections.push(`<h2>4. Submissions on disputed items</h2>`);
+      toc.push({ id: id("disputes"), num: "4", label: "Submissions on disputed items", indent: 0 });
+      sections.push(`<h2 id="${id("disputes")}">4. Submissions on disputed items</h2>`);
       aa.disputes.forEach((d, i) => {
-        sections.push(`<h3>4.${i + 1} ${escapeHtml(d.item || "Item")}${d.issueType ? ` <span class="aa-issue-tag">${escapeHtml(AA_ISSUE_TYPE_LABELS[d.issueType] || d.issueType)}</span>` : ""}</h3>`);
+        const slug = `dispute-${d.id}`;
+        toc.push({ id: id(slug), num: `4.${i + 1}`, label: d.item || "Item", indent: 1 });
+        sections.push(`<h3 id="${id(slug)}">4.${i + 1} ${escapeHtml(d.item || "Item")}${d.issueType ? ` <span class="aa-issue-tag">${escapeHtml(AA_ISSUE_TYPE_LABELS[d.issueType] || d.issueType)}</span>` : ""}</h3>`);
         sections.push(d.submissions || "<p><em>(Drafted once enough RFIs are answered.)</em></p>");
       });
     }
-    sections.push(`<h2>5. Conclusion and amount sought</h2><p>For the reasons set out above, the Claimant respectfully seeks an adjudicated amount of ${formatCurrencyFull(aa.claimedAmount || 0)}.</p>`);
+    toc.push({ id: id("conclusion"), num: "5", label: "Conclusion and amount sought", indent: 0 });
+    sections.push(`<h2 id="${id("conclusion")}">5. Conclusion and amount sought</h2><p>For the reasons set out above, the Claimant respectfully seeks an adjudicated amount of ${formatCurrencyFull(aa.claimedAmount || 0)}.</p>`);
     const evidence = [];
     aa.disputes.forEach((d) => (d.evidenceIndex || []).forEach((e) => evidence.push(e)));
-    sections.push(`<h2>6. Index of supporting evidence</h2>${evidence.length ? `<ol>${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong> — ${escapeHtml(e.desc || "")}${e.location ? ` (${escapeHtml(e.location)})` : ""}</li>`).join("")}</ol>` : "<p><em>(No exhibits indexed yet.)</em></p>"}`);
-    return sections.join("\n");
+    toc.push({ id: id("evidence"), num: "6", label: "Index of supporting evidence", indent: 0 });
+    sections.push(`<h2 id="${id("evidence")}">6. Index of supporting evidence</h2>${evidence.length ? `<ol>${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong> — ${escapeHtml(e.desc || "")}${e.location ? ` (${escapeHtml(e.location)})` : ""}</li>`).join("")}</ol>` : "<p><em>(No exhibits indexed yet.)</em></p>"}`);
+
+    const tocHtml = `
+      <nav class="aa-toc" aria-label="Master document contents">
+        <span class="aa-toc-label muted">Contents</span>
+        ${toc.map((t) => `<a class="aa-toc-link aa-toc-indent-${t.indent}" href="#${t.id}" data-aa-toc-target="${t.id}"><span class="aa-toc-num">${escapeHtml(t.num)}</span><span class="aa-toc-text">${escapeHtml(t.label)}</span></a>`).join("")}
+      </nav>`;
+
+    return tocHtml + sections.join("\n");
+  }
+
+  function bindAATocLinks() {
+    // ToC <a href="#aa-sec-..."> would scroll the WHOLE page (and slam the
+    // master pane out of frame). Intercept and scroll only inside the
+    // master pane's scroll container.
+    const master = document.querySelector("[data-aa-master]");
+    if (!master) return;
+    master.querySelectorAll("[data-aa-toc-target]").forEach((a) => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        const id = a.dataset.aaTocTarget;
+        const target = document.getElementById(id);
+        if (target && master.contains(target)) {
+          master.scrollTop = target.offsetTop - 8;
+        }
+      });
+    });
   }
 
   /* ---------- Complex AA — wiring ---------- */
@@ -3355,8 +3392,12 @@ Total\t${formatCurrencyFull(total)}`;
     });
     document.querySelector("[data-aa-rebuild]")?.addEventListener("click", () => {
       const mount = document.querySelector("[data-aa-master]");
-      if (mount) mount.innerHTML = renderAAMaster(project, aa);
+      if (mount) {
+        mount.innerHTML = renderAAMaster(project, aa);
+        bindAATocLinks();
+      }
     });
+    bindAATocLinks();
     document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
       const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`;
       const blob = new Blob([
