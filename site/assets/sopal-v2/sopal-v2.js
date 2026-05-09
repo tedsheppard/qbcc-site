@@ -2598,7 +2598,19 @@ Total\t${formatCurrencyFull(total)}`;
     const tagFilter = params.get("tag") || "";
     const items = tagFilter ? allItems.filter((it) => (it.tags || []).includes(tagFilter)) : allItems;
     const allTags = Array.from(new Set(allItems.flatMap((it) => it.tags || []))).sort();
-    const labels = bucket === "contracts" ? { single: "Contract", title: "Contract documents", helper: "Paste contract clauses or extract text from PDF/DOCX/TXT. The assistant and every agent in this project will see this content." } : { single: "Project document", title: "Project library", helper: "Paste correspondence, RFIs, claims, schedules, programme notes — or extract from PDF/DOCX/TXT." };
+    const labels = bucket === "contracts"
+      ? {
+          single: "Contract",
+          title: "Contract documents",
+          helper: "Paste contract clauses or extract text from PDF/DOCX/TXT. The assistant and every agent in this project will see this content.",
+          textareaPlaceholder: "Paste contract clauses or terms here — e.g. cl 36 (Variations), cl 41 (Default), cl 42 (Payment).",
+        }
+      : {
+          single: "Project document",
+          title: "Project library",
+          helper: "Paste correspondence, RFIs, claims, schedules, programme notes — or extract from PDF/DOCX/TXT.",
+          textareaPlaceholder: "Paste correspondence, RFIs, claims, schedules, programme notes, or facts.",
+        };
     setTimeout(() => bindContextManager(projectId, bucket), 0);
     return PageBody(`
       <div class="page-shell">
@@ -2609,7 +2621,7 @@ Total\t${formatCurrencyFull(total)}`;
             <div class="card-head"><h3>Add ${escapeHtml(labels.single.toLowerCase())}</h3></div>
             <form class="card-body context-form" data-context-form="${bucket}">
               <label class="span-2">Label<input class="text-input" name="name" placeholder="Document label"></label>
-              <label class="span-2">Paste text<textarea class="text-area" name="text" rows="8" placeholder="Paste clauses, correspondence, claim text, schedule text, or facts."></textarea></label>
+              <label class="span-2">Paste text<textarea class="text-area" name="text" rows="8" placeholder="${attr(labels.textareaPlaceholder)}"></textarea></label>
               <div class="file-zone span-2" data-bulk-drop>
                 <label class="file-zone-label">${ICON.upload}<span>Click or drop one or more PDF / DOCX / TXT files — each becomes a separate entry</span><input type="file" data-context-file accept=".pdf,.docx,.txt" multiple></label>
                 <div class="muted file-status" data-context-file-status>No files selected.</div>
