@@ -4006,9 +4006,40 @@ Total\t${formatCurrencyFull(total)}`;
   }
 
   function aaDownloadDoc(filename, title, body) {
+    // Word opens HTML with the right office namespaces directly. We embed a
+    // small inline stylesheet so the cover page, per-item meta tables and
+    // ToC render with the same formal look the user sees in the app — Word
+    // respects `<style>` blocks for `body`, headings, tables and class-based
+    // selectors when the doc is opened in compatibility mode. The ToC nav is
+    // hidden in the .doc export because Word doesn't follow in-doc anchors
+    // the same way the browser does.
+    const wordStyles = `
+      <style>
+        body { font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.5; color: #1a1a1a; }
+        h1 { font-size: 22pt; font-weight: bold; text-align: center; margin: 0 0 14px; }
+        h2 { font-size: 14pt; font-weight: bold; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1pt solid #888; }
+        h3 { font-size: 12pt; font-weight: bold; margin: 14px 0 6px; }
+        h4 { font-size: 11pt; font-weight: bold; margin: 10px 0 4px; }
+        p { margin: 0 0 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 11pt; }
+        th, td { border: 1pt solid #888; padding: 5px 8px; text-align: left; vertical-align: top; }
+        th { background: #f0ece4; font-weight: bold; }
+        nav.aa-toc { display: none; }
+        .aa-cover { padding: 0 0 18pt; border-bottom: 2pt solid #000; margin: 0 0 28pt; }
+        .aa-cover-title { font-size: 24pt; letter-spacing: 0.04em; text-transform: uppercase; text-align: center; margin: 0 0 14pt; }
+        .aa-cover-opener { font-size: 12pt; margin: 0 0 18pt; }
+        .aa-cover-section { font-size: 11pt; font-weight: bold; letter-spacing: 0.06em; text-transform: uppercase; margin: 14pt 0 6pt; border: 0; padding: 0; }
+        table.aa-cover-table { width: 100%; }
+        table.aa-cover-table th { width: 38%; }
+        table.aa-item-meta { width: auto; min-width: 60%; margin: 4px 0 12px; font-size: 10pt; }
+        table.aa-item-meta th { width: 180px; background: #faf7f1; }
+        .aa-issue-tag { display: inline; font-size: 9pt; padding: 1px 6px; margin-left: 6px; background: #e0e7ff; }
+      </style>`;
     const blob = new Blob([
       '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
-      '<head><meta charset="UTF-8"><title>', title, '</title></head><body>',
+      '<head><meta charset="UTF-8"><title>', title, '</title>',
+      wordStyles,
+      '</head><body>',
       body,
       '</body></html>',
     ], { type: "application/msword" });
