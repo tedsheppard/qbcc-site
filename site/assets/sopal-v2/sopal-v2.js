@@ -3269,7 +3269,7 @@ Total\t${formatCurrencyFull(total)}`;
         <td><span class="aa-currency-cell"><span class="aa-currency-prefix">$</span><input class="aa-cell aa-cell-num" type="number" min="0" step="1" data-aa-cell="claimed" value="${attr(d.claimed || 0)}" aria-label="Claimed amount in dollars"></span></td>
         <td><span class="aa-currency-cell"><span class="aa-currency-prefix">$</span><input class="aa-cell aa-cell-num" type="number" min="0" step="1" data-aa-cell="scheduled" value="${attr(d.scheduled || 0)}" aria-label="Scheduled amount in dollars"></span></td>
         <td>
-          <select class="aa-cell" data-aa-cell="status">
+          <select class="aa-cell" data-aa-cell="status" data-aa-status="${attr(d.status || "disputed")}">
             ${AA_DISPUTE_STATUSES.map((s) => `<option value="${s}" ${d.status === s ? "selected" : ""}>${s}</option>`).join("")}
           </select>
         </td>
@@ -4280,6 +4280,12 @@ Total\t${formatCurrencyFull(total)}`;
           const value = el.tagName === "SELECT" ? el.value : (field === "claimed" || field === "scheduled" ? Number(el.value || 0) : el.value);
           dispute[field] = value;
           dispute.updatedAt = Date.now();
+          // Mirror the status value into a data attribute so CSS can wash
+          // the cell with the right colour (CSS can't target a select's
+          // dynamic .value via attribute selectors).
+          if (field === "status" && el.tagName === "SELECT") {
+            el.setAttribute("data-aa-status", value);
+          }
           saveProject(project);
         });
       });
