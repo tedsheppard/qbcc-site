@@ -3148,6 +3148,8 @@ Total\t${formatCurrencyFull(total)}`;
               <button class="dark-button" type="button" data-aa-export>${ICON.download}<span>Export master .doc</span></button>
               <button class="ghost-button compact" type="button" data-aa-export-statdecs>${ICON.download}<span>Export combined stat dec</span></button>
               <button class="ghost-button compact" type="button" data-aa-export-soe>${ICON.download}<span>Export evidence index</span></button>
+              <button class="ghost-button compact" type="button" data-aa-print-master>${ICON.file}<span>Print master</span></button>
+              <button class="ghost-button compact" type="button" data-aa-copy-master>${ICON.copy}<span>Copy as Markdown</span></button>
             </div>
           </div>
           <div class="card-body">
@@ -3571,7 +3573,109 @@ Total\t${formatCurrencyFull(total)}`;
         `${escapeHtml(project.name)} — Index of Supporting Evidence`,
         renderAAEvidenceIndex(project, aa));
     });
+    document.querySelector("[data-aa-print-master]")?.addEventListener("click", () => {
+      const title = `${project.name} — Adjudication Application`;
+      const win = window.open("", "_blank", "noopener");
+      if (!win) {
+        alert("Could not open the print preview. Please allow popups for this site and try again.");
+        return;
+      }
+      // Reuse the main app's typography for the print preview so the user
+      // sees what they're printing in the same style as the live workspace.
+      win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+        <style>
+          :root { color-scheme: light; }
+          body { font-family: "Source Serif Pro", Georgia, "Times New Roman", serif; font-size: 12.5pt; line-height: 1.55; color: #1a1a1a; max-width: 760px; margin: 28px auto; padding: 0 24px; }
+          h1 { font-size: 20pt; text-align: center; margin: 0 0 14px; }
+          h2 { font-size: 14pt; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #ccc; }
+          h3 { font-size: 12pt; margin: 14px 0 6px; }
+          p { margin: 0 0 10px; }
+          table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 11pt; }
+          th, td { border: 1px solid #999; padding: 4px 6px; text-align: left; vertical-align: top; }
+          th { background: #f0ece4; }
+          .aa-toc { background: #f5f2ed; border: 1px solid #ddd; border-radius: 6px; padding: 12px 16px; margin: 0 0 22px; font-family: -apple-system, "Segoe UI", sans-serif; font-size: 11pt; }
+          .aa-toc-link { display: flex; gap: 8px; padding: 2px 0; color: #1a1a1a; text-decoration: none; }
+          .aa-toc-num { flex: 0 0 36px; font-weight: 600; }
+          .aa-toc-indent-1 { padding-left: 22px; }
+          .aa-issue-tag { display: inline-block; font-size: 9pt; padding: 1px 6px; margin-left: 6px; background: #e0e7ff; border-radius: 999px; }
+          .print-actions { display: flex; gap: 8px; margin: 0 0 18px; }
+          .print-actions button { font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid #aaa; background: #fff; cursor: pointer; }
+          @media print { .print-actions { display: none; } body { margin: 0; padding: 0 18px; max-width: none; } }
+        </style></head><body>
+          <div class="print-actions">
+            <button onclick="window.print()">Print</button>
+            <button onclick="window.close()">Close</button>
+          </div>
+          ${renderAAMaster(project, aa)}
+        </body></html>`);
+      win.document.close();
+    });
+    document.querySelector("[data-aa-copy-master]")?.addEventListener("click", () => {
+      const md = aaMasterToMarkdown(project, aa);
+      copyText(md);
+      const btn = document.querySelector("[data-aa-copy-master]");
+      if (btn) {
+        const original = btn.innerHTML;
+        btn.innerHTML = `${ICON.copy}<span>Copied</span>`;
+        setTimeout(() => { btn.innerHTML = original; }, 1100);
+      }
+    });
     bindAATocLinks();
+  }
+
+  function aaMasterToMarkdown(project, aa) {
+    // Convert the master HTML to a reasonable Markdown rendering. Quick + fit
+    // for purpose: handles h1/h2/h3, p, ul/ol/li, table, strong/em, br.
+    const html = renderAAMaster(project, aa);
+    const tmpl = document.createElement("div");
+    tmpl.innerHTML = html;
+    const out = [];
+    function walk(node, depth) {
+      for (const c of Array.from(node.childNodes)) {
+        if (c.nodeType === 3) {
+          const t = c.textContent.replace(/\s+/g, " ");
+          out.push(t);
+          continue;
+        }
+        if (c.nodeType !== 1) continue;
+        const tag = c.tagName;
+        if (tag === "NAV" && c.classList.contains("aa-toc")) continue; // skip ToC in Markdown
+        if (tag === "H1") { out.push(`\n\n# ${c.textContent.trim()}\n\n`); continue; }
+        if (tag === "H2") { out.push(`\n\n## ${c.textContent.trim()}\n\n`); continue; }
+        if (tag === "H3") { out.push(`\n\n### ${c.textContent.trim()}\n\n`); continue; }
+        if (tag === "H4") { out.push(`\n\n#### ${c.textContent.trim()}\n\n`); continue; }
+        if (tag === "P") { out.push("\n"); walk(c, depth); out.push("\n"); continue; }
+        if (tag === "BR") { out.push("\n"); continue; }
+        if (tag === "STRONG" || tag === "B") { out.push(`**${c.textContent.trim()}**`); continue; }
+        if (tag === "EM" || tag === "I") { out.push(`*${c.textContent.trim()}*`); continue; }
+        if (tag === "UL" || tag === "OL") {
+          let i = 1;
+          for (const li of Array.from(c.children)) {
+            if (li.tagName !== "LI") continue;
+            const marker = tag === "UL" ? "-" : `${i++}.`;
+            out.push(`\n${marker} ${li.textContent.trim()}`);
+          }
+          out.push("\n");
+          continue;
+        }
+        if (tag === "TABLE") {
+          const rows = Array.from(c.querySelectorAll("tr"));
+          if (!rows.length) continue;
+          const headerCells = Array.from(rows[0].querySelectorAll("th,td")).map((x) => x.textContent.trim());
+          out.push("\n\n| " + headerCells.join(" | ") + " |\n");
+          out.push("|" + headerCells.map(() => " --- ").join("|") + "|\n");
+          for (let i = 1; i < rows.length; i++) {
+            const tds = Array.from(rows[i].querySelectorAll("td,th")).map((x) => x.textContent.trim());
+            out.push("| " + tds.join(" | ") + " |\n");
+          }
+          out.push("\n");
+          continue;
+        }
+        walk(c, depth);
+      }
+    }
+    walk(tmpl, 0);
+    return out.join("").replace(/\n{3,}/g, "\n\n").trim() + "\n";
   }
 
   function aaDownloadDoc(filename, title, body) {
