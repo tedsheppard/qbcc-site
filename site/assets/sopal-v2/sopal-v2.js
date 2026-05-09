@@ -3395,11 +3395,13 @@ Total\t${formatCurrencyFull(total)}`;
         // sub-modal, and the sub-modal saves back to aa state. The master
         // modal is re-opened by the user when they're done editing.
         rootEl.querySelector("[data-aa-edit-cover]")?.addEventListener("click", () => {
-          openAACoverMetaModal(project, aa);
+          modal = null; render();
+          openAACoverMetaModal(project, aa, true);
         });
         rootEl.querySelector("[data-aa-edit-intro]")?.addEventListener("click", () => {
+          modal = null; render();
           openAAEditModal({
-            project, aa, mode: "html",
+            project, aa, mode: "html", returnToMaster: true,
             title: "Introduction",
             hint: "Short overview of project, parties, contract execution, and what brought the matter to adjudication. Renders as the second section of the master if populated. If left blank the general / background RFI thread submissions will be used in its place.",
             getValue: () => aa.introductionHtml || "",
@@ -3407,8 +3409,9 @@ Total\t${formatCurrencyFull(total)}`;
           });
         });
         rootEl.querySelector("[data-aa-edit-summary]")?.addEventListener("click", () => {
+          modal = null; render();
           openAAEditModal({
-            project, aa, mode: "html",
+            project, aa, mode: "html", returnToMaster: true,
             title: "Executive summary",
             hint: "Sits near the top of the master document. Use 'Generate summary' to draft this from the per-item threads, or hand-edit here.",
             getValue: () => aa.execSummaryHtml || "",
@@ -3416,8 +3419,9 @@ Total\t${formatCurrencyFull(total)}`;
           });
         });
         rootEl.querySelector("[data-aa-edit-overarching]")?.addEventListener("click", () => {
+          modal = null; render();
           openAAEditModal({
-            project, aa, mode: "html",
+            project, aa, mode: "html", returnToMaster: true,
             title: "Overarching arguments",
             hint: "Cross-cutting arguments that don't fit a single per-item section — prevention principle, estoppel, waiver, contract construction, repudiation. Optional: leave blank to omit this section from the master.",
             getValue: () => aa.overarchingHtml || "",
@@ -4595,7 +4599,9 @@ Total\t${formatCurrencyFull(total)}`;
   // meta, introduction, exec summary edits and overarching arguments. Keeps
   // the AA matter fluid — the user can hand-edit any optional section without
   // running the engine.
-  function openAAEditModal({ project, aa, title, hint, getValue, setValue, mode }) {
+  // After save / cancel the master modal is re-opened so the user doesn't lose
+  // their place in the master review flow.
+  function openAAEditModal({ project, aa, title, hint, getValue, setValue, mode, returnToMaster }) {
     const initial = getValue() || "";
     modal = {
       render: () => `
@@ -4620,7 +4626,15 @@ Total\t${formatCurrencyFull(total)}`;
           </div>
         </div>`,
       bind: (rootEl) => {
-        const close = () => { modal = null; render(); };
+        // Closing without saving still returns the user to the master modal —
+        // they meant to be reviewing the master, the edit sub-modal is just a
+        // detour. The reopen happens after the close so the modal slot is
+        // free.
+        const close = () => {
+          modal = null;
+          render();
+          if (returnToMaster) setTimeout(() => openAAMasterModal(project, aa), 0);
+        };
         rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
         rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
         rootEl.querySelector("[data-aa-edit-clear]")?.addEventListener("click", () => {
@@ -4652,7 +4666,7 @@ Total\t${formatCurrencyFull(total)}`;
   }
 
   // Cover-meta editor — small form for the bordered cover-page tables.
-  function openAACoverMetaModal(project, aa) {
+  function openAACoverMetaModal(project, aa, returnToMaster) {
     const c = aa.coverMeta || {};
     const fields = [
       { key: "applicationDate", label: "Application date", placeholder: "e.g. 12 May 2026" },
@@ -4696,7 +4710,11 @@ Total\t${formatCurrencyFull(total)}`;
           </div>
         </div>`,
       bind: (rootEl) => {
-        const close = () => { modal = null; render(); };
+        const close = () => {
+          modal = null;
+          render();
+          if (returnToMaster) setTimeout(() => openAAMasterModal(project, aa), 0);
+        };
         rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
         rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
         rootEl.querySelector("[data-aa-cover-save]")?.addEventListener("click", () => {
