@@ -4212,6 +4212,20 @@ Total\t${formatCurrencyFull(total)}`;
     editor.addEventListener("input", scheduleSave);
     editor.addEventListener("blur", () => { clearTimeout(saveTimer); persist(); });
 
+    // Clean-paste — strip the inline style soup that browsers pull from Word /
+    // Google Docs / web pages. We keep the structural HTML (headings, lists,
+    // tables, bold / italic / underline) and drop everything else.
+    editor.addEventListener("paste", (event) => {
+      event.preventDefault();
+      const cd = event.clipboardData || window.clipboardData;
+      if (!cd) return;
+      const html = cd.getData("text/html");
+      const text = cd.getData("text/plain");
+      const sanitised = html ? sanitisePastedHtml(html) : escapeHtml(text || "").replace(/\n/g, "<br>");
+      document.execCommand("insertHTML", false, sanitised);
+      scheduleSave();
+    });
+
     // Toolbar — uses the legacy execCommand API, which is sufficient for
     // basic Bold/Italic/Underline/lists in a contenteditable div. Block-type
     // changes (H1/H2/P) use formatBlock.
@@ -4326,6 +4340,35 @@ Total\t${formatCurrencyFull(total)}`;
         stream.scrollTop = stream.scrollHeight;
       }
     });
+  }
+
+  function sanitisePastedHtml(html) {
+    // Allowlist of tags we trust inside the drafting editor. Everything else
+    // becomes plain text. Strips inline styles, classes, MS Word namespacing,
+    // HTML comments. Keeps headings, lists, tables, and basic emphasis.
+    const allowedTags = new Set(["P","BR","STRONG","B","EM","I","U","H1","H2","H3","H4","UL","OL","LI","TABLE","THEAD","TBODY","TR","TH","TD","BLOCKQUOTE","CODE"]);
+    const tmpl = document.createElement("div");
+    tmpl.innerHTML = html;
+    function clean(node) {
+      const kids = Array.from(node.childNodes);
+      for (const c of kids) {
+        if (c.nodeType === 1) {
+          if (!allowedTags.has(c.tagName)) {
+            const replacement = document.createDocumentFragment();
+            const inner = (c.textContent || "").trim();
+            if (inner) replacement.appendChild(document.createTextNode(inner));
+            c.replaceWith(replacement);
+            continue;
+          }
+          for (const attr of Array.from(c.attributes)) c.removeAttribute(attr.name);
+          clean(c);
+        } else if (c.nodeType === 8) {
+          c.remove();
+        }
+      }
+    }
+    clean(tmpl);
+    return tmpl.innerHTML;
   }
 
   function AgentPage(projectId, agentKey) {
