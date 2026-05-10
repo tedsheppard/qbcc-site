@@ -814,9 +814,43 @@
             <span class="nav-icon">${ICON.book}</span>
             <span class="nav-label">Help and support</span>
           </a>
+          ${SidebarAuth()}
         </div>
       </aside>
     `;
+  }
+
+  // Renders the auth row at the bottom of the sidebar foot. Three states:
+  // unknown (initial paint, before /purchase-me lands), guest (no token or
+  // 401), authed (purchase-me returned a user). We keep the markup small so
+  // the sidebar does not feel front-loaded with auth chrome.
+  function SidebarAuth() {
+    const a = sopalAuth;
+    if (a.state === "authed" && a.user) {
+      const display = (a.user.first_name || a.user.last_name)
+        ? [a.user.first_name, a.user.last_name].filter(Boolean).join(" ")
+        : (a.user.email || "Account");
+      return `
+        <div class="sidebar-auth signed-in">
+          <div class="sidebar-auth-row">
+            <span class="sidebar-auth-name" title="${attr(a.user.email || "")}">${escapeHtml(display)}</span>
+          </div>
+          <div class="sidebar-auth-row">
+            <a class="link-button small" href="/account.html" target="_blank" rel="noopener">Account</a>
+            <button class="link-button small" type="button" data-sopal-signout>Sign out</button>
+          </div>
+        </div>`;
+    }
+    if (a.state === "guest") {
+      return `
+        <div class="sidebar-auth guest">
+          <p>You are using Sopal as a guest. Sign in to keep your work tied to your account.</p>
+          <a class="dark-button compact" href="/login?redirect=${encodeURIComponent("/sopal-v2")}">Sign in</a>
+        </div>`;
+    }
+    // Unknown: keep the row mute so the sidebar does not flash a "guest"
+    // banner before /purchase-me has had a chance to respond.
+    return `<div class="sidebar-auth checking"><span class="muted">Checking sign-in...</span></div>`;
   }
 
   /* ---------- Top header ---------- */
@@ -7913,6 +7947,7 @@ Total\t${formatCurrencyFull(total)}`;
     }));
     document.querySelectorAll("[data-toggle-sidebar]").forEach((el) => el.addEventListener("click", () => { sidebarOpen = !sidebarOpen; render(); }));
     document.querySelectorAll("[data-toggle-collapse]").forEach((el) => el.addEventListener("click", () => setSidebarCollapsed(!sidebarCollapsed)));
+    document.querySelectorAll("[data-sopal-signout]").forEach((el) => el.addEventListener("click", () => sopalAuth.signOut()));
     document.querySelectorAll("[data-open-palette]").forEach((el) => el.addEventListener("click", () => openCommandPalette()));
     document.querySelectorAll("[data-toggle-theme]").forEach((el) => el.addEventListener("click", () => setTheme(theme === "dark" ? "light" : "dark")));
     document.querySelectorAll("[data-open-whatsnew]").forEach((el) => el.addEventListener("click", () => openWhatsNew()));
@@ -8393,6 +8428,69 @@ Total\t${formatCurrencyFull(total)}`;
     render();
   }
 
+  /* ---------- Auth (purchase user via shared /purchase-login JWT) ---------- */
+
+  // The marketing site stores its JWT in localStorage under "purchase_token"
+  // and authenticates against /purchase-me with a Bearer header. We reuse that
+  // same token here so the user only has to sign in once across both sites.
+  // Hard-gating (redirect to /login when no token) is opt-in via the flag
+  // below; until it is flipped on the SPA still loads for guests, but the
+  // sidebar surfaces a Sign in prompt and keeps the user's identity visible
+  // when they are signed in.
+  const AUTH_HARD_GATE = false;
+  const AUTH_TOKEN_KEY = "purchase_token";
+  const sopalAuth = {
+    user: null,
+    state: "unknown", // "unknown" | "guest" | "authed"
+    token() {
+      try { return localStorage.getItem(AUTH_TOKEN_KEY) || ""; } catch (_) { return ""; }
+    },
+    headers() {
+      const t = this.token();
+      return t ? { "Authorization": "Bearer " + t } : {};
+    },
+    async refresh() {
+      const t = this.token();
+      if (!t) {
+        this.user = null;
+        this.state = "guest";
+        return;
+      }
+      try {
+        const r = await fetch("/purchase-me", { headers: { "Authorization": "Bearer " + t } });
+        if (r.ok) {
+          this.user = await r.json();
+          this.state = "authed";
+        } else if (r.status === 401) {
+          try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (_) {}
+          this.user = null;
+          this.state = "guest";
+        } else {
+          // Server error: treat as transient, keep token, mark unknown so we
+          // do not punt the user out of a working session.
+          this.state = "unknown";
+        }
+      } catch (_) {
+        this.state = "unknown";
+      }
+    },
+    requireOrRedirect() {
+      if (!AUTH_HARD_GATE) return;
+      if (this.state !== "authed") {
+        const here = window.location.pathname + window.location.search + window.location.hash;
+        window.location.replace("/login?redirect=" + encodeURIComponent(here));
+      }
+    },
+    signOut() {
+      try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (_) {}
+      this.user = null;
+      this.state = "guest";
+      window.location.replace("/login?redirect=" + encodeURIComponent("/sopal-v2"));
+    },
+  };
+  // Expose so other modules and the inspector can read auth state.
+  window.SopalAuth = sopalAuth;
+
   /* ---------- Boot ---------- */
 
   window.addEventListener("popstate", render);
@@ -8449,4 +8547,14 @@ Total\t${formatCurrencyFull(total)}`;
   });
 
   render();
+
+  // Auth check runs after the first paint so the user does not stare at a
+  // blank screen waiting for the network round-trip. When the call lands the
+  // sidebar foot re-renders with the user's identity (or a Sign in prompt)
+  // and the hard gate fires only if the AUTH_HARD_GATE flag is on.
+  (async () => {
+    await sopalAuth.refresh();
+    sopalAuth.requireOrRedirect();
+    render();
+  })();
 })();

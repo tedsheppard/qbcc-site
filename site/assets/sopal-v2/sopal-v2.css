@@ -4842,3 +4842,50 @@ select.aa-cell[data-aa-status="jurisdictional"] {
   gap: 4px;
 }
 .help-back a:hover { text-decoration: underline; }
+
+/* ---------- Sidebar auth row ---------- */
+.sidebar-auth {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--main-border);
+  border-radius: 10px;
+  background: var(--main-panel);
+}
+.sidebar-auth.guest p {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted-fg);
+}
+.sidebar-auth.guest .dark-button { width: 100%; justify-content: center; }
+.sidebar-auth.checking {
+  padding: 8px 14px;
+  background: transparent;
+  border-style: dashed;
+}
+.sidebar-auth.checking .muted { font-size: 12px; }
+.sidebar-auth-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sidebar-auth-row + .sidebar-auth-row { margin-top: 6px; }
+.sidebar-auth-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--main-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-auth .link-button {
+  font-size: 12px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--focus);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.sopal-sidebar.collapsed .sidebar-auth { display: none; }
