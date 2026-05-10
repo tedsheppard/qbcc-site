@@ -3645,9 +3645,11 @@ Total\t${formatCurrencyFull(total)}`;
           <div class="card-head">
             <h3>Stage 5: Final review and lodgement</h3>
             <div class="aa-review-actions">
-              <button class="dark-button" type="button" data-aa-export>${ICON.download}<span>Export master .doc</span></button>
-              <button class="ghost-button compact" type="button" data-aa-export-statdecs>${ICON.download}<span>Export combined stat dec</span></button>
-              <button class="ghost-button compact" type="button" data-aa-export-soe>${ICON.download}<span>Export evidence index</span></button>
+              <button class="dark-button" type="button" data-aa-export-docx title="Download master as .docx">${ICON.download}<span>Master .docx</span></button>
+              <button class="dark-button" type="button" data-aa-export-pdf title="Download master as .pdf">${ICON.download}<span>Master .pdf</span></button>
+              <button class="ghost-button compact" type="button" data-aa-export title="Download master as legacy .doc">${ICON.download}<span>.doc</span></button>
+              <button class="ghost-button compact" type="button" data-aa-export-statdecs>${ICON.download}<span>Stat dec</span></button>
+              <button class="ghost-button compact" type="button" data-aa-export-soe>${ICON.download}<span>Evidence index</span></button>
               <button class="ghost-button compact" type="button" data-aa-print-master>${ICON.file}<span>Print master</span></button>
               <button class="ghost-button compact" type="button" data-aa-copy-master>${ICON.copy}<span>Copy as Markdown</span></button>
               <button class="ghost-button compact" type="button" data-aa-draft-all title="Run a draft pass for every thread that has answered RFIs but isn't drafted yet">${ICON.sparkles}<span>Draft all</span></button>
@@ -3834,7 +3836,9 @@ Total\t${formatCurrencyFull(total)}`;
                 <button class="ghost-button compact" type="button" data-aa-edit-summary>Edit summary</button>
                 <button class="ghost-button compact" type="button" data-aa-edit-overarching>Overarching</button>
                 <span class="aa-master-actions-sep"></span>
-                <button class="dark-button compact" type="button" data-aa-export>${ICON.download}<span>Export .doc</span></button>
+                <button class="dark-button compact" type="button" data-aa-export-docx title="Download master as .docx">${ICON.download}<span>.docx</span></button>
+                <button class="dark-button compact" type="button" data-aa-export-pdf title="Download master as .pdf">${ICON.download}<span>.pdf</span></button>
+                <button class="ghost-button compact" type="button" data-aa-export title="Download master as legacy .doc">${ICON.download}<span>.doc</span></button>
                 <button class="ghost-button compact" type="button" data-aa-export-statdecs>${ICON.download}<span>Stat dec</span></button>
                 <button class="ghost-button compact" type="button" data-aa-export-soe>${ICON.download}<span>Evidence index</span></button>
                 <button class="ghost-button compact" type="button" data-aa-print-master>${ICON.file}<span>Print</span></button>
@@ -3935,6 +3939,34 @@ Total\t${formatCurrencyFull(total)}`;
           aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`,
             `${escapeHtml(project.name)} — Adjudication Application`,
             renderAAMaster(project, aa), getFirm());
+        });
+        rootEl.querySelector("[data-aa-export-docx]")?.addEventListener("click", async (e) => {
+          const btn = e.currentTarget;
+          const original = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = `${ICON.download}<span>Building…</span>`;
+          try {
+            await aaDownloadDocx(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.docx`,
+              `${project.name}: Adjudication Application`,
+              renderAAMaster(project, aa), getFirm());
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = original;
+          }
+        });
+        rootEl.querySelector("[data-aa-export-pdf]")?.addEventListener("click", async (e) => {
+          const btn = e.currentTarget;
+          const original = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = `${ICON.download}<span>Building…</span>`;
+          try {
+            await aaDownloadPdf(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.pdf`,
+              `${project.name}: Adjudication Application`,
+              renderAAMaster(project, aa), getFirm());
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = original;
+          }
         });
         rootEl.querySelector("[data-aa-export-statdecs]")?.addEventListener("click", () => {
           aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-statutory-declaration.doc`,
@@ -4493,6 +4525,34 @@ Total\t${formatCurrencyFull(total)}`;
         `${escapeHtml(project.name)} — Adjudication Application`,
         renderAAMaster(project, aa), getFirm());
     });
+    document.querySelector("[data-aa-export-docx]")?.addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      const original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `${ICON.download}<span>Building…</span>`;
+      try {
+        await aaDownloadDocx(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.docx`,
+          `${project.name}: Adjudication Application`,
+          renderAAMaster(project, aa), getFirm());
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      }
+    });
+    document.querySelector("[data-aa-export-pdf]")?.addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      const original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `${ICON.download}<span>Building…</span>`;
+      try {
+        await aaDownloadPdf(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.pdf`,
+          `${project.name}: Adjudication Application`,
+          renderAAMaster(project, aa), getFirm());
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      }
+    });
     document.querySelector("[data-aa-export-statdecs]")?.addEventListener("click", () => {
       aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-statutory-declaration.doc`,
         `${escapeHtml(project.name)} — Statutory Declaration`,
@@ -4664,6 +4724,507 @@ Total\t${formatCurrencyFull(total)}`;
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  // -----------------------------------------------------------------------
+  // Real .docx export (docx.js) + real .pdf export (html2pdf.js).
+  //
+  // Both are pluggable into any drafting / AA flow: pass the editor HTML and
+  // the firm settings, get a clean Word / PDF file that Word and Preview open
+  // without compatibility warnings. The CDN scripts are loaded by sopal-v2.html
+  // so `window.docx` and `window.html2pdf` are available by the time these
+  // helpers run. We feature-detect each library and surface a friendly message
+  // if the CDN is blocked.
+  // -----------------------------------------------------------------------
+
+  function triggerBlobDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  // Decode the firm logo data URL into the raw bytes docx.js wants for an
+  // ImageRun. Also probes the natural image size so we can scale the logo
+  // down to a sensible header size (max ~160×80 pt).
+  function dataUrlToImageData(dataUrl) {
+    return new Promise((resolve) => {
+      try {
+        const m = /^data:([^;,]+)?[^,]*,(.*)$/.exec(dataUrl || "");
+        if (!m) { resolve(null); return; }
+        const bin = atob(m[2].replace(/\s+/g, ""));
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const img = new Image();
+        img.onload = () => {
+          let w = img.naturalWidth || 200;
+          let h = img.naturalHeight || 80;
+          const maxW = 160, maxH = 80;
+          if (w > maxW) { h = h * (maxW / w); w = maxW; }
+          if (h > maxH) { w = w * (maxH / h); h = maxH; }
+          resolve({ bytes, width: Math.round(w), height: Math.round(h) });
+        };
+        img.onerror = () => resolve({ bytes, width: 160, height: 60 });
+        img.src = dataUrl;
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  }
+
+  // HTML → docx blocks. Handles the subset of tags the Sopal editor emits:
+  // h1..h4, p, strong/b, em/i, u, s, sup, sub, br, ul, ol, li, table, blockquote,
+  // hr. Unknown / wrapper tags (div, section, nav cover blocks) recurse so the
+  // AA master HTML — which wraps content in <div class="aa-cover"> etc. — still
+  // produces clean Word output.
+  function htmlToDocxChildren(html, ctx) {
+    const D = ctx.D;
+    const accentHex = (ctx.accent || "#243043").replace(/^#/, "");
+    const root = document.createElement("div");
+    root.innerHTML = html || "";
+    const out = [];
+
+    function inlineRunDescriptors(node, baseFmt) {
+      const runs = [];
+      function step(n, fmt) {
+        if (n.nodeType === 3) {
+          const text = (n.textContent || "").replace(/ /g, " ");
+          if (text) runs.push({ ...fmt, text });
+          return;
+        }
+        if (n.nodeType !== 1) return;
+        const tag = n.tagName;
+        if (tag === "BR") { runs.push({ ...fmt, break: 1 }); return; }
+        const next = { ...fmt };
+        if (tag === "STRONG" || tag === "B") next.bold = true;
+        if (tag === "EM" || tag === "I") next.italics = true;
+        if (tag === "U") next.underline = {};
+        if (tag === "S" || tag === "STRIKE" || tag === "DEL") next.strike = true;
+        if (tag === "SUP") next.superScript = true;
+        if (tag === "SUB") next.subScript = true;
+        Array.from(n.childNodes).forEach((c) => step(c, next));
+      }
+      Array.from(node.childNodes).forEach((c) => step(c, baseFmt || {}));
+      return runs;
+    }
+
+    // Descriptors → docx TextRun instances. Used at emit-time so we never
+    // hand the library a docx object we'd later need to mutate.
+    function descsToRuns(descs) {
+      if (!descs.length) return [new D.TextRun("")];
+      return descs.map((d) => new D.TextRun(d));
+    }
+
+    function emitHeading(el, level) {
+      const descs = inlineRunDescriptors(el);
+      const headingLevel = level === 1 ? D.HeadingLevel.HEADING_1
+        : level === 2 ? D.HeadingLevel.HEADING_2
+        : level === 3 ? D.HeadingLevel.HEADING_3
+        : D.HeadingLevel.HEADING_4;
+      const sizeMap = { 1: 44, 2: 28, 3: 24, 4: 22 };
+      const color = level === 2 ? accentHex : "111111";
+      const styled = (descs.length ? descs : [{ text: "" }])
+        .map((d) => new D.TextRun({ ...d, bold: true, size: sizeMap[level] || 22, color }));
+      const para = {
+        heading: headingLevel,
+        alignment: level === 1 ? D.AlignmentType.CENTER : D.AlignmentType.LEFT,
+        spacing: { before: level === 1 ? 0 : 280, after: 140 },
+        children: styled,
+      };
+      if (level === 2) {
+        para.border = { bottom: { color: accentHex, size: 6, style: D.BorderStyle.SINGLE, space: 1 } };
+      }
+      return new D.Paragraph(para);
+    }
+
+    function emitParagraph(el) {
+      const descs = inlineRunDescriptors(el);
+      if (!descs.length) {
+        return new D.Paragraph({ spacing: { after: 120 }, children: [new D.TextRun("")] });
+      }
+      return new D.Paragraph({
+        alignment: D.AlignmentType.JUSTIFIED,
+        spacing: { after: 120, line: 320 },
+        children: descsToRuns(descs),
+      });
+    }
+
+    function emitList(listEl, ordered, level) {
+      const items = [];
+      Array.from(listEl.children).forEach((li) => {
+        if (li.tagName !== "LI") return;
+        const clone = li.cloneNode(true);
+        Array.from(clone.querySelectorAll("ul, ol")).forEach((sub) => sub.remove());
+        const descs = inlineRunDescriptors(clone);
+        const paraOpts = {
+          spacing: { after: 80 },
+          children: descsToRuns(descs),
+        };
+        if (ordered) paraOpts.numbering = { reference: "sopal-numbered", level };
+        else paraOpts.bullet = { level };
+        items.push(new D.Paragraph(paraOpts));
+        Array.from(li.children).forEach((kid) => {
+          if (kid.tagName === "UL") emitList(kid, false, level + 1).forEach((p) => items.push(p));
+          else if (kid.tagName === "OL") emitList(kid, true, level + 1).forEach((p) => items.push(p));
+        });
+      });
+      return items;
+    }
+
+    function emitTable(tableEl) {
+      const trs = Array.from(tableEl.querySelectorAll("tr"));
+      if (!trs.length) return null;
+      const rows = trs.map((tr) => {
+        const cells = [];
+        Array.from(tr.children).forEach((cell) => {
+          if (cell.tagName !== "TH" && cell.tagName !== "TD") return;
+          const isHeader = cell.tagName === "TH";
+          const descs = inlineRunDescriptors(cell);
+          const styled = (descs.length ? descs : [{ text: "" }])
+            .map((d) => new D.TextRun(isHeader ? { ...d, bold: true } : d));
+          cells.push(new D.TableCell({
+            shading: isHeader ? { type: D.ShadingType.SOLID, color: "F0ECE4", fill: "F0ECE4" } : undefined,
+            margins: { top: 80, bottom: 80, left: 120, right: 120 },
+            children: [new D.Paragraph({
+              spacing: { after: 0 },
+              children: styled,
+            })],
+          }));
+        });
+        return new D.TableRow({ children: cells });
+      });
+      return new D.Table({
+        rows,
+        width: { size: 100, type: D.WidthType.PERCENTAGE },
+      });
+    }
+
+    function walk(container) {
+      Array.from(container.children).forEach((el) => {
+        const tag = el.tagName;
+        if (tag === "NAV" || tag === "HEADER" || tag === "FOOTER" || tag === "SCRIPT" || tag === "STYLE") return;
+        if (tag === "H1") { out.push(emitHeading(el, 1)); return; }
+        if (tag === "H2") { out.push(emitHeading(el, 2)); return; }
+        if (tag === "H3") { out.push(emitHeading(el, 3)); return; }
+        if (tag === "H4") { out.push(emitHeading(el, 4)); return; }
+        if (tag === "P") { out.push(emitParagraph(el)); return; }
+        if (tag === "BLOCKQUOTE") {
+          const descs = inlineRunDescriptors(el);
+          const styled = (descs.length ? descs : [{ text: "" }])
+            .map((d) => new D.TextRun({ ...d, italics: true }));
+          out.push(new D.Paragraph({
+            indent: { left: 720 },
+            spacing: { after: 120 },
+            children: styled,
+          }));
+          return;
+        }
+        if (tag === "UL") { emitList(el, false, 0).forEach((p) => out.push(p)); return; }
+        if (tag === "OL") { emitList(el, true, 0).forEach((p) => out.push(p)); return; }
+        if (tag === "TABLE") { const t = emitTable(el); if (t) out.push(t); return; }
+        if (tag === "HR") {
+          out.push(new D.Paragraph({
+            border: { bottom: { color: "888888", size: 6, style: D.BorderStyle.SINGLE, space: 1 } },
+            children: [],
+          }));
+          return;
+        }
+        if (tag === "BR") { out.push(new D.Paragraph("")); return; }
+        // Wrapper-style element (div, section, article, span at top-level) →
+        // descend into children so AA cover blocks and similar containers still
+        // emit clean block-level docx content.
+        walk(el);
+      });
+    }
+
+    walk(root);
+    return out;
+  }
+
+  async function aaDownloadDocx(filename, title, body, firm) {
+    if (typeof window.docx === "undefined") {
+      alert("DOCX export library could not load. Please refresh and try again.");
+      return;
+    }
+    const D = window.docx;
+    const f = firm || {};
+    const accent = f.accentColour || "#243043";
+    const accentHex = accent.replace(/^#/, "");
+    // 1 inch = 1440 twips. A4 = 210×297mm = 11906×16838 twips. Letter = 12240×15840.
+    const pageSize = f.pageSize === "letter"
+      ? { width: 12240, height: 15840 }
+      : { width: 11906, height: 16838 };
+    // firmPageMargins returns CSS pixels at 96 dpi. 1 px = 15 twips.
+    const margins = firmPageMargins(f);
+    const pageMargin = {
+      top: margins.top * 15,
+      right: margins.right * 15,
+      bottom: margins.bottom * 15,
+      left: margins.left * 15,
+      header: 720,
+      footer: 720,
+    };
+    const docFont = f.bodyFont === "sans" ? "Arial"
+      : f.bodyFont === "inter" ? "Calibri"
+      : "Times New Roman";
+    const branded = firmHasBranding(f);
+
+    // Logo bytes (optional). Skipped silently if decoding fails so a broken
+    // image data URL doesn't abort the export.
+    let logo = null;
+    if (branded && f.logoDataUrl) {
+      try { logo = await dataUrlToImageData(f.logoDataUrl); } catch (e) { logo = null; }
+    }
+
+    const bodyChildren = htmlToDocxChildren(body, { D, accent });
+
+    function firstHeader() {
+      if (!branded) return null;
+      const rows = [];
+      const leftChildren = [];
+      if (logo && logo.bytes && logo.bytes.length) {
+        leftChildren.push(new D.Paragraph({
+          children: [new D.ImageRun({
+            data: logo.bytes,
+            transformation: { width: logo.width, height: logo.height },
+          })],
+        }));
+      } else if (f.name) {
+        leftChildren.push(new D.Paragraph({
+          children: [new D.TextRun({ text: f.name, bold: true, size: 22 })],
+        }));
+      } else {
+        leftChildren.push(new D.Paragraph(""));
+      }
+      const rightChildren = [];
+      if (f.letterheadAddress) {
+        (f.letterheadAddress || "").split("\n").forEach((line) => {
+          rightChildren.push(new D.Paragraph({
+            alignment: D.AlignmentType.RIGHT,
+            spacing: { after: 0 },
+            children: [new D.TextRun({ text: line, size: 18 })],
+          }));
+        });
+      } else if (f.name) {
+        rightChildren.push(new D.Paragraph({
+          alignment: D.AlignmentType.RIGHT,
+          children: [new D.TextRun({ text: f.name, bold: true, size: 20 })],
+        }));
+      } else {
+        rightChildren.push(new D.Paragraph(""));
+      }
+      const noBorder = { style: D.BorderStyle.NONE, size: 0, color: "FFFFFF" };
+      const cellBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
+      const cellMargins = { top: 0, bottom: 0, left: 0, right: 0 };
+      rows.push(new D.TableRow({
+        children: [
+          new D.TableCell({ width: { size: 50, type: D.WidthType.PERCENTAGE }, borders: cellBorders, margins: cellMargins, children: leftChildren }),
+          new D.TableCell({ width: { size: 50, type: D.WidthType.PERCENTAGE }, borders: cellBorders, margins: cellMargins, children: rightChildren }),
+        ],
+      }));
+      const headerChildren = [
+        new D.Table({
+          rows,
+          width: { size: 100, type: D.WidthType.PERCENTAGE },
+          borders: {
+            top: noBorder, bottom: noBorder, left: noBorder, right: noBorder,
+            insideHorizontal: noBorder, insideVertical: noBorder,
+          },
+        }),
+        new D.Paragraph({
+          border: { bottom: { color: accentHex, size: 12, style: D.BorderStyle.SINGLE, space: 4 } },
+          spacing: { after: 0 },
+          children: [],
+        }),
+      ];
+      return new D.Header({ children: headerChildren });
+    }
+
+    function defaultHeader() {
+      if (!branded) return null;
+      return new D.Header({
+        children: [new D.Paragraph({
+          alignment: D.AlignmentType.RIGHT,
+          children: [new D.TextRun({
+            text: (f.name || "").toUpperCase(),
+            bold: true,
+            size: 16,
+            color: accentHex,
+          })],
+        })],
+      });
+    }
+
+    function makeFooter(suppressOnCover) {
+      const leftText = f.footerText || f.name || "";
+      if (suppressOnCover) {
+        return new D.Footer({ children: [new D.Paragraph("")] });
+      }
+      return new D.Footer({
+        children: [new D.Paragraph({
+          alignment: D.AlignmentType.LEFT,
+          tabStops: [{ type: D.TabStopType.RIGHT, position: 9072 }],
+          children: [
+            new D.TextRun({ text: leftText, size: 16, color: "555555" }),
+            new D.TextRun({ children: ["\t", "Page ", D.PageNumber.CURRENT, " of ", D.PageNumber.TOTAL_PAGES], size: 16, color: "555555" }),
+          ],
+        })],
+      });
+    }
+
+    const section = {
+      properties: {
+        page: { size: pageSize, margin: pageMargin },
+        titlePage: branded,
+      },
+      children: bodyChildren.length ? bodyChildren : [new D.Paragraph("")],
+    };
+    const fh = firstHeader();
+    const dh = defaultHeader();
+    if (fh || dh) {
+      section.headers = {};
+      if (fh) section.headers.first = fh;
+      if (dh) section.headers.default = dh;
+    }
+    section.footers = { default: makeFooter(false) };
+    if (branded) section.footers.first = makeFooter(true);
+
+    const docObj = new D.Document({
+      creator: f.name || "Sopal",
+      title: title || "Sopal document",
+      styles: {
+        default: {
+          document: { run: { font: docFont, size: 23 } },
+        },
+      },
+      numbering: {
+        config: [{
+          reference: "sopal-numbered",
+          levels: [
+            { level: 0, format: "decimal", text: "%1.", alignment: D.AlignmentType.START, style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
+            { level: 1, format: "lowerLetter", text: "%2.", alignment: D.AlignmentType.START, style: { paragraph: { indent: { left: 1440, hanging: 360 } } } },
+            { level: 2, format: "lowerRoman", text: "%3.", alignment: D.AlignmentType.START, style: { paragraph: { indent: { left: 2160, hanging: 360 } } } },
+          ],
+        }],
+      },
+      sections: [section],
+    });
+
+    const blob = await D.Packer.toBlob(docObj);
+    triggerBlobDownload(blob, filename);
+  }
+
+  // Inline copy of the firm-paper styles so the offscreen mount we feed to
+  // html2pdf renders identically to the on-screen paginated A4 view, even
+  // when the SPA's own stylesheet isn't reachable from the captured node.
+  function firmPdfStyleCss(dims, accent, fontStack) {
+    return `
+      .firm-paper { width:${dims.width}px; min-height:${dims.height}px; max-height:${dims.height}px; background:#ffffff; box-sizing:border-box; font-family:${fontStack}; color:#1a1a1a; font-size:11.5pt; line-height:1.55; display:flex; flex-direction:column; position:relative; overflow:hidden; }
+      .firm-paper-content { padding:56px 96px 40px 96px; flex:1; }
+      .firm-paper-cover .firm-paper-content { padding-top:12px; }
+      .firm-page-header { padding:36px 56px 0; display:flex; align-items:flex-start; justify-content:space-between; gap:24px; }
+      .firm-cover-header { padding-bottom:14px; border-bottom:2pt solid ${accent}; }
+      .firm-cover-logo img { max-height:96px; max-width:240px; object-fit:contain; }
+      .firm-cover-letterhead { font-size:10pt; line-height:1.45; text-align:right; color:#2a2a2a; white-space:pre-line; }
+      .firm-running-header { justify-content:flex-end; padding-top:18px; padding-bottom:6px; border-bottom:1pt solid #d6d2c6; }
+      .firm-running-name { font-size:9.5pt; letter-spacing:0.04em; text-transform:uppercase; color:${accent}; font-weight:600; }
+      .firm-page-footer { display:flex; justify-content:space-between; align-items:center; padding:8px 56px 24px; font-size:9pt; color:#555; border-top:1pt solid #d6d2c6; margin-top:auto; }
+      .firm-paper h1 { font-size:22pt; font-weight:700; text-align:center; margin:0 0 16px; color:#111; }
+      .firm-paper h2 { font-size:14pt; font-weight:700; margin:22px 0 8px; padding-bottom:4px; border-bottom:1pt solid ${accent}; color:${accent}; }
+      .firm-paper h3 { font-size:12pt; font-weight:700; margin:14px 0 6px; }
+      .firm-paper h4 { font-size:11pt; font-weight:700; margin:10px 0 4px; }
+      .firm-paper p { margin:0 0 10px; text-align:justify; }
+      .firm-paper ul, .firm-paper ol { margin:4px 0 12px 20px; padding:0; }
+      .firm-paper li { margin:0 0 4px; }
+      .firm-paper table { width:100%; border-collapse:collapse; margin:8px 0 14px; font-size:10.5pt; }
+      .firm-paper th, .firm-paper td { border:1pt solid #888; padding:5px 8px; text-align:left; vertical-align:top; }
+      .firm-paper th { background:#f0ece4; font-weight:600; }
+      .firm-paper .aa-toc { display:none; }
+      .firm-paper .aa-cover { padding:0 0 18pt; margin:0 0 24pt; border-bottom:0; }
+      .firm-paper .aa-cover-title { font-size:24pt; letter-spacing:0.04em; text-transform:uppercase; text-align:center; margin:0 0 16pt; color:#111; }
+      .firm-paper .aa-cover-opener { font-size:11.5pt; margin:0 0 18pt; text-align:justify; }
+      .firm-paper .aa-cover-section { font-size:10.5pt; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; margin:16pt 0 6pt; border:0; padding:0; color:#111; }
+      .firm-paper table.aa-cover-table { width:100%; }
+      .firm-paper table.aa-cover-table th { width:38%; }
+      .firm-paper table.aa-item-meta { width:auto; min-width:60%; margin:4px 0 12px; font-size:10pt; }
+      .firm-paper table.aa-item-meta th { width:180px; background:#faf7f1; }
+      .firm-paper .aa-issue-tag { display:inline-block; font-size:9pt; padding:1px 6px; margin-left:6px; background:#e0e7ff; border-radius:999px; }
+      .firm-paper-probe { position:absolute; left:-99999px; top:0; visibility:hidden; font-family:${fontStack}; font-size:11.5pt; line-height:1.55; }
+    `;
+  }
+
+  async function aaDownloadPdf(filename, title, body, firm) {
+    if (typeof window.html2pdf === "undefined") {
+      alert("PDF export library could not load. Please refresh and try again.");
+      return;
+    }
+    const f = firm || {};
+    const dims = firmPageDimensions(f);
+    const accent = f.accentColour || "#243043";
+    const fontStack = firmFontFamily(f);
+    const margins = firmPageMargins(f);
+    const pageFormat = dims.label === "Letter" ? "letter" : "a4";
+
+    const wrap = document.createElement("div");
+    wrap.className = "firm-pdf-export";
+    wrap.style.cssText = `position:fixed; left:-99999px; top:0; width:${dims.width}px; background:#ffffff; pointer-events:none;`;
+    wrap.style.setProperty("--firm-accent", accent);
+    wrap.style.setProperty("--firm-font", fontStack);
+    wrap.style.setProperty("--firm-page-width", dims.width + "px");
+    wrap.style.setProperty("--firm-page-height", dims.height + "px");
+    wrap.style.setProperty("--firm-margin-top", margins.top + "px");
+    wrap.style.setProperty("--firm-margin-right", margins.right + "px");
+    wrap.style.setProperty("--firm-margin-bottom", margins.bottom + "px");
+    wrap.style.setProperty("--firm-margin-left", margins.left + "px");
+
+    const styleEl = document.createElement("style");
+    styleEl.textContent = firmPdfStyleCss(dims, accent, fontStack);
+    wrap.appendChild(styleEl);
+
+    const mount = document.createElement("div");
+    mount.className = "firm-paper-stack";
+    wrap.appendChild(mount);
+    document.body.appendChild(wrap);
+
+    paintFirmPaperStack(mount, body, f);
+
+    // Give the browser a tick to lay out + decode any logo image before
+    // html2canvas snapshots the DOM.
+    await new Promise((resolve) => setTimeout(resolve, 80));
+
+    const opts = {
+      margin: 0,
+      filename,
+      image: { type: "jpeg", quality: 0.96 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        windowWidth: dims.width,
+      },
+      jsPDF: {
+        unit: "px",
+        format: [dims.width, dims.height],
+        orientation: "portrait",
+        hotfixes: ["px_scaling"],
+        compress: true,
+      },
+      pagebreak: { mode: ["css", "legacy"], before: ".firm-paper:not(:first-child)" },
+    };
+
+    try {
+      await window.html2pdf().set(opts).from(mount).save();
+    } catch (err) {
+      console.error("PDF export failed", err);
+      alert("PDF export failed: " + (err && err.message ? err.message : String(err)));
+    } finally {
+      try { document.body.removeChild(wrap); } catch (e) { /* ignore */ }
+    }
   }
 
   function renderAAStatDecCompilation(project, aa) {
@@ -6030,7 +6591,9 @@ Total\t${formatCurrencyFull(total)}`;
               <span class="ribbon-quick-sep"></span>
               <button class="ribbon-flat-btn" type="button" data-doc-copy title="Copy document HTML">${ICON.copy}<span>Copy</span></button>
               <button class="ribbon-flat-btn" type="button" data-doc-print title="Print preview">${ICON.file}<span>Print</span></button>
-              <button class="ribbon-flat-btn primary" type="button" data-doc-download title="Download .doc">${ICON.download}<span>.doc</span></button>
+              <button class="ribbon-flat-btn primary" type="button" data-doc-download-docx title="Download .docx">${ICON.download}<span>.docx</span></button>
+              <button class="ribbon-flat-btn primary" type="button" data-doc-download-pdf title="Download .pdf">${ICON.download}<span>.pdf</span></button>
+              <button class="ribbon-flat-btn" type="button" data-doc-download title="Download .doc (legacy)">${ICON.download}<span>.doc</span></button>
               <button class="ribbon-flat-btn danger" type="button" data-doc-reset title="Reset to blank template">Reset</button>
             </div>
           </div>
@@ -6782,6 +7345,34 @@ Total\t${formatCurrencyFull(total)}`;
       // overrides since drafting agents render top-down without a
       // separate cover.
       aaDownloadDoc(filename, `${project.name}: ${AGENT_LABELS[agentKey] || agentKey}`, editor.innerHTML, getFirm());
+    });
+    document.querySelector("[data-doc-download-docx]")?.addEventListener("click", async (e) => {
+      persist();
+      const btn = e.currentTarget;
+      const original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `${ICON.download}<span>Building…</span>`;
+      try {
+        const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-${agentKey}.docx`;
+        await aaDownloadDocx(filename, `${project.name}: ${AGENT_LABELS[agentKey] || agentKey}`, editor.innerHTML, getFirm());
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      }
+    });
+    document.querySelector("[data-doc-download-pdf]")?.addEventListener("click", async (e) => {
+      persist();
+      const btn = e.currentTarget;
+      const original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `${ICON.download}<span>Building…</span>`;
+      try {
+        const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-${agentKey}.pdf`;
+        await aaDownloadPdf(filename, `${project.name}: ${AGENT_LABELS[agentKey] || agentKey}`, editor.innerHTML, getFirm());
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      }
     });
     document.querySelector("[data-doc-reset]")?.addEventListener("click", () => {
       if (!confirm("Reset this draft back to the blank template? The current content will be lost.")) return;
@@ -9720,7 +10311,7 @@ Total\t${formatCurrencyFull(total)}`;
         <h2>The editor</h2>
         <p>The left pane is a contenteditable document. Type or paste content directly. The toolbar gives you bold, italic, underline, headings (H1, H2), paragraph formatting, bulleted lists and numbered lists. The keyboard shortcuts you would expect (Cmd or Ctrl plus B, I, U) work as well.</p>
         <p>Pasting from Word or Google Docs is supported and the inline style soup is stripped automatically; the structural HTML (headings, lists, tables, basic emphasis) is preserved. The document is auto-saved every time you stop typing, with the save indicator in the toolbar.</p>
-        <p>Three buttons in the top right of the toolbar give you Copy HTML (copies the rich content to your clipboard), Download .doc (downloads a Word-compatible .doc file), and Reset (rolls the document back to the blank template; this asks for confirmation because it is destructive).</p>
+        <p>The top right of the toolbar gives you Copy HTML (copies the rich content to your clipboard), Download .docx (a real Word file that opens cleanly in Word and Pages), Download .pdf (a paginated PDF matching the on-screen A4 view), Download .doc (legacy Word-HTML hybrid, kept for backward compatibility), and Reset (rolls the document back to the blank template; this asks for confirmation because it is destructive). Both .docx and .pdf apply your firm settings: font, page size, margins, and the letterhead logo / footer on the first page.</p>
 
         <h2>The chat pane</h2>
         <p>Type any instruction into the chat composer. Sopal rewrites the document according to your instruction and gives you a one-line summary of what it changed. Examples that work well:</p>

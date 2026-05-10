@@ -10,11 +10,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
   <!-- Cache-busted: bump when sopal-v2.{js,css} change so browsers don't show stale UI. -->
-  <link rel="stylesheet" href="/assets/sopal-v2/sopal-v2.css?v=20260511-3">
+  <link rel="stylesheet" href="/assets/sopal-v2/sopal-v2.css?v=20260511-4">
 </head>
 <body>
   <!-- Intentionally isolated local prototype mounted at /sopal-v2 only. -->
   <div id="sopal-v2-root"></div>
-  <script src="/assets/sopal-v2/sopal-v2.js?v=20260511-3" defer></script>
+  <!-- Real .docx export (docx.js) and real .pdf export (html2pdf.js + jsPDF + html2canvas).
+       Loaded ahead of sopal-v2.js so the export helpers can see the `docx` and
+       `html2pdf` globals as soon as the SPA boots. -->
+  <script src="https://unpkg.com/docx@latest/build/index.js"></script>
+  <script src="https://unpkg.com/html2pdf.js@latest/dist/html2pdf.bundle.min.js"></script>
+  <script src="/assets/sopal-v2/sopal-v2.js?v=20260511-4" defer></script>
 </body>
 </html>
