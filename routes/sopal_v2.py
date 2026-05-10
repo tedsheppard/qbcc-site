@@ -2,20 +2,24 @@
 
 This module intentionally does not alter existing live Sopal routes. It serves
 the single-page prototype at /sopal-v2/* and exposes only /api/sopal-v2/*
-endpoints for prototype AI calls.
+endpoints for prototype AI calls plus the per-user project persistence layer
+under /api/sopal-v2/projects/*.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import io
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
+from jose import JWTError, jwt
 from pydantic import BaseModel, Field
 
 
@@ -24,6 +28,148 @@ SOPAL_V2_PAGE = ROOT / "site" / "sopal-v2.html"
 
 page_router = APIRouter(tags=["sopal-v2-page"])
 router = APIRouter(prefix="/api/sopal-v2", tags=["sopal-v2"])
+
+
+# ---------- Per-user project persistence ----------
+#
+# Sopal v2's SPA is local-first (projects live in the browser's localStorage)
+# but a paid user expects their work to survive a browser reset and to follow
+# them across devices. This block adds a light-touch persistence layer over
+# the existing purchases.db sqlite database, keyed by the same purchase user
+# email that the marketing site authenticates with.
+#
+# The client opts into syncing by sending its purchase_token JWT in the
+# Authorization header. Anonymous requests are rejected so we never
+# accidentally store one user's project under another user's email.
+
+_SECRET_KEY = os.getenv("LEXIFILE_SECRET_KEY", "dev-secret-key")
+_JWT_ALGORITHM = "HS256"
+_USE_PERSISTENT_DISK = os.path.isdir("/var/data") and os.access("/var/data", os.W_OK)
+_PURCHASES_DB_PATH = (
+    "/var/data/adjudicator_purchases.db"
+    if _USE_PERSISTENT_DISK
+    else str(ROOT / "_local_data" / "adjudicator_purchases.db")
+)
+os.makedirs(os.path.dirname(_PURCHASES_DB_PATH), exist_ok=True)
+_sopal_v2_con = sqlite3.connect(_PURCHASES_DB_PATH, check_same_thread=False)
+_sopal_v2_con.row_factory = sqlite3.Row
+_sopal_v2_con.execute(
+    """
+    CREATE TABLE IF NOT EXISTS sopal_v2_projects (
+        user_email TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        data TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (user_email, project_id)
+    )
+    """
+)
+_sopal_v2_con.execute(
+    "CREATE INDEX IF NOT EXISTS sopal_v2_projects_user ON sopal_v2_projects(user_email)"
+)
+_sopal_v2_con.commit()
+
+
+def _current_user_email(authorization: str | None = Header(default=None)) -> str:
+    """Decode the purchase_token JWT and return the user's email.
+
+    Returns 401 with a clear message if the token is missing, malformed, or
+    expired. We do not look the user up in purchase_users here because the
+    JWT is signed by the same SECRET_KEY this server uses; if the signature
+    is valid the email is trustworthy for the duration of the token.
+    """
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Sign in to sync this project to your account.")
+    parts = authorization.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Authorization header must be 'Bearer <token>'.")
+    token = parts[1].strip()
+    try:
+        payload = jwt.decode(token, _SECRET_KEY, algorithms=[_JWT_ALGORITHM])
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail=f"Invalid or expired token: {exc}") from exc
+    email = (payload.get("sub") or "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=401, detail="Token is missing the 'sub' email claim.")
+    return email
+
+
+class SopalV2ProjectPut(BaseModel):
+    """Body for PUT /projects/{id}. The whole project blob is sent up.
+
+    The server treats the blob as opaque JSON; the SPA owns the schema.
+    Cap the payload at 5 MB to keep accidental runaways out of the DB.
+    """
+
+    data: dict[str, Any]
+
+
+@router.get("/projects")
+def list_projects(email: str = Depends(_current_user_email)) -> dict[str, Any]:
+    """Return the lightweight index of every project for the current user.
+
+    The full data blob is NOT included to keep the response small. Use
+    GET /projects/{id} to pull a single project's full content.
+    """
+    rows = _sopal_v2_con.execute(
+        "SELECT project_id, updated_at, length(data) AS size_bytes FROM sopal_v2_projects WHERE user_email = ? ORDER BY updated_at DESC",
+        (email,),
+    ).fetchall()
+    return {
+        "projects": [
+            {"id": r["project_id"], "updatedAt": r["updated_at"], "sizeBytes": r["size_bytes"]}
+            for r in rows
+        ]
+    }
+
+
+@router.get("/projects/{project_id}")
+def get_project(project_id: str, email: str = Depends(_current_user_email)) -> dict[str, Any]:
+    row = _sopal_v2_con.execute(
+        "SELECT data, updated_at FROM sopal_v2_projects WHERE user_email = ? AND project_id = ?",
+        (email, project_id),
+    ).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Project not found for this user.")
+    try:
+        data = json.loads(row["data"])
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Stored project blob is corrupted.")
+    return {"id": project_id, "updatedAt": row["updated_at"], "data": data}
+
+
+@router.put("/projects/{project_id}")
+def upsert_project(
+    project_id: str,
+    payload: SopalV2ProjectPut,
+    email: str = Depends(_current_user_email),
+) -> dict[str, Any]:
+    if not project_id or len(project_id) > 128:
+        raise HTTPException(status_code=400, detail="project_id must be 1 to 128 characters.")
+    blob = json.dumps(payload.data, separators=(",", ":"), ensure_ascii=False)
+    if len(blob.encode("utf-8")) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Project blob is over the 5 MB cap.")
+    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    _sopal_v2_con.execute(
+        """
+        INSERT INTO sopal_v2_projects (user_email, project_id, data, updated_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(user_email, project_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at
+        """,
+        (email, project_id, blob, now),
+    )
+    _sopal_v2_con.commit()
+    return {"id": project_id, "updatedAt": now, "sizeBytes": len(blob)}
+
+
+@router.delete("/projects/{project_id}")
+def delete_project(project_id: str, email: str = Depends(_current_user_email)) -> dict[str, Any]:
+    cur = _sopal_v2_con.execute(
+        "DELETE FROM sopal_v2_projects WHERE user_email = ? AND project_id = ?",
+        (email, project_id),
+    )
+    _sopal_v2_con.commit()
+    return {"deleted": cur.rowcount}
 
 
 @page_router.get("/sopal-v2", include_in_schema=False)
