@@ -3324,7 +3324,7 @@ Total\t${formatCurrencyFull(total)}`;
               <textarea class="text-area" data-aa-text="paymentClaim" rows="8" placeholder="Or paste the payment claim text here…">${escapeHtml(pc ? pc.text : "")}</textarea>
             </div>
             <div class="aa-doc-slot ${scenario.psOptional ? "aa-doc-slot-optional" : ""}">
-              <label class="aa-doc-label">Payment Schedule${scenario.psOptional ? " (none received — optional)" : ""}</label>
+              <label class="aa-doc-label">Payment Schedule${scenario.psOptional ? " (none received, optional)" : ""}</label>
               ${scenario.psOptional ? `<p class="muted aa-doc-help">No PS was given by the respondent in the s 76 window. Leave this blank; Sopal will frame the application accordingly.</p>` : ""}
               <div class="file-zone">
                 <label class="file-zone-label">${ICON.upload}<span>Click or drop a PDF / DOCX / TXT</span><input type="file" data-aa-file="paymentSchedule" accept=".pdf,.docx,.txt"></label>
@@ -4749,7 +4749,7 @@ Total\t${formatCurrencyFull(total)}`;
     function clearStatus() { if (status) { status.hidden = true; status.innerHTML = ""; } }
 
     if (!candidates.length) {
-      setStatus(`<span class="muted">Nothing to draft yet — answer at least one RFI on a thread first.</span>`);
+      setStatus(`<span class="muted">Nothing to draft yet. Answer at least one RFI on a thread first.</span>`);
       setTimeout(clearStatus, 4000);
       return;
     }
@@ -4803,7 +4803,7 @@ Total\t${formatCurrencyFull(total)}`;
       saveProject(project);
     }));
     if (failed) {
-      setStatus(`<span class="muted">Drafted ${done} of ${candidates.length}. ${failed} failed — try Draft again on the affected items.</span>`);
+      setStatus(`<span class="muted">Drafted ${done} of ${candidates.length}. ${failed} failed; try Draft again on the affected items.</span>`);
     } else {
       setStatus(`<span class="muted">Drafted ${done} of ${candidates.length}.</span>`);
     }
@@ -5869,7 +5869,7 @@ Total\t${formatCurrencyFull(total)}`;
                 const c = (h.analysis && h.analysis.counts) || { fail: 0, warn: 0, info: 0, pass: 0 };
                 const date = h.savedAt ? new Date(h.savedAt) : null;
                 const stamp = date && !isNaN(date) ? date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : `Run ${i + 1}`;
-                return `<option value="${i}">${escapeHtml(stamp)} — ${c.fail || 0} issues · ${c.warn || 0} warnings · ${c.pass || 0} passed</option>`;
+                return `<option value="${i}">${escapeHtml(stamp)} · ${c.fail || 0} issues · ${c.warn || 0} warnings · ${c.pass || 0} passed</option>`;
               }).join("")}
             </select>
           </div>
@@ -7014,7 +7014,7 @@ Total\t${formatCurrencyFull(total)}`;
               ${escapeHtml(j.label)}${j.supported ? "" : '<span class="jurisdiction-tag" aria-label="Limited support">·</span>'}
             </button>`).join("")}
         </div>
-        ${jur.supported ? "" : `<span class="jurisdiction-warn muted">${escapeHtml(jur.full)} sources aren't yet integrated. Answers rely on general knowledge only — verify against the local act before relying.</span>`}
+        ${jur.supported ? "" : `<span class="jurisdiction-warn muted">${escapeHtml(jur.full)} sources aren't yet integrated. Answers rely on general knowledge only; verify against the local act before relying.</span>`}
       </div>`;
     return PageBody(`
       <div class="page-shell chat-shell">
