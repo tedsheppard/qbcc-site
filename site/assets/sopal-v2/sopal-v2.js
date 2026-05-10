@@ -1053,12 +1053,23 @@
     const tools = toolsNav();
     const projects = projectList();
     const recent = (store.recentDecisions || []).slice(0, 6);
+    // Contextual greeting based on auth state. Falls back to the generic
+    // "Welcome to Sopal v2" until the auth check has resolved.
+    const auth = window.SopalAuth;
+    const greeting = (() => {
+      if (auth && auth.state === "authed" && auth.user) {
+        const first = (auth.user.first_name || "").trim();
+        const display = first || (auth.user.email ? auth.user.email.split("@")[0] : "");
+        if (display) return `Welcome back, ${escapeHtml(display)}`;
+      }
+      return "Welcome to Sopal v2";
+    })();
     return PageBody(`
       <div class="home-shell">
         <section class="home-hero">
           <div class="home-hero-row">
             <div>
-              <h2>Welcome to Sopal v2</h2>
+              <h2>${greeting}</h2>
               <p>Search adjudication decisions, run BIF Act calculators, and manage SOPA workflows project by project.</p>
             </div>
             <button class="ghost-button compact whatsnew-btn" type="button" data-open-whatsnew title="See recent feature releases">${ICON.sparkles}<span>What's new</span></button>
