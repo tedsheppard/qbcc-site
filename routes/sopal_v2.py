@@ -50,24 +50,40 @@ _PURCHASES_DB_PATH = (
     if _USE_PERSISTENT_DISK
     else str(ROOT / "_local_data" / "adjudicator_purchases.db")
 )
-os.makedirs(os.path.dirname(_PURCHASES_DB_PATH), exist_ok=True)
-_sopal_v2_con = sqlite3.connect(_PURCHASES_DB_PATH, check_same_thread=False)
-_sopal_v2_con.row_factory = sqlite3.Row
-_sopal_v2_con.execute(
-    """
-    CREATE TABLE IF NOT EXISTS sopal_v2_projects (
-        user_email TEXT NOT NULL,
-        project_id TEXT NOT NULL,
-        data TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        PRIMARY KEY (user_email, project_id)
+# DB init is wrapped in a try/except so that, in the worst case where the
+# disk path is not writable on a particular deploy, the server still boots
+# and the rest of the prototype keeps working. The persistence endpoints
+# below check `_sopal_v2_con` is not None before touching the DB and return
+# a 503 if persistence is offline.
+_sopal_v2_con: sqlite3.Connection | None = None
+try:
+    os.makedirs(os.path.dirname(_PURCHASES_DB_PATH), exist_ok=True)
+    _conn = sqlite3.connect(_PURCHASES_DB_PATH, check_same_thread=False)
+    _conn.row_factory = sqlite3.Row
+    _conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sopal_v2_projects (
+            user_email TEXT NOT NULL,
+            project_id TEXT NOT NULL,
+            data TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (user_email, project_id)
+        )
+        """
     )
-    """
-)
-_sopal_v2_con.execute(
-    "CREATE INDEX IF NOT EXISTS sopal_v2_projects_user ON sopal_v2_projects(user_email)"
-)
-_sopal_v2_con.commit()
+    _conn.execute(
+        "CREATE INDEX IF NOT EXISTS sopal_v2_projects_user ON sopal_v2_projects(user_email)"
+    )
+    _conn.commit()
+    _sopal_v2_con = _conn
+except Exception as _exc:  # pragma: no cover - defensive, runs once at boot
+    print(f"[sopal_v2] WARNING: project persistence offline ({_exc}); endpoints will return 503.")
+
+
+def _require_persistence() -> sqlite3.Connection:
+    if _sopal_v2_con is None:
+        raise HTTPException(status_code=503, detail="Project persistence is temporarily unavailable.")
+    return _sopal_v2_con
 
 
 def _current_user_email(authorization: str | None = Header(default=None)) -> str:
@@ -111,7 +127,7 @@ def list_projects(email: str = Depends(_current_user_email)) -> dict[str, Any]:
     The full data blob is NOT included to keep the response small. Use
     GET /projects/{id} to pull a single project's full content.
     """
-    rows = _sopal_v2_con.execute(
+    rows = _require_persistence().execute(
         "SELECT project_id, updated_at, length(data) AS size_bytes FROM sopal_v2_projects WHERE user_email = ? ORDER BY updated_at DESC",
         (email,),
     ).fetchall()
@@ -125,7 +141,7 @@ def list_projects(email: str = Depends(_current_user_email)) -> dict[str, Any]:
 
 @router.get("/projects/{project_id}")
 def get_project(project_id: str, email: str = Depends(_current_user_email)) -> dict[str, Any]:
-    row = _sopal_v2_con.execute(
+    row = _require_persistence().execute(
         "SELECT data, updated_at FROM sopal_v2_projects WHERE user_email = ? AND project_id = ?",
         (email, project_id),
     ).fetchone()
@@ -150,7 +166,8 @@ def upsert_project(
     if len(blob.encode("utf-8")) > 5 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Project blob is over the 5 MB cap.")
     now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    _sopal_v2_con.execute(
+    con = _require_persistence()
+    con.execute(
         """
         INSERT INTO sopal_v2_projects (user_email, project_id, data, updated_at)
         VALUES (?, ?, ?, ?)
@@ -158,17 +175,18 @@ def upsert_project(
         """,
         (email, project_id, blob, now),
     )
-    _sopal_v2_con.commit()
+    con.commit()
     return {"id": project_id, "updatedAt": now, "sizeBytes": len(blob)}
 
 
 @router.delete("/projects/{project_id}")
 def delete_project(project_id: str, email: str = Depends(_current_user_email)) -> dict[str, Any]:
-    cur = _sopal_v2_con.execute(
+    con = _require_persistence()
+    cur = con.execute(
         "DELETE FROM sopal_v2_projects WHERE user_email = ? AND project_id = ?",
         (email, project_id),
     )
-    _sopal_v2_con.commit()
+    con.commit()
     return {"deleted": cur.rowcount}
 
 
