@@ -7889,7 +7889,14 @@ Total\t${formatCurrencyFull(total)}`;
       if (!parts[1]) return { crumbs: [{ label: "Help and support" }], body: HelpIndexPage() };
       const article = HELP_ARTICLES.find((a) => a.slug === parts[1]);
       if (article) return { crumbs: [{ label: "Help and support", href: "/sopal-v2/help" }, { label: article.title }], body: HelpArticlePage(parts[1]) };
-      return { crumbs: [{ label: "Help and support", href: "/sopal-v2/help" }], body: notFoundPage() };
+      return {
+        crumbs: [{ label: "Help and support", href: "/sopal-v2/help" }],
+        body: notFoundPage({
+          title: "We could not find that help article.",
+          body: "It may have been renamed or removed. Browse the index for the current article list.",
+          cta: `<a class="ghost-button compact" href="/sopal-v2/help" data-nav>Open the help index</a>`,
+        }),
+      };
     }
     if (parts[0] === "projects") {
       if (!parts[1]) return { crumbs: [{ label: "Your projects" }], body: ProjectsListPage() };
@@ -8089,6 +8096,15 @@ Total\t${formatCurrencyFull(total)}`;
     (store.recentDecisions || []).slice(0, 6).forEach((d) => {
       items.push({ section: "Recent decision", label: d.title || d.id, hint: [d.decisionDate, d.adjudicator].filter(Boolean).join(" · "), run: () => navigate(`/sopal-v2/research/decisions/${encodeURIComponent(d.id)}`) });
     });
+
+    // Help articles. Surfacing these in the palette is what makes the help
+    // system actually findable; without them the user has to remember the
+    // sidebar foot link.
+    items.push({ section: "Help", label: "Help and support index", hint: "All articles", run: () => navigate("/sopal-v2/help") });
+    HELP_ARTICLES.forEach((a) => {
+      items.push({ section: "Help", label: a.title, hint: a.summary, run: () => navigate(`/sopal-v2/help/${a.slug}`) });
+    });
+
     return items;
   }
 
