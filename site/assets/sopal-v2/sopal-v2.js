@@ -3704,12 +3704,13 @@ Total\t${formatCurrencyFull(total)}`;
       render: () => {
         const firm = getFirm();
         const dims = firmPageDimensions(firm);
+        const margins = firmPageMargins(firm);
         const accent = firm.accentColour || "#243043";
         const fontStack = firmFontFamily(firm);
         const branded = firmHasBranding(firm) ? "is-branded" : "is-unbranded";
         return `
         <div class="modal-backdrop" data-modal-backdrop>
-          <div class="modal aa-master-modal firm-paper-modal ${branded}" role="dialog" aria-modal="true" style="--firm-accent:${attr(accent)};--firm-page-width:${dims.width}px;--firm-page-height:${dims.height}px;--firm-font:${attr(fontStack)};--firm-page-label:'${dims.label}'">
+          <div class="modal aa-master-modal firm-paper-modal ${branded}" role="dialog" aria-modal="true" style="--firm-accent:${attr(accent)};--firm-page-width:${dims.width}px;--firm-page-height:${dims.height}px;--firm-font:${attr(fontStack)};--firm-page-label:'${dims.label}';--firm-margin-top:${margins.top}px;--firm-margin-right:${margins.right}px;--firm-margin-bottom:${margins.bottom}px;--firm-margin-left:${margins.left}px;">
             <div class="modal-head aa-master-modal-head">
               <h2>Master document <span class="muted firm-page-label-tag">${dims.label}${firmHasBranding(firm) ? "" : " · unbranded"}</span></h2>
               <div class="aa-master-modal-actions">
@@ -5479,6 +5480,12 @@ Total\t${formatCurrencyFull(total)}`;
 
   function DraftingWorkspace(project, agentKey, draftOnly) {
     const draft = getProjectDraft(project, agentKey);
+    const firm = getFirm();
+    const dims = firmPageDimensions(firm);
+    const margins = firmPageMargins(firm);
+    const fontStack = firmFontFamily(firm);
+    const accent = firm.accentColour || "#243043";
+
     const reviewHref = `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=review`;
     const tabs = draftOnly ? "" : `
       <div class="mode-tabs" role="tablist">
@@ -5495,32 +5502,195 @@ Total\t${formatCurrencyFull(total)}`;
       </div>`;
 
     const ctxCount = project.contracts.length + project.library.length;
+
+    // Word-style font choices — names match what the user expects to see in
+    // Word's font picker, with a CSS fallback chain so the editor still renders
+    // sensibly if a particular font is not installed.
+    const FONT_CHOICES = [
+      { name: "Calibri",          stack: 'Calibri, "Carlito", "Helvetica Neue", Arial, sans-serif' },
+      { name: "Times New Roman",  stack: '"Times New Roman", Times, "Liberation Serif", serif' },
+      { name: "Arial",            stack: 'Arial, "Helvetica Neue", Helvetica, sans-serif' },
+      { name: "Georgia",          stack: 'Georgia, "Source Serif Pro", serif' },
+      { name: "Garamond",         stack: '"EB Garamond", Garamond, "Times New Roman", serif' },
+      { name: "Verdana",          stack: 'Verdana, Geneva, sans-serif' },
+      { name: "Cambria",          stack: 'Cambria, Georgia, serif' },
+      { name: "Source Serif Pro", stack: '"Source Serif Pro", "Times New Roman", Georgia, serif' },
+      { name: "Inter",            stack: 'Inter, "Segoe UI", Roboto, system-ui, sans-serif' },
+    ];
+    const SIZE_CHOICES = [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72];
+    const PALETTE = [
+      "#000000", "#1a1a1a", "#3a3a3a", "#666666", "#a0a0a0", "#d4d4d4", "#ffffff",
+      "#c00000", "#ff0000", "#ffc000", "#ffff00", "#92d050", "#00b050", "#00b0f0",
+      "#0070c0", "#002060", "#7030a0", accent,
+    ];
+    const HIGHLIGHT_PALETTE = ["transparent", "#fff59d", "#a5d6a7", "#90caf9", "#f48fb1", "#ce93d8", "#ffab91", "#bcaaa4", "#ffd54f"];
+
+    const fontOptions = FONT_CHOICES.map((f) => `<option value="${attr(f.stack)}" data-font-name="${attr(f.name)}" style="font-family:${attr(f.stack)}">${escapeHtml(f.name)}</option>`).join("");
+    const sizeOptions = SIZE_CHOICES.map((s) => `<option value="${s}">${s}</option>`).join("");
+    const colorSwatches = PALETTE.map((c) => `<button type="button" class="word-swatch" data-color="${attr(c)}" style="background:${attr(c)}" aria-label="${attr(c)}"></button>`).join("");
+    const highlightSwatches = HIGHLIGHT_PALETTE.map((c) => `<button type="button" class="word-swatch ${c === "transparent" ? "is-clear" : ""}" data-highlight="${attr(c)}" style="background:${attr(c === "transparent" ? "#fff" : c)}" aria-label="${attr(c)}">${c === "transparent" ? "×" : ""}</button>`).join("");
+
+    const firmRunningName = firm.name ? escapeHtml(firm.name) : "";
+    const firmFooterLeft = firm.footerText ? escapeHtml(firm.footerText) : "";
+
     return `
-      <div class="page-shell drafting-shell">
+      <div class="page-shell drafting-shell word-shell"
+           style="--firm-accent:${attr(accent)};--firm-font:${attr(fontStack)};--firm-page-width:${dims.width}px;--firm-page-height:${dims.height}px;--firm-margin-top:${margins.top}px;--firm-margin-right:${margins.right}px;--firm-margin-bottom:${margins.bottom}px;--firm-margin-left:${margins.left}px;">
         ${head}
-        <div class="drafting-toolbar">
-          <div class="drafting-toolbar-left">
-            <button class="ghost-button compact" type="button" data-doc-cmd="bold" title="Bold (⌘B)"><strong>B</strong></button>
-            <button class="ghost-button compact" type="button" data-doc-cmd="italic" title="Italic (⌘I)"><em>I</em></button>
-            <button class="ghost-button compact" type="button" data-doc-cmd="underline" title="Underline (⌘U)"><u>U</u></button>
-            <span class="toolbar-sep"></span>
-            <button class="ghost-button compact" type="button" data-doc-block="h1" title="Heading 1">H1</button>
-            <button class="ghost-button compact" type="button" data-doc-block="h2" title="Heading 2">H2</button>
-            <button class="ghost-button compact" type="button" data-doc-block="p" title="Paragraph">¶</button>
-            <button class="ghost-button compact" type="button" data-doc-cmd="insertUnorderedList" title="Bulleted list">•</button>
-            <button class="ghost-button compact" type="button" data-doc-cmd="insertOrderedList" title="Numbered list">1.</button>
+
+        <div class="word-ribbon" data-word-ribbon>
+          <div class="ribbon-quick-row">
+            <div class="ribbon-quick-left">
+              <button class="ribbon-flat-btn" type="button" data-doc-undo title="Undo (⌘Z)"><span class="rb-glyph">↶</span><span>Undo</span></button>
+              <button class="ribbon-flat-btn" type="button" data-doc-redo title="Redo (⌘⇧Z)"><span class="rb-glyph">↷</span><span>Redo</span></button>
+              <span class="ribbon-quick-sep"></span>
+              <button class="ribbon-flat-btn" type="button" data-doc-find title="Find &amp; replace (⌘F)"><span class="rb-glyph">⌕</span><span>Find</span></button>
+              <span class="ribbon-quick-sep"></span>
+              <span class="ribbon-savestate muted" data-drafting-savestate>Saved</span>
+            </div>
+            <div class="ribbon-quick-right">
+              <span class="ribbon-page-readout" data-page-readout>Page <span data-page-current>1</span> of <span data-page-total>1</span></span>
+              <span class="ribbon-quick-sep"></span>
+              <button class="ribbon-flat-btn" type="button" data-doc-copy title="Copy document HTML">${ICON.copy}<span>Copy</span></button>
+              <button class="ribbon-flat-btn" type="button" data-doc-print title="Print preview">${ICON.file}<span>Print</span></button>
+              <button class="ribbon-flat-btn primary" type="button" data-doc-download title="Download .doc">${ICON.download}<span>.doc</span></button>
+              <button class="ribbon-flat-btn danger" type="button" data-doc-reset title="Reset to blank template">Reset</button>
+            </div>
           </div>
-          <div class="drafting-toolbar-right">
-            <span class="muted drafting-savestate" data-drafting-savestate>Saved</span>
-            <button class="ghost-button compact" type="button" data-doc-copy>${ICON.copy}<span>Copy HTML</span></button>
-            <button class="ghost-button compact" type="button" data-doc-print>${ICON.file}<span>Print preview</span></button>
-            <button class="ghost-button compact" type="button" data-doc-download>${ICON.download}<span>Download .doc</span></button>
-            <button class="ghost-button compact danger" type="button" data-doc-reset title="Reset to blank template">Reset</button>
+
+          <div class="ribbon-main-row">
+            <div class="ribbon-group">
+              <div class="ribbon-group-stack">
+                <div class="ribbon-line ribbon-line-1">
+                  <select class="ribbon-select ribbon-font-select" data-doc-font title="Font family">
+                    ${fontOptions}
+                  </select>
+                  <select class="ribbon-select ribbon-size-select" data-doc-size title="Font size">
+                    ${sizeOptions}
+                  </select>
+                  <button class="ribbon-icon-btn" type="button" data-doc-grow title="Grow font">A<span class="rb-grow">▲</span></button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-shrink title="Shrink font">A<span class="rb-grow">▼</span></button>
+                </div>
+                <div class="ribbon-line ribbon-line-2">
+                  <button class="ribbon-icon-btn rb-bold" type="button" data-doc-cmd="bold" title="Bold (⌘B)"><strong>B</strong></button>
+                  <button class="ribbon-icon-btn rb-italic" type="button" data-doc-cmd="italic" title="Italic (⌘I)"><em>I</em></button>
+                  <button class="ribbon-icon-btn rb-underline" type="button" data-doc-cmd="underline" title="Underline (⌘U)"><u>U</u></button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="subscript" title="Subscript">x<sub>2</sub></button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="superscript" title="Superscript">x<sup>2</sup></button>
+                  <span class="ribbon-color-wrap">
+                    <button class="ribbon-icon-btn rb-color" type="button" data-doc-color-toggle title="Font colour">A<span class="rb-color-bar" data-rb-color-bar style="background:#c00000"></span></button>
+                    <div class="ribbon-color-pop" data-rb-color-pop hidden>${colorSwatches}<button type="button" class="ribbon-color-auto" data-color="auto">Automatic</button></div>
+                  </span>
+                  <span class="ribbon-color-wrap">
+                    <button class="ribbon-icon-btn rb-highlight" type="button" data-doc-highlight-toggle title="Text highlight"><span class="rb-hl-icon">A</span><span class="rb-hl-bar" data-rb-hl-bar style="background:#fff59d"></span></button>
+                    <div class="ribbon-color-pop" data-rb-hl-pop hidden>${highlightSwatches}</div>
+                  </span>
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="removeFormat" title="Clear formatting">A<span class="rb-clear">↺</span></button>
+                </div>
+              </div>
+              <span class="ribbon-group-label">Font</span>
+            </div>
+
+            <div class="ribbon-group">
+              <div class="ribbon-group-stack">
+                <div class="ribbon-line ribbon-line-1">
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="insertUnorderedList" title="Bulleted list">•≡</button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="insertOrderedList" title="Numbered list">1.≡</button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="outdent" title="Decrease indent">←≡</button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="indent" title="Increase indent">→≡</button>
+                  <span class="ribbon-divider-vert"></span>
+                  <select class="ribbon-select ribbon-linespace-select" data-doc-linespace title="Line spacing">
+                    <option value="1.0">1.0</option>
+                    <option value="1.15" selected>1.15</option>
+                    <option value="1.5">1.5</option>
+                    <option value="2.0">2.0</option>
+                    <option value="2.5">2.5</option>
+                    <option value="3.0">3.0</option>
+                  </select>
+                </div>
+                <div class="ribbon-line ribbon-line-2">
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="justifyLeft" title="Align left"><span class="rb-align rb-align-l"></span></button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="justifyCenter" title="Align centre"><span class="rb-align rb-align-c"></span></button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="justifyRight" title="Align right"><span class="rb-align rb-align-r"></span></button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="justifyFull" title="Justify"><span class="rb-align rb-align-j"></span></button>
+                  <span class="ribbon-divider-vert"></span>
+                  <button class="ribbon-icon-btn" type="button" data-doc-cmd="formatBlock" data-doc-block-arg="blockquote" title="Quote">"</button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-hr title="Horizontal line">─</button>
+                </div>
+              </div>
+              <span class="ribbon-group-label">Paragraph</span>
+            </div>
+
+            <div class="ribbon-group">
+              <div class="ribbon-group-stack">
+                <div class="ribbon-line ribbon-line-1">
+                  <select class="ribbon-select ribbon-style-select" data-doc-block-select title="Paragraph style">
+                    <option value="">Style</option>
+                    <option value="h1">Title</option>
+                    <option value="h2">Heading 1</option>
+                    <option value="h3">Heading 2</option>
+                    <option value="h4">Heading 3</option>
+                    <option value="p">Normal</option>
+                  </select>
+                </div>
+                <div class="ribbon-line ribbon-line-2">
+                  <span class="ribbon-style-preview rb-sp-h1">Title</span>
+                  <span class="ribbon-style-preview rb-sp-h2">Heading 1</span>
+                  <span class="ribbon-style-preview rb-sp-p">Normal</span>
+                </div>
+              </div>
+              <span class="ribbon-group-label">Styles</span>
+            </div>
+
+            <div class="ribbon-group">
+              <div class="ribbon-group-stack">
+                <div class="ribbon-line ribbon-line-1">
+                  <button class="ribbon-icon-btn" type="button" data-doc-table title="Insert table">⊞ Table</button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-image title="Insert image">🖼 Image</button>
+                </div>
+                <div class="ribbon-line ribbon-line-2">
+                  <button class="ribbon-icon-btn" type="button" data-doc-page-break title="Insert page break">¶¶ Page break</button>
+                  <button class="ribbon-icon-btn" type="button" data-doc-special title="Special character">Ω</button>
+                </div>
+              </div>
+              <span class="ribbon-group-label">Insert</span>
+            </div>
           </div>
         </div>
-        <div class="drafting-grid">
-          <section class="drafting-doc-card card">
-            <div class="drafting-editor" contenteditable="true" data-drafting-editor spellcheck="true">${draft.html}</div>
+
+        <div class="word-find-bar" data-word-find-bar hidden>
+          <div class="wfb-row">
+            <label>Find <input class="text-input wfb-input" type="text" data-wfb-find></label>
+            <label>Replace <input class="text-input wfb-input" type="text" data-wfb-replace></label>
+            <button class="ghost-button compact" type="button" data-wfb-prev title="Previous">↑</button>
+            <button class="ghost-button compact" type="button" data-wfb-next title="Next">↓</button>
+            <button class="ghost-button compact" type="button" data-wfb-replace-one>Replace</button>
+            <button class="ghost-button compact" type="button" data-wfb-replace-all>Replace all</button>
+            <span class="wfb-status muted" data-wfb-status></span>
+            <button class="icon-button" type="button" data-wfb-close aria-label="Close find">${ICON.close}</button>
+          </div>
+        </div>
+
+        <div class="drafting-grid word-grid">
+          <section class="drafting-doc-card word-doc-card card">
+            <div class="word-canvas" data-word-canvas>
+              <div class="word-page-stack" data-word-page-stack>
+                <article class="word-page" data-word-page>
+                  <div class="word-page-running-header" data-word-running-header>
+                    <span class="wph-name">${firmRunningName}</span>
+                  </div>
+                  <div class="word-page-body">
+                    <div class="drafting-editor word-editor" contenteditable="true" data-drafting-editor spellcheck="true">${draft.html}</div>
+                    <div class="word-page-overlays" data-word-page-overlays aria-hidden="true"></div>
+                  </div>
+                  <div class="word-page-running-footer" data-word-running-footer>
+                    <span class="wpf-left">${firmFooterLeft}</span>
+                    <span class="wpf-right">Page <span data-page-current-foot>1</span> of <span data-page-total-foot>1</span></span>
+                  </div>
+                </article>
+              </div>
+            </div>
           </section>
           <aside class="drafting-chat-card card">
             <header class="drafting-chat-head">
@@ -5586,22 +5756,532 @@ Total\t${formatCurrencyFull(total)}`;
       scheduleSave();
     });
 
-    // Toolbar — uses the legacy execCommand API, which is sufficient for
-    // basic Bold/Italic/Underline/lists in a contenteditable div. Block-type
-    // changes (H1/H2/P) use formatBlock.
-    document.querySelectorAll("[data-doc-cmd]").forEach((btn) => btn.addEventListener("click", (e) => {
-      e.preventDefault();
+    // ---- Word-style toolbar bindings ----------------------------------------
+    // The browser's contenteditable + execCommand surface is enough for the
+    // bulk of Word-style commands (B/I/U/S, sub/sup, lists, alignment, indent,
+    // formatBlock, fontName, fontSize, foreColor, hiliteColor, undo/redo,
+    // removeFormat, insertHTML). For richer features (insertable table, image
+    // upload, find/replace, line spacing, page breaks) we add custom handlers
+    // that operate on the current Selection.
+
+    // Generic exec wrapper — focuses the editor first so the command lands on
+    // the live Selection rather than the ribbon button itself.
+    function exec(cmd, value) {
       editor.focus();
-      document.execCommand(btn.dataset.docCmd, false, null);
+      try { document.execCommand(cmd, false, value === undefined ? null : value); } catch (_) {}
       scheduleSave();
-    }));
-    document.querySelectorAll("[data-doc-block]").forEach((btn) => btn.addEventListener("click", (e) => {
+      requestAnimationFrame(() => { recomputePages(); reflectSelectionState(); });
+    }
+
+    // Restore selection helper — when the user clicks a ribbon control the
+    // editor loses focus, so we cache the selection range on every selection
+    // change inside the editor and restore it before applying the command.
+    let savedRange = null;
+    function captureSelection() {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const r = sel.getRangeAt(0);
+      if (editor.contains(r.commonAncestorContainer)) savedRange = r.cloneRange();
+    }
+    function restoreSelection() {
+      if (!savedRange) return;
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
+    document.addEventListener("selectionchange", () => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const r = sel.getRangeAt(0);
+      if (editor.contains(r.commonAncestorContainer)) savedRange = r.cloneRange();
+    });
+
+    document.querySelectorAll("[data-doc-cmd]").forEach((btn) => btn.addEventListener("mousedown", (e) => {
+      // mousedown so the editor's selection isn't lost when the button is
+      // clicked. We restore + run inside a microtask.
       e.preventDefault();
-      editor.focus();
-      document.execCommand("formatBlock", false, btn.dataset.docBlock);
-      scheduleSave();
+      restoreSelection();
+      const cmd = btn.dataset.docCmd;
+      const arg = btn.dataset.docBlockArg || null;
+      exec(cmd, arg);
     }));
 
+    // Paragraph-style dropdown (Title / Heading 1 / Heading 2 / Heading 3 / Normal).
+    const blockSelect = document.querySelector("[data-doc-block-select]");
+    blockSelect?.addEventListener("change", () => {
+      const v = blockSelect.value;
+      if (!v) return;
+      restoreSelection();
+      exec("formatBlock", v === "p" ? "p" : v);
+      blockSelect.value = "";
+    });
+
+    // Font family — execCommand("fontName", value) wraps the selection in a
+    // <font face=...> tag, which contenteditable supports universally even
+    // though it's deprecated. We accept the full CSS stack as the value so
+    // that fallbacks render when the named font isn't installed.
+    const fontSelect = document.querySelector("[data-doc-font]");
+    if (fontSelect) {
+      // Default to firm body font so new docs pick up the user's choice.
+      const firmStack = firmFontFamily(getFirm());
+      const matchOpt = Array.from(fontSelect.options).find((o) => o.value.toLowerCase() === firmStack.toLowerCase());
+      fontSelect.value = matchOpt ? matchOpt.value : fontSelect.options[0].value;
+      // Apply default to the editor so the cursor inherits it before any
+      // text is typed.
+      editor.style.fontFamily = fontSelect.value;
+      fontSelect.addEventListener("change", () => {
+        restoreSelection();
+        exec("fontName", fontSelect.value);
+        editor.style.fontFamily = fontSelect.value;
+      });
+    }
+
+    // Font size — execCommand("fontSize") only accepts 1..7 buckets, which
+    // is too coarse. We instead wrap the selection in a <span style="font-size:Npt">
+    // by inserting HTML, preserving any existing inline formatting on the
+    // selected text where possible.
+    const sizeSelect = document.querySelector("[data-doc-size]");
+    if (sizeSelect) {
+      sizeSelect.value = "12";
+      sizeSelect.addEventListener("change", () => {
+        restoreSelection();
+        applyFontSize(sizeSelect.value + "pt");
+      });
+    }
+    function applyFontSize(size) {
+      editor.focus();
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      // Use the legacy fontSize bucket then rewrite font tags to spans with
+      // the precise pt size. Browser-native enough to keep undo working.
+      document.execCommand("fontSize", false, "7");
+      editor.querySelectorAll('font[size="7"]').forEach((node) => {
+        const span = document.createElement("span");
+        span.style.fontSize = size;
+        while (node.firstChild) span.appendChild(node.firstChild);
+        node.replaceWith(span);
+      });
+      scheduleSave();
+      requestAnimationFrame(recomputePages);
+    }
+
+    document.querySelector("[data-doc-grow]")?.addEventListener("click", () => {
+      restoreSelection();
+      const cur = parseInt(sizeSelect?.value || "12", 10);
+      const next = Math.min(72, cur + 2);
+      if (sizeSelect) sizeSelect.value = String(next);
+      applyFontSize(next + "pt");
+    });
+    document.querySelector("[data-doc-shrink]")?.addEventListener("click", () => {
+      restoreSelection();
+      const cur = parseInt(sizeSelect?.value || "12", 10);
+      const next = Math.max(8, cur - 2);
+      if (sizeSelect) sizeSelect.value = String(next);
+      applyFontSize(next + "pt");
+    });
+
+    // Font color and highlight — popovers with palette swatches. Clicking a
+    // swatch applies it via execCommand and updates the indicator bar on
+    // the toolbar button so the user can re-apply with one click.
+    const colorPop = document.querySelector("[data-rb-color-pop]");
+    const colorBar = document.querySelector("[data-rb-color-bar]");
+    document.querySelector("[data-doc-color-toggle]")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      // Bare click (not on the chevron) just re-applies the current colour.
+      if (colorBar && colorBar.dataset.lastColor) {
+        restoreSelection();
+        exec("foreColor", colorBar.dataset.lastColor);
+        return;
+      }
+      togglePop(colorPop);
+    });
+    colorPop?.addEventListener("click", (e) => {
+      const target = e.target.closest("[data-color]");
+      if (!target) return;
+      const c = target.dataset.color;
+      restoreSelection();
+      if (c === "auto") {
+        exec("foreColor", "#1a1a1a");
+        if (colorBar) { colorBar.style.background = "#1a1a1a"; colorBar.dataset.lastColor = "#1a1a1a"; }
+      } else {
+        exec("foreColor", c);
+        if (colorBar) { colorBar.style.background = c; colorBar.dataset.lastColor = c; }
+      }
+      hidePop(colorPop);
+    });
+
+    const hlPop = document.querySelector("[data-rb-hl-pop]");
+    const hlBar = document.querySelector("[data-rb-hl-bar]");
+    document.querySelector("[data-doc-highlight-toggle]")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (hlBar && hlBar.dataset.lastColor) {
+        restoreSelection();
+        applyHighlight(hlBar.dataset.lastColor);
+        return;
+      }
+      togglePop(hlPop);
+    });
+    hlPop?.addEventListener("click", (e) => {
+      const target = e.target.closest("[data-highlight]");
+      if (!target) return;
+      const c = target.dataset.highlight;
+      restoreSelection();
+      applyHighlight(c);
+      if (hlBar) {
+        hlBar.style.background = c === "transparent" ? "#fff" : c;
+        hlBar.dataset.lastColor = c;
+      }
+      hidePop(hlPop);
+    });
+
+    function applyHighlight(color) {
+      editor.focus();
+      // hiliteColor works in Firefox; backColor is the cross-browser fallback.
+      // Try hiliteColor first via execCommand("styleWithCSS"); on transparent
+      // we need to remove the wrapping <span style="background:...">.
+      try { document.execCommand("styleWithCSS", false, true); } catch (_) {}
+      if (color === "transparent") {
+        document.execCommand("hiliteColor", false, "transparent");
+      } else {
+        document.execCommand("hiliteColor", false, color);
+      }
+      scheduleSave();
+      requestAnimationFrame(recomputePages);
+    }
+
+    function togglePop(el) {
+      if (!el) return;
+      document.querySelectorAll(".ribbon-color-pop").forEach((p) => { if (p !== el) p.hidden = true; });
+      el.hidden = !el.hidden;
+    }
+    function hidePop(el) { if (el) el.hidden = true; }
+    document.addEventListener("click", (e) => {
+      if (e.target.closest(".ribbon-color-wrap")) return;
+      document.querySelectorAll(".ribbon-color-pop").forEach((p) => p.hidden = true);
+    });
+
+    // Line spacing — applies to the block containing the current selection.
+    const lineSelect = document.querySelector("[data-doc-linespace]");
+    lineSelect?.addEventListener("change", () => {
+      restoreSelection();
+      editor.focus();
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      // Walk up to the nearest block element from the selection's start; if
+      // a range spans multiple blocks, apply to all blocks the range touches.
+      const blocks = blocksInRange(range, editor);
+      blocks.forEach((b) => { b.style.lineHeight = lineSelect.value; });
+      scheduleSave();
+      requestAnimationFrame(recomputePages);
+    });
+
+    function blocksInRange(range, root) {
+      const startBlock = nearestBlock(range.startContainer, root);
+      const endBlock = nearestBlock(range.endContainer, root);
+      if (startBlock === endBlock) return [startBlock].filter(Boolean);
+      const all = Array.from(root.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, blockquote, pre"));
+      const startIdx = all.indexOf(startBlock);
+      const endIdx = all.indexOf(endBlock);
+      if (startIdx === -1 || endIdx === -1) return [startBlock, endBlock].filter(Boolean);
+      return all.slice(startIdx, endIdx + 1);
+    }
+    function nearestBlock(node, root) {
+      let n = node;
+      while (n && n !== root) {
+        if (n.nodeType === 1) {
+          const tag = n.tagName.toLowerCase();
+          if (["p","h1","h2","h3","h4","h5","h6","li","blockquote","pre","div"].includes(tag)) return n;
+        }
+        n = n.parentNode;
+      }
+      return null;
+    }
+
+    // Insert table — small dialog asks for rows and cols (defaults 3x3),
+    // inserts a clean <table> with empty cells at the cursor position.
+    document.querySelector("[data-doc-table]")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      restoreSelection();
+      const cols = Math.max(1, Math.min(20, parseInt(prompt("Columns?", "3") || "0", 10)));
+      if (!cols) return;
+      const rows = Math.max(1, Math.min(50, parseInt(prompt("Rows?", "3") || "0", 10)));
+      if (!rows) return;
+      let html = '<table style="width:100%; border-collapse:collapse; margin:8px 0;">';
+      for (let r = 0; r < rows; r++) {
+        html += "<tr>";
+        for (let c = 0; c < cols; c++) {
+          const cell = r === 0 ? "th" : "td";
+          html += `<${cell} style="border:1pt solid #888; padding:5px 8px;">&nbsp;</${cell}>`;
+        }
+        html += "</tr>";
+      }
+      html += "</table><p>&nbsp;</p>";
+      restoreSelection();
+      editor.focus();
+      document.execCommand("insertHTML", false, html);
+      scheduleSave();
+      requestAnimationFrame(recomputePages);
+    });
+
+    // Insert image — prompts for a file, embeds as data URL. Capped at ~2MB
+    // so the autosave payload stays manageable.
+    document.querySelector("[data-doc-image]")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      restoreSelection();
+      const inp = document.createElement("input");
+      inp.type = "file";
+      inp.accept = "image/png,image/jpeg,image/gif,image/webp";
+      inp.addEventListener("change", () => {
+        const file = inp.files && inp.files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+          alert("Image is over 2 MB. Please use a smaller version (Sopal embeds images directly into the document, so very large files bloat the .doc export).");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          restoreSelection();
+          editor.focus();
+          const html = `<img src="${reader.result}" alt="" style="max-width:100%; height:auto; margin:6px 0;">`;
+          document.execCommand("insertHTML", false, html);
+          scheduleSave();
+          requestAnimationFrame(recomputePages);
+        };
+        reader.readAsDataURL(file);
+      });
+      inp.click();
+    });
+
+    document.querySelector("[data-doc-hr]")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      restoreSelection();
+      exec("insertHorizontalRule");
+    });
+
+    document.querySelector("[data-doc-page-break]")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      restoreSelection();
+      editor.focus();
+      // Visible "manual page break" — a div with a custom class that the
+      // pagination layout treats as a hard break. The .doc export passes it
+      // through as a Word page break via mso-page-break.
+      const html = '<div class="manual-page-break" style="page-break-before:always; mso-special-character:line-break;">&nbsp;</div><p>&nbsp;</p>';
+      document.execCommand("insertHTML", false, html);
+      scheduleSave();
+      requestAnimationFrame(recomputePages);
+    });
+
+    document.querySelector("[data-doc-special]")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      const ch = prompt("Insert special character (e.g. § © ¶ ™ ↗ ✓ Ω π ½ ¼ £ €)", "§");
+      if (!ch) return;
+      restoreSelection();
+      editor.focus();
+      document.execCommand("insertText", false, ch);
+      scheduleSave();
+    });
+
+    // Undo / Redo — use the browser's native contenteditable history.
+    document.querySelector("[data-doc-undo]")?.addEventListener("click", () => exec("undo"));
+    document.querySelector("[data-doc-redo]")?.addEventListener("click", () => exec("redo"));
+
+    // ---- Find & Replace ----------------------------------------------------
+    const findBar = document.querySelector("[data-word-find-bar]");
+    const findInput = document.querySelector("[data-wfb-find]");
+    const replaceInput = document.querySelector("[data-wfb-replace]");
+    const findStatus = document.querySelector("[data-wfb-status]");
+    let findMatches = [];
+    let findIdx = -1;
+    function runFind() {
+      const q = (findInput?.value || "").trim();
+      findMatches = [];
+      findIdx = -1;
+      clearFindHighlights();
+      if (!q) { if (findStatus) findStatus.textContent = ""; return; }
+      const lc = q.toLowerCase();
+      // Walk text nodes and collect ranges. We mark them with <mark class=wfb-match>
+      // for visibility; this is reverted on close.
+      const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      let n;
+      while ((n = walker.nextNode())) nodes.push(n);
+      nodes.forEach((tn) => {
+        const text = tn.nodeValue;
+        const tl = text.toLowerCase();
+        let from = 0;
+        let idx;
+        while ((idx = tl.indexOf(lc, from)) !== -1) {
+          const range = document.createRange();
+          range.setStart(tn, idx);
+          range.setEnd(tn, idx + lc.length);
+          findMatches.push(range);
+          from = idx + lc.length;
+        }
+      });
+      // Visually mark by wrapping; iterate in reverse so ranges remain valid.
+      findMatches.slice().reverse().forEach((r) => {
+        const mark = document.createElement("mark");
+        mark.className = "wfb-match";
+        try { r.surroundContents(mark); } catch (_) {}
+      });
+      if (findStatus) findStatus.textContent = findMatches.length ? `${findMatches.length} match${findMatches.length === 1 ? "" : "es"}` : "No matches";
+      // Refresh ranges from the live <mark> elements (the surroundContents
+      // above invalidates the original Range objects).
+      findMatches = Array.from(editor.querySelectorAll("mark.wfb-match"));
+      if (findMatches.length) gotoFindMatch(0);
+    }
+    function clearFindHighlights() {
+      editor.querySelectorAll("mark.wfb-match").forEach((m) => {
+        const parent = m.parentNode;
+        while (m.firstChild) parent.insertBefore(m.firstChild, m);
+        parent.removeChild(m);
+        parent.normalize();
+      });
+    }
+    function gotoFindMatch(i) {
+      if (!findMatches.length) return;
+      findIdx = ((i % findMatches.length) + findMatches.length) % findMatches.length;
+      findMatches.forEach((m, k) => m.classList.toggle("is-active", k === findIdx));
+      const target = findMatches[findIdx];
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    document.querySelector("[data-doc-find]")?.addEventListener("click", () => {
+      if (!findBar) return;
+      findBar.hidden = false;
+      findInput?.focus();
+    });
+    findInput?.addEventListener("input", runFind);
+    document.querySelector("[data-wfb-next]")?.addEventListener("click", () => gotoFindMatch(findIdx + 1));
+    document.querySelector("[data-wfb-prev]")?.addEventListener("click", () => gotoFindMatch(findIdx - 1));
+    document.querySelector("[data-wfb-replace-one]")?.addEventListener("click", () => {
+      if (findIdx < 0 || findIdx >= findMatches.length) return;
+      const node = findMatches[findIdx];
+      const replacement = replaceInput?.value || "";
+      const text = document.createTextNode(replacement);
+      node.replaceWith(text);
+      scheduleSave();
+      runFind();
+    });
+    document.querySelector("[data-wfb-replace-all]")?.addEventListener("click", () => {
+      if (!findMatches.length) return;
+      const replacement = replaceInput?.value || "";
+      findMatches.forEach((m) => m.replaceWith(document.createTextNode(replacement)));
+      scheduleSave();
+      runFind();
+      requestAnimationFrame(recomputePages);
+    });
+    document.querySelector("[data-wfb-close]")?.addEventListener("click", () => {
+      clearFindHighlights();
+      findMatches = []; findIdx = -1;
+      if (findStatus) findStatus.textContent = "";
+      if (findBar) findBar.hidden = true;
+    });
+    // ⌘F in the editor opens find.
+    editor.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        document.querySelector("[data-doc-find]")?.click();
+      }
+    });
+
+    // ---- Pagination overlays + page count ---------------------------------
+    // We don't actually split the contenteditable into separate page DOM
+    // nodes (that breaks selection across pages and is fragile to keep in
+    // sync). Instead the editor is one tall white sheet, and we draw
+    // horizontal "page break" rules + per-page "Page N of M" mini-footers
+    // as absolutely-positioned overlays at every page-content-height
+    // interval. Visually it reads as a stack of pages with content flowing
+    // between them; structurally it's one contenteditable.
+    const overlays = document.querySelector("[data-word-page-overlays]");
+    const pageCurrentEls = document.querySelectorAll("[data-page-current], [data-page-current-foot]");
+    const pageTotalEls = document.querySelectorAll("[data-page-total], [data-page-total-foot]");
+    let recomputeTimer = null;
+    function recomputePages() {
+      if (!overlays) return;
+      clearTimeout(recomputeTimer);
+      recomputeTimer = setTimeout(_recomputePages, 80);
+    }
+    function _recomputePages() {
+      const firmNow = getFirm();
+      const dimsNow = firmPageDimensions(firmNow);
+      const marginsNow = firmPageMargins(firmNow);
+      // Each page's content area = page height − running header/footer strips
+      // − top/bottom margins. This is the visual height between page-break
+      // dividers in the editor.
+      const contentH = Math.max(200, dimsNow.height - 56 - marginsNow.top - marginsNow.bottom);
+      const editorH = editor.scrollHeight || editor.offsetHeight;
+      // Inner content height (between the editor's own top + bottom padding
+      // which mirror the page margins).
+      const innerH = Math.max(0, editorH - marginsNow.top - marginsNow.bottom);
+      const total = Math.max(1, Math.ceil(innerH / contentH));
+      pageTotalEls.forEach((el) => { el.textContent = String(total); });
+      // Draw the dividers — at y = top-margin + i × contentH — measured in
+      // editor coordinates (overlays are positioned relative to the editor's
+      // .word-page-body parent which starts at the editor's top).
+      let html = "";
+      for (let i = 1; i < total; i++) {
+        const y = marginsNow.top + i * contentH;
+        html += `<div class="word-page-divider" style="top:${y}px"><span class="wpd-label">End of page ${i} · Page ${i + 1}</span></div>`;
+      }
+      overlays.innerHTML = html;
+      overlays.style.height = `${editorH}px`;
+      updateCurrentPage(contentH, marginsNow.top);
+    }
+    function updateCurrentPage(contentH, marginTop) {
+      let y = 0;
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const r = sel.getRangeAt(0);
+        if (editor.contains(r.commonAncestorContainer)) {
+          const caretRect = r.getBoundingClientRect();
+          const editorRect = editor.getBoundingClientRect();
+          if (caretRect && caretRect.top) {
+            // Caret y in editor coordinates (i.e. inside the editor element,
+            // which already includes padding-top = margin-top).
+            y = (caretRect.top - editorRect.top);
+          }
+        }
+      }
+      // Subtract the top margin so y=0 means "first line of page 1".
+      const innerY = Math.max(0, y - (marginTop || 0));
+      const cur = Math.max(1, Math.floor(innerY / contentH) + 1);
+      pageCurrentEls.forEach((el) => { el.textContent = String(cur); });
+    }
+    // Debounced recompute on input, immediate on caret moves and resize.
+    editor.addEventListener("input", () => recomputePages());
+    function caretPagePing() {
+      const m = firmPageMargins(getFirm());
+      const d = firmPageDimensions(getFirm());
+      const contentH = Math.max(200, d.height - 56 - m.top - m.bottom);
+      updateCurrentPage(contentH, m.top);
+    }
+    editor.addEventListener("keyup", caretPagePing);
+    editor.addEventListener("click", caretPagePing);
+    window.addEventListener("resize", recomputePages);
+    // Initial paint after layout.
+    requestAnimationFrame(recomputePages);
+    // Recompute again once fonts have loaded — letters of different fonts
+    // change line wrapping which changes the page boundaries.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => recomputePages()).catch(() => {});
+    }
+
+    // ---- Reflect selection state into ribbon controls ----------------------
+    function reflectSelectionState() {
+      const cmds = ["bold", "italic", "underline", "strikeThrough"];
+      cmds.forEach((c) => {
+        const btn = document.querySelector(`[data-doc-cmd="${c}"]`);
+        if (!btn) return;
+        try {
+          btn.classList.toggle("is-active", document.queryCommandState(c));
+        } catch (_) {}
+      });
+    }
+    editor.addEventListener("keyup", reflectSelectionState);
+    editor.addEventListener("mouseup", reflectSelectionState);
+
+    // ---- File actions ------------------------------------------------------
     document.querySelector("[data-doc-copy]")?.addEventListener("click", () => {
       copyText(editor.innerHTML);
     });
@@ -7817,6 +8497,15 @@ Total\t${formatCurrencyFull(total)}`;
               </select>
             </label>
             <label class="firm-field">
+              <span>Page margins</span>
+              <select class="select-input" name="pageMargin">
+                <option value="narrow" ${firm.pageMargin === "narrow" ? "selected" : ""}>Narrow (1.27 cm)</option>
+                <option value="moderate" ${firm.pageMargin === "moderate" ? "selected" : ""}>Moderate (1.91 cm)</option>
+                <option value="normal" ${(firm.pageMargin === "normal" || !firm.pageMargin) ? "selected" : ""}>Normal (2.54 cm)</option>
+                <option value="wide" ${firm.pageMargin === "wide" ? "selected" : ""}>Wide (5.08 cm)</option>
+              </select>
+            </label>
+            <label class="firm-field">
               <span>Heading numbering</span>
               <select class="select-input" name="headingNumbering">
                 <option value="decimal" ${firm.headingNumbering === "decimal" ? "selected" : ""}>1, 2, 3</option>
@@ -7964,6 +8653,7 @@ Total\t${formatCurrencyFull(total)}`;
         footerText: String(fd.get("footerText") || "").trim(),
         bodyFont: String(fd.get("bodyFont") || "serif"),
         pageSize: String(fd.get("pageSize") || "a4"),
+        pageMargin: String(fd.get("pageMargin") || "normal"),
         accentColour: String(fd.get("accentColour") || "#243043"),
         headingNumbering: String(fd.get("headingNumbering") || "decimal"),
       };
@@ -7978,7 +8668,7 @@ Total\t${formatCurrencyFull(total)}`;
 
     // Live-update the preview without blowing away the form's focus.
     form.addEventListener("change", (event) => {
-      if (event.target && event.target.matches('input[name="accentColour"], select[name="bodyFont"], select[name="pageSize"], select[name="headingNumbering"]')) {
+      if (event.target && event.target.matches('input[name="accentColour"], select[name="bodyFont"], select[name="pageSize"], select[name="pageMargin"], select[name="headingNumbering"]')) {
         const fd = new FormData(form);
         const previewFirm = {
           ...getFirm(),
@@ -7987,6 +8677,7 @@ Total\t${formatCurrencyFull(total)}`;
           footerText: String(fd.get("footerText") || ""),
           bodyFont: String(fd.get("bodyFont") || "serif"),
           pageSize: String(fd.get("pageSize") || "a4"),
+          pageMargin: String(fd.get("pageMargin") || "normal"),
           accentColour: String(fd.get("accentColour") || "#243043"),
           headingNumbering: String(fd.get("headingNumbering") || "decimal"),
         };
@@ -8077,6 +8768,17 @@ Total\t${formatCurrencyFull(total)}`;
     return { width: 794, height: 1123, label: "A4" };
   }
 
+  // Word-style margin presets converted to CSS pixels at 96dpi (1 inch = 96px,
+  // 1 cm ~= 37.795px). Returns { topPx, rightPx, bottomPx, leftPx, label }.
+  function firmPageMargins(firm) {
+    const key = (firm && firm.pageMargin) || "normal";
+    const cmToPx = (cm) => Math.round(cm * 37.7952755906);
+    if (key === "narrow")   return { top: cmToPx(1.27), right: cmToPx(1.27), bottom: cmToPx(1.27), left: cmToPx(1.27), label: "Narrow", cm: "1.27 cm" };
+    if (key === "moderate") return { top: cmToPx(2.54), right: cmToPx(1.91), bottom: cmToPx(2.54), left: cmToPx(1.91), label: "Moderate", cm: "1.91 cm" };
+    if (key === "wide")     return { top: cmToPx(2.54), right: cmToPx(5.08), bottom: cmToPx(2.54), left: cmToPx(5.08), label: "Wide", cm: "5.08 cm" };
+    return { top: cmToPx(2.54), right: cmToPx(2.54), bottom: cmToPx(2.54), left: cmToPx(2.54), label: "Normal", cm: "2.54 cm" };
+  }
+
   function renderFirmHeader(firm, isCover) {
     if (!firmHasBranding(firm)) return "";
     if (isCover) {
@@ -8152,6 +8854,7 @@ Total\t${formatCurrencyFull(total)}`;
   function paintFirmPaperStack(mountEl, contentHtml, firm) {
     if (!mountEl) return;
     const dims = firmPageDimensions(firm);
+    const margins = firmPageMargins(firm);
     const accent = (firm && firm.accentColour) || "#243043";
     const fontStack = firmFontFamily(firm);
 
@@ -8160,9 +8863,8 @@ Total\t${formatCurrencyFull(total)}`;
     // matches when we slice. Padding mirrors `.firm-paper-content`.
     const probe = document.createElement("div");
     probe.className = "firm-paper-probe";
-    // Same content width as the page-content area in CSS — keep this in
-    // sync with .firm-paper-content padding (96px L/R = ~25mm at 96dpi).
-    probe.style.width = `${dims.width - 192}px`;
+    // Content width = page width minus left + right margins from Firm Settings.
+    probe.style.width = `${dims.width - margins.left - margins.right}px`;
     // Match the paginated layout's font + size so measurements line up;
     // without this, switching the firm font from serif to sans would
     // silently drift the page boundaries.
@@ -8235,6 +8937,10 @@ Total\t${formatCurrencyFull(total)}`;
     mountEl.style.setProperty("--firm-page-width", `${dims.width}px`);
     mountEl.style.setProperty("--firm-page-height", `${dims.height}px`);
     mountEl.style.setProperty("--firm-font", fontStack);
+    mountEl.style.setProperty("--firm-margin-top", `${margins.top}px`);
+    mountEl.style.setProperty("--firm-margin-right", `${margins.right}px`);
+    mountEl.style.setProperty("--firm-margin-bottom", `${margins.bottom}px`);
+    mountEl.style.setProperty("--firm-margin-left", `${margins.left}px`);
     mountEl.classList.add("firm-paper-stack");
 
     const html = pages.map((nodes, i) => {
