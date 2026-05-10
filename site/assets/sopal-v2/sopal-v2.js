@@ -7,6 +7,7 @@
 
   const root = document.getElementById("sopal-v2-root");
   const STORE_KEY = "sopal-v2-workspace-v2";
+  const ONBOARD_KEY = "sopal-v2-onboarded";
 
   /* ---------- Static config ---------- */
 
@@ -294,6 +295,7 @@
   let modal = null; // { render(): string, bind(root): void, close(): void }
   let projectMenuOpen = false;
   let sidebarOpen = false;
+  let onboarding = null; // { step, role, contractForm, firmName, firmLogo }
   // Which agents are expanded in the sidebar (shows their drafting instances).
   // Keyed by `${projectId}:${agentKey}`. Not persisted: opens fresh per load.
   const sidebarAgentOpen = new Set();
@@ -8813,8 +8815,11 @@ Total\t${formatCurrencyFull(total)}`;
     }
   }
 
-  function openProjectModal(editId) {
+  function openProjectModal(editId, prefill) {
     const editing = editId ? getProject(editId) : null;
+    const pre = prefill || {};
+    const cfDefault = editing ? editing.contractForm : (pre.contractForm || "");
+    const partyDefault = editing ? editing.userIsParty : (pre.userIsParty || "claimant");
     modal = {
       render: () => `
         <div class="modal-backdrop" data-modal-backdrop>
@@ -8832,7 +8837,7 @@ Total\t${formatCurrencyFull(total)}`;
               <div class="row-2">
                 <label>Contract form
                   <select class="select-input" name="contractForm">
-                    ${CONTRACT_FORMS.map((f) => `<option value="${attr(f)}" ${editing && editing.contractForm === f ? "selected" : ""}>${escapeHtml(f)}</option>`).join("")}
+                    ${CONTRACT_FORMS.map((f) => `<option value="${attr(f)}" ${cfDefault === f ? "selected" : ""}>${escapeHtml(f)}</option>`).join("")}
                   </select>
                 </label>
                 <label>Reference / contract no.<input class="text-input" name="reference" value="${attr(editing?.reference || "")}" placeholder="Reference or contract no."></label>
@@ -8847,8 +8852,8 @@ Total\t${formatCurrencyFull(total)}`;
               <div class="row-2">
                 <label class="span-all">You act for
                   <div class="radio-group">
-                    <label class="radio-option"><input type="radio" name="userIsParty" value="claimant" ${(!editing || editing.userIsParty === "claimant") ? "checked" : ""}>The claimant</label>
-                    <label class="radio-option"><input type="radio" name="userIsParty" value="respondent" ${editing && editing.userIsParty === "respondent" ? "checked" : ""}>The respondent</label>
+                    <label class="radio-option"><input type="radio" name="userIsParty" value="claimant" ${partyDefault === "claimant" ? "checked" : ""}>The claimant</label>
+                    <label class="radio-option"><input type="radio" name="userIsParty" value="respondent" ${partyDefault === "respondent" ? "checked" : ""}>The respondent</label>
                   </div>
                 </label>
               </div>
@@ -10777,6 +10782,297 @@ Total\t${formatCurrencyFull(total)}`;
     return { crumbs: [], body: HomePage() };
   }
 
+  /* ---------- Onboarding ---------- */
+
+  // First-run guided overlay. Fires on first visit (gated on localStorage
+  // ONBOARD_KEY). Six steps, dismissible at any step. Final step opens the
+  // new-project modal pre-filled with the user's role + contract form.
+  function shouldShowOnboarding() {
+    try { return localStorage.getItem(ONBOARD_KEY) !== "1"; } catch (_) { return false; }
+  }
+  function markOnboarded() {
+    try { localStorage.setItem(ONBOARD_KEY, "1"); } catch (_) {}
+  }
+  function startOnboarding() {
+    if (!shouldShowOnboarding()) return;
+    const firm = getFirm();
+    onboarding = {
+      step: 0,
+      role: "",
+      contractForm: "",
+      firmName: firm.name || "",
+      firmLogo: firm.logoDataUrl || "",
+    };
+  }
+  function closeOnboarding() {
+    // Persist any firm typing/upload that happened before the user dismissed,
+    // so partial onboarding still leaves the firm slot populated.
+    if (onboarding) {
+      const firm = getFirm();
+      const patch = {};
+      if (onboarding.firmName && onboarding.firmName !== firm.name) patch.name = onboarding.firmName;
+      if (onboarding.firmLogo && onboarding.firmLogo !== firm.logoDataUrl) patch.logoDataUrl = onboarding.firmLogo;
+      if (Object.keys(patch).length) saveFirm(patch);
+    }
+    onboarding = null;
+    markOnboarded();
+    render();
+  }
+  function nextOnboardStep() { if (onboarding) { onboarding.step += 1; render(); } }
+  function prevOnboardStep() { if (onboarding && onboarding.step > 0) { onboarding.step -= 1; render(); } }
+
+  // Map onboarding choices to the project modal's pre-fill values. Lawyer is
+  // role-agnostic so we leave the party as 'claimant' (the modal still asks).
+  function onboardingPrefill() {
+    if (!onboarding) return null;
+    const cfMap = { "AS 4000": "AS 4000", "AS 4902": "AS 4902", "In-house": "Bespoke", "Other": "Other" };
+    return {
+      userIsParty: onboarding.role === "respondent" ? "respondent" : "claimant",
+      contractForm: cfMap[onboarding.contractForm] || "Bespoke",
+    };
+  }
+
+  function Onboarding() {
+    if (!onboarding) return "";
+    const { step } = onboarding;
+    const totalSteps = 6;
+    return `
+      <div class="onb-backdrop" data-onb-backdrop>
+        <div class="onb-card" role="dialog" aria-modal="true" aria-label="Sopal v2 onboarding">
+          <div class="onb-top">
+            <div class="onb-progress" aria-hidden="true">
+              ${Array.from({ length: totalSteps }, (_, i) => `<span class="onb-dot ${i === step ? "active" : ""} ${i < step ? "done" : ""}"></span>`).join("")}
+            </div>
+            <button class="onb-skip" type="button" data-onb-skip>Skip onboarding</button>
+          </div>
+          <div class="onb-body">
+            ${renderOnboardingStep(step)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderOnboardingStep(step) {
+    if (step === 0) {
+      return `
+        <div class="onb-step welcome">
+          <div class="onb-eyebrow">Welcome</div>
+          <h2>You're in.</h2>
+          <p>Sopal v2 helps you draft adjudication applications, payment claims, EOTs, variations and more under the BIF Act. Project by project, with your contracts and evidence in one place.</p>
+          <p class="onb-muted">Six quick steps. Under a minute. Skip at any time.</p>
+          <div class="onb-actions">
+            <span class="onb-spacer"></span>
+            <button class="dark-button" type="button" data-onb-next>Let's begin</button>
+          </div>
+        </div>
+      `;
+    }
+    if (step === 1) {
+      const role = onboarding.role;
+      const opts = [
+        { id: "claimant", label: "Claimant", sub: "Builder, sub or supplier &mdash; chasing payment." },
+        { id: "respondent", label: "Respondent", sub: "Principal or head contractor &mdash; defending or scheduling." },
+        { id: "lawyer", label: "Lawyer / consultant", sub: "Acting for either side." },
+      ];
+      return `
+        <div class="onb-step">
+          <div class="onb-eyebrow">Step 1 of 6</div>
+          <h2>What's your role?</h2>
+          <p class="onb-muted">We'll preselect this for new projects so drafts come from the right side.</p>
+          <div class="onb-tile-grid one-col">
+            ${opts.map((o) => `
+              <button class="onb-tile ${role === o.id ? "selected" : ""}" type="button" data-onb-role="${attr(o.id)}">
+                <strong>${escapeHtml(o.label)}</strong>
+                <span>${o.sub}</span>
+              </button>`).join("")}
+          </div>
+          <div class="onb-actions">
+            <button class="ghost-button" type="button" data-onb-prev>Back</button>
+            <button class="dark-button" type="button" data-onb-next ${role ? "" : "disabled"}>Continue</button>
+          </div>
+        </div>
+      `;
+    }
+    if (step === 2) {
+      const cf = onboarding.contractForm;
+      const opts = [
+        { id: "AS 4000", sub: "Standard head-contract form." },
+        { id: "AS 4902", sub: "Design and construct." },
+        { id: "In-house", sub: "Bespoke or principal's template." },
+        { id: "Other", sub: "Pick later, or use another standard form." },
+      ];
+      return `
+        <div class="onb-step">
+          <div class="onb-eyebrow">Step 2 of 6</div>
+          <h2>Which contract form do you mostly work on?</h2>
+          <p class="onb-muted">Sopal references the right clauses when drafting. You can change this on any project.</p>
+          <div class="onb-tile-grid two-col">
+            ${opts.map((o) => `
+              <button class="onb-tile ${cf === o.id ? "selected" : ""}" type="button" data-onb-cf="${attr(o.id)}">
+                <strong>${escapeHtml(o.id)}</strong>
+                <span>${escapeHtml(o.sub)}</span>
+              </button>`).join("")}
+          </div>
+          <div class="onb-actions">
+            <button class="ghost-button" type="button" data-onb-prev>Back</button>
+            <button class="dark-button" type="button" data-onb-next ${cf ? "" : "disabled"}>Continue</button>
+          </div>
+        </div>
+      `;
+    }
+    if (step === 3) {
+      const logo = onboarding.firmLogo;
+      return `
+        <div class="onb-step">
+          <div class="onb-eyebrow">Step 3 of 6 &middot; optional</div>
+          <h2>Your firm</h2>
+          <p class="onb-muted">We use your firm name and logo on letterheads when Sopal drafts correspondence. You can skip and add later from Firm Settings.</p>
+          <label class="onb-field">
+            <span>Firm name</span>
+            <input class="text-input" id="onb-firm-name" type="text" value="${attr(onboarding.firmName || "")}" placeholder="e.g. Acme Lawyers">
+          </label>
+          <div class="onb-field">
+            <span>Logo (optional)</span>
+            <div class="onb-logo-row">
+              ${logo ? `<img class="onb-logo-preview" src="${attr(logo)}" alt="Firm logo preview">` : `<div class="onb-logo-placeholder">No logo</div>`}
+              <label class="ghost-button onb-file-button" for="onb-firm-logo">${logo ? "Replace logo" : "Upload logo"}</label>
+              <input id="onb-firm-logo" type="file" accept="image/png,image/jpeg" hidden>
+              ${logo ? `<button class="ghost-button" type="button" data-onb-clear-logo>Remove</button>` : ""}
+            </div>
+          </div>
+          <div class="onb-actions">
+            <button class="ghost-button" type="button" data-onb-prev>Back</button>
+            <button class="dark-button" type="button" data-onb-next>Continue</button>
+          </div>
+        </div>
+      `;
+    }
+    if (step === 4) {
+      const callouts = [
+        { icon: ICON.folder, label: "Projects", body: "Each project is one contract. Drafting agents reuse your contract, library and chat history within that project." },
+        { icon: ICON.sparkles, label: "Drafting agents", body: "Payment Claims, EOTs, Variations, Adjudication Application/Response. Open a project, pick an agent, draft." },
+        { icon: ICON.search, label: "Workspace tools", body: "Decision Search, Adjudicator Statistics, Due Date Calculator, Interest Calculator. No project required." },
+        { icon: ICON.book, label: "Help & docs", body: "Sopal v2 has an in-app Help index. The marketing site at sopal.com.au has the BIF Act guide and FAQs." },
+      ];
+      return `
+        <div class="onb-step">
+          <div class="onb-eyebrow">Step 4 of 6</div>
+          <h2>The lay of the land</h2>
+          <p class="onb-muted">Quick tour of the sidebar.</p>
+          <div class="onb-tour-list">
+            ${callouts.map((c) => `
+              <div class="onb-tour-row">
+                <span class="onb-tour-icon">${c.icon}</span>
+                <div class="onb-tour-text">
+                  <strong>${escapeHtml(c.label)}</strong>
+                  <p>${escapeHtml(c.body)}</p>
+                </div>
+              </div>`).join("")}
+          </div>
+          <div class="onb-actions">
+            <button class="ghost-button" type="button" data-onb-prev>Back</button>
+            <button class="dark-button" type="button" data-onb-next>Continue</button>
+          </div>
+        </div>
+      `;
+    }
+    if (step === 5) {
+      const role = onboarding.role || "your role";
+      const cf = onboarding.contractForm || "your contract form";
+      return `
+        <div class="onb-step">
+          <div class="onb-eyebrow">Step 5 of 6 &middot; last one</div>
+          <h2>Create your first project</h2>
+          <p class="onb-muted">Spin up a project for the contract you're working on now. We'll preselect <strong>${escapeHtml(role)}</strong> and <strong>${escapeHtml(cf)}</strong>. You can change anything from there.</p>
+          <div class="onb-actions">
+            <button class="ghost-button" type="button" data-onb-prev>Back</button>
+            <button class="ghost-button" type="button" data-onb-finish>I'll do this later</button>
+            <button class="dark-button" type="button" data-onb-create>Create your first project</button>
+          </div>
+        </div>
+      `;
+    }
+    return "";
+  }
+
+  function bindOnboarding(rootEl) {
+    if (!onboarding) return;
+    const close = () => closeOnboarding();
+    rootEl.querySelectorAll("[data-onb-skip]").forEach((b) => b.addEventListener("click", close));
+    rootEl.querySelectorAll("[data-onb-finish]").forEach((b) => b.addEventListener("click", close));
+    rootEl.querySelectorAll("[data-onb-prev]").forEach((b) => b.addEventListener("click", () => {
+      // Capture firm name typing before navigating away from step 3.
+      if (onboarding && onboarding.step === 3) {
+        const nameInput = rootEl.querySelector("#onb-firm-name");
+        if (nameInput) onboarding.firmName = (nameInput.value || "").trim();
+      }
+      prevOnboardStep();
+    }));
+    rootEl.querySelectorAll("[data-onb-next]").forEach((b) => b.addEventListener("click", () => {
+      if (onboarding && onboarding.step === 3) {
+        const nameInput = rootEl.querySelector("#onb-firm-name");
+        if (nameInput) onboarding.firmName = (nameInput.value || "").trim();
+        // Persist firm now so downstream renders pick it up immediately
+        // (e.g. the project modal's claimant placeholder).
+        const firm = getFirm();
+        const patch = {};
+        if (onboarding.firmName && onboarding.firmName !== firm.name) patch.name = onboarding.firmName;
+        if (onboarding.firmLogo && onboarding.firmLogo !== firm.logoDataUrl) patch.logoDataUrl = onboarding.firmLogo;
+        if (Object.keys(patch).length) saveFirm(patch);
+      }
+      nextOnboardStep();
+    }));
+    rootEl.querySelectorAll("[data-onb-role]").forEach((b) => b.addEventListener("click", () => {
+      onboarding.role = b.dataset.onbRole;
+      render();
+    }));
+    rootEl.querySelectorAll("[data-onb-cf]").forEach((b) => b.addEventListener("click", () => {
+      onboarding.contractForm = b.dataset.onbCf;
+      render();
+    }));
+    const fileInput = rootEl.querySelector("#onb-firm-logo");
+    if (fileInput) {
+      fileInput.addEventListener("change", async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        // Snapshot firm name from the live input so re-render after upload
+        // doesn't blow away unsaved typing.
+        const nameInput = rootEl.querySelector("#onb-firm-name");
+        if (nameInput) onboarding.firmName = (nameInput.value || "").trim();
+        try {
+          const dataUrl = await downscaleLogoIfNeeded(file, 250 * 1024);
+          onboarding.firmLogo = dataUrl;
+          render();
+        } catch (err) {
+          alert(err && err.message ? err.message : "Could not read that image.");
+        }
+      });
+    }
+    rootEl.querySelectorAll("[data-onb-clear-logo]").forEach((b) => b.addEventListener("click", () => {
+      const nameInput = rootEl.querySelector("#onb-firm-name");
+      if (nameInput) onboarding.firmName = (nameInput.value || "").trim();
+      onboarding.firmLogo = "";
+      render();
+    }));
+    rootEl.querySelectorAll("[data-onb-create]").forEach((b) => b.addEventListener("click", () => {
+      // Persist firm if anything changed, then mark onboarded and open the
+      // pre-filled project modal.
+      const firm = getFirm();
+      const patch = {};
+      if (onboarding.firmName && onboarding.firmName !== firm.name) patch.name = onboarding.firmName;
+      if (onboarding.firmLogo && onboarding.firmLogo !== firm.logoDataUrl) patch.logoDataUrl = onboarding.firmLogo;
+      if (Object.keys(patch).length) saveFirm(patch);
+      const prefill = onboardingPrefill();
+      markOnboarded();
+      onboarding = null;
+      openProjectModal(null, prefill);
+    }));
+    rootEl.querySelector("[data-onb-backdrop]")?.addEventListener("click", (e) => {
+      if (e.target.matches("[data-onb-backdrop]")) close();
+    });
+  }
+
   /* ---------- Shell + render ---------- */
 
   function Shell() {
@@ -10791,6 +11087,7 @@ Total\t${formatCurrencyFull(total)}`;
         </div>
       </div>
       ${modal ? modal.render() : ""}
+      ${Onboarding()}
       ${sidebarOpen ? `<div class="mobile-backdrop" data-toggle-sidebar></div>` : ""}
     `;
   }
@@ -10896,6 +11193,7 @@ Total\t${formatCurrencyFull(total)}`;
     }));
     document.addEventListener("click", closeProjectMenuOnOutside, { once: true });
     if (modal) modal.bind(document);
+    if (onboarding) bindOnboarding(document);
   }
 
   function closeProjectMenuOnOutside(event) {
@@ -11391,6 +11689,7 @@ Total\t${formatCurrencyFull(total)}`;
 
   /* ---------- Boot ---------- */
 
+  startOnboarding();
   window.addEventListener("popstate", render);
   window.addEventListener("keydown", (ev) => {
     if ((ev.metaKey || ev.ctrlKey) && (ev.key === "k" || ev.key === "K")) {
