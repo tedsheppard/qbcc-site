@@ -3343,6 +3343,66 @@ Total\t${formatCurrencyFull(total)}`;
 
   function newDisputeId() { return `d_${Math.random().toString(36).slice(2, 8)}`; }
 
+  /* ---------- AA snapshots (multi-AA per project, thin archive wrapper) ----------
+     The AA workflow internally reads project.complexApps["adjudication-application"]
+     directly in many places (engine calls, dispute table, RFI rounds, master doc,
+     evidence index). Parameterising every internal function would be a multi-day
+     refactor.
+
+     Instead: keep the live AA where it is. Snapshots are NAMED checkpoints kept
+     in project.complexApps.snapshots = [{ id, name, savedAt, blob }]. The blob
+     is a deep-copy of the live AA at save time. Loading a snapshot deep-copies
+     the blob back into the active slot. Existing readers see no shape change.
+  */
+  function newAASnapshotId() { return `aa_${Math.random().toString(36).slice(2, 10)}`; }
+  function getAASnapshots(project) {
+    if (!project.complexApps) project.complexApps = {};
+    if (!Array.isArray(project.complexApps.snapshots)) project.complexApps.snapshots = [];
+    return project.complexApps.snapshots;
+  }
+  function saveAASnapshot(project, name) {
+    const aa = project.complexApps && project.complexApps["adjudication-application"];
+    if (!aa) return null;
+    const list = getAASnapshots(project);
+    const cleanName = String(name || "").trim() || `Snapshot ${list.length + 1}`;
+    // JSON deep-copy. AA blobs are pure data (strings, numbers, arrays, plain
+    // objects); no functions, no Dates, so JSON round-trip is safe.
+    const blob = JSON.parse(JSON.stringify(aa));
+    const snapshot = {
+      id: newAASnapshotId(),
+      name: cleanName,
+      savedAt: Date.now(),
+      blob,
+    };
+    list.push(snapshot);
+    saveProject(project);
+    return snapshot;
+  }
+  function loadAASnapshot(project, snapshotId) {
+    const list = getAASnapshots(project);
+    const snap = list.find((s) => s.id === snapshotId);
+    if (!snap) return false;
+    if (!project.complexApps) project.complexApps = {};
+    project.complexApps["adjudication-application"] = JSON.parse(JSON.stringify(snap.blob));
+    saveProject(project);
+    return true;
+  }
+  function deleteAASnapshot(project, snapshotId) {
+    const list = getAASnapshots(project);
+    const idx = list.findIndex((s) => s.id === snapshotId);
+    if (idx >= 0) {
+      list.splice(idx, 1);
+      saveProject(project);
+    }
+  }
+  function renameAASnapshot(project, snapshotId, name) {
+    const list = getAASnapshots(project);
+    const snap = list.find((s) => s.id === snapshotId);
+    if (!snap) return;
+    snap.name = String(name || "").trim() || snap.name;
+    saveProject(project);
+  }
+
   function ComplexAdjudicationPage(projectId) {
     const project = getProject(projectId);
     if (!project) return notFoundPage();
@@ -3378,6 +3438,24 @@ Total\t${formatCurrencyFull(total)}`;
     const draftedThreads = allThreads.filter((t) => (t.submissions || "").length > 60).length;
     const totalThreads = allThreads.length;
     const progressPct = totalThreads ? Math.round((draftedThreads / totalThreads) * 100) : 0;
+    const snapshots = getAASnapshots(project);
+    const snapshotBar = `
+      <div class="aa-snapshot-bar">
+        <div class="aa-snapshot-bar-left">
+          <span class="aa-snapshot-label">Working AA</span>
+          <span class="muted">${snapshots.length} saved snapshot${snapshots.length === 1 ? "" : "s"}</span>
+        </div>
+        <div class="aa-snapshot-bar-right">
+          ${snapshots.length > 0 ? `
+            <select class="ribbon-select" data-aa-snapshot-load aria-label="Load snapshot">
+              <option value="">Load snapshot…</option>
+              ${snapshots.slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0)).map((s) => `<option value="${attr(s.id)}">${escapeHtml(s.name)} · ${escapeHtml(new Date(s.savedAt || Date.now()).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }))}</option>`).join("")}
+            </select>
+            <button class="ghost-button compact" type="button" data-aa-snapshot-manage>Manage…</button>
+          ` : ""}
+          <button class="ghost-button compact" type="button" data-aa-snapshot-save>${ICON.plus}<span>Save snapshot</span></button>
+        </div>
+      </div>`;
     return PageBody(`
       <div class="page-shell aa-shell">
         <div class="chat-page-head">
@@ -3392,6 +3470,7 @@ Total\t${formatCurrencyFull(total)}`;
             <button class="ghost-button compact danger" type="button" data-aa-reset>Reset</button>
           </div>
         </div>
+        ${snapshotBar}
         ${stageBar}
         ${warnings.length ? `<div class="aa-warnings">${warnings.map((w) => `<div class="aa-warning"><strong>${escapeHtml(w.code || "warning")}</strong> ${escapeHtml(w.message || "")}</div>`).join("")}</div>` : ""}
         ${body}
@@ -4232,6 +4311,91 @@ Total\t${formatCurrencyFull(total)}`;
     render();
   }
 
+  function openAASnapshotManager(project) {
+    const renderList = () => {
+      const list = getAASnapshots(project).slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+      if (!list.length) return `<div class="empty-state"><strong>No snapshots yet.</strong><p>Click "Save snapshot" to capture the current working AA.</p></div>`;
+      return `
+        <div class="aa-snapshot-list">
+          ${list.map((s) => `
+            <div class="aa-snapshot-row" data-aa-snap-row="${attr(s.id)}">
+              <div class="aa-snapshot-meta">
+                <strong>${escapeHtml(s.name)}</strong>
+                <span class="muted">Saved ${escapeHtml(new Date(s.savedAt || Date.now()).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }))}</span>
+              </div>
+              <div class="aa-snapshot-actions">
+                <button class="ghost-button compact" type="button" data-aa-snap-load="${attr(s.id)}">Load</button>
+                <button class="ghost-button compact" type="button" data-aa-snap-rename="${attr(s.id)}">Rename</button>
+                <button class="ghost-button compact danger" type="button" data-aa-snap-delete="${attr(s.id)}">Delete</button>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    };
+    modal = {
+      render: () => `
+        <div class="modal-backdrop" data-modal-backdrop>
+          <div class="modal" role="dialog" aria-modal="true" style="max-width:560px;">
+            <div class="modal-head">
+              <h2>Manage AA snapshots</h2>
+              <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
+            </div>
+            <div class="modal-body" data-aa-snapshot-list>
+              ${renderList()}
+            </div>
+          </div>
+        </div>`,
+      bind: (rootEl) => {
+        const close = () => { modal = null; render(); };
+        rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
+        rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        const refresh = () => {
+          const mount = document.querySelector("[data-aa-snapshot-list]");
+          if (mount) mount.innerHTML = renderList();
+          // Re-bind the inner action buttons after refresh.
+          bindRows();
+        };
+        const bindRows = () => {
+          document.querySelectorAll("[data-aa-snap-load]").forEach((b) => b.addEventListener("click", () => {
+            const id = b.dataset.aaSnapLoad;
+            const snap = getAASnapshots(project).find((s) => s.id === id);
+            if (!snap) return;
+            const hasLive = !!(project.complexApps && project.complexApps["adjudication-application"]);
+            const msg = hasLive
+              ? `Load snapshot "${snap.name}"? Your current working AA will be replaced.\n\nClick Cancel and save the working AA first if you want to keep it.`
+              : `Load snapshot "${snap.name}" as the working AA?`;
+            if (!confirm(msg)) return;
+            loadAASnapshot(project, id);
+            close();
+          }));
+          document.querySelectorAll("[data-aa-snap-rename]").forEach((b) => b.addEventListener("click", () => {
+            const id = b.dataset.aaSnapRename;
+            const snap = getAASnapshots(project).find((s) => s.id === id);
+            if (!snap) return;
+            const next = prompt("Rename snapshot", snap.name);
+            if (next === null) return;
+            renameAASnapshot(project, id, next);
+            refresh();
+          }));
+          document.querySelectorAll("[data-aa-snap-delete]").forEach((b) => b.addEventListener("click", () => {
+            const id = b.dataset.aaSnapDelete;
+            const snap = getAASnapshots(project).find((s) => s.id === id);
+            if (!snap) return;
+            if (!confirm(`Delete snapshot "${snap.name}"? This cannot be undone.`)) return;
+            deleteAASnapshot(project, id);
+            refresh();
+          }));
+        };
+        bindRows();
+        document.addEventListener("keydown", function handler(ev) {
+          if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); }
+        });
+      },
+    };
+    render();
+  }
+
   function bindAATocLinks() {
     // ToC <a href="#aa-sec-..."> would scroll the WHOLE page (and slam the
     // master pane out of frame). Intercept and scroll only inside the
@@ -4271,11 +4435,38 @@ Total\t${formatCurrencyFull(total)}`;
       render();
     }));
     document.querySelectorAll("[data-aa-reset]").forEach((b) => b.addEventListener("click", () => {
-      if (!confirm("Reset the entire adjudication application workflow? All extracted items, RFIs, and drafts will be cleared.")) return;
+      if (!confirm("Reset the entire adjudication application workflow? All extracted items, RFIs, and drafts will be cleared.\n\nTip: if you want to start a second AA but keep this one, use \"Save snapshot\" first.")) return;
       delete project.complexApps["adjudication-application"];
       saveProject(project);
       render();
     }));
+
+    // ----- Snapshot bar handlers -----
+    document.querySelectorAll("[data-aa-snapshot-save]").forEach((b) => b.addEventListener("click", () => {
+      const aaLive = project.complexApps && project.complexApps["adjudication-application"];
+      if (!aaLive) { alert("No AA to snapshot yet — work on Stage 1 first."); return; }
+      const name = prompt("Name this snapshot (e.g. \"Reference date 25 March\")", `Snapshot ${getAASnapshots(project).length + 1}`);
+      if (name === null) return;
+      saveAASnapshot(project, name);
+      render();
+    }));
+    const loadSelect = document.querySelector("[data-aa-snapshot-load]");
+    if (loadSelect) {
+      loadSelect.addEventListener("change", () => {
+        const id = loadSelect.value;
+        if (!id) return;
+        const snap = getAASnapshots(project).find((s) => s.id === id);
+        if (!snap) { loadSelect.value = ""; return; }
+        const hasLive = !!(project.complexApps && project.complexApps["adjudication-application"]);
+        const msg = hasLive
+          ? `Load snapshot "${snap.name}"? Your current working AA will be replaced.\n\nIf you want to keep the current working AA, click Cancel and use "Save snapshot" first.`
+          : `Load snapshot "${snap.name}" as the working AA?`;
+        if (!confirm(msg)) { loadSelect.value = ""; return; }
+        loadAASnapshot(project, id);
+        render();
+      });
+    }
+    document.querySelectorAll("[data-aa-snapshot-manage]").forEach((b) => b.addEventListener("click", () => openAASnapshotManager(project)));
 
     if (aa.stage === "intake") return bindAAIntake(project, aa);
     if (aa.stage === "dispute-table") return bindAADisputeTable(project, aa);

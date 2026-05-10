@@ -6171,3 +6171,37 @@ mark.wfb-match.is-active { background: rgba(255, 152, 0, 0.55); outline: 1px sol
   text-align: left;
 }
 .nav-instance-add:hover { background: var(--sidebar-hover); color: var(--sidebar-fg); }
+
+/* AA snapshot bar — sits between the page head and the stage bar. */
+.aa-snapshot-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  margin: 0 0 12px;
+  background: #fdfcf9;
+  border: 1px solid var(--main-border);
+  border-radius: 10px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+.aa-snapshot-bar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.aa-snapshot-bar-right { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.aa-snapshot-label { font-weight: 650; }
+.aa-snapshot-bar select { min-width: 220px; }
+.aa-snapshot-list { display: flex; flex-direction: column; gap: 8px; }
+.aa-snapshot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--main-border);
+  border-radius: 8px;
+  background: #fff;
+}
+.aa-snapshot-meta { display: flex; flex-direction: column; min-width: 0; }
+.aa-snapshot-meta strong { font-size: 13.5px; }
+.aa-snapshot-meta .muted { font-size: 12px; }
+.aa-snapshot-actions { display: inline-flex; gap: 6px; flex-shrink: 0; }
