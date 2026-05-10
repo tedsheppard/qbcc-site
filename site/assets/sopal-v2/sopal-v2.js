@@ -2624,8 +2624,15 @@ Total\t${formatCurrencyFull(total)}`;
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
-  function notFoundPage() {
-    return PageBody(`<div class="page-shell">${EmptyState("Project not found.", "It may have been deleted. Return to the project list.", `<a class="ghost-button compact" href="/sopal-v2/projects" data-nav>Open projects</a>`)}</div>`);
+  // Generic not-found page used across many routes (project, help article,
+  // tool, agent). Falls back to the project-list CTA but accepts overrides
+  // for callers that have a more specific recovery action.
+  function notFoundPage(opts) {
+    const o = opts || {};
+    const title = o.title || "We could not find that page.";
+    const body = o.body || "The link may be stale, or the item may have been deleted.";
+    const cta = o.cta || `<a class="ghost-button compact" href="/sopal-v2" data-nav>Back to home</a>`;
+    return PageBody(`<div class="page-shell">${EmptyState(title, body, cta)}</div>`);
   }
 
   function ContextPage(projectId, bucket) {
