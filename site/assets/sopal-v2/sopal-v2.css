@@ -4957,3 +4957,38 @@ select.aa-cell[data-aa-status="jurisdictional"] {
   gap: 12px;
 }
 .settings-status { margin-top: 12px; font-size: 12.5px; }
+
+/* ---------- Project quickstart (empty-state walkthrough on Project Overview) ---------- */
+.project-quickstart { margin-bottom: 14px; }
+.project-quickstart-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.project-quickstart-list li {
+  padding-left: 2px;
+}
+.project-quickstart-list li strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--main-fg);
+  margin-bottom: 2px;
+}
+.project-quickstart-list li span {
+  display: block;
+  color: var(--muted-fg);
+  margin-bottom: 8px;
+}
+.project-quickstart-foot {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+}
+.project-quickstart-foot a {
+  color: var(--focus);
+  text-decoration: underline;
+}

@@ -2444,6 +2444,13 @@ Total\t${formatCurrencyFull(total)}`;
     if (!project) return notFoundPage();
     const allChats = Object.entries(project.chats || {})
       .filter(([, c]) => Array.isArray(c.messages) && c.messages.length > 0);
+    // Empty-state quick-start panel. Renders only when the project is fresh
+    // (no contracts, no library, no chats). Disappears as soon as the user
+    // adds their first piece of content. Helps a first-time user understand
+    // the right order of operations without a full tour.
+    const isEmptyProject = project.contracts.length === 0
+      && project.library.length === 0
+      && allChats.length === 0;
     const recentChats = [
       ...allChats.filter(([, c]) => c.pinned).sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0)),
       ...allChats.filter(([, c]) => !c.pinned).sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0)),
@@ -2463,6 +2470,39 @@ Total\t${formatCurrencyFull(total)}`;
             <button class="ghost-button compact danger" type="button" data-delete-project="${attr(project.id)}">${ICON.trash}<span>Delete</span></button>
           </div>
         </div>
+        ${isEmptyProject ? `
+          <section class="card project-quickstart">
+            <div class="card-head">
+              <h3>Quick start for a fresh project</h3>
+              <span class="muted">This panel disappears once you add your first piece of content.</span>
+            </div>
+            <div class="card-body">
+              <ol class="project-quickstart-list">
+                <li>
+                  <strong>Add the contract.</strong>
+                  <span>Paste the relevant clauses or drop the executed PDF. Sopal's agents quote real contract clauses by number when you give them the source.</span>
+                  <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/contract" data-nav>Open contract</a>
+                </li>
+                <li>
+                  <strong>Add project library items.</strong>
+                  <span>Correspondence, RFIs, programme notes, prior payment claims and schedules. Tag each item so it stays scannable.</span>
+                  <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/library" data-nav>Open library</a>
+                </li>
+                <li>
+                  <strong>Try a drafting agent or the assistant.</strong>
+                  <span>Open Variations, EOTs, Payment Claims or the project Assistant to sense-check the project context. Your contract and library are sent automatically.</span>
+                  <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/assistant" data-nav>Open assistant</a>
+                </li>
+                <li>
+                  <strong>When the dispute is ready, run the Adjudication Application.</strong>
+                  <span>Paste the payment claim and the payment schedule into Stage 1 and walk through the five-stage workflow. The end result is a Word-ready master document.</span>
+                  <a class="ghost-button compact" href="/sopal-v2/projects/${attr(project.id)}/complex/adjudication-application" data-nav>Open Adjudication Application</a>
+                </li>
+              </ol>
+              <p class="muted project-quickstart-foot">Need more detail? <a href="/sopal-v2/help/getting-started" data-nav>Read the Getting started guide</a> or <a href="/sopal-v2/help" data-nav>browse all help articles</a>.</p>
+            </div>
+          </section>
+        ` : ""}
         <div class="project-grid">
           <section class="card">
             <div class="card-head"><h3>Project details</h3></div>
