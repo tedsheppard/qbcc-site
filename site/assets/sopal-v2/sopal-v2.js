@@ -1122,7 +1122,7 @@
             <div class="card-empty">
               <div class="card-empty-icon">${ICON.file}</div>
               <h4>Create your first project</h4>
-              <p>Add the contract details, paste in clauses or upload your contract — Sopal then runs every agent (Payment Claims, EOTs, Adjudication etc.) inside that project's context.</p>
+              <p>Add the contract details, paste in clauses or upload your contract. Sopal then runs every agent (Payment Claims, EOTs, Adjudication etc.) inside that project's context.</p>
               <button class="dark-button" type="button" data-new-project>Create project</button>
             </div>
           ` : `
@@ -2436,7 +2436,7 @@ Total\t${formatCurrencyFull(total)}`;
           <div class="card-empty">
             <div class="card-empty-icon">${ICON.file}</div>
             <h4>${categoryFilter ? `No ${categoryFilter} projects` : "Create your first project"}</h4>
-            <p>${categoryFilter ? "Try a different category." : "Give it a name, the parties, the contract form. Then upload or paste the contract — the assistant and every agent will work in that project's context."}</p>
+            <p>${categoryFilter ? "Try a different category." : "Give it a name, the parties, the contract form. Then upload or paste the contract; the assistant and every agent will work in that project's context."}</p>
             <div class="card-empty-actions">
               <button class="dark-button" type="button" data-new-project>Create project</button>
               <label class="ghost-button" title="Import a sopal-*.json export">${ICON.upload}<span>Import from JSON</span><input type="file" data-import-project accept="application/json,.json" hidden></label>
@@ -2444,7 +2444,7 @@ Total\t${formatCurrencyFull(total)}`;
           </div>`) : `<div class="project-list">${projects.map((p) => projectRow(p, { archived: showArchived })).join("")}</div>`}
         <footer class="storage-footer">
           <div class="storage-bar"><div class="storage-bar-fill ${pct >= 80 ? "high" : ""}" style="width:${pct}%"></div></div>
-          <p class="muted">${formatBytes(bytes)} of ~${formatBytes(quotaApprox)} local browser storage used (${pct}%). Sopal v2 stores all project data in this browser only — no server account.</p>
+          <p class="muted">${formatBytes(bytes)} of ~${formatBytes(quotaApprox)} local browser storage used (${pct}%). Sopal v2 stores all project data in this browser only when you are not signed in. Sign in to enable cloud sync to your account.</p>
         </footer>
       </div>
     `);
@@ -2578,7 +2578,7 @@ Total\t${formatCurrencyFull(total)}`;
               <span class="muted notes-status" data-notes-status></span>
             </div>
             <div class="card-body">
-              <textarea class="text-area notes-textarea" data-notes-input rows="5" placeholder="Free-form scratchpad — chronology, key dates, open questions. Saved automatically.">${escapeHtml(project.notes || "")}</textarea>
+              <textarea class="text-area notes-textarea" data-notes-input rows="5" placeholder="Free-form scratchpad. Chronology, key dates, open questions. Saved automatically.">${escapeHtml(project.notes || "")}</textarea>
             </div>
           </section>
           <section class="card span-all">
@@ -3325,7 +3325,7 @@ Total\t${formatCurrencyFull(total)}`;
             </div>
             <div class="aa-doc-slot ${scenario.psOptional ? "aa-doc-slot-optional" : ""}">
               <label class="aa-doc-label">Payment Schedule${scenario.psOptional ? " (none received — optional)" : ""}</label>
-              ${scenario.psOptional ? `<p class="muted aa-doc-help">No PS was given by the respondent in the s 76 window. Leave this blank — Sopal will frame the application accordingly.</p>` : ""}
+              ${scenario.psOptional ? `<p class="muted aa-doc-help">No PS was given by the respondent in the s 76 window. Leave this blank; Sopal will frame the application accordingly.</p>` : ""}
               <div class="file-zone">
                 <label class="file-zone-label">${ICON.upload}<span>Click or drop a PDF / DOCX / TXT</span><input type="file" data-aa-file="paymentSchedule" accept=".pdf,.docx,.txt"></label>
                 <div class="muted file-status" data-aa-file-status-paymentSchedule>${ps ? `${escapeHtml(ps.name)} · ${ps.text.length.toLocaleString()} chars` : "No file selected."}</div>
@@ -3449,9 +3449,9 @@ Total\t${formatCurrencyFull(total)}`;
                 <li>${aa.documents.paymentClaim ? "✓" : "○"} Payment Claim ingested</li>
                 <li>${scenario.psOptional ? "—" : (aa.documents.paymentSchedule ? "✓" : "○")} Payment Schedule ${scenario.psOptional ? "(not required for this scenario)" : "ingested"}</li>
                 <li>${aa.disputes.length ? "✓" : "○"} Dispute table populated (${aa.disputes.length} item${aa.disputes.length === 1 ? "" : "s"})</li>
-                <li>${(aa.jurisdictionalRfis.submissions || "").length > 60 ? "✓" : "○"} Jurisdictional submissions drafted <span class="muted">(optional — only render if there's a jurisdictional issue)</span></li>
+                <li>${(aa.jurisdictionalRfis.submissions || "").length > 60 ? "✓" : "○"} Jurisdictional submissions drafted <span class="muted">(optional, only render if there's a jurisdictional issue)</span></li>
                 <li>${((aa.introductionHtml || "").length > 60 || (aa.generalRfis.submissions || "").length > 60) ? "✓" : "○"} Introduction / background drafted <span class="muted">(optional)</span></li>
-                <li>${(aa.execSummaryHtml || "").length > 60 ? "✓" : "○"} Executive summary drafted <span class="muted">(optional — generate from the master modal)</span></li>
+                <li>${(aa.execSummaryHtml || "").length > 60 ? "✓" : "○"} Executive summary drafted <span class="muted">(optional; generate from the master modal)</span></li>
                 <li>${(aa.overarchingHtml || "").length > 60 ? "✓" : "○"} Overarching arguments drafted <span class="muted">(optional)</span></li>
                 <li>${drafted}/${total} threads drafted overall</li>
                 <li>${evidence.length ? "✓" : "○"} Index of supporting evidence (${evidence.length} item${evidence.length === 1 ? "" : "s"})</li>
@@ -3531,7 +3531,7 @@ Total\t${formatCurrencyFull(total)}`;
                   <span class="aa-nav-row">
                     <span class="aa-nav-label">${escapeHtml(n.label)}</span>
                     ${ready ? '<span class="aa-nav-dot ok" title="Drafted">✓</span>'
-                      : engineReady ? '<span class="aa-nav-dot ready" title="Sopal has enough info — click Draft this item">⚡</span>'
+                      : engineReady ? '<span class="aa-nav-dot ready" title="Sopal has enough info, click Draft this item">⚡</span>'
                       : (rounds > 0 ? '<span class="aa-nav-dot in-progress" title="In progress">●</span>' : '<span class="aa-nav-dot idle" title="Not started">○</span>')}
                   </span>
                   <span class="aa-nav-meta muted">${rounds === 0 ? "Not started" : `${answered}/${rounds} answered`}${ready ? " · drafted" : (engineReady ? " · ready to draft" : "")}</span>
@@ -4044,7 +4044,7 @@ Total\t${formatCurrencyFull(total)}`;
               <section>
                 <h4>Evidence index for this thread</h4>
                 ${evidence.length
-                  ? `<ul class="aa-artifact-list">${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong> — ${escapeHtml(e.desc || "")}${e.location ? ` <span class="muted">(${escapeHtml(e.location)})</span>` : ""}</li>`).join("")}</ul>`
+                  ? `<ul class="aa-artifact-list">${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong>: ${escapeHtml(e.desc || "")}${e.location ? ` <span class="muted">(${escapeHtml(e.location)})</span>` : ""}</li>`).join("")}</ul>`
                   : `<p class="muted">No exhibits indexed for this thread yet. Sopal adds them as you draft.</p>`}
               </section>
               <section>
@@ -5292,8 +5292,8 @@ Total\t${formatCurrencyFull(total)}`;
       <strong>Date:</strong> [DD Month YYYY]</p>
       <p>Dear [Recipient name],</p>
       <p>[Opening paragraph identifying the contract and the matter being addressed.]</p>
-      <p>[Substantive body — facts, contractual references, and any action requested.]</p>
-      <p>[Closing paragraph — reservation of rights as appropriate.]</p>
+      <p>[Substantive body. Facts, contractual references, and any action requested.]</p>
+      <p>[Closing paragraph. Reservation of rights as appropriate.]</p>
       <p>Yours sincerely,<br>
       [Signatory name]<br>
       [Position]<br>
@@ -5785,7 +5785,7 @@ Total\t${formatCurrencyFull(total)}`;
         ${checksHtml ? `<h2>Checks</h2>${checksHtml}` : ""}
         ${(analysis.recommendations || []).length ? `<h2>Recommended next steps</h2><ol class="print-list">${analysis.recommendations.map((r) => `<li>${safe(r)}</li>`).join("")}</ol>` : ""}
         ${(analysis.missing || []).length ? `<h2>Information to gather</h2><ul class="print-list">${analysis.missing.map((m) => `<li>${safe(m)}</li>`).join("")}</ul>` : ""}
-        <p class="print-foot">Generated by Sopal v2 — sopal.com.au</p>
+        <p class="print-foot">Generated by Sopal v2 (sopal.com.au)</p>
       </body></html>`);
     win.document.close();
   }
@@ -5961,7 +5961,7 @@ Total\t${formatCurrencyFull(total)}`;
       emptyHtml = `
         <div class="empty-state review-empty-with-suggestions">
           <strong>Ask a follow-up</strong>
-          <p>The analysis is grounded in this document — chase a specific item or draft an amendment.</p>
+          <p>The analysis is grounded in this document. Chase a specific item or draft an amendment.</p>
           <div class="chip-row">
             ${suggestions.map((s) => `<button class="chip" type="button" data-chip="${attr(s)}">${escapeHtml(s)}</button>`).join("")}
           </div>
@@ -7010,7 +7010,7 @@ Total\t${formatCurrencyFull(total)}`;
         <span class="muted">Jurisdiction</span>
         <div class="jurisdiction-tabs" role="tablist">
           ${JURISDICTIONS.map((j) => `
-            <button class="jurisdiction-tab ${j.id === jur.id ? "active" : ""} ${j.supported ? "" : "limited"}" type="button" data-jurisdiction="${attr(j.id)}" title="${j.full}${j.supported ? "" : " — limited support (general knowledge only)"}">
+            <button class="jurisdiction-tab ${j.id === jur.id ? "active" : ""} ${j.supported ? "" : "limited"}" type="button" data-jurisdiction="${attr(j.id)}" title="${j.full}${j.supported ? "" : ": limited support (general knowledge only)"}">
               ${escapeHtml(j.label)}${j.supported ? "" : '<span class="jurisdiction-tag" aria-label="Limited support">·</span>'}
             </button>`).join("")}
         </div>
@@ -7299,7 +7299,7 @@ Total\t${formatCurrencyFull(total)}`;
       emptyHtml = `
         <div class="empty-state review-empty-with-suggestions">
           <strong>Ask a follow-up</strong>
-          <p>The analysis is grounded in this document — chase a specific item or draft an amendment.</p>
+          <p>The analysis is grounded in this document. Chase a specific item or draft an amendment.</p>
           <div class="chip-row">
             ${suggestions.map((s) => `<button class="chip" type="button" data-chip="${attr(s)}">${escapeHtml(s)}</button>`).join("")}
           </div>
@@ -8634,7 +8634,7 @@ Total\t${formatCurrencyFull(total)}`;
             <div class="palette" role="dialog" aria-modal="true">
               <div class="palette-input-row">
                 <span class="palette-icon">${ICON.search}</span>
-                <input class="palette-input" type="text" data-project-search-input placeholder="Search ${escapeHtml(project.name)} — contracts, library, chats…" value="${attr(projectSearchState.query)}" autocomplete="off" spellcheck="false">
+                <input class="palette-input" type="text" data-project-search-input placeholder="Search ${escapeHtml(project.name)}: contracts, library, chats…" value="${attr(projectSearchState.query)}" autocomplete="off" spellcheck="false">
                 <span class="palette-kbd">esc</span>
               </div>
               <ol class="palette-list">
