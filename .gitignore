@@ -55,3 +55,4 @@ astruct/
 # _archive/ contains parked features. Code here is committed for posterity
 # but must NOT be imported by live application code. Treat as documentation.
 # (Intentionally NOT gitignored — we want it tracked.)
+.claude/scheduled_tasks.lock
