@@ -1103,7 +1103,7 @@
         </section>
 
         <section class="home-section">
-          <div class="section-head"><h3>Tools</h3><p>Standalone utilities — no project required.</p></div>
+          <div class="section-head"><h3>Tools</h3><p>Standalone utilities. No project required.</p></div>
           <div class="tile-grid">
             ${tools.map((t) => `
               <a class="tile" href="${t.href}" data-nav>
@@ -1115,7 +1115,7 @@
 
         <section class="home-section">
           <div class="section-head row">
-            <div><h3>Your projects</h3><p>Each project is one construction contract — head contract or subcontract.</p></div>
+            <div><h3>Your projects</h3><p>Each project is one construction contract: head contract or subcontract.</p></div>
             <button class="dark-button" type="button" data-new-project>${ICON.plus}<span>New project</span></button>
           </div>
           ${projects.length === 0 ? `
@@ -1258,7 +1258,7 @@
     return PageBody(`
       <div class="page-shell">
         <h1 class="page-title">Decision search</h1>
-        <p class="page-sub">Searches Sopal's adjudication decision database. Results render here — no jumps to the live site.</p>
+        <p class="page-sub">Searches Sopal's adjudication decision database. Results render here, with no jumps to the live site.</p>
 
         <form class="search-form-v2" data-decision-search>
           <div class="search-row-main">
@@ -2397,7 +2397,7 @@ Total\t${formatCurrencyFull(total)}`;
     return PageBody(`
       <div class="page-shell">
         <div class="page-head">
-          <div><h1 class="page-title">${showArchived ? "Archived projects" : "Your projects"}</h1><p class="page-sub">Each project is one construction contract — head contract or subcontract.</p></div>
+          <div><h1 class="page-title">${showArchived ? "Archived projects" : "Your projects"}</h1><p class="page-sub">Each project is one construction contract: head contract or subcontract.</p></div>
           <div class="page-actions">
             <select class="select-input compact" data-project-sort title="Sort projects">
               <option value="favourites" ${sort === "favourites" ? "selected" : ""}>Favourites first</option>
@@ -3250,7 +3250,7 @@ Total\t${formatCurrencyFull(total)}`;
         <div class="chat-page-head">
           <div>
             <h1 class="page-title">Adjudication Application</h1>
-            <p class="page-sub">Guided drafter — intake, dispute mapping, RFIs per item, live master document.</p>
+            <p class="page-sub">Guided drafter for intake, dispute mapping, RFIs per item, and the live master document.</p>
           </div>
           <div class="aa-header-actions">
             ${aa.stage !== "intake" ? `<span class="aa-progress-pill" title="Drafted threads">${draftedThreads}/${totalThreads} drafted · ${progressPct}%</span>` : ""}
@@ -3293,7 +3293,7 @@ Total\t${formatCurrencyFull(total)}`;
       <section class="aa-intake card">
         <div class="card-head">
           <div>
-            <h3>Stage 1 — Document intake</h3>
+            <h3>Stage 1: Document intake</h3>
             <p class="muted">Paste or upload the Payment Claim (and the Payment Schedule, where one was given). Sopal extracts the parties, amounts, line items, and the respondent's reasons.</p>
           </div>
         </div>
@@ -3356,7 +3356,7 @@ Total\t${formatCurrencyFull(total)}`;
         <section class="aa-dispute-table card">
           <div class="card-head">
             <div>
-              <h3>Stage 2 — Dispute table</h3>
+              <h3>Stage 2: Dispute table</h3>
               <p class="muted">Once you parse the PC and PS in Stage 1, the line items appear here as an editable dispute table. You can also build it manually.</p>
             </div>
             <div class="aa-table-actions">
@@ -3374,7 +3374,7 @@ Total\t${formatCurrencyFull(total)}`;
       <section class="aa-dispute-table card">
         <div class="card-head">
           <div>
-            <h3>Stage 2 — Dispute table</h3>
+            <h3>Stage 2: Dispute table</h3>
             <p class="muted">Edit the rows. Merge or split where the PC artificially divides one dispute. Set the issue type so the RFIs are tailored. Lock to advance.</p>
           </div>
           <div class="aa-table-actions">
@@ -3431,7 +3431,7 @@ Total\t${formatCurrencyFull(total)}`;
       <section class="aa-review">
         <div class="card aa-review-summary">
           <div class="card-head">
-            <h3>Stage 5 — Final review &amp; lodgement</h3>
+            <h3>Stage 5: Final review and lodgement</h3>
             <div class="aa-review-actions">
               <button class="dark-button" type="button" data-aa-export>${ICON.download}<span>Export master .doc</span></button>
               <button class="ghost-button compact" type="button" data-aa-export-statdecs>${ICON.download}<span>Export combined stat dec</span></button>
@@ -3928,7 +3928,7 @@ Total\t${formatCurrencyFull(total)}`;
     if (evidence.length) {
       const eNum = nextNum();
       toc.push({ id: id("evidence"), num: eNum, label: "Index of supporting evidence", indent: 0 });
-      sections.push(`<h2 id="${id("evidence")}">${eNum}. Index of supporting evidence</h2><ol>${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong> — ${escapeHtml(e.desc || "")}${e.location ? ` (${escapeHtml(e.location)})` : ""}</li>`).join("")}</ol>`);
+      sections.push(`<h2 id="${id("evidence")}">${eNum}. Index of supporting evidence</h2><ol>${evidence.map((e) => `<li><strong>${escapeHtml(e.ref || "")}</strong>: ${escapeHtml(e.desc || "")}${e.location ? ` (${escapeHtml(e.location)})` : ""}</li>`).join("")}</ol>`);
     }
 
     const tocHtml = `
@@ -4037,7 +4037,7 @@ Total\t${formatCurrencyFull(total)}`;
         <div class="modal-backdrop" data-modal-backdrop>
           <div class="modal aa-artifacts-modal" role="dialog" aria-modal="true">
             <div class="modal-head">
-              <h2>${escapeHtml(ctx.label)} — supporting artefacts</h2>
+              <h2>${escapeHtml(ctx.label)}: supporting artefacts</h2>
               <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
             </div>
             <div class="modal-body aa-artifacts-body">
@@ -4062,7 +4062,7 @@ Total\t${formatCurrencyFull(total)}`;
         rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
         rootEl.querySelector("[data-aa-statdec-export]")?.addEventListener("click", () => {
           const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-statdec-${ctx.id || ctx.kind}.doc`;
-          const html = `<h1>Statutory declaration — ${escapeHtml(ctx.label)}</h1>${renderMarkdown(statDec)}`;
+          const html = `<h1>Statutory declaration: ${escapeHtml(ctx.label)}</h1>${renderMarkdown(statDec)}`;
           const blob = new Blob([
             '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
             '<head><meta charset="UTF-8"></head><body>', html, '</body></html>',
