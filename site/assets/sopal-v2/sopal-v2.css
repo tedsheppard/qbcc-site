@@ -4889,3 +4889,71 @@ select.aa-cell[data-aa-status="jurisdictional"] {
   text-decoration: underline;
 }
 .sopal-sidebar.collapsed .sidebar-auth { display: none; }
+
+/* ---------- Settings page ---------- */
+.settings-shell { max-width: 760px; }
+.settings-card {
+  margin-top: 14px;
+  padding: 16px 20px;
+  border: 1px solid var(--main-border);
+  border-radius: 12px;
+  background: var(--main-panel);
+}
+.settings-card.settings-card-muted { background: var(--main-muted); }
+.settings-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.settings-card-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+}
+.settings-card p {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--muted-fg);
+}
+.settings-card p:last-child { margin-bottom: 0; }
+.settings-pill {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.settings-pill-on {
+  background: rgba(16,185,129,0.12);
+  color: #047857;
+}
+.settings-pill-off {
+  background: var(--main-muted);
+  color: var(--muted-fg);
+}
+.settings-dl {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 6px 14px;
+  margin: 0 0 12px;
+  font-size: 13.5px;
+}
+.settings-dl dt { color: var(--muted-fg); font-weight: 500; }
+.settings-dl dd { margin: 0; color: var(--main-fg); }
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.settings-status { margin-top: 12px; font-size: 12.5px; }

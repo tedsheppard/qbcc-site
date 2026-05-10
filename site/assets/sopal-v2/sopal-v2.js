@@ -916,6 +916,10 @@
             <span class="nav-icon">${ICON.book}</span>
             <span class="nav-label">Help and support</span>
           </a>
+          <a class="nav-item small ${isActivePrefix("/sopal-v2/settings") ? "active" : ""}" href="/sopal-v2/settings" data-nav>
+            <span class="nav-icon">${ICON.settings}</span>
+            <span class="nav-label">Settings</span>
+          </a>
           ${SidebarAuth()}
         </div>
       </aside>
@@ -7487,6 +7491,163 @@ Total\t${formatCurrencyFull(total)}`;
     if (initialPane) bindReviewChatForm(initialPane);
   }
 
+  /* ---------- Settings page ---------- */
+
+  // Single Settings page that surfaces every cross-cutting preference and
+  // account thing in one place. Lives at /sopal-v2/settings. Relies on the
+  // window.SopalAuth and window.SopalCloudSync objects exposed from the boot
+  // module; both are tolerant of being absent.
+  function SettingsPage() {
+    const auth = window.SopalAuth || { state: "guest", user: null };
+    const projects = projectList();
+    const archived = archivedProjectList();
+    const bytes = localStorageBytesUsed();
+    const quota = 5 * 1024 * 1024;
+    const pct = Math.min(100, Math.round((bytes / quota) * 100));
+    const themeLabel = theme === "dark" ? "Dark" : "Light";
+
+    setTimeout(() => bindSettingsActions(), 0);
+
+    const accountCard = (() => {
+      if (auth.state === "authed" && auth.user) {
+        const display = (auth.user.first_name || auth.user.last_name)
+          ? [auth.user.first_name, auth.user.last_name].filter(Boolean).join(" ")
+          : auth.user.email;
+        return `
+          <div class="settings-card">
+            <div class="settings-card-head">
+              <h3>Account</h3>
+              <span class="settings-pill settings-pill-on">Signed in</span>
+            </div>
+            <dl class="settings-dl">
+              <dt>Name</dt><dd>${escapeHtml(display || "")}</dd>
+              <dt>Email</dt><dd>${escapeHtml(auth.user.email || "")}</dd>
+              ${auth.user.firm_name ? `<dt>Firm</dt><dd>${escapeHtml(auth.user.firm_name)}</dd>` : ""}
+            </dl>
+            <div class="settings-actions">
+              <a class="ghost-button compact" href="/account.html" target="_blank" rel="noopener">Open account on sopal.com.au ${ICON.arrowUpRight}</a>
+              <button class="ghost-button compact" type="button" data-sopal-signout>Sign out</button>
+            </div>
+          </div>`;
+      }
+      return `
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <h3>Account</h3>
+            <span class="settings-pill settings-pill-off">Guest</span>
+          </div>
+          <p>You are using Sopal as a guest. Project content is stored in this browser only and will not follow you across devices. Sign in with your Sopal account to enable cloud sync.</p>
+          <div class="settings-actions">
+            <a class="dark-button compact" href="/login?redirect=${encodeURIComponent("/sopal-v2/settings")}">Sign in</a>
+            <a class="ghost-button compact" href="/register?redirect=${encodeURIComponent("/sopal-v2/settings")}">Create an account</a>
+          </div>
+        </div>`;
+    })();
+
+    const cloudCard = (() => {
+      if (auth.state === "authed") {
+        return `
+          <div class="settings-card">
+            <div class="settings-card-head">
+              <h3>Cloud sync</h3>
+              <span class="settings-pill settings-pill-on">On</span>
+            </div>
+            <p>Your projects sync to your account automatically. New projects on this browser are pushed; projects on your account that this browser does not have are pulled the next time you sign in.</p>
+            <div class="settings-actions">
+              <button class="ghost-button compact" type="button" data-sopal-push-all>Push all local projects to cloud now</button>
+              <button class="ghost-button compact" type="button" data-sopal-pull-missing>Pull missing projects from cloud</button>
+            </div>
+            <p class="muted settings-status" data-sopal-sync-status></p>
+          </div>`;
+      }
+      return `
+        <div class="settings-card settings-card-muted">
+          <div class="settings-card-head">
+            <h3>Cloud sync</h3>
+            <span class="settings-pill settings-pill-off">Off (sign in)</span>
+          </div>
+          <p>Cloud sync becomes available once you sign in. Until then, every project lives in this browser only.</p>
+        </div>`;
+    })();
+
+    const dataCard = `
+      <div class="settings-card">
+        <div class="settings-card-head"><h3>Data and storage</h3></div>
+        <dl class="settings-dl">
+          <dt>Active projects</dt><dd>${projects.length}</dd>
+          <dt>Archived projects</dt><dd>${archived.length}</dd>
+          <dt>Browser storage used</dt><dd>${formatBytes(bytes)} of about ${formatBytes(quota)} (${pct}%)</dd>
+        </dl>
+        <div class="settings-actions">
+          <a class="ghost-button compact" href="/sopal-v2/projects" data-nav>Open project list</a>
+          <button class="ghost-button compact danger" type="button" data-sopal-clear-local>Clear all local data</button>
+        </div>
+      </div>`;
+
+    const appearanceCard = `
+      <div class="settings-card">
+        <div class="settings-card-head"><h3>Appearance</h3></div>
+        <div class="settings-row">
+          <div>
+            <strong>Theme</strong>
+            <p class="muted">Currently ${escapeHtml(themeLabel)}. Toggle from the header or with Cmd+Shift+D.</p>
+          </div>
+          <button class="ghost-button compact" type="button" data-toggle-theme>Switch to ${theme === "dark" ? "Light" : "Dark"}</button>
+        </div>
+      </div>`;
+
+    return PageBody(`
+      <div class="page-shell settings-shell">
+        <h1 class="page-title">Settings</h1>
+        <p class="page-sub">Account, cloud sync, data, and appearance for Sopal v2.</p>
+        ${accountCard}
+        ${cloudCard}
+        ${dataCard}
+        ${appearanceCard}
+      </div>
+    `);
+  }
+
+  function bindSettingsActions() {
+    document.querySelector("[data-sopal-push-all]")?.addEventListener("click", async (event) => {
+      const btn = event.currentTarget;
+      const status = document.querySelector("[data-sopal-sync-status]");
+      btn.disabled = true;
+      btn.textContent = "Pushing...";
+      try {
+        const r = await window.SopalCloudSync.pushAll();
+        if (status) status.textContent = `Pushed ${r.pushed} project${r.pushed === 1 ? "" : "s"} to your account.`;
+      } catch (err) {
+        if (status) status.textContent = `Push failed: ${err.message || err}`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Push all local projects to cloud now";
+      }
+    });
+    document.querySelector("[data-sopal-pull-missing]")?.addEventListener("click", async (event) => {
+      const btn = event.currentTarget;
+      const status = document.querySelector("[data-sopal-sync-status]");
+      btn.disabled = true;
+      btn.textContent = "Pulling...";
+      try {
+        await window.SopalCloudSync.pullMissing();
+        if (status) status.textContent = "Pull complete. Any missing projects have been added to this browser.";
+      } catch (err) {
+        if (status) status.textContent = `Pull failed: ${err.message || err}`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Pull missing projects from cloud";
+      }
+    });
+    document.querySelector("[data-sopal-clear-local]")?.addEventListener("click", () => {
+      if (!confirm("Clear every project, recent decision and saved search from this browser? This does not affect your cloud-synced copies.")) return;
+      try {
+        localStorage.removeItem(STORE_KEY);
+      } catch (_) {}
+      window.location.replace("/sopal-v2");
+    });
+  }
+
   /* ---------- Help & support system ---------- */
 
   // The help system is a self-contained set of articles routed under
@@ -7987,6 +8148,9 @@ Total\t${formatCurrencyFull(total)}`;
       if (parts[1] === "payment-schedule-reviewer") return { crumbs: [{ label: "Payment schedule reviewer" }], body: StandaloneReviewerPage("payment-schedules") };
       return { crumbs: [{ label: "Tools" }], body: notFoundPage() };
     }
+    if (parts[0] === "settings") {
+      return { crumbs: [{ label: "Settings" }], body: SettingsPage() };
+    }
     if (parts[0] === "help") {
       if (!parts[1]) return { crumbs: [{ label: "Help and support" }], body: HelpIndexPage() };
       const article = HELP_ARTICLES.find((a) => a.slug === parts[1]);
@@ -8206,6 +8370,9 @@ Total\t${formatCurrencyFull(total)}`;
     HELP_ARTICLES.forEach((a) => {
       items.push({ section: "Help", label: a.title, hint: a.summary, run: () => navigate(`/sopal-v2/help/${a.slug}`) });
     });
+
+    // Settings.
+    items.push({ section: "Settings", label: "Settings", hint: "Account, cloud sync, data, appearance", run: () => navigate("/sopal-v2/settings") });
 
     return items;
   }
