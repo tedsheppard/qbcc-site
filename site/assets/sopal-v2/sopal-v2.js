@@ -294,6 +294,9 @@
   let modal = null; // { render(): string, bind(root): void, close(): void }
   let projectMenuOpen = false;
   let sidebarOpen = false;
+  // Which agents are expanded in the sidebar (shows their drafting instances).
+  // Keyed by `${projectId}:${agentKey}`. Not persisted: opens fresh per load.
+  const sidebarAgentOpen = new Set();
   let projectSelection = new Set();
   let sidebarCollapsed = (() => {
     try { return localStorage.getItem("sopal-v2-sidebar-collapsed") === "1"; } catch (_) { return false; }
@@ -914,6 +917,42 @@
     return COMPLEX_AGENT_KEYS.map((key) => ({ label: COMPLEX_AGENT_LABELS[key], href: `${base}/${key}`, icon: ICON.layers }));
   }
 
+  function sidebarDraftingAgentRow(project, agentKey) {
+    const base = `/sopal-v2/projects/${project.id}/agents/${agentKey}`;
+    const draftBase = `${base}?mode=draft`;
+    const instances = getDraftInstances(project, agentKey);
+    const expandKey = `${project.id}:${agentKey}`;
+    const params = new URLSearchParams(window.location.search);
+    const activeIid = params.get("iid");
+    const isAgentActive = isActivePrefix(base);
+    const expanded = sidebarAgentOpen.has(expandKey) || isAgentActive;
+    const draftOnly = DRAFT_ONLY_AGENTS.has(agentKey);
+    const landingHref = draftOnly ? draftBase : base;
+    return `
+      <div class="nav-agent-row">
+        <div class="nav-agent-head">
+          <a class="nav-item nav-item-sub nav-item-agent ${isAgentActive ? "active" : ""}" href="${landingHref}" data-nav>
+            <span class="nav-icon">${ICON.sparkles}</span>
+            <span class="nav-label">${escapeHtml(AGENT_LABELS[agentKey])}</span>
+            ${instances.length ? `<span class="nav-instance-count">${instances.length}</span>` : ""}
+          </a>
+          <button class="nav-agent-toggle ${expanded ? "open" : ""}" type="button" data-toggle-agent="${attr(expandKey)}" aria-label="Toggle drafts" title="Show drafts">${ICON.chevRight}</button>
+        </div>
+        <div class="nav-agent-instances ${expanded ? "open" : ""}">
+          ${instances.map((inst) => `
+            <a class="nav-instance-item ${activeIid === inst.id ? "active" : ""}" href="${base}?mode=draft&iid=${attr(inst.id)}" data-nav>
+              <span class="nav-instance-bullet"></span>
+              <span class="nav-instance-text">${escapeHtml(inst.label || defaultDraftLabel(agentKey, 0))}</span>
+            </a>`).join("")}
+          <button class="nav-instance-add" type="button" data-new-agent-draft="${attr(agentKey)}" title="New draft">
+            <span class="nav-instance-bullet new">+</span>
+            <span class="nav-instance-text">New draft</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   function Sidebar() {
     const project = currentProject();
     const projects = projectList();
@@ -981,11 +1020,7 @@
                   <span class="nav-label">${escapeHtml(item.label)}</span>
                 </a>`).join("")}
               <div class="nav-subgroup-title">Drafting agents</div>
-              ${projectAgentNav(project.id).map((item) => `
-                <a class="nav-item nav-item-sub ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
-                  <span class="nav-icon">${item.icon}</span>
-                  <span class="nav-label">${escapeHtml(item.label)}</span>
-                </a>`).join("")}
+              ${DRAFTING_AGENT_KEYS.map((key) => sidebarDraftingAgentRow(project, key)).join("")}
               <div class="nav-subgroup-title">Complex agents</div>
               ${projectComplexAgentNav(project.id).map((item) => `
                 <a class="nav-item nav-item-sub ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
@@ -5461,25 +5496,248 @@ Total\t${formatCurrencyFull(total)}`;
     return out;
   }
 
-  function getProjectDraft(project, agentKey) {
+  // Draft storage. Each agentKey holds an ARRAY of drafting instances so a
+  // single project can carry multiple Payment Claims (e.g. March + April
+  // progress claims), multiple EOT notices, etc. The legacy single-draft
+  // shape is migrated transparently on first read: any pre-existing object
+  // becomes the first instance with id "legacy" so users don't lose work.
+  function newDraftInstanceId() { return `dr_${Math.random().toString(36).slice(2, 10)}`; }
+  function defaultDraftLabel(agentKey, index) {
+    const base = AGENT_LABELS[agentKey] || "Draft";
+    return index === 0 ? base : `${base} ${index + 1}`;
+  }
+  function migrateDraftsForAgent(project, agentKey) {
     if (!project.drafts) project.drafts = {};
-    if (!project.drafts[agentKey]) {
-      const tpl = (AGENT_TEMPLATES[agentKey] || "<p>[Start drafting…]</p>").trim();
-      project.drafts[agentKey] = {
-        html: applyFirmToDraftTemplate(tpl, getFirm(), agentKey),
-        chat: { messages: [] },
-        updatedAt: Date.now(),
+    const existing = project.drafts[agentKey];
+    if (Array.isArray(existing)) return existing;
+    if (existing && typeof existing === "object" && (existing.html !== undefined || existing.chat !== undefined)) {
+      // Legacy single-draft shape — wrap as the first instance.
+      const inst = {
+        id: existing.id || "legacy",
+        label: existing.label || defaultDraftLabel(agentKey, 0),
+        html: typeof existing.html === "string" ? existing.html : "",
+        chat: existing.chat && Array.isArray(existing.chat.messages) ? existing.chat : { messages: [] },
+        createdAt: existing.createdAt || existing.updatedAt || Date.now(),
+        updatedAt: existing.updatedAt || Date.now(),
       };
+      project.drafts[agentKey] = [inst];
       saveProject(project);
+      return project.drafts[agentKey];
     }
-    if (!project.drafts[agentKey].chat || !Array.isArray(project.drafts[agentKey].chat.messages)) {
-      project.drafts[agentKey].chat = { messages: [] };
-    }
+    project.drafts[agentKey] = [];
     return project.drafts[agentKey];
   }
+  function getDraftInstances(project, agentKey) {
+    return migrateDraftsForAgent(project, agentKey);
+  }
+  function findDraftInstance(project, agentKey, instanceId) {
+    if (!instanceId) return null;
+    const list = getDraftInstances(project, agentKey);
+    return list.find((d) => d.id === instanceId) || null;
+  }
+  function createDraftInstance(project, agentKey, label) {
+    const list = getDraftInstances(project, agentKey);
+    const tpl = (AGENT_TEMPLATES[agentKey] || "<p>[Start drafting…]</p>").trim();
+    const inst = {
+      id: newDraftInstanceId(),
+      label: (label || "").trim() || defaultDraftLabel(agentKey, list.length),
+      html: applyFirmToDraftTemplate(tpl, getFirm(), agentKey),
+      chat: { messages: [] },
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    list.push(inst);
+    saveProject(project);
+    return inst;
+  }
+  function renameDraftInstance(project, agentKey, instanceId, label) {
+    const inst = findDraftInstance(project, agentKey, instanceId);
+    if (!inst) return;
+    inst.label = String(label || "").trim() || inst.label;
+    inst.updatedAt = Date.now();
+    saveProject(project);
+  }
+  function deleteDraftInstance(project, agentKey, instanceId) {
+    const list = getDraftInstances(project, agentKey);
+    const idx = list.findIndex((d) => d.id === instanceId);
+    if (idx >= 0) {
+      list.splice(idx, 1);
+      saveProject(project);
+    }
+  }
 
-  function DraftingWorkspace(project, agentKey, draftOnly) {
-    const draft = getProjectDraft(project, agentKey);
+  // The original accessor. Used by code paths that don't know an instance id
+  // (e.g. saveProject sync). Returns the first instance, creating it if the
+  // project has none. New callers should prefer findDraftInstance + an iid.
+  function getProjectDraft(project, agentKey, instanceId) {
+    const list = getDraftInstances(project, agentKey);
+    if (instanceId) {
+      const found = list.find((d) => d.id === instanceId);
+      if (found) {
+        if (!found.chat || !Array.isArray(found.chat.messages)) found.chat = { messages: [] };
+        return found;
+      }
+    }
+    if (list.length === 0) createDraftInstance(project, agentKey, "");
+    const head = list[0];
+    if (!head.chat || !Array.isArray(head.chat.messages)) head.chat = { messages: [] };
+    return head;
+  }
+
+  function bindDraftInstanceBar(project, agentKey, draft, draftOnly) {
+    const renameEl = document.querySelector("[data-draft-rename]");
+    renameEl?.addEventListener("change", () => {
+      renameDraftInstance(project, agentKey, draft.id, renameEl.value);
+    });
+    renameEl?.addEventListener("blur", () => {
+      renameDraftInstance(project, agentKey, draft.id, renameEl.value);
+    });
+    const switchEl = document.querySelector("[data-draft-switch]");
+    switchEl?.addEventListener("change", () => {
+      navigate(`/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft&iid=${switchEl.value}`);
+    });
+    document.querySelector("[data-draft-new]")?.addEventListener("click", () => {
+      const inst = createDraftInstance(project, agentKey, "");
+      navigate(`/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft&iid=${inst.id}`);
+    });
+    document.querySelector("[data-draft-duplicate]")?.addEventListener("click", () => {
+      const list = getDraftInstances(project, agentKey);
+      const inst = {
+        id: newDraftInstanceId(),
+        label: `${draft.label || defaultDraftLabel(agentKey, 0)} (copy)`,
+        html: draft.html,
+        chat: { messages: [] },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      list.push(inst);
+      saveProject(project);
+      navigate(`/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft&iid=${inst.id}`);
+    });
+    document.querySelector("[data-draft-delete]")?.addEventListener("click", () => {
+      const label = draft.label || defaultDraftLabel(agentKey, 0);
+      if (!confirm(`Delete the draft "${label}"? This cannot be undone.`)) return;
+      deleteDraftInstance(project, agentKey, draft.id);
+      navigate(`/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft`);
+    });
+  }
+
+  function DraftInstanceListPage(project, agentKey, instances, draftOnly) {
+    const reviewHref = `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=review`;
+    const tabs = draftOnly ? "" : `
+      <div class="mode-tabs" role="tablist">
+        <button class="mode-tab" type="button" data-go="${reviewHref}">Review</button>
+        <button class="mode-tab active" type="button">Draft</button>
+      </div>`;
+    const sorted = instances.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    return `
+      <div class="page-shell">
+        <div class="chat-page-head">
+          <div>
+            <h1 class="page-title">${escapeHtml(AGENT_LABELS[agentKey])}</h1>
+            <p class="page-sub">${escapeHtml(AGENT_DESCRIPTIONS[agentKey] || "")}</p>
+          </div>
+          ${tabs}
+        </div>
+        <div class="drafts-listing-toolbar">
+          <div class="muted">${sorted.length} draft${sorted.length === 1 ? "" : "s"} in this project</div>
+          <button class="dark-button" type="button" data-draft-list-new>${ICON.plus}<span>New draft</span></button>
+        </div>
+        ${sorted.length === 0 ? `
+          <div class="card-empty" style="margin-top:14px;">
+            <div class="card-empty-icon">${ICON.file}</div>
+            <h4>No drafts yet</h4>
+            <p>Create a new draft and Sopal opens the Word-style editor with the firm template loaded.</p>
+            <button class="dark-button" type="button" data-draft-list-new>${ICON.plus}<span>Start a draft</span></button>
+          </div>
+        ` : `
+          <div class="drafts-listing-list">
+            ${sorted.map((inst) => {
+              const wordCount = approxDraftWordCount(inst.html);
+              const updated = formatRelativeTimeShort(inst.updatedAt || inst.createdAt);
+              return `
+                <div class="draft-listing-row" data-draft-row="${attr(inst.id)}">
+                  <button class="draft-listing-open" type="button" data-open-draft="${attr(inst.id)}">
+                    <span class="draft-listing-icon">${ICON.file}</span>
+                    <span class="draft-listing-text">
+                      <strong>${escapeHtml(inst.label || defaultDraftLabel(agentKey, 0))}</strong>
+                      <span class="muted">Updated ${escapeHtml(updated)} · ${wordCount} word${wordCount === 1 ? "" : "s"}</span>
+                    </span>
+                  </button>
+                  <div class="draft-listing-actions">
+                    <button class="ghost-button compact" type="button" data-rename-draft="${attr(inst.id)}">Rename</button>
+                    <button class="ghost-button compact" type="button" data-duplicate-draft="${attr(inst.id)}">Duplicate</button>
+                    <button class="ghost-button compact danger" type="button" data-delete-draft="${attr(inst.id)}">Delete</button>
+                  </div>
+                </div>`;
+            }).join("")}
+          </div>
+        `}
+      </div>
+    `;
+  }
+
+  function approxDraftWordCount(html) {
+    if (!html) return 0;
+    const text = String(html).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    if (!text) return 0;
+    return text.split(" ").length;
+  }
+  function formatRelativeTimeShort(ts) {
+    if (!ts) return "never";
+    const diff = Date.now() - Number(ts);
+    if (diff < 60_000) return "just now";
+    if (diff < 3600_000) return `${Math.floor(diff / 60_000)} min ago`;
+    if (diff < 86_400_000) return `${Math.floor(diff / 3600_000)} hr ago`;
+    if (diff < 7 * 86_400_000) return `${Math.floor(diff / 86_400_000)} d ago`;
+    return new Date(ts).toLocaleDateString("en-AU");
+  }
+
+  function bindDraftInstanceList(project, agentKey, draftOnly) {
+    document.querySelectorAll("[data-draft-list-new]").forEach((b) => b.addEventListener("click", () => {
+      const inst = createDraftInstance(project, agentKey, "");
+      navigate(`/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft&iid=${inst.id}`);
+    }));
+    document.querySelectorAll("[data-open-draft]").forEach((b) => b.addEventListener("click", () => {
+      navigate(`/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft&iid=${b.dataset.openDraft}`);
+    }));
+    document.querySelectorAll("[data-rename-draft]").forEach((b) => b.addEventListener("click", () => {
+      const iid = b.dataset.renameDraft;
+      const inst = findDraftInstance(project, agentKey, iid);
+      if (!inst) return;
+      const next = prompt("Rename draft", inst.label || "");
+      if (next === null) return;
+      renameDraftInstance(project, agentKey, iid, next);
+      render();
+    }));
+    document.querySelectorAll("[data-duplicate-draft]").forEach((b) => b.addEventListener("click", () => {
+      const iid = b.dataset.duplicateDraft;
+      const inst = findDraftInstance(project, agentKey, iid);
+      if (!inst) return;
+      const list = getDraftInstances(project, agentKey);
+      list.push({
+        id: newDraftInstanceId(),
+        label: `${inst.label || defaultDraftLabel(agentKey, 0)} (copy)`,
+        html: inst.html,
+        chat: { messages: [] },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      saveProject(project);
+      render();
+    }));
+    document.querySelectorAll("[data-delete-draft]").forEach((b) => b.addEventListener("click", () => {
+      const iid = b.dataset.deleteDraft;
+      const inst = findDraftInstance(project, agentKey, iid);
+      if (!inst) return;
+      if (!confirm(`Delete the draft "${inst.label || "Untitled"}"? This cannot be undone.`)) return;
+      deleteDraftInstance(project, agentKey, iid);
+      render();
+    }));
+  }
+
+  function DraftingWorkspace(project, agentKey, draftOnly, instanceId) {
+    const draft = getProjectDraft(project, agentKey, instanceId);
     const firm = getFirm();
     const dims = firmPageDimensions(firm);
     const margins = firmPageMargins(firm);
@@ -5499,6 +5757,27 @@ Total\t${formatCurrencyFull(total)}`;
           <p class="page-sub">${escapeHtml(AGENT_DESCRIPTIONS[agentKey] || "")}</p>
         </div>
         ${tabs}
+      </div>`;
+
+    const instances = getDraftInstances(project, agentKey);
+    const listHref = `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft`;
+    const newHref = `/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft&iid=new`;
+    const instanceBar = `
+      <div class="draft-instance-bar">
+        <div class="draft-instance-bar-left">
+          <input class="draft-instance-title" type="text" value="${attr(draft.label || defaultDraftLabel(agentKey, 0))}" data-draft-rename placeholder="Untitled draft" aria-label="Draft name">
+          ${instances.length > 1 ? `
+            <select class="draft-instance-switch" data-draft-switch aria-label="Switch draft">
+              ${instances.map((d) => `<option value="${attr(d.id)}" ${d.id === draft.id ? "selected" : ""}>${escapeHtml(d.label || defaultDraftLabel(agentKey, 0))}</option>`).join("")}
+            </select>
+          ` : ""}
+        </div>
+        <div class="draft-instance-bar-right">
+          <a class="link-button small" href="${listHref}" data-nav>All drafts (${instances.length})</a>
+          <button class="ghost-button compact" type="button" data-draft-duplicate>Duplicate</button>
+          <button class="ghost-button compact" type="button" data-draft-new>${ICON.plus}<span>New</span></button>
+          ${instances.length > 1 ? `<button class="ghost-button compact danger" type="button" data-draft-delete>Delete this draft</button>` : ""}
+        </div>
       </div>`;
 
     const ctxCount = project.contracts.length + project.library.length;
@@ -5537,6 +5816,7 @@ Total\t${formatCurrencyFull(total)}`;
       <div class="page-shell drafting-shell word-shell"
            style="--firm-accent:${attr(accent)};--firm-font:${attr(fontStack)};--firm-page-width:${dims.width}px;--firm-page-height:${dims.height}px;--firm-margin-top:${margins.top}px;--firm-margin-right:${margins.right}px;--firm-margin-bottom:${margins.bottom}px;--firm-margin-left:${margins.left}px;">
         ${head}
+        ${instanceBar}
 
         <div class="word-ribbon" data-word-ribbon>
           <div class="ribbon-quick-row">
@@ -5718,14 +5998,15 @@ Total\t${formatCurrencyFull(total)}`;
     `;
   }
 
-  function bindDraftingWorkspace(project, agentKey, draftOnly) {
+  function bindDraftingWorkspace(project, agentKey, draftOnly, instanceId) {
     const editor = document.querySelector("[data-drafting-editor]");
     const saveState = document.querySelector("[data-drafting-savestate]");
     const stream = document.querySelector("[data-drafting-chat-stream]");
     const form = document.querySelector("[data-drafting-chat-form]");
     if (!editor || !form) return;
 
-    const draft = getProjectDraft(project, agentKey);
+    const draft = getProjectDraft(project, agentKey, instanceId);
+    bindDraftInstanceBar(project, agentKey, draft, draftOnly);
     let saveTimer = null;
     function persist() {
       draft.html = editor.innerHTML;
@@ -6426,8 +6707,33 @@ Total\t${formatCurrencyFull(total)}`;
     if (mode === "draft") {
       // Drafting workspace: a Word-style editor on the left with a starter
       // template, an AI chat on the right that can rewrite the document.
-      setTimeout(() => bindDraftingWorkspace(project, agentKey, draftOnly), 0);
-      return PageBody(DraftingWorkspace(project, agentKey, draftOnly));
+      const iid = params.get("iid");
+      // ?iid=new creates a fresh instance and redirects to its editor. Used
+      // by the "+ New" buttons in the sidebar and the drafts-list page.
+      if (iid === "new") {
+        const inst = createDraftInstance(project, agentKey, "");
+        navigate(`/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft&iid=${inst.id}`);
+        return PageBody("");
+      }
+      const instances = getDraftInstances(project, agentKey);
+      // Bare ?mode=draft with multiple instances → show the picker so the
+      // user can choose which draft to open. With zero or one instance we
+      // fall through to the legacy single-doc editor (auto-creating the
+      // first instance) so the experience is unchanged for new projects.
+      if (!iid && instances.length > 1) {
+        setTimeout(() => bindDraftInstanceList(project, agentKey, draftOnly), 0);
+        return PageBody(DraftInstanceListPage(project, agentKey, instances, draftOnly));
+      }
+      const targetInstance = iid ? findDraftInstance(project, agentKey, iid) : null;
+      // Unknown iid → bounce to the drafts list rather than silently swapping
+      // them onto another draft.
+      if (iid && !targetInstance) {
+        setTimeout(() => bindDraftInstanceList(project, agentKey, draftOnly), 0);
+        return PageBody(DraftInstanceListPage(project, agentKey, instances, draftOnly));
+      }
+      const activeIid = targetInstance ? targetInstance.id : (instances[0] && instances[0].id) || null;
+      setTimeout(() => bindDraftingWorkspace(project, agentKey, draftOnly, activeIid), 0);
+      return PageBody(DraftingWorkspace(project, agentKey, draftOnly, activeIid));
     }
 
     // Review = claim-check style workspace.
@@ -9726,6 +10032,24 @@ Total\t${formatCurrencyFull(total)}`;
       togglePinThread(el.dataset.projectId, el.dataset.togglePinThread);
     }));
     document.querySelectorAll("[data-new-project]").forEach((el) => el.addEventListener("click", () => openProjectModal(null)));
+    document.querySelectorAll("[data-toggle-agent]").forEach((btn) => btn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const key = btn.dataset.toggleAgent;
+      if (sidebarAgentOpen.has(key)) sidebarAgentOpen.delete(key);
+      else sidebarAgentOpen.add(key);
+      render();
+    }));
+    document.querySelectorAll("[data-new-agent-draft]").forEach((btn) => btn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const project = currentProject();
+      if (!project) return;
+      const agentKey = btn.dataset.newAgentDraft;
+      const inst = createDraftInstance(project, agentKey, "");
+      sidebarAgentOpen.add(`${project.id}:${agentKey}`);
+      navigate(`/sopal-v2/projects/${project.id}/agents/${agentKey}?mode=draft&iid=${inst.id}`);
+    }));
     document.querySelectorAll("[data-import-project]").forEach((input) => input.addEventListener("change", async (event) => {
       const file = event.currentTarget.files && event.currentTarget.files[0];
       event.currentTarget.value = "";
