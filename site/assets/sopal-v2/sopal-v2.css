@@ -5279,9 +5279,78 @@ select.aa-cell[data-aa-status="jurisdictional"] {
 
 /* ---------- Word-style ribbon + paginated A4 canvas (drafting agents) ---------- */
 
+/* When a drafting/document-editing shell is on the page, lock the chrome so
+   that ONLY the document body scrolls — sidebar, top nav, ribbon and AI chat
+   all stay pinned. Without this lock, the whole page would scroll as one
+   when the user pages down through a long document.
+   Uses :has() so we don't have to mark up the page-body or main-area from JS.
+   Modern browsers (>= 2023) all support :has(). */
+body:has(.word-shell),
+body:has(.aa-shell) {
+  height: 100vh;
+  overflow: hidden;
+}
+body:has(.word-shell) .sopal-shell,
+body:has(.aa-shell) .sopal-shell {
+  height: 100vh;
+  min-height: 0;
+}
+body:has(.word-shell) .main-area,
+body:has(.aa-shell) .main-area {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+body:has(.word-shell) .page-body,
+body:has(.aa-shell) .page-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+body:has(.word-shell) .page-shell.word-shell {
+  flex: 1;
+  min-height: 0;
+  padding-top: 18px;
+  padding-bottom: 0;
+  height: 100%;
+  overflow: hidden;
+  gap: 8px;
+}
+/* AA workspace: same chrome lock, but the page-shell itself scrolls so
+   forms/cards inside each stage flow normally — head + stage-bar stay sticky
+   at the top of the scroll surface so the user always sees where they are
+   in the workflow. */
+body:has(.aa-shell) .page-shell.aa-shell {
+  flex: 1;
+  min-height: 0;
+  padding-top: 18px;
+  padding-bottom: 32px;
+  height: 100%;
+  overflow-y: auto;
+}
+body:has(.aa-shell) .page-shell.aa-shell > .chat-page-head,
+body:has(.aa-shell) .page-shell.aa-shell > .aa-stage-bar {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  background: var(--main-panel);
+}
+body:has(.aa-shell) .page-shell.aa-shell > .aa-stage-bar { top: 64px; }
+
 /* Outer shell: lays out ribbon → find bar → editor + chat. Slimmer gaps so the
    ribbon and the page sheet sit close together like Word's print layout. */
 .word-shell { gap: 8px; }
+.word-shell > .chat-page-head { flex: 0 0 auto; }
+.word-shell > .word-ribbon { flex: 0 0 auto; }
+.word-shell > .word-find-bar { flex: 0 0 auto; }
+.word-shell > .word-grid {
+  flex: 1;
+  min-height: 0;
+}
 
 /* ---- The ribbon itself ------------------------------------------------- */
 .word-ribbon {
@@ -5587,11 +5656,12 @@ mark.wfb-match.is-active { background: rgba(255, 152, 0, 0.55); outline: 1px sol
 .word-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  /* One row taking full available height; min:0 lets children shrink so
+     internal-scroll surfaces (canvas, chat stream) actually engage. */
+  grid-template-rows: minmax(0, 1fr);
   gap: 14px;
   align-items: stretch;
-  /* Stretch the workspace down to the bottom of the viewport so the editor
-     and chat fill the available space. */
-  min-height: calc(100vh - 320px);
+  min-height: 0;
 }
 
 .word-doc-card {
@@ -5601,15 +5671,26 @@ mark.wfb-match.is-active { background: rgba(255, 152, 0, 0.55); outline: 1px sol
   flex-direction: column;
   background: transparent;
   border: 1px solid var(--main-border);
+  min-height: 0;
+  height: 100%;
 }
 .word-canvas {
   background: #ece9e2;
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 28px 24px 32px;
   display: flex;
   justify-content: center;
 }
+
+/* The AI chat sidebar — also internal-scroll so the chrome around it
+   (sidebar + ribbon + canvas + the chat composer) all stay put. */
+.word-shell .drafting-chat-card {
+  height: 100%;
+  min-height: 0;
+}
+.word-shell .drafting-chat-stream { min-height: 0; }
 [data-theme="dark"] .word-canvas { background: #1c1a16; }
 
 .word-page-stack {
@@ -5792,9 +5873,40 @@ mark.wfb-match.is-active { background: rgba(255, 152, 0, 0.55); outline: 1px sol
   .word-grid { grid-template-columns: 1fr; min-height: 0; }
   .word-page { width: 100%; min-height: 720px; }
   .word-canvas { padding: 16px 8px; }
-  .word-editor {
+  .drafting-editor.word-editor {
     padding: 32px 28px;
     min-height: 520px;
+  }
+  /* Below desktop sizes the locked-shell becomes too cramped — release the
+     body lock and let the page scroll normally with the document inline. */
+  body:has(.word-shell),
+  body:has(.aa-shell) {
+    height: auto;
+    overflow: visible;
+  }
+  body:has(.word-shell) .sopal-shell,
+  body:has(.aa-shell) .sopal-shell {
+    height: auto;
+    min-height: 100vh;
+  }
+  body:has(.word-shell) .main-area,
+  body:has(.aa-shell) .main-area {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+  body:has(.word-shell) .page-body,
+  body:has(.aa-shell) .page-body {
+    flex: 1 1 auto;
+    overflow: visible;
+    display: block;
+  }
+  body:has(.word-shell) .page-shell.word-shell,
+  body:has(.aa-shell) .page-shell.aa-shell {
+    flex: none;
+    height: auto;
+    overflow: visible;
+    padding-bottom: 32px;
   }
 }
 
