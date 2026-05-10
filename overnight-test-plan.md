@@ -138,6 +138,35 @@ A walkthrough you (or anyone reviewing the branch) can follow to manually verify
 2. Project Overview should show a "Quick start for a fresh project" card with four numbered steps and deep-link buttons.
 3. Open the Contract page and add anything; come back to Project Overview; the Quick start card should be gone.
 
+## 22. Account and cloud sync help article (cac76f6)
+
+1. Open `/sopal-v2/help/account-and-cloud-sync`.
+2. Confirm the article reads end-to-end with no em dashes and covers JWT, sync mechanism, manual push and pull, sign out, and account closure.
+
+## 23. Updated keyboard cheat sheet (77aa052)
+
+1. Press `?` anywhere in the SPA.
+2. Confirm the modal lists Cmd+Shift+D for theme toggle and a separate Cmd+Enter row labelled "Submit answer in an RFI table row".
+
+## 24. Contextual greeting on home (e5f161c)
+
+1. Sign out: home page heading reads "Welcome to Sopal v2".
+2. Sign back in: home page heading reads "Welcome back, {your first name or email prefix}".
+
+## 25. Em-dash sweep on user-visible copy (ea4c84a, 75e7860, f42f47f)
+
+1. Stage labels read "Stage 1: Document intake", "Stage 2: Dispute table", "Stage 5: Final review and lodgement" (colons, no em dashes).
+2. Tools section subtitle on home reads "Standalone utilities. No project required." (full stop, no em dash).
+3. Decision search subtitle reads "Searches Sopal's adjudication decision database. Results render here, with no jumps to the live site." (no em dash).
+4. AA workspace status-dot tooltip on the ready-to-draft state reads "Sopal has enough info, click Draft this item" (comma, no em dash).
+5. Project search palette placeholder reads "Search {projectName}: contracts, library, chats..." (colon, no em dash).
+6. BIF Act statutory paragraphs (sections 73, 76, 79, 83, 85) intentionally still contain em dashes because they mirror the Act's enumerated structure.
+
+## 26. What's new modal entries (4ccf012)
+
+1. Open the home page → click "What's new".
+2. Confirm the top three entries summarise this branch.
+
 ## Rollback if anything is broken
 
 ```bash
