@@ -375,7 +375,7 @@ Rules for documentHtml:
 - Preserve [bracketed placeholders] the user has not filled in. If the user instructs you to fill one in, fill it.
 - Do not invent facts (case names, sums, dates, parties) that are not in the current document or the project context.
 - Use clear Australian English. Be legally careful.
-- The current Queensland security-of-payment legislation is the **Building Industry Fairness (Security of Payment) Act 2017 (Qld)** — refer to it as the "BIF Act". The repealed BCIPA 2004 (Qld) is no longer the current Act and should not be cited as the operative statute for any payment claim, schedule, adjudication application or response from after 17 December 2018. If the user's draft refers to "BCIPA" or the older Act, ask whether to update it rather than silently changing.
+- The current Queensland security-of-payment legislation is the **Building Industry Fairness (Security of Payment) Act 2017 (Qld)**, referred to as the "BIF Act". The repealed BCIPA 2004 (Qld) is no longer the current Act and should not be cited as the operative statute for any payment claim, schedule, adjudication application or response from after 17 December 2018. If the user's draft refers to "BCIPA" or the older Act, ask whether to update it rather than silently changing.
 - Quote section numbers and contract clause numbers explicitly when the source provides them (e.g. "section 75 of the BIF Act", "cl 36.2(a) of the Contract"). Avoid floating assertions without a source reference.
 
 Rules for summary:
@@ -594,7 +594,7 @@ class AAEngineRequest(BaseModel):
     libraryDocs: list[dict[str, Any]] = Field(default_factory=list)
     projectMeta: dict[str, Any] = Field(default_factory=dict)
     # Cover-page extras (ABN, contact details, contract date, site address,
-    # ANA, etc.). Optional — only forwarded for context where the engine can
+    # ANA, etc.). Optional. Only forwarded for context where the engine can
     # use them (introduction / background threads). Empty dict is fine.
     coverMeta: dict[str, Any] = Field(default_factory=dict)
 
@@ -835,9 +835,9 @@ async def aa_engine(payload: AAEngineRequest) -> dict[str, Any]:
     library_block = _format_docs(payload.libraryDocs, "Project library (correspondence / programme / claims / schedules)", 18_000, 50_000)
 
     # Cover-page extras the user filled in (ABN, addresses, contract date,
-    # site address, ANA). Optional — fold them into the matter context only
-    # when present, so the engine can reference them in introduction /
-    # background threads where useful, instead of leaving placeholders.
+    # site address, ANA). Optional. Folded into the matter context only when
+    # present, so the engine can reference them in introduction / background
+    # threads where useful, instead of leaving placeholders.
     cover_meta_lines: list[str] = []
     cm = payload.coverMeta or {}
     cm_label_map = [
@@ -864,10 +864,10 @@ async def aa_engine(payload: AAEngineRequest) -> dict[str, Any]:
         if isinstance(v, str) and v.strip():
             cover_meta_lines.append(f"- {label}: {v.strip()[:200]}")
     cover_meta_block = (
-        "Cover-page extras the user has confirmed (use in introduction / background submissions where natural — DO NOT invent these if they are not listed):\n"
+        "Cover-page extras the user has confirmed (use in introduction / background submissions where natural; DO NOT invent these if they are not listed):\n"
         + "\n".join(cover_meta_lines)
         if cover_meta_lines else
-        "Cover-page extras: (none provided — leave [bracketed placeholders] in the draft for any field you want)"
+        "Cover-page extras: (none provided. Leave [bracketed placeholders] in the draft for any field you want)"
     )
 
     user_content = (

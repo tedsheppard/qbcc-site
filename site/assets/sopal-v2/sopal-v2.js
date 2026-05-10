@@ -2641,12 +2641,12 @@ Total\t${formatCurrencyFull(total)}`;
           single: "Contract",
           title: "Contract documents",
           helper: "Paste contract clauses or extract text from PDF/DOCX/TXT. The assistant and every agent in this project will see this content.",
-          textareaPlaceholder: "Paste contract clauses or terms here — e.g. cl 36 (Variations), cl 41 (Default), cl 42 (Payment).",
+          textareaPlaceholder: "Paste contract clauses or terms here. For example: cl 36 (Variations), cl 41 (Default), cl 42 (Payment).",
         }
       : {
           single: "Project document",
           title: "Project library",
-          helper: "Paste correspondence, RFIs, claims, schedules, programme notes — or extract from PDF/DOCX/TXT.",
+          helper: "Paste correspondence, RFIs, claims, schedules, programme notes, or extract them from PDF/DOCX/TXT.",
           textareaPlaceholder: "Paste correspondence, RFIs, claims, schedules, programme notes, or facts.",
         };
     setTimeout(() => bindContextManager(projectId, bucket), 0);
@@ -3390,7 +3390,7 @@ Total\t${formatCurrencyFull(total)}`;
           </div>
           <div class="aa-rfi-stream" data-aa-rfi-stream>
             ${(active.thread.rounds || []).length === 0
-              ? `<div class="empty-state aa-rfi-empty"><strong>Ready when you are.</strong><p>Click <em>Ask first RFI</em> below — Sopal will generate the first targeted question for this ${active.kind === "dispute" ? "dispute" : "thread"} and add it as a row in the table.</p></div>`
+              ? `<div class="empty-state aa-rfi-empty"><strong>Ready when you are.</strong><p>Click <em>Ask first RFI</em> below. Sopal will generate the first targeted question for this ${active.kind === "dispute" ? "dispute" : "thread"} and add it as a row in the table.</p></div>`
               : `<table class="aa-rfi-table">
                    <thead>
                      <tr>
@@ -4238,9 +4238,9 @@ Total\t${formatCurrencyFull(total)}`;
       const pc = aa.documents.paymentClaim;
       const ps = aa.documents.paymentSchedule;
       const scenario = AA_S79_SCENARIOS.find((s) => s.id === (aa.s79Scenario || "less-than-claimed")) || AA_S79_SCENARIOS[0];
-      // Inline error helper — surface validation + runtime errors next to the
-      // Parse button instead of an alert() that loses context the moment it
-      // closes. Auto-clears on the next click.
+      // Inline error helper that surfaces validation and runtime errors next
+      // to the Parse button instead of an alert() that loses context the
+      // moment it closes. Auto-clears on the next click.
       const errEl = document.querySelector("[data-aa-parse-error]");
       const showErr = (msg) => {
         if (!errEl) { alert(msg); return; }
@@ -4254,7 +4254,7 @@ Total\t${formatCurrencyFull(total)}`;
       };
       clearErr();
       if (!pc || !pc.text) {
-        showErr("Add the Payment Claim before parsing — drop a PDF / DOCX / TXT into the Payment Claim slot, or paste the text directly.");
+        showErr("Add the Payment Claim before parsing. Drop a PDF / DOCX / TXT into the Payment Claim slot, or paste the text directly.");
         return;
       }
       if (!scenario.psOptional && (!ps || !ps.text)) {
@@ -4313,7 +4313,7 @@ Total\t${formatCurrencyFull(total)}`;
         saveProject(project);
         render();
       } catch (error) {
-        showErr(error.message || "Parse failed — please try again or paste the document text directly into the slots.");
+        showErr(error.message || "Parse failed. Please try again or paste the document text directly into the slots.");
         btn.disabled = false;
         btn.innerHTML = `${ICON.sparkles}<span>Parse documents</span>`;
       }
@@ -4917,7 +4917,7 @@ Total\t${formatCurrencyFull(total)}`;
         ],
       },
     ];
-    // Flat list still used by the save handler — the order of the groups
+    // Flat list still used by the save handler. The order of the groups
     // above must reach every key the legacy field array used to.
     const fields = groups.flatMap((g) => g.fields);
     modal = {
