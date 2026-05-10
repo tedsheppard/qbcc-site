@@ -810,6 +810,10 @@
             <span class="nav-icon">${ICON.grid}</span>
             <span class="nav-label">Your projects</span>
           </a>
+          <a class="nav-item small ${isActivePrefix("/sopal-v2/help") ? "active" : ""}" href="/sopal-v2/help" data-nav>
+            <span class="nav-icon">${ICON.book}</span>
+            <span class="nav-label">Help and support</span>
+          </a>
         </div>
       </aside>
     `;
@@ -7340,6 +7344,469 @@ Total\t${formatCurrencyFull(total)}`;
     if (initialPane) bindReviewChatForm(initialPane);
   }
 
+  /* ---------- Help & support system ---------- */
+
+  // The help system is a self-contained set of articles routed under
+  // /sopal-v2/help. Each article is plain HTML inside a `body` string. Articles
+  // are categorised so the index page can present them in groups. We keep the
+  // copy in one place (this constant) so it is easy to audit and update.
+  const HELP_ARTICLES = [
+    {
+      slug: "getting-started",
+      title: "Getting started with Sopal",
+      category: "Start here",
+      summary: "A quick tour of what Sopal does and how to set up your first project.",
+      body: `
+        <p class="lead">Sopal is a Queensland security-of-payment workspace. It helps you draft and review the documents that flow under the Building Industry Fairness (Security of Payment) Act 2017 (Qld) (the BIF Act): payment claims, payment schedules, adjudication applications, adjudication responses, extension of time notices, variation claims, delay-cost claims, and the day-to-day correspondence around a project.</p>
+
+        <h2>What Sopal is, and what it is not</h2>
+        <p>Sopal sits between a blank document and the engagement of a lawyer. It is not legal advice and it does not replace independent professional judgement on a difficult or high-stakes matter. What it does is help an experienced project manager, contract administrator or claimant build a solid first draft, sense-check timing, search the public adjudication record, and keep the paperwork organised in one place.</p>
+
+        <h2>Pick a starting point</h2>
+        <p>You can use Sopal in two distinct ways. Most people end up using both.</p>
+
+        <h3>Standalone tools</h3>
+        <p>The Tools group in the sidebar contains four utilities that work without needing a project. The Decision Search lets you search every public adjudication decision in the corpus by adjudicator, party, section reference or keyword. The Adjudicator Statistics page lets you size up a particular adjudicator before nominating one. The Payment Claim Reviewer and Payment Schedule Reviewer both accept a pasted document and return a structured BIF Act check. The Due Date Calculator and Interest Calculator handle the most common timing and money calculations.</p>
+
+        <h3>Project workspaces</h3>
+        <p>For anything that runs longer than a single document, create a project. A project is one construction contract. It carries the contract documents, a project library (correspondence, programme notes, RFIs, claims, schedules), a free-form chat assistant, the suite of drafting agents, and the Adjudication Application complex agent. Everything inside a project is stored in your browser and tied to that project, so the AI agents have proper context when they help you draft.</p>
+
+        <h2>Create your first project</h2>
+        <p>From the home page or the sidebar, click the plus icon next to Projects. Pick a short, identifiable project name (the actual contract reference works well: for example, "HC-2025-12 Riverside Apartments"). Choose the contract form (AS 4000, AS 4902, an in-house template, or other). Identify yourself as Claimant or Respondent for this matter. The project is saved as soon as you create it.</p>
+
+        <h2>Add your contract</h2>
+        <p>Open Contract from the project sub-navigation. Either paste the relevant clauses directly or drop the executed contract PDF into the upload zone. The agents in this project use this content to anchor their drafting in real clause numbers rather than bracketed placeholders. You can split a long contract into separate clause entries using the Detect clauses action so each clause is independently retrievable.</p>
+
+        <h2>Add the project library</h2>
+        <p>Open Project Library and add the surrounding paper trail: payment claims, payment schedules served, RFIs raised, variation notices, EOT notices, programme updates, key correspondence, latent condition notices. The more context, the better the drafting agents perform. Tag each item (RFI, Variation, Notice, Programme, Schedule, Correspondence, Other) so the lists stay scannable.</p>
+
+        <h2>Choose the right tool for the job you have right now</h2>
+        <p>If you are about to serve a payment claim, open the Payment Claims drafting agent inside your project. If you have just received one, open the Payment Schedule drafting agent. If a payment schedule has come back at zero or short, open the Adjudication Application complex agent and start with Stage 1 Intake. If you need a variation notice or an EOT notice, the matching drafting agent has a starter template ready to go. The Adjudicator Statistics page is a good cross-check before you nominate.</p>
+
+        <h2>Where your data lives</h2>
+        <p>Project content is stored in your browser using local storage. Nothing is uploaded to a server unless you explicitly run an action that needs the AI engine, in which case the relevant text is sent to Sopal's processing endpoint and the response is stored back into your local project. There is no shared workspace yet, and exporting your data (Project menu, Export) gives you a JSON snapshot you can keep elsewhere for backup.</p>
+      `,
+    },
+
+    {
+      slug: "adjudication-application",
+      title: "Adjudication Application: end-to-end guide",
+      category: "Workflows",
+      summary: "How the five-stage Adjudication Application complex agent works, what each stage produces, and how to get the most useful output.",
+      body: `
+        <p class="lead">The Adjudication Application complex agent is the most involved workflow in Sopal. It is designed for a claimant preparing a section 79 application under the BIF Act, where the payment schedule has come back at less than the claimed amount, or no payment schedule has been provided, or a schedule was provided but the scheduled amount has not been paid by the due date.</p>
+
+        <h2>Before you start</h2>
+        <p>Have these documents ready in plain text or a clean PDF or DOCX: the payment claim you served, the payment schedule the respondent gave you (if any), the contract or its key clauses, and any correspondence that turned the dispute on a particular factual point (variation directions, RFI exchanges, latent condition notices, programme updates, dispute notices). You will get materially better drafting output if these documents are uploaded into the project's Contract and Project Library before you start the workflow, because the engine can then quote real clauses and real correspondence by name.</p>
+
+        <h2>Stage 1: Document intake</h2>
+        <p>This stage extracts the structured spine of the matter from the payment claim and payment schedule. Pick the right section 79 scenario first, because that drives every downstream calculation, framing and deadline.</p>
+        <ul>
+          <li><strong>No payment schedule received and no payment made:</strong> section 79(2)(a). The respondent did not give a payment schedule within the section 76 window (15 business days after the payment claim was given, or the period the contract specifies if shorter). The application is due 30 business days after the later of (i) the day the amount became payable under the contract, or (ii) the last day a schedule could have been given.</li>
+          <li><strong>Schedule received and scheduled amount is less than claimed:</strong> section 79(2)(b). This is the most common scenario. The application is due 30 business days after the day you received the payment schedule.</li>
+          <li><strong>Schedule received, scheduled amount equals the claim, but it has not been paid:</strong> section 79(2)(c). The application is due 20 business days after the day on which payment is due under the contract.</li>
+        </ul>
+        <p>Drop the payment claim into the left slot and the payment schedule into the right slot, or paste the text into the textareas if PDF extraction is messy. Optionally set the lodgement deadline; the Calculate from dates link opens the Due Date Calculator preset to the Adjudication Application scenario so you can compute it from the relevant key dates.</p>
+        <p>When you click Parse documents, Sopal extracts the parties, the contract reference, the reference date, the claimed and scheduled totals, every line item with its claimed and scheduled amounts and the respondent's reasons for any difference, and the universe of reasons the respondent has put on the table (the section 82(4) ceiling for what the respondent can later argue at adjudication). Any extraction warnings appear inline next to the Parse button.</p>
+
+        <h2>Stage 2: Dispute table</h2>
+        <p>Stage 2 is where you sanity-check the extracted dispute table. The respondent's reasons that came out of the schedule are pre-filled per row. You can edit the item label, description, claimed and scheduled amounts, status, issue type, and the verbatim reasons.</p>
+        <p>Pay particular attention to the issue type column, because it drives the per-item RFI templates the engine uses in Stage 3. The available types are variation, EOT, delay costs, defects, set-off, retention, prevention, scope, valuation, and other. The status column also matters: disputed (red wash) is the default for an item the respondent rejected; jurisdictional (purple) is for an item that turns on a jurisdictional argument rather than the merits; admitted (green) and partial (amber) are useful when an item is partly conceded.</p>
+        <p>If the parser missed a line item, click Add row to append a blank one. If two PC line items are really one dispute, edit one row to combine them and delete the other. If the parser got the parties or contract reference wrong, click Matter details in the card head and fix them; those fields drive both the engine prompt and the master document cover page.</p>
+        <p>When the table accurately reflects the dispute as you see it, click Lock dispute table to advance.</p>
+
+        <h2>Stages 3 and 4: RFI and Draft</h2>
+        <p>Stages 3 and 4 share a workspace. The left side is your items navigation: a Jurisdictional thread, a Background and General thread, and one thread per dispute item from Stage 2. The right side is the active thread.</p>
+        <p>Each thread runs as a small AI conversation, scoped strictly to the topic of that thread. When you open a freshly-created thread, Sopal automatically generates the first targeted RFI for it. You answer in the table row, click Submit (or press Cmd or Ctrl plus Enter), and Sopal either generates the next RFI or, if it has enough information, marks the thread ready to draft.</p>
+        <p>Click Draft this thread now whenever you want Sopal to take what it has and write the per-thread submissions. The Draft all action at the top runs the draft pass for every thread that has answered RFIs but is not yet drafted. The items navigation shows a status dot per thread (idle, in-progress, ready-to-draft, drafted) so you can see at a glance where everything stands.</p>
+        <p>Definitions you and Sopal introduce in any one thread (for example, defining "the Contract" or "the Variation Notice") are shared across every other thread, so the language stays consistent across the whole application.</p>
+
+        <h2>Stage 5: Review and lodge</h2>
+        <p>Stage 5 has two parts: a lodgement checklist on the left and a master document preview on the right.</p>
+        <p>The lodgement checklist tells you what is in place and what is still missing: payment claim ingested, payment schedule ingested, dispute table populated, jurisdictional submissions drafted, introduction drafted, executive summary drafted, overarching arguments drafted, threads drafted, evidence index populated, deadline set.</p>
+        <p>Click View master document to open the master document in a fullscreen modal. The master is fluid: only sections you have populated will render. The seven possible sections, in order, are the cover page, the introduction, the executive summary, jurisdictional submissions, overarching arguments, per-item submissions with a quantum summary table, and the conclusion. The cover page is the only section that always renders.</p>
+        <p>The master modal's action row gives you Cover page (opens the cover-page editor with grouped fields for application context, claimant details and respondent details), Introduction, Generate summary (which runs an engine call to produce a 4-6 paragraph executive summary from the per-thread headlines), Edit summary, and Overarching. The export buttons produce a Word-friendly .doc of the master, the combined statutory declaration, the index of supporting evidence, and a clean Markdown copy.</p>
+
+        <h2>Tips that materially improve the output</h2>
+        <ul>
+          <li>Upload the contract before you parse. The engine quotes real clauses when it can see them, and falls back to bracketed placeholders when it cannot.</li>
+          <li>Be precise with party names. "Acme Builders Pty Ltd" is materially different to "Acme Builders" in submissions; if you let the parser get this wrong, the engine repeats the error throughout. Use the Matter details editor to fix it.</li>
+          <li>Answer the first RFI on a thread carefully. The engine bases the next questions on the first answer; if your answer is vague, every subsequent question is vague too.</li>
+          <li>Use the Definitions panel proactively. The shared definitions are how the engine keeps language consistent across threads and sections.</li>
+          <li>For each item that was rejected on multiple grounds, mention every ground in your RFI answers, even briefly. The engine will not invent reasons or address grounds it has not been told about.</li>
+          <li>The exec summary is best generated last, after every per-item thread has been drafted. Re-generating is cheap; the new summary inherits any updates.</li>
+        </ul>
+      `,
+    },
+
+    {
+      slug: "drafting-agents",
+      title: "Drafting agents: when to use which",
+      category: "Workflows",
+      summary: "A practical guide to the six drafting agents and how the Word-style editor works.",
+      body: `
+        <p class="lead">The drafting agents in the Projects group give you a Word-style editor with a starter template for each common BIF Act and project document. The right-hand pane is an AI chat that rewrites the document on instruction. Use them for one-off documents that do not need the multi-stage workflow of the Adjudication Application complex agent.</p>
+
+        <h2>The six agents</h2>
+        <p><strong>Payment Claims</strong>: prepare a payment claim under section 75 of the BIF Act. The template covers parties, claimed amount, identification of the construction work or related goods and services, item-by-item breakdown, the statutory endorsement, and service detail.</p>
+        <p><strong>Payment Schedules</strong>: respond to a payment claim under section 76. The template covers parties, the payment claim being responded to, scheduled amount, itemised reasons for any difference, and a reservation-of-rights paragraph.</p>
+        <p><strong>EOTs</strong>: notice of extension of time. The template covers the qualifying cause of delay, when the contractor became aware, the likely effect on progress, supporting analysis, and the contractual basis for the claim.</p>
+        <p><strong>Variations</strong>: a variation notice or claim. The template covers the direction or change relied on, the contractual basis, a description of the varied work, valuation, time impact, and supporting documents.</p>
+        <p><strong>Delay Costs</strong>: a prolongation or disruption claim. The template covers entitlement, causation, period, and quantum.</p>
+        <p><strong>General Correspondence</strong>: a free-form letter, email or notice template. Useful for show-cause letters, suspension notices, default notices, or anything that does not fit one of the structured agents.</p>
+
+        <h2>The editor</h2>
+        <p>The left pane is a contenteditable document. Type or paste content directly. The toolbar gives you bold, italic, underline, headings (H1, H2), paragraph formatting, bulleted lists and numbered lists. The keyboard shortcuts you would expect (Cmd or Ctrl plus B, I, U) work as well.</p>
+        <p>Pasting from Word or Google Docs is supported and the inline style soup is stripped automatically; the structural HTML (headings, lists, tables, basic emphasis) is preserved. The document is auto-saved every time you stop typing, with the save indicator in the toolbar.</p>
+        <p>Three buttons in the top right of the toolbar give you Copy HTML (copies the rich content to your clipboard), Download .doc (downloads a Word-compatible .doc file), and Reset (rolls the document back to the blank template; this asks for confirmation because it is destructive).</p>
+
+        <h2>The chat pane</h2>
+        <p>Type any instruction into the chat composer. Sopal rewrites the document according to your instruction and gives you a one-line summary of what it changed. Examples that work well:</p>
+        <ul>
+          <li>"Set the claimed amount to $487,250 and recalculate the breakdown so the items add up to that figure."</li>
+          <li>"Add a section reserving the contractor's rights to delay costs and disruption costs in respect of the latent condition described in the variation notice."</li>
+          <li>"Tighten the language on the statutory endorsement so it tracks section 75 of the BIF Act."</li>
+          <li>"Change every reference to BCIPA to BIF Act."</li>
+          <li>"Add a row to the breakdown table for the Variation V14 amount of $214,500 (excl. GST)."</li>
+        </ul>
+        <p>The chat keeps a running history per agent per project so you can see the lineage of edits. The Project context checkbox at the bottom controls whether your contract and library content is also sent with the instruction; turn it on when you want Sopal to quote real clauses, turn it off if you want a faster turn-around with no project grounding.</p>
+
+        <h2>Where to draw the line</h2>
+        <p>If you find yourself making the same kind of document many times, with multiple disputes and a complex narrative, switch to the Adjudication Application complex agent instead. It runs a structured RFI workflow per dispute and assembles the master document for you. The drafting agents are best for one document at a time.</p>
+      `,
+    },
+
+    {
+      slug: "decision-search",
+      title: "Decision search and adjudicator statistics",
+      category: "Research",
+      summary: "How to search the public adjudication-decision corpus and how to size up an adjudicator before you nominate.",
+      body: `
+        <p class="lead">Sopal carries a searchable corpus of public Queensland adjudication decisions under both the current BIF Act 2017 and the older BCIPA 2004. It is the only place inside the app where you do not need a project to do useful research.</p>
+
+        <h2>Decision search</h2>
+        <p>The search box accepts a free-text query: an adjudicator name, a party name, a section reference, a contract clause, or any keyword from the decision text. Results are ranked by relevance by default; you can sort by date instead from the Sort dropdown.</p>
+        <p>The Filters control lets you narrow by date range, decision year, and amount claimed. Saved searches let you keep a frequent query as a one-click chip. Pagination at the top and bottom of the results lets you walk through long result sets ten at a time.</p>
+        <p>Click any result to open the decision detail panel on the right. The detail header shows the date, parties, adjudicator, the Act under which the decision was made, and the claimed and awarded amounts. The body shows the formatted decision text. The action row gives you Open page (a shareable link to the same decision), Copy citation (a short citation suitable for pasting into a brief or chat), Copy text (the full text), and Save to project (saves the decision into a chosen project's library so it is available as context for the agents in that project).</p>
+
+        <h2>Adjudicator statistics</h2>
+        <p>Adjudicator Statistics groups the corpus by adjudicator and shows you, for each one, the count of decisions, total claimed across those decisions, total awarded, and the average award rate (awarded as a percentage of claimed). This is the right place to look before you nominate an adjudicator: the average award rate gives you a coarse sense of how generous they tend to be on the merits, and the sample size tells you how confident you can be in that average.</p>
+        <p>Click any card to open the adjudicator's detail page. That page shows their full decision list, the section references most commonly cited in their reasons, and an option to filter to just BIF Act decisions or just BCIPA decisions. From there you can save particular decisions to a project library or copy citations.</p>
+
+        <h2>Research agent</h2>
+        <p>The Research Agent is a free-form chat targeted at construction-law and SOPA questions. It uses the same decision corpus as background. Pick a jurisdiction at the top: Queensland is the default (with full BIF Act framing), and New South Wales, Victoria, Western Australia and South Australia are also available with limited support (the agent flags when it is operating outside its primary jurisdiction).</p>
+      `,
+    },
+
+    {
+      slug: "calculators",
+      title: "BIF Act calculators",
+      category: "Tools",
+      summary: "Due dates and statutory interest calculations explained.",
+      body: `
+        <p class="lead">Two calculators take care of the most common money and time arithmetic. Both work without needing a project.</p>
+
+        <h2>Due Date Calculator</h2>
+        <p>The Due Date Calculator handles four common BIF Act deadlines. Each one is presented with the relevant statutory section reference so you can cross-check.</p>
+        <ul>
+          <li><strong>Payment Schedule</strong> (section 76): when the schedule must be given in response to a payment claim. Default 15 business days after the payment claim was given, or the period the contract specifies if shorter.</li>
+          <li><strong>Adjudication Application</strong> (section 79): when the application must be lodged. Three sub-scenarios reflect the three section 79(2) limbs.</li>
+          <li><strong>Adjudication Response</strong> (section 83): when the respondent's response must be given. The window depends on whether the respondent is in the business of construction work and whether a payment schedule was previously given.</li>
+          <li><strong>Adjudicator's Decision</strong> (section 85): when the adjudicator must give their decision. Default 10 business days from the date the adjudicator notified acceptance of the application, extendable by agreement.</li>
+        </ul>
+        <p>Pick the location (Brisbane, Cairns, Toowoomba, Townsville, Mackay or other QLD region) so the right show-day public holidays apply. Public holidays and weekends are skipped automatically. The calculator reports the final due date, the count of business days added, and a list of any holidays that were skipped along the way.</p>
+
+        <h2>Interest Calculator</h2>
+        <p>The Interest Calculator works out the interest payable on an overdue progress payment under section 73 of the BIF Act. Two rate types are supported.</p>
+        <ul>
+          <li><strong>QBCC section 67P rate:</strong> the prescribed rate from section 67P of the Queensland Building and Construction Commission Act 1991, which is the default unless the contract specifies a higher rate. The rate updates periodically; the calculator carries the current published rate.</li>
+          <li><strong>Contractual rate:</strong> the rate specified in the contract, where it is higher than the section 67P rate. Enter the rate as an annual percentage.</li>
+        </ul>
+        <p>Enter the unpaid amount, the date payment was due, and the date you want interest calculated to (defaults to today). The calculator returns the interest payable, the day count, and the daily rate used.</p>
+
+        <h2>Standalone reviewers</h2>
+        <p>Two reviewers also live in Tools: the Payment Claim Reviewer and the Payment Schedule Reviewer. Each takes a pasted document or a PDF or DOCX upload and runs a structured BIF Act review. You can pick the review mode at the top: "I'm about to serve" runs a pre-service check (statutory compliance, identification of work, dates, evidence); "I'm received" runs an audit (jurisdictional objections, prior-claim comparison, withholding adequacy). Held in memory only; nothing is stored on the server.</p>
+      `,
+    },
+
+    {
+      slug: "faq",
+      title: "Frequently asked questions",
+      category: "Reference",
+      summary: "Direct answers to the questions most users send us.",
+      body: `
+        <h2>About Sopal</h2>
+
+        <h3>Is Sopal a law firm?</h3>
+        <p>No. Sopal is software. It does not provide legal advice and using it does not create a solicitor-client relationship. Where the consequences of a decision are material, run the output past a construction lawyer who acts for you.</p>
+
+        <h3>Who is Sopal for?</h3>
+        <p>Project managers, contract administrators, claims managers, in-house counsel and small to mid-sized construction businesses who want to draft and review BIF Act documents quickly without paying for every cycle to be done by an external firm.</p>
+
+        <h3>What jurisdictions does Sopal cover?</h3>
+        <p>Primary jurisdiction is Queensland (BIF Act 2017). The Research Agent will run queries across New South Wales, Victoria, Western Australia and South Australia with a "limited support" banner; the dedicated workflows (Adjudication Application, drafting agents) are tuned to the BIF Act. Multi-jurisdiction support for the dedicated workflows is on the roadmap.</p>
+
+        <h2>Account and billing</h2>
+
+        <h3>How do I create an account?</h3>
+        <p>Click Login at the top right of the marketing site. From the login page, click Create account and enter your details. Your subscription gives you access to every page on app.sopal.com.au.</p>
+
+        <h3>What does Sopal cost?</h3>
+        <p>Pricing is on the public pricing page. Plans range from a per-seat monthly subscription for individuals through to firm-wide plans with shared projects.</p>
+
+        <h3>How do I cancel?</h3>
+        <p>From your account page on the marketing site, open the Subscription section and click Manage subscription. That opens the Stripe customer portal where you can cancel, change plan, update payment method, or download invoices.</p>
+
+        <h3>Is there a free trial?</h3>
+        <p>Yes. New accounts can run the Standalone tools (Decision Search, Adjudicator Statistics, the calculators) without paying. The drafting agents and the Adjudication Application complex agent require a paid plan because they incur AI processing costs per use.</p>
+
+        <h2>Data and privacy</h2>
+
+        <h3>Where is my project data stored?</h3>
+        <p>Your project content (contracts, library, drafts, definitions, RFIs, dispute tables, master documents) is stored in your browser using local storage. It does not leave your machine unless you explicitly run an action that needs the AI engine.</p>
+
+        <h3>What gets sent to the AI engine when I use it?</h3>
+        <p>When you ask the engine to draft, parse or rewrite, the relevant text is sent to Sopal's processing endpoint. That includes the documents you have uploaded for context (capped per request to keep latency sane), the RFI history for the relevant thread, and your most recent instruction. Sopal does not retain that content beyond the duration of the request.</p>
+
+        <h3>Can I export everything?</h3>
+        <p>Yes. From any project, click Export in the project header. You get a JSON snapshot containing the contracts, library, drafts, definitions and chat history for that project. Keep it as a backup or move the project between machines.</p>
+
+        <h3>What happens if I clear my browser data?</h3>
+        <p>Without an export, your project content is lost. Server-side persistent storage is on the roadmap; until then, exporting before any browser-data wipe is the safest practice.</p>
+
+        <h2>Workflow questions</h2>
+
+        <h3>The parser missed a line item in my payment claim. What do I do?</h3>
+        <p>Open Stage 2 (Dispute Table) and click Add row. Enter the missed item's label, description, claimed amount, scheduled amount, status and issue type. Save. Continue to Stage 3 normally.</p>
+
+        <h3>The parser got my client's name wrong. What do I do?</h3>
+        <p>On Stage 2, click Matter details in the card head and edit the Claimant or Respondent name. The corrected names flow into the engine prompt and the master document cover page from the next save. You do not need to re-parse.</p>
+
+        <h3>The engine's draft looks generic. How do I make it better?</h3>
+        <p>Three things make the biggest difference. First, upload the contract clauses (or paste them) into the project's Contract page so the engine can quote them by clause number. Second, answer the early RFIs precisely; the engine builds on what you give it. Third, populate the Definitions panel proactively so the engine uses your defined terms consistently.</p>
+
+        <h3>Can Sopal lodge the application for me?</h3>
+        <p>No. Sopal produces the documents; you (or your nominated authorised nominating authority) lodge them. The export buttons on Stage 5 give you the master document, the combined statutory declaration and the index of supporting evidence as Word files you can attach to your lodgement email.</p>
+
+        <h3>Why does the engine sometimes leave [bracketed placeholders] in the draft?</h3>
+        <p>The engine never invents facts. If a fact is not in the documents you have uploaded or in your RFI answers, it leaves a placeholder for you to fill in. If you would prefer the engine to ask you for the fact instead of leaving a placeholder, click Ask another RFI on the relevant thread.</p>
+
+        <h2>Technical questions</h2>
+
+        <h3>Which browsers are supported?</h3>
+        <p>Sopal is tested on the current versions of Chrome, Safari, Edge and Firefox. The Word-style editor uses contenteditable, which is well-supported across all four. Mobile Safari and mobile Chrome work for read and review; for heavy drafting we recommend a desktop browser.</p>
+
+        <h3>Is there a mobile app?</h3>
+        <p>Not yet. The web app is responsive enough to use on a phone for review and quick edits, but the dispute table, master document and Word-style editor are best on a screen wider than 1024 pixels.</p>
+
+        <h3>Can I run Sopal offline?</h3>
+        <p>The pages that have already loaded keep working offline (because everything is in local storage), but the AI engine, the Decision Search and the Adjudicator Statistics page need a network connection to function.</p>
+
+        <h3>I think I found a bug. Where do I report it?</h3>
+        <p>Send us a note via the Feedback link in the footer. Include a short description, the page URL, and a screenshot if possible. We triage every report.</p>
+      `,
+    },
+
+    {
+      slug: "glossary",
+      title: "Glossary",
+      category: "Reference",
+      summary: "Defined terms used in Sopal and in BIF Act work.",
+      body: `
+        <p class="lead">A short reference of terms you will encounter throughout Sopal. The definitions below are written for working understanding, not as legal definitions; the BIF Act and the contract govern actual scope.</p>
+
+        <h2>Statutory terms</h2>
+        <dl>
+          <dt>BIF Act</dt>
+          <dd>The Building Industry Fairness (Security of Payment) Act 2017 (Qld). The current Queensland security-of-payment legislation, in force from 17 December 2018.</dd>
+
+          <dt>BCIPA</dt>
+          <dd>The Building and Construction Industry Payments Act 2004 (Qld). Repealed and replaced by the BIF Act. Decisions decided under BCIPA are still useful research material because the substantive principles often carry across.</dd>
+
+          <dt>Section 75</dt>
+          <dd>The provision under which a payment claim is made. A valid section 75 claim must identify the construction work or related goods and services to which it relates, state the claimed amount, and carry the statutory endorsement.</dd>
+
+          <dt>Section 76</dt>
+          <dd>The provision governing payment schedules. A respondent must give a payment schedule within 15 business days after the payment claim is given (or the period the contract specifies if shorter). The schedule must identify the payment claim, state the scheduled amount, and (where the scheduled amount is less than the claimed amount) give reasons for the difference.</dd>
+
+          <dt>Section 79</dt>
+          <dd>The provision under which an adjudication application is made. Section 79(2) sets out the three timing scenarios that drive the lodgement deadline.</dd>
+
+          <dt>Section 82(4)</dt>
+          <dd>The provision that limits the respondent in adjudication to the reasons it gave in its payment schedule (or to reasons that could not have been included). New reasons cannot be raised at adjudication; this is the "section 82(4) ceiling".</dd>
+
+          <dt>Section 83</dt>
+          <dd>The provision governing the adjudication response. Timing depends on whether the respondent is in the business of construction work and whether a payment schedule was previously given.</dd>
+
+          <dt>Section 85</dt>
+          <dd>The provision governing the adjudicator's decision. The adjudicator must give the decision within 10 business days of accepting the application (extendable by agreement).</dd>
+        </dl>
+
+        <h2>Procedural terms</h2>
+        <dl>
+          <dt>Reference date</dt>
+          <dd>The date on or after which a payment claim may be made under the contract. Often the last day of a calendar month, or the date a particular milestone is reached. Each reference date supports one payment claim.</dd>
+
+          <dt>Authorised Nominating Authority (ANA)</dt>
+          <dd>An organisation authorised under the BIF Act to receive adjudication applications and refer them to an adjudicator. Adjudicate Today is the most active in Queensland.</dd>
+
+          <dt>Statutory declaration</dt>
+          <dd>A formal declaration signed before an authorised witness, used to verify the facts in an adjudication application. Sopal generates a combined statutory declaration covering the matter, parties, application materials and supporting evidence.</dd>
+
+          <dt>Index of supporting evidence</dt>
+          <dd>A schedule of every document attached to the adjudication application, cross-referenced from the per-item submissions. Sopal generates this automatically from the evidence references its engine produces while drafting.</dd>
+        </dl>
+
+        <h2>Sopal-specific terms</h2>
+        <dl>
+          <dt>Drafting agent</dt>
+          <dd>A single-document workspace with a Word-style editor on the left and an AI chat on the right. There is one per common BIF Act document type.</dd>
+
+          <dt>Complex agent</dt>
+          <dd>A multi-stage workflow that produces a structured output. The Adjudication Application is the only complex agent in the current build.</dd>
+
+          <dt>Item, dispute, thread</dt>
+          <dd>In the Adjudication Application complex agent, an item (or dispute) is one row in the Stage 2 dispute table. A thread is the per-item RFI conversation that runs in Stage 3 and 4.</dd>
+
+          <dt>RFI</dt>
+          <dd>Request for Information. In the Adjudication Application complex agent, the engine raises one RFI at a time per thread to gather what it needs to draft that thread's submissions.</dd>
+
+          <dt>Master document</dt>
+          <dd>The assembled adjudication application document. Renders fluidly: only sections you have populated will appear.</dd>
+
+          <dt>Cover meta</dt>
+          <dd>The optional cover-page details (ABN, contact information, contract date, project address, ANA reference) that render in the bordered tables on the master document cover page.</dd>
+        </dl>
+      `,
+    },
+
+    {
+      slug: "privacy",
+      title: "Privacy and data",
+      category: "Reference",
+      summary: "How Sopal handles your data, what is sent where, and what control you have.",
+      body: `
+        <p class="lead">Sopal is built on a "your project, your machine" model. Project content lives in the browser; the AI engine only sees what is needed to handle the immediate request; nothing is shared between users.</p>
+
+        <h2>Local-first storage</h2>
+        <p>Project content (contracts, library, drafts, definitions, RFI history, dispute tables, master documents, chat history) is stored in your browser using local storage. The same storage holds the Recently viewed decisions list and your saved searches.</p>
+        <p>Local storage is per browser per device. It is not synced across devices or browsers automatically, and it is cleared when you clear browsing data for the site. Use the Export action on a project to take a JSON snapshot you can keep elsewhere.</p>
+
+        <h2>What goes to the server</h2>
+        <p>When you click an action that uses the AI engine (Parse documents, Ask first RFI, Draft this thread now, Generate executive summary, the chat composer in any drafting agent or assistant), Sopal sends a request to its processing endpoint. The request contains:</p>
+        <ul>
+          <li>The user instruction (your prompt or the system action you triggered).</li>
+          <li>The relevant context (the document being edited, the thread's RFI history, the matter context, the project's contracts and library to a reasonable cap).</li>
+          <li>The shared definitions for the active project.</li>
+        </ul>
+        <p>The engine's response is stored back into the project's local storage. Sopal does not retain the request body or the response beyond the duration of that request, and does not use your project content to train any model.</p>
+
+        <h2>Account data</h2>
+        <p>Account data (email, name, firm details, billing address, subscription state) is stored on Sopal's servers and is required to authenticate you and to bill the subscription. You can update or remove account data from the account page on the marketing site.</p>
+
+        <h2>Cookies</h2>
+        <p>Sopal uses essential cookies only: a session cookie to keep you logged in, and a preference cookie for theme (light or dark). No advertising or tracking cookies.</p>
+
+        <h2>Removing your data</h2>
+        <p>To remove the project content from your browser: open Settings (the cog icon), choose Clear all local data, confirm. To close your account: from the account page on the marketing site, choose Close account; this removes account data after the subscription is cancelled and any open invoices are settled.</p>
+
+        <h2>Data we will share, and when</h2>
+        <p>We share data with third parties only in narrow, specified circumstances: with our payment processor (Stripe) to take subscription payments; with our infrastructure providers (cloud hosting, email delivery) under standard data-processing agreements; and where compelled by a court or by law. We will not sell your data and we will not share it with construction industry firms or other third parties.</p>
+      `,
+    },
+
+    {
+      slug: "legal-disclaimer",
+      title: "Legal disclaimer",
+      category: "Reference",
+      summary: "What Sopal is and is not, and the limits of the AI output.",
+      body: `
+        <p class="lead">Sopal is software. The output is a working draft, not legal advice.</p>
+
+        <h2>Not legal advice</h2>
+        <p>Nothing in Sopal constitutes legal advice. Using Sopal does not create a solicitor-client relationship between you and any law firm. Where the matter is high value, time-critical, or turns on a difficult question of law, run the output past a qualified construction lawyer who acts for you. Sopal is best understood as a faster way to produce a first draft and to do background research, not a replacement for legal judgement.</p>
+
+        <h2>AI output limits</h2>
+        <p>The drafting agents and the Adjudication Application complex agent run on large language models. The output is generally accurate but is sometimes wrong: it can mis-cite a section number, mis-state a date, or mischaracterise a fact. Treat every draft as a draft. Read it carefully. Cross-check section references against the BIF Act. Cross-check dates against your records. Cross-check quoted contract clauses against the contract text. Sopal flags placeholders explicitly so you can see where it has not invented facts.</p>
+
+        <h2>Decision corpus accuracy</h2>
+        <p>The decision corpus is built from publicly-available adjudication decisions. Reasonable care is taken in extracting party names, adjudicator names, dates, and amounts, but extraction errors occur from time to time. Always verify against the official copy of the decision before relying on it in submissions or correspondence.</p>
+
+        <h2>No guarantee of outcome</h2>
+        <p>Adjudication outcomes turn on a wide range of factors: the strength of the underlying contract, the documentary record, the conduct of the parties, the timing, and the adjudicator's view. Sopal does not, and cannot, guarantee a particular outcome. The Adjudicator Statistics page shows historical award rates, which is a useful data point but not a forecast.</p>
+
+        <h2>Service availability</h2>
+        <p>Sopal aims for high availability but does not guarantee uninterrupted service. The processing endpoint depends on third-party language model providers; if those providers are unavailable, the dependent features will be unavailable too. Standalone tools that do not need the engine continue to work in those windows.</p>
+
+        <h2>Updates to Sopal</h2>
+        <p>Sopal is updated regularly. Some updates change the way the engine prompts itself, or the way drafts are structured, in light of feedback or new case law. Old drafts are not retroactively rewritten. Re-run a draft action if you want the latest engine to revisit an old draft.</p>
+      `,
+    },
+  ];
+
+  function HelpIndexPage() {
+    const groups = {};
+    HELP_ARTICLES.forEach((a) => {
+      groups[a.category] = groups[a.category] || [];
+      groups[a.category].push(a);
+    });
+    const groupOrder = ["Start here", "Workflows", "Research", "Tools", "Reference"];
+    const groupHtml = groupOrder
+      .filter((g) => groups[g])
+      .map((g) => `
+        <section class="help-group">
+          <h2 class="help-group-title">${escapeHtml(g)}</h2>
+          <div class="help-card-grid">
+            ${groups[g].map((a) => `
+              <a class="help-card" href="/sopal-v2/help/${attr(a.slug)}" data-nav>
+                <h3>${escapeHtml(a.title)}</h3>
+                <p>${escapeHtml(a.summary)}</p>
+                <span class="help-card-cta">Read ${ICON.arrowUpRight}</span>
+              </a>
+            `).join("")}
+          </div>
+        </section>
+      `).join("");
+    return PageBody(`
+      <div class="page-shell help-shell">
+        <h1 class="page-title">Help and support</h1>
+        <p class="page-sub">Guides to every part of Sopal, plus FAQs and reference material. Search the page in the browser (Cmd or Ctrl plus F) for a quick lookup.</p>
+        ${groupHtml}
+        <section class="help-contact">
+          <h2 class="help-group-title">Still stuck?</h2>
+          <p>Send us a note via the <a href="/feedback" target="_blank" rel="noopener">Feedback page</a>. Include the page URL, a short description of what you were doing, and a screenshot if possible. We triage every report.</p>
+        </section>
+      </div>
+    `);
+  }
+
+  function HelpArticlePage(slug) {
+    const article = HELP_ARTICLES.find((a) => a.slug === slug);
+    if (!article) return notFoundPage();
+    const others = HELP_ARTICLES.filter((a) => a.slug !== slug && a.category === article.category).slice(0, 3);
+    return PageBody(`
+      <div class="page-shell help-article-shell">
+        <p class="muted help-article-cat">${escapeHtml(article.category)}</p>
+        <h1 class="page-title">${escapeHtml(article.title)}</h1>
+        <article class="help-article-body">${article.body}</article>
+        ${others.length ? `
+          <section class="help-related">
+            <h2 class="help-group-title">Related</h2>
+            <div class="help-card-grid">
+              ${others.map((a) => `
+                <a class="help-card" href="/sopal-v2/help/${attr(a.slug)}" data-nav>
+                  <h3>${escapeHtml(a.title)}</h3>
+                  <p>${escapeHtml(a.summary)}</p>
+                </a>
+              `).join("")}
+            </div>
+          </section>
+        ` : ""}
+        <p class="help-back"><a href="/sopal-v2/help" data-nav>${ICON.chevLeft || "<"} Back to all help</a></p>
+      </div>
+    `);
+  }
+
   /* ---------- Page resolver ---------- */
 
   function pageForRoute(route) {
@@ -7376,6 +7843,12 @@ Total\t${formatCurrencyFull(total)}`;
       if (parts[1] === "payment-claim-reviewer") return { crumbs: [{ label: "Payment claim reviewer" }], body: StandaloneReviewerPage("payment-claims") };
       if (parts[1] === "payment-schedule-reviewer") return { crumbs: [{ label: "Payment schedule reviewer" }], body: StandaloneReviewerPage("payment-schedules") };
       return { crumbs: [{ label: "Tools" }], body: notFoundPage() };
+    }
+    if (parts[0] === "help") {
+      if (!parts[1]) return { crumbs: [{ label: "Help and support" }], body: HelpIndexPage() };
+      const article = HELP_ARTICLES.find((a) => a.slug === parts[1]);
+      if (article) return { crumbs: [{ label: "Help and support", href: "/sopal-v2/help" }, { label: article.title }], body: HelpArticlePage(parts[1]) };
+      return { crumbs: [{ label: "Help and support", href: "/sopal-v2/help" }], body: notFoundPage() };
     }
     if (parts[0] === "projects") {
       if (!parts[1]) return { crumbs: [{ label: "Your projects" }], body: ProjectsListPage() };
