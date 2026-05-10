@@ -650,7 +650,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .card-empty {
-  background: #fff;
+  background: var(--main-panel);
   border: 1px dashed var(--main-border);
   border-radius: 14px;
   padding: 56px 20px;
@@ -782,7 +782,7 @@ a { color: inherit; text-decoration: none; }
   padding: 10px 14px;
   border: 1px solid var(--main-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--main-panel);
   color: var(--main-fg);
   font-size: 13px;
   font-weight: 500;

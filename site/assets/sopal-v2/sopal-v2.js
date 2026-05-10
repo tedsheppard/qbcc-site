@@ -43,7 +43,7 @@
     "adjudication-application": "Adjudication Application",
   };
   const COMPLEX_AGENT_DESCRIPTIONS = {
-    "adjudication-application": "Guided multi-stage adjudication application drafter — intake, dispute table, RFIs, parallel item drafting, live master document.",
+    "adjudication-application": "Guided multi-stage adjudication application drafter: intake, dispute table, RFIs, parallel item drafting, live master document.",
   };
   const AGENT_LABELS = {
     "payment-claims": "Payment Claims",
@@ -56,14 +56,14 @@
     "adjudication-response": "Adjudication Response",
   };
   const AGENT_DESCRIPTIONS = {
-    "payment-claims": "Review or draft payment claim material — BIF Act compliance, work identification, dates, service, evidence.",
-    "payment-schedules": "Review or draft payment schedules — scheduled amount, withholding reasons, timing, adjudication risk.",
-    eots: "Review or draft extension of time notices and claims — contract notice, causation, critical delay, evidence.",
-    variations: "Review or draft variation notices and claims — direction, scope, valuation, time/cost impact, evidence.",
-    "delay-costs": "Review or draft delay cost / prolongation / disruption claims — entitlement, causation, quantum.",
-    "general-correspondence": "Draft general project correspondence — letters, emails, notices, RFIs, show-cause, suspension, default.",
-    "adjudication-application": "Review or draft adjudication application material — chronology, jurisdiction, entitlement, quantum, annexures.",
-    "adjudication-response": "Review or draft adjudication response material — jurisdictional objections, payment schedule alignment, evidence.",
+    "payment-claims": "Review or draft payment claim material. Covers BIF Act compliance, work identification, dates, service, evidence.",
+    "payment-schedules": "Review or draft payment schedules. Covers scheduled amount, withholding reasons, timing, adjudication risk.",
+    eots: "Review or draft extension of time notices and claims. Covers contract notice, causation, critical delay, evidence.",
+    variations: "Review or draft variation notices and claims. Covers direction, scope, valuation, time and cost impact, evidence.",
+    "delay-costs": "Review or draft delay cost, prolongation or disruption claims. Covers entitlement, causation, quantum.",
+    "general-correspondence": "Draft general project correspondence: letters, emails, notices, RFIs, show-cause, suspension, default.",
+    "adjudication-application": "Review or draft adjudication application material. Covers chronology, jurisdiction, entitlement, quantum, annexures.",
+    "adjudication-response": "Review or draft adjudication response material. Covers jurisdictional objections, payment schedule alignment, evidence.",
   };
   // Every agent in the Drafting Agents sidebar group is drafting-only — the
   // Review/Draft mode picker only made sense when these doubled as document
@@ -122,9 +122,9 @@
       "Practical amendments and next steps",
     ],
     "payment-schedules": [
-      "Was the schedule given within time (s 76 — 15 BD or contract)?",
+      "Was the schedule given within time (s 76: 15 BD or contract)?",
       "Scheduled amount and clarity",
-      "Reasons for withholding — adequacy and itemisation",
+      "Reasons for withholding: adequacy and itemisation",
       "Reasons not properly raised vs s 82(4) risk",
       "Identification of the payment claim being responded to",
       "Reservation of rights and standard endorsements",
@@ -132,21 +132,21 @@
       "Practical amendments and next steps",
     ],
     eots: [
-      "Trigger event — qualifying delay event under the contract",
-      "Notice timing — did it meet the contractual deadline?",
-      "Causation — link between event and critical-path delay",
-      "Delay period — how it has been measured",
+      "Trigger event: qualifying delay event under the contract",
+      "Notice timing: did it meet the contractual deadline?",
+      "Causation: link between event and critical-path delay",
+      "Delay period: how it has been measured",
       "Programme and float analysis evidence",
       "Supporting documentation (correspondence, photos, RFIs)",
       "Time-bar risk and waiver / estoppel arguments",
       "Whether the claim should also raise variation or delay costs",
     ],
     variations: [
-      "Direction or instruction — is there a variation in fact?",
+      "Direction or instruction: is there a variation in fact?",
       "Contractual basis (variation clause, scope, gateway)",
-      "Notice compliance — content and timing",
+      "Notice compliance: content and timing",
       "Valuation method and rates / day-work substantiation",
-      "Time impact — separate EOT needed?",
+      "Time impact: separate EOT needed?",
       "Supporting evidence (cost build-up, quotes, dockets)",
       "Time-bar / waiver risk",
       "Reservation of rights and next steps",
@@ -192,7 +192,7 @@
       "Review this document for BIF Act compliance and identify any fatal issues.",
       "Identify the strongest jurisdictional objections and weakest claim items.",
       "List the missing evidence I should request before progressing.",
-      "Check timing — has the document been served and dated correctly under the BIF Act?",
+      "Check timing: has the document been served and dated correctly under the BIF Act?",
       "Stress-test the document the way a respondent's lawyer would.",
     ],
     draft: [
@@ -214,15 +214,15 @@
   const AGENT_QUICK_ACTIONS = {
     "payment-claims": [
       "Draft a payment claim for [scope] valued at $[amount] for [period].",
-      "Audit a payment claim served on me — what are the strongest jurisdictional objections?",
+      "Audit a payment claim served on me: what are the strongest jurisdictional objections?",
       "Suggest s 68 BIF Act endorsement wording for this claim.",
-      "Compare this claim against the prior claim — what's new or repeated?",
+      "Compare this claim against the prior claim: what's new or repeated?",
     ],
     "payment-schedules": [
       "Draft a payment schedule responding to a $[amount] claim, scheduled at $[amount].",
       "Itemise the reasons for withholding in a 4-column table.",
       "Stress-test the reasons against s 82(4) BIF Act risk.",
-      "Check timing — was the schedule given within s 76 (15 BD or contract)?",
+      "Check timing: was the schedule given within s 76 (15 BD or contract)?",
     ],
     eots: [
       "Draft an EOT notice citing clause [#] for [delay event].",
@@ -1519,8 +1519,11 @@
           ${pagerHtml ? `<div class="pager-wrap pager-bottom">${pagerHtml}</div>` : ""}
         </div>`;
       mount.querySelectorAll("[data-decision-id]").forEach((el) => el.addEventListener("click", () => {
+        const id = el.dataset.decisionId;
+        if (!id) return;
         const meta = el.dataset.meta ? safeParseJson(el.dataset.meta) : null;
-        loadDecisionDetail(el.dataset.decisionId, el.dataset.title, meta);
+        if (meta) trackRecentDecision({ ...meta, id, title: el.dataset.title || meta.title || id });
+        navigate(`/sopal-v2/research/decisions/${encodeURIComponent(id)}`);
       }));
       bindPagination(mount, params);
       // Scroll the results back to the top when the page changes so the user
@@ -1727,7 +1730,7 @@
     // so the reader can pull it back up in Sopal.
     const t = (title || "").trim();
     const dt = meta?.decisionDate ? ` (${meta.decisionDate})` : "";
-    const adj = meta?.adjudicator ? ` — Adjudicator ${meta.adjudicator}` : "";
+    const adj = meta?.adjudicator ? `, Adjudicator ${meta.adjudicator}` : "";
     const act = meta?.act ? ` [${meta.act}]` : "";
     const ref = id ? ` [${id}]` : "";
     return `${t}${dt}${adj}${act}${ref}`.trim();
@@ -1875,6 +1878,9 @@
     const mount = document.getElementById("adj-detail");
     if (!mount) return;
     mount.innerHTML = `<div class="card-head"><h3>${escapeHtml(name)}</h3><p class="muted">Loading decisions…</p></div><div class="card-body">${skeletonRows()}</div>`;
+    // Detail panel renders below the adjudicator grid on narrow viewports;
+    // scroll it into view so the click feels like it did something.
+    mount.scrollIntoView({ behavior: "smooth", block: "start" });
     try {
       const response = await fetch(`/api/adjudicator/${encodeURIComponent(name)}`, { credentials: "include" });
       const data = await response.json().catch(() => ({}));
@@ -1984,7 +1990,7 @@
     function applyScenario(id) {
       scenario = id;
       const meta = DUE_DATE_SCENARIOS.find((s) => s.id === id);
-      titleEl.textContent = `${meta.title} — due date`;
+      titleEl.textContent = `${meta.title}: due date`;
       badgeEl.textContent = meta.section;
       document.querySelectorAll("[data-scenario]").forEach((el) => el.classList.toggle("active", el.dataset.scenario === id));
       const url = new URL(window.location.href);
@@ -2310,7 +2316,7 @@
               </form>
             </div>
             <details class="provision">
-              <summary>BIF Act s 73 — interest on overdue progress payments</summary>
+              <summary>BIF Act s 73: interest on overdue progress payments</summary>
               <div class="provision-body">
                 <p>(1) A progress payment becomes payable — (a) on the day it becomes payable under the contract; or (b) 10 business days after the payment claim is made if the contract is silent.</p>
                 <p>(2) Interest is payable at the greater of the contract rate or the rate prescribed under the <em>Civil Proceedings Act 2011</em> s 59(3) for a money order debt.</p>
@@ -2952,7 +2958,7 @@ Total\t${formatCurrencyFull(total)}`;
               <label class="span-2">Label<input class="text-input" name="name" placeholder="Document label"></label>
               <label class="span-2">Paste text<textarea class="text-area" name="text" rows="8" placeholder="${attr(labels.textareaPlaceholder)}"></textarea></label>
               <div class="file-zone span-2" data-bulk-drop>
-                <label class="file-zone-label">${ICON.upload}<span>Click or drop one or more PDF / DOCX / TXT files — each becomes a separate entry</span><input type="file" data-context-file accept=".pdf,.docx,.txt" multiple></label>
+                <label class="file-zone-label">${ICON.upload}<span>Click or drop one or more PDF / DOCX / TXT files. Each becomes a separate entry.</span><input type="file" data-context-file accept=".pdf,.docx,.txt" multiple></label>
                 <div class="muted file-status" data-context-file-status>No files selected.</div>
               </div>
               <div class="span-2 split-action" data-split-action hidden>
@@ -3221,19 +3227,19 @@ Total\t${formatCurrencyFull(total)}`;
     {
       id: "no-schedule",
       label: "No payment schedule received and no payment made",
-      sub: "s 79(2)(a) — 30 BD after the LATER of (i) day amount became payable; or (ii) last day a schedule could have been given (15 BD after PC).",
+      sub: "s 79(2)(a): 30 BD after the LATER of (i) day amount became payable; or (ii) last day a schedule could have been given (15 BD after PC).",
       psOptional: true,
     },
     {
       id: "less-than-claimed",
-      label: "Schedule received — scheduled amount LESS than claimed",
-      sub: "s 79(2)(b) — 30 BD after receipt of the payment schedule.",
+      label: "Schedule received: scheduled amount LESS than claimed",
+      sub: "s 79(2)(b): 30 BD after receipt of the payment schedule.",
       psOptional: false,
     },
     {
       id: "scheduled-but-unpaid",
-      label: "Schedule received — scheduled amount EQUAL to claim, but not paid",
-      sub: "s 79(2)(c) — 20 BD after the day on which payment is due under the contract.",
+      label: "Schedule received: scheduled amount EQUAL to claim, but not paid",
+      sub: "s 79(2)(c): 20 BD after the day on which payment is due under the contract.",
       psOptional: false,
     },
   ];
@@ -3911,7 +3917,7 @@ Total\t${formatCurrencyFull(total)}`;
           openAAEditModal({
             project, aa, mode: "html", returnToMaster: true,
             title: "Overarching arguments",
-            hint: "Cross-cutting arguments that don't fit a single per-item section — prevention principle, estoppel, waiver, contract construction, repudiation. Optional: leave blank to omit this section from the master.",
+            hint: "Cross-cutting arguments that don't fit a single per-item section: prevention principle, estoppel, waiver, contract construction, repudiation. Optional: leave blank to omit this section from the master.",
             getValue: () => aa.overarchingHtml || "",
             setValue: (v) => { aa.overarchingHtml = v; },
           });
@@ -3939,7 +3945,7 @@ Total\t${formatCurrencyFull(total)}`;
         });
         rootEl.querySelector("[data-aa-export]")?.addEventListener("click", () => {
           aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`,
-            `${escapeHtml(project.name)} — Adjudication Application`,
+            `${escapeHtml(project.name)}: Adjudication Application`,
             renderAAMaster(project, aa), getFirm());
         });
         rootEl.querySelector("[data-aa-export-docx]")?.addEventListener("click", async (e) => {
@@ -3972,17 +3978,17 @@ Total\t${formatCurrencyFull(total)}`;
         });
         rootEl.querySelector("[data-aa-export-statdecs]")?.addEventListener("click", () => {
           aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-statutory-declaration.doc`,
-            `${escapeHtml(project.name)} — Statutory Declaration`,
+            `${escapeHtml(project.name)}: Statutory Declaration`,
             renderAAStatDecCompilation(project, aa), getFirm());
         });
         rootEl.querySelector("[data-aa-export-soe]")?.addEventListener("click", () => {
           aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-evidence-index.doc`,
-            `${escapeHtml(project.name)} — Index of Supporting Evidence`,
+            `${escapeHtml(project.name)}: Index of Supporting Evidence`,
             renderAAEvidenceIndex(project, aa), getFirm());
         });
         rootEl.querySelector("[data-aa-print-master]")?.addEventListener("click", () => {
           openFirmPrintPreview({
-            title: `${project.name} — Adjudication Application`,
+            title: `${project.name}: Adjudication Application`,
             bodyHtml: renderAAMaster(project, aa),
             firm: getFirm(),
           });
@@ -4483,7 +4489,7 @@ Total\t${formatCurrencyFull(total)}`;
     document.querySelectorAll("[data-aa-snapshot-save]").forEach((b) => {
       b.onclick = () => {
         const aaLive = project.complexApps && project.complexApps["adjudication-application"];
-        if (!aaLive) { alert("No AA to snapshot yet — work on Stage 1 first."); return; }
+        if (!aaLive) { alert("No AA to snapshot yet. Work on Stage 1 first."); return; }
         const name = prompt("Name this snapshot (e.g. \"Reference date 25 March\")", `Snapshot ${getAASnapshots(project).length + 1}`);
         if (name === null) return;
         saveAASnapshot(project, name);
@@ -4524,7 +4530,7 @@ Total\t${formatCurrencyFull(total)}`;
     });
     document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
       aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`,
-        `${escapeHtml(project.name)} — Adjudication Application`,
+        `${escapeHtml(project.name)}: Adjudication Application`,
         renderAAMaster(project, aa), getFirm());
     });
     document.querySelector("[data-aa-export-docx]")?.addEventListener("click", async (e) => {
@@ -4557,17 +4563,17 @@ Total\t${formatCurrencyFull(total)}`;
     });
     document.querySelector("[data-aa-export-statdecs]")?.addEventListener("click", () => {
       aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-statutory-declaration.doc`,
-        `${escapeHtml(project.name)} — Statutory Declaration`,
+        `${escapeHtml(project.name)}: Statutory Declaration`,
         renderAAStatDecCompilation(project, aa), getFirm());
     });
     document.querySelector("[data-aa-export-soe]")?.addEventListener("click", () => {
       aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-evidence-index.doc`,
-        `${escapeHtml(project.name)} — Index of Supporting Evidence`,
+        `${escapeHtml(project.name)}: Index of Supporting Evidence`,
         renderAAEvidenceIndex(project, aa), getFirm());
     });
     document.querySelector("[data-aa-print-master]")?.addEventListener("click", () => {
       openFirmPrintPreview({
-        title: `${project.name} — Adjudication Application`,
+        title: `${project.name}: Adjudication Application`,
         bodyHtml: renderAAMaster(project, aa),
         firm: getFirm(),
       });
@@ -5248,7 +5254,7 @@ Total\t${formatCurrencyFull(total)}`;
     }
     addThread("Jurisdictional facts", aa.jurisdictionalRfis.statDecContent);
     addThread("Background facts", aa.generalRfis.statDecContent);
-    (aa.disputes || []).forEach((d) => addThread(`Item — ${d.item || "Item"}`, (d.rfis && d.rfis.statDecContent) || ""));
+    (aa.disputes || []).forEach((d) => addThread(`Item: ${d.item || "Item"}`, (d.rfis && d.rfis.statDecContent) || ""));
     out.push(`<h3>Declaration</h3>`);
     out.push(`<p>And I make this solemn declaration conscientiously believing the same to be true and by virtue of the provisions of the <em>Oaths Act 1867</em> (Qld).</p>`);
     out.push(`<p>Declared at [place] in the State of Queensland on [date].</p>`);
@@ -5445,7 +5451,7 @@ Total\t${formatCurrencyFull(total)}`;
     });
     document.querySelector("[data-aa-lock-table]")?.addEventListener("click", () => {
       if (!aa.disputes.length) {
-        if (!confirm("No disputed items in the table — lock anyway? You can come back and add items later.")) return;
+        if (!confirm("No disputed items in the table. Lock anyway? You can come back and add items later.")) return;
       }
       aa.stage = "rfi";
       saveProject(project);
@@ -5642,7 +5648,7 @@ Total\t${formatCurrencyFull(total)}`;
     bindAATocLinks();
     document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
       aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`,
-        `${escapeHtml(project.name)} — Adjudication Application`,
+        `${escapeHtml(project.name)}: Adjudication Application`,
         renderAAMaster(project, aa), getFirm());
     });
   }
@@ -7333,7 +7339,7 @@ Total\t${formatCurrencyFull(total)}`;
       // the editor actually shows.
       persist();
       openFirmPrintPreview({
-        title: `${project.name} — ${AGENT_LABELS[agentKey] || agentKey}`,
+        title: `${project.name}: ${AGENT_LABELS[agentKey] || agentKey}`,
         bodyHtml: editor.innerHTML,
         firm: getFirm(),
       });
@@ -7663,7 +7669,7 @@ Total\t${formatCurrencyFull(total)}`;
       return;
     }
     const safe = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const heading = `${AGENT_LABELS[agentKey] || agentKey} review${project ? ` — ${project.name}` : ""}`;
+    const heading = `${AGENT_LABELS[agentKey] || agentKey} review${project ? `: ${project.name}` : ""}`;
     const today = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
     const checksHtml = (analysis.checks || []).map((c, i) => `
       <article class="print-check ${c.status || "info"}">
@@ -7725,7 +7731,7 @@ Total\t${formatCurrencyFull(total)}`;
     if (!analysis) return "";
     const project = currentProject();
     const date = new Date().toISOString().slice(0, 10);
-    const heading = `${AGENT_LABELS[agentKey] || agentKey} review${project ? ` — ${project.name}` : ""}`;
+    const heading = `${AGENT_LABELS[agentKey] || agentKey} review${project ? `: ${project.name}` : ""}`;
     const docLine = document?.name ? `**Document:** ${document.name}` : "";
     const counts = analysis.counts || { fail: 0, warn: 0, info: 0, pass: 0 };
     const countLine = `**${counts.fail} issues · ${counts.warn} warnings · ${counts.info} need input · ${counts.pass} passed**`;
@@ -8231,7 +8237,7 @@ Total\t${formatCurrencyFull(total)}`;
       detail: "Couldn't parse a per-check status from the model output. See the raw analysis above.",
     }));
     return {
-      summary: "_The model didn't return strict structured JSON — showing its raw response below. Try Re-run if you want a structured analysis._\n\n" + (text || ""),
+      summary: "_The model didn't return strict structured JSON. Showing its raw response below; try Re-run if you want a structured analysis._\n\n" + (text || ""),
       checks,
       counts: { pass: 0, fail: 0, warn: 0, info: checks.length },
       recommendations: [],
@@ -11584,9 +11590,9 @@ Total\t${formatCurrencyFull(total)}`;
     { date: "May 2026", title: "AA: definitions panel, ToC, deadline countdown, progress pill", body: "Defined terms picked up across threads propagate to every engine call. Live ToC at the top of the master scrolls only the master pane. Lodgement deadline shows a colour-coded countdown (ok / soon / urgent / overdue). At-a-glance 'X/Y drafted · NN%' progress pill in the header." },
     { date: "May 2026", title: "AA: print preview, copy as Markdown, per-thread artefact drawer", body: "View / export the per-thread evidence index + statutory declaration content. Copy the master as Markdown for pasting into other tools. Print preview opens a clean, styled new window." },
     { date: "May 2026", title: "Drafting agents are draft-only with a Word-style editor", body: "Payment Claims, Payment Schedules, EOTs, Variations, Delay Costs, General Correspondence go straight to a Word-style contenteditable doc with toolbar (B/I/U/H1/H2/¶/lists), preloaded template, autosave, .doc download, and clean-paste from Word." },
-    { date: "May 2026", title: "Research Agent: jurisdiction selector (QLD / NSW / VIC / WA / SA)", body: "Pick the active jurisdiction. QLD has full BIF Act framing + decision corpus. Other states show a 'Limited support — general knowledge only' banner and the system prompt warns the model accordingly until per-jurisdiction corpora ship." },
-    { date: "May 2026", title: "Pinned context, citations, doc tags", body: "Pin a contract or library doc and it's always sent to chat as context — even with the project-context box unchecked. Assistant replies that mention [@DocName] now render as clickable chips. Tag any doc as RFI / Variation / Notice / Programme and filter the lists by tag." },
-    { date: "May 2026", title: "Bulk upload + in-project search", body: "Drag many files into the contract or library list at once — each becomes its own entry. ⌘/Ctrl+F opens a fast project-wide search across contracts, library and chat threads." },
+    { date: "May 2026", title: "Research Agent: jurisdiction selector (QLD / NSW / VIC / WA / SA)", body: "Pick the active jurisdiction. QLD has full BIF Act framing + decision corpus. Other states show a 'Limited support: general knowledge only' banner and the system prompt warns the model accordingly until per-jurisdiction corpora ship." },
+    { date: "May 2026", title: "Pinned context, citations, doc tags", body: "Pin a contract or library doc and it's always sent to chat as context, even with the project-context box unchecked. Assistant replies that mention [@DocName] now render as clickable chips. Tag any doc as RFI / Variation / Notice / Programme and filter the lists by tag." },
+    { date: "May 2026", title: "Bulk upload + in-project search", body: "Drag many files into the contract or library list at once. Each becomes its own entry. ⌘/Ctrl+F opens a fast project-wide search across contracts, library and chat threads." },
     { date: "May 2026", title: "Project archive + duplicate + JSON export/import", body: "Tuck old projects out of sight without losing them. Clone a project's contract + library into a fresh project. Round-trip the whole project to JSON for backup." },
     { date: "May 2026", title: "Command palette (⌘K) + saved searches + clause splitter", body: "Jump to any project, agent, decision or tool from a single fuzzy palette. Save Decision Search queries as one-click chips. Paste a contract and split it into one entry per Clause / Section automatically." },
     { date: "May 2026", title: "Doc preview drawer + edit-in-drawer + Resume CTA", body: "Open any doc in a side drawer (with Edit / Pin / Copy). The home page surfaces a Resume chip with a one-line preview of where you left off." },

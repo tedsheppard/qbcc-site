@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
   <!-- Cache-busted: bump when sopal-v2.{js,css} change so browsers don't show stale UI. -->
-  <link rel="stylesheet" href="/assets/sopal-v2/sopal-v2.css?v=20260511-6">
+  <link rel="stylesheet" href="/assets/sopal-v2/sopal-v2.css?v=20260511-7">
 </head>
 <body>
   <!-- Intentionally isolated local prototype mounted at /sopal-v2 only. -->
@@ -18,10 +18,10 @@
   <!-- Real .docx export (docx.js) and real .pdf export (html2pdf.js + jsPDF + html2canvas).
        Loaded ahead of sopal-v2.js so the export helpers can see the `docx` and
        `html2pdf` globals as soon as the SPA boots. Pinned to the UMD bundle
-       paths used by docx@9.x and html2pdf.js@0.10+ — `build/index.js` (the old
-       docx layout) returns 404 on current versions. -->
+       paths used by docx@9.x and html2pdf.js@0.10+ since `build/index.js`
+       (the old docx layout) returns 404 on current versions. -->
   <script src="https://unpkg.com/docx@9.6.1/dist/index.umd.cjs"></script>
   <script src="https://unpkg.com/html2pdf.js@0.10.3/dist/html2pdf.bundle.min.js"></script>
-  <script src="/assets/sopal-v2/sopal-v2.js?v=20260511-6" defer></script>
+  <script src="/assets/sopal-v2/sopal-v2.js?v=20260511-7" defer></script>
 </body>
 </html>
