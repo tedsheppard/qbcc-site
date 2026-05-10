@@ -448,12 +448,114 @@
     p.updatedAt = Date.now();
     store.projects[p.id] = p;
     saveStore();
+    cloudSync.enqueue(p.id);
   }
   function deleteProject(id) {
     delete store.projects[id];
     if (store.currentProjectId === id) store.currentProjectId = projectList()[0]?.id || null;
     saveStore();
+    cloudSync.deleteRemote(id);
   }
+
+  // Cloud sync: a thin debounced wrapper over /api/sopal-v2/projects. Only
+  // fires when the user is signed in. Last-write-wins on conflict (the SPA
+  // is single-user single-device for now). Failures are logged to a queue so
+  // the next successful sync covers everything that was pending.
+  const cloudSync = (() => {
+    const SYNC_DEBOUNCE_MS = 1500;
+    const pending = new Set();
+    let timer = null;
+    function scheduleFlush() {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(flush, SYNC_DEBOUNCE_MS);
+    }
+    async function flush() {
+      timer = null;
+      if (!window.SopalAuth || window.SopalAuth.state !== "authed") return;
+      const ids = Array.from(pending);
+      pending.clear();
+      for (const id of ids) {
+        const project = store.projects[id];
+        if (!project) continue;
+        try {
+          await fetch(`/api/sopal-v2/projects/${encodeURIComponent(id)}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", ...window.SopalAuth.headers() },
+            body: JSON.stringify({ data: project }),
+          });
+        } catch (_) {
+          // Network blip: re-enqueue so the next save picks it back up.
+          pending.add(id);
+        }
+      }
+    }
+    return {
+      enqueue(id) {
+        if (!window.SopalAuth || window.SopalAuth.state !== "authed") return;
+        pending.add(id);
+        scheduleFlush();
+      },
+      async deleteRemote(id) {
+        if (!window.SopalAuth || window.SopalAuth.state !== "authed") return;
+        try {
+          await fetch(`/api/sopal-v2/projects/${encodeURIComponent(id)}`, {
+            method: "DELETE",
+            headers: window.SopalAuth.headers(),
+          });
+        } catch (_) {}
+      },
+      async pullMissing() {
+        // Called once after auth succeeds. Fetches the lightweight project
+        // list, and for any project the cloud has but local does not, pulls
+        // the full blob and merges it into the local store.
+        if (!window.SopalAuth || window.SopalAuth.state !== "authed") return;
+        try {
+          const r = await fetch("/api/sopal-v2/projects", { headers: window.SopalAuth.headers() });
+          if (!r.ok) return;
+          const data = await r.json();
+          const list = (data && data.projects) || [];
+          let pulled = 0;
+          for (const meta of list) {
+            if (store.projects[meta.id]) continue;
+            try {
+              const fr = await fetch(`/api/sopal-v2/projects/${encodeURIComponent(meta.id)}`, { headers: window.SopalAuth.headers() });
+              if (!fr.ok) continue;
+              const full = await fr.json();
+              if (full && full.data && typeof full.data === "object") {
+                store.projects[meta.id] = full.data;
+                pulled += 1;
+              }
+            } catch (_) {}
+          }
+          if (pulled) {
+            saveStore();
+            render();
+          }
+        } catch (_) {}
+      },
+      async pushAll() {
+        // Manual full-push action. Used when the user wants to seed the
+        // cloud copy from the current browser state (after enabling sync
+        // on a machine that already has projects).
+        if (!window.SopalAuth || window.SopalAuth.state !== "authed") return { pushed: 0 };
+        let pushed = 0;
+        for (const id of Object.keys(store.projects)) {
+          const project = store.projects[id];
+          if (!project) continue;
+          try {
+            const r = await fetch(`/api/sopal-v2/projects/${encodeURIComponent(id)}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json", ...window.SopalAuth.headers() },
+              body: JSON.stringify({ data: project }),
+            });
+            if (r.ok) pushed += 1;
+          } catch (_) {}
+        }
+        return { pushed };
+      },
+    };
+  })();
+  window.SopalCloudSync = cloudSync;
 
   function sanitiseImportedDoc(d) {
     if (!d || typeof d !== "object") return null;
@@ -8574,10 +8676,15 @@ Total\t${formatCurrencyFull(total)}`;
   // Auth check runs after the first paint so the user does not stare at a
   // blank screen waiting for the network round-trip. When the call lands the
   // sidebar foot re-renders with the user's identity (or a Sign in prompt)
-  // and the hard gate fires only if the AUTH_HARD_GATE flag is on.
+  // and the hard gate fires only if the AUTH_HARD_GATE flag is on. Cloud
+  // sync's pull-missing pass runs once the auth state is known, so a fresh
+  // browser on a signed-in account auto-rehydrates that user's projects.
   (async () => {
     await sopalAuth.refresh();
     sopalAuth.requireOrRedirect();
     render();
+    if (sopalAuth.state === "authed") {
+      cloudSync.pullMissing();
+    }
   })();
 })();
