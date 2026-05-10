@@ -2894,6 +2894,14 @@ Total\t${formatCurrencyFull(total)}`;
   function bindContextManager(projectId, bucket) {
     const form = document.querySelector(`[data-context-form="${bucket}"]`);
     if (!form) return;
+    // Idempotency guard. bindContextManager fires from a setTimeout in
+    // ContextPage; if the page renders twice in quick succession (e.g. a
+    // side-effect re-render) the old form was double-bound, so a single
+    // click would fire the submit handler twice and add two duplicate
+    // entries to project.contracts / project.library. Mark the element on
+    // first bind and bail on subsequent calls for the same DOM node.
+    if (form._sopalContextBound) return;
+    form._sopalContextBound = true;
     const fileInput = form.querySelector("[data-context-file]");
     const status = form.querySelector("[data-context-file-status]");
     const textarea = form.querySelector("textarea[name=text]");
