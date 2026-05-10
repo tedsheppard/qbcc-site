@@ -4442,17 +4442,23 @@ Total\t${formatCurrencyFull(total)}`;
     }));
 
     // ----- Snapshot bar handlers -----
-    document.querySelectorAll("[data-aa-snapshot-save]").forEach((b) => b.addEventListener("click", () => {
-      const aaLive = project.complexApps && project.complexApps["adjudication-application"];
-      if (!aaLive) { alert("No AA to snapshot yet — work on Stage 1 first."); return; }
-      const name = prompt("Name this snapshot (e.g. \"Reference date 25 March\")", `Snapshot ${getAASnapshots(project).length + 1}`);
-      if (name === null) return;
-      saveAASnapshot(project, name);
-      render();
-    }));
+    // Use .onclick (assign-once) instead of addEventListener so a double-bind
+    // from racing renders (ComplexAdjudicationPage uses a deferred bind, and
+    // sopalAuth.refresh() re-render at boot can queue a second one) doesn't
+    // fire the prompt twice and create duplicate snapshots.
+    document.querySelectorAll("[data-aa-snapshot-save]").forEach((b) => {
+      b.onclick = () => {
+        const aaLive = project.complexApps && project.complexApps["adjudication-application"];
+        if (!aaLive) { alert("No AA to snapshot yet — work on Stage 1 first."); return; }
+        const name = prompt("Name this snapshot (e.g. \"Reference date 25 March\")", `Snapshot ${getAASnapshots(project).length + 1}`);
+        if (name === null) return;
+        saveAASnapshot(project, name);
+        render();
+      };
+    });
     const loadSelect = document.querySelector("[data-aa-snapshot-load]");
     if (loadSelect) {
-      loadSelect.addEventListener("change", () => {
+      loadSelect.onchange = () => {
         const id = loadSelect.value;
         if (!id) return;
         const snap = getAASnapshots(project).find((s) => s.id === id);
@@ -4464,9 +4470,9 @@ Total\t${formatCurrencyFull(total)}`;
         if (!confirm(msg)) { loadSelect.value = ""; return; }
         loadAASnapshot(project, id);
         render();
-      });
+      };
     }
-    document.querySelectorAll("[data-aa-snapshot-manage]").forEach((b) => b.addEventListener("click", () => openAASnapshotManager(project)));
+    document.querySelectorAll("[data-aa-snapshot-manage]").forEach((b) => { b.onclick = () => openAASnapshotManager(project); });
 
     if (aa.stage === "intake") return bindAAIntake(project, aa);
     if (aa.stage === "dispute-table") return bindAADisputeTable(project, aa);
