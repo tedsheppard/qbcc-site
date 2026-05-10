@@ -8060,6 +8060,40 @@ Total\t${formatCurrencyFull(total)}`;
     },
 
     {
+      slug: "account-and-cloud-sync",
+      title: "Account and cloud sync",
+      category: "Reference",
+      summary: "How accounts work, how cloud sync of your projects works, and what happens when you sign out.",
+      body: `
+        <p class="lead">Sopal uses a single account across the marketing site and the app. Sign in once and you have everything: pricing-page features, project workspace, cloud sync of your projects, and the account page on sopal.com.au.</p>
+
+        <h2>Creating an account</h2>
+        <p>Go to <a href="/register">/register</a> on the marketing site or use the Sign in button in Sopal v2's sidebar foot, which takes you to <a href="/login">/login</a> with a Create account link. The fields are email, password, name, firm name (optional), ABN (optional), billing details, and a phone number.</p>
+
+        <h2>Signing in</h2>
+        <p>The login flow stores a JWT in your browser's local storage under the key "purchase_token". Sopal v2's sidebar foot picks this up automatically. If the token is missing, malformed or expired, the foot row shows a guest banner with a Sign in button.</p>
+
+        <h2>Cloud sync</h2>
+        <p>When you are signed in, every project edit auto-syncs to your account. The sync is a debounced PUT to /api/sopal-v2/projects/{id} that fires roughly 1.5 seconds after your last save. Failures are queued and retried on the next save.</p>
+        <p>On boot, when the SPA detects you are signed in, it fetches the lightweight project index from your account. For any project the cloud has but this browser does not, the SPA pulls the full blob and merges it in. This is how a fresh browser, a different machine, or a freshly cleared local-storage rehydrates everything.</p>
+        <p>Conflict resolution is last-write-wins. If you edit the same project from two browsers in parallel, the most recent save wins. Sopal does not currently merge concurrent edits at the field level.</p>
+
+        <h2>Manual sync actions</h2>
+        <p>Settings → Cloud sync exposes two manual actions:</p>
+        <ul>
+          <li><strong>Push all local projects to cloud now</strong>: posts every project in this browser to your account. Useful after enabling sync on a machine that already had projects, or after a long offline session.</li>
+          <li><strong>Pull missing projects from cloud</strong>: re-runs the boot pull. Useful if you cleared local storage and want everything back without restarting the app.</li>
+        </ul>
+
+        <h2>Signing out</h2>
+        <p>Sidebar foot → Sign out clears the JWT from local storage and redirects to /login?redirect=/sopal-v2. Your project content stays in this browser; it is also still in your account, untouched. Signing back in restores access to the cloud copies.</p>
+
+        <h2>Closing your account</h2>
+        <p>Open <a href="/account.html" target="_blank" rel="noopener">/account.html</a> on the marketing site and choose Close account. This cancels any active subscription and removes account data after the closing balance is settled. Your cloud-stored projects are deleted as part of this process.</p>
+      `,
+    },
+
+    {
       slug: "legal-disclaimer",
       title: "Legal disclaimer",
       category: "Reference",
