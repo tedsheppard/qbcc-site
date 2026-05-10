@@ -5623,7 +5623,7 @@ Total\t${formatCurrencyFull(total)}`;
       // come along for the ride. Suppresses the cover-page-specific
       // overrides since drafting agents render top-down without a
       // separate cover.
-      aaDownloadDoc(filename, `${project.name} — ${AGENT_LABELS[agentKey] || agentKey}`, editor.innerHTML, getFirm());
+      aaDownloadDoc(filename, `${project.name}: ${AGENT_LABELS[agentKey] || agentKey}`, editor.innerHTML, getFirm());
     });
     document.querySelector("[data-doc-reset]")?.addEventListener("click", () => {
       if (!confirm("Reset this draft back to the blank template? The current content will be lost.")) return;
@@ -8163,6 +8163,12 @@ Total\t${formatCurrencyFull(total)}`;
     // Same content width as the page-content area in CSS — keep this in
     // sync with .firm-paper-content padding (96px L/R = ~25mm at 96dpi).
     probe.style.width = `${dims.width - 192}px`;
+    // Match the paginated layout's font + size so measurements line up;
+    // without this, switching the firm font from serif to sans would
+    // silently drift the page boundaries.
+    probe.style.fontFamily = fontStack;
+    probe.style.fontSize = "11.5pt";
+    probe.style.lineHeight = "1.55";
     probe.innerHTML = contentHtml;
     // The screen ToC nav is a navigation aid for the inline Stage 5 view,
     // not a document element. Strip it from the paginated layout so the
