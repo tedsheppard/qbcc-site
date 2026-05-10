@@ -74,6 +74,20 @@ try:
     _conn.execute(
         "CREATE INDEX IF NOT EXISTS sopal_v2_projects_user ON sopal_v2_projects(user_email)"
     )
+    # One row per user, holding the firm-wide branding settings (firm name,
+    # letterhead, footer text, logo data URL, body font, page size, accent
+    # colour, heading numbering style). The shape is owned by the SPA — the
+    # server treats `data` as opaque JSON capped at 1 MB so an oversized logo
+    # cannot wedge persistence.
+    _conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sopal_v2_firm (
+            user_email TEXT PRIMARY KEY,
+            data TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
     _conn.commit()
     _sopal_v2_con = _conn
 except Exception as _exc:  # pragma: no cover - defensive, runs once at boot
@@ -188,6 +202,53 @@ def delete_project(project_id: str, email: str = Depends(_current_user_email)) -
     )
     con.commit()
     return {"deleted": cur.rowcount}
+
+
+# ---------- Firm-wide branding (one row per user) ----------
+#
+# The firm settings (logo, letterhead, footer, fonts, page size, accent
+# colour, heading numbering style) drive how the AA master document and
+# the six standalone drafting agents render. Stored opaquely as JSON so
+# the SPA can evolve the shape without a migration.
+
+class SopalV2FirmPut(BaseModel):
+    data: dict[str, Any]
+
+
+@router.get("/firm")
+def get_firm(email: str = Depends(_current_user_email)) -> dict[str, Any]:
+    row = _require_persistence().execute(
+        "SELECT data, updated_at FROM sopal_v2_firm WHERE user_email = ?",
+        (email,),
+    ).fetchone()
+    if not row:
+        return {"data": None, "updatedAt": None}
+    try:
+        data = json.loads(row["data"])
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Stored firm blob is corrupted.")
+    return {"data": data, "updatedAt": row["updated_at"]}
+
+
+@router.put("/firm")
+def upsert_firm(payload: SopalV2FirmPut, email: str = Depends(_current_user_email)) -> dict[str, Any]:
+    blob = json.dumps(payload.data, separators=(",", ":"), ensure_ascii=False)
+    # 1 MB cap is generous given the only large field is the base64 logo,
+    # which we already downscale client-side to ~250 KB.
+    if len(blob.encode("utf-8")) > 1_000_000:
+        raise HTTPException(status_code=413, detail="Firm settings are over the 1 MB cap (downscale your logo).")
+    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    con = _require_persistence()
+    con.execute(
+        """
+        INSERT INTO sopal_v2_firm (user_email, data, updated_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(user_email) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at
+        """,
+        (email, blob, now),
+    )
+    con.commit()
+    return {"updatedAt": now, "sizeBytes": len(blob)}
 
 
 @page_router.get("/sopal-v2", include_in_schema=False)

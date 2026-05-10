@@ -338,18 +338,47 @@
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   }
 
-  function emptyStore() { return { projects: {}, currentProjectId: null, recentDecisions: [] }; }
+  // Firm branding defaults — used wherever the user hasn't set anything
+  // themselves. Kept conservative so a brand-new user gets a clean,
+  // unbranded look that still passes for legal output rather than a
+  // half-applied template.
+  function defaultFirmSettings() {
+    return {
+      name: "",
+      letterheadAddress: "",
+      footerText: "",
+      logoDataUrl: "",
+      bodyFont: "serif",          // 'serif' | 'sans' | 'inter'
+      pageSize: "a4",             // 'a4' | 'letter'
+      accentColour: "#243043",
+      headingNumbering: "decimal", // 'decimal' | 'decimal-nested' | 'alpha' | 'roman' | 'none'
+    };
+  }
+  function emptyStore() {
+    return { projects: {}, currentProjectId: null, recentDecisions: [], firm: defaultFirmSettings() };
+  }
   function loadStore() {
     try {
       const parsed = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
       if (parsed && parsed.projects) {
         if (!Array.isArray(parsed.recentDecisions)) parsed.recentDecisions = [];
+        // Backfill firm slot for stores that pre-date the Firm Settings card.
+        parsed.firm = { ...defaultFirmSettings(), ...(parsed.firm || {}) };
         return parsed;
       }
     } catch {}
     return emptyStore();
   }
   function saveStore() { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+  function getFirm() {
+    if (!store.firm) store.firm = defaultFirmSettings();
+    return store.firm;
+  }
+  function saveFirm(patch) {
+    store.firm = { ...getFirm(), ...(patch || {}) };
+    saveStore();
+    firmCloudSync.enqueue();
+  }
 
   // Track decisions the user has opened so the home page can surface them.
   function trackRecentDecision(meta) {
@@ -556,6 +585,67 @@
     };
   })();
   window.SopalCloudSync = cloudSync;
+
+  // Firm-wide settings sync. Mirrors the project sync pattern but operates
+  // on a single per-user blob, not a list. Debounced so editing the logo
+  // / fonts / colours doesn't fire one PUT per keystroke.
+  const firmCloudSync = (() => {
+    const SYNC_DEBOUNCE_MS = 1500;
+    let timer = null;
+    let pending = false;
+    function scheduleFlush() {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(flush, SYNC_DEBOUNCE_MS);
+    }
+    async function flush() {
+      timer = null;
+      if (!pending) return;
+      pending = false;
+      if (!window.SopalAuth || window.SopalAuth.state !== "authed") return;
+      try {
+        await fetch("/api/sopal-v2/firm", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...window.SopalAuth.headers() },
+          body: JSON.stringify({ data: getFirm() }),
+        });
+      } catch (_) {
+        // Re-arm so the next save still picks the change up.
+        pending = true;
+      }
+    }
+    return {
+      enqueue() {
+        if (!window.SopalAuth || window.SopalAuth.state !== "authed") return;
+        pending = true;
+        scheduleFlush();
+      },
+      async pull() {
+        if (!window.SopalAuth || window.SopalAuth.state !== "authed") return;
+        try {
+          const r = await fetch("/api/sopal-v2/firm", { headers: window.SopalAuth.headers() });
+          if (!r.ok) return;
+          const data = await r.json();
+          if (data && data.data && typeof data.data === "object") {
+            store.firm = { ...defaultFirmSettings(), ...data.data };
+            saveStore();
+            render();
+          }
+        } catch (_) {}
+      },
+      async push() {
+        if (!window.SopalAuth || window.SopalAuth.state !== "authed") return false;
+        try {
+          const r = await fetch("/api/sopal-v2/firm", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", ...window.SopalAuth.headers() },
+            body: JSON.stringify({ data: getFirm() }),
+          });
+          return r.ok;
+        } catch (_) { return false; }
+      },
+    };
+  })();
+  window.SopalFirmSync = firmCloudSync;
 
   function sanitiseImportedDoc(d) {
     if (!d || typeof d !== "object") return null;
@@ -3611,11 +3701,17 @@ Total\t${formatCurrencyFull(total)}`;
   // actions in one place so the user can review + download in flow.
   function openAAMasterModal(project, aa) {
     modal = {
-      render: () => `
+      render: () => {
+        const firm = getFirm();
+        const dims = firmPageDimensions(firm);
+        const accent = firm.accentColour || "#243043";
+        const fontStack = firmFontFamily(firm);
+        const branded = firmHasBranding(firm) ? "is-branded" : "is-unbranded";
+        return `
         <div class="modal-backdrop" data-modal-backdrop>
-          <div class="modal aa-master-modal" role="dialog" aria-modal="true">
+          <div class="modal aa-master-modal firm-paper-modal ${branded}" role="dialog" aria-modal="true" style="--firm-accent:${attr(accent)};--firm-page-width:${dims.width}px;--firm-page-height:${dims.height}px;--firm-font:${attr(fontStack)};--firm-page-label:'${dims.label}'">
             <div class="modal-head aa-master-modal-head">
-              <h2>Master document</h2>
+              <h2>Master document <span class="muted firm-page-label-tag">${dims.label}${firmHasBranding(firm) ? "" : " · unbranded"}</span></h2>
               <div class="aa-master-modal-actions">
                 <button class="ghost-button compact" type="button" data-aa-edit-cover>Cover page</button>
                 <button class="ghost-button compact" type="button" data-aa-edit-intro>Introduction</button>
@@ -3629,23 +3725,37 @@ Total\t${formatCurrencyFull(total)}`;
                 <button class="ghost-button compact" type="button" data-aa-print-master>${ICON.file}<span>Print</span></button>
                 <button class="ghost-button compact" type="button" data-aa-copy-master>${ICON.copy}<span>Copy as Markdown</span></button>
                 <button class="ghost-button compact" type="button" data-aa-rebuild>Rebuild</button>
+                <a class="ghost-button compact" href="/sopal-v2/settings" data-nav title="Edit firm branding">Firm</a>
                 <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
               </div>
             </div>
-            <div class="modal-body aa-master-modal-body">
-              <div class="aa-master-body" data-aa-master>${renderAAMaster(project, aa)}</div>
+            <div class="modal-body aa-master-modal-body firm-paper-stage">
+              <div class="firm-paper-stack" data-firm-paper-stack data-aa-master></div>
             </div>
           </div>
-        </div>`,
+        </div>`;
+      },
       bind: (rootEl) => {
         const close = () => { modal = null; render(); };
         rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
         rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
         function refreshMasterPane() {
           const mount = rootEl.querySelector("[data-aa-master]");
-          if (mount) { mount.innerHTML = renderAAMaster(project, aa); bindAATocLinks(); }
+          if (mount) {
+            mount.innerHTML = "";
+            paintFirmPaperStack(mount, renderAAMaster(project, aa), getFirm());
+            bindAATocLinks();
+          }
           const lbl = rootEl.querySelector("[data-aa-gen-summary-label]");
           if (lbl) lbl.textContent = aa.execSummaryHtml ? "Re-generate summary" : "Generate summary";
+        }
+        // Initial paint — the modal HTML leaves the stack empty so we can
+        // measure the freshly-mounted container before we slice content
+        // into pages.
+        const initialMount = rootEl.querySelector("[data-aa-master]");
+        if (initialMount) {
+          paintFirmPaperStack(initialMount, renderAAMaster(project, aa), getFirm());
+          bindAATocLinks();
         }
         rootEl.querySelector("[data-aa-rebuild]")?.addEventListener("click", refreshMasterPane);
         // Section editors. Each one closes the master modal, opens the editor
@@ -3709,28 +3819,24 @@ Total\t${formatCurrencyFull(total)}`;
         rootEl.querySelector("[data-aa-export]")?.addEventListener("click", () => {
           aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`,
             `${escapeHtml(project.name)} — Adjudication Application`,
-            renderAAMaster(project, aa));
+            renderAAMaster(project, aa), getFirm());
         });
         rootEl.querySelector("[data-aa-export-statdecs]")?.addEventListener("click", () => {
           aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-statutory-declaration.doc`,
             `${escapeHtml(project.name)} — Statutory Declaration`,
-            renderAAStatDecCompilation(project, aa));
+            renderAAStatDecCompilation(project, aa), getFirm());
         });
         rootEl.querySelector("[data-aa-export-soe]")?.addEventListener("click", () => {
           aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-evidence-index.doc`,
             `${escapeHtml(project.name)} — Index of Supporting Evidence`,
-            renderAAEvidenceIndex(project, aa));
+            renderAAEvidenceIndex(project, aa), getFirm());
         });
         rootEl.querySelector("[data-aa-print-master]")?.addEventListener("click", () => {
-          const win = window.open("", "_blank", "noopener");
-          if (!win) { alert("Could not open the print preview. Please allow popups for this site and try again."); return; }
-          win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(project.name)} — Adjudication Application</title>
-            <style>body{font-family:"Source Serif Pro",Georgia,"Times New Roman",serif;font-size:12.5pt;line-height:1.55;color:#1a1a1a;max-width:760px;margin:28px auto;padding:0 24px}h1{font-size:20pt;text-align:center;margin:0 0 14px}h2{font-size:14pt;margin:22px 0 8px;padding-bottom:4px;border-bottom:1px solid #ccc}h3{font-size:12pt;margin:14px 0 6px}p{margin:0 0 10px}table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:11pt}th,td{border:1px solid #999;padding:4px 6px;text-align:left;vertical-align:top}th{background:#f0ece4}.aa-toc{background:#f5f2ed;border:1px solid #ddd;border-radius:6px;padding:12px 16px;margin:0 0 22px;font-family:-apple-system,"Segoe UI",sans-serif;font-size:11pt}.aa-toc-link{display:flex;gap:8px;padding:2px 0;color:#1a1a1a;text-decoration:none}.aa-toc-num{flex:0 0 36px;font-weight:600}.aa-toc-indent-1{padding-left:22px}.aa-issue-tag{display:inline-block;font-size:9pt;padding:1px 6px;margin-left:6px;background:#e0e7ff;border-radius:999px}.print-actions{display:flex;gap:8px;margin:0 0 18px}.print-actions button{font:inherit;padding:6px 14px;border-radius:6px;border:1px solid #aaa;background:#fff;cursor:pointer}@media print{.print-actions{display:none}body{margin:0;padding:0 18px;max-width:none}}</style>
-            </head><body>
-              <div class="print-actions"><button onclick="window.print()">Print</button><button onclick="window.close()">Close</button></div>
-              ${renderAAMaster(project, aa)}
-            </body></html>`);
-          win.document.close();
+          openFirmPrintPreview({
+            title: `${project.name} — Adjudication Application`,
+            bodyHtml: renderAAMaster(project, aa),
+            firm: getFirm(),
+          });
         });
         rootEl.querySelector("[data-aa-copy-master]")?.addEventListener("click", () => {
           copyText(aaMasterToMarkdown(project, aa));
@@ -4152,54 +4258,24 @@ Total\t${formatCurrencyFull(total)}`;
     document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
       aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`,
         `${escapeHtml(project.name)} — Adjudication Application`,
-        renderAAMaster(project, aa));
+        renderAAMaster(project, aa), getFirm());
     });
     document.querySelector("[data-aa-export-statdecs]")?.addEventListener("click", () => {
       aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-statutory-declaration.doc`,
         `${escapeHtml(project.name)} — Statutory Declaration`,
-        renderAAStatDecCompilation(project, aa));
+        renderAAStatDecCompilation(project, aa), getFirm());
     });
     document.querySelector("[data-aa-export-soe]")?.addEventListener("click", () => {
       aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-evidence-index.doc`,
         `${escapeHtml(project.name)} — Index of Supporting Evidence`,
-        renderAAEvidenceIndex(project, aa));
+        renderAAEvidenceIndex(project, aa), getFirm());
     });
     document.querySelector("[data-aa-print-master]")?.addEventListener("click", () => {
-      const title = `${project.name} — Adjudication Application`;
-      const win = window.open("", "_blank", "noopener");
-      if (!win) {
-        alert("Could not open the print preview. Please allow popups for this site and try again.");
-        return;
-      }
-      // Reuse the main app's typography for the print preview so the user
-      // sees what they're printing in the same style as the live workspace.
-      win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
-        <style>
-          :root { color-scheme: light; }
-          body { font-family: "Source Serif Pro", Georgia, "Times New Roman", serif; font-size: 12.5pt; line-height: 1.55; color: #1a1a1a; max-width: 760px; margin: 28px auto; padding: 0 24px; }
-          h1 { font-size: 20pt; text-align: center; margin: 0 0 14px; }
-          h2 { font-size: 14pt; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #ccc; }
-          h3 { font-size: 12pt; margin: 14px 0 6px; }
-          p { margin: 0 0 10px; }
-          table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 11pt; }
-          th, td { border: 1px solid #999; padding: 4px 6px; text-align: left; vertical-align: top; }
-          th { background: #f0ece4; }
-          .aa-toc { background: #f5f2ed; border: 1px solid #ddd; border-radius: 6px; padding: 12px 16px; margin: 0 0 22px; font-family: -apple-system, "Segoe UI", sans-serif; font-size: 11pt; }
-          .aa-toc-link { display: flex; gap: 8px; padding: 2px 0; color: #1a1a1a; text-decoration: none; }
-          .aa-toc-num { flex: 0 0 36px; font-weight: 600; }
-          .aa-toc-indent-1 { padding-left: 22px; }
-          .aa-issue-tag { display: inline-block; font-size: 9pt; padding: 1px 6px; margin-left: 6px; background: #e0e7ff; border-radius: 999px; }
-          .print-actions { display: flex; gap: 8px; margin: 0 0 18px; }
-          .print-actions button { font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid #aaa; background: #fff; cursor: pointer; }
-          @media print { .print-actions { display: none; } body { margin: 0; padding: 0 18px; max-width: none; } }
-        </style></head><body>
-          <div class="print-actions">
-            <button onclick="window.print()">Print</button>
-            <button onclick="window.close()">Close</button>
-          </div>
-          ${renderAAMaster(project, aa)}
-        </body></html>`);
-      win.document.close();
+      openFirmPrintPreview({
+        title: `${project.name} — Adjudication Application`,
+        bodyHtml: renderAAMaster(project, aa),
+        firm: getFirm(),
+      });
     });
     document.querySelector("[data-aa-copy-master]")?.addEventListener("click", () => {
       const md = aaMasterToMarkdown(project, aa);
@@ -4270,7 +4346,7 @@ Total\t${formatCurrencyFull(total)}`;
     return out.join("").replace(/\n{3,}/g, "\n\n").trim() + "\n";
   }
 
-  function aaDownloadDoc(filename, title, body) {
+  function aaDownloadDoc(filename, title, body, firm) {
     // Word opens HTML with the right office namespaces directly. We embed a
     // small inline stylesheet so the cover page, per-item meta tables and
     // ToC render with the same formal look the user sees in the app — Word
@@ -4278,14 +4354,28 @@ Total\t${formatCurrencyFull(total)}`;
     // selectors when the doc is opened in compatibility mode. The ToC nav is
     // hidden in the .doc export because Word doesn't follow in-doc anchors
     // the same way the browser does.
+    //
+    // When firm branding is configured we wrap the body in a cover-page
+    // letterhead block + add a Word-style page footer using the
+    // <div style="mso-element:footer"> trick, which Word picks up as a
+    // running footer when the document is opened.
+    const f = firm || {};
+    const accent = f.accentColour || "#000000";
+    const familySerif = f.bodyFont === "sans"
+      ? '"Helvetica", "Arial", sans-serif'
+      : f.bodyFont === "inter"
+      ? '"Inter", "Calibri", sans-serif'
+      : '"Times New Roman", "Source Serif Pro", serif';
+    const pageSize = f.pageSize === "letter" ? "8.5in 11in" : "210mm 297mm";
     const wordStyles = `
       <style>
-        body { font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.5; color: #1a1a1a; }
+        @page { size: ${pageSize}; margin: 25mm 25mm 25mm 25mm; mso-header-margin: 12mm; mso-footer-margin: 12mm; }
+        body { font-family: ${familySerif}; font-size: 12pt; line-height: 1.5; color: #1a1a1a; }
         h1 { font-size: 22pt; font-weight: bold; text-align: center; margin: 0 0 14px; }
-        h2 { font-size: 14pt; font-weight: bold; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1pt solid #888; }
+        h2 { font-size: 14pt; font-weight: bold; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1pt solid ${accent}; color: ${accent}; }
         h3 { font-size: 12pt; font-weight: bold; margin: 14px 0 6px; }
         h4 { font-size: 11pt; font-weight: bold; margin: 10px 0 4px; }
-        p { margin: 0 0 10px; }
+        p { margin: 0 0 10px; text-align: justify; }
         table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 11pt; }
         th, td { border: 1pt solid #888; padding: 5px 8px; text-align: left; vertical-align: top; }
         th { background: #f0ece4; font-weight: bold; }
@@ -4299,13 +4389,40 @@ Total\t${formatCurrencyFull(total)}`;
         table.aa-item-meta { width: auto; min-width: 60%; margin: 4px 0 12px; font-size: 10pt; }
         table.aa-item-meta th { width: 180px; background: #faf7f1; }
         .aa-issue-tag { display: inline; font-size: 9pt; padding: 1px 6px; margin-left: 6px; background: #e0e7ff; }
+        .firm-cover-letterhead-block { width: 100%; border-bottom: 2pt solid ${accent}; padding-bottom: 14pt; margin: 0 0 22pt; overflow: hidden; }
+        .firm-cover-letterhead-logo { float: left; max-height: 90pt; max-width: 240pt; }
+        .firm-cover-letterhead-text { float: right; text-align: right; font-size: 10pt; line-height: 1.4; color: #2a2a2a; white-space: pre-line; }
+        .firm-doc-footer { font-size: 9pt; color: #555; border-top: 1pt solid #aaa; padding-top: 4pt; margin-top: 18pt; }
+        .firm-doc-footer span.right { float: right; }
       </style>`;
+
+    const showHeader = firmHasBranding(f);
+    const headerHtml = showHeader
+      ? `<div class="firm-cover-letterhead-block">
+          ${f.logoDataUrl ? `<img class="firm-cover-letterhead-logo" src="${f.logoDataUrl}" alt="">` : ""}
+          ${f.letterheadAddress ? `<div class="firm-cover-letterhead-text">${escapeHtml(f.letterheadAddress)}</div>` : (f.name ? `<div class="firm-cover-letterhead-text"><strong>${escapeHtml(f.name)}</strong></div>` : "")}
+          <div style="clear:both"></div>
+        </div>`
+      : "";
+    // Word reads the special <div style="mso-element:footer"> pattern as a
+    // running page footer. PAGE / NUMPAGES are Word fields that resolve at
+    // open time so the user gets correct page numbers.
+    const footerLeft = f.footerText ? escapeHtml(f.footerText) : (f.name ? escapeHtml(f.name) : "");
+    const wordFooter = showHeader
+      ? `<div style="mso-element:footer" id="f1">
+           <p class="firm-doc-footer">${footerLeft}<span class="right">Page <span style="mso-field-code:&quot;PAGE&quot;">1</span> of <span style="mso-field-code:&quot;NUMPAGES&quot;">1</span></span></p>
+         </div>`
+      : "";
+
     const blob = new Blob([
       '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
       '<head><meta charset="UTF-8"><title>', title, '</title>',
       wordStyles,
+      '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->',
       '</head><body>',
+      headerHtml,
       body,
+      wordFooter,
       '</body></html>',
     ], { type: "application/msword" });
     const url = URL.createObjectURL(blob);
@@ -4730,7 +4847,7 @@ Total\t${formatCurrencyFull(total)}`;
     document.querySelector("[data-aa-export]")?.addEventListener("click", () => {
       aaDownloadDoc(`${project.name.replace(/[^a-z0-9]+/gi, "-")}-adjudication-application.doc`,
         `${escapeHtml(project.name)} — Adjudication Application`,
-        renderAAMaster(project, aa));
+        renderAAMaster(project, aa), getFirm());
     });
   }
 
@@ -5317,11 +5434,38 @@ Total\t${formatCurrencyFull(total)}`;
     `,
   };
 
+  // Pre-fill the user's firm name into "[Claimant name]" / "[Contractor name]"
+  // / "[Sender name, position, company]" placeholders in the standard
+  // drafting templates so a firm with branding configured doesn't have to
+  // hand-fill the obvious slot every time. Only the agent-side "self"
+  // placeholders are touched — counterparty placeholders ([Respondent name],
+  // [Recipient name]) are left alone for the user to fill.
+  function applyFirmToDraftTemplate(html, firm, agentKey) {
+    if (!firm || !firm.name) return html;
+    const name = firm.name;
+    const firmRoles = ["[Claimant name]", "[Contractor name]"];
+    let out = html;
+    for (const placeholder of firmRoles) {
+      // Replace every occurrence so all the bullet-point and header
+      // references get filled at once.
+      out = out.split(placeholder).join(escapeHtml(name));
+    }
+    // The general-correspondence template uses a richer "[Sender name,
+    // position, company]" line — only fill the company slot, leave name +
+    // position for the user.
+    out = out.replace(/\[Sender name, position, company\]/g, `[Sender name], [Position], ${escapeHtml(name)}`);
+    // Payment Schedule template: the issuer is the Respondent role; do
+    // not touch Respondent placeholders. The Variations / EOTs / Delay
+    // Costs templates use [Contractor name] which we just covered.
+    return out;
+  }
+
   function getProjectDraft(project, agentKey) {
     if (!project.drafts) project.drafts = {};
     if (!project.drafts[agentKey]) {
+      const tpl = (AGENT_TEMPLATES[agentKey] || "<p>[Start drafting…]</p>").trim();
       project.drafts[agentKey] = {
-        html: (AGENT_TEMPLATES[agentKey] || "<p>[Start drafting…]</p>").trim(),
+        html: applyFirmToDraftTemplate(tpl, getFirm(), agentKey),
         chat: { messages: [] },
         updatedAt: Date.now(),
       };
@@ -5369,6 +5513,7 @@ Total\t${formatCurrencyFull(total)}`;
           <div class="drafting-toolbar-right">
             <span class="muted drafting-savestate" data-drafting-savestate>Saved</span>
             <button class="ghost-button compact" type="button" data-doc-copy>${ICON.copy}<span>Copy HTML</span></button>
+            <button class="ghost-button compact" type="button" data-doc-print>${ICON.file}<span>Print preview</span></button>
             <button class="ghost-button compact" type="button" data-doc-download>${ICON.download}<span>Download .doc</span></button>
             <button class="ghost-button compact danger" type="button" data-doc-reset title="Reset to blank template">Reset</button>
           </div>
@@ -5460,30 +5605,32 @@ Total\t${formatCurrencyFull(total)}`;
     document.querySelector("[data-doc-copy]")?.addEventListener("click", () => {
       copyText(editor.innerHTML);
     });
+    document.querySelector("[data-doc-print]")?.addEventListener("click", () => {
+      // Persist any unsaved keystrokes first so the preview reflects what
+      // the editor actually shows.
+      persist();
+      openFirmPrintPreview({
+        title: `${project.name} — ${AGENT_LABELS[agentKey] || agentKey}`,
+        bodyHtml: editor.innerHTML,
+        firm: getFirm(),
+      });
+    });
     document.querySelector("[data-doc-download]")?.addEventListener("click", () => {
-      // Word opens .doc files containing HTML directly. Wrap the editor HTML in
-      // a minimal HTML envelope and trigger a download.
+      // Persist before exporting so the .doc matches the editor.
+      persist();
       const filename = `${project.name.replace(/[^a-z0-9]+/gi, "-")}-${agentKey}.doc`;
-      const blob = new Blob([
-        '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
-        '<head><meta charset="UTF-8"><title>',
-        escapeHtml(project.name),
-        '</title></head><body>',
-        editor.innerHTML,
-        '</body></html>',
-      ], { type: "application/msword" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      // Reuse the AA .doc envelope so the firm header / footer / fonts
+      // come along for the ride. Suppresses the cover-page-specific
+      // overrides since drafting agents render top-down without a
+      // separate cover.
+      aaDownloadDoc(filename, `${project.name} — ${AGENT_LABELS[agentKey] || agentKey}`, editor.innerHTML, getFirm());
     });
     document.querySelector("[data-doc-reset]")?.addEventListener("click", () => {
       if (!confirm("Reset this draft back to the blank template? The current content will be lost.")) return;
       const tpl = (AGENT_TEMPLATES[agentKey] || "<p>[Start drafting…]</p>").trim();
-      editor.innerHTML = tpl;
-      draft.html = tpl;
+      const filled = applyFirmToDraftTemplate(tpl, getFirm(), agentKey);
+      editor.innerHTML = filled;
+      draft.html = filled;
       draft.chat = { messages: [] };
       saveProject(project);
       render();
@@ -6905,7 +7052,7 @@ Total\t${formatCurrencyFull(total)}`;
             <form class="modal-body" data-project-form>
               <label>Project name<input class="text-input" name="name" required value="${attr(editing?.name || "")}" placeholder="Project name"></label>
               <div class="row-2">
-                <label>Claimant<input class="text-input" name="claimant" value="${attr(editing?.claimant || "")}" placeholder="Claimant name"></label>
+                <label>Claimant<input class="text-input" name="claimant" value="${attr(editing?.claimant || (editing ? "" : (getFirm().name || "")))}" placeholder="${attr(getFirm().name ? `Defaults to ${getFirm().name}` : "Claimant name")}"></label>
                 <label>Respondent<input class="text-input" name="respondent" value="${attr(editing?.respondent || "")}" placeholder="Respondent name"></label>
               </div>
               <div class="row-2">
@@ -7629,6 +7776,95 @@ Total\t${formatCurrencyFull(total)}`;
         </div>`;
     })();
 
+    const firm = getFirm();
+    const firmCard = `
+      <div class="settings-card firm-card">
+        <div class="settings-card-head">
+          <h3>Firm</h3>
+          <span class="settings-pill ${firm.name ? "settings-pill-on" : "settings-pill-off"}">${firm.name ? "Configured" : "Not set"}</span>
+        </div>
+        <p>Firm-wide branding for documents Sopal drafts on your behalf. The logo, letterhead, footer, font and page size are applied to the AA master document and the six standalone drafting agents (Payment Claims, Payment Schedules, EOTs, Variations, Delay Costs, General Correspondence).</p>
+        <form class="firm-form" data-firm-form autocomplete="off">
+          <div class="firm-form-grid">
+            <label class="firm-field firm-field-wide">
+              <span>Firm name</span>
+              <input class="text-input" name="name" type="text" maxlength="160" placeholder="e.g. Acme Builders Pty Ltd" value="${attr(firm.name || "")}">
+              <small class="muted">Used as the default Claimant on new projects and on the cover page if no project Claimant is set.</small>
+            </label>
+            <label class="firm-field firm-field-wide">
+              <span>Letterhead address</span>
+              <textarea class="text-area" name="letterheadAddress" rows="3" maxlength="600" placeholder="Suite 12, Level 3&#10;123 Example Street&#10;Brisbane QLD 4000&#10;ABN 12 345 678 901">${escapeHtml(firm.letterheadAddress || "")}</textarea>
+              <small class="muted">Renders top-right of the cover page on the master document.</small>
+            </label>
+            <label class="firm-field firm-field-wide">
+              <span>Footer text (left side)</span>
+              <input class="text-input" name="footerText" type="text" maxlength="200" placeholder="e.g. Acme Builders Pty Ltd · Adjudication Application · Confidential" value="${attr(firm.footerText || "")}">
+              <small class="muted">Page number "Page X of Y" sits on the right; this text on the left.</small>
+            </label>
+            <label class="firm-field">
+              <span>Body font</span>
+              <select class="select-input" name="bodyFont">
+                <option value="serif" ${firm.bodyFont === "serif" ? "selected" : ""}>Serif (Source Serif Pro / Times)</option>
+                <option value="sans" ${firm.bodyFont === "sans" ? "selected" : ""}>Sans (Helvetica / Arial)</option>
+                <option value="inter" ${firm.bodyFont === "inter" ? "selected" : ""}>Inter (modern sans)</option>
+              </select>
+            </label>
+            <label class="firm-field">
+              <span>Page size</span>
+              <select class="select-input" name="pageSize">
+                <option value="a4" ${firm.pageSize === "a4" ? "selected" : ""}>A4 (default for AU)</option>
+                <option value="letter" ${firm.pageSize === "letter" ? "selected" : ""}>US Letter</option>
+              </select>
+            </label>
+            <label class="firm-field">
+              <span>Heading numbering</span>
+              <select class="select-input" name="headingNumbering">
+                <option value="decimal" ${firm.headingNumbering === "decimal" ? "selected" : ""}>1, 2, 3</option>
+                <option value="decimal-nested" ${firm.headingNumbering === "decimal-nested" ? "selected" : ""}>1.1, 1.1.1</option>
+                <option value="alpha" ${firm.headingNumbering === "alpha" ? "selected" : ""}>(a), (b), (c)</option>
+                <option value="roman" ${firm.headingNumbering === "roman" ? "selected" : ""}>I, II, III</option>
+                <option value="none" ${firm.headingNumbering === "none" ? "selected" : ""}>None</option>
+              </select>
+            </label>
+            <fieldset class="firm-field firm-field-wide firm-swatches">
+              <legend>Accent colour</legend>
+              <div class="swatch-row">
+                ${["#243043","#1f4e3d","#7a2236","#5c4a8c","#0e6b8a","#8a5a2b"].map((hex) => `
+                  <label class="swatch ${firm.accentColour === hex ? "selected" : ""}" style="--swatch:${hex}">
+                    <input type="radio" name="accentColour" value="${hex}" ${firm.accentColour === hex ? "checked" : ""}>
+                    <span class="swatch-chip" aria-hidden="true"></span>
+                    <span class="swatch-label">${hex.toUpperCase()}</span>
+                  </label>`).join("")}
+              </div>
+            </fieldset>
+            <div class="firm-field firm-field-wide firm-logo-field">
+              <span>Firm logo</span>
+              <div class="firm-logo-row">
+                <div class="firm-logo-preview" data-firm-logo-preview>
+                  ${firm.logoDataUrl ? `<img src="${attr(firm.logoDataUrl)}" alt="Firm logo">` : `<span class="muted">No logo uploaded</span>`}
+                </div>
+                <div class="firm-logo-actions">
+                  <label class="ghost-button compact">
+                    ${ICON.upload}<span>Upload PNG / JPG</span>
+                    <input type="file" hidden accept="image/png,image/jpeg" data-firm-logo-input>
+                  </label>
+                  ${firm.logoDataUrl ? `<button class="ghost-button compact danger" type="button" data-firm-logo-clear>Remove logo</button>` : ""}
+                  <small class="muted" data-firm-logo-status>PNG or JPG. Sopal downscales anything over 250 KB so the .doc export stays portable.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="firm-form-actions">
+            <button class="dark-button compact" type="submit">Save firm settings</button>
+            <span class="muted settings-status" data-firm-save-status></span>
+          </div>
+        </form>
+        <details class="firm-preview-wrap">
+          <summary>Preview cover page</summary>
+          <div class="firm-preview-pane" data-firm-preview>${renderFirmPreviewPage(firm)}</div>
+        </details>
+      </div>`;
+
     const dataCard = `
       <div class="settings-card">
         <div class="settings-card-head"><h3>Data and storage</h3></div>
@@ -7658,9 +7894,10 @@ Total\t${formatCurrencyFull(total)}`;
     return PageBody(`
       <div class="page-shell settings-shell">
         <h1 class="page-title">Settings</h1>
-        <p class="page-sub">Account, cloud sync, data, and appearance for Sopal v2.</p>
+        <p class="page-sub">Account, cloud sync, firm branding, data and appearance for Sopal v2.</p>
         ${accountCard}
         ${cloudCard}
+        ${firmCard}
         ${dataCard}
         ${appearanceCard}
       </div>
@@ -7705,6 +7942,453 @@ Total\t${formatCurrencyFull(total)}`;
       } catch (_) {}
       window.location.replace("/sopal-v2");
     });
+    bindFirmForm();
+  }
+
+  // The firm form lives inside the Settings page. Save commits the patch
+  // and re-renders only the preview tile so the user doesn't lose focus.
+  // The logo input runs an in-browser canvas downscale when the file is
+  // bigger than 250 KB before saving — that keeps the .doc export portable
+  // even if the user uploads a 4 MB PNG straight off their drive.
+  function bindFirmForm() {
+    const form = document.querySelector("[data-firm-form]");
+    if (!form) return;
+    const status = document.querySelector("[data-firm-save-status]");
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const fd = new FormData(form);
+      const patch = {
+        name: String(fd.get("name") || "").trim(),
+        letterheadAddress: String(fd.get("letterheadAddress") || "").trim(),
+        footerText: String(fd.get("footerText") || "").trim(),
+        bodyFont: String(fd.get("bodyFont") || "serif"),
+        pageSize: String(fd.get("pageSize") || "a4"),
+        accentColour: String(fd.get("accentColour") || "#243043"),
+        headingNumbering: String(fd.get("headingNumbering") || "decimal"),
+      };
+      saveFirm(patch);
+      if (status) {
+        status.textContent = "Saved." + (window.SopalAuth && window.SopalAuth.state === "authed" ? " Syncing to your account." : "");
+        setTimeout(() => { if (status.textContent.startsWith("Saved")) status.textContent = ""; }, 2400);
+      }
+      const previewMount = document.querySelector("[data-firm-preview]");
+      if (previewMount) previewMount.innerHTML = renderFirmPreviewPage(getFirm());
+    });
+
+    // Live-update the preview without blowing away the form's focus.
+    form.addEventListener("change", (event) => {
+      if (event.target && event.target.matches('input[name="accentColour"], select[name="bodyFont"], select[name="pageSize"], select[name="headingNumbering"]')) {
+        const fd = new FormData(form);
+        const previewFirm = {
+          ...getFirm(),
+          name: String(fd.get("name") || ""),
+          letterheadAddress: String(fd.get("letterheadAddress") || ""),
+          footerText: String(fd.get("footerText") || ""),
+          bodyFont: String(fd.get("bodyFont") || "serif"),
+          pageSize: String(fd.get("pageSize") || "a4"),
+          accentColour: String(fd.get("accentColour") || "#243043"),
+          headingNumbering: String(fd.get("headingNumbering") || "decimal"),
+        };
+        const previewMount = document.querySelector("[data-firm-preview]");
+        if (previewMount) previewMount.innerHTML = renderFirmPreviewPage(previewFirm);
+        // Visually update swatch selection without re-rendering the field set.
+        form.querySelectorAll(".swatch").forEach((el) => el.classList.toggle("selected", el.querySelector("input").checked));
+      }
+    });
+
+    const logoInput = form.querySelector("[data-firm-logo-input]");
+    const logoStatus = form.querySelector("[data-firm-logo-status]");
+    logoInput?.addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (logoStatus) logoStatus.textContent = "Reading…";
+      try {
+        const dataUrl = await downscaleLogoIfNeeded(file, 250 * 1024);
+        saveFirm({ logoDataUrl: dataUrl });
+        render();
+      } catch (err) {
+        if (logoStatus) logoStatus.textContent = err.message || "Could not read that image.";
+      }
+    });
+
+    document.querySelector("[data-firm-logo-clear]")?.addEventListener("click", () => {
+      saveFirm({ logoDataUrl: "" });
+      render();
+    });
+  }
+
+  // Read an uploaded image into a data URL. If the file is larger than the
+  // soft cap, downscale it through a canvas so the .doc export and the
+  // localStorage blob stay manageable. Returns a base64 PNG data URL.
+  function downscaleLogoIfNeeded(file, capBytes) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Could not read the file."));
+      reader.onload = () => {
+        const original = String(reader.result || "");
+        // Below the cap: trust the original bytes and return them verbatim.
+        if (original.length < capBytes) return resolve(original);
+        const img = new Image();
+        img.onerror = () => reject(new Error("That doesn't look like a valid PNG or JPG."));
+        img.onload = () => {
+          const maxDim = 800;
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          // PNG is the safe bet for logos with transparency. If the file was
+          // a JPG and is large because of photographic content, fall back to
+          // a quality-tuned JPG.
+          let out = canvas.toDataURL("image/png");
+          if (out.length > capBytes) out = canvas.toDataURL("image/jpeg", 0.85);
+          resolve(out);
+        };
+        img.src = original;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ---------- Firm-page rendering helpers ----------
+  //
+  // Used by the Settings preview, the AA master modal, and the drafting
+  // agents' print preview. A single source of truth for letterhead +
+  // footer means a Firm change anywhere in the app lights up everywhere.
+
+  function firmHasBranding(firm) {
+    if (!firm) return false;
+    return !!(firm.name || firm.letterheadAddress || firm.footerText || firm.logoDataUrl);
+  }
+  function firmFontFamily(firm) {
+    const f = (firm && firm.bodyFont) || "serif";
+    if (f === "sans") return '"Helvetica Neue", Helvetica, Arial, sans-serif';
+    if (f === "inter") return 'Inter, "Segoe UI", Roboto, system-ui, sans-serif';
+    return '"Source Serif Pro", "Times New Roman", Georgia, serif';
+  }
+  function firmPageDimensions(firm) {
+    // Visual page sizes in CSS pixels at 96dpi. A4 = 794×1123, Letter = 816×1056.
+    const size = (firm && firm.pageSize) || "a4";
+    if (size === "letter") return { width: 816, height: 1056, label: "Letter" };
+    return { width: 794, height: 1123, label: "A4" };
+  }
+
+  function renderFirmHeader(firm, isCover) {
+    if (!firmHasBranding(firm)) return "";
+    if (isCover) {
+      const logo = firm.logoDataUrl ? `<div class="firm-cover-logo"><img src="${attr(firm.logoDataUrl)}" alt="${attr(firm.name || "Firm logo")}"></div>` : "";
+      const address = firm.letterheadAddress
+        ? `<div class="firm-cover-letterhead">${escapeHtml(firm.letterheadAddress).replace(/\n/g, "<br>")}</div>`
+        : "";
+      return `<header class="firm-page-header firm-cover-header">
+        ${logo}
+        ${address}
+      </header>`;
+    }
+    // Subsequent pages: condensed firm-name strip top right.
+    return `<header class="firm-page-header firm-running-header">
+      <span class="firm-running-name">${escapeHtml(firm.name || "")}</span>
+    </header>`;
+  }
+
+  function renderFirmFooter(firm, pageNum, pageCount, isCover) {
+    if (!firmHasBranding(firm) && !pageCount) return "";
+    if (isCover) {
+      // Convention from formal QLD adjudication apps and legal letters: the
+      // cover page has the letterhead at top, no page number at bottom.
+      return "";
+    }
+    const left = firm && firm.footerText ? escapeHtml(firm.footerText) : "";
+    return `<footer class="firm-page-footer">
+      <span class="firm-footer-left">${left}</span>
+      <span class="firm-footer-right">Page ${pageNum} of ${pageCount}</span>
+    </footer>`;
+  }
+
+  // Settings preview tile: a miniature A4/Letter page that shows how the
+  // user's branding choices will look.
+  function renderFirmPreviewPage(firm) {
+    const dims = firmPageDimensions(firm);
+    const ratio = 320 / dims.width;
+    const previewW = Math.round(dims.width * ratio);
+    const previewH = Math.round(dims.height * ratio);
+    const accent = (firm && firm.accentColour) || "#243043";
+    const fontStack = firmFontFamily(firm);
+    return `
+      <div class="firm-preview-stage" style="--firm-accent:${attr(accent)};font-family:${attr(fontStack)}">
+        <div class="firm-preview-sheet" style="width:${previewW}px;height:${previewH}px">
+          <div class="firm-preview-inner">
+            ${renderFirmHeader(firm, true)}
+            <div class="firm-preview-body">
+              <h1 class="firm-preview-h1">ADJUDICATION APPLICATION</h1>
+              <p class="firm-preview-meta"><strong>Claimant:</strong> ${escapeHtml(firm && firm.name ? firm.name : "[Claimant name]")}</p>
+              <p class="firm-preview-meta"><strong>Respondent:</strong> [Respondent name]</p>
+              <p class="firm-preview-meta"><strong>Reference:</strong> [Contract reference]</p>
+              <h2 class="firm-preview-h2">${firmNumberHeading(firm, 1)} Introduction</h2>
+              <p class="firm-preview-p">This Adjudication Application is made by the Claimant under section 79 of the Building Industry Fairness (Security of Payment) Act 2017 (Qld).</p>
+              <h2 class="firm-preview-h2">${firmNumberHeading(firm, 2)} Background</h2>
+              <p class="firm-preview-p">The parties entered into a contract for the carrying out of construction work at the project site.</p>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // Paginate a long HTML string into discrete A4 / Letter sheets, each with a
+  // page-1 letterhead treatment + page-N condensed header + page-N/M footer.
+  //
+  // Strategy: render the whole content into an off-screen probe so we can
+  // measure heights, then walk the children and assign each one to the
+  // current page until the cumulative height crosses the per-page content
+  // budget. We bias on the conservative side (16pt tolerance) to leave room
+  // for the footer and avoid clipping a final line.
+  //
+  // The mount node is replaced with N <article class="firm-paper"> sheets.
+  // Used by the AA master modal and the drafting-editor print preview.
+  function paintFirmPaperStack(mountEl, contentHtml, firm) {
+    if (!mountEl) return;
+    const dims = firmPageDimensions(firm);
+    const accent = (firm && firm.accentColour) || "#243043";
+    const fontStack = firmFontFamily(firm);
+
+    // Pre-render content into a hidden probe so we can measure children.
+    // The probe has the same width as the page content area so layout
+    // matches when we slice. Padding mirrors `.firm-paper-content`.
+    const probe = document.createElement("div");
+    probe.className = "firm-paper-probe";
+    // Same content width as the page-content area in CSS — keep this in
+    // sync with .firm-paper-content padding (96px L/R = ~25mm at 96dpi).
+    probe.style.width = `${dims.width - 192}px`;
+    probe.innerHTML = contentHtml;
+    // The screen ToC nav is a navigation aid for the inline Stage 5 view,
+    // not a document element. Strip it from the paginated layout so the
+    // cover page lands on page 1 and so the printed/PDF output reads
+    // like a real document.
+    probe.querySelectorAll("nav.aa-toc").forEach((n) => n.remove());
+    document.body.appendChild(probe);
+
+    const children = Array.from(probe.children);
+    // Page content height budget. Cover page eats more vertical space for
+    // the letterhead block, so we drop its budget further. Subsequent
+    // pages reserve room for the running header (44px) and footer (44px).
+    const totalH = dims.height;
+    const coverContentH = totalH - 320;     // letterhead block + bottom margin
+    const runningContentH = totalH - 200;   // header + footer + top/bottom margin
+
+    const pages = [[]];
+    let curHeight = 0;
+    let onCoverPage = true;
+    let budget = coverContentH;
+
+    function newPage() {
+      pages.push([]);
+      curHeight = 0;
+      onCoverPage = false;
+      budget = runningContentH;
+    }
+
+    children.forEach((child) => {
+      const h = child.getBoundingClientRect().height;
+      // Force the cover-page block to live alone on page 1 — it carries the
+      // formal title + meta tables and the rest should reflow underneath
+      // starting on page 2. This matches the way the user thinks about the
+      // document and avoids the cover bleeding into a half-orphaned table.
+      if (child.classList.contains("aa-cover")) {
+        if (pages[pages.length - 1].length) newPage();
+        pages[pages.length - 1].push(child);
+        newPage();
+        return;
+      }
+      // Single child taller than a page (eg. a long quantum table): give it
+      // its own page rather than splitting it — Word handles intra-table
+      // page breaks better than the browser does at this fidelity.
+      if (h > budget && pages[pages.length - 1].length === 0) {
+        pages[pages.length - 1].push(child);
+        newPage();
+        return;
+      }
+      if (curHeight + h > budget && pages[pages.length - 1].length) {
+        newPage();
+      }
+      pages[pages.length - 1].push(child);
+      curHeight += h;
+    });
+
+    // Drop trailing empty page that the cover-forces-newPage call may
+    // create when there is no body content yet.
+    if (pages.length > 1 && pages[pages.length - 1].length === 0) pages.pop();
+
+    document.body.removeChild(probe);
+
+    const pageCount = pages.length;
+    mountEl.style.setProperty("--firm-accent", accent);
+    mountEl.style.setProperty("--firm-page-width", `${dims.width}px`);
+    mountEl.style.setProperty("--firm-page-height", `${dims.height}px`);
+    mountEl.style.setProperty("--firm-font", fontStack);
+    mountEl.classList.add("firm-paper-stack");
+
+    const html = pages.map((nodes, i) => {
+      const pageNum = i + 1;
+      const isCover = i === 0;
+      // Move the actual DOM nodes (not innerHTML) so contenteditable cover
+      // tables in the DOM keep their state if anything ever needs it. We
+      // simply collect their outerHTML for the page render.
+      const inner = nodes.map((n) => n.outerHTML).join("");
+      return `<article class="firm-paper ${isCover ? "firm-paper-cover" : "firm-paper-running"}" data-page="${pageNum}">
+        ${renderFirmHeader(firm, isCover)}
+        <div class="firm-paper-content">${inner}</div>
+        ${renderFirmFooter(firm, pageNum, pageCount, isCover)}
+      </article>`;
+    }).join("");
+
+    mountEl.innerHTML = html;
+  }
+
+  // Open a new browser tab containing a print-ready, paginated view of the
+  // given content. Reused by the AA master modal and the drafting editor.
+  function openFirmPrintPreview({ title, bodyHtml, firm }) {
+    const win = window.open("", "_blank", "noopener");
+    if (!win) {
+      alert("Could not open the print preview. Please allow popups for this site and try again.");
+      return;
+    }
+    const dims = firmPageDimensions(firm);
+    const accent = (firm && firm.accentColour) || "#243043";
+    const fontStack = firmFontFamily(firm);
+    const pageSizeCss = dims.label === "Letter" ? "letter" : "a4";
+    // Print stylesheet: @page rules size the printed page, the visual
+    // .firm-paper sheets carry header/footer for screen viewing, and we
+    // use page-break-before: always to enforce the paginated boundaries
+    // when sent to the printer / "Save as PDF".
+    const css = `
+      :root { --firm-accent: ${accent}; --firm-font: ${fontStack}; }
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: #ece9e2; color: #1a1a1a; font-family: ${fontStack}; }
+      body { font-size: 11.5pt; line-height: 1.55; }
+      .firm-print-toolbar { position: sticky; top: 0; display: flex; gap: 8px; padding: 12px 16px; background: #fff; border-bottom: 1px solid #d6d2c6; z-index: 10; }
+      .firm-print-toolbar button { font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid #aaa; background: #fff; cursor: pointer; }
+      .firm-print-stage { padding: 24px 0; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+      .firm-paper { width: ${dims.width}px; min-height: ${dims.height}px; background: #fff; box-shadow: 0 4px 18px rgba(0,0,0,0.12); display: flex; flex-direction: column; position: relative; padding: 0; }
+      .firm-paper-content { padding: 56px 96px 56px; flex: 1; }
+      .firm-paper-cover .firm-paper-content { padding-top: 12px; }
+      .firm-page-header { padding: 36px 56px 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+      .firm-cover-header { padding-bottom: 14px; border-bottom: 2pt solid var(--firm-accent); }
+      .firm-cover-logo img { max-height: 96px; max-width: 240px; object-fit: contain; }
+      .firm-cover-letterhead { font-size: 10pt; line-height: 1.45; text-align: right; color: #2a2a2a; }
+      .firm-running-header { justify-content: flex-end; padding-top: 18px; padding-bottom: 6px; border-bottom: 1pt solid #d6d2c6; }
+      .firm-running-name { font-size: 9.5pt; letter-spacing: 0.04em; text-transform: uppercase; color: var(--firm-accent); font-weight: 600; }
+      .firm-page-footer { display: flex; justify-content: space-between; align-items: center; padding: 8px 56px 24px; font-size: 9pt; color: #555; border-top: 1pt solid #d6d2c6; margin-top: auto; }
+      .firm-footer-right { font-variant-numeric: tabular-nums; }
+      h1 { font-size: 22pt; font-weight: 700; text-align: center; margin: 0 0 16px; color: #111; }
+      h2 { font-size: 14pt; font-weight: 700; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1pt solid var(--firm-accent); color: var(--firm-accent); }
+      h3 { font-size: 12pt; font-weight: 700; margin: 14px 0 6px; }
+      p { margin: 0 0 10px; text-align: justify; hyphens: auto; }
+      table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 10.5pt; }
+      th, td { border: 1pt solid #888; padding: 5px 8px; text-align: left; vertical-align: top; }
+      th { background: #f0ece4; font-weight: 600; }
+      .aa-toc { display: none; }
+      .aa-cover { padding: 0 0 18pt; margin: 0 0 24pt; border-bottom: 0; }
+      .aa-cover-title { font-size: 24pt; letter-spacing: 0.04em; text-transform: uppercase; text-align: center; margin: 0 0 16pt; color: #111; }
+      .aa-cover-opener { font-size: 11.5pt; margin: 0 0 18pt; text-align: justify; }
+      .aa-cover-section { font-size: 10.5pt; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin: 16pt 0 6pt; border: 0; padding: 0; color: #111; }
+      table.aa-cover-table { width: 100%; }
+      table.aa-cover-table th { width: 38%; }
+      table.aa-item-meta { width: auto; min-width: 60%; margin: 4px 0 12px; font-size: 10pt; }
+      table.aa-item-meta th { width: 180px; background: #faf7f1; }
+      .aa-issue-tag { display: inline-block; font-size: 9pt; padding: 1px 6px; margin-left: 6px; background: #e0e7ff; border-radius: 999px; }
+      @page { size: ${pageSizeCss}; margin: 0; }
+      @media print {
+        body { background: #fff; }
+        .firm-print-toolbar { display: none; }
+        .firm-print-stage { padding: 0; gap: 0; }
+        .firm-paper { box-shadow: none; page-break-after: always; min-height: ${dims.height}px; }
+        .firm-paper:last-child { page-break-after: auto; }
+      }
+    `;
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>${css}</style></head><body>
+      <div class="firm-print-toolbar"><button onclick="window.print()">Print / Save as PDF</button><button onclick="window.close()">Close</button></div>
+      <div class="firm-print-stage" id="firm-print-stage"></div>
+      <script>
+        // Re-paginate inside the new window so we measure heights against
+        // the print stylesheet, not the SPA's. Same algorithm as the SPA.
+        (function () {
+          var contentHtml = ${JSON.stringify(bodyHtml)};
+          var firm = ${JSON.stringify(firm || {})};
+          var dims = ${JSON.stringify(dims)};
+          var stage = document.getElementById("firm-print-stage");
+          var probe = document.createElement("div");
+          probe.style.cssText = "position:absolute;left:-99999px;top:0;visibility:hidden;width:" + (dims.width - 192) + "px;font-family:" + ${JSON.stringify(fontStack)} + ";font-size:11.5pt;line-height:1.55;";
+          probe.innerHTML = contentHtml;
+          document.body.appendChild(probe);
+          var kids = Array.prototype.slice.call(probe.children);
+          var pages = [[]];
+          var cur = 0;
+          var onCover = true;
+          var budget = dims.height - 320;
+          function flush() { pages.push([]); cur = 0; onCover = false; budget = dims.height - 200; }
+          kids.forEach(function (k) {
+            var h = k.getBoundingClientRect().height;
+            if (k.classList.contains("aa-cover")) {
+              if (pages[pages.length - 1].length) flush();
+              pages[pages.length - 1].push(k);
+              flush();
+              return;
+            }
+            if (h > budget && pages[pages.length - 1].length === 0) { pages[pages.length - 1].push(k); flush(); return; }
+            if (cur + h > budget && pages[pages.length - 1].length) flush();
+            pages[pages.length - 1].push(k);
+            cur += h;
+          });
+          if (pages.length > 1 && pages[pages.length - 1].length === 0) pages.pop();
+          document.body.removeChild(probe);
+          function header(isCover) {
+            if (!firm || (!firm.name && !firm.letterheadAddress && !firm.logoDataUrl && !firm.footerText)) return "";
+            if (isCover) {
+              var logo = firm.logoDataUrl ? '<div class="firm-cover-logo"><img src="' + firm.logoDataUrl + '" alt=""></div>' : "";
+              var addr = firm.letterheadAddress ? '<div class="firm-cover-letterhead">' + firm.letterheadAddress.replace(/[<>&]/g, function (c) { return c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&amp;"; }).replace(/\\n/g, "<br>") + '</div>' : "";
+              return '<header class="firm-page-header firm-cover-header">' + logo + addr + '</header>';
+            }
+            return '<header class="firm-page-header firm-running-header"><span class="firm-running-name">' + (firm.name || "").replace(/[<>&]/g, function (c) { return c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&amp;"; }) + '</span></header>';
+          }
+          function footer(n, total, isCover) {
+            if (isCover) return "";
+            return '<footer class="firm-page-footer"><span class="firm-footer-left">' + ((firm && firm.footerText || "").replace(/[<>&]/g, function (c) { return c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&amp;"; })) + '</span><span class="firm-footer-right">Page ' + n + ' of ' + total + '</span></footer>';
+          }
+          stage.innerHTML = pages.map(function (nodes, i) {
+            var inner = nodes.map(function (n) { return n.outerHTML; }).join("");
+            var isCover = i === 0;
+            return '<article class="firm-paper ' + (isCover ? "firm-paper-cover" : "firm-paper-running") + '">' + header(isCover) + '<div class="firm-paper-content">' + inner + '</div>' + footer(i + 1, pages.length, isCover) + '</article>';
+          }).join("");
+        })();
+      <\/script>
+    </body></html>`);
+    win.document.close();
+  }
+
+  // Converts a 1-based heading index into the user's chosen numbering style.
+  // Used for the preview tile and (later) for the rendered master sections.
+  function firmNumberHeading(firm, idx) {
+    const style = (firm && firm.headingNumbering) || "decimal";
+    if (style === "none") return "";
+    if (style === "alpha") {
+      // (a), (b), … (z), (aa), (ab), …
+      let n = idx;
+      let out = "";
+      while (n > 0) { n -= 1; out = String.fromCharCode(97 + (n % 26)) + out; n = Math.floor(n / 26); }
+      return `(${out})`;
+    }
+    if (style === "roman") {
+      const romans = [["M",1000],["CM",900],["D",500],["CD",400],["C",100],["XC",90],["L",50],["XL",40],["X",10],["IX",9],["V",5],["IV",4],["I",1]];
+      let n = idx; let out = "";
+      for (const [sym, val] of romans) { while (n >= val) { out += sym; n -= val; } }
+      return `${out}.`;
+    }
+    if (style === "decimal-nested") return `${idx}.`;
+    return `${idx}.`;
   }
 
   /* ---------- Help & support system ---------- */
@@ -8950,6 +9634,9 @@ Total\t${formatCurrencyFull(total)}`;
     render();
     if (sopalAuth.state === "authed") {
       cloudSync.pullMissing();
+      // Pull firm settings after auth so the user's branding follows them
+      // across browsers. Local-first wins until the network responds.
+      firmCloudSync.pull();
     }
   })();
 })();
