@@ -1458,9 +1458,9 @@ async def sopal_v2_search(
     }
     # Two-step search: first run an FTS-only query for matching rowids (FTS5
     # `rank` only works in a query directly against the FTS table). Then join
-    # the metadata tables. Cap chosen to keep the metadata join + pagination
-    # cheap; the UI paginates at 10/page so 5000 covers practical browsing
-    # without churning the DB on common stop-word-ish queries like 'how'.
+    # the metadata tables. No cap, full corpus returned — the UI paginates at
+    # 10/page and Ted wants every match available for deep-browsing /
+    # cross-referencing on broad queries.
     rowid_rank: dict[int, int] = {}
     rowid_snippet: dict[int, str] = {}
     rowids: list[int] | None
@@ -1470,12 +1470,12 @@ async def sopal_v2_search(
         snippet_call = "snippet(fts, '<mark>', '</mark>', ' … ', 0, 30)"
         try:
             ranked = con.execute(
-                f"SELECT rowid, {snippet_call} AS snip FROM fts WHERE fts MATCH ? ORDER BY rank LIMIT 5000",
+                f"SELECT rowid, {snippet_call} AS snip FROM fts WHERE fts MATCH ? ORDER BY rank",
                 (nq2,),
             ).fetchall()
         except sqlite3.OperationalError:
             ranked = con.execute(
-                f"SELECT rowid, {snippet_call} AS snip FROM fts WHERE fts MATCH ? LIMIT 5000",
+                f"SELECT rowid, {snippet_call} AS snip FROM fts WHERE fts MATCH ?",
                 (nq2,),
             ).fetchall()
         rowids = [r[0] for r in ranked]
