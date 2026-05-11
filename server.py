@@ -178,8 +178,44 @@ def serve_page_with_override(relative_path: str) -> Optional[str]:
     return None
 
 
-# Download DB from GCS on startup if it doesn't exist in /tmp
+# Self-heal: if GCS qbcc.db is newer than the local /var/data copy, wipe
+# the local file so the existing download-on-missing block below pulls the
+# fresh version. Without this, batch ingests on a laptop (which upload a
+# refreshed qbcc.db to GCS) never reach prod because /var/data persists
+# across deploys and the original download-on-missing block only fires when
+# the file is absent. Failures here fall through to the existing behaviour
+# (use whatever is on disk) so a flaky GCS metadata call can't take prod
+# down.
 import time as _time
+try:
+    if os.path.exists(DB_PATH):
+        _gcs_bucket_name = os.getenv("GCS_BUCKET_NAME", "sopal-bucket")
+        _gcs_db_object_name = os.getenv("GCS_DB_OBJECT_NAME", "qbcc.db")
+        if _gcs_bucket_name:
+            _client = get_gcs_client()
+            if _client is not None:
+                _blob = _client.bucket(_gcs_bucket_name).blob(_gcs_db_object_name)
+                _blob.reload()
+                _local_mtime_ts = os.path.getmtime(DB_PATH)
+                _gcs_updated = _blob.updated
+                if _gcs_updated is not None:
+                    from datetime import datetime as _dt, timezone as _tz
+                    _local_mtime = _dt.fromtimestamp(_local_mtime_ts, tz=_tz.utc)
+                    if _gcs_updated > _local_mtime:
+                        print(
+                            f"[db-refresh] GCS qbcc.db updated {_gcs_updated} is newer "
+                            f"than local mtime {_local_mtime}; removing local copy to force re-download"
+                        )
+                        os.remove(DB_PATH)
+                        for _ext in (".db-wal", ".db-shm"):
+                            _stale = DB_PATH + _ext
+                            if os.path.exists(_stale):
+                                os.remove(_stale)
+                    else:
+                        print(f"[db-refresh] local qbcc.db is up-to-date (local={_local_mtime}, gcs={_gcs_updated})")
+except Exception as _e:
+    print(f"[db-refresh] check failed, falling through to existing behaviour: {_e}")
+
 if not os.path.exists(DB_PATH):
     _db_downloaded = False
     for _attempt in range(5):
