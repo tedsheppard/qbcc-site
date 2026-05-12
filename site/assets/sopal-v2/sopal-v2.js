@@ -84,26 +84,30 @@
   // Per-agent review modes. Mirrors the live /claim-check checker — each mode
   // is a distinct perspective ("about to serve" / "received") with its own
   // checklist of structured items.
+  // tileLabel is the headline shown on the mode-picker tiles. The original
+  // template just prepended "I'm " to label which produced "I'm received" —
+  // grammatically broken. tileLabel carries a full grammatical sentence per
+  // mode, label stays as the short token for breadcrumbs / dropdowns.
   const AGENT_REVIEW_MODES = {
     "payment-claims": [
-      { id: "serving", label: "About to serve", sub: "Check a payment claim before you serve it." },
-      { id: "received", label: "Received", sub: "Audit a payment claim served on you." },
+      { id: "serving", label: "About to serve", tileLabel: "I'm about to serve one", sub: "Check a payment claim before you serve it." },
+      { id: "received", label: "Received", tileLabel: "I've been served one", sub: "Audit a payment claim served on you." },
     ],
     "payment-schedules": [
-      { id: "giving", label: "About to give", sub: "Check a payment schedule before issuing it." },
-      { id: "received", label: "Received", sub: "Audit a payment schedule served on you." },
+      { id: "giving", label: "About to give", tileLabel: "I'm about to give one", sub: "Check a payment schedule before issuing it." },
+      { id: "received", label: "Received", tileLabel: "I've been given one", sub: "Audit a payment schedule served on you." },
     ],
     eots: [
-      { id: "serving", label: "About to serve", sub: "Stress-test an EOT notice or claim before you send it." },
-      { id: "received", label: "Received", sub: "Audit an EOT notice or claim served on you." },
+      { id: "serving", label: "About to serve", tileLabel: "I'm about to serve one", sub: "Stress-test an EOT notice or claim before you send it." },
+      { id: "received", label: "Received", tileLabel: "I've been served one", sub: "Audit an EOT notice or claim served on you." },
     ],
     variations: [
-      { id: "serving", label: "About to serve", sub: "Check a variation notice or claim before you send it." },
-      { id: "received", label: "Received", sub: "Audit a variation notice or claim served on you." },
+      { id: "serving", label: "About to serve", tileLabel: "I'm about to serve one", sub: "Check a variation notice or claim before you send it." },
+      { id: "received", label: "Received", tileLabel: "I've been served one", sub: "Audit a variation notice or claim served on you." },
     ],
     "delay-costs": [
-      { id: "serving", label: "About to serve", sub: "Stress-test a delay cost / prolongation claim before you send it." },
-      { id: "received", label: "Received", sub: "Audit a delay cost claim served on you." },
+      { id: "serving", label: "About to serve", tileLabel: "I'm about to serve one", sub: "Stress-test a delay cost / prolongation claim before you send it." },
+      { id: "received", label: "Received", tileLabel: "I've been served one", sub: "Audit a delay cost claim served on you." },
     ],
   };
 
@@ -7572,7 +7576,7 @@ Total\t${formatCurrencyFull(total)}`;
           <a class="mode-strip-tab ${submode && m.id === submode.id ? "active" : ""}" href="${modeBaseHref}&submode=${m.id}" data-nav>
             <span class="mode-strip-icon">${m.id === "received" ? ICON.upload : ICON.file}</span>
             <span class="mode-strip-body">
-              <strong>I'm ${escapeHtml(m.label.toLowerCase())}</strong>
+              <strong>${escapeHtml(m.tileLabel || `I'm ${m.label.toLowerCase()}`)}</strong>
               <span class="muted">${escapeHtml(m.sub)}</span>
             </span>
           </a>
@@ -9169,7 +9173,7 @@ Total\t${formatCurrencyFull(total)}`;
           <a class="mode-strip-tab ${activeSubmode && m.id === activeSubmode.id ? "active" : ""}" href="${baseHref}?submode=${m.id}" data-nav>
             <span class="mode-strip-icon">${m.id === "received" ? ICON.upload : ICON.file}</span>
             <span class="mode-strip-body">
-              <strong>I'm ${escapeHtml(m.label.toLowerCase())}</strong>
+              <strong>${escapeHtml(m.tileLabel || `I'm ${m.label.toLowerCase()}`)}</strong>
               <span class="muted">${escapeHtml(m.sub)}</span>
             </span>
           </a>
