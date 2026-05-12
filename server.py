@@ -178,61 +178,146 @@ def serve_page_with_override(relative_path: str) -> Optional[str]:
     return None
 
 
-# Self-heal: if GCS qbcc.db is newer than the local /var/data copy, wipe
-# the local file so the existing download-on-missing block below pulls the
-# fresh version. Without this, batch ingests on a laptop (which upload a
-# refreshed qbcc.db to GCS) never reach prod because /var/data persists
-# across deploys and the original download-on-missing block only fires when
-# the file is absent. Failures here fall through to the existing behaviour
-# (use whatever is on disk) so a flaky GCS metadata call can't take prod
-# down.
+# Boot-time DB readiness for /var/data/qbcc.db.
+#
+# Previous version had two independent blocks: a "self-heal" that wiped the
+# local copy when GCS was newer, and a "download-on-missing" that pulled a
+# fresh file. The download wrote directly to DB_PATH, so a SIGTERM mid-
+# download (very easy on Render when deploys queue up) left a half-written
+# file on the persistent disk. On the next boot the file existed (skip
+# download-on-missing) AND local mtime was fresh (skip self-heal), so the
+# torn file got opened and SQLite returned "database disk image is
+# malformed" on every query forever.
+#
+# This rewrite:
+#   1. Probes the local file with a fast integrity check on boot. A torn
+#      or truncated file is treated like a missing file -> re-download.
+#   2. Downloads to DB_PATH + ".download_tmp" and atomically os.replace's
+#      into DB_PATH. A SIGTERM mid-download leaves the .download_tmp
+#      behind (cleaned up on next boot) and never overwrites the live file.
+#   3. Verifies the freshly downloaded file with the same integrity probe
+#      BEFORE swapping it in, so a bad GCS object never replaces a working
+#      local copy.
 import time as _time
-try:
-    if os.path.exists(DB_PATH):
-        _gcs_bucket_name = os.getenv("GCS_BUCKET_NAME", "sopal-bucket")
-        _gcs_db_object_name = os.getenv("GCS_DB_OBJECT_NAME", "qbcc.db")
+
+
+def _qbcc_db_integrity_ok(path):
+    """Fast SQLite health probe. Returns True if `path` looks like a
+    valid qbcc.db that we can serve queries from, False if it's missing,
+    truncated, or fails a structural check. Closes the connection before
+    returning so we don't leave handles open on a file we're about to
+    delete."""
+    if not os.path.exists(path):
+        return False
+    # SQLite always writes whole pages (default 4096 bytes). A few bytes
+    # of file size means the download barely started.
+    if os.path.getsize(path) < 1024:
+        return False
+    try:
+        _probe = sqlite3.connect(path)
+        try:
+            # quick_check walks page structure without cross-checking
+            # every index entry — fast enough to run on boot even on the
+            # 400 MB+ qbcc.db, slow enough to catch torn files that a
+            # bare "SELECT FROM sqlite_master" would miss.
+            _row = _probe.execute("PRAGMA quick_check;").fetchone()
+            return bool(_row) and (_row[0] or "").lower().startswith("ok")
+        finally:
+            _probe.close()
+    except Exception:
+        return False
+
+
+def _download_qbcc_db_atomic(bucket_name, object_name, dest_path):
+    """Download GCS object atomically to dest_path. Writes to a sibling
+    .download_tmp file and os.replaces it in only after a successful
+    integrity probe, so a partial download never overwrites a healthy
+    file. Returns True on success, raises on failure."""
+    _client = get_gcs_client()
+    if _client is None:
+        raise RuntimeError("GCS client unavailable")
+    _bucket = _client.bucket(bucket_name)
+    _blob = _bucket.blob(object_name)
+    _tmp_path = dest_path + ".download_tmp"
+    # Clean up any leftover tmp from a previous interrupted run before
+    # writing a new one.
+    if os.path.exists(_tmp_path):
+        try:
+            os.remove(_tmp_path)
+        except OSError:
+            pass
+    _blob.download_to_filename(_tmp_path)
+    if not _qbcc_db_integrity_ok(_tmp_path):
+        try:
+            os.remove(_tmp_path)
+        except OSError:
+            pass
+        raise RuntimeError("Downloaded qbcc.db failed integrity check; refusing to swap in")
+    os.replace(_tmp_path, dest_path)
+    # The previous .db-wal / .db-shm describe the OLD file's transaction
+    # state. They're meaningless against the freshly downloaded file and
+    # would actively confuse SQLite.
+    for _ext in (".db-wal", ".db-shm"):
+        _stale = dest_path + _ext
+        if os.path.exists(_stale):
+            try:
+                os.remove(_stale)
+            except OSError:
+                pass
+    return True
+
+
+_gcs_bucket_name = os.getenv("GCS_BUCKET_NAME", "sopal-bucket")
+_gcs_db_object_name = os.getenv("GCS_DB_OBJECT_NAME", "qbcc.db")
+_need_download = False
+_download_reason = None
+
+if not os.path.exists(DB_PATH):
+    _need_download = True
+    _download_reason = "missing"
+elif not _qbcc_db_integrity_ok(DB_PATH):
+    _need_download = True
+    _download_reason = "local file failed integrity probe (likely torn from an interrupted download)"
+else:
+    # Local file is healthy. Check if GCS has a newer version we should
+    # pull in. Any GCS metadata failure here is non-fatal: we keep the
+    # known-good local copy rather than risk replacing it.
+    try:
         if _gcs_bucket_name:
             _client = get_gcs_client()
             if _client is not None:
                 _blob = _client.bucket(_gcs_bucket_name).blob(_gcs_db_object_name)
                 _blob.reload()
-                _local_mtime_ts = os.path.getmtime(DB_PATH)
                 _gcs_updated = _blob.updated
                 if _gcs_updated is not None:
                     from datetime import datetime as _dt, timezone as _tz
-                    _local_mtime = _dt.fromtimestamp(_local_mtime_ts, tz=_tz.utc)
+                    _local_mtime = _dt.fromtimestamp(os.path.getmtime(DB_PATH), tz=_tz.utc)
                     if _gcs_updated > _local_mtime:
                         print(
                             f"[db-refresh] GCS qbcc.db updated {_gcs_updated} is newer "
-                            f"than local mtime {_local_mtime}; removing local copy to force re-download"
+                            f"than local mtime {_local_mtime}; will re-download atomically"
                         )
-                        os.remove(DB_PATH)
-                        for _ext in (".db-wal", ".db-shm"):
-                            _stale = DB_PATH + _ext
-                            if os.path.exists(_stale):
-                                os.remove(_stale)
+                        _need_download = True
+                        _download_reason = "GCS newer than local"
                     else:
-                        print(f"[db-refresh] local qbcc.db is up-to-date (local={_local_mtime}, gcs={_gcs_updated})")
-except Exception as _e:
-    print(f"[db-refresh] check failed, falling through to existing behaviour: {_e}")
+                        print(f"[db-refresh] local qbcc.db is up-to-date and healthy (local={_local_mtime}, gcs={_gcs_updated})")
+    except Exception as _e:
+        print(f"[db-refresh] GCS freshness check failed, keeping local copy: {_e}")
 
-if not os.path.exists(DB_PATH):
+if _need_download:
+    print(f"[db-refresh] qbcc.db re-download required: {_download_reason}")
     _db_downloaded = False
     for _attempt in range(5):
         try:
-            gcs_bucket_name = os.getenv("GCS_BUCKET_NAME", "sopal-bucket")
-            gcs_db_object_name = os.getenv("GCS_DB_OBJECT_NAME", "qbcc.db")
-
-            if gcs_bucket_name:
-                print(f"Database not found at {DB_PATH}. Downloading from GCS bucket '{gcs_bucket_name}'...")
-                storage_client = get_gcs_client()
-                bucket = storage_client.bucket(gcs_bucket_name)
-                blob = bucket.blob(gcs_db_object_name)
-                blob.download_to_filename(DB_PATH)
-                print("Database downloaded successfully.")
+            if _gcs_bucket_name:
+                print(f"[db-refresh] Downloading gs://{_gcs_bucket_name}/{_gcs_db_object_name} -> {DB_PATH} (attempt {_attempt+1}/5)")
+                _download_qbcc_db_atomic(_gcs_bucket_name, _gcs_db_object_name, DB_PATH)
+                print("[db-refresh] Database downloaded, integrity-checked, and swapped in atomically.")
                 _db_downloaded = True
                 break
             else:
+                # Local-dev fallback: a developer ran the build script
+                # manually and the bucket env var is unset.
                 if os.path.exists("qbcc.db"):
                     print("GCS_BUCKET_NAME not set. Copying local 'qbcc.db'.")
                     shutil.copy("qbcc.db", DB_PATH)
@@ -242,7 +327,7 @@ if not os.path.exists(DB_PATH):
                     print(f"GCS_BUCKET_NAME not set (attempt {_attempt+1}/5). Retrying in 3s...")
                     _time.sleep(3)
         except Exception as e:
-            print(f"Failed to download database (attempt {_attempt+1}/5): {e}. Retrying in 3s...")
+            print(f"[db-refresh] Failed to download database (attempt {_attempt+1}/5): {e}. Retrying in 3s...")
             _time.sleep(3)
     if not _db_downloaded:
         print("FATAL: Could not load database after 5 attempts.")
