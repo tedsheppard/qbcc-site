@@ -12604,10 +12604,12 @@ Total\t${formatCurrencyFull(total)}`;
     if (sopalAuth.state !== "authed") {
       root.innerHTML = sopalAuth.state === "unknown" ? AuthCheckingPage() : AuthWallPage();
       bindAuthWall();
+      ensureDevChatWidget();
       return;
     }
     root.innerHTML = Shell();
     bindShellEvents();
+    ensureDevChatWidget();
     // Keep the currently-active sidebar item visible. With Drafting Agents
     // (6) + Complex Agents (1+) the sidebar can overflow on common viewport
     // heights — without this the user lands on a route whose nav item is
@@ -13171,6 +13173,210 @@ Total\t${formatCurrencyFull(total)}`;
         submit.textContent = isRegister ? "Create account" : "Sign in";
       }
     });
+  }
+
+  /* ---------- Dev chat (owner-only floating widget → Claude dev agent) ---------- */
+  //
+  // A speech-bubble button bottom-right, visible only when the signed-in
+  // account is the owner. Chatting sends change requests to a Claude coding
+  // agent that has the GitHub repo mounted in a sandboxed cloud container —
+  // it edits, verifies, commits and pushes to main (= Render deploy), and
+  // its activity streams back live. The widget lives on document.body,
+  // OUTSIDE the SPA's render root, so render() never destroys it mid-stream.
+
+  const DEV_CHAT_OWNER = "edwardsheppard5@gmail.com";
+  const devChat = { el: null, open: false, loaded: false, streaming: false, abort: null };
+
+  function devChatAllowed() {
+    return sopalAuth.state === "authed" && sopalAuth.user
+      && (sopalAuth.user.email || "").toLowerCase() === DEV_CHAT_OWNER;
+  }
+
+  function ensureDevChatWidget() {
+    if (!devChatAllowed()) {
+      if (devChat.el) { devChat.el.remove(); devChat.el = null; devChat.open = false; devChat.loaded = false; }
+      return;
+    }
+    if (devChat.el) return;
+    const el = document.createElement("div");
+    el.className = "devchat";
+    el.innerHTML = `
+      <div class="devchat-panel" data-devchat-panel hidden>
+        <div class="devchat-head">
+          <div>
+            <strong>Dev chat</strong>
+            <span class="devchat-sub" data-devchat-sub>Claude dev agent</span>
+          </div>
+          <div class="devchat-head-actions">
+            <button class="devchat-iconbtn" type="button" data-devchat-clear title="Clear thread + fresh workspace">${ICON.trash}</button>
+            <button class="devchat-iconbtn" type="button" data-devchat-close title="Close">${ICON.close}</button>
+          </div>
+        </div>
+        <div class="devchat-stream" data-devchat-stream></div>
+        <form class="devchat-form" data-devchat-form>
+          <textarea class="devchat-input" name="message" rows="2" placeholder="Ask for a change to the app…"></textarea>
+          <button class="devchat-send" type="submit" aria-label="Send">${ICON.send}</button>
+        </form>
+      </div>
+      <button class="devchat-fab" type="button" data-devchat-fab title="Dev chat — talk to the coding agent" aria-label="Open dev chat">
+        ${ICON.chat}
+      </button>`;
+    document.body.appendChild(el);
+    devChat.el = el;
+
+    const panel = el.querySelector("[data-devchat-panel]");
+    el.querySelector("[data-devchat-fab]").addEventListener("click", () => {
+      devChat.open = !devChat.open;
+      panel.hidden = !devChat.open;
+      if (devChat.open && !devChat.loaded) loadDevChat();
+    });
+    el.querySelector("[data-devchat-close]").addEventListener("click", () => {
+      devChat.open = false;
+      panel.hidden = true;
+    });
+    el.querySelector("[data-devchat-clear]").addEventListener("click", async () => {
+      if (!confirm("Clear the dev chat and start a fresh agent workspace?")) return;
+      try { devChat.abort?.abort(); } catch (_) {}
+      await devFetch("/api/sopal-v2/dev/messages", { method: "DELETE" }).catch(() => {});
+      const stream = el.querySelector("[data-devchat-stream]");
+      stream.innerHTML = "";
+      devChatLine("system", "Thread cleared. The next message starts a fresh workspace on a clean checkout of main.");
+    });
+
+    const form = el.querySelector("[data-devchat-form]");
+    const input = form.elements.message;
+    input.addEventListener("keydown", (ev) => {
+      if ((ev.metaKey || ev.ctrlKey) && ev.key === "Enter") { ev.preventDefault(); form.requestSubmit(); }
+    });
+    form.addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const message = input.value.trim();
+      if (!message || devChat.streaming) return;
+      input.value = "";
+      sendDevChat(message);
+    });
+  }
+
+  async function devFetch(url, opts) {
+    const r = await fetch(url, {
+      ...opts,
+      headers: { "Content-Type": "application/json", ...sopalAuth.headers(), ...(opts && opts.headers) },
+      credentials: "include",
+    });
+    return r;
+  }
+
+  function devChatLine(kind, text) {
+    const stream = devChat.el?.querySelector("[data-devchat-stream]");
+    if (!stream) return null;
+    const div = document.createElement("div");
+    div.className = `devchat-msg devchat-${kind}`;
+    if (kind === "assistant") div.innerHTML = renderMarkdown(text);
+    else div.textContent = text;
+    stream.appendChild(div);
+    stream.scrollTop = stream.scrollHeight;
+    return div;
+  }
+
+  function devChatStatus(text) {
+    const stream = devChat.el?.querySelector("[data-devchat-stream]");
+    if (!stream) return;
+    let s = stream.querySelector(".devchat-statusline");
+    if (!text) { s?.remove(); return; }
+    if (!s) {
+      s = document.createElement("div");
+      s.className = "devchat-statusline";
+      stream.appendChild(s);
+    } else {
+      stream.appendChild(s); // keep it last
+    }
+    s.textContent = text;
+    stream.scrollTop = stream.scrollHeight;
+  }
+
+  async function loadDevChat() {
+    devChat.loaded = true;
+    const sub = devChat.el.querySelector("[data-devchat-sub]");
+    try {
+      const [statusR, msgsR] = await Promise.all([
+        devFetch("/api/sopal-v2/dev/status"),
+        devFetch("/api/sopal-v2/dev/messages"),
+      ]);
+      const status = await statusR.json().catch(() => ({}));
+      const msgs = await msgsR.json().catch(() => ({ messages: [] }));
+      (msgs.messages || []).forEach((m) => devChatLine(m.role === "user" ? "user" : m.role === "assistant" ? "assistant" : "system", m.content));
+      if (!statusR.ok) {
+        devChatLine("system", status.detail || "Dev chat unavailable.");
+        return;
+      }
+      if (!status.configured) {
+        sub.textContent = "not configured";
+        devChatLine("system", `Dev chat needs server env vars: ${(status.missing || []).join(", ")}. Add them in Render and redeploy.`);
+      } else {
+        sub.textContent = `${status.model} · ${status.repo}`;
+        if (!(msgs.messages || []).length) {
+          devChatLine("system", "Talk to the coding agent. It has the repo checked out in a sandbox — it edits, verifies, pushes to main, and Render deploys.");
+        }
+      }
+    } catch (e) {
+      devChatLine("system", "Could not reach the dev chat backend.");
+    }
+  }
+
+  async function sendDevChat(message) {
+    devChatLine("user", message);
+    devChat.streaming = true;
+    devChatStatus("Sending…");
+    try {
+      const r = await devFetch("/api/sopal-v2/dev/message", { method: "POST", body: JSON.stringify({ message }) });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.detail || "Could not send the message.");
+      await streamDevChat();
+    } catch (e) {
+      devChatStatus("");
+      devChatLine("system", e.message || "Failed.");
+      devChat.streaming = false;
+    }
+  }
+
+  async function streamDevChat() {
+    try { devChat.abort?.abort(); } catch (_) {}
+    const ctrl = new AbortController();
+    devChat.abort = ctrl;
+    devChatStatus("Connecting…");
+    try {
+      const r = await devFetch("/api/sopal-v2/dev/stream", { signal: ctrl.signal });
+      if (!r.ok || !r.body) {
+        const data = await r.json().catch(() => ({}));
+        throw new Error(data.detail || "Stream failed to open.");
+      }
+      await consumeSSE(r.body, (event, data) => {
+        if (event === "assistant") {
+          devChatStatus("");
+          devChatLine("assistant", data.text || "");
+        } else if (event === "tool") {
+          devChatStatus(data.text || "working…");
+        } else if (event === "status") {
+          if (data.message) devChatStatus(data.message);
+        } else if (event === "error") {
+          devChatStatus("");
+          devChatLine("system", data.message || "Agent error.");
+        } else if (event === "done") {
+          devChatStatus("");
+          if (data.message) devChatLine("system", data.message);
+          try { ctrl.abort(); } catch (_) {}
+        }
+      });
+    } catch (e) {
+      if (!ctrl.signal.aborted) {
+        devChatStatus("");
+        devChatLine("system", "Connection dropped — if the agent pushed a deploy, the server restarts; reopen the panel to catch up.");
+      }
+    } finally {
+      devChatStatus("");
+      devChat.streaming = false;
+      if (devChat.abort === ctrl) devChat.abort = null;
+    }
   }
 
   /* ---------- Boot ---------- */

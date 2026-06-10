@@ -378,6 +378,9 @@ app.include_router(_claim_check_redirect_router)
 from routes.sopal_v2 import page_router as _sopal_v2_page_router, router as _sopal_v2_router
 app.include_router(_sopal_v2_router)
 app.include_router(_sopal_v2_page_router)
+# Owner-only dev chat relay (floating widget in app.sopal.com.au → Managed Agent).
+from routes.sopal_dev import router as _sopal_dev_router
+app.include_router(_sopal_dev_router)
 # <<< Sopal v2 local prototype
 
 # >>> SopalAI (Construction Law Research) — services/bif_research/api.py
