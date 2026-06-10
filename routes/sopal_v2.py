@@ -11,12 +11,14 @@ from __future__ import annotations
 import json
 import os
 import io
+import re
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
+import bcrypt
 from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from jose import JWTError, jwt
@@ -88,6 +90,23 @@ try:
         )
         """
     )
+    # Sopal v2 has its own account type, deliberately separate from the
+    # marketing site's purchase_users table. Same sqlite file, different
+    # table, different JWT audience — a purchase login token cannot be used
+    # against the v2 app and vice versa.
+    _conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sopal_v2_users (
+            email TEXT PRIMARY KEY,
+            hashed_password TEXT NOT NULL,
+            first_name TEXT DEFAULT '',
+            last_name TEXT DEFAULT '',
+            company TEXT DEFAULT '',
+            created_at TEXT NOT NULL,
+            last_login TEXT
+        )
+        """
+    )
     _conn.commit()
     _sopal_v2_con = _conn
 except Exception as _exc:  # pragma: no cover - defensive, runs once at boot
@@ -100,28 +119,115 @@ def _require_persistence() -> sqlite3.Connection:
     return _sopal_v2_con
 
 
-def _current_user_email(authorization: str | None = Header(default=None)) -> str:
-    """Decode the purchase_token JWT and return the user's email.
+_V2_JWT_AUDIENCE = "sopal-v2"
+_V2_TOKEN_DAYS = 30
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
-    Returns 401 with a clear message if the token is missing, malformed, or
-    expired. We do not look the user up in purchase_users here because the
-    JWT is signed by the same SECRET_KEY this server uses; if the signature
-    is valid the email is trustworthy for the duration of the token.
+
+def _current_user_email(authorization: str | None = Header(default=None)) -> str:
+    """Decode the Sopal v2 JWT and return the user's email.
+
+    Sopal v2 accounts are a separate account type from the marketing site's
+    purchase users — the v2 token carries an `aud` claim of "sopal-v2" and a
+    purchase token does not, so the two cannot be used interchangeably even
+    though both are signed with the same server secret.
     """
     if not authorization:
-        raise HTTPException(status_code=401, detail="Sign in to sync this project to your account.")
+        raise HTTPException(status_code=401, detail="Sign in to use Sopal.")
     parts = authorization.split(None, 1)
     if len(parts) != 2 or parts[0].lower() != "bearer":
         raise HTTPException(status_code=401, detail="Authorization header must be 'Bearer <token>'.")
     token = parts[1].strip()
     try:
-        payload = jwt.decode(token, _SECRET_KEY, algorithms=[_JWT_ALGORITHM])
+        payload = jwt.decode(token, _SECRET_KEY, algorithms=[_JWT_ALGORITHM], audience=_V2_JWT_AUDIENCE)
     except JWTError as exc:
         raise HTTPException(status_code=401, detail=f"Invalid or expired token: {exc}") from exc
     email = (payload.get("sub") or "").strip().lower()
     if not email:
         raise HTTPException(status_code=401, detail="Token is missing the 'sub' email claim.")
     return email
+
+
+def _v2_issue_token(email: str) -> str:
+    payload = {
+        "sub": email,
+        "aud": _V2_JWT_AUDIENCE,
+        "exp": datetime.utcnow() + timedelta(days=_V2_TOKEN_DAYS),
+    }
+    return jwt.encode(payload, _SECRET_KEY, algorithm=_JWT_ALGORITHM)
+
+
+def _v2_user_public(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "email": row["email"],
+        "first_name": row["first_name"] or "",
+        "last_name": row["last_name"] or "",
+        "company": row["company"] or "",
+    }
+
+
+class SopalV2Register(BaseModel):
+    email: str = Field(max_length=254)
+    password: str = Field(max_length=200)
+    firstName: str = Field(default="", max_length=80)
+    lastName: str = Field(default="", max_length=80)
+    company: str = Field(default="", max_length=120)
+
+
+class SopalV2Login(BaseModel):
+    email: str = Field(max_length=254)
+    password: str = Field(max_length=200)
+
+
+@router.post("/auth/register")
+def sopal_v2_register(payload: SopalV2Register) -> dict[str, Any]:
+    con = _require_persistence()
+    email = (payload.email or "").strip().lower()
+    if not _EMAIL_RE.match(email):
+        raise HTTPException(status_code=400, detail="Enter a valid email address.")
+    if len(payload.password or "") < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters.")
+    existing = con.execute("SELECT 1 FROM sopal_v2_users WHERE email = ?", (email,)).fetchone()
+    if existing:
+        raise HTTPException(status_code=409, detail="An account with that email already exists. Sign in instead.")
+    hashed = bcrypt.hashpw(payload.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    con.execute(
+        "INSERT INTO sopal_v2_users (email, hashed_password, first_name, last_name, company, created_at, last_login) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (email, hashed, (payload.firstName or "").strip(), (payload.lastName or "").strip(), (payload.company or "").strip(), now, now),
+    )
+    con.commit()
+    row = con.execute("SELECT * FROM sopal_v2_users WHERE email = ?", (email,)).fetchone()
+    return {"token": _v2_issue_token(email), "user": _v2_user_public(row)}
+
+
+@router.post("/auth/login")
+def sopal_v2_login(payload: SopalV2Login) -> dict[str, Any]:
+    con = _require_persistence()
+    email = (payload.email or "").strip().lower()
+    row = con.execute("SELECT * FROM sopal_v2_users WHERE email = ?", (email,)).fetchone()
+    bad = HTTPException(status_code=401, detail="Email or password is incorrect.")
+    if not row:
+        raise bad
+    try:
+        ok = bcrypt.checkpw((payload.password or "").encode("utf-8"), (row["hashed_password"] or "").encode("utf-8"))
+    except ValueError:
+        ok = False
+    if not ok:
+        raise bad
+    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    con.execute("UPDATE sopal_v2_users SET last_login = ? WHERE email = ?", (now, email))
+    con.commit()
+    return {"token": _v2_issue_token(email), "user": _v2_user_public(row)}
+
+
+@router.get("/auth/me")
+def sopal_v2_me(email: str = Depends(_current_user_email)) -> dict[str, Any]:
+    con = _require_persistence()
+    row = con.execute("SELECT * FROM sopal_v2_users WHERE email = ?", (email,)).fetchone()
+    if not row:
+        raise HTTPException(status_code=401, detail="Account not found. Sign in again.")
+    return _v2_user_public(row)
 
 
 class SopalV2ProjectPut(BaseModel):
@@ -272,6 +378,85 @@ class SopalV2AgentRequest(BaseModel):
     reviewSubmode: str | None = Field(default=None, max_length=40)
     checks: list[str] = Field(default_factory=list)
     chatFollowup: bool = False
+    jurisdiction: str | None = Field(default=None, max_length=8)
+
+
+# Deep per-state statutory context for the SOPA reviewers. Built from the
+# current consolidations as at June 2026 (see docs/sopa-research/*.md):
+# QLD BIF Act 2017; NSW SOP Act 1999 (post-2019 amendments); VIC SOP Act 2002
+# as amended by the Fairer Payments on Jobsites reforms in force 15 Apr 2026;
+# SA SOP Act 2009 (+ the 1 May 2025 Crown >$4m regulation).
+REVIEWER_JURISDICTION_FRAMING: dict[str, str] = {
+    "qld": (
+        "ACTIVE JURISDICTION: Queensland — Building Industry Fairness (Security of Payment) Act 2017 (Qld) ('BIF Act'). "
+        "Key rules: payment claim must identify the work, state the claimed amount and request payment (s 68; a document "
+        "bearing 'invoice' is taken to be a payment claim). Claims served on or after a valid reference date (s 67); "
+        "service window in s 75 (generally 6 months after the work, 28-day rule for final claims). Payment schedule due "
+        "within the contract period or 15 business days, whichever ends first (s 76); must identify the claim, state the "
+        "scheduled amount and ALL reasons for withholding (s 69) — new reasons are barred at adjudication response stage "
+        "(s 82(4)). No schedule → respondent liable for the full claimed amount and exposed to s 100 penalty. Business "
+        "days exclude 22 December – 10 January. Adjudication deadlines: s 79 (30/20/30 BD), response s 83, decision s 85. "
+        "Leading cases: Southern Han v Lewence [2016] HCA 52 (reference dates); KDV Sport v Muggeridge [2019] QSC 178 "
+        "(content); Niclin Constructions v SHA Premier [2019] QCA 177 (service)."
+    ),
+    "nsw": (
+        "ACTIVE JURISDICTION: New South Wales — Building and Construction Industry Security of Payment Act 1999 (NSW), "
+        "as amended in 2019. Key rules: payment claim must identify the work, indicate the claimed amount AND state that "
+        "it is made under the Act (s 13(2)(c) — the endorsement was reinstated for contracts from 21 Oct 2019; a claim "
+        "without it is invalid). Reference dates are abolished — claims may be served monthly on and from the last day "
+        "of each named month (s 13(1A)-(1C)), and within 12 months of the work or the contract period if longer "
+        "(s 13(4)). A HEAD CONTRACTOR serving the principal MUST attach a supporting statement declaring subcontractors "
+        "have been paid (s 13(7); penalty applies, though omission does not invalidate the claim — TFM Epping Land v "
+        "Decon Australia [2020] NSWCA 93). Owner-occupier contracts are covered since 1 Mar 2021; s 8(2) (from 20 Aug "
+        "2024) bars claims for unlicensed/uninsured residential work. Payment schedule due within the contract period or "
+        "10 business days, whichever first (s 14(4)); must identify the claim, the scheduled amount, and all reasons "
+        "(s 14(3)) — reasons not raised cannot be used in an adjudication response (s 20(2B); Multiplex v Luikens [2003] "
+        "NSWSC 1140 on adequacy). Payment due: principal→head contractor 15 BD, to subcontractor 20 BD (30 BD pre-Oct-"
+        "2019 contracts); later terms void (s 11(8)). Business days exclude 27–31 December. Adjudication: s 17(3) "
+        "(10/20 BD; no-schedule path needs a s 17(2) notice within 20 BD + 5 BD second chance + 10 BD), response s 20, "
+        "determination s 21(3). Leading cases: Southern Han [2016] HCA 52; Dualcorp v Remo [2009] NSWCA 69; Chase Oyster "
+        "Bar v Hamo [2010] NSWCA 190; Probuild v Shade Systems [2018] HCA 4."
+    ),
+    "vic": (
+        "ACTIVE JURISDICTION: Victoria — Building and Construction Industry Security of Payment Act 2002 (Vic), AS "
+        "AMENDED by the Building Legislation Amendment (Fairer Payments on Jobsites and Other Matters) Act 2025, in "
+        "force 15 APRIL 2026. THE OLD VICTORIAN REGIME NO LONGER APPLIES to claims served on or after that date: "
+        "reference dates are ABOLISHED, and the excluded amounts / claimable variations regime (old ss 10A-10B) is "
+        "REPEALED — variations of any kind, delay and time-related costs, latent conditions and damages are now "
+        "claimable. Key rules: payment claim must identify the work, indicate the claimed amount and state it is made "
+        "under the Act (s 14(2)); may be served on and from the last day of each named month (s 14A; December rules: "
+        "work 1–21 Dec → from 22 Dec, work 22–31 Dec → from 31 Jan); outer limit is the day before 6 months after "
+        "practical completion (s 14C); one claim per month default (s 14D), unpaid amounts re-claimable. Unfair "
+        "notice-based time bars can be declared void (s 13A). Payment schedule due within the contract period or 10 "
+        "business days, whichever first (s 15(4)); must identify the claim, the scheduled amount and ALL reasons — "
+        "reasons omitted from the schedule are barred in the adjudication response and a determination relying on them "
+        "is void to that extent. Payment due per contract capped at 20 BD after service (s 12(1B)); if silent, 10 BD "
+        "after the earliest permissible service day. Business days now exclude 22 December – 10 January AND statewide "
+        "public holidays. Adjudication: s 18(3) (10 BD after schedule / 10 BD after due date / notice ≤10 BD + 5 BD + "
+        "5 BD), response s 21(1) (5/2 BD), determination s 22(4) (10 BD + agreed ≤20 BD); review adjudication is "
+        "abolished. New: 5 BD written notice required before recourse to performance security (s 17H). For claims "
+        "served BEFORE 15 Apr 2026 the old regime (excluded amounts, reference dates, 3-month limit) still governs — "
+        "ask the user which side of the commencement date the claim falls on if unclear."
+    ),
+    "sa": (
+        "ACTIVE JURISDICTION: South Australia — Building and Construction Industry Security of Payment Act 2009 (SA) "
+        "(original 2009 text — never amended; regulation change 1 May 2025). Key rules: payment claim must identify the "
+        "work, indicate the claimed amount AND state that it is made under the Act (s 13(2)(c) — mandatory endorsement; "
+        "a claim without it is invalid). Reference dates apply (defined in s 4; default last day of each named month); "
+        "one claim per reference date (s 13(5)) though prior unpaid amounts may be re-included (s 13(6)); service window "
+        "is the LATER of the contract period and 6 months after the work was last carried out (s 13(4)). Retention/"
+        "security release amounts expressly claimable (s 13(3)(b)). Exclusions: owner-occupier domestic building work "
+        "(s 7(2)(b)) and, from 1 May 2025, Crown contracts over $4m ex-GST lose deemed liability, debt recovery, "
+        "adjudication and suspension rights (reg 7). Payment schedule due within the contract period or 15 business "
+        "days, whichever first (s 14(4)); must identify the claim, the scheduled amount and reasons (s 14(3)) — new "
+        "reasons barred at adjudication (s 20(4)). Payment due per contract or 15 BD if silent (s 11(1)); no statutory "
+        "cap. Business days exclude 27–31 December. Adjudication: s 17(3) (15 BD after schedule / 20 BD after due date / "
+        "notice ≤20 BD + 5 BD + 15 BD), response s 20(1) (5/2 BD), determination s 21(3) (10 BD from response). 'Pay "
+        "when paid' provisions void (s 12; Maxcon v Vadasz [2018] HCA 5 — retention tied to head-contract certificate). "
+        "Leading cases: Built Environs v Tali [2013] SASC 84; Goyder Wind Farm v GE Renewable [2024] SASC 108 "
+        "(re-agitation); Southern Han [2016] HCA 52 (reference dates, persuasive)."
+    ),
+}
 
 
 AGENT_LABELS: dict[str, str] = {
@@ -488,6 +673,10 @@ def _build_messages(payload: SopalV2AgentRequest, *, assistant_only: bool = Fals
             task_prompt = REVIEW_CHAT_FRAME
         else:
             task_prompt = AGENT_INSTRUCTIONS[(agent_key, mode)]
+        # Anchor the agent in the user's security-of-payment jurisdiction so
+        # reviews cite the right Act, sections, deadlines and case law.
+        jur = (payload.jurisdiction or "qld").strip().lower()
+        task_prompt = REVIEWER_JURISDICTION_FRAMING.get(jur, REVIEWER_JURISDICTION_FRAMING["qld"]) + "\n\n" + task_prompt
         label = AGENT_LABELS[agent_key]
 
     file_note = ""
@@ -517,7 +706,7 @@ def _build_messages(payload: SopalV2AgentRequest, *, assistant_only: bool = Fals
     ]
 
 
-def _complete(messages: list[dict[str, str]]) -> dict[str, Any]:
+def _complete(messages: list[dict[str, str]], max_output_tokens: int = 2200) -> dict[str, Any]:
     if not os.getenv("OPENAI_API_KEY"):
         raise HTTPException(
             status_code=503,
@@ -531,7 +720,7 @@ def _complete(messages: list[dict[str, str]]) -> dict[str, Any]:
             messages=messages,
             reasoning_effort="medium",
             tier="default",
-            max_output_tokens=2200,
+            max_output_tokens=max_output_tokens,
             temperature=0.2,
         )
     except HTTPException:
@@ -577,6 +766,7 @@ class SopalV2EditDraftRequest(BaseModel):
     currentDocumentHtml: str = Field(default="", max_length=300_000)
     message: str = Field(default="", max_length=120_000)
     projectContext: str | None = Field(default=None, max_length=120_000)
+    jurisdiction: str | None = Field(default=None, max_length=8)
 
 
 EDIT_DRAFT_SYSTEM_PROMPT = """You are Sopal Drafting, editing a construction-law / SOPA / BIF Act draft document on the user's behalf.
@@ -633,6 +823,8 @@ async def sopal_v2_edit_draft(payload: SopalV2EditDraftRequest) -> dict[str, Any
         f"{context_block}"
     )
 
+    jur = (payload.jurisdiction or "qld").strip().lower()
+    jur_block = DRAFT_JURISDICTION_FRAMING.get(jur, DRAFT_JURISDICTION_FRAMING["qld"])
     messages = [
         {
             "role": "system",
@@ -642,12 +834,14 @@ async def sopal_v2_edit_draft(payload: SopalV2EditDraftRequest) -> dict[str, Any
                 + _current_date_context()
                 + "\n\n"
                 + EDIT_DRAFT_SYSTEM_PROMPT
+                + "\n\n"
+                + jur_block
             ),
         },
         {"role": "user", "content": user_content},
     ]
 
-    result = _complete(messages)
+    result = _complete(messages, max_output_tokens=4000)
     raw = (result.get("content") or "").strip()
     # Tolerate the occasional code-fence wrapper from the model.
     if raw.startswith("```"):
@@ -669,6 +863,171 @@ async def sopal_v2_edit_draft(payload: SopalV2EditDraftRequest) -> dict[str, Any
     return {
         "documentHtml": parsed.get("documentHtml") or "",
         "summary": parsed.get("summary") or "Updated the draft.",
+        "model": result.get("model"),
+    }
+
+
+# First-draft generation for the drafting workspaces. The static HTML
+# templates the editor used to start from looked like shallow forms; this
+# endpoint instead reads the project's contract + library documents and the
+# project metadata and produces a complete, realistic document of the given
+# type, grounded in the actual contract (clause numbers, defined terms,
+# parties, rates) and the project's security-of-payment jurisdiction.
+class SopalV2GenerateDraftRequest(BaseModel):
+    agentType: str = Field(default="", max_length=80)
+    instructions: str = Field(default="", max_length=20_000)
+    projectMeta: dict[str, Any] = Field(default_factory=dict)
+    contractDocs: list[dict[str, Any]] = Field(default_factory=list)
+    libraryDocs: list[dict[str, Any]] = Field(default_factory=list)
+
+
+# Per-jurisdiction drafting frame: act name, endorsement wording and the
+# headline content rules a served document must satisfy. Kept deliberately
+# short — the reviewers carry the deep per-section checklists; this block is
+# what the drafting model needs to produce a compliant document.
+DRAFT_JURISDICTION_FRAMING: dict[str, str] = {
+    "qld": (
+        "Jurisdiction: Queensland — Building Industry Fairness (Security of Payment) Act 2017 (Qld) ('BIF Act').\n"
+        "Payment claims: must identify the construction work / related goods and services, state the claimed amount, and "
+        "request payment (s 68). Best practice is to endorse: 'This is a payment claim made under the Building Industry "
+        "Fairness (Security of Payment) Act 2017 (Qld).' Claims are served on or after each reference date (s 67, s 75). "
+        "Payment schedules: identify the claim, state the scheduled amount, and give ALL reasons for withholding (s 69) — "
+        "reasons not in the schedule generally cannot be raised later (s 82(4)). Schedule due within the contract period "
+        "or 15 business days, whichever is earlier (s 76)."
+    ),
+    "nsw": (
+        "Jurisdiction: New South Wales — Building and Construction Industry Security of Payment Act 1999 (NSW).\n"
+        "Payment claims: must identify the work, indicate the claimed amount, and STATE that the claim is made under the "
+        "Act (s 13(2)(c) — mandatory endorsement: 'This is a payment claim made under the Building and Construction "
+        "Industry Security of Payment Act 1999 (NSW).'). A head contractor serving a claim on the principal MUST attach a "
+        "supporting statement declaring all subcontractors have been paid (s 13(7)) — include a placeholder + note. "
+        "Payment schedules: identify the claim, indicate the scheduled amount, and give all reasons for withholding "
+        "(s 14(3)); due within the contract period or 10 business days, whichever is earlier (s 14(4)); reasons not in "
+        "the schedule cannot be raised in an adjudication response (s 20(2B))."
+    ),
+    "vic": (
+        "Jurisdiction: Victoria — Building and Construction Industry Security of Payment Act 2002 (Vic), as amended by the "
+        "Fairer Payments on Jobsites reforms in force from 15 April 2026.\n"
+        "Payment claims: must identify the work, indicate the claimed amount, and state that the claim is made under the "
+        "Act (s 14(2)(e) — endorsement: 'This is a payment claim made under the Building and Construction Industry "
+        "Security of Payment Act 2002 (Vic).'). Reference dates are abolished — claims may be served on and from the last "
+        "day of each named month (s 14A); the old excluded-amounts regime (old ss 10A-10B) is repealed, so variations, "
+        "delay and time-related costs and latent-conditions amounts are now claimable. Payment schedules: identify the "
+        "claim, state the scheduled amount and ALL reasons (s 15); due within the contract period or 10 business days, "
+        "whichever is earlier; reasons omitted from the schedule are barred in adjudication."
+    ),
+    "sa": (
+        "Jurisdiction: South Australia — Building and Construction Industry Security of Payment Act 2009 (SA).\n"
+        "Payment claims: must identify the work, indicate the claimed amount, and state that the claim is made under the "
+        "Act (s 13(2)(c) — endorsement: 'This is a payment claim made under the Building and Construction Industry "
+        "Security of Payment Act 2009 (SA).'). Claims are served on and from each reference date (s 8). Payment "
+        "schedules: identify the claim, indicate the scheduled amount, and give all reasons for withholding (s 14(3)); "
+        "due within the contract period or 15 business days, whichever is earlier (s 14(4))."
+    ),
+}
+
+
+GENERATE_DRAFT_SYSTEM_PROMPT = """You are Sopal Drafting, producing the FIRST FULL DRAFT of a construction-contract / security-of-payment document.
+
+You will receive:
+1. The document type (payment claim, payment schedule, EOT notice/claim, variation notice/claim, delay-cost claim, correspondence).
+2. Project metadata (parties, ABNs, contract form, reference, contract sum, site address, superintendent, payment terms, retention, DLP, jurisdiction, who the user acts for).
+3. The project's CONTRACT DOCUMENTS and LIBRARY DOCUMENTS (correspondence, prior claims, programmes) — extracted text.
+4. Optional user instructions (amounts, period, items to include).
+
+Return STRICT JSON: { "documentHtml": "...", "summary": "..." }
+
+documentHtml rules:
+- Produce a COMPLETE, REALISTIC, professional document of the kind actually served in the Australian construction industry — not a skeleton form. Think: what a contracts administrator at a mid-tier contractor would actually send.
+- READ THE CONTRACT. Use the real clause numbers, defined terms, parties, superintendent, payment provisions, variation/EOT machinery from the supplied documents. Quote clause numbers explicitly (e.g. 'cl 37.1 of the Contract'). Use real names, ABNs, addresses and the contract reference from the metadata/documents.
+- For a PAYMENT CLAIM include: a formal header block (claimant/respondent incl. ABNs, contract ref, claim number placeholder, claim period / month, date of claim, due-date note per the contract or Act); an itemised claim table of the trade/scope items (description, contract sum, % complete or qty, previously claimed, this claim) built from the contract's scope/price breakdown where available; a separate VARIATIONS table (number, description, status, amount) if any appear in the documents; delay/time-related amounts only where the jurisdiction allows; subtotal, GST and total incl. GST; the statutory endorsement required in the jurisdiction; a service block; signature block; and an attachments schedule. Where real figures are unknown use [bracketed placeholders] in the cells but keep the realistic structure.
+- For a PAYMENT SCHEDULE include: header block identifying the payment claim being answered (date received, claimed amount); scheduled amount; a 5-column itemised response table (item, claimed, scheduled, difference, reasons for withholding) with each reason tied to a contract clause or statutory basis; the jurisdiction's warning that all reasons must be included now; reservation of rights; signature block.
+- For EOT / VARIATION / DELAY-COST documents: follow the contract's actual notice machinery (clause numbers, time limits, content requirements found in the contract docs), include the substantive sections a well-drafted notice carries, and cross-reference supporting library documents by name where they evidence the claim.
+- Do NOT invent facts, figures, dates or events that are not in the documents or instructions — use [bracketed placeholders]. But DO use everything that IS in the documents.
+- Structural HTML only (h1, h2, h3, p, table/thead/tbody/tr/th/td, ul, ol, strong, em, br). No inline styles or scripts.
+- Australian English. Legally careful. Use the jurisdiction frame supplied — cite that Act, not another state's.
+
+summary rules: one or two sentences to the user describing what was generated and what they still need to fill in.
+
+Return only the JSON object. No code fences."""
+
+
+@router.post("/agent/generate-draft")
+async def sopal_v2_generate_draft(payload: SopalV2GenerateDraftRequest) -> dict[str, Any]:
+    agent_key = (payload.agentType or "").strip()
+    if agent_key not in AGENT_LABELS:
+        raise HTTPException(status_code=400, detail="Unknown agent type")
+
+    meta = payload.projectMeta or {}
+    jur = str(meta.get("jurisdiction") or "qld").lower()
+    jur_block = DRAFT_JURISDICTION_FRAMING.get(jur, DRAFT_JURISDICTION_FRAMING["qld"])
+
+    def _docs_block(docs: list[dict[str, Any]], label: str, per_cap: int, total_cap: int) -> str:
+        items = [d for d in (docs or []) if (d.get("text") or "").strip()]
+        if not items:
+            return f"{label}: (none uploaded)"
+        out = [label + ":"]
+        running = 0
+        for d in items[:10]:
+            name = str(d.get("name") or "Untitled").strip()[:200]
+            text = str(d.get("text") or "").strip()[:per_cap]
+            if running + len(text) > total_cap:
+                out.append(f"- {name} (omitted — total cap reached)")
+                continue
+            running += len(text)
+            out.append(f"--- {name} ---\n{text}")
+        return "\n".join(out)
+
+    meta_lines = []
+    for key, label in [
+        ("name", "Project"), ("claimant", "Claimant"), ("claimantAbn", "Claimant ABN"),
+        ("respondent", "Respondent"), ("respondentAbn", "Respondent ABN"),
+        ("contractForm", "Contract form"), ("reference", "Contract reference"),
+        ("contractDate", "Contract date"), ("contractSum", "Contract sum"),
+        ("siteAddress", "Site address"), ("superintendent", "Superintendent / CA"),
+        ("paymentTerms", "Payment terms"), ("retention", "Retention / security"),
+        ("dlp", "Defects liability period"), ("userIsParty", "User acts for"),
+    ]:
+        v = meta.get(key)
+        if isinstance(v, str) and v.strip():
+            meta_lines.append(f"- {label}: {v.strip()[:400]}")
+    meta_block = "Project metadata:\n" + ("\n".join(meta_lines) if meta_lines else "(none provided)")
+
+    user_content = (
+        f"Document type: {AGENT_LABELS[agent_key]}\n\n"
+        f"{jur_block}\n\n"
+        f"{meta_block}\n\n"
+        f"User instructions: {(payload.instructions or '').strip() or '(none — generate the best first draft you can from the documents)'}\n\n"
+        f"{_docs_block(payload.contractDocs, 'CONTRACT DOCUMENTS', 30_000, 70_000)}\n\n"
+        f"{_docs_block(payload.libraryDocs, 'PROJECT LIBRARY DOCUMENTS', 15_000, 40_000)}"
+    )
+
+    messages = [
+        {"role": "system", "content": BASE_SYSTEM_PROMPT + "\n\n" + _current_date_context() + "\n\n" + GENERATE_DRAFT_SYSTEM_PROMPT},
+        {"role": "user", "content": user_content},
+    ]
+    result = _complete(messages, max_output_tokens=6000)
+    raw = (result.get("content") or "").strip()
+    if raw.startswith("```"):
+        raw = raw.split("```", 2)[-1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip().rstrip("`").strip()
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start == -1 or end <= start:
+        raise HTTPException(status_code=502, detail="Could not parse the draft output.")
+    try:
+        parsed = json.loads(raw[start : end + 1])
+    except Exception:
+        import re as _re
+        try:
+            parsed = json.loads(_re.sub(r",\s*([}\]])", r"\1", raw[start : end + 1]))
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Could not parse the draft output: {exc}") from exc
+    return {
+        "documentHtml": parsed.get("documentHtml") or "",
+        "summary": parsed.get("summary") or "Generated a first draft.",
         "model": result.get("model"),
     }
 
@@ -1344,10 +1703,14 @@ RESEARCH_JURISDICTION_FRAMING: dict[str, str] = {
     ),
     "vic": (
         "Active jurisdiction: Victoria. Apply the Building and Construction Industry Security of Payment Act 2002 "
-        "(Vic). Note: Sopal's decision corpus is QLD-only — you do NOT have access to VIC-specific decisions, so do "
-        "not fabricate them. Answer from general knowledge of the Vic Act, flag any answer that would normally rely "
-        "on case law as needing verification, and recommend the user check VCAT / Supreme Court Vic / VBA decisions "
-        "directly."
+        "(Vic) AS AMENDED by the Fairer Payments on Jobsites reforms, in force from 15 April 2026: reference dates "
+        "abolished (monthly claims from the last day of each named month, s 14A), excluded amounts / claimable "
+        "variations (old ss 10A-10B) REPEALED, 6-month-after-practical-completion outer limit (s 14C), 20-business-day "
+        "statutory payment cap (s 12(1B)), no new reasons in adjudication responses, review adjudication abolished, "
+        "business days exclude 22 Dec - 10 Jan. Claims served before 15 April 2026 stay on the old rules. Note: "
+        "Sopal's decision corpus is QLD-only — you do NOT have access to VIC-specific decisions, so do not fabricate "
+        "them. Flag case-law-dependent answers as needing verification and recommend the user check Supreme Court Vic "
+        "decisions directly."
     ),
     "wa": (
         "Active jurisdiction: Western Australia. Apply the Building and Construction Industry (Security of Payment) "
@@ -1576,6 +1939,81 @@ async def sopal_v2_search(
         items.append(d)
 
     return {"total": total, "items": items}
+
+
+# Project setup autofill: the New Project flow requires the user to upload
+# the contract documents up front; this endpoint reads the extracted text and
+# returns a structured fill for the project form. The SPA renders the values
+# into editable fields — the user always confirms before the project is
+# created, so a wrong extraction is a one-keystroke fix, not a trap.
+class SopalV2ProjectAutofillRequest(BaseModel):
+    documents: list[dict[str, Any]] = Field(default_factory=list)
+
+
+PROJECT_AUTOFILL_SYSTEM_PROMPT = """You are extracting project-setup metadata from construction contract documents.
+
+Return STRICT JSON with exactly this shape (every field present; use "" when the documents do not show the value — do NOT guess):
+{
+  "projectName":      "short working name for the project, e.g. '88 Creek St Fitout' — derive from the project/site description",
+  "claimant":         "the party who would claim payment (contractor / subcontractor) — full legal name incl. ABN suffix entity type",
+  "respondent":       "the party who would receive a payment claim (principal / head contractor)",
+  "claimantAbn":      "ABN/ACN of the claimant if shown",
+  "respondentAbn":    "ABN/ACN of the respondent if shown",
+  "contractForm":     "one of: AS 4000, AS 4902, AS 2124, AS 4300, AS 4905, GC21, MW21, Bespoke, Other",
+  "reference":        "contract number / reference",
+  "contractDate":     "date of contract execution, YYYY-MM-DD or ''",
+  "contractSum":      "original contract sum as a plain number string without $ or commas, or ''",
+  "siteAddress":      "project / site address",
+  "superintendent":   "superintendent / contract administrator / principal's representative if named",
+  "jurisdiction":     "qld | nsw | vic | sa | other — from the governing-law clause first, else the site address state",
+  "category":         "Head contract | Subcontract | Other",
+  "paymentTerms":     "1-2 sentence summary of the payment claim regime under the contract: when claims may be made (reference date / claim date), and when payment falls due",
+  "retention":        "1 sentence on retention / security if provided (e.g. '5% retention to 2.5% at PC, released at end of DLP')",
+  "dlp":              "defects liability period if stated (e.g. '12 months from practical completion')",
+  "warnings":         ["short strings for anything ambiguous or conflicting you found"]
+}
+
+Rules:
+- Extract only what the documents actually say. Empty string beats a guess.
+- If the documents include an unamended standard form, use its code for contractForm; if heavily amended say the base form.
+- Australian English. Return ONLY the JSON object — no commentary, no code fences."""
+
+
+@router.post("/projects/autofill")
+async def sopal_v2_project_autofill(payload: SopalV2ProjectAutofillRequest) -> dict[str, Any]:
+    docs = [d for d in (payload.documents or []) if (d.get("text") or "").strip()]
+    if not docs:
+        raise HTTPException(status_code=400, detail="At least one contract document with extracted text is required.")
+    blocks: list[str] = []
+    running = 0
+    for d in docs[:8]:
+        name = str(d.get("name") or "Untitled").strip()[:200]
+        text = str(d.get("text") or "").strip()[:60_000]
+        if running + len(text) > 150_000:
+            blocks.append(f"--- {name} --- (omitted, total cap reached)")
+            continue
+        running += len(text)
+        blocks.append(f"--- {name} ---\n{text}")
+    messages = [
+        {"role": "system", "content": BASE_SYSTEM_PROMPT + "\n\n" + _current_date_context() + "\n\n" + PROJECT_AUTOFILL_SYSTEM_PROMPT},
+        {"role": "user", "content": "CONTRACT DOCUMENTS:\n\n" + "\n\n".join(blocks)},
+    ]
+    result = _complete(messages)
+    raw = (result.get("content") or "").strip()
+    if raw.startswith("```"):
+        raw = raw.split("```", 2)[-1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip().rstrip("`").strip()
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start == -1 or end <= start:
+        raise HTTPException(status_code=502, detail="Could not parse the autofill output.")
+    try:
+        parsed = json.loads(raw[start : end + 1])
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Could not parse the autofill output: {exc}") from exc
+    return parsed
 
 
 @router.post("/extract")

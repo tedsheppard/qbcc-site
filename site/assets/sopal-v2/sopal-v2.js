@@ -56,7 +56,7 @@
     "adjudication-response": "Adjudication Response",
   };
   const AGENT_DESCRIPTIONS = {
-    "payment-claims": "Review or draft payment claim material. Covers BIF Act compliance, work identification, dates, service, evidence.",
+    "payment-claims": "Review or draft payment claim material. Covers SOPA compliance (QLD, NSW, VIC, SA), work identification, dates, service, evidence.",
     "payment-schedules": "Review or draft payment schedules. Covers scheduled amount, withholding reasons, timing, adjudication risk.",
     eots: "Review or draft extension of time notices and claims. Covers contract notice, causation, critical delay, evidence.",
     variations: "Review or draft variation notices and claims. Covers direction, scope, valuation, time and cost impact, evidence.",
@@ -167,6 +167,84 @@
     ],
   };
 
+  // Jurisdiction-specific check lists for the two SOPA reviewers. The other
+  // agents' checks are contract-driven, not statute-driven, so they stay
+  // uniform across states. qld entries mirror REVIEW_CHECKS for fallback.
+  const JUR_REVIEW_CHECKS = {
+    "payment-claims": {
+      qld: REVIEW_CHECKS["payment-claims"],
+      nsw: [
+        "Is the document a valid payment claim?",
+        "Identification of the construction work or related goods/services (s 13(2)(a))",
+        "Amount claimed and basis for the amount (s 13(2)(b))",
+        "Statement that the claim is made under the Act (s 13(2)(c) endorsement)",
+        "Timing: monthly entitlement and the 12-month / contract service window (s 13(1A)-(4))",
+        "Supporting statement if served by a head contractor (s 13(7)-(9))",
+        "Service: who, when, how, evidence of service (s 31)",
+        "Practical amendments and next steps",
+      ],
+      vic: [
+        "Is the document a valid payment claim?",
+        "Identification of the construction work or related goods/services (s 14(2)(c))",
+        "Amount claimed and basis for the amount (s 14(2)(d))",
+        "Statement that the claim is made under the Act (s 14(2)(e))",
+        "Earliest service: last day of the named month + December rules (s 14A)",
+        "Latest service: day before 6 months after practical completion (s 14C) and one-claim-per-month (s 14D)",
+        "Post-reform amounts: variations / delay costs / latent conditions now claimable (excluded amounts repealed 15 Apr 2026)",
+        "Service and evidence of service (s 50)",
+      ],
+      sa: [
+        "Is the document a valid payment claim?",
+        "Identification of the construction work or related goods/services (s 13(2)(a))",
+        "Amount claimed and basis for the amount (s 13(2)(b))",
+        "Statement that the claim is made under the Act (s 13(2)(c) endorsement)",
+        "Reference date validity and one-claim-per-reference-date (s 13(5))",
+        "Service window: later of contract period and 6 months after work last carried out (s 13(4))",
+        "Application exclusions: owner-occupier domestic work; Crown contracts over $4m (reg 7)",
+        "Service, evidence of service, and next steps",
+      ],
+    },
+    "payment-schedules": {
+      qld: REVIEW_CHECKS["payment-schedules"],
+      nsw: [
+        "Was the schedule given within time (s 14(4) — 10 BD or contract, whichever earlier)?",
+        "Scheduled amount and clarity (s 14(2))",
+        "Reasons for withholding — adequacy and itemisation (s 14(3))",
+        "Reasons not raised now are barred in adjudication (s 20(2B) risk)",
+        "Identification of the payment claim being responded to (s 14(1))",
+        "Reservation of rights and standard endorsements",
+        "Adjudication-risk view (claimant vs respondent)",
+        "Practical amendments and next steps",
+      ],
+      vic: [
+        "Was the schedule given within time (s 15(4) — 10 BD or contract, whichever earlier)?",
+        "Scheduled amount and clarity (s 15(2))",
+        "Reasons for withholding — adequacy and itemisation (s 15(3))",
+        "Reasons omitted now are barred in adjudication (post-15 Apr 2026 rule)",
+        "Identification of the payment claim being responded to (s 15(2))",
+        "Reservation of rights and standard endorsements",
+        "Adjudication-risk view (claimant vs respondent)",
+        "Practical amendments and next steps",
+      ],
+      sa: [
+        "Was the schedule given within time (s 14(4) — 15 BD or contract, whichever earlier)?",
+        "Scheduled amount and clarity (s 14(2))",
+        "Reasons for withholding — adequacy and itemisation (s 14(3))",
+        "Reasons not raised now are barred in adjudication (s 20(4) risk)",
+        "Identification of the payment claim being responded to (s 14(2)(a))",
+        "Reservation of rights and standard endorsements",
+        "Adjudication-risk view (claimant vs respondent)",
+        "Practical amendments and next steps",
+      ],
+    },
+  };
+
+  function reviewChecksFor(agentKey, jur) {
+    const byJur = JUR_REVIEW_CHECKS[agentKey];
+    if (byJur) return byJur[jur] || byJur.qld;
+    return REVIEW_CHECKS[agentKey] || [];
+  }
+
   const REVIEW_PROMPT_HINTS = {
     "payment-claims:serving": "Paste the draft payment claim text. Include claimed amount, claim date, intended service date, contract reference, and any prior claim dates if relevant.",
     "payment-claims:received": "Paste the payment claim text you received. Include the date and method of service, the contract reference, and any prior claims you've received from this claimant.",
@@ -266,13 +344,39 @@
     ],
   };
 
-  // QLD public holidays + regional show holidays — copied from the live Sopal due-date calculator.
+  // Public holidays per jurisdiction. QLD includes regional show holidays
+  // (selected via the location dropdown); NSW/VIC/SA are statewide-only —
+  // their SOPA business-day definitions exclude statewide holidays.
   const HOLIDAYS = {
     qld: [
       ["2025-01-01", "New Year's Day"], ["2025-01-27", "Australia Day"], ["2025-04-18", "Good Friday"], ["2025-04-19", "Day after Good Friday"], ["2025-04-21", "Easter Monday"], ["2025-04-25", "Anzac Day"], ["2025-05-05", "Labour Day"], ["2025-10-06", "King's Birthday"], ["2025-12-25", "Christmas Day"], ["2025-12-26", "Boxing Day"],
       ["2026-01-01", "New Year's Day"], ["2026-01-26", "Australia Day"], ["2026-04-03", "Good Friday"], ["2026-04-04", "Day after Good Friday"], ["2026-04-06", "Easter Monday"], ["2026-04-25", "Anzac Day"], ["2026-05-04", "Labour Day"], ["2026-10-05", "King's Birthday"], ["2026-12-25", "Christmas Day"], ["2026-12-28", "Boxing Day Holiday"],
       ["2027-01-01", "New Year's Day"], ["2027-01-26", "Australia Day"], ["2027-03-26", "Good Friday"], ["2027-03-27", "Day after Good Friday"], ["2027-03-29", "Easter Monday"], ["2027-04-26", "Anzac Day Holiday"], ["2027-05-03", "Labour Day"], ["2027-10-04", "King's Birthday"], ["2027-12-27", "Christmas Day Holiday"], ["2027-12-28", "Boxing Day Holiday"],
       ["2028-01-03", "New Year's Day Holiday"], ["2028-01-26", "Australia Day"], ["2028-04-14", "Good Friday"], ["2028-04-15", "Day after Good Friday"], ["2028-04-17", "Easter Monday"], ["2028-04-25", "Anzac Day"], ["2028-05-01", "Labour Day"], ["2028-10-02", "King's Birthday"], ["2028-12-25", "Christmas Day"], ["2028-12-26", "Boxing Day"],
+    ].map(([date, name]) => ({ date, name })),
+    // NSW/VIC/SA statewide public holidays 2025-2028, from the official state
+    // lists (nsw.gov.au, Business Victoria, SafeWork SA) as at June 2026.
+    // 2028 NSW dates are derived from the Public Holidays Act 2010 rules
+    // (not yet published); VIC AFL Grand Final Friday 2027/2028 are expected
+    // dates pending declaration. SA 7pm-midnight part-day holidays are not
+    // included (they do not displace a business day).
+    nsw: [
+      ["2025-01-01", "New Year's Day"], ["2025-01-27", "Australia Day Holiday"], ["2025-04-18", "Good Friday"], ["2025-04-19", "Easter Saturday"], ["2025-04-20", "Easter Sunday"], ["2025-04-21", "Easter Monday"], ["2025-04-25", "Anzac Day"], ["2025-06-09", "King's Birthday"], ["2025-10-06", "Labour Day"], ["2025-12-25", "Christmas Day"], ["2025-12-26", "Boxing Day"],
+      ["2026-01-01", "New Year's Day"], ["2026-01-26", "Australia Day"], ["2026-04-03", "Good Friday"], ["2026-04-04", "Easter Saturday"], ["2026-04-05", "Easter Sunday"], ["2026-04-06", "Easter Monday"], ["2026-04-25", "Anzac Day"], ["2026-06-08", "King's Birthday"], ["2026-10-05", "Labour Day"], ["2026-12-25", "Christmas Day"], ["2026-12-26", "Boxing Day"], ["2026-12-28", "Boxing Day Holiday"],
+      ["2027-01-01", "New Year's Day"], ["2027-01-26", "Australia Day"], ["2027-03-26", "Good Friday"], ["2027-03-27", "Easter Saturday"], ["2027-03-28", "Easter Sunday"], ["2027-03-29", "Easter Monday"], ["2027-04-25", "Anzac Day"], ["2027-06-14", "King's Birthday"], ["2027-10-04", "Labour Day"], ["2027-12-25", "Christmas Day"], ["2027-12-26", "Boxing Day"], ["2027-12-27", "Christmas Day Holiday"], ["2027-12-28", "Boxing Day Holiday"],
+      ["2028-01-01", "New Year's Day"], ["2028-01-03", "New Year's Day Holiday"], ["2028-01-26", "Australia Day"], ["2028-04-14", "Good Friday"], ["2028-04-15", "Easter Saturday"], ["2028-04-16", "Easter Sunday"], ["2028-04-17", "Easter Monday"], ["2028-04-25", "Anzac Day"], ["2028-06-12", "King's Birthday"], ["2028-10-02", "Labour Day"], ["2028-12-25", "Christmas Day"], ["2028-12-26", "Boxing Day"],
+    ].map(([date, name]) => ({ date, name })),
+    vic: [
+      ["2025-01-01", "New Year's Day"], ["2025-01-27", "Australia Day Holiday"], ["2025-03-10", "Labour Day"], ["2025-04-18", "Good Friday"], ["2025-04-19", "Easter Saturday"], ["2025-04-20", "Easter Sunday"], ["2025-04-21", "Easter Monday"], ["2025-04-25", "Anzac Day"], ["2025-06-09", "King's Birthday"], ["2025-09-26", "Friday before AFL Grand Final"], ["2025-11-04", "Melbourne Cup Day"], ["2025-12-25", "Christmas Day"], ["2025-12-26", "Boxing Day"],
+      ["2026-01-01", "New Year's Day"], ["2026-01-26", "Australia Day"], ["2026-03-09", "Labour Day"], ["2026-04-03", "Good Friday"], ["2026-04-04", "Easter Saturday"], ["2026-04-05", "Easter Sunday"], ["2026-04-06", "Easter Monday"], ["2026-04-25", "Anzac Day"], ["2026-06-08", "King's Birthday"], ["2026-09-25", "Friday before AFL Grand Final"], ["2026-11-03", "Melbourne Cup Day"], ["2026-12-25", "Christmas Day"], ["2026-12-26", "Boxing Day"], ["2026-12-28", "Boxing Day Holiday"],
+      ["2027-01-01", "New Year's Day"], ["2027-01-26", "Australia Day"], ["2027-03-08", "Labour Day"], ["2027-03-26", "Good Friday"], ["2027-03-27", "Easter Saturday"], ["2027-03-28", "Easter Sunday"], ["2027-03-29", "Easter Monday"], ["2027-04-25", "Anzac Day"], ["2027-06-14", "King's Birthday"], ["2027-09-24", "Friday before AFL Grand Final (expected)"], ["2027-11-02", "Melbourne Cup Day"], ["2027-12-25", "Christmas Day"], ["2027-12-26", "Boxing Day"], ["2027-12-27", "Christmas Day Holiday"], ["2027-12-28", "Boxing Day Holiday"],
+      ["2028-01-01", "New Year's Day"], ["2028-01-03", "New Year's Day Holiday"], ["2028-01-26", "Australia Day"], ["2028-03-13", "Labour Day"], ["2028-04-14", "Good Friday"], ["2028-04-15", "Easter Saturday"], ["2028-04-16", "Easter Sunday"], ["2028-04-17", "Easter Monday"], ["2028-04-25", "Anzac Day"], ["2028-06-12", "King's Birthday"], ["2028-09-29", "Friday before AFL Grand Final (expected)"], ["2028-11-07", "Melbourne Cup Day"], ["2028-12-25", "Christmas Day"], ["2028-12-26", "Boxing Day"],
+    ].map(([date, name]) => ({ date, name })),
+    sa: [
+      ["2025-01-01", "New Year's Day"], ["2025-01-27", "Australia Day Holiday"], ["2025-03-10", "Adelaide Cup Day"], ["2025-04-18", "Good Friday"], ["2025-04-19", "Easter Saturday"], ["2025-04-20", "Easter Sunday"], ["2025-04-21", "Easter Monday"], ["2025-04-25", "Anzac Day"], ["2025-06-09", "King's Birthday"], ["2025-10-06", "Labour Day"], ["2025-12-25", "Christmas Day"], ["2025-12-26", "Proclamation Day"],
+      ["2026-01-01", "New Year's Day"], ["2026-01-26", "Australia Day"], ["2026-03-09", "Adelaide Cup Day"], ["2026-04-03", "Good Friday"], ["2026-04-04", "Easter Saturday"], ["2026-04-05", "Easter Sunday"], ["2026-04-06", "Easter Monday"], ["2026-04-25", "Anzac Day"], ["2026-06-08", "King's Birthday"], ["2026-10-05", "Labour Day"], ["2026-12-25", "Christmas Day"], ["2026-12-26", "Proclamation Day"], ["2026-12-28", "Proclamation Day Holiday"],
+      ["2027-01-01", "New Year's Day"], ["2027-01-26", "Australia Day"], ["2027-03-08", "Adelaide Cup Day"], ["2027-03-26", "Good Friday"], ["2027-03-27", "Easter Saturday"], ["2027-03-28", "Easter Sunday"], ["2027-03-29", "Easter Monday"], ["2027-04-25", "Anzac Day"], ["2027-06-14", "King's Birthday"], ["2027-10-04", "Labour Day"], ["2027-12-25", "Christmas Day"], ["2027-12-26", "Proclamation Day"], ["2027-12-27", "Christmas Day Holiday"], ["2027-12-28", "Proclamation Day Holiday"],
+      ["2028-01-01", "New Year's Day"], ["2028-01-03", "New Year's Day Holiday"], ["2028-01-26", "Australia Day"], ["2028-03-13", "Adelaide Cup Day"], ["2028-04-14", "Good Friday"], ["2028-04-15", "Easter Saturday"], ["2028-04-16", "Easter Sunday"], ["2028-04-17", "Easter Monday"], ["2028-04-25", "Anzac Day"], ["2028-06-12", "King's Birthday"], ["2028-10-02", "Labour Day"], ["2028-12-25", "Christmas Day"], ["2028-12-26", "Proclamation Day"],
     ].map(([date, name]) => ({ date, name })),
     bne: [["2025-08-13", "Brisbane EKKA"], ["2026-08-12", "Brisbane EKKA"], ["2027-08-11", "Brisbane EKKA"], ["2028-08-16", "Brisbane EKKA"]].map(([date, name]) => ({ date, name })),
     gld: [["2025-08-29", "Gold Coast Show"]].map(([date, name]) => ({ date, name })),
@@ -292,6 +396,16 @@
   ];
 
   const CONTRACT_FORMS = ["AS 4000", "AS 4902", "AS 2124", "AS 4300", "AS 4905", "GC21", "MW21", "Bespoke", "Other"];
+
+  // Security-of-payment jurisdictions the app supports end-to-end (tools,
+  // reviewers, agents). Project setup stores one of these ids.
+  const JURISDICTION_OPTIONS = [
+    ["qld", "Queensland — BIF Act 2017"],
+    ["nsw", "New South Wales — SOP Act 1999"],
+    ["vic", "Victoria — SOP Act 2002"],
+    ["sa", "South Australia — SOP Act 2009"],
+  ];
+
 
   /* ---------- State ---------- */
 
@@ -468,9 +582,19 @@
       name: (input.name || "Untitled project").trim(),
       claimant: (input.claimant || "").trim(),
       respondent: (input.respondent || "").trim(),
+      claimantAbn: (input.claimantAbn || "").trim(),
+      respondentAbn: (input.respondentAbn || "").trim(),
       contractForm: input.contractForm || "Bespoke",
       reference: (input.reference || "").trim(),
       userIsParty: input.userIsParty || "claimant",
+      jurisdiction: input.jurisdiction || "qld",
+      contractDate: (input.contractDate || "").trim(),
+      contractSum: (input.contractSum || "").trim(),
+      siteAddress: (input.siteAddress || "").trim(),
+      superintendent: (input.superintendent || "").trim(),
+      paymentTerms: (input.paymentTerms || "").trim(),
+      retention: (input.retention || "").trim(),
+      dlp: (input.dlp || "").trim(),
       contracts: [],
       library: [],
       chats: {},
@@ -683,6 +807,16 @@
       contractForm: String(incoming.contractForm || "Bespoke"),
       reference: String(incoming.reference || "").trim(),
       userIsParty: incoming.userIsParty === "respondent" ? "respondent" : "claimant",
+      claimantAbn: String(incoming.claimantAbn || "").trim(),
+      respondentAbn: String(incoming.respondentAbn || "").trim(),
+      jurisdiction: ["qld", "nsw", "vic", "sa"].includes(incoming.jurisdiction) ? incoming.jurisdiction : "qld",
+      contractDate: String(incoming.contractDate || "").trim(),
+      contractSum: String(incoming.contractSum || "").trim(),
+      siteAddress: String(incoming.siteAddress || "").trim(),
+      superintendent: String(incoming.superintendent || "").trim(),
+      paymentTerms: String(incoming.paymentTerms || "").trim(),
+      retention: String(incoming.retention || "").trim(),
+      dlp: String(incoming.dlp || "").trim(),
       contracts: Array.isArray(incoming.contracts) ? incoming.contracts.map(sanitiseImportedDoc).filter(Boolean) : [],
       library: Array.isArray(incoming.library) ? incoming.library.map(sanitiseImportedDoc).filter(Boolean) : [],
       chats: incoming.chats && typeof incoming.chats === "object" ? incoming.chats : {},
@@ -966,20 +1100,10 @@
       <aside class="sopal-sidebar ${sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}">
         <div class="sidebar-brand">
           <a href="/sopal-v2" data-nav>Sopal</a>
-          <span class="brand-pill">v2</span>
           <button class="sidebar-collapse-btn" type="button" data-toggle-collapse aria-label="${sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}" title="${sidebarCollapsed ? "Expand sidebar (⌘\\)" : "Collapse sidebar (⌘\\)"}">${sidebarCollapsed ? ICON.chevRight : ICON.chevLeft || ICON.close}</button>
         </div>
 
         <div class="sidebar-scroll">
-          <div class="nav-group-title">Research</div>
-          ${researchNav().map((item) => `
-            <a class="nav-item ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
-              <span class="nav-icon">${item.icon}</span>
-              <span class="nav-label">${escapeHtml(item.label)}</span>
-            </a>`).join("")}
-
-          <div class="nav-divider"></div>
-
           <div class="nav-group-title">Tools</div>
           ${toolsNav().map((item) => `
             <a class="nav-item ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
@@ -989,8 +1113,17 @@
 
           <div class="nav-divider"></div>
 
+          <div class="nav-group-title">Research</div>
+          ${researchNav().map((item) => `
+            <a class="nav-item ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
+              <span class="nav-icon">${item.icon}</span>
+              <span class="nav-label">${escapeHtml(item.label)}</span>
+            </a>`).join("")}
+
+          <div class="nav-divider"></div>
+
           <div class="nav-group-title row">
-            <span>Projects</span>
+            <span>Projects <span class="beta-tag">Beta</span></span>
             <button class="icon-button" type="button" data-new-project title="New project">${ICON.plus}</button>
           </div>
 
@@ -1073,20 +1206,12 @@
             <span class="sidebar-auth-name" title="${attr(a.user.email || "")}">${escapeHtml(display)}</span>
           </div>
           <div class="sidebar-auth-row">
-            <a class="link-button small" href="/account.html" target="_blank" rel="noopener">Account</a>
             <button class="link-button small" type="button" data-sopal-signout>Sign out</button>
           </div>
         </div>`;
     }
-    if (a.state === "guest") {
-      return `
-        <div class="sidebar-auth guest">
-          <p>You are using Sopal as a guest. Sign in to keep your work tied to your account.</p>
-          <a class="dark-button compact" href="/login?redirect=${encodeURIComponent("/sopal-v2")}">Sign in</a>
-        </div>`;
-    }
-    // Unknown: keep the row mute so the sidebar does not flash a "guest"
-    // banner before /purchase-me has had a chance to respond.
+    // The login wall means the shell never renders for guests; keep a quiet
+    // fallback for the unknown state just in case.
     return `<div class="sidebar-auth checking"><span class="muted">Checking sign-in...</span></div>`;
   }
 
@@ -1193,7 +1318,7 @@
         const display = first || (auth.user.email ? auth.user.email.split("@")[0] : "");
         if (display) return `Welcome back, ${escapeHtml(display)}`;
       }
-      return "Welcome to Sopal v2";
+      return "Welcome to Sopal";
     })();
     return PageBody(`
       <div class="home-shell">
@@ -1201,7 +1326,7 @@
           <div class="home-hero-row">
             <div>
               <h2>${greeting}</h2>
-              <p>Search adjudication decisions, run BIF Act calculators, and manage SOPA workflows project by project.</p>
+              <p>Search adjudication decisions, run SOPA calculators for QLD, NSW, VIC and SA, and manage security-of-payment workflows project by project.</p>
             </div>
             <button class="ghost-button compact whatsnew-btn" type="button" data-open-whatsnew title="See recent feature releases">${ICON.sparkles}<span>What's new</span></button>
           </div>
@@ -1942,25 +2067,123 @@
     bindInPagePager(mount, (target) => { adjDetailPage = target; renderAdjudicatorDetail(); });
   }
 
-  /* ---------- Tools: due date calculator (mirrors live Sopal layout) ---------- */
+  /* ---------- Tools: due date calculator (multi-jurisdiction) ---------- */
 
-  const DUE_DATE_SCENARIOS = [
-    { id: "paymentSchedule", title: "Payment Schedule", subtitle: "When is the schedule due?", section: "s 76 BIF Act" },
-    { id: "adjudicationApp", title: "Adjudication Application", subtitle: "Deadline to lodge", section: "s 79 BIF Act" },
-    { id: "adjudicationResp", title: "Adjudication Response", subtitle: "Deadline for the response", section: "s 83 BIF Act" },
-    { id: "adjudicatorDecision", title: "Adjudicator's Decision", subtitle: "Deadline to deliver", section: "s 85 BIF Act" },
-  ];
+  // Jurisdiction metadata for the tools. The same ids are used by projects
+  // (project.jurisdiction), the reviewers and the backend prompts.
+  const JUR_META = {
+    qld: { label: "Queensland", act: "Building Industry Fairness (Security of Payment) Act 2017 (Qld)", actShort: "BIF Act" },
+    nsw: { label: "New South Wales", act: "Building and Construction Industry Security of Payment Act 1999 (NSW)", actShort: "SOP Act (NSW)" },
+    vic: { label: "Victoria", act: "Building and Construction Industry Security of Payment Act 2002 (Vic)", actShort: "SOP Act (Vic)" },
+    sa: { label: "South Australia", act: "Building and Construction Industry Security of Payment Act 2009 (SA)", actShort: "SOP Act (SA)" },
+  };
+
+  const TOOL_JUR_KEY = "sopal-v2-tool-jurisdiction";
+  function getToolJur() {
+    try {
+      const stored = localStorage.getItem(TOOL_JUR_KEY);
+      if (stored && JUR_META[stored]) return stored;
+    } catch (_) {}
+    const p = currentProject();
+    return (p && JUR_META[p.jurisdiction]) ? p.jurisdiction : "qld";
+  }
+  function setToolJur(id) {
+    if (!JUR_META[id]) return;
+    try { localStorage.setItem(TOOL_JUR_KEY, id); } catch (_) {}
+  }
+  function jurSelectHtml(current, dataAttr) {
+    return `<select class="select-input compact" ${dataAttr}>
+      ${Object.entries(JUR_META).map(([id, m]) => `<option value="${id}" ${id === current ? "selected" : ""}>${escapeHtml(m.label)}</option>`).join("")}
+    </select>`;
+  }
+
+  // Scenario lists per jurisdiction. Same ids across states so deep links
+  // (?scenario=paymentSchedule) keep working when the user flips state.
+  const DUE_SCENARIOS = {
+    qld: [
+      { id: "paymentDue", title: "Progress Payment", subtitle: "When is payment due?", section: "s 73 BIF Act" },
+      { id: "paymentSchedule", title: "Payment Schedule", subtitle: "When is the schedule due?", section: "s 76 BIF Act" },
+      { id: "adjudicationApp", title: "Adjudication Application", subtitle: "Deadline to lodge", section: "s 79 BIF Act" },
+      { id: "adjudicationResp", title: "Adjudication Response", subtitle: "Deadline for the response", section: "s 83 BIF Act" },
+      { id: "adjudicatorDecision", title: "Adjudicator's Decision", subtitle: "Deadline to deliver", section: "s 85 BIF Act" },
+    ],
+    nsw: [
+      { id: "paymentDue", title: "Progress Payment", subtitle: "When is payment due?", section: "s 11 SOP Act (NSW)" },
+      { id: "paymentSchedule", title: "Payment Schedule", subtitle: "When is the schedule due?", section: "s 14(4) SOP Act (NSW)" },
+      { id: "adjudicationApp", title: "Adjudication Application", subtitle: "Deadline to lodge", section: "s 17(3) SOP Act (NSW)" },
+      { id: "adjudicationResp", title: "Adjudication Response", subtitle: "Deadline for the response", section: "s 20 SOP Act (NSW)" },
+      { id: "adjudicatorDecision", title: "Adjudicator's Determination", subtitle: "Deadline to determine", section: "s 21(3) SOP Act (NSW)" },
+    ],
+    vic: [
+      { id: "paymentDue", title: "Progress Payment", subtitle: "When is payment due?", section: "s 12 SOP Act (Vic)" },
+      { id: "paymentSchedule", title: "Payment Schedule", subtitle: "When is the schedule due?", section: "s 15(4) SOP Act (Vic)" },
+      { id: "adjudicationApp", title: "Adjudication Application", subtitle: "Deadline to lodge", section: "s 18(3) SOP Act (Vic)" },
+      { id: "adjudicationResp", title: "Adjudication Response", subtitle: "Deadline for the response", section: "s 21(1) SOP Act (Vic)" },
+      { id: "adjudicatorDecision", title: "Adjudicator's Determination", subtitle: "Deadline to determine", section: "s 22(4) SOP Act (Vic)" },
+    ],
+    sa: [
+      { id: "paymentDue", title: "Progress Payment", subtitle: "When is payment due?", section: "s 11(1) SOP Act (SA)" },
+      { id: "paymentSchedule", title: "Payment Schedule", subtitle: "When is the schedule due?", section: "s 14(4) SOP Act (SA)" },
+      { id: "adjudicationApp", title: "Adjudication Application", subtitle: "Deadline to lodge", section: "s 17(3) SOP Act (SA)" },
+      { id: "adjudicationResp", title: "Adjudication Response", subtitle: "Deadline for the response", section: "s 20(1) SOP Act (SA)" },
+      { id: "adjudicatorDecision", title: "Adjudicator's Determination", subtitle: "Deadline to determine", section: "s 21(3) SOP Act (SA)" },
+    ],
+  };
+
+  // Relevant-provision panels. Statutory summaries are faithful to the
+  // current text of each Act (Vic: as amended by the Fairer Payments on
+  // Jobsites reforms in force 15 April 2026).
+  const DUE_PROVISIONS = {
+    qld: {
+      paymentDue: `<p><strong>s 73 BIF Act — due date for payment.</strong> A progress payment becomes payable (a) on the day it becomes payable under the contract; or (b) if the contract is silent — 10 business days after the payment claim is made. For building contracts regulated by the QBCC Act 1991, ss 67U/67W cap payment terms (15 business days for head contracts, 25 business days for subcontracts).</p>`,
+      paymentSchedule: `<p><strong>76 Responding to payment claim.</strong> A respondent must respond by giving the claimant a payment schedule within whichever ends first — (a) the period under the contract; or (b) 15 business days after the payment claim is given.</p>`,
+      adjudicationApp: `<p><strong>79 Application for adjudication</strong> — must be made within: (i) for failure to give a schedule and pay the claim — 30 business days after the later of the payment due date or last day a schedule could have been given; (ii) for failure to pay the scheduled amount — 20 business days after the payment due date; (iii) where scheduled amount is less than claimed — 30 business days after receipt of the schedule.</p>`,
+      adjudicationResp: `<p><strong>83 Time for making adjudication response</strong> — Standard claim: later of 10 BD after receiving s 79(4) documents OR 7 BD after acceptance. Complex claim: later of 15 BD OR 12 BD, with up to 15 additional BD extension under s 83(3).</p>`,
+      adjudicatorDecision: `<p><strong>85 Time for deciding adjudication application</strong> — 10 BD after the response date for a standard claim, 15 BD for a complex claim. Parties may agree to extend under s 86 (any agreed days).</p>`,
+    },
+    nsw: {
+      paymentDue: `<p><strong>s 11 SOP Act (NSW) — due date for payment.</strong> Principal → head contractor: 15 business days after the claim is made, unless the contract provides an earlier date (s 11(1A)). Payment to a subcontractor: 20 business days after the claim, or an earlier contract date (s 11(1B); 30 BD for contracts entered before 21 Oct 2019). Exempt residential construction contract: per the contract, or 10 business days if silent (s 11(1C)). A term allowing later payment has no effect (s 11(8)).</p>`,
+      paymentSchedule: `<p><strong>s 14(4) SOP Act (NSW).</strong> The payment schedule must be provided within the time required by the contract or 10 business days after the payment claim is served, whichever ends first. No schedule in time → the respondent becomes liable for the full claimed amount (s 14(4)).</p>`,
+      adjudicationApp: `<p><strong>s 17(3) SOP Act (NSW).</strong> (c) Scheduled amount less than claimed — within 10 business days after the claimant receives the schedule. (d) Scheduled amount unpaid by the due date — within 20 business days after the due date. (e) No schedule — the claimant must first notify the respondent within 20 business days after the due date (s 17(2)(a)); the respondent then has 5 business days to provide a schedule (s 17(2)(b)); the application must be made within 10 business days after the end of that 5-day period.</p>`,
+      adjudicationResp: `<p><strong>s 20 SOP Act (NSW).</strong> The response may be lodged within 5 business days after receiving a copy of the application or 2 business days after receiving notice of the adjudicator's acceptance, whichever expires later. No response is permitted unless a payment schedule was provided in time (s 20(2A)); no new reasons (s 20(2B)).</p>`,
+      adjudicatorDecision: `<p><strong>s 21(3) SOP Act (NSW).</strong> The adjudicator must determine the application within 10 business days after (i) the respondent lodges its response or the response window expires, or (ii) where the respondent has no response entitlement — the date notice of acceptance is served; or within such further time as the parties agree.</p>`,
+    },
+    vic: {
+      paymentDue: `<p><strong>s 12 SOP Act (Vic)</strong> (as in force from 15 April 2026). Payment is due on the day it becomes due and payable under the contract, but a term providing for payment later than 20 business days after the payment claim is served has no effect (s 12(1B)). If the contract makes no express provision, payment is due 10 business days after the earliest day the claim could have been served under s 14A (the last day of the named month).</p>`,
+      paymentSchedule: `<p><strong>s 15(4) SOP Act (Vic).</strong> The schedule must be provided within the time required by the contract or 10 business days after the payment claim is served, whichever ends first. Reasons omitted from the schedule are barred in adjudication. Note: business days in Victoria now exclude 22 December – 10 January and statewide public holidays.</p>`,
+      adjudicationApp: `<p><strong>s 18(3) SOP Act (Vic).</strong> (c) Scheduled amount less than claimed — within 10 business days after the claimant receives the schedule. (d) Scheduled amount unpaid — within 10 business days after the due date. (e) No schedule — the claimant must notify the respondent within 10 business days after the due date (s 18(2)); the respondent has 5 business days to provide a schedule (s 18(2A)); the application must be made within 5 business days after the end of that period.</p>`,
+      adjudicationResp: `<p><strong>s 21(1) SOP Act (Vic).</strong> The response may be lodged within 5 business days after receiving a copy of the application or 2 business days after receiving notice of the adjudicator's acceptance, whichever is later. Only available if a schedule was served in time (s 21(2A)); no new reasons (s 21(2)(d)).</p>`,
+      adjudicatorDecision: `<p><strong>s 22(4) SOP Act (Vic).</strong> The adjudicator must determine the application within 10 business days after the later of (i) the day the adjudicator is taken to be appointed, or (ii) the latest day the respondent may lodge a response — or within further time agreed by both parties, not exceeding 20 further business days. A late determination is not invalid for lateness alone (s 22(4B)).</p>`,
+    },
+    sa: {
+      paymentDue: `<p><strong>s 11(1) SOP Act (SA).</strong> Payment is due on the date it becomes due and payable under the contract or, if the contract makes no express provision, 15 business days after the payment claim is made. There is no statutory cap on longer contractual terms in SA.</p>`,
+      paymentSchedule: `<p><strong>s 14(4) SOP Act (SA).</strong> The schedule must be provided within the time required by the contract or 15 business days after the payment claim is served, whichever ends first. No schedule in time → the respondent becomes liable for the full claimed amount.</p>`,
+      adjudicationApp: `<p><strong>s 17(3) SOP Act (SA).</strong> (c) Scheduled amount less than claimed — within 15 business days after the claimant receives the schedule. (d) Scheduled amount unpaid by the due date — within 20 business days after the due date. (e) No schedule — the claimant must notify the respondent within 20 business days after the due date (s 17(2)(a)); the respondent has 5 business days to provide a schedule (s 17(2)(b)); the application must be made within 15 business days after the end of that period.</p>`,
+      adjudicationResp: `<p><strong>s 20(1) SOP Act (SA).</strong> The response may be lodged within 5 business days after receiving a copy of the application or 2 business days after receiving notice of the adjudicator's acceptance, whichever is later. Only available if a schedule was provided in time (s 20(3)); no new reasons (s 20(4)).</p>`,
+      adjudicatorDecision: `<p><strong>s 21(3) SOP Act (SA).</strong> The adjudicator must determine the application within 10 business days after (i) the response is lodged, (ii) if no response — the last day a response could be lodged, or (iii) if the respondent had no response entitlement — the day the respondent received the copy of the application; or within further time the parties agree.</p>`,
+    },
+  };
 
   function DueDatePage() {
     const params = new URLSearchParams(window.location.search);
-    const active = params.get("scenario") && DUE_DATE_SCENARIOS.some((s) => s.id === params.get("scenario")) ? params.get("scenario") : "paymentSchedule";
-    setTimeout(() => bindDueDate(active), 0);
+    const jur = (() => {
+      const q = params.get("jur");
+      if (q && JUR_META[q]) { setToolJur(q); return q; }
+      return getToolJur();
+    })();
+    const scenarios = DUE_SCENARIOS[jur];
+    const active = params.get("scenario") && scenarios.some((s) => s.id === params.get("scenario")) ? params.get("scenario") : "paymentSchedule";
+    setTimeout(() => bindDueDate(active, jur), 0);
     return PageBody(`
       <div class="page-shell">
-        <h1 class="page-title">Due date calculator</h1>
+        <div class="page-head">
+          <div><h1 class="page-title">Due date calculator</h1>
+          <p class="page-sub">${escapeHtml(JUR_META[jur].act)}</p></div>
+          <div class="page-actions"><label class="loc-row">Jurisdiction ${jurSelectHtml(jur, "data-due-jur")}</label></div>
+        </div>
         <div class="due-grid">
           <div class="scenario-list">
-            ${DUE_DATE_SCENARIOS.map((s) => `
+            ${scenarios.map((s) => `
               <button class="scenario-card ${s.id === active ? "active" : ""}" type="button" data-scenario="${attr(s.id)}">
                 <strong>${escapeHtml(s.title)}</strong>
                 <span class="muted">${escapeHtml(s.subtitle)}</span>
@@ -1971,7 +2194,9 @@
             <div class="card-head">
               <div>
                 <h3 id="due-card-title"></h3>
-                <p class="muted"><label class="loc-row">Location <select class="select-input compact" id="due-location">${LOCATION_OPTIONS.map(([v,l]) => `<option value="${v}">${escapeHtml(l)}</option>`).join("")}</select></label></p>
+                ${jur === "qld"
+                  ? `<p class="muted"><label class="loc-row">Location <select class="select-input compact" id="due-location">${LOCATION_OPTIONS.map(([v,l]) => `<option value="${v}">${escapeHtml(l)}</option>`).join("")}</select></label></p>`
+                  : `<p class="muted">Statewide ${escapeHtml(JUR_META[jur].label)} public holidays applied.</p>`}
               </div>
               <span class="section-badge" id="due-card-badge"></span>
             </div>
@@ -1983,7 +2208,7 @@
     `);
   }
 
-  function bindDueDate(initial) {
+  function bindDueDate(initial, jur) {
     let scenario = initial;
     const titleEl = document.getElementById("due-card-title");
     const badgeEl = document.getElementById("due-card-badge");
@@ -1991,169 +2216,73 @@
     const resultMount = document.getElementById("due-result");
     if (!titleEl || !formMount) return;
 
+    document.querySelector("[data-due-jur]")?.addEventListener("change", (e) => {
+      setToolJur(e.target.value);
+      const url = new URL(window.location.href);
+      url.searchParams.set("jur", e.target.value);
+      window.history.replaceState({}, "", url);
+      render();
+    });
+
     function applyScenario(id) {
       scenario = id;
-      const meta = DUE_DATE_SCENARIOS.find((s) => s.id === id);
-      titleEl.textContent = `${meta.title}: due date`;
+      const meta = DUE_SCENARIOS[jur].find((s) => s.id === id);
+      titleEl.textContent = `${meta.title} — due date`;
       badgeEl.textContent = meta.section;
       document.querySelectorAll("[data-scenario]").forEach((el) => el.classList.toggle("active", el.dataset.scenario === id));
       const url = new URL(window.location.href);
       url.searchParams.set("scenario", id);
       window.history.replaceState({}, "", url);
       resultMount.innerHTML = "";
-      formMount.innerHTML = renderDueForm(id);
+      formMount.innerHTML = renderDueForm(jur, id);
       bindDueForm(id);
     }
 
     document.querySelectorAll("[data-scenario]").forEach((el) => el.addEventListener("click", () => applyScenario(el.dataset.scenario)));
     applyScenario(scenario);
 
-    function renderDueForm(id) {
-      if (id === "paymentSchedule") {
-        return `
-          <details class="provision">
-            <summary>Relevant provision · s 76 BIF Act</summary>
-            <div class="provision-body">
-              <p><strong>76 Responding to payment claim.</strong> A respondent must respond by giving the claimant a payment schedule within whichever ends first — (a) the period under the contract; or (b) 15 business days after the payment claim is given.</p>
-            </div>
-          </details>
-          <form class="calc-form" data-due-form>
-            <label class="span-2">Date payment claim given<input class="text-input" type="date" name="given"></label>
-            <button class="dark-button span-2" type="submit">Calculate due date</button>
-          </form>`;
-      }
-      if (id === "adjudicationApp") {
-        return `
-          <details class="provision">
-            <summary>Relevant provision · s 79 BIF Act</summary>
-            <div class="provision-body">
-              <p><strong>79 Application for adjudication</strong> — must be made within: (i) for failure to give a schedule and pay the claim — 30 business days after the later of the payment due date or last day a schedule could have been given; (ii) for failure to pay the scheduled amount — 20 business days after the payment due date; (iii) where scheduled amount is less than claimed — 30 business days after receipt of the schedule.</p>
-            </div>
-          </details>
-          <form class="calc-form" data-due-form>
-            <label class="span-2">Reason for application
-              <select class="select-input" name="aaScenario" data-due-aa-scenario>
-                <option value="less" selected>Scheduled amount was less than claimed amount</option>
-                <option value="no-pay-schedule">Respondent failed to provide a payment schedule</option>
-                <option value="no-pay-amount">Respondent failed to pay the scheduled amount</option>
-              </select>
-            </label>
-            <label class="span-2" data-aa-field="schedule-received">Date payment schedule received<input class="text-input" type="date" name="scheduleReceived"></label>
-            <label data-aa-field="payment-due" hidden>Due date for progress payment<input class="text-input" type="date" name="paymentDue"></label>
-            <label data-aa-field="schedule-due" hidden>Last day to provide schedule<input class="text-input" type="date" name="scheduleDue"></label>
-            <button class="dark-button span-2" type="submit">Calculate due date</button>
-          </form>`;
-      }
-      if (id === "adjudicationResp") {
-        return `
-          <details class="provision">
-            <summary>Relevant provision · s 83 BIF Act</summary>
-            <div class="provision-body">
-              <p><strong>83 Time for making adjudication response</strong> — Standard claim: later of 10 BD after receiving s 79(4) documents OR 7 BD after acceptance. Complex claim: later of 15 BD OR 12 BD, with up to 15 additional BD extension under s 83(3).</p>
-            </div>
-          </details>
-          <form class="calc-form" data-due-form>
-            <label>Date application received<input class="text-input" type="date" name="appReceived"></label>
-            <label>Date acceptance received<input class="text-input" type="date" name="acceptanceReceived"></label>
-            <div class="span-2">
-              <span class="form-label">Claim type</span>
-              <div class="radio-group">
-                <label class="radio-option"><input type="radio" name="claimType" value="standard" checked>Standard (≤ $750k)</label>
-                <label class="radio-option"><input type="radio" name="claimType" value="complex">Complex (> $750k)</label>
-              </div>
-            </div>
-            <div class="span-2 eot-block" data-eot-block hidden>
-              <label class="check-line"><input type="checkbox" name="eotEnabled" data-eot-enabled> Extension of time granted by adjudicator (s 83(3))</label>
-              <div class="eot-days" data-eot-days hidden>
-                <label>Additional business days (1-15)<input class="text-input compact" type="number" name="eotDays" min="1" max="15" value="1"></label>
-              </div>
-            </div>
-            <button class="dark-button span-2" type="submit">Calculate due date</button>
-          </form>`;
-      }
-      if (id === "adjudicatorDecision") {
-        return `
-          <details class="provision">
-            <summary>Relevant provision · s 85 BIF Act</summary>
-            <div class="provision-body">
-              <p><strong>85 Time for deciding adjudication application</strong> — 10 BD after the response date for a standard claim, 15 BD for a complex claim. Parties may agree to extend under s 86 (any agreed days).</p>
-            </div>
-          </details>
-          <form class="calc-form" data-due-form>
-            <label class="span-2">Date adjudication response given<input class="text-input" type="date" name="responseGiven"></label>
-            <div class="span-2">
-              <span class="form-label">Claim type</span>
-              <div class="radio-group">
-                <label class="radio-option"><input type="radio" name="claimType" value="standard" checked>Standard (≤ $750k)</label>
-                <label class="radio-option"><input type="radio" name="claimType" value="complex">Complex (> $750k)</label>
-              </div>
-            </div>
-            <div class="span-2 eot-block-2">
-              <label class="check-line"><input type="checkbox" name="eotEnabled" data-eot-enabled> Extension of time agreed by parties (s 86)</label>
-              <div class="eot-days" data-eot-days hidden>
-                <label>Extension days<input class="text-input compact" type="number" name="eotDays" min="1" value="1"></label>
-                <label>Day type
-                  <select class="select-input compact" name="eotDayType">
-                    <option value="business">Business days</option>
-                    <option value="calendar">Calendar days</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-            <button class="dark-button span-2" type="submit">Calculate due date</button>
-          </form>`;
-      }
-      return "";
-    }
-
     function bindDueForm(id) {
       const form = formMount.querySelector("[data-due-form]");
       if (!form) return;
 
-      if (id === "adjudicationApp") {
-        const sel = form.querySelector("[data-due-aa-scenario]");
-        const fields = {
-          "schedule-received": form.querySelector('[data-aa-field="schedule-received"]'),
-          "payment-due": form.querySelector('[data-aa-field="payment-due"]'),
-          "schedule-due": form.querySelector('[data-aa-field="schedule-due"]'),
-        };
+      // Generic sub-scenario field visibility: any select with
+      // data-due-subselect toggles [data-show-when] blocks whose value list
+      // contains the selection.
+      const sub = form.querySelector("[data-due-subselect]");
+      if (sub) {
         const apply = () => {
-          Object.values(fields).forEach((f) => { if (f) f.hidden = true; });
-          if (sel.value === "less") fields["schedule-received"].hidden = false;
-          else if (sel.value === "no-pay-amount") fields["payment-due"].hidden = false;
-          else if (sel.value === "no-pay-schedule") { fields["payment-due"].hidden = false; fields["schedule-due"].hidden = false; }
+          form.querySelectorAll("[data-show-when]").forEach((el) => {
+            el.hidden = !el.dataset.showWhen.split(",").includes(sub.value);
+          });
         };
-        sel.addEventListener("change", apply);
+        sub.addEventListener("change", apply);
         apply();
       }
 
-      if (id === "adjudicationResp") {
-        const radios = form.querySelectorAll('input[name="claimType"]');
-        const eotBlock = form.querySelector("[data-eot-block]");
-        const eotEnabled = form.querySelector("[data-eot-enabled]");
-        const eotDays = form.querySelector("[data-eot-days]");
+      // QLD response/decision claim-type + EOT blocks.
+      const radios = form.querySelectorAll('input[name="claimType"]');
+      const eotBlock = form.querySelector("[data-eot-block]");
+      const eotEnabled = form.querySelector("[data-eot-enabled]");
+      const eotDays = form.querySelector("[data-eot-days]");
+      if (radios.length && eotBlock) {
         const apply = () => {
           const isComplex = form.querySelector('input[name="claimType"]:checked').value === "complex";
           eotBlock.hidden = !isComplex;
-          if (!isComplex) { eotEnabled.checked = false; eotDays.hidden = true; }
+          if (!isComplex && eotEnabled) { eotEnabled.checked = false; if (eotDays) eotDays.hidden = true; }
         };
         radios.forEach((r) => r.addEventListener("change", apply));
-        eotEnabled.addEventListener("change", () => { eotDays.hidden = !eotEnabled.checked; });
         apply();
       }
-
-      if (id === "adjudicatorDecision") {
-        const eotEnabled = form.querySelector("[data-eot-enabled]");
-        const eotDays = form.querySelector("[data-eot-days]");
+      if (eotEnabled && eotDays) {
         eotEnabled.addEventListener("change", () => { eotDays.hidden = !eotEnabled.checked; });
       }
 
       form.addEventListener("submit", (event) => {
         event.preventDefault();
         const data = Object.fromEntries(new FormData(form).entries());
-        const location = document.getElementById("due-location").value;
+        const location = document.getElementById("due-location")?.value || jur;
         try {
-          const result = computeDueDate(id, data, location);
+          const result = computeDueDate(jur, scenario, data, location);
           resultMount.innerHTML = renderDateResult(result);
         } catch (error) {
           resultMount.innerHTML = `<div class="error-banner">${escapeHtml(error.message || "Calculation failed")}</div>`;
@@ -2162,105 +2291,427 @@
     }
   }
 
-  function computeDueDate(scenario, data, location) {
+  function provisionPanel(jur, id) {
+    const meta = DUE_SCENARIOS[jur].find((s) => s.id === id);
+    return `
+      <details class="provision">
+        <summary>Relevant provision · ${escapeHtml(meta.section)}</summary>
+        <div class="provision-body">${DUE_PROVISIONS[jur][id] || ""}</div>
+      </details>`;
+  }
+
+  function renderDueForm(jur, id) {
+    const P = provisionPanel(jur, id);
+    const submit = `<button class="dark-button span-2" type="submit">Calculate due date</button>`;
+    const dateField = (label, name, extra) => `<label class="span-2" ${extra || ""}>${label}<input class="text-input" type="date" name="${name}"></label>`;
+
+    if (id === "paymentDue") {
+      if (jur === "qld") {
+        return `${P}<form class="calc-form" data-due-form>
+          ${dateField("Date payment claim made", "claimGiven")}
+          <p class="muted span-2">Uses the s 73(1)(b) default of 10 business days. If the contract states an earlier due date, the contract date applies.</p>
+          ${submit}</form>`;
+      }
+      if (jur === "nsw") {
+        return `${P}<form class="calc-form" data-due-form>
+          <label class="span-2">Payment type
+            <select class="select-input" name="payType" data-due-subselect>
+              <option value="head" selected>Principal → head contractor (15 BD)</option>
+              <option value="sub">Payment to a subcontractor (20 BD)</option>
+              <option value="sub-old">Subcontractor — contract before 21 Oct 2019 (30 BD)</option>
+              <option value="resi">Exempt residential construction contract (10 BD default)</option>
+            </select>
+          </label>
+          ${dateField("Date payment claim made", "claimGiven")}
+          <p class="muted span-2">The contract can only make payment due earlier, never later (s 11(8)). For exempt residential contracts the contract date governs; 10 BD applies only if the contract is silent.</p>
+          ${submit}</form>`;
+      }
+      if (jur === "vic") {
+        return `${P}<form class="calc-form" data-due-form>
+          <label class="span-2">Does the contract state when payment is due?
+            <select class="select-input" name="vicDueMode" data-due-subselect>
+              <option value="contract" selected>Yes — contract specifies a due date</option>
+              <option value="silent">No — contract is silent</option>
+            </select>
+          </label>
+          <div class="span-2" data-show-when="contract">
+            <label>Due date under the contract<input class="text-input" type="date" name="contractDue"></label>
+            <label>Date payment claim served<input class="text-input" type="date" name="claimGiven"></label>
+            <p class="muted">The contract date applies, but is capped at 20 business days after the claim is served (s 12(1B)).</p>
+          </div>
+          <div class="span-2" data-show-when="silent" hidden>
+            <label>Earliest day the claim could be served (last day of the named month)<input class="text-input" type="date" name="earliestService"></label>
+            <p class="muted">If the contract is silent, payment is due 10 business days after the earliest day the claim could have been served under s 14A.</p>
+          </div>
+          ${submit}</form>`;
+      }
+      return `${P}<form class="calc-form" data-due-form>
+        ${dateField("Date payment claim made", "claimGiven")}
+        <p class="muted span-2">Uses the s 11(1)(b) default of 15 business days. If the contract states a due date (earlier or later), the contract date applies — SA has no statutory cap.</p>
+        ${submit}</form>`;
+    }
+
+    if (id === "paymentSchedule") {
+      const days = { qld: 15, nsw: 10, vic: 10, sa: 15 }[jur];
+      return `${P}<form class="calc-form" data-due-form>
+        ${dateField(`Date payment claim ${jur === "qld" ? "given" : "served"}`, "given")}
+        <p class="muted span-2">Statutory limit of ${days} business days. If the contract requires the schedule earlier, the contract period applies instead.</p>
+        ${submit}</form>`;
+    }
+
+    if (id === "adjudicationApp") {
+      const conf = {
+        qld: { less: "Scheduled amount was less than claimed (30 BD after schedule)", noPayAmount: "Failed to pay the scheduled amount (20 BD after due date)", noSchedule: "No payment schedule and no payment (30 BD after the later of due date / last day for schedule)" },
+        nsw: { less: "Scheduled amount was less than claimed (10 BD after schedule)", noPayAmount: "Scheduled amount unpaid by the due date (20 BD after due date)", noticeOnly: "No schedule — when must I serve the s 17(2) notice? (20 BD after due date)", noSchedule: "No schedule — notice served, calculate the application deadline" },
+        vic: { less: "Scheduled amount was less than claimed (10 BD after schedule)", noPayAmount: "Scheduled amount unpaid by the due date (10 BD after due date)", noticeOnly: "No schedule — when must I serve the s 18(2) notice? (10 BD after due date)", noSchedule: "No schedule — notice served, calculate the application deadline" },
+        sa: { less: "Scheduled amount was less than claimed (15 BD after schedule)", noPayAmount: "Scheduled amount unpaid by the due date (20 BD after due date)", noticeOnly: "No schedule — when must I serve the s 17(2) notice? (20 BD after due date)", noSchedule: "No schedule — notice served, calculate the application deadline" },
+      }[jur];
+      if (jur === "qld") {
+        return `${P}<form class="calc-form" data-due-form>
+          <label class="span-2">Reason for application
+            <select class="select-input" name="aaScenario" data-due-subselect>
+              <option value="less" selected>${escapeHtml(conf.less)}</option>
+              <option value="no-pay-schedule">${escapeHtml(conf.noSchedule)}</option>
+              <option value="no-pay-amount">${escapeHtml(conf.noPayAmount)}</option>
+            </select>
+          </label>
+          <div class="span-2" data-show-when="less"><label>Date payment schedule received<input class="text-input" type="date" name="scheduleReceived"></label></div>
+          <div class="span-2" data-show-when="no-pay-amount,no-pay-schedule" hidden><label>Due date for progress payment<input class="text-input" type="date" name="paymentDue"></label></div>
+          <div class="span-2" data-show-when="no-pay-schedule" hidden><label>Last day to provide schedule<input class="text-input" type="date" name="scheduleDue"></label></div>
+          ${submit}</form>`;
+      }
+      return `${P}<form class="calc-form" data-due-form>
+        <label class="span-2">Reason for application
+          <select class="select-input" name="aaScenario" data-due-subselect>
+            <option value="less" selected>${escapeHtml(conf.less)}</option>
+            <option value="no-pay-amount">${escapeHtml(conf.noPayAmount)}</option>
+            <option value="notice-only">${escapeHtml(conf.noticeOnly)}</option>
+            <option value="no-schedule">${escapeHtml(conf.noSchedule)}</option>
+          </select>
+        </label>
+        <div class="span-2" data-show-when="less"><label>Date payment schedule received<input class="text-input" type="date" name="scheduleReceived"></label></div>
+        <div class="span-2" data-show-when="no-pay-amount,notice-only" hidden><label>Due date for progress payment<input class="text-input" type="date" name="paymentDue"></label></div>
+        <div class="span-2" data-show-when="no-schedule" hidden><label>Date the respondent received your notice of intention<input class="text-input" type="date" name="noticeReceived"></label></div>
+        ${submit}</form>`;
+    }
+
+    if (id === "adjudicationResp") {
+      if (jur === "qld") {
+        return `${P}<form class="calc-form" data-due-form>
+          <label>Date application received<input class="text-input" type="date" name="appReceived"></label>
+          <label>Date acceptance received<input class="text-input" type="date" name="acceptanceReceived"></label>
+          <div class="span-2">
+            <span class="form-label">Claim type</span>
+            <div class="radio-group">
+              <label class="radio-option"><input type="radio" name="claimType" value="standard" checked>Standard (≤ $750k)</label>
+              <label class="radio-option"><input type="radio" name="claimType" value="complex">Complex (> $750k)</label>
+            </div>
+          </div>
+          <div class="span-2 eot-block" data-eot-block hidden>
+            <label class="check-line"><input type="checkbox" name="eotEnabled" data-eot-enabled> Extension of time granted by adjudicator (s 83(3))</label>
+            <div class="eot-days" data-eot-days hidden>
+              <label>Additional business days (1-15)<input class="text-input compact" type="number" name="eotDays" min="1" max="15" value="1"></label>
+            </div>
+          </div>
+          ${submit}</form>`;
+      }
+      return `${P}<form class="calc-form" data-due-form>
+        <label>Date copy of application received<input class="text-input" type="date" name="appReceived"></label>
+        <label>Date acceptance notice received<input class="text-input" type="date" name="acceptanceReceived"></label>
+        <p class="muted span-2">Later of 5 business days after the application copy and 2 business days after the acceptance notice. ${jur === "nsw" ? "No response is permitted if no payment schedule was provided in time (s 20(2A))." : "Only available if a schedule was provided in time."}</p>
+        ${submit}</form>`;
+    }
+
+    if (id === "adjudicatorDecision") {
+      if (jur === "qld") {
+        return `${P}<form class="calc-form" data-due-form>
+          ${dateField("Date adjudication response given", "responseGiven")}
+          <div class="span-2">
+            <span class="form-label">Claim type</span>
+            <div class="radio-group">
+              <label class="radio-option"><input type="radio" name="claimType" value="standard" checked>Standard (≤ $750k)</label>
+              <label class="radio-option"><input type="radio" name="claimType" value="complex">Complex (> $750k)</label>
+            </div>
+          </div>
+          <div class="span-2 eot-block-2">
+            <label class="check-line"><input type="checkbox" name="eotEnabled" data-eot-enabled> Extension of time agreed by parties (s 86)</label>
+            <div class="eot-days" data-eot-days hidden>
+              <label>Extension days<input class="text-input compact" type="number" name="eotDays" min="1" value="1"></label>
+              <label>Day type
+                <select class="select-input compact" name="eotDayType">
+                  <option value="business">Business days</option>
+                  <option value="calendar">Calendar days</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          ${submit}</form>`;
+      }
+      if (jur === "vic") {
+        return `${P}<form class="calc-form" data-due-form>
+          <label>Date adjudicator taken to be appointed (acceptance)<input class="text-input" type="date" name="appointed"></label>
+          <label>Last day the respondent could lodge a response<input class="text-input" type="date" name="lastResponseDay"></label>
+          <div class="span-2 eot-block-2">
+            <label class="check-line"><input type="checkbox" name="eotEnabled" data-eot-enabled> Further time agreed by both parties (max 20 BD)</label>
+            <div class="eot-days" data-eot-days hidden>
+              <label>Agreed additional business days (1-20)<input class="text-input compact" type="number" name="eotDays" min="1" max="20" value="1"></label>
+            </div>
+          </div>
+          ${submit}</form>`;
+      }
+      // NSW + SA: 10 BD from a basis date.
+      return `${P}<form class="calc-form" data-due-form>
+        <label class="span-2">Start the clock from
+          <select class="select-input" name="basis" data-due-subselect>
+            <option value="response" selected>${jur === "nsw" ? "Date the response was lodged" : "Date the response was lodged"}</option>
+            <option value="response-expiry">Last day the response could be lodged (no response)</option>
+            <option value="no-entitlement">${jur === "nsw" ? "Notice of acceptance served (respondent had no response right)" : "Respondent received the application copy (no response right)"}</option>
+          </select>
+        </label>
+        ${dateField("Date", "basisDate")}
+        <div class="span-2 eot-block-2">
+          <label class="check-line"><input type="checkbox" name="eotEnabled" data-eot-enabled> Further time agreed by the parties</label>
+          <div class="eot-days" data-eot-days hidden>
+            <label>Agreed additional business days<input class="text-input compact" type="number" name="eotDays" min="1" value="1"></label>
+          </div>
+        </div>
+        ${submit}</form>`;
+    }
+    return "";
+  }
+
+  function computeDueDate(jur, scenario, data, location) {
+    const S = JUR_META[jur].actShort;
+    const need = (v, msg) => { const d = parseDate(v); if (!d) throw new Error(msg); return d; };
+
+    if (scenario === "paymentDue") {
+      if (jur === "qld") {
+        const start = need(data.claimGiven, "Enter the date the payment claim was made.");
+        const r = addBusinessDays(start, 10, jur, location);
+        return { title: "Progress payment due date", finalDate: r.finalDate, startDate: start, days: 10, basis: `10 business days after the payment claim is made — contract silent (s 73(1)(b) ${S}). An earlier contractual due date prevails.`, skipped: r.skipped };
+      }
+      if (jur === "nsw") {
+        const start = need(data.claimGiven, "Enter the date the payment claim was made.");
+        const cfg = {
+          head: [15, "15 business days after the claim — principal to head contractor (s 11(1A))."],
+          sub: [20, "20 business days after the claim — payment to a subcontractor (s 11(1B))."],
+          "sub-old": [30, "30 business days after the claim — subcontract entered before 21 Oct 2019 (s 11(1B) as then in force)."],
+          resi: [10, "10 business days after the claim — exempt residential construction contract with no express contract provision (s 11(1C))."],
+        }[data.payType || "head"];
+        const r = addBusinessDays(start, cfg[0], jur, location);
+        return { title: "Progress payment due date", finalDate: r.finalDate, startDate: start, days: cfg[0], basis: `${cfg[1]} An earlier contractual date prevails; later terms have no effect (s 11(8)).`, skipped: r.skipped };
+      }
+      if (jur === "vic") {
+        if ((data.vicDueMode || "contract") === "silent") {
+          const start = need(data.earliestService, "Enter the earliest day the claim could be served.");
+          const r = addBusinessDays(start, 10, jur, location);
+          return { title: "Progress payment due date", finalDate: r.finalDate, startDate: start, days: 10, basis: `Contract silent — 10 business days after the earliest day the payment claim could be served under s 14A (s 12(1)(b) ${S}).`, skipped: r.skipped };
+        }
+        const contractDue = need(data.contractDue, "Enter the contract due date.");
+        const served = need(data.claimGiven, "Enter the date the claim was served.");
+        const cap = addBusinessDays(served, 20, jur, location);
+        if (contractDue.getTime() <= cap.finalDate.getTime()) {
+          return { title: "Progress payment due date", finalDate: contractDue, startDate: served, days: 0, basis: `Due date under the contract (s 12(1)(a) ${S}) — within the 20-business-day cap in s 12(1B).`, skipped: [] };
+        }
+        return { title: "Progress payment due date", finalDate: cap.finalDate, startDate: served, days: 20, basis: `The contractual due date falls outside the statutory cap, so the term has no effect to that extent — payment is due 20 business days after the claim was served (s 12(1B) ${S}).`, skipped: cap.skipped };
+      }
+      const start = need(data.claimGiven, "Enter the date the payment claim was made.");
+      const r = addBusinessDays(start, 15, jur, location);
+      return { title: "Progress payment due date", finalDate: r.finalDate, startDate: start, days: 15, basis: `15 business days after the payment claim is made — contract silent (s 11(1)(b) ${S}). A contractual due date (earlier or later) prevails in SA.`, skipped: r.skipped };
+    }
+
     if (scenario === "paymentSchedule") {
-      const start = parseDate(data.given);
-      if (!start) throw new Error("Enter the date the payment claim was given.");
-      const r = addBusinessDays(start, 15, location);
-      return { title: "Payment Schedule due date", finalDate: r.finalDate, startDate: start, days: 15, eotNote: "", basis: "15 business days after the payment claim is given (s 76 BIF Act).", skipped: r.skipped };
+      const days = { qld: 15, nsw: 10, vic: 10, sa: 15 }[jur];
+      const secs = { qld: "s 76 BIF Act", nsw: "s 14(4) SOP Act (NSW)", vic: "s 15(4) SOP Act (Vic)", sa: "s 14(4) SOP Act (SA)" };
+      const start = need(data.given, "Enter the date the payment claim was given.");
+      const r = addBusinessDays(start, days, jur, location);
+      return { title: "Payment Schedule due date", finalDate: r.finalDate, startDate: start, days, basis: `${days} business days after the payment claim is ${jur === "qld" ? "given" : "served"} (${secs[jur]}). If the contract requires the schedule earlier, the contract period applies.`, skipped: r.skipped };
     }
+
     if (scenario === "adjudicationApp") {
-      if (data.aaScenario === "less") {
-        const start = parseDate(data.scheduleReceived);
-        if (!start) throw new Error("Enter the date the payment schedule was received.");
-        const r = addBusinessDays(start, 30, location);
-        return { title: "Adjudication application due date", finalDate: r.finalDate, startDate: start, days: 30, basis: "30 business days after the payment schedule was received (s 79(2)(b)(iii) BIF Act).", skipped: r.skipped };
+      if (jur === "qld") {
+        if (data.aaScenario === "less") {
+          const start = need(data.scheduleReceived, "Enter the date the payment schedule was received.");
+          const r = addBusinessDays(start, 30, jur, location);
+          return { title: "Adjudication application due date", finalDate: r.finalDate, startDate: start, days: 30, basis: "30 business days after the payment schedule was received (s 79(2)(b)(iii) BIF Act).", skipped: r.skipped };
+        }
+        if (data.aaScenario === "no-pay-amount") {
+          const start = need(data.paymentDue, "Enter the due date for the progress payment.");
+          const r = addBusinessDays(start, 20, jur, location);
+          return { title: "Adjudication application due date", finalDate: r.finalDate, startDate: start, days: 20, basis: "20 business days after the due date for the progress payment (s 79(2)(b)(ii) BIF Act).", skipped: r.skipped };
+        }
+        const a = need(data.paymentDue, "Enter both the payment due date and the last day to provide a schedule.");
+        const b = need(data.scheduleDue, "Enter both the payment due date and the last day to provide a schedule.");
+        const start = new Date(Math.max(a.getTime(), b.getTime()));
+        const r = addBusinessDays(start, 30, jur, location);
+        return { title: "Adjudication application due date", finalDate: r.finalDate, startDate: start, days: 30, basis: "30 business days after the LATER of the payment due date or schedule due date (s 79(2)(b)(i) BIF Act).", skipped: r.skipped };
       }
-      if (data.aaScenario === "no-pay-amount") {
-        const start = parseDate(data.paymentDue);
-        if (!start) throw new Error("Enter the due date for the progress payment.");
-        const r = addBusinessDays(start, 20, location);
-        return { title: "Adjudication application due date", finalDate: r.finalDate, startDate: start, days: 20, basis: "20 business days after the due date for the progress payment (s 79(2)(b)(ii) BIF Act).", skipped: r.skipped };
+      const cfg = {
+        nsw: { less: [10, "10 business days after the claimant receives the payment schedule (s 17(3)(c))."], unpaid: [20, "20 business days after the due date for payment (s 17(3)(d))."], notice: [20, "s 17(2)(a) notice of intention — must be served within 20 business days after the due date for payment."], respWindow: 5, apply: [10, "10 business days after the end of the respondent's 5-business-day second-chance period (s 17(3)(e))."] },
+        vic: { less: [10, "10 business days after the claimant receives the payment schedule (s 18(3)(c))."], unpaid: [10, "10 business days after the due date for payment (s 18(3)(d))."], notice: [10, "s 18(2) notice — must be served within 10 business days after the due date for payment."], respWindow: 5, apply: [5, "5 business days after the end of the respondent's 5-business-day second-chance period (s 18(3)(e))."] },
+        sa: { less: [15, "15 business days after the claimant receives the payment schedule (s 17(3)(c))."], unpaid: [20, "20 business days after the due date for payment (s 17(3)(d))."], notice: [20, "s 17(2)(a) notice of intention — must be served within 20 business days after the due date for payment."], respWindow: 5, apply: [15, "15 business days after the end of the respondent's 5-business-day second-chance period (s 17(3)(e))."] },
+      }[jur];
+      const which = data.aaScenario || "less";
+      if (which === "less") {
+        const start = need(data.scheduleReceived, "Enter the date the payment schedule was received.");
+        const r = addBusinessDays(start, cfg.less[0], jur, location);
+        return { title: "Adjudication application due date", finalDate: r.finalDate, startDate: start, days: cfg.less[0], basis: cfg.less[1], skipped: r.skipped };
       }
-      const a = parseDate(data.paymentDue);
-      const b = parseDate(data.scheduleDue);
-      if (!a || !b) throw new Error("Enter both the payment due date and the last day to provide a schedule.");
-      const start = new Date(Math.max(a.getTime(), b.getTime()));
-      const r = addBusinessDays(start, 30, location);
-      return { title: "Adjudication application due date", finalDate: r.finalDate, startDate: start, days: 30, basis: "30 business days after the LATER of the payment due date or schedule due date (s 79(2)(b)(i) BIF Act).", skipped: r.skipped };
+      if (which === "no-pay-amount") {
+        const start = need(data.paymentDue, "Enter the due date for the progress payment.");
+        const r = addBusinessDays(start, cfg.unpaid[0], jur, location);
+        return { title: "Adjudication application due date", finalDate: r.finalDate, startDate: start, days: cfg.unpaid[0], basis: cfg.unpaid[1], skipped: r.skipped };
+      }
+      if (which === "notice-only") {
+        const start = need(data.paymentDue, "Enter the due date for the progress payment.");
+        const r = addBusinessDays(start, cfg.notice[0], jur, location);
+        return { title: "Deadline to serve the notice of intention", finalDate: r.finalDate, startDate: start, days: cfg.notice[0], basis: cfg.notice[1] + " The respondent then has 5 business days to provide a schedule, after which the application window opens.", skipped: r.skipped };
+      }
+      const noticeReceived = need(data.noticeReceived, "Enter the date the respondent received the notice of intention.");
+      const windowEnd = addBusinessDays(noticeReceived, cfg.respWindow, jur, location);
+      const r = addBusinessDays(windowEnd.finalDate, cfg.apply[0], jur, location);
+      return { title: "Adjudication application due date", finalDate: r.finalDate, startDate: noticeReceived, days: cfg.respWindow + cfg.apply[0], basis: `Respondent's second-chance window ends ${formatDate(windowEnd.finalDate)} (5 business days after the notice); ${cfg.apply[1]}`, skipped: windowEnd.skipped.concat(r.skipped) };
     }
+
     if (scenario === "adjudicationResp") {
-      const appReceived = parseDate(data.appReceived);
-      const acceptanceReceived = parseDate(data.acceptanceReceived);
-      if (!appReceived || !acceptanceReceived) throw new Error("Enter both the application-received and acceptance-received dates.");
-      const claimType = data.claimType || "standard";
-      const days1 = claimType === "standard" ? 10 : 15;
-      const days2 = claimType === "standard" ? 7 : 12;
-      const r1 = addBusinessDays(appReceived, days1, location);
-      const r2 = addBusinessDays(acceptanceReceived, days2, location);
+      const appReceived = need(data.appReceived, "Enter both the application-received and acceptance-received dates.");
+      const acceptanceReceived = need(data.acceptanceReceived, "Enter both the application-received and acceptance-received dates.");
+      if (jur === "qld") {
+        const claimType = data.claimType || "standard";
+        const days1 = claimType === "standard" ? 10 : 15;
+        const days2 = claimType === "standard" ? 7 : 12;
+        const r1 = addBusinessDays(appReceived, days1, jur, location);
+        const r2 = addBusinessDays(acceptanceReceived, days2, jur, location);
+        const r1IsLater = r1.finalDate.getTime() >= r2.finalDate.getTime();
+        const picked = r1IsLater ? r1 : r2;
+        const startDate = r1IsLater ? appReceived : acceptanceReceived;
+        const startDays = r1IsLater ? days1 : days2;
+        let finalDate = picked.finalDate;
+        let skipped = picked.skipped.slice();
+        let eotNote = "";
+        if (claimType === "complex" && data.eotEnabled === "on") {
+          const eotDays = Math.min(15, Math.max(1, parseInt(data.eotDays || "1", 10) || 1));
+          const ext = addBusinessDays(finalDate, eotDays, jur, location);
+          finalDate = ext.finalDate;
+          skipped = skipped.concat(ext.skipped);
+          eotNote = ` Plus ${eotDays} additional business day${eotDays > 1 ? "s" : ""} extension under s 83(3).`;
+        }
+        return { title: "Adjudication response due date", finalDate, startDate, days: startDays, basis: `Later of ${days1} business days after receiving the application, or ${days2} business days after receiving notice of acceptance (s 83 BIF Act).${eotNote}`, skipped };
+      }
+      const secs = { nsw: "s 20(1) SOP Act (NSW)", vic: "s 21(1) SOP Act (Vic)", sa: "s 20(1) SOP Act (SA)" };
+      const r1 = addBusinessDays(appReceived, 5, jur, location);
+      const r2 = addBusinessDays(acceptanceReceived, 2, jur, location);
       const r1IsLater = r1.finalDate.getTime() >= r2.finalDate.getTime();
       const picked = r1IsLater ? r1 : r2;
-      const startDate = r1IsLater ? appReceived : acceptanceReceived;
-      const startDays = r1IsLater ? days1 : days2;
-      let finalDate = picked.finalDate;
-      let skipped = picked.skipped.slice();
-      let eotNote = "";
-      if (claimType === "complex" && data.eotEnabled === "on") {
-        const eotDays = Math.min(15, Math.max(1, parseInt(data.eotDays || "1", 10) || 1));
-        const ext = addBusinessDays(finalDate, eotDays, location);
-        finalDate = ext.finalDate;
-        skipped = skipped.concat(ext.skipped);
-        eotNote = ` Plus ${eotDays} additional business day${eotDays > 1 ? "s" : ""} extension under s 83(3).`;
-      }
-      return { title: "Adjudication response due date", finalDate, startDate, days: startDays, basis: `Later of ${days1} business days after receiving the application, or ${days2} business days after receiving notice of acceptance (s 83 BIF Act).${eotNote}`, skipped };
+      return { title: "Adjudication response due date", finalDate: picked.finalDate, startDate: r1IsLater ? appReceived : acceptanceReceived, days: r1IsLater ? 5 : 2, basis: `Later of 5 business days after receiving the application copy, or 2 business days after the acceptance notice (${secs[jur]}). No response is permitted without a timely payment schedule.`, skipped: picked.skipped };
     }
+
     if (scenario === "adjudicatorDecision") {
-      const start = parseDate(data.responseGiven);
-      if (!start) throw new Error("Enter the date the adjudication response was given.");
-      const claimType = data.claimType || "standard";
-      const days = claimType === "standard" ? 10 : 15;
-      const base = addBusinessDays(start, days, location);
+      if (jur === "qld") {
+        const start = need(data.responseGiven, "Enter the date the adjudication response was given.");
+        const claimType = data.claimType || "standard";
+        const days = claimType === "standard" ? 10 : 15;
+        const base = addBusinessDays(start, days, jur, location);
+        let finalDate = base.finalDate;
+        let skipped = base.skipped.slice();
+        let eotNote = "";
+        if (data.eotEnabled === "on") {
+          const eotDays = Math.max(1, parseInt(data.eotDays || "1", 10) || 1);
+          const dayType = data.eotDayType || "business";
+          if (dayType === "business") {
+            const ext = addBusinessDays(finalDate, eotDays, jur, location);
+            finalDate = ext.finalDate;
+            skipped = skipped.concat(ext.skipped);
+            eotNote = ` Plus ${eotDays} business day${eotDays > 1 ? "s" : ""} extension agreed under s 86.`;
+          } else {
+            const next = new Date(finalDate.getTime());
+            next.setDate(next.getDate() + eotDays);
+            finalDate = next;
+            eotNote = ` Plus ${eotDays} calendar day${eotDays > 1 ? "s" : ""} extension agreed under s 86.`;
+          }
+        }
+        return { title: "Adjudicator's decision due date", finalDate, startDate: start, days, basis: `${days} business days after the adjudication response was given (s 85 BIF Act).${eotNote}`, skipped };
+      }
+      if (jur === "vic") {
+        const appointed = need(data.appointed, "Enter both dates — appointment and the last response day.");
+        const lastResp = need(data.lastResponseDay, "Enter both dates — appointment and the last response day.");
+        const start = new Date(Math.max(appointed.getTime(), lastResp.getTime()));
+        const base = addBusinessDays(start, 10, jur, location);
+        let finalDate = base.finalDate;
+        let skipped = base.skipped.slice();
+        let eotNote = "";
+        if (data.eotEnabled === "on") {
+          const eotDays = Math.min(20, Math.max(1, parseInt(data.eotDays || "1", 10) || 1));
+          const ext = addBusinessDays(finalDate, eotDays, jur, location);
+          finalDate = ext.finalDate;
+          skipped = skipped.concat(ext.skipped);
+          eotNote = ` Plus ${eotDays} agreed business day${eotDays > 1 ? "s" : ""} (max 20) under s 22(4)(b).`;
+        }
+        return { title: "Adjudicator's determination due date", finalDate, startDate: start, days: 10, basis: `10 business days after the LATER of the adjudicator's appointment and the last day a response could be lodged (s 22(4) SOP Act (Vic)).${eotNote}`, skipped };
+      }
+      const start = need(data.basisDate, "Enter the date to start the clock from.");
+      const basisLabels = {
+        response: "the date the adjudication response was lodged",
+        "response-expiry": "the last day the response could be lodged",
+        "no-entitlement": jur === "nsw" ? "the date notice of the adjudicator's acceptance was served" : "the date the respondent received the application copy",
+      };
+      const sec = jur === "nsw" ? "s 21(3) SOP Act (NSW)" : "s 21(3) SOP Act (SA)";
+      const base = addBusinessDays(start, 10, jur, location);
       let finalDate = base.finalDate;
       let skipped = base.skipped.slice();
       let eotNote = "";
       if (data.eotEnabled === "on") {
         const eotDays = Math.max(1, parseInt(data.eotDays || "1", 10) || 1);
-        const dayType = data.eotDayType || "business";
-        if (dayType === "business") {
-          const ext = addBusinessDays(finalDate, eotDays, location);
-          finalDate = ext.finalDate;
-          skipped = skipped.concat(ext.skipped);
-          eotNote = ` Plus ${eotDays} business day${eotDays > 1 ? "s" : ""} extension agreed under s 86.`;
-        } else {
-          const next = new Date(finalDate.getTime());
-          next.setDate(next.getDate() + eotDays);
-          finalDate = next;
-          eotNote = ` Plus ${eotDays} calendar day${eotDays > 1 ? "s" : ""} extension agreed under s 86.`;
-        }
+        const ext = addBusinessDays(finalDate, eotDays, jur, location);
+        finalDate = ext.finalDate;
+        skipped = skipped.concat(ext.skipped);
+        eotNote = ` Plus ${eotDays} business day${eotDays > 1 ? "s" : ""} agreed by the parties.`;
       }
-      return { title: "Adjudicator's decision due date", finalDate, startDate: start, days, basis: `${days} business days after the adjudication response was given (s 85 BIF Act).${eotNote}`, skipped };
+      return { title: "Adjudicator's determination due date", finalDate, startDate: start, days: 10, basis: `10 business days after ${basisLabels[data.basis || "response"]} (${sec}).${eotNote}`, skipped };
     }
     throw new Error("Unknown scenario.");
   }
 
-  function isBusinessDay(date, location) {
+  // Business-day engine. Each Act defines "business day" differently:
+  //  - QLD BIF Act: excludes 22 December – 10 January (industry shutdown).
+  //  - VIC (from 15 Apr 2026): excludes 22 December – 10 January and
+  //    statewide public holidays.
+  //  - NSW: excludes 27–31 December.
+  //  - SA: excludes 27–31 December (and statewide industry shutdown days).
+  function isBusinessDay(date, jur, location) {
     const d = date.getDay();
     if (d === 0 || d === 6) return { isBiz: false, reason: "Weekend" };
-    const m = date.getMonth(), day = date.getDate();
-    if ((m === 11 && day >= 22 && day <= 24) || (m === 11 && day >= 27 && day <= 31) || (m === 0 && day >= 2 && day <= 10)) return { isBiz: false, reason: "Christmas shutdown (s 87)" };
-    const dateString = date.toISOString().slice(0, 10);
-    const list = (HOLIDAYS.qld || []).concat(HOLIDAYS[location] || []);
+    // Local date string — toISOString() shifts to UTC and, east of
+    // Greenwich, attributes every holiday to the following day.
+    const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    let list;
+    if (jur === "qld") {
+      list = (HOLIDAYS.qld || []).concat(location && location !== "qld" ? (HOLIDAYS[location] || []) : []);
+    } else {
+      list = HOLIDAYS[jur] || [];
+    }
     const hit = list.find((h) => h.date === dateString);
-    return hit ? { isBiz: false, reason: hit.name } : { isBiz: true, reason: "" };
+    if (hit) return { isBiz: false, reason: hit.name };
+    const m = date.getMonth(), day = date.getDate();
+    if (jur === "qld" || jur === "vic") {
+      if ((m === 11 && day >= 22) || (m === 0 && day <= 10)) {
+        return { isBiz: false, reason: jur === "qld" ? "Christmas shutdown (22 Dec – 10 Jan, BIF Act)" : "Christmas shutdown (22 Dec – 10 Jan, SOP Act (Vic))" };
+      }
+    } else {
+      if (m === 11 && day >= 27 && day <= 31) {
+        return { isBiz: false, reason: "27–31 December exclusion (business day definition)" };
+      }
+    }
+    return { isBiz: true, reason: "" };
   }
 
-  function addBusinessDays(startDate, days, location) {
+  function addBusinessDays(startDate, days, jur, location) {
     const current = new Date(startDate.getTime());
     let added = 0;
     const skipped = [];
     current.setDate(current.getDate() + 1);
     while (added < days) {
-      const check = isBusinessDay(current, location);
+      const check = isBusinessDay(current, jur, location);
       if (check.isBiz) added++;
       else skipped.push({ date: new Date(current.getTime()), reason: check.reason });
       if (added < days) current.setDate(current.getDate() + 1);
@@ -2293,25 +2744,102 @@
     </div>`;
   }
 
-  /* ---------- Tools: Interest calculator (mirrors live Sopal layout) ---------- */
+  /* ---------- Tools: Interest calculator (multi-jurisdiction) ---------- */
+
+  // Statutory interest config per jurisdiction.
+  //  - QLD: QBCC Act s 67P penalty rate = 10% + RBA cash rate, computed daily
+  //    from the live RBA series via /get_interest_rate.
+  //  - NSW: SOP Act s 11(2)(a) → Civil Procedure Act 2005 s 101 prescribed
+  //    rate (RBA cash + 6%), reset each 1 Jan / 1 Jul. Dated table below.
+  //  - VIC: SOP Act s 12(2)(a) → Penalty Interest Rates Act 1983 rate
+  //    (gazetted; 10% p.a. since 1 Feb 2017).
+  //  - SA: SOP Act s 11(2)(a) → Supreme Court judgment-debt rate (UCR 2020
+  //    r 185.1) — 6% p.a.
+  // In each state the payable rate is the GREATER of the statutory rate and
+  // the contract rate — the tabs let the user calculate either.
+  const INTEREST_CONFIG = {
+    qld: {
+      statutoryTab: "QBCC s 67P rate",
+      pageSub: "Calculate interest on overdue progress payments under BIF Act s 73 / QBCC Act s 67P.",
+      method: "rba-live",
+      provision: `
+        <p>(1) A progress payment becomes payable — (a) on the day it becomes payable under the contract; or (b) 10 business days after the payment claim is made if the contract is silent.</p>
+        <p>(2) Interest is payable at the greater of the contract rate or the rate prescribed under the <em>Civil Proceedings Act 2011</em> s 59(3) for a money order debt.</p>
+        <p>(3) For a building contract under the <em>QBCC Act 1991</em> s 67P, interest is payable at the penalty rate under that section (10% + RBA cash rate).</p>`,
+      provisionTitle: "BIF Act s 73 — interest on overdue progress payments",
+    },
+    nsw: {
+      statutoryTab: "s 11(2) prescribed rate",
+      pageSub: "Calculate interest on overdue progress payments under s 11(2) SOP Act (NSW).",
+      method: "table",
+      // Civil Procedure Act 2005 s 101 / UCPR r 36.7 post-judgment rate:
+      // RBA cash rate (last published before 1 Jan / 1 Jul) + 6%.
+      rates: [
+        ["2022-01-01", 6.10], ["2022-07-01", 6.85],
+        ["2023-01-01", 9.10], ["2023-07-01", 10.10],
+        ["2024-01-01", 10.35], ["2024-07-01", 10.35],
+        ["2025-01-01", 10.35], ["2025-07-01", 9.85],
+        ["2026-01-01", 9.60],
+      ],
+      rateNote: "Prescribed rate under s 101 Civil Procedure Act 2005 (NSW) — RBA cash rate + 6%, reset each 1 January and 1 July.",
+      provision: `
+        <p><strong>s 11(2) SOP Act (NSW):</strong> Interest is payable on the unpaid amount of a progress payment that has become due and payable at the rate — (a) prescribed under section 101 of the <em>Civil Procedure Act 2005</em>, or (b) specified under the construction contract, whichever is the greater.</p>
+        <p>The s 101 prescribed rate is the post-judgment rate under UCPR r 36.7: 6% above the RBA cash rate last published before the half-year commencing 1 January or 1 July. Current: 9.60% (1 Jan – 30 Jun 2026).</p>`,
+      provisionTitle: "s 11(2) SOP Act (NSW) — interest on overdue progress payments",
+    },
+    vic: {
+      statutoryTab: "Penalty interest rate",
+      pageSub: "Calculate interest on overdue progress payments under s 12(2) SOP Act (Vic).",
+      method: "table",
+      rates: [
+        ["2014-02-03", 11.5], ["2014-08-11", 10.5], ["2015-06-01", 9.5], ["2017-02-01", 10],
+      ],
+      rateNote: "Rate fixed under s 2 Penalty Interest Rates Act 1983 (Vic) — 10% p.a., in force since 1 February 2017.",
+      provision: `
+        <p><strong>s 12(2) SOP Act (Vic):</strong> Interest is payable on the unpaid amount of a progress payment that has become due and payable at the greater of the following rates — (a) the rate for the time being fixed under section 2 of the <em>Penalty Interest Rates Act 1983</em>; or (b) the rate specified under the construction contract.</p>
+        <p>The penalty interest rate is 10% per annum, in force since 1 February 2017 (gazetted by the Attorney-General).</p>`,
+      provisionTitle: "s 12(2) SOP Act (Vic) — interest on overdue progress payments",
+    },
+    sa: {
+      statutoryTab: "Judgment-debt rate",
+      pageSub: "Calculate interest on overdue progress payments under s 11(2) SOP Act (SA).",
+      method: "table",
+      rates: [["2020-05-18", 6]],
+      rateNote: "Supreme Court judgment-debt rate under Uniform Civil Rules 2020 (SA) r 185.1 — 6% p.a. simple.",
+      provision: `
+        <p><strong>s 11(2) SOP Act (SA):</strong> Interest is payable on the unpaid amount of a progress payment that has become due and payable at the rate — (a) prescribed under the <em>Supreme Court Act 1935</em> in respect of judgment debts of the Supreme Court; or (b) specified under the construction contract, whichever is the greater.</p>
+        <p>The prescribed rate is set by Uniform Civil Rules 2020 (SA) r 185.1 — currently 6% per annum, simple interest.</p>`,
+      provisionTitle: "s 11(2) SOP Act (SA) — interest on overdue progress payments",
+    },
+  };
 
   function InterestPage() {
-    setTimeout(bindInterestCalculator, 0);
+    const params = new URLSearchParams(window.location.search);
+    const jur = (() => {
+      const q = params.get("jur");
+      if (q && JUR_META[q]) { setToolJur(q); return q; }
+      return getToolJur();
+    })();
+    const conf = INTEREST_CONFIG[jur];
+    setTimeout(() => bindInterestCalculator(jur), 0);
     const today = new Date().toISOString().slice(0, 10);
     return PageBody(`
       <div class="page-shell">
-        <h1 class="page-title">Interest calculator</h1>
-        <p class="page-sub">Calculate interest on overdue progress payments under BIF Act s 73.</p>
+        <div class="page-head">
+          <div><h1 class="page-title">Interest calculator</h1>
+          <p class="page-sub">${escapeHtml(conf.pageSub)}</p></div>
+          <div class="page-actions"><label class="loc-row">Jurisdiction ${jurSelectHtml(jur, "data-interest-jur")}</label></div>
+        </div>
         <div class="interest-grid">
           <div class="card">
             <div class="card-head"><h3>Calculate interest</h3><p class="muted">Choose the rate type below.</p></div>
             <div class="card-body">
               <div class="tab-strip">
-                <button class="tab-strip-btn active" type="button" data-rate-type="qbcc">QBCC s 67P rate</button>
+                <button class="tab-strip-btn active" type="button" data-rate-type="statutory">${escapeHtml(conf.statutoryTab)}</button>
                 <button class="tab-strip-btn" type="button" data-rate-type="contractual">Contractual rate</button>
               </div>
               <form class="calc-form" data-interest-form>
-                <input type="hidden" name="type" value="qbcc">
+                <input type="hidden" name="type" value="statutory">
                 <label class="span-2">Progress payment amount<div class="input-group"><span class="prefix">$</span><input class="text-input" type="number" name="principal" min="0" step="0.01" placeholder="0.00"></div></label>
                 <label class="span-2 contractual-only" data-contractual hidden>Annual interest rate<div class="input-group"><input class="text-input" type="number" name="annualRate" min="0" step="0.01" value="10"><span class="suffix">%</span></div></label>
                 <label>Due date<input class="text-input" type="date" name="startDate"></label>
@@ -2320,12 +2848,8 @@
               </form>
             </div>
             <details class="provision">
-              <summary>BIF Act s 73: interest on overdue progress payments</summary>
-              <div class="provision-body">
-                <p>(1) A progress payment becomes payable — (a) on the day it becomes payable under the contract; or (b) 10 business days after the payment claim is made if the contract is silent.</p>
-                <p>(2) Interest is payable at the greater of the contract rate or the rate prescribed under the <em>Civil Proceedings Act 2011</em> s 59(3) for a money order debt.</p>
-                <p>(3) For a building contract under the <em>QBCC Act 1991</em> s 67P, interest is payable at the penalty rate under that section (10% + RBA cash rate).</p>
-              </div>
+              <summary>${escapeHtml(conf.provisionTitle)}</summary>
+              <div class="provision-body">${conf.provision}</div>
             </details>
           </div>
           <div id="interest-result-card" class="card">${interestPlaceholder()}</div>
@@ -2338,9 +2862,16 @@
     return `<div class="card-body interest-placeholder">${EmptyState("No calculation yet.", "Enter the unpaid amount and dates, then calculate.")}</div>`;
   }
 
-  function bindInterestCalculator() {
+  function bindInterestCalculator(jur) {
     const form = document.querySelector("[data-interest-form]");
     if (!form) return;
+    document.querySelector("[data-interest-jur]")?.addEventListener("change", (e) => {
+      setToolJur(e.target.value);
+      const url = new URL(window.location.href);
+      url.searchParams.set("jur", e.target.value);
+      window.history.replaceState({}, "", url);
+      render();
+    });
     const tabs = document.querySelectorAll("[data-rate-type]");
     const contractualField = document.querySelector("[data-contractual]");
     const typeInput = form.elements.type;
@@ -2358,7 +2889,7 @@
       card.innerHTML = `<div class="card-body"><div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Calculating…</span></div></div>`;
       try {
         const data = Object.fromEntries(new FormData(form).entries());
-        const result = await computeInterest(data);
+        const result = await computeInterest(jur, data);
         card.innerHTML = renderInterestResult(result);
         card.querySelectorAll("[data-toggle-breakdown]").forEach((b) => b.addEventListener("click", () => {
           const body = document.getElementById("interest-breakdown-body");
@@ -2372,7 +2903,16 @@
     });
   }
 
-  async function computeInterest(data) {
+  function statutoryRateFor(rates, dateString) {
+    let rate = rates[0][1];
+    for (const [from, r] of rates) {
+      if (dateString >= from) rate = r;
+    }
+    return rate;
+  }
+
+  async function computeInterest(jur, data) {
+    const conf = INTEREST_CONFIG[jur];
     const principal = Number(data.principal);
     const startDate = parseDate(data.startDate);
     const endDate = parseDate(data.endDate);
@@ -2380,36 +2920,67 @@
     if (!startDate || !endDate) throw new Error("Enter both the due date and the calculation date.");
     if (endDate < startDate) throw new Error("The calculation date must be on or after the due date.");
     const days = Math.ceil((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
+
     if (data.type === "contractual") {
       const annualRate = Number(data.annualRate);
       if (Number.isNaN(annualRate)) throw new Error("Enter the contractual annual rate.");
       const interest = principal * (annualRate / 100 / 365) * days;
-      return { type: "Contractual", principal, days, interest, startDate, endDate, annualRate };
+      return { type: "Contractual", typeDetail: "Contractual rate as entered.", principal, days, interest, startDate, endDate, annualRate };
     }
-    const sd = startDate.toISOString().slice(0, 10);
-    const ed = endDate.toISOString().slice(0, 10);
-    const response = await fetch(`/get_interest_rate?startDate=${sd}&endDate=${ed}`, { credentials: "include" });
-    const ratesData = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(ratesData.detail || "Could not fetch the live RBA cash-rate series.");
-    const dailyRates = (ratesData.dailyRates || []).map((r) => ({ date: r.date, rate: Number(r.rate) }));
-    if (!dailyRates.length) throw new Error("No daily rates returned for that period.");
+
+    if (conf.method === "rba-live") {
+      const sd = startDate.toISOString().slice(0, 10);
+      const ed = endDate.toISOString().slice(0, 10);
+      const response = await fetch(`/get_interest_rate?startDate=${sd}&endDate=${ed}`, { credentials: "include" });
+      const ratesData = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(ratesData.detail || "Could not fetch the live RBA cash-rate series.");
+      const dailyRates = (ratesData.dailyRates || []).map((r) => ({ date: r.date, rate: Number(r.rate), effective: 10 + Number(r.rate) }));
+      if (!dailyRates.length) throw new Error("No daily rates returned for that period.");
+      let interest = 0;
+      dailyRates.forEach((row) => { interest += (principal / 365) * (row.effective / 100); });
+      const effs = dailyRates.map((r) => r.effective);
+      return { type: conf.statutoryTab, typeDetail: "10% + RBA cash rate, computed daily from the live RBA series.", principal, days, interest, startDate, endDate, minRate: Math.min(...effs), maxRate: Math.max(...effs), dailyRates, showRbaColumn: true };
+    }
+
+    // Dated statutory table (NSW half-yearly prescribed rate; VIC penalty
+    // rate; SA judgment rate). Computed per-day so rate changes mid-period
+    // are handled.
+    const dailyRates = [];
+    const cursor = new Date(startDate.getTime());
     let interest = 0;
-    dailyRates.forEach((row) => { interest += (principal / 365) * ((10 + row.rate) / 100); });
-    const rates = dailyRates.map((r) => r.rate);
-    return { type: "QBCC s 67P", principal, days, interest, startDate, endDate, minRate: Math.min(...rates), maxRate: Math.max(...rates), dailyRates };
+    const lastKnown = conf.rates[conf.rates.length - 1][0];
+    let beyondTable = false;
+    while (cursor.getTime() <= endDate.getTime()) {
+      const ds = cursor.toISOString().slice(0, 10);
+      const rate = statutoryRateFor(conf.rates, ds);
+      if (ds > lastKnown && jur === "nsw") {
+        // NSW resets each half-year; beyond the encoded table we hold the
+        // last known rate and flag it.
+        const halfYearStart = ds >= `${ds.slice(0, 4)}-07-01` ? `${ds.slice(0, 4)}-07-01` : `${ds.slice(0, 4)}-01-01`;
+        if (halfYearStart > lastKnown) beyondTable = true;
+      }
+      dailyRates.push({ date: ds, effective: rate });
+      interest += (principal / 365) * (rate / 100);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    const effs = dailyRates.map((r) => r.effective);
+    return {
+      type: conf.statutoryTab,
+      typeDetail: conf.rateNote + (beyondTable ? " Note: part of this period falls after the last rate Sopal has on record — the most recent known rate was applied; verify the current half-year rate." : ""),
+      principal, days, interest, startDate, endDate,
+      minRate: Math.min(...effs), maxRate: Math.max(...effs), dailyRates, showRbaColumn: false,
+    };
   }
 
   function renderInterestResult(result) {
     const total = result.principal + result.interest;
-    const isQbcc = result.type === "QBCC s 67P";
-    const rateRange = isQbcc
+    const isStatutory = result.type !== "Contractual";
+    const rateRange = isStatutory
       ? (result.minRate.toFixed(2) === result.maxRate.toFixed(2)
-        ? `${(10 + result.minRate).toFixed(2)}% (10% + ${result.minRate.toFixed(2)}% RBA)`
-        : `${(10 + result.minRate).toFixed(2)}% – ${(10 + result.maxRate).toFixed(2)}%`)
+        ? `${result.minRate.toFixed(2)}%`
+        : `${result.minRate.toFixed(2)}% – ${result.maxRate.toFixed(2)}%`)
       : `${result.annualRate.toFixed(2)}%`;
-    const rateDetail = isQbcc
-      ? (result.minRate.toFixed(2) === result.maxRate.toFixed(2) ? "Single RBA cash rate over the period." : "Variable daily rate (10% + RBA cash rate).")
-      : "Contractual rate as entered.";
+    const rateDetail = result.typeDetail || "";
 
     const breakdown = (result.dailyRates && result.dailyRates.length)
       ? `<div class="breakdown">
@@ -2419,12 +2990,12 @@
           </button>
           <div class="breakdown-body" id="interest-breakdown-body" hidden>
             <table class="breakdown-table">
-              <thead><tr><th>Date</th><th>RBA</th><th>Effective</th><th class="num">Daily interest</th></tr></thead>
+              <thead><tr><th>Date</th>${result.showRbaColumn ? "<th>RBA</th>" : ""}<th>Effective</th><th class="num">Daily interest</th></tr></thead>
               <tbody>
                 ${result.dailyRates.slice(0, 365).map((row) => {
-                  const eff = (10 + row.rate) / 100;
+                  const eff = row.effective / 100;
                   const day = (result.principal / 365) * eff;
-                  return `<tr><td>${escapeHtml(row.date)}</td><td>${row.rate.toFixed(2)}%</td><td>${(eff * 100).toFixed(2)}%</td><td class="num">${formatCurrencyMicro(day)}</td></tr>`;
+                  return `<tr><td>${escapeHtml(row.date)}</td>${result.showRbaColumn ? `<td>${Number(row.rate).toFixed(2)}%</td>` : ""}<td>${row.effective.toFixed(2)}%</td><td class="num">${formatCurrencyMicro(day)}</td></tr>`;
                 }).join("")}
               </tbody>
             </table>
@@ -2581,7 +3152,7 @@ Total\t${formatCurrencyFull(total)}`;
           </div>`) : `<div class="project-list">${projects.map((p) => projectRow(p, { archived: showArchived })).join("")}</div>`}
         <footer class="storage-footer">
           <div class="storage-bar"><div class="storage-bar-fill ${pct >= 80 ? "high" : ""}" style="width:${pct}%"></div></div>
-          <p class="muted">${formatBytes(bytes)} of ~${formatBytes(quotaApprox)} local browser storage used (${pct}%). Sopal v2 stores all project data in this browser only when you are not signed in. Sign in to enable cloud sync to your account.</p>
+          <p class="muted">${formatBytes(bytes)} of ~${formatBytes(quotaApprox)} local browser storage used (${pct}%). Sopal stores all project data in this browser only when you are not signed in. Sign in to enable cloud sync to your account.</p>
         </footer>
       </div>
     `);
@@ -2657,11 +3228,19 @@ Total\t${formatCurrencyFull(total)}`;
             <div class="card-body">
               <dl class="kv">
                 <dt>Project name</dt><dd>${escapeHtml(project.name)}</dd>
+                <dt>Jurisdiction</dt><dd>${escapeHtml((JURISDICTION_OPTIONS.find(([v]) => v === (project.jurisdiction || "qld")) || [])[1] || "Queensland — BIF Act 2017")}</dd>
                 <dt>Contract form</dt><dd>${escapeHtml(project.contractForm)}</dd>
                 <dt>Reference</dt><dd>${escapeHtml(project.reference || "—")}</dd>
-                <dt>Claimant</dt><dd>${escapeHtml(project.claimant || "—")}</dd>
-                <dt>Respondent</dt><dd>${escapeHtml(project.respondent || "—")}</dd>
+                <dt>Claimant</dt><dd>${escapeHtml([project.claimant, project.claimantAbn ? `ABN ${project.claimantAbn}` : ""].filter(Boolean).join(" · ") || "—")}</dd>
+                <dt>Respondent</dt><dd>${escapeHtml([project.respondent, project.respondentAbn ? `ABN ${project.respondentAbn}` : ""].filter(Boolean).join(" · ") || "—")}</dd>
                 <dt>You are</dt><dd>${escapeHtml(project.userIsParty === "respondent" ? "Respondent" : "Claimant")}</dd>
+                ${project.contractDate ? `<dt>Contract date</dt><dd>${escapeHtml(shortDate(project.contractDate) || project.contractDate)}</dd>` : ""}
+                ${project.contractSum ? `<dt>Contract sum</dt><dd>${escapeHtml(money(project.contractSum) || `$${project.contractSum}`)}</dd>` : ""}
+                ${project.siteAddress ? `<dt>Site</dt><dd>${escapeHtml(project.siteAddress)}</dd>` : ""}
+                ${project.superintendent ? `<dt>Superintendent</dt><dd>${escapeHtml(project.superintendent)}</dd>` : ""}
+                ${project.paymentTerms ? `<dt>Payment terms</dt><dd>${escapeHtml(project.paymentTerms)}</dd>` : ""}
+                ${project.retention ? `<dt>Retention</dt><dd>${escapeHtml(project.retention)}</dd>` : ""}
+                ${project.dlp ? `<dt>DLP</dt><dd>${escapeHtml(project.dlp)}</dd>` : ""}
               </dl>
             </div>
           </section>
@@ -2882,9 +3461,20 @@ Total\t${formatCurrencyFull(total)}`;
       name: `${source.name} (copy)`,
       claimant: source.claimant || "",
       respondent: source.respondent || "",
+      claimantAbn: source.claimantAbn || "",
+      respondentAbn: source.respondentAbn || "",
       contractForm: source.contractForm || "Bespoke",
       reference: source.reference || "",
       userIsParty: source.userIsParty || "claimant",
+      jurisdiction: source.jurisdiction || "qld",
+      contractDate: source.contractDate || "",
+      contractSum: source.contractSum || "",
+      siteAddress: source.siteAddress || "",
+      superintendent: source.superintendent || "",
+      paymentTerms: source.paymentTerms || "",
+      retention: source.retention || "",
+      dlp: source.dlp || "",
+      category: source.category || "Head contract",
       contracts: (source.contracts || []).map((d) => ({ ...d, addedAt: new Date().toISOString() })),
       library: (source.library || []).map((d) => ({ ...d, addedAt: new Date().toISOString() })),
       chats: {},
@@ -6751,7 +7341,12 @@ Total\t${formatCurrencyFull(total)}`;
             </header>
             <div class="drafting-chat-stream" data-drafting-chat-stream>
               ${draft.chat.messages.length === 0
-                ? `<div class="empty-state"><strong>Tell Sopal what to change.</strong><p>Try "Set the claimed amount to $487,250", "Add a section reserving rights to delay costs", or "Tighten the language on the statutory endorsement".</p></div>`
+                ? `<div class="empty-state drafting-generate-cta">
+                    <strong>Generate a first draft from your project.</strong>
+                    <p>Sopal reads the contract and project library and drafts a complete ${escapeHtml(AGENT_LABELS[agentKey] || "document")} document — real clause numbers, parties and figures where the documents contain them. Add instructions below first if you want (amounts, period, items), then generate.</p>
+                    <button class="dark-button compact" type="button" data-generate-draft>${ICON.sparkles}<span>Generate first draft</span></button>
+                    <p class="muted">Or keep the template and tell Sopal what to change, message by message.</p>
+                  </div>`
                 : draft.chat.messages.map((m) => renderMessage(m.role, m.content, m.role === "assistant")).join("")}
             </div>
             <form class="drafting-chat-form" data-drafting-chat-form>
@@ -7407,6 +8002,66 @@ Total\t${formatCurrencyFull(total)}`;
       }
     });
 
+    function projectMetaPayload() {
+      return {
+        name: project.name || "",
+        claimant: project.claimant || "",
+        claimantAbn: project.claimantAbn || "",
+        respondent: project.respondent || "",
+        respondentAbn: project.respondentAbn || "",
+        contractForm: project.contractForm || "",
+        reference: project.reference || "",
+        contractDate: project.contractDate || "",
+        contractSum: project.contractSum || "",
+        siteAddress: project.siteAddress || "",
+        superintendent: project.superintendent || "",
+        paymentTerms: project.paymentTerms || "",
+        retention: project.retention || "",
+        dlp: project.dlp || "",
+        userIsParty: project.userIsParty || "claimant",
+        jurisdiction: project.jurisdiction || "qld",
+      };
+    }
+
+    document.querySelector("[data-generate-draft]")?.addEventListener("click", async (event) => {
+      const btn = event.currentTarget;
+      const instructions = textarea.value.trim();
+      btn.disabled = true;
+      btn.innerHTML = `<span class="thinking-dots"><i></i><i></i><i></i></span><span>Reading the contract & drafting…</span>`;
+      try {
+        const response = await fetch("/api/sopal-v2/agent/generate-draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            agentType: agentKey,
+            instructions,
+            projectMeta: projectMetaPayload(),
+            contractDocs: (project.contracts || []).map((d) => ({ name: d.name, text: d.text })),
+            libraryDocs: (project.library || []).map((d) => ({ name: d.name, text: d.text })),
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(describeApiError(data, "Draft generation failed"));
+        const html = (data.documentHtml || "").trim();
+        if (html) {
+          editor.innerHTML = html;
+          draft.html = html;
+        }
+        const summary = (data.summary || "Generated a first draft.").trim();
+        if (instructions) draft.chat.messages.push({ role: "user", content: instructions, at: Date.now() });
+        draft.chat.messages.push({ role: "assistant", content: summary, at: Date.now() });
+        draft.updatedAt = Date.now();
+        textarea.value = "";
+        saveProject(project);
+        render();
+      } catch (error) {
+        btn.disabled = false;
+        btn.innerHTML = `${ICON.sparkles}<span>Generate first draft</span>`;
+        stream.insertAdjacentHTML("beforeend", `<div class="message msg-assistant"><div class="message-body"><div class="error-banner">${escapeHtml(error.message || "Draft generation failed")}</div></div></div>`);
+      }
+    });
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const message = textarea.value.trim();
@@ -7440,6 +8095,7 @@ Total\t${formatCurrencyFull(total)}`;
             agentType: agentKey,
             currentDocumentHtml: draft.html,
             message,
+            jurisdiction: project.jurisdiction || "qld",
             projectContext: [projectMeta, projectContext].filter(Boolean).join("\n\n---\n\n"),
           }),
         });
@@ -7624,7 +8280,7 @@ Total\t${formatCurrencyFull(total)}`;
                 ${analysis ? `<button class="ghost-button compact" type="button" data-rerun-analysis>Re-run</button>` : ""}
               </div>
               <div class="card-body" data-analysis-body>
-                ${renderAnalysis(agentKey, document, analysis, review?.status, review)}
+                ${renderAnalysis(agentKey, document, analysis, review?.status, review, project.jurisdiction)}
               </div>
             </section>
           </aside>
@@ -7726,7 +8382,7 @@ Total\t${formatCurrencyFull(total)}`;
         ${checksHtml ? `<h2>Checks</h2>${checksHtml}` : ""}
         ${(analysis.recommendations || []).length ? `<h2>Recommended next steps</h2><ol class="print-list">${analysis.recommendations.map((r) => `<li>${safe(r)}</li>`).join("")}</ol>` : ""}
         ${(analysis.missing || []).length ? `<h2>Information to gather</h2><ul class="print-list">${analysis.missing.map((m) => `<li>${safe(m)}</li>`).join("")}</ul>` : ""}
-        <p class="print-foot">Generated by Sopal v2 (sopal.com.au)</p>
+        <p class="print-foot">Generated by Sopal (sopal.com.au)</p>
       </body></html>`);
     win.document.close();
   }
@@ -7759,22 +8415,23 @@ Total\t${formatCurrencyFull(total)}`;
       checks ? `## Checks\n\n${checks}` : "",
       recs,
       missing,
-      "---\n_Generated by Sopal v2_",
+      "---\n_Generated by Sopal_",
     ].filter(Boolean).join("\n\n");
   }
 
-  function renderAnalysis(agentKey, document, analysis, status, review) {
+  function renderAnalysis(agentKey, document, analysis, status, review, jur) {
+    jur = jur && JUR_META[jur] ? jur : getToolJur();
     if (!document) {
       return EmptyState("Add a document to start.", "Upload or paste the document, then run the structured BIF Act / SOPA review.");
     }
     if (status === "running") {
-      const items = REVIEW_CHECKS[agentKey] || [];
+      const items = reviewChecksFor(agentKey, jur);
       return `
         <div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Running ${items.length} structured checks…</span></div>
         <ol class="check-list pending">${items.map((t) => `<li class="check-item pending"><span class="check-status">…</span><div class="check-body"><strong>${escapeHtml(t)}</strong></div></li>`).join("")}</ol>`;
     }
     if (!analysis) {
-      const items = REVIEW_CHECKS[agentKey] || [];
+      const items = reviewChecksFor(agentKey, jur);
       return `
         <div class="analysis-action">
           <button class="dark-button" type="button" data-run-analysis>${ICON.sparkles}<span>Run analysis</span></button>
@@ -7948,7 +8605,7 @@ Total\t${formatCurrencyFull(total)}`;
 
     function refreshAnalysis() {
       const r = ensureReview();
-      analysisBody.innerHTML = renderAnalysis(agentKey, r.document, r.analysis, r.status, r);
+      analysisBody.innerHTML = renderAnalysis(agentKey, r.document, r.analysis, r.status, r, project.jurisdiction);
       bindAnalysisActions();
     }
 
@@ -8087,8 +8744,9 @@ Total\t${formatCurrencyFull(total)}`;
       saveProject(project);
       refreshAnalysis();
 
-      const checks = REVIEW_CHECKS[agentKey] || [];
-      const projectMeta = `Project: ${project.name}\nContract form: ${project.contractForm}${project.reference ? `\nReference: ${project.reference}` : ""}\nUser is: ${project.userIsParty || "claimant"}`;
+      const jur = project.jurisdiction && JUR_META[project.jurisdiction] ? project.jurisdiction : "qld";
+      const checks = reviewChecksFor(agentKey, jur);
+      const projectMeta = `Project: ${project.name}\nJurisdiction: ${JUR_META[jur].act}\nContract form: ${project.contractForm}${project.reference ? `\nReference: ${project.reference}` : ""}\nUser is: ${project.userIsParty || "claimant"}`;
       const ctxText = projectContextString(project);
 
       try {
@@ -8100,6 +8758,7 @@ Total\t${formatCurrencyFull(total)}`;
             agentType: agentKey,
             mode: "review",
             reviewSubmode: submode.id,
+            jurisdiction: jur,
             checks,
             structured: true,
             message: `Review the document below.\n\nDocument:\n${r.document.text.slice(0, 60000)}`,
@@ -8179,6 +8838,7 @@ Total\t${formatCurrencyFull(total)}`;
               mode: "review",
               reviewSubmode: submode.id,
               chatFollowup: true,
+              jurisdiction: (project && project.jurisdiction) || getToolJur(),
               message,
               projectContext: [projectMeta, ctxText, docBlock].filter(Boolean).join("\n\n---\n\n"),
               files: [{ name: r.document.name, characters: r.document.text.length }],
@@ -8828,56 +9488,203 @@ Total\t${formatCurrencyFull(total)}`;
   function openProjectModal(editId, prefill) {
     const editing = editId ? getProject(editId) : null;
     const pre = prefill || {};
-    const cfDefault = editing ? editing.contractForm : (pre.contractForm || "");
-    const partyDefault = editing ? editing.userIsParty : (pre.userIsParty || "claimant");
+    // New projects are contract-first: the user must upload the contract
+    // documents before the project form appears, and the AI pre-fills the
+    // form from the documents. Editing skips the gate (the contract already
+    // lives on the project).
+    const state = {
+      step: editing ? "form" : "upload",
+      docs: [], // { name, text, characters }
+      analysing: false,
+      uploadError: "",
+      autofill: null,
+      autofillFailed: false,
+    };
+
+    const fieldVal = (key) => {
+      if (editing) return editing[key] || "";
+      return (state.autofill && state.autofill[key]) || pre[key] || "";
+    };
+
+    function uploadStepHtml() {
+      return `
+        <div class="modal-body project-upload-step">
+          <p class="project-upload-intro">A project starts from its contract. Upload the executed contract (and any schedules / special conditions) — Sopal reads them and sets the project up for you.</p>
+          <div class="upload-zone project-upload-zone" data-project-upload-zone>
+            <input type="file" data-project-doc-file accept=".pdf,.docx,.txt" multiple hidden>
+            <span class="upload-primary" data-project-upload-status>Drop contract documents here, or click to browse</span>
+            <span class="muted">PDF, DOCX or TXT · up to 25MB each</span>
+          </div>
+          ${state.docs.length ? `
+            <ul class="project-upload-list">
+              ${state.docs.map((d, i) => `
+                <li>
+                  <span class="doc-list-name">${escapeHtml(d.name)}</span>
+                  <span class="doc-list-meta">${(d.characters || d.text.length).toLocaleString()} characters</span>
+                  <button class="icon-button" type="button" data-project-doc-remove="${i}" aria-label="Remove">${ICON.close}</button>
+                </li>`).join("")}
+            </ul>` : ""}
+          ${state.uploadError ? `<div class="error-banner">${escapeHtml(state.uploadError)}</div>` : ""}
+          <div class="modal-actions">
+            <button class="ghost-button" type="button" data-modal-close>Cancel</button>
+            <button class="dark-button" type="button" data-project-analyse ${state.docs.length && !state.analysing ? "" : "disabled"}>
+              ${state.analysing ? "Reading the contract…" : "Analyse contract & continue"}
+            </button>
+          </div>
+        </div>`;
+    }
+
+    function formStepHtml() {
+      const af = state.autofill || {};
+      const jur = editing ? (editing.jurisdiction || "qld") : (["qld", "nsw", "vic", "sa"].includes(af.jurisdiction) ? af.jurisdiction : (pre.jurisdiction || "qld"));
+      const cat = editing ? (editing.category || "Head contract") : (PROJECT_CATEGORIES.includes(af.category) ? af.category : (pre.category || "Head contract"));
+      const form = editing ? editing.contractForm : (CONTRACT_FORMS.includes(af.contractForm) ? af.contractForm : (pre.contractForm || "Bespoke"));
+      const partyDefault = editing ? (editing.userIsParty || "claimant") : (pre.userIsParty || "claimant");
+      const claimantDefault = editing ? (editing.claimant || "") : (af.claimant || pre.claimant || getFirm().name || "");
+      return `
+        <form class="modal-body" data-project-form>
+          ${!editing && state.autofillFailed ? `<div class="warn-banner">Sopal couldn't auto-read the contract just now — the documents are still attached; fill the details in manually.</div>` : ""}
+          ${!editing && state.autofill && (state.autofill.warnings || []).length ? `<div class="warn-banner">${escapeHtml((state.autofill.warnings || []).slice(0, 3).join(" · "))}</div>` : ""}
+          <label>Project name<input class="text-input" name="name" required value="${attr(editing?.name || af.projectName || pre.name || "")}" placeholder="Project name"></label>
+          <div class="row-2">
+            <label>Claimant<input class="text-input" name="claimant" value="${attr(claimantDefault)}" placeholder="Claimant name"></label>
+            <label>Respondent<input class="text-input" name="respondent" value="${attr(fieldVal("respondent"))}" placeholder="Respondent name"></label>
+          </div>
+          <div class="row-2">
+            <label>Claimant ABN / ACN<input class="text-input" name="claimantAbn" value="${attr(fieldVal("claimantAbn"))}" placeholder="ABN / ACN"></label>
+            <label>Respondent ABN / ACN<input class="text-input" name="respondentAbn" value="${attr(fieldVal("respondentAbn"))}" placeholder="ABN / ACN"></label>
+          </div>
+          <div class="row-2">
+            <label>Contract form
+              <select class="select-input" name="contractForm">
+                ${CONTRACT_FORMS.map((f) => `<option value="${attr(f)}" ${form === f ? "selected" : ""}>${escapeHtml(f)}</option>`).join("")}
+              </select>
+            </label>
+            <label>Reference / contract no.<input class="text-input" name="reference" value="${attr(fieldVal("reference"))}" placeholder="Reference or contract no."></label>
+          </div>
+          <div class="row-2">
+            <label>Jurisdiction
+              <select class="select-input" name="jurisdiction">
+                ${JURISDICTION_OPTIONS.map(([v, l]) => `<option value="${v}" ${jur === v ? "selected" : ""}>${escapeHtml(l)}</option>`).join("")}
+              </select>
+            </label>
+            <label>Category
+              <select class="select-input" name="category">
+                ${PROJECT_CATEGORIES.map((c) => `<option value="${attr(c)}" ${cat === c ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}
+              </select>
+            </label>
+          </div>
+          <div class="row-2">
+            <label>Contract date<input class="text-input" type="date" name="contractDate" value="${attr(fieldVal("contractDate"))}"></label>
+            <label>Contract sum ($)<input class="text-input" name="contractSum" value="${attr(fieldVal("contractSum"))}" placeholder="e.g. 1250000"></label>
+          </div>
+          <label>Site / project address<input class="text-input" name="siteAddress" value="${attr(fieldVal("siteAddress"))}" placeholder="Site address"></label>
+          <label>Superintendent / contract administrator<input class="text-input" name="superintendent" value="${attr(fieldVal("superintendent"))}" placeholder="If named in the contract"></label>
+          <label>Payment terms<textarea class="text-area" name="paymentTerms" rows="2" placeholder="When claims can be made and when payment falls due under the contract">${escapeHtml(fieldVal("paymentTerms"))}</textarea></label>
+          <div class="row-2">
+            <label>Retention / security<input class="text-input" name="retention" value="${attr(fieldVal("retention"))}" placeholder="e.g. 5% to 2.5% at PC"></label>
+            <label>Defects liability period<input class="text-input" name="dlp" value="${attr(fieldVal("dlp"))}" placeholder="e.g. 12 months from PC"></label>
+          </div>
+          <div class="row-2">
+            <label class="span-all">You act for
+              <div class="radio-group">
+                <label class="radio-option"><input type="radio" name="userIsParty" value="claimant" ${partyDefault === "claimant" ? "checked" : ""}>The claimant</label>
+                <label class="radio-option"><input type="radio" name="userIsParty" value="respondent" ${partyDefault === "respondent" ? "checked" : ""}>The respondent</label>
+              </div>
+            </label>
+          </div>
+          ${!editing && state.docs.length ? `<p class="muted project-doc-note">${state.docs.length} contract document${state.docs.length > 1 ? "s" : ""} will be attached to the project.</p>` : ""}
+          <div class="modal-actions">
+            ${editing ? `<button class="ghost-button" type="button" data-modal-close>Cancel</button>` : `<button class="ghost-button" type="button" data-project-back>Back</button>`}
+            <button class="dark-button" type="submit">${editing ? "Save changes" : "Create project"}</button>
+          </div>
+        </form>`;
+    }
+
     modal = {
       render: () => `
         <div class="modal-backdrop" data-modal-backdrop>
-          <div class="modal" role="dialog" aria-modal="true">
+          <div class="modal modal-wide" role="dialog" aria-modal="true">
             <div class="modal-head">
-              <h2>${editing ? "Edit project" : "New project"}</h2>
+              <h2>${editing ? "Edit project" : (state.step === "upload" ? "New project — contract documents" : "New project — confirm details")}</h2>
               <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
             </div>
-            <form class="modal-body" data-project-form>
-              <label>Project name<input class="text-input" name="name" required value="${attr(editing?.name || "")}" placeholder="Project name"></label>
-              <div class="row-2">
-                <label>Claimant<input class="text-input" name="claimant" value="${attr(editing?.claimant || (editing ? "" : (getFirm().name || "")))}" placeholder="${attr(getFirm().name ? `Defaults to ${getFirm().name}` : "Claimant name")}"></label>
-                <label>Respondent<input class="text-input" name="respondent" value="${attr(editing?.respondent || "")}" placeholder="Respondent name"></label>
-              </div>
-              <div class="row-2">
-                <label>Contract form
-                  <select class="select-input" name="contractForm">
-                    ${CONTRACT_FORMS.map((f) => `<option value="${attr(f)}" ${cfDefault === f ? "selected" : ""}>${escapeHtml(f)}</option>`).join("")}
-                  </select>
-                </label>
-                <label>Reference / contract no.<input class="text-input" name="reference" value="${attr(editing?.reference || "")}" placeholder="Reference or contract no."></label>
-              </div>
-              <div class="row-2">
-                <label class="span-all">Category
-                  <select class="select-input" name="category">
-                    ${PROJECT_CATEGORIES.map((c) => `<option value="${attr(c)}" ${(editing?.category || "Head contract") === c ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}
-                  </select>
-                </label>
-              </div>
-              <div class="row-2">
-                <label class="span-all">You act for
-                  <div class="radio-group">
-                    <label class="radio-option"><input type="radio" name="userIsParty" value="claimant" ${partyDefault === "claimant" ? "checked" : ""}>The claimant</label>
-                    <label class="radio-option"><input type="radio" name="userIsParty" value="respondent" ${partyDefault === "respondent" ? "checked" : ""}>The respondent</label>
-                  </div>
-                </label>
-              </div>
-              <div class="modal-actions">
-                <button class="ghost-button" type="button" data-modal-close>Cancel</button>
-                <button class="dark-button" type="submit">${editing ? "Save changes" : "Create project"}</button>
-              </div>
-            </form>
+            ${state.step === "upload" ? uploadStepHtml() : formStepHtml()}
           </div>
         </div>`,
       bind: (rootEl) => {
         const close = () => { modal = null; render(); };
         rootEl.querySelector("[data-modal-backdrop]")?.addEventListener("click", (e) => { if (e.target.matches("[data-modal-backdrop]")) close(); });
         rootEl.querySelectorAll("[data-modal-close]").forEach((b) => b.addEventListener("click", close));
+        document.addEventListener("keydown", function handler(ev) {
+          if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); }
+        });
+
+        // --- Upload step wiring ---
+        const zone = rootEl.querySelector("[data-project-upload-zone]");
+        const fileInput = rootEl.querySelector("[data-project-doc-file]");
+        async function ingest(files) {
+          state.uploadError = "";
+          for (const file of files) {
+            const status = document.querySelector("[data-project-upload-status]");
+            if (status) status.textContent = `Extracting ${file.name}…`;
+            const fd = new FormData();
+            fd.append("file", file);
+            try {
+              const r = await fetch("/api/sopal-v2/extract", { method: "POST", body: fd, credentials: "include" });
+              const data = await r.json().catch(() => ({}));
+              if (!r.ok) throw new Error(describeApiError(data, `Could not read ${file.name}`));
+              state.docs.push({ name: data.filename, text: data.text, characters: data.characters });
+            } catch (err) {
+              state.uploadError = err.message || `Could not read ${file.name}`;
+            }
+          }
+          render();
+        }
+        zone?.addEventListener("click", () => fileInput?.click());
+        fileInput?.addEventListener("change", () => { if (fileInput.files?.length) ingest(Array.from(fileInput.files)); });
+        zone?.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag-over"); });
+        zone?.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+        zone?.addEventListener("drop", (e) => {
+          e.preventDefault();
+          zone.classList.remove("drag-over");
+          if (e.dataTransfer?.files?.length) ingest(Array.from(e.dataTransfer.files));
+        });
+        rootEl.querySelectorAll("[data-project-doc-remove]").forEach((b) => b.addEventListener("click", () => {
+          state.docs.splice(Number(b.dataset.projectDocRemove), 1);
+          render();
+        }));
+        rootEl.querySelector("[data-project-analyse]")?.addEventListener("click", async () => {
+          if (!state.docs.length || state.analysing) return;
+          state.analysing = true;
+          render();
+          try {
+            const r = await fetch("/api/sopal-v2/projects/autofill", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ documents: state.docs.map((d) => ({ name: d.name, text: d.text })) }),
+            });
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(describeApiError(data, "Autofill failed"));
+            state.autofill = data;
+            state.autofillFailed = false;
+          } catch (_) {
+            // AI down ≠ user blocked: continue with an empty form, documents
+            // still attach to the project.
+            state.autofill = null;
+            state.autofillFailed = true;
+          }
+          state.analysing = false;
+          state.step = "form";
+          render();
+        });
+
+        // --- Form step wiring ---
+        rootEl.querySelector("[data-project-back]")?.addEventListener("click", () => {
+          state.step = "upload";
+          render();
+        });
         rootEl.querySelector("[data-project-form]")?.addEventListener("submit", (event) => {
           event.preventDefault();
           const data = Object.fromEntries(new FormData(event.currentTarget).entries());
@@ -8887,8 +9694,18 @@ Total\t${formatCurrencyFull(total)}`;
               name: (data.name || "").trim() || project.name,
               claimant: (data.claimant || "").trim(),
               respondent: (data.respondent || "").trim(),
+              claimantAbn: (data.claimantAbn || "").trim(),
+              respondentAbn: (data.respondentAbn || "").trim(),
               contractForm: data.contractForm,
               reference: (data.reference || "").trim(),
+              jurisdiction: data.jurisdiction || project.jurisdiction || "qld",
+              contractDate: (data.contractDate || "").trim(),
+              contractSum: (data.contractSum || "").trim(),
+              siteAddress: (data.siteAddress || "").trim(),
+              superintendent: (data.superintendent || "").trim(),
+              paymentTerms: (data.paymentTerms || "").trim(),
+              retention: (data.retention || "").trim(),
+              dlp: (data.dlp || "").trim(),
               userIsParty: data.userIsParty || "claimant",
               category: data.category || project.category || "Other",
             });
@@ -8898,19 +9715,17 @@ Total\t${formatCurrencyFull(total)}`;
           } else {
             const project = createProject(data);
             project.category = data.category || "Head contract";
+            const now = new Date().toISOString();
+            project.contracts = state.docs.map((d) => ({ name: d.name, text: d.text, source: "extracted", addedAt: now }));
             saveProject(project);
             modal = null;
             navigate(`/sopal-v2/projects/${project.id}/overview`);
           }
         });
-        document.addEventListener("keydown", function handler(ev) {
-          if (ev.key === "Escape") { document.removeEventListener("keydown", handler); close(); }
-        });
       },
     };
     render();
   }
-
   /* ---------- Research Agent (project-less chat) ---------- */
 
   // Project-less, non-persistent chat backed by /api/sopal-v2/research. Stores
@@ -8922,10 +9737,10 @@ Total\t${formatCurrencyFull(total)}`;
   // that explains they're degraded ("general knowledge only").
   const JURISDICTIONS = [
     { id: "qld", label: "QLD", full: "Queensland", supported: true },
-    { id: "nsw", label: "NSW", full: "New South Wales", supported: false },
-    { id: "vic", label: "VIC", full: "Victoria", supported: false },
+    { id: "nsw", label: "NSW", full: "New South Wales", supported: true },
+    { id: "vic", label: "VIC", full: "Victoria", supported: true },
     { id: "wa", label: "WA", full: "Western Australia", supported: false },
-    { id: "sa", label: "SA", full: "South Australia", supported: false },
+    { id: "sa", label: "SA", full: "South Australia", supported: true },
   ];
 
   function getResearchJurisdiction() {
@@ -8958,7 +9773,7 @@ Total\t${formatCurrencyFull(total)}`;
               ${escapeHtml(j.label)}${j.supported ? "" : '<span class="jurisdiction-tag" aria-label="Limited support">·</span>'}
             </button>`).join("")}
         </div>
-        ${jur.supported ? "" : `<span class="jurisdiction-warn muted">${escapeHtml(jur.full)} sources aren't yet integrated. Answers rely on general knowledge only; verify against the local act before relying.</span>`}
+        ${jur.supported ? "" : `<span class="jurisdiction-warn muted">${escapeHtml(jur.full)}: the WA Act isn't yet integrated. Answers rely on general knowledge only; verify against the local act before relying.</span>`}
       </div>`;
     return PageBody(`
       <div class="page-shell chat-shell">
@@ -9154,16 +9969,15 @@ Total\t${formatCurrencyFull(total)}`;
       ? "/sopal-v2/tools/payment-claim-reviewer"
       : "/sopal-v2/tools/payment-schedule-reviewer";
     const title = agentKey === "payment-claims" ? "Payment claim reviewer" : "Payment schedule reviewer";
-    const sub = agentKey === "payment-claims"
-      ? "Upload or paste a payment claim. Sopal runs a structured BIF Act / SOPA review. No project required."
-      : "Upload or paste a payment schedule. Sopal runs a structured BIF Act / SOPA review. No project required.";
 
+    const jur = review.jurisdiction && JUR_META[review.jurisdiction] ? review.jurisdiction : getToolJur();
     const head = `
       <div class="chat-page-head">
         <div>
           <h1 class="page-title">${escapeHtml(title)}</h1>
-          <p class="page-sub">${escapeHtml(sub)}</p>
+          <p class="page-sub">Upload or paste the document. Sopal runs a structured review under the ${escapeHtml(JUR_META[jur].act)}. No project required.</p>
         </div>
+        <label class="loc-row">Jurisdiction ${jurSelectHtml(jur, "data-review-jur")}</label>
       </div>`;
 
     const modeStrip = `
@@ -9221,7 +10035,7 @@ Total\t${formatCurrencyFull(total)}`;
                 ${review.analysis ? `<button class="ghost-button compact" type="button" data-rerun-analysis>Re-run</button>` : ""}
               </div>
               <div class="card-body" data-analysis-body>
-                ${renderAnalysis(agentKey, review.document, review.analysis, review.status, review)}
+                ${renderAnalysis(agentKey, review.document, review.analysis, review.status, review, jur)}
               </div>
             </section>
           </aside>
@@ -9268,8 +10082,20 @@ Total\t${formatCurrencyFull(total)}`;
   }
 
   function bindStandaloneReviewer(agentKey, submode) {
-    if (!submode) return;
     const review = getStandaloneReview(agentKey);
+    if (!review.jurisdiction || !JUR_META[review.jurisdiction]) review.jurisdiction = getToolJur();
+    const jurSel = document.querySelector("[data-review-jur]");
+    if (jurSel) jurSel.addEventListener("change", () => {
+      review.jurisdiction = jurSel.value;
+      setToolJur(jurSel.value);
+      // Check lists differ per Act, so a completed analysis no longer
+      // matches the new jurisdiction — reset to idle.
+      review.analysis = null;
+      review.status = "idle";
+      saveStore();
+      render();
+    });
+    if (!submode) return;
     review.submode = submode.id;
     saveStore();
     const docBody = document.querySelector("[data-doc-body]");
@@ -9280,7 +10106,7 @@ Total\t${formatCurrencyFull(total)}`;
       bindDocInput();
     }
     function refreshAnalysis() {
-      analysisBody.innerHTML = renderAnalysis(agentKey, review.document, review.analysis, review.status, review);
+      analysisBody.innerHTML = renderAnalysis(agentKey, review.document, review.analysis, review.status, review, review.jurisdiction);
       bindAnalysisActions();
     }
     function refreshChat() {
@@ -9383,7 +10209,7 @@ Total\t${formatCurrencyFull(total)}`;
       review.status = "running";
       saveStore();
       refreshAnalysis();
-      const checks = REVIEW_CHECKS[agentKey] || [];
+      const checks = reviewChecksFor(agentKey, review.jurisdiction);
       try {
         const response = await fetch("/api/sopal-v2/agent", {
           method: "POST",
@@ -9393,6 +10219,7 @@ Total\t${formatCurrencyFull(total)}`;
             agentType: agentKey,
             mode: "review",
             reviewSubmode: submode.id,
+            jurisdiction: review.jurisdiction,
             checks,
             structured: true,
             message: `Review the document below.\n\nDocument:\n${review.document.text.slice(0, 60000)}`,
@@ -9460,6 +10287,7 @@ Total\t${formatCurrencyFull(total)}`;
               mode: "review",
               reviewSubmode: submode.id,
               chatFollowup: true,
+              jurisdiction: review.jurisdiction,
               message,
               projectContext: docBlock,
               files: [{ name: review.document.name, characters: review.document.text.length }],
@@ -9517,10 +10345,9 @@ Total\t${formatCurrencyFull(total)}`;
             <dl class="settings-dl">
               <dt>Name</dt><dd>${escapeHtml(display || "")}</dd>
               <dt>Email</dt><dd>${escapeHtml(auth.user.email || "")}</dd>
-              ${auth.user.firm_name ? `<dt>Firm</dt><dd>${escapeHtml(auth.user.firm_name)}</dd>` : ""}
+              ${auth.user.company ? `<dt>Company</dt><dd>${escapeHtml(auth.user.company)}</dd>` : ""}
             </dl>
             <div class="settings-actions">
-              <a class="ghost-button compact" href="/account.html" target="_blank" rel="noopener">Open account on sopal.com.au ${ICON.arrowUpRight}</a>
               <button class="ghost-button compact" type="button" data-sopal-signout>Sign out</button>
             </div>
           </div>`;
@@ -9529,13 +10356,9 @@ Total\t${formatCurrencyFull(total)}`;
         <div class="settings-card">
           <div class="settings-card-head">
             <h3>Account</h3>
-            <span class="settings-pill settings-pill-off">Guest</span>
+            <span class="settings-pill settings-pill-off">Signed out</span>
           </div>
-          <p>You are using Sopal as a guest. Project content is stored in this browser only and will not follow you across devices. Sign in with your Sopal account to enable cloud sync.</p>
-          <div class="settings-actions">
-            <a class="dark-button compact" href="/login?redirect=${encodeURIComponent("/sopal-v2/settings")}">Sign in</a>
-            <a class="ghost-button compact" href="/register?redirect=${encodeURIComponent("/sopal-v2/settings")}">Create an account</a>
-          </div>
+          <p>You are signed out. Sopal requires an account — reload the page to sign in.</p>
         </div>`;
     })();
 
@@ -9692,7 +10515,7 @@ Total\t${formatCurrencyFull(total)}`;
     return PageBody(`
       <div class="page-shell settings-shell">
         <h1 class="page-title">Settings</h1>
-        <p class="page-sub">Account, cloud sync, firm branding, data and appearance for Sopal v2.</p>
+        <p class="page-sub">Account, cloud sync, firm branding, data and appearance for Sopal.</p>
         ${accountCard}
         ${cloudCard}
         ${firmCard}
@@ -10589,13 +11412,13 @@ Total\t${formatCurrencyFull(total)}`;
       category: "Reference",
       summary: "How accounts work, how cloud sync of your projects works, and what happens when you sign out.",
       body: `
-        <p class="lead">Sopal uses a single account across the marketing site and the app. Sign in once and you have everything: pricing-page features, project workspace, cloud sync of your projects, and the account page on sopal.com.au.</p>
+        <p class="lead">The Sopal app uses its own account, separate from any sopal.com.au purchase account. Signing in unlocks the workspace and syncs your projects to your account.</p>
 
         <h2>Creating an account</h2>
-        <p>Go to <a href="/register">/register</a> on the marketing site or use the Sign in button in Sopal v2's sidebar foot, which takes you to <a href="/login">/login</a> with a Create account link. The fields are email, password, name, firm name (optional), ABN (optional), billing details, and a phone number.</p>
+        <p>The app is behind a login wall — when you are signed out you land on the sign-in screen, which has a Create an account link. The fields are email, password, name and an optional company.</p>
 
         <h2>Signing in</h2>
-        <p>The login flow stores a JWT in your browser's local storage under the key "purchase_token". Sopal v2's sidebar foot picks this up automatically. If the token is missing, malformed or expired, the foot row shows a guest banner with a Sign in button.</p>
+        <p>Signing in stores a token in this browser. If the token is missing, malformed or expired, the app returns to the sign-in screen; your local project data is untouched and reappears when you sign back in.</p>
 
         <h2>Cloud sync</h2>
         <p>When you are signed in, every project edit auto-syncs to your account. The sync is a debounced PUT to /api/sopal-v2/projects/{id} that fires roughly 1.5 seconds after your last save. Failures are queued and retried on the next save.</p>
@@ -10610,10 +11433,7 @@ Total\t${formatCurrencyFull(total)}`;
         </ul>
 
         <h2>Signing out</h2>
-        <p>Sidebar foot → Sign out clears the JWT from local storage and redirects to /login?redirect=/sopal-v2. Your project content stays in this browser; it is also still in your account, untouched. Signing back in restores access to the cloud copies.</p>
-
-        <h2>Closing your account</h2>
-        <p>Open <a href="/account.html" target="_blank" rel="noopener">/account.html</a> on the marketing site and choose Close account. This cancels any active subscription and removes account data after the closing balance is settled. Your cloud-stored projects are deleted as part of this process.</p>
+        <p>Sidebar foot → Sign out clears the token from this browser and returns you to the sign-in screen. Your project content stays in this browser and in your account, untouched. Signing back in restores access to the cloud copies.</p>
       `,
     },
 
@@ -10848,7 +11668,7 @@ Total\t${formatCurrencyFull(total)}`;
     const totalSteps = 6;
     return `
       <div class="onb-backdrop" data-onb-backdrop>
-        <div class="onb-card" role="dialog" aria-modal="true" aria-label="Sopal v2 onboarding">
+        <div class="onb-card" role="dialog" aria-modal="true" aria-label="Sopal onboarding">
           <div class="onb-top">
             <div class="onb-progress" aria-hidden="true">
               ${Array.from({ length: totalSteps }, (_, i) => `<span class="onb-dot ${i === step ? "active" : ""} ${i < step ? "done" : ""}"></span>`).join("")}
@@ -10869,7 +11689,7 @@ Total\t${formatCurrencyFull(total)}`;
         <div class="onb-step welcome">
           <div class="onb-eyebrow">Welcome</div>
           <h2>You're in.</h2>
-          <p>Sopal v2 helps you draft adjudication applications, payment claims, EOTs, variations and more under the BIF Act. Project by project, with your contracts and evidence in one place.</p>
+          <p>Sopal helps you draft adjudication applications, payment claims, EOTs, variations and more under the security of payment Acts in QLD, NSW, VIC and SA. Project by project, with your contracts and evidence in one place.</p>
           <p class="onb-muted">Six quick steps. Under a minute. Skip at any time.</p>
           <div class="onb-actions">
             <span class="onb-spacer"></span>
@@ -10963,7 +11783,7 @@ Total\t${formatCurrencyFull(total)}`;
         { icon: ICON.folder, label: "Projects", body: "Each project is one contract. Drafting agents reuse your contract, library and chat history within that project." },
         { icon: ICON.sparkles, label: "Drafting agents", body: "Payment Claims, EOTs, Variations, Adjudication Application/Response. Open a project, pick an agent, draft." },
         { icon: ICON.search, label: "Workspace tools", body: "Decision Search, Adjudicator Statistics, Due Date Calculator, Interest Calculator. No project required." },
-        { icon: ICON.book, label: "Help & docs", body: "Sopal v2 has an in-app Help index. The marketing site at sopal.com.au has the BIF Act guide and FAQs." },
+        { icon: ICON.book, label: "Help & docs", body: "Sopal has an in-app Help index. The marketing site at sopal.com.au has the BIF Act guide and FAQs." },
       ];
       return `
         <div class="onb-step">
@@ -11217,6 +12037,14 @@ Total\t${formatCurrencyFull(total)}`;
   }
 
   function render() {
+    // Login wall: the workspace only renders for a confirmed account. While
+    // the initial /auth/me round-trip is in flight we show a quiet checking
+    // card instead of flashing the login form at a signed-in user.
+    if (sopalAuth.state !== "authed") {
+      root.innerHTML = sopalAuth.state === "unknown" ? AuthCheckingPage() : AuthWallPage();
+      bindAuthWall();
+      return;
+    }
     root.innerHTML = Shell();
     bindShellEvents();
     // Keep the currently-active sidebar item visible. With Drafting Agents
@@ -11248,7 +12076,7 @@ Total\t${formatCurrencyFull(total)}`;
 
     // Workspace tools
     workspaceNav().forEach((t) => items.push({ section: "Tool", label: t.label, hint: "Workspace tool", run: () => navigate(t.href) }));
-    items.push({ section: "Tool", label: "Home", hint: "Sopal v2 home", run: () => navigate("/sopal-v2") });
+    items.push({ section: "Tool", label: "Home", hint: "Sopal home", run: () => navigate("/sopal-v2") });
     items.push({ section: "Tool", label: "Your projects", hint: "All projects", run: () => navigate("/sopal-v2/projects") });
 
     // Projects
@@ -11587,6 +12415,10 @@ Total\t${formatCurrencyFull(total)}`;
   /* ---------- What's new modal ---------- */
 
   const WHATS_NEW = [
+    { date: "June 2026", title: "Four jurisdictions: QLD, NSW, VIC and SA (NEW)", body: "The Payment Claim Reviewer, Payment Schedule Reviewer, Due Date Calculator and Interest Calculator now work in Queensland, New South Wales, Victoria and South Australia — pick the jurisdiction from the dropdown on each tool. Per-state deadlines, business-day definitions (including each Act's December shutdown rules), statutory provisions, public-holiday tables to 2028, and statutory interest rates (QBCC s 67P, NSW CPA s 101 prescribed rate, Victorian penalty interest, SA judgment-debt rate). Victoria runs the post-15-April-2026 Fairer Payments on Jobsites regime: reference dates abolished, excluded amounts repealed." },
+    { date: "June 2026", title: "Contract-first project setup with AI autofill", body: "New projects now start from the contract: upload the executed contract documents and Sopal reads them, fills the project form (parties, ABNs, contract form, sum, dates, site, superintendent, payment terms, retention, DLP, jurisdiction), and attaches the documents to the project. A new due-date scenario — Progress Payment — answers 'when is payment actually due' in every state." },
+    { date: "June 2026", title: "First-draft generation from your contract", body: "Each drafting agent can now generate a complete first draft grounded in the project's contract and library — itemised claim tables, real clause numbers, the correct statutory endorsement for the project's jurisdiction — instead of starting from a skeleton template." },
+    { date: "June 2026", title: "Sopal accounts and login wall", body: "Sopal now has its own accounts, separate from sopal.com.au purchases. Sign in (or create an account in seconds) to use the app; projects sync to your account automatically. Dark mode got a full contrast pass while we were at it." },
     { date: "May 2026", title: "Help and Support, Settings, and cloud sync", body: "Nine long-form help articles routed under /sopal-v2/help and indexed in the Cmd+K palette. A new Settings page (Account, Cloud sync, Data and storage, Appearance) at /sopal-v2/settings. Sign in with your Sopal account and your projects auto-sync to the cloud (debounced PUTs to /api/sopal-v2/projects), with manual push and pull controls in Settings." },
     { date: "May 2026", title: "AA workflow polish: RFI table, Matter details, ABN and contract date on cover", body: "Stage 3/4 RFI panel rebuilt as a table with Edit on answered rows and Cmd+Enter to submit. Stage 2 dispute table now colour-codes status, prefixes Claimed/Scheduled with $, and exposes a Matter details editor for Claimant, Respondent, Contract reference and Reference date. Cover page editor adds ABN, Contract executed date and Project / site address fields, grouped under Application context, Claimant and Respondent." },
     { date: "May 2026", title: "Project Quick start, contextual greeting, inline parse errors", body: "New empty projects show a four-step Quick start panel that disappears when content arrives. The home page greets signed-in users by first name. Stage 1 Intake replaces alert() validation and parse failures with an inline error pane so the upload context is preserved." },
@@ -11610,7 +12442,7 @@ Total\t${formatCurrencyFull(total)}`;
         <div class="modal-backdrop" data-modal-backdrop>
           <div class="modal whatsnew-modal" role="dialog" aria-modal="true">
             <div class="modal-head">
-              <h2>What's new in Sopal v2</h2>
+              <h2>What's new in Sopal</h2>
               <button class="icon-button" type="button" data-modal-close aria-label="Close">${ICON.close}</button>
             </div>
             <div class="modal-body whatsnew-body">
@@ -11634,17 +12466,14 @@ Total\t${formatCurrencyFull(total)}`;
     render();
   }
 
-  /* ---------- Auth (purchase user via shared /purchase-login JWT) ---------- */
+  /* ---------- Auth (Sopal v2 accounts — separate from the marketing-site purchase login) ---------- */
 
-  // The marketing site stores its JWT in localStorage under "purchase_token"
-  // and authenticates against /purchase-me with a Bearer header. We reuse that
-  // same token here so the user only has to sign in once across both sites.
-  // Hard-gating (redirect to /login when no token) is opt-in via the flag
-  // below; until it is flipped on the SPA still loads for guests, but the
-  // sidebar surfaces a Sign in prompt and keeps the user's identity visible
-  // when they are signed in.
-  const AUTH_HARD_GATE = false;
-  const AUTH_TOKEN_KEY = "purchase_token";
+  // Sopal v2 has its own account type stored in its own table server-side
+  // (sopal_v2_users) with its own JWT audience. A purchase_token from the
+  // marketing site is NOT valid here. The whole app is behind a login wall:
+  // until /api/sopal-v2/auth/me confirms a user, render() shows AuthWallPage
+  // instead of the workspace shell.
+  const AUTH_TOKEN_KEY = "sopal_v2_token";
   const sopalAuth = {
     user: null,
     state: "unknown", // "unknown" | "guest" | "authed"
@@ -11655,6 +12484,11 @@ Total\t${formatCurrencyFull(total)}`;
       const t = this.token();
       return t ? { "Authorization": "Bearer " + t } : {};
     },
+    setSession(token, user) {
+      try { localStorage.setItem(AUTH_TOKEN_KEY, token); } catch (_) {}
+      this.user = user || null;
+      this.state = "authed";
+    },
     async refresh() {
       const t = this.token();
       if (!t) {
@@ -11663,7 +12497,7 @@ Total\t${formatCurrencyFull(total)}`;
         return;
       }
       try {
-        const r = await fetch("/purchase-me", { headers: { "Authorization": "Bearer " + t } });
+        const r = await fetch("/api/sopal-v2/auth/me", { headers: { "Authorization": "Bearer " + t } });
         if (r.ok) {
           this.user = await r.json();
           this.state = "authed";
@@ -11674,28 +12508,109 @@ Total\t${formatCurrencyFull(total)}`;
         } else {
           // Server error: treat as transient, keep token, mark unknown so we
           // do not punt the user out of a working session.
-          this.state = "unknown";
+          this.state = "authed" === this.state ? "authed" : "unknown";
         }
       } catch (_) {
         this.state = "unknown";
-      }
-    },
-    requireOrRedirect() {
-      if (!AUTH_HARD_GATE) return;
-      if (this.state !== "authed") {
-        const here = window.location.pathname + window.location.search + window.location.hash;
-        window.location.replace("/login?redirect=" + encodeURIComponent(here));
       }
     },
     signOut() {
       try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (_) {}
       this.user = null;
       this.state = "guest";
-      window.location.replace("/login?redirect=" + encodeURIComponent("/sopal-v2"));
+      render();
     },
   };
   // Expose so other modules and the inspector can read auth state.
   window.SopalAuth = sopalAuth;
+
+  /* ---------- Login wall ---------- */
+
+  let authWallMode = "login";
+
+  function AuthWallPage() {
+    const isRegister = authWallMode === "register";
+    return `
+      <div class="auth-wall">
+        <div class="auth-wall-card">
+          <div class="auth-wall-brand">Sopal</div>
+          <h1>${isRegister ? "Create your Sopal account" : "Sign in to Sopal"}</h1>
+          <p class="muted auth-wall-sub">${isRegister
+            ? "Sopal app accounts are separate from sopal.com.au purchases. It takes a few seconds."
+            : "Your projects, drafts and reviews are tied to your Sopal account."}</p>
+          <form data-auth-form data-auth-mode="${isRegister ? "register" : "login"}">
+            ${isRegister ? `
+              <div class="row-2">
+                <label>First name<input class="text-input" name="firstName" autocomplete="given-name"></label>
+                <label>Last name<input class="text-input" name="lastName" autocomplete="family-name"></label>
+              </div>
+              <label>Company <span class="muted">(optional)</span><input class="text-input" name="company" autocomplete="organization"></label>
+            ` : ""}
+            <label>Email<input class="text-input" type="email" name="email" required autocomplete="email"></label>
+            <label>Password<input class="text-input" type="password" name="password" required autocomplete="${isRegister ? "new-password" : "current-password"}" ${isRegister ? 'minlength="8"' : ""}></label>
+            <div class="error-banner" data-auth-error hidden></div>
+            <button class="dark-button" type="submit" data-auth-submit>${isRegister ? "Create account" : "Sign in"}</button>
+          </form>
+          <p class="auth-wall-switch muted">
+            ${isRegister
+              ? `Already have an account? <button class="link-button" type="button" data-auth-switch="login">Sign in</button>`
+              : `New here? <button class="link-button" type="button" data-auth-switch="register">Create an account</button>`}
+          </p>
+        </div>
+      </div>`;
+  }
+
+  function AuthCheckingPage() {
+    return `
+      <div class="auth-wall">
+        <div class="auth-wall-card auth-wall-checking">
+          <div class="auth-wall-brand">Sopal</div>
+          <div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Checking sign-in…</span></div>
+        </div>
+      </div>`;
+  }
+
+  function bindAuthWall() {
+    document.querySelectorAll("[data-auth-switch]").forEach((b) => b.addEventListener("click", () => {
+      authWallMode = b.dataset.authSwitch;
+      render();
+    }));
+    const form = document.querySelector("[data-auth-form]");
+    if (!form) return;
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const isRegister = form.dataset.authMode === "register";
+      const data = Object.fromEntries(new FormData(form).entries());
+      const errEl = form.querySelector("[data-auth-error]");
+      const submit = form.querySelector("[data-auth-submit]");
+      errEl.hidden = true;
+      submit.disabled = true;
+      submit.textContent = isRegister ? "Creating account…" : "Signing in…";
+      try {
+        const r = await fetch(`/api/sopal-v2/auth/${isRegister ? "register" : "login"}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: (data.email || "").trim(),
+            password: data.password || "",
+            firstName: (data.firstName || "").trim(),
+            lastName: (data.lastName || "").trim(),
+            company: (data.company || "").trim(),
+          }),
+        });
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(describeApiError(body, isRegister ? "Could not create the account" : "Could not sign in"));
+        sopalAuth.setSession(body.token, body.user);
+        render();
+        cloudSync.pullMissing();
+      } catch (error) {
+        errEl.textContent = error.message || "Something went wrong.";
+        errEl.hidden = false;
+        submit.disabled = false;
+        submit.textContent = isRegister ? "Create account" : "Sign in";
+      }
+    });
+  }
 
   /* ---------- Boot ---------- */
 
@@ -11763,7 +12678,9 @@ Total\t${formatCurrencyFull(total)}`;
   // browser on a signed-in account auto-rehydrates that user's projects.
   (async () => {
     await sopalAuth.refresh();
-    sopalAuth.requireOrRedirect();
+    // A transient server error on boot shouldn't lock a user out behind the
+    // checking screen forever — fall back to the wall so they can retry.
+    if (sopalAuth.state === "unknown") sopalAuth.state = "guest";
     render();
     if (sopalAuth.state === "authed") {
       cloudSync.pullMissing();
