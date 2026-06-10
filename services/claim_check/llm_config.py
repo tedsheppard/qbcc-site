@@ -252,6 +252,146 @@ def complete(
     raise RuntimeError(f"All models in chain failed. Last error: {last_err}")
 
 
+def complete_stream(
+    *,
+    messages: list[dict[str, str]],
+    reasoning_effort: str = "medium",
+    tier: str = "default",  # "default" | "max"
+    max_output_tokens: int = 3500,
+    temperature: float | None = None,
+) -> Iterable[dict[str, Any]]:
+    """Streaming variant of complete().
+
+    Yields {"type": "delta", "text": str} for each content delta, then a
+    final {"type": "final", "content": full_text, "model": str,
+    "input_tokens": int, "output_tokens": int, "cost_usd": float,
+    "low_confidence": bool}.
+
+    Model-not-found / unsupported-param failures BEFORE the first delta walk
+    the same fallback chain as complete(). A failure mid-stream is raised —
+    the caller turns it into an error event for the client.
+    """
+    if reasoning_effort not in VALID_REASONING:
+        reasoning_effort = "medium"
+
+    _check_cost_cap()
+
+    from openai import OpenAI  # deferred
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY is not configured on the server.")
+    client = OpenAI(api_key=api_key)
+
+    chain = MODEL_CHAIN_MAX if tier == "max" else MODEL_CHAIN_DEFAULT
+    with _cache_lock:
+        preferred = _working_model_cache.get(tier)
+    if preferred and preferred in chain:
+        chain = [preferred] + [m for m in chain if m != preferred]
+
+    last_err: Exception | None = None
+    for model in chain:
+        kwargs: dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "max_completion_tokens": max_output_tokens,
+            "stream": True,
+            "stream_options": {"include_usage": True},
+        }
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        include_reasoning = model not in _reasoning_unsupported
+        if include_reasoning:
+            kwargs["reasoning_effort"] = reasoning_effort
+
+        try:
+            stream = client.chat.completions.create(**kwargs)
+        except Exception as e:
+            msg = str(e)
+            if "model" in msg.lower() and ("not found" in msg.lower() or "does not exist" in msg.lower() or "404" in msg):
+                log.info("model %s not available (stream), trying next", model)
+                last_err = e
+                continue
+            if include_reasoning and ("reasoning_effort" in msg or "unknown_parameter" in msg.lower() or "unrecognized request argument" in msg.lower()):
+                with _cache_lock:
+                    _reasoning_unsupported.add(model)
+                try:
+                    kwargs.pop("reasoning_effort", None)
+                    if "max_completion_tokens" in kwargs:
+                        kwargs["max_tokens"] = kwargs.pop("max_completion_tokens")
+                    stream = client.chat.completions.create(**kwargs)
+                except Exception as e2:
+                    last_err = e2
+                    continue
+            elif "stream_options" in msg or ("stream" in msg.lower() and "unsupported" in msg.lower()):
+                # Account/model rejects usage-in-stream: retry without it.
+                try:
+                    kwargs.pop("stream_options", None)
+                    stream = client.chat.completions.create(**kwargs)
+                except Exception as e3:
+                    last_err = e3
+                    continue
+            else:
+                last_err = e
+                continue
+
+        # Stream opened — relay deltas. From here on, errors propagate.
+        parts: list[str] = []
+        in_tokens = 0
+        out_tokens = 0
+        for chunk in stream:
+            usage = getattr(chunk, "usage", None)
+            if usage:
+                in_tokens = getattr(usage, "prompt_tokens", 0) or in_tokens
+                out_tokens = getattr(usage, "completion_tokens", 0) or out_tokens
+            choices = getattr(chunk, "choices", None) or []
+            if not choices:
+                continue
+            delta = getattr(choices[0], "delta", None)
+            text = getattr(delta, "content", None) if delta else None
+            if text:
+                parts.append(text)
+                yield {"type": "delta", "text": text}
+
+        content = "".join(parts).strip()
+        if not in_tokens:
+            # Usage chunk absent (older models / stream_options stripped):
+            # crude estimate so the cost cap still moves.
+            in_tokens = sum(len(m.get("content") or "") for m in messages) // 4
+        if not out_tokens:
+            out_tokens = max(1, len(content) // 4)
+        cost = _estimate_cost_usd(model, in_tokens, out_tokens)
+        _bump_cost(cost)
+        low_conf = _looks_low_confidence(content)
+
+        with _cache_lock:
+            _working_model_cache[tier] = model
+
+        _log_usage({
+            "ts": int(time.time()),
+            "tier": tier,
+            "model": model,
+            "reasoning_effort": reasoning_effort if include_reasoning else None,
+            "input_tokens": in_tokens,
+            "output_tokens": out_tokens,
+            "cost_usd": round(cost, 6),
+            "low_confidence": low_conf,
+            "stream": True,
+        })
+
+        yield {
+            "type": "final",
+            "content": content,
+            "model": model,
+            "input_tokens": in_tokens,
+            "output_tokens": out_tokens,
+            "cost_usd": cost,
+            "low_confidence": low_conf,
+        }
+        return
+
+    raise RuntimeError(f"All models in chain failed (stream). Last error: {last_err}")
+
+
 _LOW_CONF_MARKERS: tuple[str, ...] = (
     "i'm not certain",
     "i am not certain",

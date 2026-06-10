@@ -975,6 +975,7 @@
     return path.replace(/^\/sopal-v2\/?/, "") || "home";
   }
   function navigate(href) {
+    if (typeof abortActiveReviewStream === "function") abortActiveReviewStream();
     window.history.pushState({}, "", href);
     render();
   }
@@ -8886,6 +8887,7 @@ Total\t${formatCurrencyFull(total)}`;
             counts,
             recommendations: Array.isArray(json.recommendations) ? json.recommendations : [],
             missing: Array.isArray(json.missing) ? json.missing : [],
+            annotations: Array.isArray(json.annotations) ? json.annotations : [],
           };
         }
       }
@@ -9941,139 +9943,533 @@ Total\t${formatCurrencyFull(total)}`;
     return data;
   }
 
-  /* ---------- Standalone reviewers (Tools → Payment Claim/Schedule Reviewer) ---------- */
+  /* ---------- Reviewer wizard (Tools → Payment Claim/Schedule Reviewer) ---------- */
+  //
+  // Full-page wizard: mode → jurisdiction → upload → split workspace with a
+  // live working-notes stream (SSE from /api/sopal-v2/agent/review-stream),
+  // structured results, and annotations anchored into the document text.
+  // Persistent state lives in store.standaloneReviews[agentKey]; the raw
+  // File objects, blob URLs and full extracted text live only in
+  // reviewSession (in-memory) so localStorage never sees blobs.
 
-  // Project-less variant of the project review workflow. State is stored in
-  // store.standaloneReviews[agentKey] so each reviewer remembers the last
-  // uploaded document + analysis between page navigations.
+  const REVIEW_WIZARD_STEPS = ["mode", "jurisdiction", "upload", "workspace"];
+  const reviewSession = {}; // agentKey -> { files: Map, blobUrls: Map, fullText: Map, activeDoc, view }
+  let lastWizardStepIndex = 0;
+  let activeReviewStream = null; // AbortController while an analysis stream runs
+
+  function abortActiveReviewStream() {
+    if (activeReviewStream) {
+      try { activeReviewStream.abort(); } catch (_) {}
+      activeReviewStream = null;
+    }
+  }
+
+  function getReviewSession(agentKey) {
+    if (!reviewSession[agentKey]) {
+      reviewSession[agentKey] = { files: new Map(), blobUrls: new Map(), fullText: new Map(), activeDoc: null, view: "text" };
+    }
+    return reviewSession[agentKey];
+  }
+
+  // saveStore that survives QuotaExceededError by progressively shrinking the
+  // stored copies of reviewer document text (the full text stays in the
+  // in-memory session and is what gets sent to the API).
+  function saveStoreSafe() {
+    const caps = [80000, 40000, 20000, 0];
+    for (const cap of caps) {
+      try {
+        Object.values(store.standaloneReviews || {}).forEach((r) => {
+          (r.docs || []).forEach((d) => {
+            if ((d.text || "").length > cap) {
+              d.text = (d.text || "").slice(0, cap);
+              d.storedTruncated = true;
+            }
+          });
+        });
+        saveStore();
+        return;
+      } catch (_) { /* shrink and retry */ }
+    }
+  }
+
   function getStandaloneReview(agentKey) {
     if (!store.standaloneReviews || typeof store.standaloneReviews !== "object") {
       store.standaloneReviews = {};
     }
-    if (!store.standaloneReviews[agentKey]) {
-      store.standaloneReviews[agentKey] = { document: null, analysis: null, status: "idle", submode: null };
+    let r = store.standaloneReviews[agentKey];
+    if (!r) {
+      r = store.standaloneReviews[agentKey] = {
+        wizard: { submode: null, jurisdiction: null },
+        docs: [], analysis: null, status: "idle", thinkingTail: "", chat: { messages: [] },
+      };
     }
-    return store.standaloneReviews[agentKey];
+    // Migrate the pre-wizard single-document shape.
+    if (!r.wizard) r.wizard = { submode: r.submode || null, jurisdiction: r.jurisdiction || null };
+    if (!Array.isArray(r.docs)) {
+      r.docs = r.document ? [{
+        id: `d_${Math.random().toString(36).slice(2, 8)}`,
+        name: r.document.name || "Document",
+        text: (r.document.text || "").slice(0, 80000),
+        chars: (r.document.text || "").length,
+        source: r.document.source || "extracted",
+        addedAt: r.document.addedAt || new Date().toISOString(),
+      }] : [];
+      delete r.document;
+    }
+    if (!r.chat || !Array.isArray(r.chat.messages)) r.chat = { messages: [] };
+    return r;
   }
 
-  function StandaloneReviewerPage(agentKey) {
+  function reviewerMeta(agentKey) {
+    return agentKey === "payment-claims"
+      ? { href: "/sopal-v2/tools/payment-claim-reviewer", title: "Payment claim reviewer", noun: "payment claim" }
+      : { href: "/sopal-v2/tools/payment-schedule-reviewer", title: "Payment schedule reviewer", noun: "payment schedule" };
+  }
+
+  // ----- SSE client (copied from the live claim-check implementation) -----
+  async function consumeSSE(stream, onEvent) {
+    const reader = stream.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let idx;
+      while ((idx = buffer.indexOf("\n\n")) !== -1) {
+        const chunk = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+        const parsed = parseSseChunk(chunk);
+        if (parsed) {
+          try { onEvent(parsed.event, parsed.data); } catch (e) { console.error("SSE handler error", e); }
+        }
+      }
+    }
+  }
+
+  function parseSseChunk(chunk) {
+    const lines = chunk.split("\n");
+    let event = "message";
+    const dataParts = [];
+    for (const ln of lines) {
+      if (ln.startsWith("event:")) event = ln.slice(6).trim();
+      else if (ln.startsWith("data:")) dataParts.push(ln.slice(5).trim());
+    }
+    if (!dataParts.length) return null;
+    try {
+      return { event, data: JSON.parse(dataParts.join("\n")) };
+    } catch (_) {
+      return { event, data: {} };
+    }
+  }
+
+  // ----- Annotation anchoring -----
+  // Returns { start, end } into docText, or null. Four passes: exact,
+  // whitespace-normalised, case-insensitive normalised, first-10-words.
+  function anchorAnnotation(docText, quote) {
+    try {
+      if (!docText || !quote || quote.length < 4) return null;
+      let idx = docText.indexOf(quote);
+      if (idx !== -1) return { start: idx, end: idx + quote.length };
+
+      // Whitespace-normalised matching with an index map back to the original.
+      const map = [];
+      let norm = "";
+      let lastWasSpace = true;
+      for (let i = 0; i < docText.length; i++) {
+        const ch = docText[i];
+        if (/\s/.test(ch)) {
+          if (!lastWasSpace) { norm += " "; map.push(i); lastWasSpace = true; }
+        } else {
+          norm += ch; map.push(i); lastWasSpace = false;
+        }
+      }
+      const normQuote = quote.replace(/\s+/g, " ").trim();
+      idx = norm.indexOf(normQuote);
+      if (idx === -1) idx = norm.toLowerCase().indexOf(normQuote.toLowerCase());
+      if (idx !== -1) {
+        const start = map[idx];
+        const end = map[Math.min(idx + normQuote.length - 1, map.length - 1)] + 1;
+        return { start, end };
+      }
+      // Prefix match on the first ~10 words.
+      const words = normQuote.split(" ").slice(0, 10).join(" ");
+      if (words.length >= 12) {
+        idx = norm.toLowerCase().indexOf(words.toLowerCase());
+        if (idx !== -1) {
+          const start = map[idx];
+          const end = map[Math.min(idx + words.length - 1, map.length - 1)] + 1;
+          return { start, end };
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Render a document's text with annotation <mark>s. anns is the array of
+  // { ann, idx } items belonging to this doc; returns { html, anchored:Set }.
+  function renderAnnotatedText(docText, anns) {
+    const ranges = [];
+    const anchored = new Set();
+    (anns || []).forEach(({ ann, idx }) => {
+      const hit = anchorAnnotation(docText, ann.quote || "");
+      if (hit) { ranges.push({ ...hit, idx, severity: (ann.severity || "info").toLowerCase() }); anchored.add(idx); }
+    });
+    ranges.sort((a, b) => a.start - b.start || b.end - a.end);
+    // Drop overlapping ranges (keep the first).
+    const kept = [];
+    let cursor = 0;
+    ranges.forEach((r) => { if (r.start >= cursor) { kept.push(r); cursor = r.end; } });
+
+    const seg = (text) => escapeHtml(text).replace(/\n/g, "<br>");
+    let html = "";
+    let pos = 0;
+    kept.forEach((r) => {
+      html += seg(docText.slice(pos, r.start));
+      html += `<mark class="rw-ann rw-ann-${attr(r.severity)}" data-rw-ann="${r.idx}" tabindex="0" title="Annotation ${r.idx + 1}">`
+        + seg(docText.slice(r.start, r.end))
+        + `<sup class="rw-ann-chip">${r.idx + 1}</sup></mark>`;
+      pos = r.end;
+    });
+    html += seg(docText.slice(pos));
+    return { html, anchored };
+  }
+
+  // ----- Page ----- //
+  function ReviewerWizardPage(agentKey) {
     if (!REVIEW_CHECKS[agentKey]) return notFoundPage();
     const review = getStandaloneReview(agentKey);
-    const submodes = AGENT_REVIEW_MODES[agentKey] || [];
+    const meta = reviewerMeta(agentKey);
     const params = new URLSearchParams(window.location.search);
-    const submodeId = params.get("submode") || review.submode || null;
-    const activeSubmode = submodes.find((m) => m.id === submodeId) || null;
-    setTimeout(() => bindStandaloneReviewer(agentKey, activeSubmode), 0);
 
-    const baseHref = agentKey === "payment-claims"
-      ? "/sopal-v2/tools/payment-claim-reviewer"
-      : "/sopal-v2/tools/payment-schedule-reviewer";
-    const title = agentKey === "payment-claims" ? "Payment claim reviewer" : "Payment schedule reviewer";
-
-    const jur = review.jurisdiction && JUR_META[review.jurisdiction] ? review.jurisdiction : getToolJur();
-    const head = `
-      <div class="chat-page-head">
-        <div>
-          <h1 class="page-title">${escapeHtml(title)}</h1>
-          <p class="page-sub">Upload or paste the document. Sopal runs a structured review under the ${escapeHtml(JUR_META[jur].act)}. No project required.</p>
-        </div>
-        <label class="loc-row">Jurisdiction ${jurSelectHtml(jur, "data-review-jur")}</label>
-      </div>`;
-
-    const modeStrip = `
-      <div class="mode-strip">
-        <span class="mode-strip-label muted">What are you reviewing?</span>
-        ${submodes.map((m) => `
-          <a class="mode-strip-tab ${activeSubmode && m.id === activeSubmode.id ? "active" : ""}" href="${baseHref}?submode=${m.id}" data-nav>
-            <span class="mode-strip-icon">${m.id === "received" ? ICON.upload : ICON.file}</span>
-            <span class="mode-strip-body">
-              <strong>${escapeHtml(m.tileLabel || `I'm ${m.label.toLowerCase()}`)}</strong>
-              <span class="muted">${escapeHtml(m.sub)}</span>
-            </span>
-          </a>
-        `).join("")}
-      </div>`;
-
-    if (!activeSubmode) {
-      return `
-        <div class="page-shell review-shell">
-          ${head}
-          ${modeStrip}
-          <p class="muted review-pick-hint">Pick a perspective above. The checks are tailored to it.</p>
-        </div>`;
+    // ?submode= deep links (home tiles, palette) complete step 1.
+    const submodeParam = params.get("submode");
+    if (submodeParam && (AGENT_REVIEW_MODES[agentKey] || []).some((m) => m.id === submodeParam)) {
+      review.wizard.submode = submodeParam;
     }
 
-    return `
-      <div class="page-shell review-shell">
-        ${head}
-        ${modeStrip}
-        <div class="review-grid">
-          <div class="review-left">
-            <section class="card review-doc-card">
-              <div class="card-head">
-                <h3>Document</h3>
-                <button class="link-button small" type="button" data-toggle-paste>${review.document ? "Replace" : "Paste text instead"}</button>
-              </div>
-              <div class="card-body" data-doc-body>
-                ${renderDocumentInput(review.document)}
-              </div>
-            </section>
-            <section class="card review-chat-card">
-              <div class="card-head">
-                <h3>Ask about this document</h3>
-                <span class="muted">${review.analysis ? "Use the analysis on the right as you ask" : "Run an analysis first to ground the chat"}</span>
-              </div>
-              <div class="review-chat" data-chat-pane>
-                ${standaloneReviewChatPane(agentKey, activeSubmode, !!review.document)}
-              </div>
-            </section>
+    // Resolve the requested step against prerequisites.
+    let step = params.get("step") || "";
+    if (!REVIEW_WIZARD_STEPS.includes(step)) {
+      // No explicit step: resume where the user left off.
+      step = review.status === "done" && review.docs.length ? "workspace"
+        : review.docs.length ? "workspace"
+        : review.wizard.jurisdiction ? "upload"
+        : review.wizard.submode ? "jurisdiction"
+        : "mode";
+    }
+    if (step !== "mode" && !review.wizard.submode) step = "mode";
+    if ((step === "upload" || step === "workspace") && !review.wizard.jurisdiction) step = "jurisdiction";
+    if (step === "workspace" && !review.docs.length) step = "upload";
+
+    const stepIndex = REVIEW_WIZARD_STEPS.indexOf(step);
+    const direction = stepIndex >= lastWizardStepIndex ? "right" : "left";
+    lastWizardStepIndex = stepIndex;
+
+    setTimeout(() => bindReviewerWizard(agentKey, step), 0);
+
+    const dots = `
+      <div class="rw-dots" role="tablist" aria-label="Steps">
+        ${[["mode", "Reviewing"], ["jurisdiction", "Jurisdiction"], ["upload", "Documents"], ["workspace", "Analysis"]].map(([id, label], i) => {
+          const unlocked = (id === "mode")
+            || (id === "jurisdiction" && review.wizard.submode)
+            || (id === "upload" && review.wizard.submode && review.wizard.jurisdiction)
+            || (id === "workspace" && review.docs.length);
+          const state = id === step ? "current" : (unlocked ? "done" : "locked");
+          return `<button class="rw-dot rw-dot-${state}" type="button" data-rw-goto="${id}" ${unlocked ? "" : "disabled"} title="${attr(label)}">
+            <span class="rw-dot-num">${i + 1}</span><span class="rw-dot-label">${escapeHtml(label)}</span>
+          </button>${i < 3 ? '<span class="rw-dot-line"></span>' : ""}`;
+        }).join("")}
+      </div>`;
+
+    const header = `
+      <div class="rw-header">
+        <div class="rw-header-left">
+          ${stepIndex > 0 ? `<button class="icon-button rw-back" type="button" data-rw-back aria-label="Back">${ICON.chevLeft}</button>` : ""}
+          <div>
+            <h1 class="rw-title">${escapeHtml(meta.title)}</h1>
+            ${review.wizard.jurisdiction && JUR_META[review.wizard.jurisdiction] ? `<p class="rw-sub muted">${escapeHtml(JUR_META[review.wizard.jurisdiction].act)}</p>` : `<p class="rw-sub muted">A guided review — no project required.</p>`}
           </div>
-          <aside class="review-right">
-            <section class="card review-analysis-card">
-              <div class="card-head">
-                <h3>Analysis</h3>
-                ${review.analysis ? `<button class="ghost-button compact" type="button" data-rerun-analysis>Re-run</button>` : ""}
-              </div>
-              <div class="card-body" data-analysis-body>
-                ${renderAnalysis(agentKey, review.document, review.analysis, review.status, review, jur)}
-              </div>
-            </section>
-          </aside>
         </div>
+        <div class="rw-header-right">
+          ${dots}
+          ${(review.docs.length || review.analysis) ? `<button class="link-button small" type="button" data-rw-restart>Start over</button>` : ""}
+        </div>
+      </div>`;
+
+    let body = "";
+    if (step === "mode") body = wizardStepMode(agentKey, review);
+    else if (step === "jurisdiction") body = wizardStepJurisdiction(review);
+    else if (step === "upload") body = wizardStepUpload(agentKey, review);
+    else body = wizardWorkspace(agentKey, review);
+
+    return `
+      <div class="rw-shell" data-rw-shell data-rw-step="${step}">
+        ${header}
+        <div class="rw-step-pane rw-enter-from-${direction}" data-rw-pane>
+          ${body}
+        </div>
+      </div>`;
+  }
+
+  function wizardStepMode(agentKey, review) {
+    const meta = reviewerMeta(agentKey);
+    const submodes = AGENT_REVIEW_MODES[agentKey] || [];
+    return `
+      <div class="rw-step rw-step-choice">
+        <h2 class="rw-question">What are you reviewing?</h2>
+        <p class="rw-question-sub muted">The checks are tailored to your side of the ${escapeHtml(meta.noun)}.</p>
+        <div class="rw-choice-row">
+          ${submodes.map((m) => `
+            <button class="rw-choice-card ${review.wizard.submode === m.id ? "selected" : ""}" type="button" data-rw-mode="${attr(m.id)}">
+              <span class="rw-choice-icon">${m.id === "received" ? ICON.upload : ICON.file}</span>
+              <strong>${escapeHtml(m.tileLabel || `I'm ${m.label.toLowerCase()}`)}</strong>
+              <span class="muted">${escapeHtml(m.sub)}</span>
+              ${review.wizard.submode === m.id ? '<span class="rw-choice-tick">✓</span>' : ""}
+            </button>`).join("")}
+        </div>
+      </div>`;
+  }
+
+  function wizardStepJurisdiction(review) {
+    return `
+      <div class="rw-step rw-step-choice">
+        <h2 class="rw-question">Which jurisdiction?</h2>
+        <p class="rw-question-sub muted">Each state's Act has different content rules, deadlines and case law.</p>
+        <div class="rw-choice-grid">
+          ${Object.entries(JUR_META).map(([id, m]) => `
+            <button class="rw-choice-card ${review.wizard.jurisdiction === id ? "selected" : ""}" type="button" data-rw-jur="${attr(id)}">
+              <strong>${escapeHtml(m.label)}</strong>
+              <span class="muted">${escapeHtml(m.act)}</span>
+              ${review.wizard.jurisdiction === id ? '<span class="rw-choice-tick">✓</span>' : ""}
+            </button>`).join("")}
+        </div>
+      </div>`;
+  }
+
+  function wizardUploadRows(agentKey, review) {
+    return review.docs.map((d, i) => `
+      <li data-rw-doc-row="${attr(d.id)}">
+        <span class="rw-doc-kind">${i === 0 ? "Primary" : "Supporting"}</span>
+        <span class="doc-list-name">${escapeHtml(d.name)}</span>
+        <span class="doc-list-meta">${(d.chars || 0).toLocaleString()} characters${d.extractFailed ? " · failed" : ""}</span>
+        <button class="icon-button" type="button" data-rw-doc-remove="${attr(d.id)}" aria-label="Remove">${ICON.close}</button>
+      </li>`).join("");
+  }
+
+  function wizardStepUpload(agentKey, review) {
+    const meta = reviewerMeta(agentKey);
+    const other = agentKey === "payment-schedules"
+      ? "Add the payment claim it responds to as a supporting document — the review is sharper with both."
+      : "You can add attachments or related documents too — the first document is treated as the claim itself.";
+    return `
+      <div class="rw-step rw-step-upload">
+        <h2 class="rw-question">Add the ${escapeHtml(meta.noun)}${review.docs.length ? "" : ""}</h2>
+        <p class="rw-question-sub muted">${escapeHtml(other)} Up to 4 documents. Held in memory — nothing is stored on the server.</p>
+        <div class="upload-zone rw-upload-zone" data-rw-upload-zone>
+          <input type="file" data-rw-doc-file accept=".pdf,.docx,.txt" multiple hidden>
+          <span class="upload-primary" data-rw-upload-status>Drop PDF / DOCX / TXT here, or click to browse</span>
+          <span class="muted">Up to 25MB each</span>
+        </div>
+        ${review.docs.length ? `<ul class="rw-upload-list" data-rw-upload-list>${wizardUploadRows(agentKey, review)}</ul>` : ""}
+        <details class="rw-paste" data-rw-paste>
+          <summary>Paste text instead</summary>
+          <textarea class="text-area" rows="6" data-rw-paste-input placeholder="Paste the document text here…"></textarea>
+          <div class="rw-paste-foot">
+            <span class="muted" data-rw-paste-meta>0 characters</span>
+            <button class="ghost-button compact" type="button" data-rw-paste-add disabled>Add as document</button>
+          </div>
+        </details>
+        <div class="rw-upload-error" data-rw-upload-error hidden></div>
+        <div class="rw-step-actions">
+          <button class="dark-button rw-run-btn" type="button" data-rw-run ${review.docs.length ? "" : "disabled"}>
+            ${ICON.sparkles}<span>Run the analysis</span>
+          </button>
+        </div>
+      </div>`;
+  }
+
+  // ----- Workspace ----- //
+  function wizardWorkspace(agentKey, review) {
+    const sess = getReviewSession(agentKey);
+    if (!sess.activeDoc || !review.docs.some((d) => d.id === sess.activeDoc)) {
+      sess.activeDoc = review.docs[0] ? review.docs[0].id : null;
+    }
+    return `
+      <div class="rw-workspace">
+        <section class="rw-doc-col card">
+          ${workspaceDocPaneHtml(agentKey, review)}
+        </section>
+        <aside class="rw-analysis-col">
+          <section class="card rw-analysis-card">
+            <div class="card-head">
+              <h3>Analysis</h3>
+              <div class="rw-analysis-actions">
+                ${review.analysis ? `<button class="ghost-button compact" type="button" data-rw-print>Report</button>` : ""}
+                ${review.status === "done" || review.status === "error" ? `<button class="ghost-button compact" type="button" data-rw-rerun>Re-run</button>` : ""}
+              </div>
+            </div>
+            <div class="card-body rw-analysis-body" data-rw-analysis-body>
+              ${workspaceAnalysisHtml(agentKey, review)}
+            </div>
+          </section>
+          <section class="card rw-chat-card">
+            <div class="card-head">
+              <h3>Ask about this document</h3>
+              <span class="muted">${review.analysis ? "Grounded in the documents and the analysis" : "You can ask before the analysis finishes"}</span>
+            </div>
+            <div class="rw-chat" data-rw-chat-pane>
+              ${workspaceChatHtml(agentKey, review)}
+            </div>
+          </section>
+        </aside>
+      </div>`;
+  }
+
+  function workspaceDocPaneHtml(agentKey, review) {
+    const sess = getReviewSession(agentKey);
+    const active = review.docs.find((d) => d.id === sess.activeDoc) || review.docs[0];
+    if (!active) return EmptyState("No documents.", "Go back to the upload step to add the document.");
+    const anns = annotationsByDoc(review, active);
+    const fullText = sess.fullText.get(active.id) || active.text || "";
+    const hasBlob = sess.blobUrls.has(active.id);
+    const view = (sess.view === "original" && hasBlob) ? "original" : "text";
+    const rendered = view === "text" ? renderAnnotatedText(fullText, anns) : null;
+
+    return `
+      <div class="rw-doc-tabs" role="tablist">
+        ${review.docs.map((d, i) => `
+          <button class="rw-doc-tab ${d.id === active.id ? "active" : ""}" type="button" data-rw-doc-tab="${attr(d.id)}" title="${attr(d.name)}">
+            <span class="rw-doc-tab-name">${escapeHtml(d.name)}</span>
+            <span class="rw-doc-tab-meta muted">${i === 0 ? "primary" : "supporting"}</span>
+          </button>`).join("")}
       </div>
+      <div class="rw-doc-toolbar">
+        <div class="tab-strip rw-view-toggle">
+          <button class="tab-strip-btn ${view === "text" ? "active" : ""}" type="button" data-rw-view="text">Text view</button>
+          <button class="tab-strip-btn ${view === "original" ? "active" : ""}" type="button" data-rw-view="original" ${hasBlob ? "" : `disabled title="Re-upload to view the original file"`}>Original</button>
+        </div>
+        ${view === "original" ? `<span class="muted rw-view-hint">Annotations appear in the text view.</span>`
+          : active.storedTruncated && !sess.fullText.has(active.id) ? `<span class="muted rw-view-hint">Stored preview truncated — re-upload for full text.</span>` : ""}
+      </div>
+      <div class="rw-doc-view" data-rw-doc-view>
+        ${view === "original"
+          ? `<iframe class="rw-doc-frame" src="${attr(sess.blobUrls.get(active.id))}" title="${attr(active.name)}"></iframe>`
+          : `<div class="rw-paper" data-rw-paper>${rendered.html || '<p class="muted">No text extracted.</p>'}</div>`}
+      </div>`;
+  }
+
+  function annotationsByDoc(review, doc) {
+    const anns = (review.analysis && Array.isArray(review.analysis.annotations)) ? review.analysis.annotations : [];
+    const out = [];
+    anns.forEach((ann, idx) => {
+      const target = (ann.doc || "").trim().toLowerCase();
+      const isMatch = !target || target === (doc.name || "").trim().toLowerCase()
+        || (review.docs.length === 1);
+      if (isMatch) out.push({ ann, idx });
+    });
+    return out;
+  }
+
+  function workspaceAnalysisHtml(agentKey, review) {
+    if (review.status === "running" || review.status === "queued") {
+      return `
+        <div class="rw-thinking-wrap">
+          <div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span data-rw-status>Starting the review…</span></div>
+          <div class="rw-thinking" data-rw-thinking aria-live="polite"></div>
+        </div>`;
+    }
+    if (review.status === "error") {
+      return `
+        <div class="error-banner">${escapeHtml(review.errorMessage || "The analysis failed.")}</div>
+        <div class="rw-step-actions"><button class="dark-button compact" type="button" data-rw-rerun-inline>${ICON.sparkles}<span>Try again</span></button></div>`;
+    }
+    if (review.analysis) {
+      return renderWizardResults(agentKey, review);
+    }
+    return `
+      <div class="rw-step-actions">
+        <button class="dark-button" type="button" data-rw-rerun-inline>${ICON.sparkles}<span>Run the analysis</span></button>
+        <span class="muted">Will run ${reviewChecksFor(agentKey, review.wizard.jurisdiction).length} checks and annotate the document.</span>
+      </div>`;
+  }
+
+  function renderWizardResults(agentKey, review) {
+    const a = review.analysis;
+    const counts = a.counts || { pass: 0, fail: 0, warn: 0, info: 0 };
+    const anns = Array.isArray(a.annotations) ? a.annotations : [];
+    const thinking = (review.thinkingTail || "").trim();
+    return `
+      ${thinking ? `
+        <details class="rw-notes-details">
+          <summary>Show working notes</summary>
+          <div class="rw-thinking rw-thinking-done">${escapeHtml(thinking)}</div>
+        </details>` : ""}
+      <div class="rw-pills">
+        ${["pass", "warn", "fail", "info"].map((k) => counts[k] ? `<span class="sc-pill sc-${k}">${counts[k]} ${k}</span>` : "").join("")}
+        ${a._fallback ? `<span class="sc-pill sc-info">unstructured</span>` : ""}
+      </div>
+      <div class="rw-summary">${renderMarkdown(a.summary || "")}</div>
+      <ol class="check-list rw-check-list">
+        ${(a.checks || []).map((c) => `
+          <li class="check-item ${attr((c.status || "info").toLowerCase())}">
+            <span class="check-status">${checkIcon((c.status || "info").toLowerCase())}</span>
+            <div class="check-body">
+              <strong>${escapeHtml(c.title || "")}</strong>
+              <p>${escapeHtml(c.detail || "")}</p>
+            </div>
+          </li>`).join("")}
+      </ol>
+      ${anns.length ? `
+        <div class="rw-ann-section">
+          <h4>Document annotations</h4>
+          <ol class="rw-ann-list">
+            ${anns.map((ann, idx) => `
+              <li class="rw-ann-card rw-ann-card-${attr((ann.severity || "info").toLowerCase())}" data-rw-ann-card="${idx}" tabindex="0">
+                <span class="rw-ann-card-num">${idx + 1}</span>
+                <div class="rw-ann-card-body">
+                  <blockquote>${escapeHtml((ann.quote || "").slice(0, 220))}</blockquote>
+                  <p>${escapeHtml(ann.comment || "")}</p>
+                  <span class="rw-ann-card-meta muted">${escapeHtml([ann.doc, ann.check].filter(Boolean).join(" · "))}<span data-rw-ann-badge="${idx}"></span></span>
+                </div>
+              </li>`).join("")}
+          </ol>
+        </div>` : ""}
+      ${(a.recommendations || []).length ? `
+        <div class="rw-recs">
+          <h4>Recommended next steps</h4>
+          <ol>${a.recommendations.map((r) => `<li>${escapeHtml(r)}</li>`).join("")}</ol>
+        </div>` : ""}
+      ${(a.missing || []).length ? `
+        <div class="rw-missing">
+          <h4>Missing information</h4>
+          <ul>${a.missing.map((m) => `<li>${escapeHtml(m)}</li>`).join("")}</ul>
+        </div>` : ""}
     `;
   }
 
-  function standaloneReviewChatPane(agentKey, submode, hasDocument) {
-    const review = getStandaloneReview(agentKey);
-    if (!review.chat || !Array.isArray(review.chat.messages)) review.chat = { messages: [] };
+  function workspaceChatHtml(agentKey, review) {
     const suggestions = (REVIEW_CHAT_SUGGESTIONS[agentKey] || []).slice(0, 4);
-    let emptyHtml;
-    if (!hasDocument) {
-      emptyHtml = EmptyState("No questions yet.", "Add a document above to give the chat something to anchor to.");
-    } else if (!review.analysis) {
-      emptyHtml = EmptyState("No questions yet.", "Run the analysis on the right, or ask anything about the document below.");
-    } else {
-      emptyHtml = `
+    const messagesHtml = (review.chat.messages || []).length
+      ? review.chat.messages.map((m) => renderMessage(m.role, m.content, m.role === "assistant")).join("")
+      : `
         <div class="empty-state review-empty-with-suggestions">
           <strong>Ask a follow-up</strong>
-          <p>The analysis is grounded in this document. Chase a specific item or draft an amendment.</p>
+          <p>Questions are answered against the uploaded document${review.docs.length > 1 ? "s" : ""}${review.analysis ? " and the analysis" : ""}.</p>
           <div class="chip-row">
             ${suggestions.map((s) => `<button class="chip" type="button" data-chip="${attr(s)}">${escapeHtml(s)}</button>`).join("")}
           </div>
         </div>`;
-    }
-    const messagesHtml = (review.chat.messages || []).length
-      ? review.chat.messages.map((m) => renderMessage(m.role, m.content, m.role === "assistant")).join("")
-      : emptyHtml;
     return `
       <div class="message-area review-message-area" data-message-area>
         <div class="message-stack" data-messages>${messagesHtml}</div>
       </div>
-      <form class="composer-active review-composer" data-standalone-chat-form>
+      <form class="composer-active review-composer" data-rw-chat-form>
         <div class="composer-row">
-          <textarea class="text-area auto-grow" name="message" rows="1" placeholder="${hasDocument ? "Ask about this document…" : "Add a document above to start the chat."}" ${hasDocument ? "" : "disabled"}></textarea>
-          <button class="send-button" type="submit" aria-label="Send" ${hasDocument ? "" : "disabled"}>${ICON.send}</button>
+          <textarea class="text-area auto-grow" name="message" rows="1" placeholder="Ask about this document…"></textarea>
+          <button class="send-button" type="submit" aria-label="Send">${ICON.send}</button>
         </div>
         <div class="composer-meta">
           <span class="muted kbd-hint">⌘ / Ctrl + Enter to send</span>
@@ -10081,136 +10477,374 @@ Total\t${formatCurrencyFull(total)}`;
       </form>`;
   }
 
-  function bindStandaloneReviewer(agentKey, submode) {
+  // ----- Bindings ----- //
+  function bindReviewerWizard(agentKey, step) {
     const review = getStandaloneReview(agentKey);
-    if (!review.jurisdiction || !JUR_META[review.jurisdiction]) review.jurisdiction = getToolJur();
-    const jurSel = document.querySelector("[data-review-jur]");
-    if (jurSel) jurSel.addEventListener("change", () => {
-      review.jurisdiction = jurSel.value;
-      setToolJur(jurSel.value);
-      // Check lists differ per Act, so a completed analysis no longer
-      // matches the new jurisdiction — reset to idle.
-      review.analysis = null;
-      review.status = "idle";
-      saveStore();
+    const meta = reviewerMeta(agentKey);
+    const sess = getReviewSession(agentKey);
+
+    // Enter animation: mount with offset class, then release on the next frame.
+    const pane = document.querySelector("[data-rw-pane]");
+    if (pane) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        pane.classList.remove("rw-enter-from-right", "rw-enter-from-left");
+      }));
+    }
+
+    const go = (target) => navigate(`${meta.href}?step=${target}`);
+
+    document.querySelectorAll("[data-rw-goto]").forEach((b) => b.addEventListener("click", () => go(b.dataset.rwGoto)));
+    document.querySelector("[data-rw-back]")?.addEventListener("click", () => {
+      const i = REVIEW_WIZARD_STEPS.indexOf(step);
+      go(REVIEW_WIZARD_STEPS[Math.max(0, i - 1)]);
+    });
+    document.querySelector("[data-rw-restart]")?.addEventListener("click", () => {
+      if (!confirm("Start over? This clears the documents, analysis and chat for this reviewer.")) return;
+      abortActiveReviewStream();
+      sess.blobUrls.forEach((url) => { try { URL.revokeObjectURL(url); } catch (_) {} });
+      reviewSession[agentKey] = undefined;
+      store.standaloneReviews[agentKey] = undefined;
+      delete store.standaloneReviews[agentKey];
+      saveStoreSafe();
+      go("mode");
+    });
+
+    // Step 1: mode cards.
+    document.querySelectorAll("[data-rw-mode]").forEach((b) => b.addEventListener("click", () => {
+      review.wizard.submode = b.dataset.rwMode;
+      saveStoreSafe();
+      go("jurisdiction");
+    }));
+
+    // Step 2: jurisdiction cards.
+    document.querySelectorAll("[data-rw-jur]").forEach((b) => b.addEventListener("click", () => {
+      const changed = review.wizard.jurisdiction && review.wizard.jurisdiction !== b.dataset.rwJur;
+      review.wizard.jurisdiction = b.dataset.rwJur;
+      setToolJur(b.dataset.rwJur);
+      if (changed) { review.analysis = null; review.status = "idle"; review.thinkingTail = ""; }
+      saveStoreSafe();
+      go("upload");
+    }));
+
+    // Step 3: upload.
+    if (step === "upload") bindWizardUpload(agentKey, review, go);
+
+    // Step 4: workspace.
+    if (step === "workspace") bindWizardWorkspace(agentKey, review);
+  }
+
+  function addReviewDoc(agentKey, review, { name, text, source, file }) {
+    const sess = getReviewSession(agentKey);
+    const id = `d_${Math.random().toString(36).slice(2, 8)}`;
+    sess.fullText.set(id, text);
+    if (file && /\.pdf$/i.test(file.name || "")) {
+      try { sess.blobUrls.set(id, URL.createObjectURL(file)); sess.files.set(id, file); } catch (_) {}
+    }
+    review.docs.push({
+      id,
+      name: (name || "Document").slice(0, 200),
+      text: text.slice(0, 80000),
+      storedTruncated: text.length > 80000,
+      chars: text.length,
+      source: source || "extracted",
+      addedAt: new Date().toISOString(),
+    });
+    // New evidence invalidates a finished analysis.
+    review.analysis = null;
+    review.status = "idle";
+    review.thinkingTail = "";
+  }
+
+  function bindWizardUpload(agentKey, review, go) {
+    const zone = document.querySelector("[data-rw-upload-zone]");
+    const fileInput = document.querySelector("[data-rw-doc-file]");
+    const errEl = document.querySelector("[data-rw-upload-error]");
+
+    async function ingest(files) {
+      if (errEl) errEl.hidden = true;
+      const room = 4 - review.docs.length;
+      const list = Array.from(files).slice(0, room);
+      if (Array.from(files).length > room && errEl) {
+        errEl.textContent = "Up to 4 documents — extra files were skipped.";
+        errEl.hidden = false;
+      }
+      for (const file of list) {
+        const status = document.querySelector("[data-rw-upload-status]");
+        if (status) status.textContent = `Extracting ${file.name}…`;
+        const fd = new FormData();
+        fd.append("file", file);
+        try {
+          const r = await fetch("/api/sopal-v2/extract", { method: "POST", body: fd, credentials: "include" });
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(describeApiError(data, `Could not read ${file.name}`));
+          addReviewDoc(agentKey, review, { name: data.filename, text: data.text, source: "extracted", file });
+        } catch (err) {
+          if (errEl) { errEl.textContent = err.message || `Could not read ${file.name}`; errEl.hidden = false; }
+        }
+      }
+      saveStoreSafe();
+      render();
+    }
+
+    zone?.addEventListener("click", () => fileInput?.click());
+    fileInput?.addEventListener("change", () => { if (fileInput.files?.length) ingest(fileInput.files); });
+    zone?.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag-over"); });
+    zone?.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+    zone?.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zone.classList.remove("drag-over");
+      if (e.dataTransfer?.files?.length) ingest(e.dataTransfer.files);
+    });
+
+    document.querySelectorAll("[data-rw-doc-remove]").forEach((b) => b.addEventListener("click", () => {
+      const id = b.dataset.rwDocRemove;
+      const sess = getReviewSession(agentKey);
+      const url = sess.blobUrls.get(id);
+      if (url) { try { URL.revokeObjectURL(url); } catch (_) {} }
+      sess.blobUrls.delete(id); sess.files.delete(id); sess.fullText.delete(id);
+      review.docs = review.docs.filter((d) => d.id !== id);
+      review.analysis = null; review.status = "idle"; review.thinkingTail = "";
+      saveStoreSafe();
+      render();
+    }));
+
+    const pasteInput = document.querySelector("[data-rw-paste-input]");
+    const pasteMeta = document.querySelector("[data-rw-paste-meta]");
+    const pasteAdd = document.querySelector("[data-rw-paste-add]");
+    pasteInput?.addEventListener("input", () => {
+      const len = (pasteInput.value || "").length;
+      if (pasteMeta) pasteMeta.textContent = `${len.toLocaleString()} characters`;
+      if (pasteAdd) pasteAdd.disabled = len < 30 || review.docs.length >= 4;
+    });
+    pasteAdd?.addEventListener("click", () => {
+      const text = (pasteInput.value || "").trim();
+      if (text.length < 30) return;
+      addReviewDoc(agentKey, review, { name: `Pasted text ${review.docs.filter((d) => d.source === "pasted").length + 1}`, text, source: "pasted" });
+      saveStoreSafe();
       render();
     });
-    if (!submode) return;
-    review.submode = submode.id;
-    saveStore();
-    const docBody = document.querySelector("[data-doc-body]");
-    const analysisBody = document.querySelector("[data-analysis-body]");
 
-    function refreshDoc() {
-      docBody.innerHTML = renderDocumentInput(review.document);
-      bindDocInput();
-    }
-    function refreshAnalysis() {
-      analysisBody.innerHTML = renderAnalysis(agentKey, review.document, review.analysis, review.status, review, review.jurisdiction);
-      bindAnalysisActions();
-    }
-    function refreshChat() {
-      const pane = document.querySelector("[data-chat-pane]");
-      if (!pane) return;
-      pane.innerHTML = standaloneReviewChatPane(agentKey, submode, !!review.document);
-      bindReviewChatForm(pane);
-    }
+    document.querySelector("[data-rw-run]")?.addEventListener("click", () => {
+      if (!review.docs.length) return;
+      review.status = "queued";
+      review.analysis = null;
+      review.thinkingTail = "";
+      saveStoreSafe();
+      go("workspace");
+    });
+  }
 
-    function bindDocInput() {
-      const fileInput = docBody.querySelector("[data-doc-file]");
-      const dropzone = docBody.querySelector("[data-upload-zone]");
-      const pasteSection = docBody.querySelector("[data-paste-fallback]");
-      const pasteText = docBody.querySelector("[data-paste-input]");
-      const pasteSubmit = docBody.querySelector("[data-paste-submit]");
-      const pasteMeta = docBody.querySelector("[data-paste-meta]");
+  function bindWizardWorkspace(agentKey, review) {
+    const sess = getReviewSession(agentKey);
 
-      fileInput?.addEventListener("change", async () => {
-        const file = fileInput.files && fileInput.files[0];
-        if (file) await ingestFile(file);
-      });
-      dropzone?.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("drag-over"); });
-      dropzone?.addEventListener("dragleave", () => dropzone.classList.remove("drag-over"));
-      dropzone?.addEventListener("drop", async (e) => {
-        e.preventDefault();
-        dropzone.classList.remove("drag-over");
-        const file = e.dataTransfer?.files?.[0];
-        if (file) await ingestFile(file);
-      });
+    // Doc tabs + view toggle.
+    document.querySelectorAll("[data-rw-doc-tab]").forEach((b) => b.addEventListener("click", () => {
+      sess.activeDoc = b.dataset.rwDocTab;
+      render();
+    }));
+    document.querySelectorAll("[data-rw-view]").forEach((b) => b.addEventListener("click", () => {
+      if (b.disabled) return;
+      sess.view = b.dataset.rwView;
+      render();
+    }));
 
-      pasteText?.addEventListener("input", () => {
-        const len = (pasteText.value || "").length;
-        pasteMeta.textContent = `${len.toLocaleString()} characters`;
-        pasteSubmit.disabled = len < 30;
-      });
-      pasteSubmit?.addEventListener("click", () => {
-        const text = (pasteText.value || "").trim();
-        if (!text) return;
-        review.document = { name: "Pasted text", text, source: "pasted", addedAt: new Date().toISOString() };
-        review.analysis = null;
-        review.status = "idle";
-        review.chat = { messages: [] };
-        saveStore();
-        refreshDoc(); refreshAnalysis(); refreshChat();
-      });
+    // Annotation cross-linking.
+    bindAnnotationLinks();
 
-      const replace = document.querySelector("[data-toggle-paste]");
-      if (replace) {
-        replace.onclick = () => {
-          if (review.document) {
-            review.document = null;
-            review.analysis = null;
-            review.status = "idle";
-            review.chat = { messages: [] };
-            saveStore();
-            refreshDoc(); refreshAnalysis(); refreshChat();
-          } else {
-            pasteSection?.setAttribute("open", "");
-            pasteText?.focus();
-          }
-        };
+    document.querySelector("[data-rw-print]")?.addEventListener("click", () => {
+      const primary = review.docs[0];
+      if (review.analysis && primary) {
+        openPrintAnalysis(agentKey, { name: review.docs.map((d) => d.name).join(", "), text: sess.fullText.get(primary.id) || primary.text || "" }, review.analysis, null);
       }
-    }
+    });
+    const rerun = () => {
+      abortActiveReviewStream();
+      review.status = "queued";
+      review.analysis = null;
+      review.thinkingTail = "";
+      saveStoreSafe();
+      render();
+    };
+    document.querySelector("[data-rw-rerun]")?.addEventListener("click", rerun);
+    document.querySelector("[data-rw-rerun-inline]")?.addEventListener("click", rerun);
 
-    async function ingestFile(file) {
-      const dropzone = docBody.querySelector("[data-upload-zone]");
-      if (dropzone) dropzone.querySelector(".upload-primary").textContent = `Extracting ${file.name}…`;
-      const fd = new FormData(); fd.append("file", file);
-      try {
-        const response = await fetch("/api/sopal-v2/extract", { method: "POST", body: fd, credentials: "include" });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(describeApiError(data, "Extraction failed"));
-        review.document = { name: data.filename, text: data.text, source: "extracted", addedAt: new Date().toISOString() };
-        review.analysis = null;
-        review.status = "idle";
-        review.chat = { messages: [] };
-        saveStore();
-        refreshDoc(); refreshAnalysis(); refreshChat();
-      } catch (error) {
-        const dz = docBody.querySelector("[data-upload-zone] .upload-primary");
-        if (dz) dz.textContent = error.message || "Extraction failed";
-      }
-    }
+    bindWizardChat(agentKey, review);
 
-    function bindAnalysisActions() {
-      const runBtn = analysisBody.querySelector("[data-run-analysis]");
-      if (runBtn) runBtn.addEventListener("click", runAnalysis);
-      const rerun = document.querySelector("[data-rerun-analysis]");
-      if (rerun) rerun.addEventListener("click", () => {
-        review.analysis = null; review.status = "idle"; saveStore(); refreshAnalysis();
-      });
-      const printBtn = analysisBody.querySelector("[data-print-analysis]");
-      if (printBtn) printBtn.addEventListener("click", () => {
-        if (review.analysis) openPrintAnalysis(agentKey, review.document, review.analysis, null);
-      });
-    }
-
-    async function runAnalysis() {
-      if (!review.document) return;
+    if (review.status === "queued") {
       review.status = "running";
-      saveStore();
-      refreshAnalysis();
-      const checks = reviewChecksFor(agentKey, review.jurisdiction);
+      runWizardAnalysis(agentKey, review);
+    }
+  }
+
+  function bindAnnotationLinks() {
+    const flash = (el) => {
+      if (!el) return;
+      el.classList.remove("rw-flash");
+      void el.offsetWidth; // restart the animation
+      el.classList.add("rw-flash");
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+    };
+    document.querySelectorAll("[data-rw-ann]").forEach((m) => m.addEventListener("click", () => {
+      flash(document.querySelector(`[data-rw-ann-card="${m.dataset.rwAnn}"]`));
+    }));
+    document.querySelectorAll("[data-rw-ann-card]").forEach((c) => c.addEventListener("click", () => {
+      const mark = document.querySelector(`[data-rw-ann="${c.dataset.rwAnnCard}"]`);
+      if (mark) flash(mark);
+      else {
+        const badge = document.querySelector(`[data-rw-ann-badge="${c.dataset.rwAnnCard}"]`);
+        if (badge && !badge.textContent) badge.textContent = " · passage not found in extracted text";
+      }
+    }));
+    // Mark unanchored annotations up front.
+    document.querySelectorAll("[data-rw-ann-card]").forEach((c) => {
+      const idx = c.dataset.rwAnnCard;
+      const mark = document.querySelector(`[data-rw-ann="${idx}"]`);
+      const badge = document.querySelector(`[data-rw-ann-badge="${idx}"]`);
+      if (!mark && badge) badge.textContent = " · approximate (passage not matched on this tab)";
+    });
+  }
+
+  async function runWizardAnalysis(agentKey, review) {
+    const sess = getReviewSession(agentKey);
+    const refs = {
+      thinking: document.querySelector("[data-rw-thinking]"),
+      status: document.querySelector("[data-rw-status]"),
+      body: document.querySelector("[data-rw-analysis-body]"),
+    };
+    const checks = reviewChecksFor(agentKey, review.wizard.jurisdiction);
+    const documents = review.docs.map((d) => ({ name: d.name, text: sess.fullText.get(d.id) || d.text || "" }));
+
+    abortActiveReviewStream();
+    const ctrl = new AbortController();
+    activeReviewStream = ctrl;
+
+    let thinkingBuf = "";
+    let rafPending = false;
+    const flushThinking = () => {
+      rafPending = false;
+      if (!refs.thinking || !refs.thinking.isConnected) return;
+      refs.thinking.textContent = thinkingBuf;
+      const wrap = refs.thinking;
+      wrap.scrollTop = wrap.scrollHeight;
+    };
+
+    let gotResult = false;
+    try {
+      const response = await fetch("/api/sopal-v2/agent/review-stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        signal: ctrl.signal,
+        body: JSON.stringify({
+          agentType: agentKey,
+          reviewSubmode: review.wizard.submode,
+          jurisdiction: review.wizard.jurisdiction,
+          checks,
+          documents,
+        }),
+      });
+      if (!response.ok || !response.body) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(describeApiError(data, "The analysis could not start"));
+      }
+      await consumeSSE(response.body, (event, data) => {
+        if (event === "status" && refs.status && refs.status.isConnected) {
+          refs.status.textContent = data.message || "Working…";
+        } else if (event === "thinking") {
+          thinkingBuf += data.text || "";
+          if (!rafPending) { rafPending = true; requestAnimationFrame(flushThinking); }
+        } else if (event === "result") {
+          gotResult = true;
+          const analysis = data.analysis && Array.isArray(data.analysis.checks)
+            ? normaliseWizardAnalysis(data.analysis)
+            : parseStructuredAnalysis(data.raw || "", checks);
+          review.analysis = analysis;
+          review.status = "done";
+          review.thinkingTail = thinkingBuf.slice(-4000);
+          saveStoreSafe();
+        } else if (event === "error") {
+          gotResult = true;
+          review.status = "error";
+          review.errorMessage = data.message || "The analysis failed.";
+          review.thinkingTail = thinkingBuf.slice(-4000);
+          saveStoreSafe();
+        }
+      });
+      if (!gotResult) throw new Error("The stream ended before a result arrived.");
+    } catch (error) {
+      if (ctrl.signal.aborted) return; // user navigated away / re-ran
+      review.status = "error";
+      review.errorMessage = error.message || "The analysis failed.";
+      saveStoreSafe();
+    } finally {
+      if (activeReviewStream === ctrl) activeReviewStream = null;
+    }
+
+    // Repaint from saved state (works whether or not the original refs are
+    // still on screen).
+    if (document.querySelector("[data-rw-shell]")) render();
+  }
+
+  function normaliseWizardAnalysis(json) {
+    const counts = { pass: 0, fail: 0, warn: 0, info: 0 };
+    (json.checks || []).forEach((c) => {
+      const s = (c.status || "info").toLowerCase();
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    return {
+      summary: json.summary || "",
+      checks: json.checks || [],
+      counts,
+      recommendations: Array.isArray(json.recommendations) ? json.recommendations : [],
+      missing: Array.isArray(json.missing) ? json.missing : [],
+      annotations: Array.isArray(json.annotations) ? json.annotations.filter((a) => a && (a.quote || a.comment)) : [],
+    };
+  }
+
+  function bindWizardChat(agentKey, review) {
+    const pane = document.querySelector("[data-rw-chat-pane]");
+    if (!pane) return;
+    const form = pane.querySelector("[data-rw-chat-form]");
+    if (!form) return;
+    const textarea = form.elements.message;
+    const messages = pane.querySelector("[data-messages]");
+    const messageArea = pane.querySelector("[data-message-area]");
+    const sess = getReviewSession(agentKey);
+    autoGrow(textarea);
+    textarea.addEventListener("input", () => autoGrow(textarea));
+    textarea.addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+    pane.querySelectorAll("[data-chip]").forEach((b) => b.addEventListener("click", () => {
+      textarea.value = b.dataset.chip;
+      autoGrow(textarea);
+      textarea.focus();
+    }));
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const message = textarea.value.trim();
+      if (!message || !review.docs.length) return;
+      if (messages.querySelector(".empty-state")) messages.innerHTML = "";
+      messages.insertAdjacentHTML("beforeend", renderMessage("user", message));
+      const placeholderId = `msg-${Math.random().toString(36).slice(2)}`;
+      messages.insertAdjacentHTML("beforeend", `
+        <div class="message msg-assistant" id="${placeholderId}">
+          <div class="message-body"><div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Sopal is working…</span></div></div>
+        </div>`);
+      review.chat.messages.push({ role: "user", content: message, at: Date.now() });
+      textarea.value = "";
+      autoGrow(textarea);
+      scrollToBottom(messageArea);
+
       try {
+        const docBlock = review.docs.map((d, i) =>
+          `=== DOCUMENT ${i + 1}: ${d.name} ===\n${(sess.fullText.get(d.id) || d.text || "").slice(0, i === 0 ? 40000 : 15000)}`
+        ).join("\n\n").slice(0, 60000);
+        const analysisBlock = review.analysis && review.analysis.summary
+          ? `\n\nStructured analysis summary:\n${review.analysis.summary}` : "";
         const response = await fetch("/api/sopal-v2/agent", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -10218,100 +10852,27 @@ Total\t${formatCurrencyFull(total)}`;
           body: JSON.stringify({
             agentType: agentKey,
             mode: "review",
-            reviewSubmode: submode.id,
-            jurisdiction: review.jurisdiction,
-            checks,
-            structured: true,
-            message: `Review the document below.\n\nDocument:\n${review.document.text.slice(0, 60000)}`,
-            files: [{ name: review.document.name, characters: review.document.text.length }],
+            reviewSubmode: review.wizard.submode,
+            chatFollowup: true,
+            jurisdiction: review.wizard.jurisdiction,
+            message,
+            projectContext: `Documents under review (${AGENT_LABELS[agentKey]}):\n${docBlock}${analysisBlock}`,
+            files: review.docs.map((d) => ({ name: d.name, characters: d.chars })),
           }),
         });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(describeApiError(data, "Analysis failed"));
-        review.analysis = parseStructuredAnalysis(data.answer || "", checks);
-        review.status = "done";
-        saveStore();
-        refreshAnalysis();
-      } catch (error) {
-        review.status = "error";
-        review.analysis = { error: error.message || "Analysis failed" };
-        saveStore();
-        refreshAnalysis();
-      }
-    }
-
-    function bindReviewChatForm(pane) {
-      const form = pane.querySelector("[data-standalone-chat-form]");
-      if (!form) return;
-      const textarea = form.elements.message;
-      const messages = pane.querySelector("[data-messages]");
-      const messageArea = pane.querySelector("[data-message-area]");
-      autoGrow(textarea);
-      textarea.addEventListener("input", () => autoGrow(textarea));
-      textarea.addEventListener("keydown", (event) => {
-        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-          event.preventDefault();
-          form.requestSubmit();
-        }
-      });
-      pane.querySelectorAll("[data-chip]").forEach((b) => b.addEventListener("click", () => {
-        textarea.value = b.dataset.chip;
-        autoGrow(textarea);
-        textarea.focus();
-      }));
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const message = textarea.value.trim();
-        if (!message || !review.document) return;
-        if (!review.chat || !Array.isArray(review.chat.messages)) review.chat = { messages: [] };
-        if (messages.querySelector(".empty-state")) messages.innerHTML = "";
-        messages.insertAdjacentHTML("beforeend", renderMessage("user", message));
-        const placeholderId = `msg-${Math.random().toString(36).slice(2)}`;
-        messages.insertAdjacentHTML("beforeend", `
-          <div class="message msg-assistant" id="${placeholderId}">
-            <div class="message-body"><div class="thinking-row"><span class="thinking-dots"><i></i><i></i><i></i></span><span>Sopal is working…</span></div></div>
-          </div>`);
-        review.chat.messages.push({ role: "user", content: message, at: Date.now() });
-        textarea.value = "";
-        autoGrow(textarea);
+        if (!response.ok) throw new Error(describeApiError(data, "Reply failed"));
+        review.chat.messages.push({ role: "assistant", content: data.answer || "", at: Date.now() });
+        saveStoreSafe();
+        const placeholder = document.getElementById(placeholderId);
+        if (placeholder) placeholder.outerHTML = renderMessage("assistant", data.answer || "", true);
         scrollToBottom(messageArea);
-
-        try {
-          const docBlock = `Document under review (${AGENT_LABELS[agentKey]} — ${submode.label.toLowerCase()}):\n${review.document.text.slice(0, 60000)}`;
-          const response = await fetch("/api/sopal-v2/agent", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-              agentType: agentKey,
-              mode: "review",
-              reviewSubmode: submode.id,
-              chatFollowup: true,
-              jurisdiction: review.jurisdiction,
-              message,
-              projectContext: docBlock,
-              files: [{ name: review.document.name, characters: review.document.text.length }],
-            }),
-          });
-          const data = await response.json().catch(() => ({}));
-          if (!response.ok) throw new Error(describeApiError(data, "Reply failed"));
-          review.chat.messages.push({ role: "assistant", content: data.answer || "", at: Date.now() });
-          saveStore();
-          const placeholder = document.getElementById(placeholderId);
-          if (placeholder) placeholder.outerHTML = renderMessage("assistant", data.answer || "", true);
-          scrollToBottom(messageArea);
-        } catch (error) {
-          const placeholder = document.getElementById(placeholderId);
-          if (placeholder) placeholder.outerHTML = `<div class="message msg-assistant"><div class="message-body"><div class="error-banner">${escapeHtml(error.message || "Reply failed")}</div></div></div>`;
-          scrollToBottom(messageArea);
-        }
-      });
-    }
-
-    bindDocInput();
-    bindAnalysisActions();
-    const initialPane = document.querySelector("[data-chat-pane]");
-    if (initialPane) bindReviewChatForm(initialPane);
+      } catch (error) {
+        const placeholder = document.getElementById(placeholderId);
+        if (placeholder) placeholder.outerHTML = `<div class="message msg-assistant"><div class="message-body"><div class="error-banner">${escapeHtml(error.message || "Reply failed")}</div></div></div>`;
+        scrollToBottom(messageArea);
+      }
+    });
   }
 
   /* ---------- Settings page ---------- */
@@ -11562,8 +12123,8 @@ Total\t${formatCurrencyFull(total)}`;
     if (parts[0] === "tools") {
       if (parts[1] === "due-date-calculator") return { crumbs: [{ label: "Due date calculator" }], body: DueDatePage() };
       if (parts[1] === "interest-calculator") return { crumbs: [{ label: "Interest calculator" }], body: InterestPage() };
-      if (parts[1] === "payment-claim-reviewer") return { crumbs: [{ label: "Payment claim reviewer" }], body: StandaloneReviewerPage("payment-claims") };
-      if (parts[1] === "payment-schedule-reviewer") return { crumbs: [{ label: "Payment schedule reviewer" }], body: StandaloneReviewerPage("payment-schedules") };
+      if (parts[1] === "payment-claim-reviewer") return { crumbs: [{ label: "Payment claim reviewer" }], body: ReviewerWizardPage("payment-claims") };
+      if (parts[1] === "payment-schedule-reviewer") return { crumbs: [{ label: "Payment schedule reviewer" }], body: ReviewerWizardPage("payment-schedules") };
       return { crumbs: [{ label: "Tools" }], body: notFoundPage() };
     }
     if (parts[0] === "settings") {

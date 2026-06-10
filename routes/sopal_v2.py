@@ -736,6 +736,241 @@ async def sopal_v2_health() -> dict[str, Any]:
     return {"ok": True, "openaiConfigured": bool(os.getenv("OPENAI_API_KEY"))}
 
 
+# ---------- Reviewer wizard: streaming analysis ----------
+#
+# The standalone reviewers run their analysis through this SSE endpoint so
+# the UI can show the model's working notes live (mirrors the live site's
+# /api/claim-check/analyse-stream pattern). One streamed LLM call: the model
+# first narrates plain-prose working notes, then emits the structured JSON
+# inside a ```json fence. The server relays pre-fence text as `thinking`
+# events and parses the fenced JSON into a single `result` event.
+
+def _sse(event: str, data: dict[str, Any]) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+class SopalV2ReviewStreamRequest(BaseModel):
+    agentType: str = Field(default="", max_length=80)
+    reviewSubmode: str | None = Field(default=None, max_length=40)
+    jurisdiction: str | None = Field(default=None, max_length=8)
+    checks: list[str] = Field(default_factory=list)
+    documents: list[dict[str, Any]] = Field(default_factory=list)  # [{name, text}]
+
+
+REVIEW_STREAM_FRAME = """You are running a structured security-of-payment review of the document(s) supplied. Respond in EXACTLY two phases.
+
+PHASE 1 — WORKING NOTES (plain prose, streamed to the user live):
+Think aloud through the review in short plain-English lines. Read the document(s), note the key facts (parties, amounts, dates, endorsements, service details), then work through EACH check title in order, narrating what you find ("Checking the claimed amount — the claim states $184,300 excl GST at item 4, which…"). Be specific: quote short fragments, name clause numbers and dates. No markdown headings, no bullets, no JSON, no code fences in this phase. Keep it tight — a few sentences per check.
+
+PHASE 2 — STRUCTURED RESULT:
+When the working notes are complete, output a line containing exactly ```json then the JSON object below, then a closing ``` line. Return nothing after the closing fence.
+
+{
+  "summary": "2-4 sentence executive summary",
+  "checks": [
+    { "title": "<exact check title from the list provided>", "status": "pass" | "fail" | "warn" | "info", "detail": "concise plain-English explanation, 2-5 sentences, naming exact wording / clauses / dates from the document where possible" }
+  ],
+  "recommendations": ["short imperative actions the user should take next"],
+  "missing": ["specific facts / documents you need to make a firm call"],
+  "annotations": [
+    {
+      "doc": "<exact file name of the document the quote comes from>",
+      "quote": "a VERBATIM substring copied character-for-character from that document's text, 15-200 characters — no ellipses, no paraphrase, preserve original casing and punctuation",
+      "comment": "1-2 sentence margin note explaining the issue or strength at this passage",
+      "severity": "fail" | "warn" | "info" | "pass",
+      "check": "<exact title of the related check, or null>"
+    }
+  ]
+}
+
+Annotation rules: 4 to 12 annotations across the documents; anchor each to the most relevant passage; the quote MUST be copied verbatim from the supplied text (this is used to highlight the passage on screen) — if no passage is quotable for a point, omit the annotation rather than invent a quote.
+Status meanings: pass = clearly compliant; fail = clear non-compliance / fatal defect; warn = arguable / risk worth fixing; info = the document is silent and the user must supply more material.
+Cover EVERY check title in the order given. Do not invent extra checks. Australian English. No disclaimers inside the JSON."""
+
+
+@router.post("/agent/review-stream")
+async def sopal_v2_review_stream(payload: SopalV2ReviewStreamRequest):
+    import asyncio
+    import threading
+
+    from fastapi.responses import StreamingResponse
+
+    if not os.getenv("OPENAI_API_KEY"):
+        raise HTTPException(status_code=503, detail="AI is not configured. Add OPENAI_API_KEY to the server environment.")
+    agent_key = (payload.agentType or "").strip()
+    if agent_key not in AGENT_LABELS:
+        raise HTTPException(status_code=400, detail="Unknown agent type")
+    docs = [d for d in (payload.documents or []) if (str(d.get("text") or "")).strip()]
+    if not docs:
+        raise HTTPException(status_code=400, detail="At least one document with extracted text is required.")
+    if len(docs) > 4:
+        docs = docs[:4]
+    checks = [str(c)[:300] for c in (payload.checks or []) if str(c).strip()][:16]
+    if not checks:
+        raise HTTPException(status_code=400, detail="Check titles are required.")
+
+    jur = (payload.jurisdiction or "qld").strip().lower()
+    jur_block = REVIEWER_JURISDICTION_FRAMING.get(jur, REVIEWER_JURISDICTION_FRAMING["qld"])
+    agent_block = AGENT_INSTRUCTIONS.get((agent_key, "review"), "")
+    submode_line = f"\nReview perspective: {payload.reviewSubmode}" if payload.reviewSubmode else ""
+    check_block = "\n".join(f"- {c}" for c in checks)
+
+    # Document bundle: first doc is the primary and gets the larger budget.
+    blocks: list[str] = []
+    total_cap = 70_000
+    running = 0
+    for i, d in enumerate(docs):
+        name = str(d.get("name") or f"Document {i + 1}").strip()[:200]
+        per_cap = 45_000 if i == 0 else 20_000
+        text = str(d.get("text") or "").strip()[:per_cap]
+        if running + len(text) > total_cap:
+            text = text[: max(0, total_cap - running)]
+        if not text:
+            blocks.append(f"=== DOCUMENT {i + 1}: {name} === (omitted — size cap reached)")
+            continue
+        running += len(text)
+        blocks.append(f"=== DOCUMENT {i + 1}: {name} ===\n{text}")
+
+    system_prompt = (
+        BASE_SYSTEM_PROMPT
+        + "\n\n" + _current_date_context()
+        + "\n\n" + jur_block
+        + "\n\n" + agent_block
+        + "\n\n" + REVIEW_STREAM_FRAME
+        + submode_line
+        + "\n\nCheck titles to use verbatim:\n" + check_block
+    )
+    user_content = (
+        f"Workspace: {AGENT_LABELS[agent_key]} review ({payload.reviewSubmode or 'review'}).\n\n"
+        + "\n\n".join(blocks)
+    )
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_content},
+    ]
+
+    from services.claim_check.llm_config import CostCapExceededError, complete_stream
+
+    import re as _re
+    _FENCE_RE = _re.compile(r"```(?:json)?", _re.IGNORECASE)
+
+    def _extract_json(full_text: str) -> dict[str, Any] | None:
+        m = _FENCE_RE.search(full_text)
+        candidate = full_text[m.end():] if m else full_text
+        end_fence = candidate.find("```")
+        if end_fence != -1:
+            candidate = candidate[:end_fence]
+        start = candidate.find("{")
+        end = candidate.rfind("}")
+        if start == -1 or end <= start:
+            return None
+        for attempt in (candidate[start : end + 1], _re.sub(r",\s*([}\]])", r"\1", candidate[start : end + 1])):
+            try:
+                parsed = json.loads(attempt)
+                if isinstance(parsed, dict):
+                    return parsed
+            except Exception:
+                continue
+        return None
+
+    async def event_stream():
+        yield _sse("status", {"message": f"Reading {len(docs)} document{'s' if len(docs) > 1 else ''}…"})
+        yield _sse("meta", {
+            "docs": [{"name": str(d.get("name") or ""), "chars": len(str(d.get("text") or ""))} for d in docs],
+            "checks": len(checks),
+            "jurisdiction": jur,
+        })
+
+        loop = asyncio.get_running_loop()
+        queue: asyncio.Queue = asyncio.Queue()
+
+        def pump():
+            try:
+                for item in complete_stream(messages=messages, reasoning_effort="medium", tier="default", max_output_tokens=5000, temperature=0.2):
+                    loop.call_soon_threadsafe(queue.put_nowait, item)
+                loop.call_soon_threadsafe(queue.put_nowait, {"type": "eos"})
+            except CostCapExceededError as exc:
+                loop.call_soon_threadsafe(queue.put_nowait, {"type": "error", "message": str(exc)})
+            except Exception as exc:  # pragma: no cover - network/SDK failures
+                loop.call_soon_threadsafe(queue.put_nowait, {"type": "error", "message": f"AI request failed: {exc}"})
+
+        threading.Thread(target=pump, daemon=True).start()
+        yield _sse("status", {"message": "Sopal is reviewing — working notes will appear as it reads."})
+
+        buf = ""              # full model text accumulated so far
+        sent_upto = 0         # how much of buf has been relayed as thinking
+        fence_seen = False
+        final_info: dict[str, Any] | None = None
+        last_flush = loop.time()
+
+        def thinking_payload() -> str | None:
+            nonlocal sent_upto
+            # Hold back a small tail in case a fence straddles chunk
+            # boundaries (the longest fence token is 7 chars: ```json).
+            m = _FENCE_RE.search(buf)
+            if m:
+                # The fence start is a hard boundary — flush right up to it.
+                safe_end = m.start()
+            else:
+                safe_end = max(sent_upto, len(buf) - 7)
+            if safe_end <= sent_upto:
+                return None
+            out = buf[sent_upto:safe_end]
+            sent_upto = safe_end
+            return out
+
+        while True:
+            try:
+                item = await asyncio.wait_for(queue.get(), timeout=0.15)
+            except asyncio.TimeoutError:
+                item = None
+
+            if item is not None:
+                kind = item.get("type")
+                if kind == "delta":
+                    buf += item.get("text") or ""
+                    if not fence_seen and _FENCE_RE.search(buf):
+                        out = thinking_payload()
+                        if out:
+                            yield _sse("thinking", {"text": out})
+                        fence_seen = True
+                        yield _sse("status", {"message": "Compiling structured results…"})
+                elif kind == "final":
+                    final_info = item
+                elif kind == "error":
+                    yield _sse("error", {"message": item.get("message") or "AI request failed."})
+                    return
+                elif kind == "eos":
+                    break
+
+            now = loop.time()
+            if not fence_seen and (item is None or now - last_flush > 0.12):
+                out = thinking_payload()
+                if out:
+                    yield _sse("thinking", {"text": out})
+                    last_flush = now
+
+        full_text = (final_info or {}).get("content") or buf
+        analysis = _extract_json(full_text)
+        yield _sse("result", {
+            "analysis": analysis,
+            "raw": full_text,
+            "model": (final_info or {}).get("model"),
+            "lowConfidence": bool((final_info or {}).get("low_confidence")),
+        })
+        yield _sse("done", {})
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 @router.post("/agent")
 async def sopal_v2_agent(payload: SopalV2AgentRequest) -> dict[str, Any]:
     result = _complete(_build_messages(payload))
