@@ -27,17 +27,16 @@
   const DRAFTING_AGENT_KEYS = [
     "payment-claims",
     "payment-schedules",
-    "eots",
-    "variations",
-    "delay-costs",
-    "general-correspondence",
+    // Hidden for v1 (still routable for old saved drafts) — beyond the
+    // Research/Projects scope: eots, variations, delay-costs,
+    // general-correspondence.
   ];
 
   // Complex agents are multi-stage workflows with their own page logic —
   // not simple chat / drafting agents. v1 has just the Adjudication
   // Application drafter (see docs/complex-adjudication-application-plan.md).
   const COMPLEX_AGENT_KEYS = [
-    "adjudication-application",
+    // Hidden for v1 (still routable for old saved work): "adjudication-application".
   ];
   const COMPLEX_AGENT_LABELS = {
     "adjudication-application": "Adjudication Application",
@@ -1105,15 +1104,6 @@
         </div>
 
         <div class="sidebar-scroll">
-          <div class="nav-group-title">Tools</div>
-          ${toolsNav().map((item) => `
-            <a class="nav-item ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
-              <span class="nav-icon">${item.icon}</span>
-              <span class="nav-label">${escapeHtml(item.label)}</span>
-            </a>`).join("")}
-
-          <div class="nav-divider"></div>
-
           <div class="nav-group-title">Research</div>
           ${researchNav().map((item) => `
             <a class="nav-item ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
@@ -1124,9 +1114,14 @@
           <div class="nav-divider"></div>
 
           <div class="nav-group-title row">
-            <span>Projects <span class="beta-tag">Beta</span></span>
+            <span>Projects</span>
             <button class="icon-button" type="button" data-new-project title="New project">${ICON.plus}</button>
           </div>
+          ${toolsNav().map((item) => `
+            <a class="nav-item ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
+              <span class="nav-icon">${item.icon}</span>
+              <span class="nav-label">${escapeHtml(item.label)}</span>
+            </a>`).join("")}
 
           ${projects.length === 0 ? `
             <div class="sidebar-empty">
@@ -1159,14 +1154,14 @@
                   <span class="nav-icon">${item.icon}</span>
                   <span class="nav-label">${escapeHtml(item.label)}</span>
                 </a>`).join("")}
-              <div class="nav-subgroup-title">Drafting agents</div>
+              <div class="nav-subgroup-title">Builders</div>
               ${DRAFTING_AGENT_KEYS.map((key) => sidebarDraftingAgentRow(project, key)).join("")}
-              <div class="nav-subgroup-title">Complex agents</div>
+              ${COMPLEX_AGENT_KEYS.length ? `<div class="nav-subgroup-title">Complex agents</div>
               ${projectComplexAgentNav(project.id).map((item) => `
                 <a class="nav-item nav-item-sub ${isActivePrefix(item.href) ? "active" : ""}" href="${item.href}" data-nav>
                   <span class="nav-icon">${item.icon}</span>
                   <span class="nav-label">${escapeHtml(item.label)}</span>
-                </a>`).join("")}
+                </a>`).join("")}` : ""}
               ${sidebarRecentThreads(project)}
             ` : ""}
           `}
@@ -1360,7 +1355,7 @@
         </section>
 
         <section class="home-section">
-          <div class="section-head"><h3>Tools</h3><p>Standalone utilities. No project required.</p></div>
+          <div class="section-head"><h3>Projects</h3><p>Review and build payment claims and schedules, and run the calculators.</p></div>
           <div class="tile-grid">
             ${tools.map((t) => `
               <a class="tile" href="${t.href}" data-nav>
@@ -1379,7 +1374,7 @@
             <div class="card-empty">
               <div class="card-empty-icon">${ICON.file}</div>
               <h4>Create your first project</h4>
-              <p>Add the contract details, paste in clauses or upload your contract. Sopal then runs every agent (Payment Claims, EOTs, Adjudication etc.) inside that project's context.</p>
+              <p>Add the contract details, paste in clauses or upload your contract. Sopal then drafts your payment claims and schedules inside that project's context.</p>
               <button class="dark-button" type="button" data-new-project>Create project</button>
             </div>
           ` : `
@@ -12342,8 +12337,8 @@ Total\t${formatCurrencyFull(total)}`;
     if (step === 4) {
       const callouts = [
         { icon: ICON.folder, label: "Projects", body: "Each project is one contract. Drafting agents reuse your contract, library and chat history within that project." },
-        { icon: ICON.sparkles, label: "Drafting agents", body: "Payment Claims, EOTs, Variations, Adjudication Application/Response. Open a project, pick an agent, draft." },
-        { icon: ICON.search, label: "Workspace tools", body: "Decision Search, Adjudicator Statistics, Due Date Calculator, Interest Calculator. No project required." },
+        { icon: ICON.sparkles, label: "Builders", body: "Payment Claims and Payment Schedules. Open a project, pick a builder, and draft." },
+        { icon: ICON.search, label: "Research & tools", body: "Decision Search, Adjudicator Statistics, Research Agent, Due Date Calculator, Interest Calculator." },
         { icon: ICON.book, label: "Help & docs", body: "Sopal has an in-app Help index. The marketing site at sopal.com.au has the BIF Act guide and FAQs." },
       ];
       return `
