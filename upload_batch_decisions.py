@@ -55,10 +55,12 @@ def get_gcs_client():
         return None
 
 def extract_app_number_from_filename(filename):
-    """Extract application number from filename like 00000002884506_1.pdf"""
-    match = re.search(r'(\d{10})', filename)
+    """Extract application reference: the full digit run before the first '_',
+    leading zeros stripped (e.g. 00000003041676_1.pdf -> 3041676,
+    00000002936789_1-2.pdf -> 2936789). Matches how `reference` is stored in the DB."""
+    match = re.match(r'0*(\d+?)_', filename)
     if match:
-        return match.group(1).lstrip('0')  # Remove leading zeros
+        return match.group(1)
     return None
 
 def extract_text_from_pdf(pdf_path):

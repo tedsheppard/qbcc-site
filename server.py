@@ -264,6 +264,15 @@ def _download_qbcc_db_atomic(bucket_name, object_name, dest_path):
                 os.remove(_stale)
             except OSError:
                 pass
+    # Record the GCS generation we just applied so future boots can detect a
+    # genuinely new object regardless of local-file mtime (boot-time WAL
+    # checkpoints bump the local mtime and race the old timestamp heuristic).
+    try:
+        _blob.reload()
+        with open(dest_path + ".gcsgen", "w") as _gm:
+            _gm.write(str(_blob.generation))
+    except Exception:
+        pass
     return True
 
 
@@ -279,28 +288,35 @@ elif not _qbcc_db_integrity_ok(DB_PATH):
     _need_download = True
     _download_reason = "local file failed integrity probe (likely torn from an interrupted download)"
 else:
-    # Local file is healthy. Check if GCS has a newer version we should
-    # pull in. Any GCS metadata failure here is non-fatal: we keep the
-    # known-good local copy rather than risk replacing it.
+    # Local file is healthy. Pull from GCS only if the object's *generation*
+    # differs from the one we last applied. (mtime comparisons are unreliable:
+    # a boot-time WAL checkpoint bumps the local file's mtime past the GCS
+    # timestamp, so a genuinely newer GCS object looks "older" and gets skipped.)
+    # Any GCS metadata failure here is non-fatal: keep the known-good local copy.
     try:
         if _gcs_bucket_name:
             _client = get_gcs_client()
             if _client is not None:
                 _blob = _client.bucket(_gcs_bucket_name).blob(_gcs_db_object_name)
                 _blob.reload()
-                _gcs_updated = _blob.updated
-                if _gcs_updated is not None:
-                    from datetime import datetime as _dt, timezone as _tz
-                    _local_mtime = _dt.fromtimestamp(os.path.getmtime(DB_PATH), tz=_tz.utc)
-                    if _gcs_updated > _local_mtime:
-                        print(
-                            f"[db-refresh] GCS qbcc.db updated {_gcs_updated} is newer "
-                            f"than local mtime {_local_mtime}; will re-download atomically"
-                        )
-                        _need_download = True
-                        _download_reason = "GCS newer than local"
-                    else:
-                        print(f"[db-refresh] local qbcc.db is up-to-date and healthy (local={_local_mtime}, gcs={_gcs_updated})")
+                _gcs_gen = str(_blob.generation) if _blob.generation is not None else None
+                _marker_path = DB_PATH + ".gcsgen"
+                _applied_gen = None
+                if os.path.exists(_marker_path):
+                    try:
+                        with open(_marker_path) as _gm:
+                            _applied_gen = _gm.read().strip()
+                    except OSError:
+                        _applied_gen = None
+                if _gcs_gen is not None and _gcs_gen != _applied_gen:
+                    print(
+                        f"[db-refresh] GCS generation {_gcs_gen} differs from last applied "
+                        f"{_applied_gen}; will re-download atomically"
+                    )
+                    _need_download = True
+                    _download_reason = "GCS generation changed"
+                else:
+                    print(f"[db-refresh] local qbcc.db is up-to-date (gcs_gen={_gcs_gen}, applied={_applied_gen})")
     except Exception as _e:
         print(f"[db-refresh] GCS freshness check failed, keeping local copy: {_e}")
 
