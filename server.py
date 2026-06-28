@@ -527,6 +527,22 @@ try:
           + ("" if _DECISIONS_MCP_KEY else " (DISABLED — DECISIONS_MCP_KEY unset)"))
 except Exception as _e:
     print(f"WARNING: failed to mount Adjudication Decisions MCP ({_e})")
+
+# Claude's MCP connector probes OAuth discovery endpoints before connecting.
+# This site's SPA catch-all otherwise answers them with 200 HTML, which makes
+# Claude think an OAuth sign-in service exists and then fail to register
+# ("Couldn't register with Sopal's sign-in service"). Returning a clean 404
+# tells the connector there is no OAuth, so it falls back to an authless
+# connection and the key embedded in the /dmcp/<key>/mcp path is used instead.
+# Registered here (well before the catch-all) so these win the route match.
+@app.get("/.well-known/oauth-authorization-server", include_in_schema=False)
+@app.get("/.well-known/oauth-authorization-server/{rest:path}", include_in_schema=False)
+@app.get("/.well-known/oauth-protected-resource", include_in_schema=False)
+@app.get("/.well-known/oauth-protected-resource/{rest:path}", include_in_schema=False)
+@app.get("/.well-known/openid-configuration", include_in_schema=False)
+@app.get("/.well-known/openid-configuration/{rest:path}", include_in_schema=False)
+def _mcp_oauth_discovery_404(rest: str = ""):
+    return Response(status_code=404)
 # <<< Adjudication Decisions MCP
 
 # --- UNIFIED USERS DATABASE CONNECTION ---
