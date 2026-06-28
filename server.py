@@ -439,28 +439,12 @@ except Exception as _e:
 #   POST /dmcp/<key>/mcp     key embedded in the path (claude.ai connectors)
 # If DECISIONS_MCP_KEY is unset the endpoint refuses every request (never open).
 try:
-    import contextlib as _contextlib
-    from mcp_decisions import mcp as _decisions_mcp
+    # Bare ASGI MCP handler — no `mcp` SDK dependency (that would force
+    # pydantic>=2.11 and break this app's pinned fastapi==0.111.0 at startup).
+    from mcp_decisions import mcp_asgi as _decisions_mcp_asgi
 
     _DECISIONS_MCP_KEY = os.environ.get("DECISIONS_MCP_KEY", "")
-    _decisions_mcp_asgi = _decisions_mcp.streamable_http_app()
     _DMCP_KEYED_RE = re.compile(r"^/([^/]+)/mcp/?$")
-
-    # The streamable-HTTP transport's session manager must run for the life of
-    # the process. Mounted ASGI apps don't receive lifespan events, so drive it
-    # from the main app's startup/shutdown instead of the sub-app's lifespan.
-    _decisions_mcp_stack = _contextlib.AsyncExitStack()
-
-    @app.on_event("startup")
-    async def _start_decisions_mcp():
-        await _decisions_mcp_stack.enter_async_context(
-            _decisions_mcp.session_manager.run()
-        )
-        print(">>> Adjudication Decisions MCP session manager started")
-
-    @app.on_event("shutdown")
-    async def _stop_decisions_mcp():
-        await _decisions_mcp_stack.aclose()
 
     def _dmcp_bearer(scope):
         for name, value in scope.get("headers", []):
@@ -483,8 +467,9 @@ try:
 
     class _DecisionsMCPApp:
         """ASGI app mounted at /dmcp: enforce the shared key, then dispatch to
-        the MCP streamable-HTTP transport. Starlette strips the /dmcp prefix, so
-        paths seen here are /mcp (bearer auth) or /<key>/mcp (key in path)."""
+        the bare MCP handler. Starlette sets root_path="/dmcp" but leaves path
+        unstripped, so paths seen here are /dmcp/mcp (bearer auth) or
+        /dmcp/<key>/mcp (key in path)."""
 
         async def __call__(self, scope, receive, send):
             if scope["type"] != "http":
@@ -492,8 +477,6 @@ try:
             if not _DECISIONS_MCP_KEY:
                 await _dmcp_reject(send, 503, "MCP is not configured (DECISIONS_MCP_KEY unset).")
                 return
-            # Starlette sets root_path="/dmcp" but leaves path unstripped, so
-            # route on the path with the mount prefix removed.
             path = scope.get("path", "")
             root = scope.get("root_path", "")
             rel = path[len(root):] if root and path.startswith(root) else path
@@ -514,13 +497,7 @@ try:
                     "token on /dmcp/mcp or in the path as /dmcp/<key>/mcp.",
                 )
                 return
-            inner = dict(scope)
-            inner["path"] = "/mcp"
-            inner["raw_path"] = b"/mcp"
-            # Starlette's Mount set root_path="/dmcp"; the inner app routes on
-            # the path with root_path stripped, so clear it or it 404s.
-            inner["root_path"] = ""
-            await _decisions_mcp_asgi(inner, receive, send)
+            await _decisions_mcp_asgi(scope, receive, send)
 
     app.mount("/dmcp", _DecisionsMCPApp())
     print(">>> Mounted Adjudication Decisions MCP at /dmcp"
