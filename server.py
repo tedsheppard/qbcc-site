@@ -522,6 +522,15 @@ def _mcp_oauth_discovery_404(rest: str = ""):
     return Response(status_code=404)
 # <<< Adjudication Decisions MCP
 
+# Serve the Sopal mark at the domain root so browsers and Claude's connector
+# tile pick it up (the SPA catch-all otherwise returns HTML for /favicon.ico,
+# which is why custom connectors showed a generic globe). Explicit route so it
+# wins over the catch-all regardless of ordering.
+@app.get("/favicon.ico", include_in_schema=False)
+def _favicon_ico():
+    return FileResponse(os.path.join(SITE_DIR, "assets", "favicon.ico"),
+                        media_type="image/x-icon")
+
 # --- UNIFIED USERS DATABASE CONNECTION ---
 PURCHASES_DB_PATH = (
     "/var/data/adjudicator_purchases.db"
