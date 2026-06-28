@@ -466,16 +466,15 @@ try:
         await send({"type": "http.response.body", "body": body})
 
     class _DecisionsMCPApp:
-        """ASGI app mounted at /dmcp: enforce the shared key, then dispatch to
-        the bare MCP handler. Starlette sets root_path="/dmcp" but leaves path
-        unstripped, so paths seen here are /dmcp/mcp (bearer auth) or
-        /dmcp/<key>/mcp (key in path)."""
+        """ASGI app mounted at /dmcp: validate a per-user (or owner) key, then
+        dispatch to the bare MCP handler. Starlette sets root_path="/dmcp" but
+        leaves path unstripped, so paths seen here are /dmcp/mcp (bearer auth)
+        or /dmcp/<key>/mcp (key in path). Keys are minted per logged-in
+        subscriber (mcp_keys table) and re-checked against live subscription
+        status on every request — see _decisions_key_allowed."""
 
         async def __call__(self, scope, receive, send):
             if scope["type"] != "http":
-                return
-            if not _DECISIONS_MCP_KEY:
-                await _dmcp_reject(send, 503, "MCP is not configured (DECISIONS_MCP_KEY unset).")
                 return
             path = scope.get("path", "")
             root = scope.get("root_path", "")
@@ -490,11 +489,12 @@ try:
                     await _dmcp_reject(send, 404, "Not found. Use /dmcp/mcp or /dmcp/<key>/mcp.")
                     return
                 key = _dmcp_bearer(scope) or m.group(1)
-            if key != _DECISIONS_MCP_KEY:
+            if not _decisions_key_allowed(key):
                 await _dmcp_reject(
                     send, 401,
-                    "Invalid or missing key. Provide DECISIONS_MCP_KEY as a bearer "
-                    "token on /dmcp/mcp or in the path as /dmcp/<key>/mcp.",
+                    "Invalid key, or the associated Sopal account no longer has an "
+                    "active subscription. Get your personal connector URL from your "
+                    "account page at https://sopal.com.au/account.",
                 )
                 return
             await _decisions_mcp_asgi(scope, receive, send)
@@ -3869,6 +3869,93 @@ def get_or_create_stripe_customer(user: dict):
         email=user['email'],
         name=f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
     )
+
+# --- Adjudication Decisions MCP: per-user access keys ------------------------
+# Each subscriber gets their own connector key (mcp_keys). The /dmcp endpoint
+# re-checks live subscription status on every request, so cancelling a plan
+# revokes MCP access immediately. The owner master key (DECISIONS_MCP_KEY env)
+# still works for admin/testing.
+purchases_con.execute("""
+    CREATE TABLE IF NOT EXISTS mcp_keys (
+        mcp_key    TEXT PRIMARY KEY,
+        user_email TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now'))
+    )
+""")
+purchases_con.execute("CREATE INDEX IF NOT EXISTS idx_mcp_keys_email ON mcp_keys(user_email)")
+purchases_con.commit()
+
+
+def _user_has_decisions_access(email: str) -> bool:
+    """Same gate as unlimited search: admin, full-access, or active subscription."""
+    if not email:
+        return False
+    if email in ADMIN_EMAILS:
+        return True
+    if purchases_con.execute(
+        "SELECT 1 FROM full_access_users WHERE email = ?", (email,)
+    ).fetchone() is not None:
+        return True
+    return has_active_subscription(email)
+
+
+def _decisions_key_allowed(key: str) -> bool:
+    """Validate a /dmcp key: owner master key, or a per-user key whose owner
+    still has active decisions access. Re-checked on every request."""
+    if not key:
+        return False
+    master = os.environ.get("DECISIONS_MCP_KEY", "")
+    if master and key == master:
+        return True
+    row = purchases_con.execute(
+        "SELECT user_email FROM mcp_keys WHERE mcp_key = ?", (key,)
+    ).fetchone()
+    if not row:
+        return False
+    return _user_has_decisions_access(row["user_email"])
+
+
+@app.get("/api/mcp/my-connector")
+def my_mcp_connector(current_user: dict = Depends(get_current_purchase_user)):
+    """Return the signed-in user's personal Claude connector URL, minting a key
+    on first request. Only eligible (subscribed/full-access/admin) users get a
+    URL; everyone else gets eligible=false so the account page can prompt them
+    to subscribe."""
+    email = current_user["email"]
+    if not _user_has_decisions_access(email):
+        return {
+            "eligible": False,
+            "message": "An active Sopal subscription is required to use the Claude connector.",
+        }
+    row = purchases_con.execute(
+        "SELECT mcp_key FROM mcp_keys WHERE user_email = ?", (email,)
+    ).fetchone()
+    if row:
+        key = row["mcp_key"]
+    else:
+        key = secrets.token_urlsafe(32)
+        purchases_con.execute(
+            "INSERT INTO mcp_keys (mcp_key, user_email) VALUES (?, ?)", (key, email)
+        )
+        purchases_con.commit()
+    return {"eligible": True, "url": f"https://sopal.com.au/dmcp/{key}/mcp"}
+
+
+@app.post("/api/mcp/rotate-key")
+def rotate_mcp_connector(current_user: dict = Depends(get_current_purchase_user)):
+    """Rotate (revoke + reissue) the user's connector key. The old URL stops
+    working immediately."""
+    email = current_user["email"]
+    if not _user_has_decisions_access(email):
+        raise HTTPException(status_code=403, detail="No active subscription.")
+    key = secrets.token_urlsafe(32)
+    purchases_con.execute("DELETE FROM mcp_keys WHERE user_email = ?", (email,))
+    purchases_con.execute(
+        "INSERT INTO mcp_keys (mcp_key, user_email) VALUES (?, ?)", (key, email)
+    )
+    purchases_con.commit()
+    return {"eligible": True, "url": f"https://sopal.com.au/dmcp/{key}/mcp"}
+
 
 # --- Subscription status endpoint ---
 

@@ -543,6 +543,14 @@
             <div id="subscription-loading" style="color: var(--text-muted);">Loading subscription details...</div>
             <div id="subscription-content" style="display:none;"></div>
           </div>
+
+          <div class="card" id="mcp-connector-card" style="display:none; margin-top:20px;">
+            <h2>Claude Connector</h2>
+            <p style="color:var(--text-secondary); font-size:14px; margin-top:0;">
+              Search the full adjudication-decision database from inside Claude. Add this as a custom connector.
+            </p>
+            <div id="mcp-connector-body"></div>
+          </div>
         </section>
 
         <!-- Payment History Section -->
@@ -1280,6 +1288,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadProfileData();
             loadPurchaseHistory();
             loadSubscription();
+            loadMcpConnector();
 
             const res = await fetch('/purchase-me', { headers });
             if (res.ok) {
@@ -1322,6 +1331,61 @@ async function openBillingPortal() {
     if (!res.ok) throw new Error('Failed to open billing portal');
     const data = await res.json();
     window.location.href = data.portal_url;
+  } catch (e) {
+    showAlert('Error', e.message);
+  }
+}
+
+// --- Claude Connector (Adjudication Decisions MCP) ---
+async function loadMcpConnector() {
+  const token = localStorage.getItem('purchase_token');
+  if (!token) return;
+  const card = document.getElementById('mcp-connector-card');
+  const body = document.getElementById('mcp-connector-body');
+  if (!card || !body) return;
+  try {
+    const res = await fetch('/api/mcp/my-connector', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (!res.ok) return;
+    const data = await res.json();
+    card.style.display = 'block';
+    if (!data.eligible) {
+      body.innerHTML = `<div style="padding:16px; background:#fffbeb; border:1px solid #fbbf24; border-radius:10px; color:var(--text-secondary); font-size:14px;">
+        The Claude connector is available on paid plans. <a href="/pricing" style="color:var(--green-dark, #1a7f5a)">Upgrade to Unlimited</a> to get your personal connector URL.</div>`;
+      return;
+    }
+    body.innerHTML = `
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <input id="mcp-url" type="text" readonly value="${data.url}" style="flex:1 1 320px; padding:10px 12px; border:1px solid #cbd5e0; border-radius:8px; font-family:ui-monospace,Menlo,monospace; font-size:13px; background:#f7f8fa;">
+        <button class="btn" style="max-width:120px;" onclick="copyMcpUrl()">Copy</button>
+      </div>
+      <ol style="color:var(--text-secondary); font-size:14px; margin:16px 0 0; padding-left:20px;">
+        <li>In Claude, open <strong>Settings &rarr; Connectors &rarr; Add custom connector</strong>.</li>
+        <li>Paste the URL above. Leave the OAuth fields empty.</li>
+        <li>Click Add, then enable it in a chat and ask Claude to search adjudication decisions.</li>
+      </ol>
+      <p style="margin:16px 0 0;"><button class="btn" style="max-width:200px; background:#dc3545; color:#fff;" onclick="rotateMcpKey()">Reset connector URL</button></p>
+      <p style="color:var(--text-muted); font-size:12px; margin:8px 0 0;">Treat this URL like a password &mdash; anyone with it can search using your subscription. Resetting it disconnects the old URL.</p>
+    `;
+  } catch (e) { console.error('mcp connector load error', e); }
+}
+
+function copyMcpUrl() {
+  const el = document.getElementById('mcp-url');
+  if (!el) return;
+  el.select();
+  navigator.clipboard.writeText(el.value).then(() => showTempBanner('Connector URL copied to clipboard.', 'success'));
+}
+
+async function rotateMcpKey() {
+  const ok = await showConfirm('Reset connector URL', 'Reset your connector URL? The current one will stop working immediately and you must update Claude with the new URL.', 'Reset URL', true);
+  if (!ok) return;
+  const token = localStorage.getItem('purchase_token');
+  if (!token) return;
+  try {
+    const res = await fetch('/api/mcp/rotate-key', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+    if (!res.ok) throw new Error('Failed to reset');
+    await loadMcpConnector();
+    showTempBanner('Connector URL reset. Update Claude with the new URL.', 'success');
   } catch (e) {
     showAlert('Error', e.message);
   }
