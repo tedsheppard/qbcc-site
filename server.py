@@ -430,6 +430,105 @@ except Exception as _e:
     print(f"WARNING: failed to mount SopalAI ({_e}); /ai will 404")
 # <<< SopalAI
 
+# >>> Adjudication Decisions MCP (remote connector) — mcp_decisions.py
+# Exposes the full adjudication-decision corpus to Claude as a custom connector
+# over streamable HTTP. Single shared secret in DECISIONS_MCP_KEY. claude.ai's
+# connector UI has no bearer-token field, so the key may ride in the path; the
+# Claude API / Claude Code use the bearer header. Two equivalent endpoints:
+#   POST /dmcp/mcp           with  Authorization: Bearer <DECISIONS_MCP_KEY>
+#   POST /dmcp/<key>/mcp     key embedded in the path (claude.ai connectors)
+# If DECISIONS_MCP_KEY is unset the endpoint refuses every request (never open).
+try:
+    import contextlib as _contextlib
+    from mcp_decisions import mcp as _decisions_mcp
+
+    _DECISIONS_MCP_KEY = os.environ.get("DECISIONS_MCP_KEY", "")
+    _decisions_mcp_asgi = _decisions_mcp.streamable_http_app()
+    _DMCP_KEYED_RE = re.compile(r"^/([^/]+)/mcp/?$")
+
+    # The streamable-HTTP transport's session manager must run for the life of
+    # the process. Mounted ASGI apps don't receive lifespan events, so drive it
+    # from the main app's startup/shutdown instead of the sub-app's lifespan.
+    _decisions_mcp_stack = _contextlib.AsyncExitStack()
+
+    @app.on_event("startup")
+    async def _start_decisions_mcp():
+        await _decisions_mcp_stack.enter_async_context(
+            _decisions_mcp.session_manager.run()
+        )
+        print(">>> Adjudication Decisions MCP session manager started")
+
+    @app.on_event("shutdown")
+    async def _stop_decisions_mcp():
+        await _decisions_mcp_stack.aclose()
+
+    def _dmcp_bearer(scope):
+        for name, value in scope.get("headers", []):
+            if name == b"authorization":
+                t = value.decode("latin-1").strip()
+                if t.lower().startswith("bearer "):
+                    return t[7:].strip()
+        return None
+
+    async def _dmcp_reject(send, status, message):
+        body = json.dumps({"error": "unauthorized", "message": message}).encode()
+        headers = [
+            (b"content-type", b"application/json"),
+            (b"content-length", str(len(body)).encode()),
+        ]
+        if status == 401:
+            headers.append((b"www-authenticate", b"Bearer"))
+        await send({"type": "http.response.start", "status": status, "headers": headers})
+        await send({"type": "http.response.body", "body": body})
+
+    class _DecisionsMCPApp:
+        """ASGI app mounted at /dmcp: enforce the shared key, then dispatch to
+        the MCP streamable-HTTP transport. Starlette strips the /dmcp prefix, so
+        paths seen here are /mcp (bearer auth) or /<key>/mcp (key in path)."""
+
+        async def __call__(self, scope, receive, send):
+            if scope["type"] != "http":
+                return
+            if not _DECISIONS_MCP_KEY:
+                await _dmcp_reject(send, 503, "MCP is not configured (DECISIONS_MCP_KEY unset).")
+                return
+            # Starlette sets root_path="/dmcp" but leaves path unstripped, so
+            # route on the path with the mount prefix removed.
+            path = scope.get("path", "")
+            root = scope.get("root_path", "")
+            rel = path[len(root):] if root and path.startswith(root) else path
+            if not rel.startswith("/"):
+                rel = "/" + rel
+            if rel in ("/mcp", "/mcp/"):
+                key = _dmcp_bearer(scope)
+            else:
+                m = _DMCP_KEYED_RE.match(rel)
+                if not m:
+                    await _dmcp_reject(send, 404, "Not found. Use /dmcp/mcp or /dmcp/<key>/mcp.")
+                    return
+                key = _dmcp_bearer(scope) or m.group(1)
+            if key != _DECISIONS_MCP_KEY:
+                await _dmcp_reject(
+                    send, 401,
+                    "Invalid or missing key. Provide DECISIONS_MCP_KEY as a bearer "
+                    "token on /dmcp/mcp or in the path as /dmcp/<key>/mcp.",
+                )
+                return
+            inner = dict(scope)
+            inner["path"] = "/mcp"
+            inner["raw_path"] = b"/mcp"
+            # Starlette's Mount set root_path="/dmcp"; the inner app routes on
+            # the path with root_path stripped, so clear it or it 404s.
+            inner["root_path"] = ""
+            await _decisions_mcp_asgi(inner, receive, send)
+
+    app.mount("/dmcp", _DecisionsMCPApp())
+    print(">>> Mounted Adjudication Decisions MCP at /dmcp"
+          + ("" if _DECISIONS_MCP_KEY else " (DISABLED — DECISIONS_MCP_KEY unset)"))
+except Exception as _e:
+    print(f"WARNING: failed to mount Adjudication Decisions MCP ({_e})")
+# <<< Adjudication Decisions MCP
+
 # --- UNIFIED USERS DATABASE CONNECTION ---
 PURCHASES_DB_PATH = (
     "/var/data/adjudicator_purchases.db"
