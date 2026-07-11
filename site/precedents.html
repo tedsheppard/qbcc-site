@@ -249,7 +249,7 @@ function render(){
   if(!state.firm) return renderFirmPicker();
   const isAdmin = state.firm.role === "admin";
   const tabs = [
-    ["library","Library"],["search","Search"],["members","Members"],
+    ["library","Library"],["extracts","Extracts"],["search","Search"],["members","Members"],
     ...(isAdmin?[["activity","Activity"],["usage","Usage"]]:[])
   ];
   $("#root").innerHTML = `
@@ -273,22 +273,16 @@ function render(){
 }
 
 function loadTab(){
-  ({library:renderLibrary, search:renderSearch, members:renderMembers, activity:renderActivity, usage:renderUsage}[state.tab]||renderLibrary)();
+  ({library:renderLibrary, extracts:renderExtractsTab, search:renderSearch, members:renderMembers, activity:renderActivity, usage:renderUsage}[state.tab]||renderLibrary)();
 }
 
 /* ---------------- library ---------------- */
 async function refreshLibrary(){
-  const L = state.lib, E = state.ext;
+  const L = state.lib;
   try{
     const docParams = new URLSearchParams({q:L.q, sort:L.sort, dir:L.dir, page:String(L.page)});
-    const extParams = new URLSearchParams({category:E.cat, subcategory:E.sub, stance:E.stance, page:String(E.page)});
-    const [docs, cats, ext] = await Promise.all([
-      api(`/api/precedents/firms/${state.firm.id}/documents?`+docParams),
-      api(`/api/precedents/firms/${state.firm.id}/categories`),
-      api(`/api/precedents/firms/${state.firm.id}/extracts?`+extParams),
-    ]);
+    const docs = await api(`/api/precedents/firms/${state.firm.id}/documents?`+docParams);
     state.docs = docs.documents; state.docTotal = docs.total; state.docPages = docs.pages;
-    state.tree = cats.tree; E.data = ext;
   }catch(e){ toast(e.message); }
   if(state.tab==="library") renderLibrary(false);
   const pending = state.docs.some(d=>["queued","extracting","extracted","classifying"].includes(d.status));
@@ -346,9 +340,8 @@ function renderLibrary(fetch=true){
         Page ${L.page} of ${state.docPages}
         <button id="libNext" ${L.page>=state.docPages?"disabled":""}>Next ›</button>
       </div>`:""}
-    </div>
-    ${renderExtractsHtml()}`;
-  bindLibrary(); bindExtracts();
+    </div>`;
+  bindLibrary();
   if(fetch) refreshLibrary();
 }
 
@@ -428,15 +421,35 @@ function openMetaModal(d){
   };
 }
 
-/* ---------------- extracts section ---------------- */
+/* ---------------- extracts tab ---------------- */
+async function refreshExtracts(){
+  const E = state.ext;
+  try{
+    const extParams = new URLSearchParams({category:E.cat, subcategory:E.sub, stance:E.stance, page:String(E.page)});
+    const [cats, ext] = await Promise.all([
+      api(`/api/precedents/firms/${state.firm.id}/categories`),
+      api(`/api/precedents/firms/${state.firm.id}/extracts?`+extParams),
+    ]);
+    state.tree = cats.tree; E.data = ext;
+  }catch(e){ toast(e.message); }
+  if(state.tab==="extracts") renderExtractsTab(false);
+}
+
+function renderExtractsTab(fetch=true){
+  const m = $("#main"); if(!m) return;
+  m.innerHTML = renderExtractsHtml();
+  bindExtracts();
+  if(fetch) refreshExtracts();
+}
+
 function renderExtractsHtml(){
   const E = state.ext, data = E.data;
   const cats = state.tree.filter(c=> c.slug!=="other" || c.sections>0);
   const active = state.tree.find(c=>c.slug===E.cat);
   const totalSecs = state.tree.reduce((a,c)=>a+c.sections,0);
   return `
-    <h2 class="page-title" style="margin-top:34px">Extracts</h2>
-    <p class="page-sub">${totalSecs} categorised submission${totalSecs===1?"":"s"} across the library — drill down by argument type, then by which way the submission runs.</p>
+    <h2 class="page-title">Extracts</h2>
+    <p class="page-sub">${esc(state.firm.name)} · ${totalSecs} categorised submission${totalSecs===1?"":"s"} across the library — drill down by argument type, then by which way the submission runs.</p>
     <div class="pillbar" id="extCats">
       <span class="p ${!E.cat?"active":""}" data-ecat="">All</span>
       ${cats.map(c=>`<span class="p ${E.cat===c.slug?"active":""}" data-ecat="${c.slug}">${esc(c.label)}${c.sections?`<span class="n">${c.sections}</span>`:""}</span>`).join("")}
@@ -473,17 +486,17 @@ function renderExtractsHtml(){
 
 function bindExtracts(){
   document.querySelectorAll("[data-ecat]").forEach(el=> el.onclick = ()=>{
-    state.ext.cat = el.dataset.ecat; state.ext.sub=""; state.ext.page=1; refreshLibrary();
+    state.ext.cat = el.dataset.ecat; state.ext.sub=""; state.ext.page=1; refreshExtracts();
   });
   document.querySelectorAll("[data-esub]").forEach(el=> el.onclick = ()=>{
-    state.ext.sub = el.dataset.esub; state.ext.page=1; refreshLibrary();
+    state.ext.sub = el.dataset.esub; state.ext.page=1; refreshExtracts();
   });
   document.querySelectorAll("[data-estance]").forEach(el=> el.onclick = ()=>{
-    state.ext.stance = el.dataset.estance; state.ext.page=1; refreshLibrary();
+    state.ext.stance = el.dataset.estance; state.ext.page=1; refreshExtracts();
   });
   const prev=$("#extPrev"), next=$("#extNext");
-  if(prev) prev.onclick=()=>{ state.ext.page--; refreshLibrary(); };
-  if(next) next.onclick=()=>{ state.ext.page++; refreshLibrary(); };
+  if(prev) prev.onclick=()=>{ state.ext.page--; refreshExtracts(); };
+  if(next) next.onclick=()=>{ state.ext.page++; refreshExtracts(); };
   document.querySelectorAll("[data-edoc]").forEach(el=> el.onclick = ()=> openDrawer(el.dataset.edoc));
 }
 
