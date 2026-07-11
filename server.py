@@ -4455,14 +4455,14 @@ async def cancel_subscription(current_user: dict = Depends(get_current_purchase_
 async def create_disbursement_intent(
     current_user: dict = Depends(get_current_purchase_user)
 ):
-    """Creates a Stripe PaymentIntent for $49.95 one-time disbursement access."""
+    """Creates a Stripe PaymentIntent for $59.95 one-time disbursement access."""
     if not STRIPE_DISBURSEMENT_PRICE_ID:
         raise HTTPException(status_code=500, detail="Disbursement price not configured.")
 
     try:
         customer = get_or_create_stripe_customer(current_user)
         intent = stripe.PaymentIntent.create(
-            amount=4995,  # $49.95 in cents
+            amount=5995,  # $59.95 in cents
             currency="aud",
             customer=customer.id,
             metadata={
