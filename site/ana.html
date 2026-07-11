@@ -222,20 +222,18 @@
     <div class="method-notice">
       <h4>Methodology &amp; Disclaimer</h4>
       <p>
-        The statistics on this page are <strong>approximate</strong>. Each decision's authority is coded
+        The statistics on this page are <strong>approximate</strong>. The ANA for each decision is coded
         automatically from the text of the published decision document, using keyword extraction and AI extraction.
-        Where a decision document does not name the authority, attribution is <strong>inferred</strong> from the
-        adjudicator's documented ANA affiliations in other decisions; inferred attributions are approximate.
-        Coding errors and gaps are possible, and decisions that cannot be attributed either way are excluded from
-        the per-authority statistics below.<span id="attributionSentence"></span>
+        Where a decision document does not name the authority, attribution is inferred from the adjudicator's
+        documented ANA affiliations in other decisions, which may be incorrect.
       </p>
       <p>
         Authorised Nominating Authorities stopped receiving new Queensland adjudication applications from
         <strong>December 2014</strong>, when the BCIPA amendments moved referrals to the Adjudication Registry
-        operated by the QBCC; ANAs continue to administer matters for their adjudicators under the current
-        BIF Act regime. Statistics are provided for general information only, are not legal advice, and say
-        nothing about the quality or fairness of any authority, adjudicator, or decision. Data limitations are
-        described in our <a href="/adjudicator-insights-terms" style="text-decoration: underline;">Insights terms</a>.
+        operated by the QBCC; however ANAs continue to administer matters for their adjudicators under the current
+        <em>Building Industry Fairness (Security of Payment) Act 2017</em> (Qld) regime. Statistics are provided
+        for general information only, are not legal advice, and say nothing about the quality or fairness of any
+        ANA, adjudicator, or decision.
       </p>
     </div>
 
@@ -392,15 +390,7 @@ async function loadAnas() {
         seriesColor[a.name] = SERIES_COLORS[i] || OVERFLOW_COLOR;
     });
 
-    // Attribution numbers live in the methodology note (no stat tiles).
     const cov = anaData.coverage;
-    if (cov.total && cov.attributed !== undefined) {
-        document.getElementById('attributionSentence').innerHTML =
-            ` Of the ${fmtInt(cov.total)} decisions in the database, ${fmtInt(cov.attributed)}` +
-            ` (${(cov.attributedPct ?? 0).toFixed(1)}%) are attributed to an authority &mdash;` +
-            ` ${fmtInt(cov.documentCoded ?? 0)} from the decision documents and ${fmtInt(cov.inferred ?? 0)}` +
-            ` inferred from the adjudicator &mdash; and ${fmtInt(cov.total - cov.attributed)} are unattributed.`;
-    }
 
     yearFrom = cov.minYear;
     yearTo = cov.maxYear;
@@ -497,7 +487,6 @@ function renderDashboard() {
           </div>
         </div>
         <div class="multiples-grid" id="multiplesGrid"></div>
-        <div class="chart-note">Faded bars mark years with fewer than ${MIN_N} decisions &mdash; treat those values with caution.</div>
       </div>
     `;
 
