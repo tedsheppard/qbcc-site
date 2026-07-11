@@ -3320,6 +3320,7 @@ def get_anas(authorization: Optional[str] = Header(None)):
         sources = {}
         ana_years = {}  # name -> year -> bucket
         all_years = {}  # year -> bucket over EVERY decision (corpus-wide)
+        noana_years = {}  # year -> bucket: Registry-referred (ANA unknown) + uncoded rows
         min_year = max_year = None
 
         def _new_bucket():
@@ -3412,7 +3413,13 @@ def get_anas(authorization: Optional[str] = Header(None)):
             min_year = year if min_year is None else min(min_year, year)
             max_year = year if max_year is None else max(max_year, year)
 
-            if not name or name == REGISTRY_NAME or name in EXCLUDED_ANAS:
+            if not name or name == REGISTRY_NAME:
+                # "No ANA identified": referred via the QBCC Registry with no
+                # identifiable ANA, or no ANA could be coded at all. Shown as
+                # a single table row so the corpus balances; never charted.
+                _apply_row(noana_years.setdefault(year, _new_bucket()), row, is_inferred)
+                continue
+            if name in EXCLUDED_ANAS:
                 continue  # not shown as a per-authority series
 
             _apply_row(ana_years.setdefault(name, {}).setdefault(year, _new_bucket()),
@@ -3474,6 +3481,9 @@ def get_anas(authorization: Optional[str] = Header(None)):
             # Corpus-wide per-year buckets (every decision with a usable
             # date, regardless of ANA attribution).
             "all": {"years": {str(y): b for y, b in sorted(all_years.items())}},
+            # Balance of the corpus: Registry-referred rows with no
+            # identifiable ANA plus uncoded rows (table-only pseudo-row).
+            "noAna": {"years": {str(y): b for y, b in sorted(noana_years.items())}},
             "anas": anas,
         }
 

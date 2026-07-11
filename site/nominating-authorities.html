@@ -49,11 +49,11 @@
 
     /* METHODOLOGY NOTICE */
     .method-notice {
-      background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b;
+      background: #f7f7f7; border: 1px solid var(--border-light); border-left: 4px solid #b5b5b5;
       border-radius: 10px; padding: 16px 20px; margin: 22px 0 26px;
     }
-    .method-notice h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; color: #92400e; text-transform: uppercase; letter-spacing: 0.03em; }
-    .method-notice p { font-size: 13px; color: #78350f; line-height: 1.6; }
+    .method-notice h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
+    .method-notice p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
     .method-notice p + p { margin-top: 8px; }
 
     /* FILTER BAR */
@@ -112,14 +112,17 @@
     .ana-table td:first-child { text-align: left; font-weight: 600; white-space: normal; line-height: 1.3; }
     .ana-table tr:last-child td { border-bottom: none; }
     .ana-table tr:hover td { background: #fafafa; }
+    /* "No ANA identified" balance row: pinned to the bottom, visually muted */
+    .ana-table tr.noana-row td { color: var(--text-muted); font-style: italic; background: #fbfbfb; border-top: 1px solid var(--border-light); }
+    .ana-table th:focus-visible { outline: none; color: var(--text-primary); box-shadow: inset 0 -2px 0 var(--green); }
 
     /* CHART CARDS */
     .chart-card { background: white; border: 1px solid var(--border-light); border-radius: 10px; padding: 18px 20px 12px; }
     .chart-note { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; }
 
     /* TREND / GENERAL line charts (year horizontal, metric vertical) */
-    #trendChart, #generalChart { transition: opacity 0.16s ease; }
-    #trendChart.fading, #generalChart.fading { opacity: 0; }
+    #trendChart { transition: opacity 0.16s ease; }
+    #trendChart.fading { opacity: 0; }
     .trend-svg { width: 100%; height: auto; display: block; }
     /* line points are invisible until hovered (isolated points stay visible) */
     .trend-svg .pt-dot { opacity: 0; transition: opacity 0.1s; }
@@ -174,7 +177,7 @@
     .unlock-btn.secondary { background: #6b6b6b; margin-top: 10px; }
 
     @media (prefers-reduced-motion: reduce) {
-      #trendChart, #generalChart { transition: none; }
+      #trendChart { transition: none; }
       .bar-col .bar { transition: none; }
     }
 
@@ -271,7 +274,6 @@ let yearTo = null;
 let tableSort = { key: 'decisions', dir: -1 };
 let trendMetric = 'awardRate';   // trend chart metric
 let gridMetric = 'awardRate';    // small-multiples metric
-let generalMetric = 'awardRate'; // pooled "General trends" metric
 const hiddenSeries = new Set();  // legend toggles (trend chart)
 const seriesColor = {};          // ANA name -> colour, assigned once at load
 
@@ -509,7 +511,7 @@ function renderDashboard() {
       </div>
       <div class="section">
         <h2>ANA comparison</h2>
-        <div class="section-sub">Averages are per decision with usable data; % of claim awarded is capped at 100% per decision. Hover a heading for the full definition; click to sort.</div>
+        <div class="section-sub">Averages are per decision with usable data. Hover a heading for the full definition; click to sort.</div>
         <div class="table-wrap"><table class="ana-table"><thead id="anaTableHead"></thead><tbody id="anaTableBody"></tbody></table></div>
       </div>
       <div class="section">
@@ -526,7 +528,7 @@ function renderDashboard() {
         <div class="chart-card">
           <div id="trendChart"></div>
           <div id="trendLegend" class="trend-legend"></div>
-          <div class="chart-note">Years where an ANA decided fewer than ${MIN_N} matters are omitted from the lines (gaps), so small samples don't produce misleading swings. The Decisions metric always plots. Click a legend entry to show/hide its line.</div>
+          <div class="chart-note">Click a legend entry to show/hide its line.</div>
         </div>
       </div>
       <div class="section">
@@ -541,22 +543,6 @@ function renderDashboard() {
           </div>
         </div>
         <div class="multiples-grid" id="multiplesGrid"></div>
-      </div>
-      <div class="section">
-        <div class="section-head">
-          <div>
-            <h2>General trends</h2>
-            <div class="section-sub">All decisions per year</div>
-          </div>
-          <div class="metric-pick">
-            <span class="metric-label" id="generalMetricLabel">Metric</span>
-            <span id="generalMetricDD"></span>
-          </div>
-        </div>
-        <div class="chart-card">
-          <div id="generalChart"></div>
-          <div class="chart-note">Covers every decision in the database with a usable decision date, regardless of whether an ANA was identifiable.</div>
-        </div>
       </div>
     `;
 
@@ -578,10 +564,6 @@ function renderDashboard() {
         gridMetric = id;
         renderMultiples(filteredAnas());
     });
-    createDropdown(document.getElementById('generalMetricDD'), metricOptions, generalMetric, id => {
-        generalMetric = id;
-        animateSwap('generalChart', () => renderGeneral());
-    });
 
     renderStats();
 }
@@ -599,7 +581,6 @@ function renderStats() {
     renderTable(anas);
     renderTrend(anas);
     renderMultiples(anas);
-    renderGeneral();
 }
 
 // Crossfade a chart container on metric switches so it isn't jarring.
@@ -636,35 +617,25 @@ const TABLE_COLS = [
       title: 'Count of decisions where the claimant effectively received nothing: $0 awarded or a jurisdictional objection upheld' },
 ];
 
-function renderTable(anas) {
-    const head = document.getElementById('anaTableHead');
-    const body = document.getElementById('anaTableBody');
+// "No ANA identified" balance row: Registry-referred rows with no
+// identifiable ANA plus uncoded rows. Table only — never charted.
+const NO_ANA_NAME = 'No ANA identified';
+const NO_ANA_TT = 'Decisions referred via the QBCC Adjudication Registry where the administering ANA could not be identified, plus decisions where no ANA could be coded at all';
 
-    head.innerHTML = '<tr>' + TABLE_COLS.map(c => {
-        const arrow = tableSort.key === c.key ? `<span class="sort-arrow">${tableSort.dir === -1 ? '&#9660;' : '&#9650;'}</span>` : '';
-        return `<th data-key="${c.key}" title="${c.title}">${c.label}${arrow}</th>`;
-    }).join('') + '</tr>';
+function noAnaEntry() {
+    if (!anaData.noAna || !anaData.noAna.years) return null;
+    const entry = aggregateAna({ id: 'no_ana', name: NO_ANA_NAME, years: anaData.noAna.years });
+    return entry.decisions > 0 ? entry : null;
+}
 
-    head.querySelectorAll('th').forEach(th => th.addEventListener('click', () => {
-        const key = th.dataset.key;
-        if (tableSort.key === key) tableSort.dir = -tableSort.dir;
-        else tableSort = { key, dir: key === 'name' ? 1 : -1 };
-        renderTable(filteredAnas());
-    }));
-
-    const sorted = [...anas].sort((a, b) => {
-        const va = a[tableSort.key], vb = b[tableSort.key];
-        if (typeof va === 'string') return tableSort.dir * va.localeCompare(vb);
-        return tableSort.dir * ((va ?? -Infinity) - (vb ?? -Infinity));
-    });
-
-    body.innerHTML = sorted.map(a => {
-        const decTitle = a.inferredCount > 0
-            ? ` title="includes ${fmtInt(a.inferredCount)} inferred from the adjudicator's ANA"` : '';
-        return `
-      <tr>
-        <td>${sanitizeHtml(a.name)}</td>
-        <td${decTitle}>${fmtInt(a.decisions)}</td>
+function tableRowHtml(a, extraClass, nameTt) {
+    const decTt = a.inferredCount > 0
+        ? ` data-tt="${(`includes ${fmtInt(a.inferredCount)} inferred from the adjudicator's ANA`).replace(/"/g, '&quot;')}"` : '';
+    const nameAttr = nameTt ? ` data-tt="${nameTt.replace(/"/g, '&quot;')}"` : '';
+    return `
+      <tr${extraClass ? ` class="${extraClass}"` : ''}>
+        <td${nameAttr}>${sanitizeHtml(a.name)}</td>
+        <td${decTt}>${fmtInt(a.decisions)}</td>
         <td>${fmtPct(a.avgAwardRate)}</td>
         <td>${fmtPct(a.avgClaimantFee)}</td>
         <td>${fmtCurrency(a.avgClaimed)}</td>
@@ -673,7 +644,43 @@ function renderTable(anas) {
         <td>${fmtPct(a.nilNoJurRate)}</td>
         <td>${fmtInt(a.nilNoJurCount)}</td>
       </tr>`;
-    }).join('');
+}
+
+function renderTable(anas) {
+    const head = document.getElementById('anaTableHead');
+    const body = document.getElementById('anaTableBody');
+
+    // Header tooltips are custom (Sopal-styled, via the shared chartTooltip),
+    // shown on hover and keyboard focus — not native title= tooltips.
+    head.innerHTML = '<tr>' + TABLE_COLS.map(c => {
+        const arrow = tableSort.key === c.key ? `<span class="sort-arrow">${tableSort.dir === -1 ? '&#9660;' : '&#9650;'}</span>` : '';
+        return `<th data-key="${c.key}" data-tt="${c.title.replace(/"/g, '&quot;')}" tabindex="0" role="button" aria-label="${c.title.replace(/"/g, '&quot;')}">${c.label}${arrow}</th>`;
+    }).join('') + '</tr>';
+
+    head.querySelectorAll('th').forEach(th => {
+        const sort = () => {
+            const key = th.dataset.key;
+            if (tableSort.key === key) tableSort.dir = -tableSort.dir;
+            else tableSort = { key, dir: key === 'name' ? 1 : -1 };
+            renderTable(filteredAnas());
+        };
+        th.addEventListener('click', sort);
+        th.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sort(); } });
+    });
+
+    const sorted = [...anas].sort((a, b) => {
+        const va = a[tableSort.key], vb = b[tableSort.key];
+        if (typeof va === 'string') return tableSort.dir * va.localeCompare(vb);
+        return tableSort.dir * ((va ?? -Infinity) - (vb ?? -Infinity));
+    });
+
+    // Balance row pinned to the bottom regardless of sort.
+    const noAna = noAnaEntry();
+    body.innerHTML = sorted.map(a => tableRowHtml(a)).join('')
+        + (noAna ? tableRowHtml(noAna, 'noana-row', NO_ANA_TT) : '');
+
+    attachTooltips(head);
+    attachTooltips(body);
 }
 
 // ---------- shared chart helpers ----------
@@ -833,7 +840,7 @@ function renderTrend(anas) {
         points: years.map(y => ({ year: y, ...metricPoint(a, y, metric) })),
     }));
     // Corpus-wide decision-weighted average over EVERY decision in the
-    // database (same series as General trends). Drawn last (on top),
+    // database. Drawn last (on top),
     // thicker, black; no min-n gap rule — the pool is always large enough.
     if (anaData.all && anaData.all.years) {
         series.push({
@@ -875,8 +882,8 @@ function renderMultiples(anas) {
     const years = yearRange();
 
     document.getElementById('gridSub').innerHTML =
-        `${sanitizeHtml(metric.label)} per year. ` +
-        (metric.type === 'pct' ? 'All panels share a 0&ndash;100% scale.' : 'Bar heights are scaled per panel.');
+        `${sanitizeHtml(metric.label)} per year.` +
+        (metric.type === 'pct' ? '' : ' Bar heights are scaled per panel.');
 
     if (!anas.length) {
         grid.innerHTML = '<div class="empty-box" style="grid-column: 1/-1;"><h3>No decisions in range</h3><p>Try widening the year filter.</p></div>';
@@ -923,7 +930,7 @@ function renderMultiples(anas) {
     attachTooltips(grid);
 }
 
-// ---------- "General trends": corpus-wide series over EVERY decision ----------
+// ---------- corpus-wide points (drives the "All decisions" average line) ----------
 // Per-year points from the API's corpus-wide buckets (anaData.all.years):
 // every decision with a usable date, regardless of ANA attribution.
 function allPoints(years, metric, ignoreMinN) {
@@ -938,32 +945,15 @@ function allPoints(years, metric, ignoreMinN) {
     });
 }
 
-function renderGeneral() {
-    const el = document.getElementById('generalChart');
-    if (!el) return;
-    const metric = metricById(generalMetric);
-    const years = yearRange();
-
-    if (!anaData.all || !anaData.all.years) {
-        el.innerHTML = '<div class="chart-empty">Corpus-wide statistics are not available yet</div>';
-        return;
-    }
-
-    const series = [{
-        name: 'All decisions',
-        color: 'var(--green-dark)',
-        points: allPoints(years, metric),
-    }];
-
-    el.innerHTML = series[0].points.some(p => p.v !== null)
-        ? buildLineChartSvg(series, years, metric)
-        : `<div class="chart-empty">Not enough data to plot &ldquo;${sanitizeHtml(metric.label)}&rdquo; in this range</div>`;
-    attachTooltips(el);
-}
-
-// ---------- tooltip ----------
+// ---------- tooltip (shared Sopal-styled tooltip; hover + keyboard focus) ----------
 function attachTooltips(root) {
     const tt = document.getElementById('chartTooltip');
+    const clampAndPlace = (x, y) => {
+        const r = tt.getBoundingClientRect();
+        if (x + r.width > window.innerWidth - 8) x = Math.max(8, window.innerWidth - r.width - 8);
+        if (y + r.height > window.innerHeight - 8) y = Math.max(8, window.innerHeight - r.height - 8);
+        tt.style.left = x + 'px'; tt.style.top = y + 'px';
+    };
     root.querySelectorAll('[data-tt]').forEach(elm => {
         elm.addEventListener('mouseenter', () => { tt.innerHTML = elm.dataset.tt; tt.style.display = 'block'; });
         elm.addEventListener('mousemove', e => {
@@ -975,6 +965,13 @@ function attachTooltips(root) {
             tt.style.left = x + 'px'; tt.style.top = y + 'px';
         });
         elm.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
+        // keyboard: show anchored under the focused element
+        elm.addEventListener('focus', () => {
+            tt.innerHTML = elm.dataset.tt; tt.style.display = 'block';
+            const r = elm.getBoundingClientRect();
+            clampAndPlace(r.left, r.bottom + 8);
+        });
+        elm.addEventListener('blur', () => { tt.style.display = 'none'; });
     });
 }
 
