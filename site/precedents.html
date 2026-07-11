@@ -450,37 +450,44 @@ function renderExtractsHtml(){
   return `
     <h2 class="page-title">Extracts</h2>
     <p class="page-sub">${esc(state.firm.name)} · ${totalSecs} categorised submission${totalSecs===1?"":"s"} across the library — drill down by argument type, then by which way the submission runs.</p>
-    <div class="pillbar" id="extCats">
-      <span class="p ${!E.cat?"active":""}" data-ecat="">All</span>
-      ${cats.map(c=>`<span class="p ${E.cat===c.slug?"active":""}" data-ecat="${c.slug}">${esc(c.label)}${c.sections?`<span class="n">${c.sections}</span>`:""}</span>`).join("")}
-    </div>
-    ${active?`<div class="pillbar" id="extSubs">
-      <span class="p ${!E.sub?"active":""}" data-esub="">All ${esc(active.label)}</span>
-      ${active.subs.map(s=>`<span class="p ${E.sub===s.slug?"active":""}" data-esub="${s.slug}">${esc(s.label)}${s.sections?`<span class="n">${s.sections}</span>`:""}</span>`).join("")}
-    </div>`:""}
-    <div class="pillbar" id="extStance">
-      <span class="p ${!E.stance?"active":""}" data-estance="">All stances</span>
-      <span class="p ${E.stance==="for"?"active":""}" data-estance="for">For</span>
-      <span class="p ${E.stance==="against"?"active":""}" data-estance="against">Against</span>
-      <span class="p ${E.stance==="mixed"?"active":""}" data-estance="mixed">Mixed</span>
-    </div>
-    <div id="extList">
-      ${(data && data.extracts.length) ? data.extracts.map(x=>`
-        <div class="result clickable" data-edoc="${esc(x.docId)}" style="cursor:pointer">
-          <div class="doc">${esc(x.heading || x.subcategoryLabel)}</div>
-          <div style="margin-top:3px">
-            <span class="cat-chip">${esc(x.categoryLabel)} → ${esc(x.subcategoryLabel)}</span>
-            ${x.stance?`<span class="stance ${esc(x.stance)}">${esc(x.stanceLabel)}</span>`:""}
-            <span class="small muted">${x.matter?esc(x.matter)+" · ":""}${esc(x.docTitle)} · pp. ${x.pageStart}–${x.pageEnd}</span>
+    <div class="lib">
+      <div class="cat-tree card" style="padding:10px">
+        <div class="cat ${!E.cat?"active":""}" data-ecat=""><span>All extracts</span><span class="n">${totalSecs||""}</span></div>
+        ${cats.map(c=>`
+          <div class="cat ${E.cat===c.slug&&!E.sub?"active":""}" data-ecat="${c.slug}">
+            <span>${esc(c.label)}</span><span class="n">${c.sections||""}</span>
           </div>
-          <div class="snip">${esc(x.summary)}</div>
-        </div>`).join("")
-        : `<p class="muted" style="padding:8px 2px">${data?"No extracts here yet.":"Loading…"}</p>`}
-      ${(data && data.pages>1)?`<div class="pager" style="justify-content:center">
-        <button id="extPrev" ${E.page<=1?"disabled":""}>‹ Prev</button>
-        Page ${E.page} of ${data.pages}
-        <button id="extNext" ${E.page>=data.pages?"disabled":""}>Next ›</button>
-      </div>`:""}
+          ${(E.cat===c.slug)?c.subs.map(s=>`
+            <div class="sub ${E.sub===s.slug?"active":""}" data-esub="${s.slug}" ${s.sections?"":'style="opacity:.55"'}>
+              <span>${esc(s.label)}</span><span class="n">${s.sections||""}</span>
+            </div>`).join(""):""}`).join("")}
+      </div>
+      <div class="lib-docs">
+        <div class="pillbar" id="extStance" style="margin-top:0">
+          <span class="p ${!E.stance?"active":""}" data-estance="">All stances</span>
+          <span class="p ${E.stance==="for"?"active":""}" data-estance="for">For</span>
+          <span class="p ${E.stance==="against"?"active":""}" data-estance="against">Against</span>
+          <span class="p ${E.stance==="mixed"?"active":""}" data-estance="mixed">Mixed</span>
+        </div>
+        <div id="extList">
+          ${(data && data.extracts.length) ? data.extracts.map(x=>`
+            <div class="result clickable" data-edoc="${esc(x.docId)}" style="cursor:pointer">
+              <div class="doc">${esc(x.heading || x.subcategoryLabel)}</div>
+              <div style="margin-top:3px">
+                <span class="cat-chip">${esc(x.categoryLabel)} → ${esc(x.subcategoryLabel)}</span>
+                ${x.stance?`<span class="stance ${esc(x.stance)}">${esc(x.stanceLabel)}</span>`:""}
+                <span class="small muted">${x.matter?esc(x.matter)+" · ":""}${esc(x.docTitle)} · pp. ${x.pageStart}–${x.pageEnd}</span>
+              </div>
+              <div class="snip">${esc(x.summary)}</div>
+            </div>`).join("")
+            : `<p class="muted" style="padding:8px 2px">${data?"No extracts here yet.":"Loading…"}</p>`}
+          ${(data && data.pages>1)?`<div class="pager" style="justify-content:center">
+            <button id="extPrev" ${E.page<=1?"disabled":""}>‹ Prev</button>
+            Page ${E.page} of ${data.pages}
+            <button id="extNext" ${E.page>=data.pages?"disabled":""}>Next ›</button>
+          </div>`:""}
+        </div>
+      </div>
     </div>`;
 }
 
