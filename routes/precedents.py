@@ -177,7 +177,10 @@ def create_invite(firm_id: str, payload: InviteCreate, request: Request, email: 
         )
         con.commit()
     core.audit(firm_id, email, "invite.create", token, f"{payload.email} as {payload.role}", _ip(request))
-    return {"token": token, "url": f"https://app.sopal.com.au/precedents?invite={token}", "expiresAt": expires}
+    # Build the invite URL off whichever host the admin is using (the page is
+    # served on both sopal.com.au and app.sopal.com.au).
+    host = (request.headers.get("host") or "sopal.com.au").split(":", 1)[0]
+    return {"token": token, "url": f"https://{host}/precedents?invite={token}", "expiresAt": expires}
 
 
 class InviteAccept(BaseModel):

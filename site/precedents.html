@@ -496,7 +496,7 @@ async function renderMembers(){
     };
   }
   document.querySelectorAll("[data-copy]").forEach(b=> b.onclick = ()=>{
-    navigator.clipboard.writeText(`https://app.sopal.com.au/precedents?invite=${b.dataset.copy}`); toast("Invite link copied.");
+    navigator.clipboard.writeText(`${location.origin}/precedents?invite=${b.dataset.copy}`); toast("Invite link copied.");
   });
 }
 
