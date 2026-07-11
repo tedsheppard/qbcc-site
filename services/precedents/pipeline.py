@@ -26,7 +26,7 @@ from datetime import datetime
 from typing import Any
 
 from . import core
-from .taxonomy import TAXONOMY_VERSION, build_system_prompt, valid_pair
+from .taxonomy import TAXONOMY_VERSION, build_system_prompt, valid_pair, valid_stance
 
 MODEL = os.getenv("PRECEDENTS_MODEL", "claude-sonnet-5")
 # USD per 1M tokens at 50% batch pricing; override via env when prices change.
@@ -271,9 +271,24 @@ def _section_text(con, doc_id: str, page_start: int, page_end: int) -> str:
     return text[:MAX_SECTION_CHARS]
 
 
+def _parse_amount(value) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).upper().replace("$", "").replace(",", "").replace("AUD", "").strip()
+    if not text:
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
 def _apply_result(con, doc, parsed: dict[str, Any]) -> int:
     doc_id, firm_id = doc["id"], doc["firm_id"]
     meta = parsed.get("document") or {}
+    matter = parsed.get("matter") or {}
     sections = parsed.get("sections") or []
     n_pages = int(doc["pages"] or 1)
     written = 0
@@ -296,9 +311,10 @@ def _apply_result(con, doc, parsed: dict[str, Any]) -> int:
             except Exception:
                 confidence = 0.0
             cur = con.execute(
-                "INSERT INTO sections (doc_id, firm_id, category, subcategory, heading, summary, page_start, page_end, confidence, created_at) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?)",
-                (doc_id, firm_id, cat, sub, heading, summary, p1, p2, confidence, core.now_iso()),
+                "INSERT INTO sections (doc_id, firm_id, category, subcategory, heading, summary, page_start, page_end, confidence, created_at, stance) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                (doc_id, firm_id, cat, sub, heading, summary, p1, p2, confidence, core.now_iso(),
+                 valid_stance(str(s.get("stance", "")))),
             )
             section_id = cur.lastrowid
             con.execute(
@@ -318,6 +334,21 @@ def _apply_result(con, doc, parsed: dict[str, Any]) -> int:
                 doc_id,
             ),
         )
+        # Matter metadata from the AI scan — but user edits always win: once
+        # someone has pencil-edited the row, re-runs never overwrite it.
+        if not doc["meta_edited"]:
+            con.execute(
+                "UPDATE documents SET claimant=?, respondent=?, claimant_lawyers=?, respondent_lawyers=?, claimed_amount=?, scheduled_amount=? WHERE id=?",
+                (
+                    str(matter.get("claimant", ""))[:200],
+                    str(matter.get("respondent", ""))[:200],
+                    str(matter.get("claimant_lawyers", ""))[:200],
+                    str(matter.get("respondent_lawyers", ""))[:200],
+                    _parse_amount(matter.get("claimed_amount")),
+                    _parse_amount(matter.get("scheduled_amount")),
+                    doc_id,
+                ),
+            )
         con.commit()
     return written
 

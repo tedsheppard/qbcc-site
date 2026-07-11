@@ -67,6 +67,23 @@
   .pill.failed{background:#f8e7e5;color:var(--danger)}
   .pill.needs_review{background:#efe7f8;color:#6b3fa0}
   .cat-chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:1px 8px;font-size:11.5px;font-weight:600;margin:1px 4px 1px 0}
+  .stance{display:inline-block;border-radius:6px;padding:1px 8px;font-size:11.5px;font-weight:600;margin:1px 4px 1px 0}
+  .stance.for{background:#e4f2e8;color:var(--ok)}
+  .stance.against{background:#f8e7e5;color:var(--danger)}
+  .stance.mixed{background:#f3ede0;color:var(--warn)}
+  th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+  th.sortable:hover{color:var(--accent)}
+  .pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;padding:10px 12px;font-size:12.5px;color:var(--muted)}
+  .pager button{padding:4px 10px;font-size:12.5px}
+  .pillbar{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+  .pillbar .p{border:1px solid var(--border);background:#fff;border-radius:99px;padding:4px 13px;font-size:12.5px;font-weight:500;cursor:pointer}
+  .pillbar .p:hover{border-color:#c9c9c4}
+  .pillbar .p.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .pillbar .p .n{opacity:.65;font-size:11px;margin-left:4px}
+  .pencil{border:none;background:none;padding:4px;font-size:14px;opacity:.55}
+  .pencil:hover{opacity:1}
+  .modal label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 3px}
+  .modal .two{display:flex;gap:10px}.modal .two>div{flex:1}
 
   /* upload */
   .drop{border:2px dashed var(--border);border-radius:var(--radius);padding:28px;text-align:center;color:var(--muted);background:var(--panel);transition:border-color .15s;margin-bottom:16px}
@@ -116,7 +133,10 @@ const $ = (sel, el=document) => el.querySelector(sel);
 const state = {
   token: localStorage.getItem(TOKEN_KEY) || "",
   me: null, firms: [], firm: null, tab: "library",
-  docs: [], tree: [], catFilter: "", subFilter: "",
+  docs: [], docTotal: 0, docPages: 1,
+  lib: {q: "", sort: "created_at", dir: "desc", page: 1},
+  ext: {cat: "", sub: "", stance: "", page: 1, data: null},
+  tree: [],
   taxonomy: null, pollTimer: null, drawerDoc: null,
   searchResults: null, searchQ: "",
 };
@@ -217,7 +237,9 @@ async function selectFirm(fid){
   state.firm = state.firms.find(f=>f.id===fid) || null;
   if(!state.firm) return renderFirmPicker();
   localStorage.setItem("precedents_last_firm", fid);
-  state.tab="library"; state.catFilter=""; state.subFilter="";
+  state.tab="library";
+  state.lib = {q:"", sort:"created_at", dir:"desc", page:1};
+  state.ext = {cat:"", sub:"", stance:"", page:1, data:null};
   render(); await refreshLibrary();
 }
 
@@ -256,12 +278,17 @@ function loadTab(){
 
 /* ---------------- library ---------------- */
 async function refreshLibrary(){
+  const L = state.lib, E = state.ext;
   try{
-    const [docs, cats] = await Promise.all([
-      api(`/api/precedents/firms/${state.firm.id}/documents?category=${encodeURIComponent(state.catFilter)}&subcategory=${encodeURIComponent(state.subFilter)}`),
+    const docParams = new URLSearchParams({q:L.q, sort:L.sort, dir:L.dir, page:String(L.page)});
+    const extParams = new URLSearchParams({category:E.cat, subcategory:E.sub, stance:E.stance, page:String(E.page)});
+    const [docs, cats, ext] = await Promise.all([
+      api(`/api/precedents/firms/${state.firm.id}/documents?`+docParams),
       api(`/api/precedents/firms/${state.firm.id}/categories`),
+      api(`/api/precedents/firms/${state.firm.id}/extracts?`+extParams),
     ]);
-    state.docs = docs.documents; state.tree = cats.tree;
+    state.docs = docs.documents; state.docTotal = docs.total; state.docPages = docs.pages;
+    state.tree = cats.tree; E.data = ext;
   }catch(e){ toast(e.message); }
   if(state.tab==="library") renderLibrary(false);
   const pending = state.docs.some(d=>["queued","extracting","extracted","classifying"].includes(d.status));
@@ -270,55 +297,194 @@ async function refreshLibrary(){
 }
 
 function statusLabel(s){ return ({queued:"Queued", extracting:"Extracting", extracted:"Awaiting AI", classifying:"Categorising", ready:"Ready", failed:"Failed", needs_review:"Needs review"})[s]||s; }
+function fmtAmt(n){ return (n===null||n===undefined) ? "—" : "$"+Number(n).toLocaleString("en-AU",{maximumFractionDigits:0}); }
+function sortArrow(col){ const L=state.lib; return L.sort===col ? (L.dir==="asc"?" ▲":" ▼") : ""; }
 
 function renderLibrary(fetch=true){
   const m = $("#main"); if(!m) return;
-  const totalSecs = state.tree.reduce((a,c)=>a+c.sections,0);
+  const L = state.lib;
   m.innerHTML = `
-    <h2 class="page-title">Document library</h2>
-    <p class="page-sub">${esc(state.firm.name)} · ${state.docs.length} document${state.docs.length===1?"":"s"} shown · ${totalSecs} categorised submissions</p>
-    <div class="drop" id="drop">
-      <b>Drop PDF or DOCX files here</b> or <a id="pickLink" style="cursor:pointer">browse</a> — up to 20 files, 60&nbsp;MB each.<br>
-      <span class="small">Each document is text-extracted, then categorised by AI into submission types. Originals are stored encrypted; access is audit-logged.</span>
+    <h2 class="page-title">Library</h2>
+    <p class="page-sub">${esc(state.firm.name)} · ${state.docTotal} submission set${state.docTotal===1?"":"s"}</p>
+    <div class="drop" id="drop" style="cursor:pointer" title="Click to choose files">
+      <b>Drop PDF or DOCX files here</b> or click anywhere in this box — up to 20 files, 60&nbsp;MB each.<br>
+      <span class="small">Each set is scanned by AI: parties, lawyers and amounts fill the table below, and every submission is categorised into the Extracts bank. Originals are stored encrypted; access is audit-logged.</span>
       <input type="file" id="picker" multiple accept=".pdf,.docx" class="hidden">
     </div>
-    <div class="lib">
-      <div class="cat-tree card" style="padding:10px">
-        <div class="cat ${!state.catFilter?"active":""}" data-cat=""><span>All documents</span></div>
-        ${state.tree.map(c=>`
-          <div class="cat ${state.catFilter===c.slug&&!state.subFilter?"active":""}" data-cat="${c.slug}">
-            <span>${esc(c.label)}</span><span class="n">${c.sections||""}</span>
-          </div>
-          ${(state.catFilter===c.slug)?c.subs.filter(s=>s.sections).map(s=>`
-            <div class="sub ${state.subFilter===s.slug?"active":""}" data-cat="${c.slug}" data-sub="${s.slug}">
-              <span>${esc(s.label)}</span><span class="n">${s.sections}</span>
-            </div>`).join(""):""}`).join("")}
-      </div>
-      <div class="lib-docs card" style="padding:6px 0">
-        <table><thead><tr><th>Document</th><th>Categories</th><th>Pages</th><th>Status</th><th>Uploaded</th></tr></thead>
-        <tbody id="docRows">${state.docs.map(d=>`
-          <tr class="clickable" data-doc="${esc(d.id)}">
-            <td><b>${esc(d.title)}</b><br><span class="muted small">${esc(d.filename)}${d.docType?" · "+esc(d.docType):""}</span></td>
-            <td>${d.sectionCount?`<span class="cat-chip">${d.sectionCount} section${d.sectionCount===1?"":"s"}</span>`:`<span class="muted small">—</span>`}</td>
-            <td>${d.pages||"—"}</td>
-            <td><span class="pill ${esc(d.status)}">${statusLabel(d.status)}</span>${d.error?`<br><span class="small" style="color:var(--danger)">${esc(d.error)}</span>`:""}</td>
-            <td class="small muted">${fmtDate(d.createdAt)}<br>${esc(d.uploadedBy)}</td>
-          </tr>`).join("") || `<tr><td colspan="5" class="muted" style="padding:24px;text-align:center">No documents${state.catFilter?" in this category":""} yet.</td></tr>`}
-        </tbody></table>
-      </div>
-    </div>`;
+    <div class="card" style="padding:12px"><div class="row">
+      <input id="libQ" class="grow" placeholder="Search parties, lawyers or document names…" value="${esc(L.q)}">
+      <button class="primary" id="libQGo">Search</button>${L.q?`<button id="libQClear">Clear</button>`:""}
+    </div></div>
+    <div class="card" style="padding:6px 0;overflow-x:auto">
+      <table style="font-size:13px;min-width:1000px"><thead><tr>
+        <th class="sortable" data-sort="title">Document${sortArrow("title")}</th>
+        <th class="sortable" data-sort="claimant">Claimant${sortArrow("claimant")}</th>
+        <th class="sortable" data-sort="respondent">Respondent${sortArrow("respondent")}</th>
+        <th class="sortable" data-sort="claimed" style="text-align:right">Claimed${sortArrow("claimed")}</th>
+        <th class="sortable" data-sort="scheduled" style="text-align:right">Scheduled${sortArrow("scheduled")}</th>
+        <th class="sortable" data-sort="date">Date${sortArrow("date")}</th>
+        <th class="sortable" data-sort="claimant_lawyers">Claimant's Lawyers${sortArrow("claimant_lawyers")}</th>
+        <th class="sortable" data-sort="respondent_lawyers">Respondent's Lawyers${sortArrow("respondent_lawyers")}</th>
+        <th>Status</th><th></th>
+      </tr></thead>
+      <tbody>${state.docs.map(d=>`
+        <tr class="clickable" data-doc="${esc(d.id)}">
+          <td style="max-width:220px"><b>${esc(d.title)}</b><br><span class="muted small">${esc(d.filename)}</span></td>
+          <td>${esc(d.claimant)||"<span class='muted'>—</span>"}</td>
+          <td>${esc(d.respondent)||"<span class='muted'>—</span>"}</td>
+          <td style="text-align:right;white-space:nowrap">${fmtAmt(d.claimedAmount)}</td>
+          <td style="text-align:right;white-space:nowrap">${fmtAmt(d.scheduledAmount)}</td>
+          <td style="white-space:nowrap">${esc(d.dateHint)||"<span class='muted'>—</span>"}</td>
+          <td>${esc(d.claimantLawyers)||"<span class='muted'>—</span>"}</td>
+          <td>${esc(d.respondentLawyers)||"<span class='muted'>—</span>"}</td>
+          <td><span class="pill ${esc(d.status)}">${statusLabel(d.status)}</span>${d.error?`<br><span class="small" style="color:var(--danger)">${esc(d.error)}</span>`:""}</td>
+          <td><button class="pencil" data-edit="${esc(d.id)}" title="Edit details">✎</button></td>
+        </tr>`).join("") || `<tr><td colspan="10" class="muted" style="padding:24px;text-align:center">${L.q?"No matches.":"No submission sets yet — upload above."}</td></tr>`}
+      </tbody></table>
+      ${state.docPages>1?`<div class="pager">
+        <button id="libPrev" ${L.page<=1?"disabled":""}>‹ Prev</button>
+        Page ${L.page} of ${state.docPages}
+        <button id="libNext" ${L.page>=state.docPages?"disabled":""}>Next ›</button>
+      </div>`:""}
+    </div>
+    ${renderExtractsHtml()}`;
+  bindLibrary(); bindExtracts();
+  if(fetch) refreshLibrary();
+}
+
+function bindLibrary(){
   const drop = $("#drop"), picker = $("#picker");
-  $("#pickLink").onclick = ()=>picker.click();
+  if(!drop) return;
+  drop.onclick = e=>{ if(e.target!==picker) picker.click(); };
+  picker.onclick = e=> e.stopPropagation();
   picker.onchange = ()=> uploadFiles([...picker.files]);
   ;["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag");}));
   ;["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag");}));
   drop.addEventListener("drop", e=> uploadFiles([...e.dataTransfer.files]));
-  document.querySelectorAll(".cat-tree .cat, .cat-tree .sub").forEach(el=> el.onclick = ()=>{
-    state.catFilter = el.dataset.cat || ""; state.subFilter = el.dataset.sub || "";
-    refreshLibrary();
+  const q = $("#libQ");
+  $("#libQGo").onclick = ()=>{ state.lib.q=q.value.trim(); state.lib.page=1; refreshLibrary(); };
+  q.addEventListener("keydown", e=>{ if(e.key==="Enter") $("#libQGo").click(); });
+  const clear = $("#libQClear"); if(clear) clear.onclick = ()=>{ state.lib.q=""; state.lib.page=1; refreshLibrary(); };
+  document.querySelectorAll("th.sortable").forEach(th=> th.onclick = ()=>{
+    const col = th.dataset.sort;
+    if(state.lib.sort===col) state.lib.dir = state.lib.dir==="asc"?"desc":"asc";
+    else { state.lib.sort=col; state.lib.dir = (col==="claimed"||col==="scheduled"||col==="date")?"desc":"asc"; }
+    state.lib.page=1; refreshLibrary();
   });
-  document.querySelectorAll("[data-doc]").forEach(tr=> tr.onclick = ()=> openDrawer(tr.dataset.doc));
-  if(fetch) refreshLibrary();
+  const prev=$("#libPrev"), next=$("#libNext");
+  if(prev) prev.onclick=()=>{ state.lib.page--; refreshLibrary(); };
+  if(next) next.onclick=()=>{ state.lib.page++; refreshLibrary(); };
+  document.querySelectorAll("tr[data-doc]").forEach(tr=> tr.onclick = ()=> openDrawer(tr.dataset.doc));
+  document.querySelectorAll("[data-edit]").forEach(b=> b.onclick = e=>{
+    e.stopPropagation();
+    const d = state.docs.find(x=>x.id===b.dataset.edit);
+    if(d) openMetaModal(d);
+  });
+}
+
+/* ---------------- meta edit modal ---------------- */
+function openMetaModal(d){
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div class="modal-bg" id="mBg"><div class="modal" onclick="event.stopPropagation()">
+      <h3 style="margin:0 0 4px">Edit matter details</h3>
+      <p class="muted small" style="margin:0 0 6px">${esc(d.filename)} — AI-scanned values; your edits stick and won't be overwritten by re-runs.</p>
+      <label>Document title</label><input id="mTitle" value="${esc(d.title)}">
+      <div class="two">
+        <div><label>Claimant</label><input id="mClaimant" value="${esc(d.claimant)}"></div>
+        <div><label>Respondent</label><input id="mRespondent" value="${esc(d.respondent)}"></div>
+      </div>
+      <div class="two">
+        <div><label>Claimed amount (AUD)</label><input id="mClaimed" type="number" step="0.01" value="${d.claimedAmount??""}"></div>
+        <div><label>Scheduled amount (AUD)</label><input id="mScheduled" type="number" step="0.01" value="${d.scheduledAmount??""}"></div>
+      </div>
+      <label>Date</label><input id="mDate" placeholder="YYYY-MM-DD" value="${esc(d.dateHint)}">
+      <div class="two">
+        <div><label>Claimant's lawyers</label><input id="mCl" value="${esc(d.claimantLawyers)}"></div>
+        <div><label>Respondent's lawyers</label><input id="mRl" value="${esc(d.respondentLawyers)}"></div>
+      </div>
+      <div class="row" style="margin-top:16px;justify-content:flex-end">
+        <button id="mCancel">Cancel</button><button class="primary" id="mSave">Save</button>
+      </div>
+    </div></div>`;
+  document.body.appendChild(wrap);
+  const close = ()=>wrap.remove();
+  $("#mBg",wrap).onclick = close; $("#mCancel",wrap).onclick = close;
+  $("#mSave",wrap).onclick = async ()=>{
+    const num = v => { const t=(v||"").trim(); if(!t) return null; const n=Number(t); return isNaN(n)?null:n; };
+    try{
+      await api(`/api/precedents/firms/${state.firm.id}/documents/${d.id}/meta`, {method:"PATCH", json:{
+        title: $("#mTitle",wrap).value.trim(),
+        claimant: $("#mClaimant",wrap).value.trim(),
+        respondent: $("#mRespondent",wrap).value.trim(),
+        claimedAmount: num($("#mClaimed",wrap).value),
+        scheduledAmount: num($("#mScheduled",wrap).value),
+        date: $("#mDate",wrap).value.trim(),
+        claimantLawyers: $("#mCl",wrap).value.trim(),
+        respondentLawyers: $("#mRl",wrap).value.trim(),
+      }});
+      toast("Saved."); close(); refreshLibrary();
+    }catch(e){ toast(e.message); }
+  };
+}
+
+/* ---------------- extracts section ---------------- */
+function renderExtractsHtml(){
+  const E = state.ext, data = E.data;
+  const cats = state.tree.filter(c=> c.slug!=="other" || c.sections>0);
+  const active = state.tree.find(c=>c.slug===E.cat);
+  const totalSecs = state.tree.reduce((a,c)=>a+c.sections,0);
+  return `
+    <h2 class="page-title" style="margin-top:34px">Extracts</h2>
+    <p class="page-sub">${totalSecs} categorised submission${totalSecs===1?"":"s"} across the library — drill down by argument type, then by which way the submission runs.</p>
+    <div class="pillbar" id="extCats">
+      <span class="p ${!E.cat?"active":""}" data-ecat="">All</span>
+      ${cats.map(c=>`<span class="p ${E.cat===c.slug?"active":""}" data-ecat="${c.slug}">${esc(c.label)}${c.sections?`<span class="n">${c.sections}</span>`:""}</span>`).join("")}
+    </div>
+    ${active?`<div class="pillbar" id="extSubs">
+      <span class="p ${!E.sub?"active":""}" data-esub="">All ${esc(active.label)}</span>
+      ${active.subs.map(s=>`<span class="p ${E.sub===s.slug?"active":""}" data-esub="${s.slug}">${esc(s.label)}${s.sections?`<span class="n">${s.sections}</span>`:""}</span>`).join("")}
+    </div>`:""}
+    <div class="pillbar" id="extStance">
+      <span class="p ${!E.stance?"active":""}" data-estance="">All stances</span>
+      <span class="p ${E.stance==="for"?"active":""}" data-estance="for">For</span>
+      <span class="p ${E.stance==="against"?"active":""}" data-estance="against">Against</span>
+      <span class="p ${E.stance==="mixed"?"active":""}" data-estance="mixed">Mixed</span>
+    </div>
+    <div id="extList">
+      ${(data && data.extracts.length) ? data.extracts.map(x=>`
+        <div class="result clickable" data-edoc="${esc(x.docId)}" style="cursor:pointer">
+          <div class="doc">${esc(x.heading || x.subcategoryLabel)}</div>
+          <div style="margin-top:3px">
+            <span class="cat-chip">${esc(x.categoryLabel)} → ${esc(x.subcategoryLabel)}</span>
+            ${x.stance?`<span class="stance ${esc(x.stance)}">${esc(x.stanceLabel)}</span>`:""}
+            <span class="small muted">${x.matter?esc(x.matter)+" · ":""}${esc(x.docTitle)} · pp. ${x.pageStart}–${x.pageEnd}</span>
+          </div>
+          <div class="snip">${esc(x.summary)}</div>
+        </div>`).join("")
+        : `<p class="muted" style="padding:8px 2px">${data?"No extracts here yet.":"Loading…"}</p>`}
+      ${(data && data.pages>1)?`<div class="pager" style="justify-content:center">
+        <button id="extPrev" ${E.page<=1?"disabled":""}>‹ Prev</button>
+        Page ${E.page} of ${data.pages}
+        <button id="extNext" ${E.page>=data.pages?"disabled":""}>Next ›</button>
+      </div>`:""}
+    </div>`;
+}
+
+function bindExtracts(){
+  document.querySelectorAll("[data-ecat]").forEach(el=> el.onclick = ()=>{
+    state.ext.cat = el.dataset.ecat; state.ext.sub=""; state.ext.page=1; refreshLibrary();
+  });
+  document.querySelectorAll("[data-esub]").forEach(el=> el.onclick = ()=>{
+    state.ext.sub = el.dataset.esub; state.ext.page=1; refreshLibrary();
+  });
+  document.querySelectorAll("[data-estance]").forEach(el=> el.onclick = ()=>{
+    state.ext.stance = el.dataset.estance; state.ext.page=1; refreshLibrary();
+  });
+  const prev=$("#extPrev"), next=$("#extNext");
+  if(prev) prev.onclick=()=>{ state.ext.page--; refreshLibrary(); };
+  if(next) next.onclick=()=>{ state.ext.page++; refreshLibrary(); };
+  document.querySelectorAll("[data-edoc]").forEach(el=> el.onclick = ()=> openDrawer(el.dataset.edoc));
 }
 
 async function uploadFiles(files){
@@ -350,6 +516,7 @@ async function openDrawer(docId){
         <button id="dClose">Close</button>
       </div>
       <p class="muted small" style="margin:4px 0 12px">${esc(d.filename)} · ${d.pages} pages · ${fmtBytes(d.sizeBytes)} · <span class="pill ${esc(d.status)}">${statusLabel(d.status)}</span><br>
+      ${(d.claimant&&d.respondent)?`<b>${esc(d.claimant)} v ${esc(d.respondent)}</b> · `:""}${d.claimedAmount!=null?"claimed "+fmtAmt(d.claimedAmount)+" · ":""}${d.scheduledAmount!=null?"scheduled "+fmtAmt(d.scheduledAmount)+" · ":""}<br>
       ${d.docType?esc(d.docType)+" · ":""}${d.partySide&&d.partySide!=="unknown"?esc(d.partySide)+" side · ":""}${d.act&&d.act!=="unknown"?esc(d.act)+" · ":""}uploaded by ${esc(d.uploadedBy)} ${fmtDate(d.createdAt)}</p>
       <div class="row" style="margin-bottom:14px">
         <button class="primary" id="dOpen">Open document</button>
@@ -359,7 +526,7 @@ async function openDrawer(docId){
       ${detail.sections.map(s=>`
         <div class="sec">
           <div class="hd">${esc(s.heading||s.subcategoryLabel)}</div>
-          <div class="meta"><span class="cat-chip">${esc(s.categoryLabel)} → ${esc(s.subcategoryLabel)}</span> pp. ${s.pageStart}–${s.pageEnd}${s.confidence?` · confidence ${(s.confidence*100).toFixed(0)}%`:""}</div>
+          <div class="meta"><span class="cat-chip">${esc(s.categoryLabel)} → ${esc(s.subcategoryLabel)}</span>${s.stance?`<span class="stance ${esc(s.stance)}">${esc(s.stanceLabel)}</span>`:""} pp. ${s.pageStart}–${s.pageEnd}${s.confidence?` · confidence ${(s.confidence*100).toFixed(0)}%`:""}</div>
           <div class="small">${esc(s.summary)}</div>
         </div>`).join("") || `<p class="muted small">${d.status==="ready"?"No substantive submissions identified.":"Sections appear here once categorisation finishes."}</p>`}
     </div>`;
@@ -437,7 +604,7 @@ function renderResultsHtml(){
     r.results.map(x=>`
     <div class="result clickable" data-doc="${esc(x.docId)}" style="cursor:pointer">
       <div class="doc">${esc(x.docTitle)} <span class="muted small">· pp. ${x.pageStart}–${x.pageEnd}</span></div>
-      <div style="margin-top:3px"><span class="cat-chip">${esc(x.categoryLabel)} → ${esc(x.subcategoryLabel)}</span>${x.heading?` <span class="small muted">${esc(x.heading)}</span>`:""}</div>
+      <div style="margin-top:3px"><span class="cat-chip">${esc(x.categoryLabel)} → ${esc(x.subcategoryLabel)}</span>${x.stance?`<span class="stance ${esc(x.stance)}">${esc(x.stanceLabel)}</span>`:""}${x.heading?` <span class="small muted">${esc(x.heading)}</span>`:""}</div>
       <div class="snip">${x.snippet}</div>
     </div>`).join("");
 }

@@ -133,7 +133,14 @@ CREATE TABLE IF NOT EXISTS documents (
     taxonomy_version TEXT DEFAULT '',
     uploaded_by TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    claimant TEXT DEFAULT '',
+    respondent TEXT DEFAULT '',
+    claimant_lawyers TEXT DEFAULT '',
+    respondent_lawyers TEXT DEFAULT '',
+    claimed_amount REAL,
+    scheduled_amount REAL,
+    meta_edited INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_documents_firm ON documents(firm_id, status);
 CREATE INDEX IF NOT EXISTS idx_documents_batch ON documents(batch_id);
@@ -155,7 +162,8 @@ CREATE TABLE IF NOT EXISTS sections (
     page_start INTEGER NOT NULL DEFAULT 1,
     page_end INTEGER NOT NULL DEFAULT 1,
     confidence REAL DEFAULT 0,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    stance TEXT DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_sections_firm ON sections(firm_id, category, subcategory);
 CREATE INDEX IF NOT EXISTS idx_sections_doc ON sections(doc_id);
@@ -202,6 +210,23 @@ def get_con() -> sqlite3.Connection:
         con.execute("PRAGMA journal_mode=WAL;")
         con.execute("PRAGMA foreign_keys=ON;")
         con.executescript(_SCHEMA)
+        # Column migrations for DBs created under an earlier schema (the
+        # CREATE TABLE IF NOT EXISTS above only shapes fresh installs).
+        _migrations = [
+            ("documents", "claimant", "TEXT DEFAULT ''"),
+            ("documents", "respondent", "TEXT DEFAULT ''"),
+            ("documents", "claimant_lawyers", "TEXT DEFAULT ''"),
+            ("documents", "respondent_lawyers", "TEXT DEFAULT ''"),
+            ("documents", "claimed_amount", "REAL"),
+            ("documents", "scheduled_amount", "REAL"),
+            ("documents", "meta_edited", "INTEGER NOT NULL DEFAULT 0"),
+            ("sections", "stance", "TEXT DEFAULT ''"),
+        ]
+        for _table, _col, _ddl in _migrations:
+            try:
+                con.execute(f"ALTER TABLE {_table} ADD COLUMN {_col} {_ddl}")
+            except sqlite3.OperationalError:
+                pass  # column already exists
         # FTS over section text: fts5 preferred, fts4 fallback. Columns:
         # section text + summary searchable; ids carried alongside.
         try:

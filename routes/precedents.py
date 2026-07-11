@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field
 
 from routes.sopal_v2 import _current_user_email
 from services.precedents import core
-from services.precedents.taxonomy import TAXONOMY, taxonomy_public
+from services.precedents.taxonomy import STANCES, TAXONOMY, sub_label, taxonomy_public
 
 ROOT = Path(__file__).resolve().parent.parent
 PAGE_PATH = ROOT / "site" / "precedents.html"
@@ -88,6 +88,13 @@ def _doc_public(d: sqlite3.Row, section_count: int | None = None) -> dict[str, A
         "uploadedBy": d["uploaded_by"],
         "createdAt": d["created_at"],
         "updatedAt": d["updated_at"],
+        "claimant": d["claimant"] or "",
+        "respondent": d["respondent"] or "",
+        "claimantLawyers": d["claimant_lawyers"] or "",
+        "respondentLawyers": d["respondent_lawyers"] or "",
+        "claimedAmount": d["claimed_amount"],
+        "scheduledAmount": d["scheduled_amount"],
+        "metaEdited": bool(d["meta_edited"]),
     }
     if section_count is not None:
         out["sectionCount"] = section_count
@@ -286,37 +293,106 @@ async def upload_documents(
     return {"accepted": accepted, "skipped": skipped}
 
 
+PAGE_SIZE = 20
+_DOC_SORTS = {
+    "title": "COALESCE(NULLIF(d.title,''), d.filename) COLLATE NOCASE",
+    "claimant": "NULLIF(d.claimant,'') COLLATE NOCASE",
+    "respondent": "NULLIF(d.respondent,'') COLLATE NOCASE",
+    "claimant_lawyers": "NULLIF(d.claimant_lawyers,'') COLLATE NOCASE",
+    "respondent_lawyers": "NULLIF(d.respondent_lawyers,'') COLLATE NOCASE",
+    "claimed": "d.claimed_amount",
+    "scheduled": "d.scheduled_amount",
+    "date": "NULLIF(d.doc_date_hint,'')",
+    "created_at": "d.created_at",
+}
+
+
 @router.get("/firms/{firm_id}/documents")
 def list_documents(
     firm_id: str,
+    q: str = "",
     status: str = "",
-    category: str = "",
-    subcategory: str = "",
-    limit: int = 500,
+    sort: str = "created_at",
+    dir: str = "desc",
+    page: int = 1,
     email: str = Depends(_current_user_email),
 ) -> dict[str, Any]:
     _member(firm_id, email)
     con = core.get_con()
-    limit = max(1, min(limit, 1000))
+    page = max(1, min(page, 10_000))
     params: list[Any] = [firm_id]
     where = "d.firm_id = ?"
     if status:
         where += " AND d.status = ?"
         params.append(status)
-    if category:
-        where += " AND EXISTS (SELECT 1 FROM sections s WHERE s.doc_id = d.id AND s.category = ?" + (
-            " AND s.subcategory = ?)" if subcategory else ")"
+    if q.strip():
+        like = f"%{q.strip()}%"
+        where += (
+            " AND (d.title LIKE ? OR d.filename LIKE ? OR d.claimant LIKE ? OR d.respondent LIKE ?"
+            " OR d.claimant_lawyers LIKE ? OR d.respondent_lawyers LIKE ?)"
         )
-        params.append(category)
-        if subcategory:
-            params.append(subcategory)
-    params.append(limit)
+        params.extend([like] * 6)
+    order_col = _DOC_SORTS.get(sort, _DOC_SORTS["created_at"])
+    direction = "ASC" if dir.lower() == "asc" else "DESC"
+    # NULLS/blanks last regardless of direction so unedited rows don't crowd the top.
+    order = f"({order_col}) IS NULL, {order_col} {direction}"
+    total = con.execute(f"SELECT COUNT(*) AS n FROM documents d WHERE {where}", params).fetchone()["n"]
     rows = con.execute(
         f"SELECT d.*, (SELECT COUNT(*) FROM sections s WHERE s.doc_id = d.id) AS section_count "
-        f"FROM documents d WHERE {where} ORDER BY d.created_at DESC LIMIT ?",
-        params,
+        f"FROM documents d WHERE {where} ORDER BY {order} LIMIT ? OFFSET ?",
+        params + [PAGE_SIZE, (page - 1) * PAGE_SIZE],
     ).fetchall()
-    return {"documents": [_doc_public(r, r["section_count"]) for r in rows]}
+    return {
+        "documents": [_doc_public(r, r["section_count"]) for r in rows],
+        "total": total,
+        "page": page,
+        "pages": max(1, -(-total // PAGE_SIZE)),
+        "pageSize": PAGE_SIZE,
+    }
+
+
+class DocMetaPatch(BaseModel):
+    claimant: str = Field(default="", max_length=200)
+    respondent: str = Field(default="", max_length=200)
+    claimantLawyers: str = Field(default="", max_length=200)
+    respondentLawyers: str = Field(default="", max_length=200)
+    claimedAmount: float | None = None
+    scheduledAmount: float | None = None
+    date: str = Field(default="", max_length=40)
+    title: str = Field(default="", max_length=300)
+
+
+@router.patch("/firms/{firm_id}/documents/{doc_id}/meta")
+def edit_document_meta(
+    firm_id: str,
+    doc_id: str,
+    payload: DocMetaPatch,
+    request: Request,
+    email: str = Depends(_current_user_email),
+) -> dict[str, Any]:
+    _member(firm_id, email)
+    doc = _doc_or_404(firm_id, doc_id)
+    con = core.get_con()
+    with core._con_lock:
+        con.execute(
+            "UPDATE documents SET claimant=?, respondent=?, claimant_lawyers=?, respondent_lawyers=?, "
+            "claimed_amount=?, scheduled_amount=?, doc_date_hint=?, title=?, meta_edited=1, updated_at=? WHERE id=?",
+            (
+                payload.claimant.strip(),
+                payload.respondent.strip(),
+                payload.claimantLawyers.strip(),
+                payload.respondentLawyers.strip(),
+                payload.claimedAmount,
+                payload.scheduledAmount,
+                payload.date.strip(),
+                payload.title.strip() or doc["title"],
+                core.now_iso(),
+                doc_id,
+            ),
+        )
+        con.commit()
+    core.audit(firm_id, email, "doc.edit_meta", doc_id, f"{payload.claimant} v {payload.respondent}", _ip(request))
+    return _doc_public(_doc_or_404(firm_id, doc_id))
 
 
 @router.get("/firms/{firm_id}/documents/{doc_id}")
@@ -335,7 +411,9 @@ def document_detail(firm_id: str, doc_id: str, email: str = Depends(_current_use
                 "category": s["category"],
                 "categoryLabel": TAXONOMY.get(s["category"], {}).get("label", s["category"]),
                 "subcategory": s["subcategory"],
-                "subcategoryLabel": TAXONOMY.get(s["category"], {}).get("subs", {}).get(s["subcategory"], s["subcategory"]),
+                "subcategoryLabel": sub_label(s["category"], s["subcategory"]),
+                "stance": s["stance"] or "",
+                "stanceLabel": STANCES.get(s["stance"] or "", ""),
                 "heading": s["heading"],
                 "summary": s["summary"],
                 "pageStart": s["page_start"],
@@ -456,7 +534,9 @@ def search(
                 "category": s["category"],
                 "categoryLabel": TAXONOMY.get(s["category"], {}).get("label", s["category"]),
                 "subcategory": s["subcategory"],
-                "subcategoryLabel": TAXONOMY.get(s["category"], {}).get("subs", {}).get(s["subcategory"], s["subcategory"]),
+                "subcategoryLabel": sub_label(s["category"], s["subcategory"]),
+                "stance": s["stance"] or "",
+                "stanceLabel": STANCES.get(s["stance"] or "", ""),
                 "heading": s["heading"],
                 "summary": s["summary"],
                 "pageStart": s["page_start"],
@@ -495,15 +575,73 @@ def categories(firm_id: str, email: str = Depends(_current_user_email)) -> dict[
                 "subs": [
                     {
                         "slug": sub_slug,
-                        "label": sub_label,
+                        "label": sub_node["label"],
                         "sections": c["subs"].get(sub_slug, {}).get("sections", 0),
                         "docs": c["subs"].get(sub_slug, {}).get("docs", 0),
                     }
-                    for sub_slug, sub_label in meta["subs"].items()
+                    for sub_slug, sub_node in meta["subs"].items()
                 ],
             }
         )
     return {"tree": tree}
+
+
+@router.get("/firms/{firm_id}/extracts")
+def extracts(
+    firm_id: str,
+    category: str = "",
+    subcategory: str = "",
+    stance: str = "",
+    page: int = 1,
+    email: str = Depends(_current_user_email),
+) -> dict[str, Any]:
+    """Browse categorised extracts without a keyword — the drill-down list
+    under the Extracts section of the library page."""
+    _member(firm_id, email)
+    con = core.get_con()
+    page = max(1, min(page, 10_000))
+    params: list[Any] = [firm_id]
+    where = "s.firm_id = ?"
+    if category:
+        where += " AND s.category = ?"
+        params.append(category)
+    if subcategory:
+        where += " AND s.subcategory = ?"
+        params.append(subcategory)
+    if stance in STANCES:
+        where += " AND s.stance = ?"
+        params.append(stance)
+    total = con.execute(f"SELECT COUNT(*) AS n FROM sections s WHERE {where}", params).fetchone()["n"]
+    rows = con.execute(
+        f"SELECT s.*, d.title AS doc_title, d.filename, d.claimant, d.respondent "
+        f"FROM sections s JOIN documents d ON d.id = s.doc_id WHERE {where} "
+        f"ORDER BY s.id DESC LIMIT ? OFFSET ?",
+        params + [PAGE_SIZE, (page - 1) * PAGE_SIZE],
+    ).fetchall()
+    return {
+        "total": total,
+        "page": page,
+        "pages": max(1, -(-total // PAGE_SIZE)),
+        "extracts": [
+            {
+                "sectionId": s["id"],
+                "docId": s["doc_id"],
+                "docTitle": s["doc_title"] or s["filename"],
+                "matter": f"{s['claimant']} v {s['respondent']}" if (s["claimant"] and s["respondent"]) else "",
+                "category": s["category"],
+                "categoryLabel": TAXONOMY.get(s["category"], {}).get("label", s["category"]),
+                "subcategory": s["subcategory"],
+                "subcategoryLabel": sub_label(s["category"], s["subcategory"]),
+                "stance": s["stance"] or "",
+                "stanceLabel": STANCES.get(s["stance"] or "", ""),
+                "heading": s["heading"],
+                "summary": s["summary"],
+                "pageStart": s["page_start"],
+                "pageEnd": s["page_end"],
+            }
+            for s in rows
+        ],
+    }
 
 
 @router.get("/taxonomy")
