@@ -4,8 +4,8 @@
   <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nominating Authorities | Sopal</title>
-  <meta name="description" content="Statistics for Nominating Authorities (ANAs) in Queensland construction adjudication - decision counts, award rates, and trends by year.">
+  <title>Authorised Nominating Authorities | Sopal</title>
+  <meta name="description" content="Statistics for Authorised Nominating Authorities (ANAs) in Queensland construction adjudication - decision counts, award rates, and trends by year.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
@@ -221,39 +221,39 @@
 
   <div class="page">
     <div class="page-header">
-      <h1>Nominating Authorities</h1>
+      <h1>Authorised Nominating Authorities</h1>
       <p class="subtitle">
-        Nominating Authorities (or &ldquo;ANAs&rdquo; in some jurisdictions) received and referred
-        adjudication applications under the <em>Building and Construction Industry Payments Act 2004</em> (Qld),
+        Authorised Nominating Authorities <strong>(ANAs)</strong> received and referred adjudication
+        applications under the <em>Building and Construction Industry Payments Act 2004</em> (Qld),
         and still administer matters for their adjudicators under the
         <em>Building Industry Fairness (Security of Payment) Act 2017</em> (Qld),
         where referrals now come from the QBCC's Adjudication Registry.
       </p>
       <p class="subtitle">
-        Compare decision statistics by each nominating authority and by year.
+        Compare decision statistics by each ANA and by year.
       </p>
     </div>
 
     <div class="method-notice">
       <h4>Methodology &amp; Disclaimer</h4>
       <p>
-        The statistics on this page are <strong>approximate</strong>. The nominating authority for each decision
-        is coded automatically from the text of the published decision document, using keyword extraction and AI
-        extraction. Where a decision document does not name the authority, attribution is inferred from the
-        adjudicator's documented affiliations in other decisions, which may be incorrect.
+        The statistics on this page are <strong>approximate</strong>. The ANA for each decision is coded
+        automatically from the text of the published decision document, using keyword extraction and AI
+        extraction. Where a decision document does not name the ANA, attribution is inferred from the
+        adjudicator's documented ANA affiliations in other decisions, which may be incorrect.
       </p>
       <p>
-        Nominating Authorities stopped receiving new Queensland adjudication applications from
-        <strong>December 2014</strong>, when the BCIPA amendments moved referrals to the Adjudication Registry
-        operated by the QBCC; however they continue to administer matters for their adjudicators under the current
+        ANAs stopped receiving new Queensland adjudication applications from December 2014, when the
+        BCIPA amendments moved referrals to the Adjudication Registry operated by the QBCC; however ANAs
+        continue to administer matters for their adjudicators under the current
         <em>Building Industry Fairness (Security of Payment) Act 2017</em> (Qld) regime. Statistics are provided
         for general information only, are not legal advice, and say nothing about the quality or fairness of any
-        nominating authority, adjudicator, or decision.
+        ANA, adjudicator, or decision.
       </p>
     </div>
 
     <div id="dashboard">
-      <div class="loading"><div class="loading-spinner"></div>Loading nominating authority statistics...</div>
+      <div class="loading"><div class="loading-spinner"></div>Loading ANA statistics...</div>
     </div>
   </div>
 
@@ -390,7 +390,7 @@ function renderLocked(state, pendingInvoice) {
         el.innerHTML = `
           <div class="locked-box">
             <h3>Sign In Required</h3>
-            <p>Create an account or sign in to access nominating authority statistics, decision patterns, and yearly trends.</p>
+            <p>Create an account or sign in to access ANA statistics, decision patterns, and yearly trends.</p>
             <a href="/register" class="unlock-btn">Create an Account</a>
             <a href="/login?redirect=${encodeURIComponent('/nominating-authorities')}" class="unlock-btn secondary">Sign In to Existing Account</a>
           </div>`;
@@ -405,7 +405,7 @@ function renderLocked(state, pendingInvoice) {
         el.innerHTML = `
           <div class="locked-box">
             <h3>Subscription Required</h3>
-            <p>Subscribe for unlimited access to nominating authority statistics, decision patterns, and yearly trends.</p>
+            <p>Subscribe for unlimited access to ANA statistics, decision patterns, and yearly trends.</p>
             <a href="/pricing" class="unlock-btn">View Subscription Plans</a>
           </div>`;
     }
@@ -425,16 +425,16 @@ async function loadAnas() {
             renderLocked(403, !!body.pendingInvoice);
             return;
         }
-        if (!response.ok) throw new Error('Failed to fetch nominating authority statistics');
+        if (!response.ok) throw new Error('Failed to fetch ANA statistics');
         anaData = await response.json();
     } catch (e) {
-        console.error('Error loading nominating authority statistics:', e);
-        el.innerHTML = '<div class="empty-box"><h3>Unable to load statistics</h3><p>Something went wrong loading nominating authority statistics. Please try again later.</p></div>';
+        console.error('Error loading ANA statistics:', e);
+        el.innerHTML = '<div class="empty-box"><h3>Unable to load statistics</h3><p>Something went wrong loading ANA statistics. Please try again later.</p></div>';
         return;
     }
 
     if (!anaData || !anaData.available || !anaData.anas || anaData.anas.length === 0) {
-        el.innerHTML = '<div class="empty-box"><h3>No statistics available yet</h3><p>Decisions have not yet been coded with their nominating authority. Please check back soon.</p></div>';
+        el.innerHTML = '<div class="empty-box"><h3>No statistics available yet</h3><p>Decisions have not yet been coded with their ANA. Please check back soon.</p></div>';
         return;
     }
 
@@ -508,15 +508,15 @@ function renderDashboard() {
         <span class="filter-note">Filtering recalculates all statistics below</span>
       </div>
       <div class="section">
-        <h2>Nominating authority comparison</h2>
+        <h2>ANA comparison</h2>
         <div class="section-sub">Averages are per decision with usable data; % of claim awarded is capped at 100% per decision. Hover a heading for the full definition; click to sort.</div>
         <div class="table-wrap"><table class="ana-table"><thead id="anaTableHead"></thead><tbody id="anaTableBody"></tbody></table></div>
       </div>
       <div class="section">
         <div class="section-head">
           <div>
-            <h2>Yearly trends by nominating authority</h2>
-            <div class="section-sub">One line per nominating authority; pick the metric to compare</div>
+            <h2>Yearly trends by ANA</h2>
+            <div class="section-sub">One line per ANA; pick the metric to compare</div>
           </div>
           <div class="metric-pick">
             <span class="metric-label" id="trendMetricLabel">Metric</span>
@@ -526,13 +526,13 @@ function renderDashboard() {
         <div class="chart-card">
           <div id="trendChart"></div>
           <div id="trendLegend" class="trend-legend"></div>
-          <div class="chart-note">Years where an authority decided fewer than ${MIN_N} matters are omitted from the lines (gaps), so small samples don't produce misleading swings. The Decisions metric always plots. Click a legend entry to show/hide its line.</div>
+          <div class="chart-note">Years where an ANA decided fewer than ${MIN_N} matters are omitted from the lines (gaps), so small samples don't produce misleading swings. The Decisions metric always plots. Click a legend entry to show/hide its line.</div>
         </div>
       </div>
       <div class="section">
         <div class="section-head">
           <div>
-            <h2>Year-by-year, per nominating authority</h2>
+            <h2>Year-by-year, per ANA</h2>
             <div class="section-sub" id="gridSub"></div>
           </div>
           <div class="metric-pick">
@@ -616,10 +616,10 @@ function animateSwap(elId, render) {
 
 // ---------- comparison table ----------
 const TABLE_COLS = [
-    { key: 'name',           label: 'Authority',
+    { key: 'name',           label: 'ANA',
       title: 'Authorised Nominating Authority' },
     { key: 'decisions',      label: 'Decisions',
-      title: 'Number of decisions attributed to this authority in the selected year range (from documents or inferred from the adjudicator)' },
+      title: 'Number of decisions attributed to this ANA in the selected year range (from documents or inferred from the adjudicator)' },
     { key: 'avgAwardRate',   label: 'Avg %<br>awarded',
       title: 'Average percentage of the claimed amount awarded per decision (capped at 100% per decision)' },
     { key: 'avgClaimantFee', label: 'Claimant<br>fee %',
@@ -848,7 +848,7 @@ function renderTrend(anas) {
 
     el.innerHTML = plottable.length
         ? buildLineChartSvg(plottable, years, metric)
-        : `<div class="chart-empty">Not enough data to plot &ldquo;${sanitizeHtml(metric.label)}&rdquo; &mdash; no authority has ${MIN_N}+ decisions in a single year of this range</div>`;
+        : `<div class="chart-empty">Not enough data to plot &ldquo;${sanitizeHtml(metric.label)}&rdquo; &mdash; no ANA has ${MIN_N}+ decisions in a single year of this range</div>`;
 
     // legend (all series in range, toggleable)
     legendEl.innerHTML = series.map(s => `
