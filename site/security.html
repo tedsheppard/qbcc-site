@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security — Sopal</title>
+<meta name="description" content="How Sopal protects your firm's documents and data: encryption, tenant isolation, audit logging, and our AI data-handling commitments.">
+<link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--text:#1c1e21;--muted:#5f646b;--accent:#0e6b63;--border:#e4e4e0;--bg:#fbfbf9}
+  *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--text);background:var(--bg);line-height:1.65;font-size:15.5px}
+  .wrap{max-width:780px;margin:0 auto;padding:56px 24px 80px}
+  header a{color:var(--accent);text-decoration:none;font-weight:600}
+  h1{font-size:30px;margin:18px 0 6px}
+  .lede{color:var(--muted);font-size:17px;margin:0 0 36px}
+  h2{font-size:19px;margin:36px 0 8px}
+  ul{padding-left:22px} li{margin:6px 0}
+  .card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin:14px 0}
+  .k{font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)} th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+  footer{margin-top:48px;color:var(--muted);font-size:13px;border-top:1px solid var(--border);padding-top:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><a href="/">← sopal.com.au</a></header>
+  <h1>Security at Sopal</h1>
+  <p class="lede">Sopal handles construction-law documents for Australian firms. This page sets out, in plain terms, how your documents and data are protected — including exactly what our AI providers can and cannot do with your content.</p>
+
+  <h2>Your documents</h2>
+  <div class="card"><ul>
+    <li><span class="k">Encryption in transit.</span> All traffic is served over TLS (HTTPS). There are no unencrypted endpoints.</li>
+    <li><span class="k">Encryption at rest.</span> Uploaded documents are stored in Google Cloud Storage, encrypted at rest with AES-256. Extracted document text held in Sopal's own database is additionally encrypted at the application layer, so database files never contain your documents in plaintext.</li>
+    <li><span class="k">No permanent links.</span> Documents are only ever served through short-lived signed URLs (minutes, not days) or authenticated streams. There are no public object URLs.</li>
+    <li><span class="k">Tenant isolation.</span> Every document, extracted page, category tag and search index entry is bound to your firm's workspace. Access is resolved from your authenticated membership on every request — a request can never name another firm's data.</li>
+    <li><span class="k">Hard deletion.</span> Deleting a document permanently removes the stored file, extracted text, category tags and search index entries. Offboarding a firm purges everything the firm uploaded; only the audit record of the purge is retained.</li>
+    <li><span class="k">Backups.</span> Metadata is backed up nightly (encrypted content included) with a rolling retention window, and stored objects are versioned to protect against accidental deletion.</li>
+  </ul></div>
+
+  <h2>Access controls & auditability</h2>
+  <div class="card"><ul>
+    <li><span class="k">Firm workspaces with roles.</span> Admins manage members and deletions; members upload and search. Invites are token-based and expire after 14 days.</li>
+    <li><span class="k">Audit log.</span> Every upload, document view, search, deletion and membership change is recorded (who, what, when, from which IP) and is available to your firm's admins.</li>
+    <li><span class="k">Passwords</span> are stored as bcrypt hashes. Sessions use signed, audience-scoped tokens.</li>
+  </ul></div>
+
+  <h2>AI data handling</h2>
+  <div class="card">
+    <p>Sopal uses Anthropic's Claude models to categorise documents and power research features. Under Anthropic's commercial API terms:</p>
+    <ul>
+      <li><span class="k">Your content is never used to train models.</span></li>
+      <li><span class="k">Retention is limited.</span> API inputs and outputs are retained by Anthropic for up to 30 days for abuse monitoring, then deleted.</li>
+      <li>Zero-data-retention processing is on our roadmap as firm volume grows.</li>
+    </ul>
+    <p>Documents are sent for categorisation once at ingestion (and only again if you re-run categorisation). Search runs entirely on Sopal's infrastructure — your queries and library are not sent to any AI provider.</p>
+  </div>
+
+  <h2>Subprocessors</h2>
+  <div class="card">
+    <table>
+      <tr><th>Provider</th><th>Purpose</th><th>Location</th></tr>
+      <tr><td>Google Cloud Storage</td><td>Encrypted document storage & backups</td><td>United States</td></tr>
+      <tr><td>Render</td><td>Application hosting</td><td>United States</td></tr>
+      <tr><td>Anthropic</td><td>AI document categorisation & research</td><td>United States</td></tr>
+      <tr><td>Stripe</td><td>Payments</td><td>United States</td></tr>
+      <tr><td>Microsoft 365</td><td>Transactional email</td><td>Australia / global</td></tr>
+    </table>
+    <p style="color:var(--muted);font-size:13.5px">Australian data residency for document storage is available on request for firm plans.</p>
+  </div>
+
+  <h2>Roadmap</h2>
+  <div class="card"><ul>
+    <li>SOC 2 Type II certification programme</li>
+    <li>Multi-factor authentication (mandatory for firm admins)</li>
+    <li>Zero-data-retention AI processing</li>
+    <li>Australian-region document storage as the default</li>
+  </ul></div>
+
+  <h2>Questions or disclosures</h2>
+  <p>Security questions, DPA requests or vulnerability reports: <a href="mailto:security@sopal.com.au">security@sopal.com.au</a>. We respond to vulnerability reports within two business days.</p>
+
+  <footer>Sopal · Australian construction law tools · This page describes current controls and is updated as they change.</footer>
+</div>
+</body>
+</html>

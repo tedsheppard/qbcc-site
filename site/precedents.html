@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sopal — Precedent Vault</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f7f5; --panel:#ffffff; --border:#e4e4e0; --text:#1c1e21; --muted:#6b7076;
+    --accent:#0e6b63; --accent-soft:#e7f2f0; --danger:#b3372f; --warn:#9a6b0a; --ok:#1a7a3c;
+    --radius:10px; --shadow:0 1px 2px rgba(20,22,25,.05);
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+  a{color:var(--accent)}
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:#fff;border-radius:8px;padding:7px 14px;color:var(--text)}
+  button:hover{border-color:#c9c9c4}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button.primary:hover{background:#0b5851}
+  button.danger{color:var(--danger);border-color:#e8c8c5}
+  button:disabled{opacity:.5;cursor:default}
+  input,select{font:inherit;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);outline:none;width:100%}
+  input:focus,select:focus{border-color:var(--accent)}
+  .hidden{display:none!important}
+  mark{background:#fdeeb3;border-radius:2px;padding:0 1px}
+
+  /* auth */
+  .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .auth-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);width:400px;max-width:100%;padding:32px}
+  .auth-card h1{font-size:20px;margin:0 0 4px}
+  .auth-card p.sub{color:var(--muted);margin:0 0 20px}
+  .auth-card label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 4px}
+  .auth-err{color:var(--danger);font-size:13px;margin-top:10px;min-height:18px}
+  .auth-switch{margin-top:16px;font-size:13px;color:var(--muted)}
+
+  /* shell */
+  .shell{display:flex;min-height:100vh}
+  .side{width:232px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh;overflow:auto}
+  .brand{font-weight:700;font-size:15px;padding:6px 10px 2px;letter-spacing:.2px}
+  .brand small{display:block;font-weight:450;color:var(--muted);font-size:11px;margin-top:1px}
+  .firm-box{margin:12px 0;padding:0 4px}
+  .nav-btn{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:none;background:none;padding:8px 10px;border-radius:8px;color:var(--text);font-weight:500}
+  .nav-btn:hover{background:#f1f1ee}
+  .nav-btn.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .side .foot{margin-top:auto;padding:8px 10px;font-size:12px;color:var(--muted)}
+  .side .foot a{cursor:pointer}
+  .main{flex:1;padding:28px 32px;max-width:1200px}
+  h2.page-title{font-size:19px;margin:0 0 2px}
+  .page-sub{color:var(--muted);margin:0 0 20px;font-size:13px}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grow{flex:1}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;text-align:left;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--border)}
+  td{padding:9px 10px;border-bottom:1px solid #f0f0ed;vertical-align:top}
+  tr.clickable{cursor:pointer} tr.clickable:hover td{background:#fafaf8}
+
+  .pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11.5px;font-weight:600}
+  .pill.queued,.pill.extracting,.pill.extracted,.pill.classifying{background:#f3ede0;color:var(--warn)}
+  .pill.ready{background:#e4f2e8;color:var(--ok)}
+  .pill.failed{background:#f8e7e5;color:var(--danger)}
+  .pill.needs_review{background:#efe7f8;color:#6b3fa0}
+  .cat-chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:1px 8px;font-size:11.5px;font-weight:600;margin:1px 4px 1px 0}
+
+  /* upload */
+  .drop{border:2px dashed var(--border);border-radius:var(--radius);padding:28px;text-align:center;color:var(--muted);background:var(--panel);transition:border-color .15s;margin-bottom:16px}
+  .drop.drag{border-color:var(--accent);background:var(--accent-soft)}
+  .drop b{color:var(--text)}
+
+  /* library layout */
+  .lib{display:flex;gap:20px;align-items:flex-start}
+  .cat-tree{width:250px;flex-shrink:0}
+  .cat-tree .cat{padding:6px 8px;border-radius:7px;cursor:pointer;display:flex;justify-content:space-between;font-weight:500}
+  .cat-tree .cat:hover{background:#f1f1ee}
+  .cat-tree .cat.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .cat-tree .sub{padding:4px 8px 4px 20px;border-radius:7px;cursor:pointer;display:flex;justify-content:space-between;color:var(--muted);font-size:13px}
+  .cat-tree .sub:hover{background:#f1f1ee}
+  .cat-tree .sub.active{background:var(--accent-soft);color:var(--accent)}
+  .cat-tree .n{color:var(--muted);font-size:11.5px}
+  .lib-docs{flex:1;min-width:0}
+
+  /* drawer */
+  .drawer-bg{position:fixed;inset:0;background:rgba(15,17,20,.35);z-index:40}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:560px;max-width:95vw;background:var(--panel);z-index:41;box-shadow:-8px 0 30px rgba(0,0,0,.12);padding:24px;overflow:auto}
+  .drawer h3{margin:0 0 2px;font-size:16px}
+  .sec{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:8px 0}
+  .sec .hd{font-weight:600;font-size:13.5px}
+  .sec .meta{color:var(--muted);font-size:12px;margin:2px 0 4px}
+
+  .result{border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:10px 0;background:var(--panel)}
+  .result .doc{font-weight:600;font-size:13.5px}
+  .result .snip{margin-top:6px;color:#3a3d41;font-size:13px}
+  .modal-bg{position:fixed;inset:0;background:rgba(15,17,20,.35);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal{background:var(--panel);border-radius:14px;padding:24px;width:440px;max-width:100%}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c1e21;color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;z-index:99;opacity:0;transition:opacity .2s}
+  .toast.show{opacity:1}
+  .muted{color:var(--muted)} .small{font-size:12.5px}
+  .stat{display:inline-block;margin-right:28px}
+  .stat .v{font-size:20px;font-weight:700} .stat .k{color:var(--muted);font-size:12px}
+  @media (max-width:900px){.side{display:none}.main{padding:16px}.lib{flex-direction:column}.cat-tree{width:100%}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast" class="toast"></div>
+<script>
+"use strict";
+const TOKEN_KEY = "sopal_v2_token"; // shared session with app.sopal.com.au
+const $ = (sel, el=document) => el.querySelector(sel);
+const state = {
+  token: localStorage.getItem(TOKEN_KEY) || "",
+  me: null, firms: [], firm: null, tab: "library",
+  docs: [], tree: [], catFilter: "", subFilter: "",
+  taxonomy: null, pollTimer: null, drawerDoc: null,
+  searchResults: null, searchQ: "",
+};
+
+function esc(s){ const d=document.createElement("div"); d.textContent=s==null?"":String(s); return d.innerHTML; }
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 2600); }
+function fmtBytes(n){ if(!n) return "0 B"; const u=["B","KB","MB","GB"]; let i=0; while(n>=1024&&i<3){n/=1024;i++;} return n.toFixed(i?1:0)+" "+u[i]; }
+function fmtDate(iso){ if(!iso) return ""; try{ return new Date(iso).toLocaleString("en-AU",{dateStyle:"medium",timeStyle:"short"});}catch(e){return iso;} }
+
+async function api(path, opts={}){
+  const headers = opts.headers || {};
+  if(state.token) headers["Authorization"] = "Bearer " + state.token;
+  if(opts.json){ headers["Content-Type"]="application/json"; opts.body = JSON.stringify(opts.json); }
+  const res = await fetch(path, {...opts, headers});
+  if(res.status === 401){ logout(false); throw new Error("Session expired — sign in again."); }
+  let body = null;
+  try{ body = await res.json(); }catch(e){}
+  if(!res.ok) throw new Error((body && body.detail) ? (typeof body.detail==="string"?body.detail:JSON.stringify(body.detail)) : ("Request failed ("+res.status+")"));
+  return body;
+}
+
+function logout(redraw=true){
+  localStorage.removeItem(TOKEN_KEY);
+  state.token=""; state.me=null; state.firms=[]; state.firm=null;
+  if(state.pollTimer){ clearInterval(state.pollTimer); state.pollTimer=null; }
+  if(redraw) render();
+}
+
+/* ---------------- auth view ---------------- */
+function renderAuth(mode){
+  mode = mode || "login";
+  $("#root").innerHTML = `
+  <div class="auth-wrap"><div class="auth-card">
+    <h1>Sopal Precedent Vault</h1>
+    <p class="sub">Your firm's precedent submissions — categorised, searchable, secure.</p>
+    <div id="authForm">
+      ${mode==="register" ? `
+      <label>First name</label><input id="fFirst" autocomplete="given-name">
+      <label>Last name</label><input id="fLast" autocomplete="family-name">
+      <label>Firm / company</label><input id="fCompany" autocomplete="organization">`:""}
+      <label>Email</label><input id="fEmail" type="email" autocomplete="email">
+      <label>Password</label><input id="fPass" type="password" autocomplete="${mode==="register"?"new-password":"current-password"}">
+      <div class="auth-err" id="authErr"></div>
+      <button class="primary" id="authGo" style="width:100%;padding:10px">${mode==="register"?"Create account":"Sign in"}</button>
+      <div class="auth-switch">${mode==="register"
+        ? `Already have a Sopal account? <a id="authSwitch">Sign in</a>`
+        : `New to Sopal? <a id="authSwitch">Create an account</a>`}</div>
+    </div>
+  </div></div>`;
+  $("#authSwitch").onclick = () => renderAuth(mode==="register"?"login":"register");
+  $("#fPass").addEventListener("keydown", e=>{ if(e.key==="Enter") $("#authGo").click(); });
+  $("#authGo").onclick = async () => {
+    const err = $("#authErr"); err.textContent="";
+    const email = $("#fEmail").value.trim(), password = $("#fPass").value;
+    try{
+      const path = mode==="register" ? "/api/sopal-v2/auth/register" : "/api/sopal-v2/auth/login";
+      const payload = mode==="register"
+        ? {email, password, firstName:$("#fFirst").value.trim(), lastName:$("#fLast").value.trim(), company:$("#fCompany").value.trim()}
+        : {email, password};
+      const out = await api(path, {method:"POST", json:payload});
+      state.token = out.token; localStorage.setItem(TOKEN_KEY, out.token); state.me = out.user;
+      await boot();
+    }catch(e){ err.textContent = e.message; }
+  };
+}
+
+/* ---------------- firm picker ---------------- */
+function renderFirmPicker(){
+  $("#root").innerHTML = `
+  <div class="auth-wrap"><div class="auth-card" style="width:460px">
+    <h1>Choose a firm</h1>
+    <p class="sub">A firm workspace owns a precedent library. You're signed in as ${esc(state.me?.email||"")}.</p>
+    <div id="firmList">${state.firms.map(f=>`
+      <button style="width:100%;text-align:left;margin:5px 0;padding:12px 14px" data-fid="${esc(f.id)}">
+        <b>${esc(f.name)}</b><br><span class="muted small">${esc(f.role)} · ${f.docCount} documents · ${f.memberCount} member${f.memberCount===1?"":"s"}</span>
+      </button>`).join("") || `<p class="muted small">No firms yet — create one below.</p>`}
+    </div>
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
+      <label class="small muted" style="font-weight:600">Create a new firm</label>
+      <div class="row" style="margin-top:6px"><input id="newFirmName" placeholder="Firm name" class="grow"><button class="primary" id="newFirmGo">Create</button></div>
+      <div class="auth-err" id="firmErr"></div>
+    </div>
+    <div class="auth-switch"><a onclick="logout()">Sign out</a></div>
+  </div></div>`;
+  document.querySelectorAll("[data-fid]").forEach(b=> b.onclick = ()=> selectFirm(b.dataset.fid));
+  $("#newFirmGo").onclick = async ()=>{
+    const name = $("#newFirmName").value.trim();
+    if(name.length<2){ $("#firmErr").textContent="Enter a firm name."; return; }
+    try{
+      const f = await api("/api/precedents/firms", {method:"POST", json:{name}});
+      state.firms = (await api("/api/precedents/firms")).firms;
+      selectFirm(f.id);
+    }catch(e){ $("#firmErr").textContent = e.message; }
+  };
+}
+
+async function selectFirm(fid){
+  state.firm = state.firms.find(f=>f.id===fid) || null;
+  if(!state.firm) return renderFirmPicker();
+  localStorage.setItem("precedents_last_firm", fid);
+  state.tab="library"; state.catFilter=""; state.subFilter="";
+  render(); await refreshLibrary();
+}
+
+/* ---------------- app shell ---------------- */
+function render(){
+  if(!state.token) return renderAuth();
+  if(!state.firm) return renderFirmPicker();
+  const isAdmin = state.firm.role === "admin";
+  const tabs = [
+    ["library","Library"],["search","Search"],["members","Members"],
+    ...(isAdmin?[["activity","Activity"],["usage","Usage"]]:[])
+  ];
+  $("#root").innerHTML = `
+  <div class="shell">
+    <div class="side">
+      <div class="brand">Sopal <small>Precedent Vault</small></div>
+      <div class="firm-box">
+        <select id="firmSwitch">${state.firms.map(f=>`<option value="${esc(f.id)}" ${f.id===state.firm.id?"selected":""}>${esc(f.name)}</option>`).join("")}
+          <option value="__new">+ New firm…</option>
+        </select>
+      </div>
+      ${tabs.map(([id,label])=>`<button class="nav-btn ${state.tab===id?"active":""}" data-tab="${id}">${label}</button>`).join("")}
+      <div class="foot">${esc(state.me?.email||"")}<br><a id="signout">Sign out</a> · <a href="/security" target="_blank">Security</a></div>
+    </div>
+    <div class="main" id="main"></div>
+  </div>`;
+  $("#firmSwitch").onchange = e=>{ const v=e.target.value; if(v==="__new"){ state.firm=null; render(); } else selectFirm(v); };
+  $("#signout").onclick = ()=>logout();
+  document.querySelectorAll("[data-tab]").forEach(b=> b.onclick = ()=>{ state.tab=b.dataset.tab; render(); loadTab(); });
+  loadTab();
+}
+
+function loadTab(){
+  ({library:renderLibrary, search:renderSearch, members:renderMembers, activity:renderActivity, usage:renderUsage}[state.tab]||renderLibrary)();
+}
+
+/* ---------------- library ---------------- */
+async function refreshLibrary(){
+  try{
+    const [docs, cats] = await Promise.all([
+      api(`/api/precedents/firms/${state.firm.id}/documents?category=${encodeURIComponent(state.catFilter)}&subcategory=${encodeURIComponent(state.subFilter)}`),
+      api(`/api/precedents/firms/${state.firm.id}/categories`),
+    ]);
+    state.docs = docs.documents; state.tree = cats.tree;
+  }catch(e){ toast(e.message); }
+  if(state.tab==="library") renderLibrary(false);
+  const pending = state.docs.some(d=>["queued","extracting","extracted","classifying"].includes(d.status));
+  if(pending && !state.pollTimer){ state.pollTimer = setInterval(refreshLibrary, 6000); }
+  if(!pending && state.pollTimer){ clearInterval(state.pollTimer); state.pollTimer=null; }
+}
+
+function statusLabel(s){ return ({queued:"Queued", extracting:"Extracting", extracted:"Awaiting AI", classifying:"Categorising", ready:"Ready", failed:"Failed", needs_review:"Needs review"})[s]||s; }
+
+function renderLibrary(fetch=true){
+  const m = $("#main"); if(!m) return;
+  const totalSecs = state.tree.reduce((a,c)=>a+c.sections,0);
+  m.innerHTML = `
+    <h2 class="page-title">Document library</h2>
+    <p class="page-sub">${esc(state.firm.name)} · ${state.docs.length} document${state.docs.length===1?"":"s"} shown · ${totalSecs} categorised submissions</p>
+    <div class="drop" id="drop">
+      <b>Drop PDF or DOCX files here</b> or <a id="pickLink" style="cursor:pointer">browse</a> — up to 20 files, 60&nbsp;MB each.<br>
+      <span class="small">Each document is text-extracted, then categorised by AI into submission types. Originals are stored encrypted; access is audit-logged.</span>
+      <input type="file" id="picker" multiple accept=".pdf,.docx" class="hidden">
+    </div>
+    <div class="lib">
+      <div class="cat-tree card" style="padding:10px">
+        <div class="cat ${!state.catFilter?"active":""}" data-cat=""><span>All documents</span></div>
+        ${state.tree.map(c=>`
+          <div class="cat ${state.catFilter===c.slug&&!state.subFilter?"active":""}" data-cat="${c.slug}">
+            <span>${esc(c.label)}</span><span class="n">${c.sections||""}</span>
+          </div>
+          ${(state.catFilter===c.slug)?c.subs.filter(s=>s.sections).map(s=>`
+            <div class="sub ${state.subFilter===s.slug?"active":""}" data-cat="${c.slug}" data-sub="${s.slug}">
+              <span>${esc(s.label)}</span><span class="n">${s.sections}</span>
+            </div>`).join(""):""}`).join("")}
+      </div>
+      <div class="lib-docs card" style="padding:6px 0">
+        <table><thead><tr><th>Document</th><th>Categories</th><th>Pages</th><th>Status</th><th>Uploaded</th></tr></thead>
+        <tbody id="docRows">${state.docs.map(d=>`
+          <tr class="clickable" data-doc="${esc(d.id)}">
+            <td><b>${esc(d.title)}</b><br><span class="muted small">${esc(d.filename)}${d.docType?" · "+esc(d.docType):""}</span></td>
+            <td>${d.sectionCount?`<span class="cat-chip">${d.sectionCount} section${d.sectionCount===1?"":"s"}</span>`:`<span class="muted small">—</span>`}</td>
+            <td>${d.pages||"—"}</td>
+            <td><span class="pill ${esc(d.status)}">${statusLabel(d.status)}</span>${d.error?`<br><span class="small" style="color:var(--danger)">${esc(d.error)}</span>`:""}</td>
+            <td class="small muted">${fmtDate(d.createdAt)}<br>${esc(d.uploadedBy)}</td>
+          </tr>`).join("") || `<tr><td colspan="5" class="muted" style="padding:24px;text-align:center">No documents${state.catFilter?" in this category":""} yet.</td></tr>`}
+        </tbody></table>
+      </div>
+    </div>`;
+  const drop = $("#drop"), picker = $("#picker");
+  $("#pickLink").onclick = ()=>picker.click();
+  picker.onchange = ()=> uploadFiles([...picker.files]);
+  ;["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag");}));
+  ;["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag");}));
+  drop.addEventListener("drop", e=> uploadFiles([...e.dataTransfer.files]));
+  document.querySelectorAll(".cat-tree .cat, .cat-tree .sub").forEach(el=> el.onclick = ()=>{
+    state.catFilter = el.dataset.cat || ""; state.subFilter = el.dataset.sub || "";
+    refreshLibrary();
+  });
+  document.querySelectorAll("[data-doc]").forEach(tr=> tr.onclick = ()=> openDrawer(tr.dataset.doc));
+  if(fetch) refreshLibrary();
+}
+
+async function uploadFiles(files){
+  files = files.filter(f=>/\.(pdf|docx)$/i.test(f.name));
+  if(!files.length){ toast("Only PDF and DOCX files are accepted."); return; }
+  const fd = new FormData();
+  files.slice(0,20).forEach(f=>fd.append("files", f, f.name));
+  toast(`Uploading ${Math.min(files.length,20)} file${files.length===1?"":"s"}…`);
+  try{
+    const out = await api(`/api/precedents/firms/${state.firm.id}/documents`, {method:"POST", body:fd});
+    if(out.skipped.length) toast(out.skipped.map(s=>`${s.filename}: ${s.reason}`).join(" · "));
+    else toast(`${out.accepted.length} file${out.accepted.length===1?"":"s"} queued for categorisation.`);
+    await refreshLibrary();
+  }catch(e){ toast(e.message); }
+}
+
+/* ---------------- doc drawer ---------------- */
+async function openDrawer(docId){
+  let detail;
+  try{ detail = await api(`/api/precedents/firms/${state.firm.id}/documents/${docId}`); }
+  catch(e){ toast(e.message); return; }
+  const d = detail.document; const isAdmin = state.firm.role==="admin";
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div class="drawer-bg" id="dBg"></div>
+    <div class="drawer">
+      <div class="row" style="justify-content:space-between">
+        <h3 class="grow">${esc(d.title)}</h3>
+        <button id="dClose">Close</button>
+      </div>
+      <p class="muted small" style="margin:4px 0 12px">${esc(d.filename)} · ${d.pages} pages · ${fmtBytes(d.sizeBytes)} · <span class="pill ${esc(d.status)}">${statusLabel(d.status)}</span><br>
+      ${d.docType?esc(d.docType)+" · ":""}${d.partySide&&d.partySide!=="unknown"?esc(d.partySide)+" side · ":""}${d.act&&d.act!=="unknown"?esc(d.act)+" · ":""}uploaded by ${esc(d.uploadedBy)} ${fmtDate(d.createdAt)}</p>
+      <div class="row" style="margin-bottom:14px">
+        <button class="primary" id="dOpen">Open document</button>
+        ${isAdmin?`<button id="dRerun">Re-categorise</button><button class="danger" id="dDelete">Delete</button>`:""}
+      </div>
+      <h4 style="margin:8px 0 4px">Categorised submissions ${detail.sections.length?`(${detail.sections.length})`:""}</h4>
+      ${detail.sections.map(s=>`
+        <div class="sec">
+          <div class="hd">${esc(s.heading||s.subcategoryLabel)}</div>
+          <div class="meta"><span class="cat-chip">${esc(s.categoryLabel)} → ${esc(s.subcategoryLabel)}</span> pp. ${s.pageStart}–${s.pageEnd}${s.confidence?` · confidence ${(s.confidence*100).toFixed(0)}%`:""}</div>
+          <div class="small">${esc(s.summary)}</div>
+        </div>`).join("") || `<p class="muted small">${d.status==="ready"?"No substantive submissions identified.":"Sections appear here once categorisation finishes."}</p>`}
+    </div>`;
+  document.body.appendChild(wrap);
+  const close = ()=> wrap.remove();
+  $("#dBg",wrap).onclick = close; $("#dClose",wrap).onclick = close;
+  $("#dOpen",wrap).onclick = ()=> window.open(`/api/precedents/firms/${state.firm.id}/documents/${d.id}/file`, "_blank");
+  // file endpoint needs the bearer token; open via fetch->blob if signed URL redirect fails cross-origin
+  $("#dOpen",wrap).onclick = async ()=>{
+    try{
+      const res = await fetch(`/api/precedents/firms/${state.firm.id}/documents/${d.id}/file`, {headers:{Authorization:"Bearer "+state.token}, redirect:"follow"});
+      if(res.redirected){ window.open(res.url, "_blank"); return; }
+      if(!res.ok) throw new Error("Could not open document.");
+      const blob = await res.blob();
+      window.open(URL.createObjectURL(blob), "_blank");
+    }catch(e){ toast(e.message); }
+  };
+  if(isAdmin){
+    $("#dRerun",wrap).onclick = async ()=>{
+      try{ await api(`/api/precedents/firms/${state.firm.id}/documents/${d.id}/reclassify`, {method:"POST"}); toast("Queued for re-categorisation."); close(); refreshLibrary(); }
+      catch(e){ toast(e.message); }
+    };
+    $("#dDelete",wrap).onclick = async ()=>{
+      if(!confirm(`Permanently delete "${d.filename}" and its categorisation? This cannot be undone.`)) return;
+      try{ await api(`/api/precedents/firms/${state.firm.id}/documents/${d.id}`, {method:"DELETE"}); toast("Document deleted."); close(); refreshLibrary(); }
+      catch(e){ toast(e.message); }
+    };
+  }
+}
+
+/* ---------------- search ---------------- */
+async function ensureTaxonomy(){
+  if(!state.taxonomy) state.taxonomy = await api("/api/precedents/taxonomy");
+  return state.taxonomy;
+}
+
+async function renderSearch(){
+  const m = $("#main"); if(!m) return;
+  const tax = await ensureTaxonomy();
+  const cat = state.searchCat||"", sub = state.searchSub||"";
+  const catNode = tax.categories.find(c=>c.slug===cat);
+  m.innerHTML = `
+    <h2 class="page-title">Search precedents</h2>
+    <p class="page-sub">Full-text search across every categorised submission in ${esc(state.firm.name)}'s library.</p>
+    <div class="card"><div class="row">
+      <input id="sq" class="grow" placeholder='e.g. reference date  ·  latent conditions  ·  "prevention principle"' value="${esc(state.searchQ)}">
+      <select id="sCat" style="width:210px"><option value="">All categories</option>
+        ${tax.categories.map(c=>`<option value="${c.slug}" ${c.slug===cat?"selected":""}>${esc(c.label)}</option>`).join("")}</select>
+      <select id="sSub" style="width:230px" ${catNode?"":"disabled"}><option value="">All subcategories</option>
+        ${(catNode?catNode.subs:[]).map(s=>`<option value="${s.slug}" ${s.slug===sub?"selected":""}>${esc(s.label)}</option>`).join("")}</select>
+      <button class="primary" id="sGo">Search</button>
+    </div></div>
+    <div id="sResults">${state.searchResults?renderResultsHtml():""}</div>`;
+  $("#sCat").onchange = e=>{ state.searchCat=e.target.value; state.searchSub=""; renderSearch(); };
+  $("#sSub").onchange = e=>{ state.searchSub=e.target.value; };
+  $("#sq").addEventListener("keydown", e=>{ if(e.key==="Enter") $("#sGo").click(); });
+  $("#sGo").onclick = async ()=>{
+    const q = $("#sq").value.trim(); if(!q) return;
+    state.searchQ=q; state.searchCat=$("#sCat").value; state.searchSub=$("#sSub").value;
+    $("#sResults").innerHTML = `<p class="muted">Searching…</p>`;
+    try{
+      const out = await api(`/api/precedents/firms/${state.firm.id}/search?q=${encodeURIComponent(q)}&category=${encodeURIComponent(state.searchCat)}&subcategory=${encodeURIComponent(state.searchSub)}`);
+      state.searchResults = out; $("#sResults").innerHTML = renderResultsHtml();
+      bindResultClicks();
+    }catch(e){ $("#sResults").innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; }
+  };
+  bindResultClicks();
+}
+
+function renderResultsHtml(){
+  const r = state.searchResults;
+  if(!r) return "";
+  if(!r.results.length) return `<p class="muted">No matches for “${esc(r.query)}”.</p>`;
+  return `<p class="muted small">${r.results.length} matching submission${r.results.length===1?"":"s"} for “${esc(r.query)}”</p>` +
+    r.results.map(x=>`
+    <div class="result clickable" data-doc="${esc(x.docId)}" style="cursor:pointer">
+      <div class="doc">${esc(x.docTitle)} <span class="muted small">· pp. ${x.pageStart}–${x.pageEnd}</span></div>
+      <div style="margin-top:3px"><span class="cat-chip">${esc(x.categoryLabel)} → ${esc(x.subcategoryLabel)}</span>${x.heading?` <span class="small muted">${esc(x.heading)}</span>`:""}</div>
+      <div class="snip">${x.snippet}</div>
+    </div>`).join("");
+}
+function bindResultClicks(){
+  document.querySelectorAll("#sResults [data-doc]").forEach(el=> el.onclick = ()=> openDrawer(el.dataset.doc));
+}
+
+/* ---------------- members ---------------- */
+async function renderMembers(){
+  const m = $("#main"); if(!m) return;
+  let data;
+  try{ data = await api(`/api/precedents/firms/${state.firm.id}/members`); }catch(e){ toast(e.message); return; }
+  const isAdmin = state.firm.role==="admin";
+  m.innerHTML = `
+    <h2 class="page-title">Members</h2>
+    <p class="page-sub">${esc(state.firm.name)} · admins can upload, delete documents and manage members; members can upload and search.</p>
+    ${isAdmin?`<div class="card"><b>Invite someone</b>
+      <div class="row" style="margin-top:8px">
+        <input id="invEmail" class="grow" placeholder="colleague@firm.com.au (optional — leave blank for an open link)">
+        <select id="invRole" style="width:130px"><option value="member">Member</option><option value="admin">Admin</option></select>
+        <button class="primary" id="invGo">Create invite link</button>
+      </div>
+      <div id="invOut" class="small" style="margin-top:8px"></div></div>`:""}
+    <div class="card" style="padding:6px 0">
+      <table><thead><tr><th>Email</th><th>Role</th><th>Joined</th>${isAdmin?"<th></th>":""}</tr></thead><tbody>
+      ${data.members.map(x=>`<tr><td>${esc(x.email)}</td><td>${esc(x.role)}</td><td class="small muted">${fmtDate(x.joinedAt)}</td>
+        ${isAdmin?`<td style="text-align:right">${x.email!==state.me.email?`<button class="danger small" data-rm="${esc(x.email)}">Remove</button>`:""}</td>`:""}</tr>`).join("")}
+      </tbody></table>
+    </div>
+    ${data.pendingInvites.length?`<div class="card"><b>Pending invites</b>
+      ${data.pendingInvites.map(i=>`<div class="row small" style="margin-top:8px">
+        <span class="grow">${i.email?esc(i.email):"Open link"} · ${esc(i.role)} · expires ${fmtDate(i.expiresAt)}</span>
+        <button data-copy="${esc(i.token)}">Copy link</button></div>`).join("")}</div>`:""}
+    ${isAdmin?`<div class="card" style="border-color:#e8c8c5"><b style="color:var(--danger)">Danger zone</b>
+      <p class="small muted">Offboarding permanently deletes every document, extracted text and search index for this firm. The audit trail is retained.</p>
+      <button class="danger" id="offboardBtn">Offboard firm…</button></div>`:""}`;
+  if(isAdmin){
+    $("#invGo").onclick = async ()=>{
+      try{
+        const out = await api(`/api/precedents/firms/${state.firm.id}/invites`, {method:"POST", json:{email:$("#invEmail").value.trim(), role:$("#invRole").value}});
+        $("#invOut").innerHTML = `Invite link (valid 14 days): <a href="${esc(out.url)}">${esc(out.url)}</a> <button data-copy2="${esc(out.url)}">Copy</button>`;
+        $("[data-copy2]").onclick = ()=>{ navigator.clipboard.writeText(out.url); toast("Copied."); };
+      }catch(e){ toast(e.message); }
+    };
+    document.querySelectorAll("[data-rm]").forEach(b=> b.onclick = async ()=>{
+      if(!confirm(`Remove ${b.dataset.rm} from ${state.firm.name}?`)) return;
+      try{ await api(`/api/precedents/firms/${state.firm.id}/members/${encodeURIComponent(b.dataset.rm)}`, {method:"DELETE"}); renderMembers(); }
+      catch(e){ toast(e.message); }
+    });
+    $("#offboardBtn").onclick = ()=>{
+      const name = prompt(`This permanently deletes all documents for "${state.firm.name}".\nType the firm name exactly to confirm:`);
+      if(name==null) return;
+      api(`/api/precedents/firms/${state.firm.id}/offboard`, {method:"POST", json:{confirmName:name}})
+        .then(async out=>{ toast(`Purged ${out.purgedDocuments} documents.`); state.firms=(await api("/api/precedents/firms")).firms; state.firm=null; render(); })
+        .catch(e=>toast(e.message));
+    };
+  }
+  document.querySelectorAll("[data-copy]").forEach(b=> b.onclick = ()=>{
+    navigator.clipboard.writeText(`https://app.sopal.com.au/precedents?invite=${b.dataset.copy}`); toast("Invite link copied.");
+  });
+}
+
+/* ---------------- activity / usage ---------------- */
+async function renderActivity(){
+  const m = $("#main"); if(!m) return;
+  let data; try{ data = await api(`/api/precedents/firms/${state.firm.id}/audit`); }catch(e){ toast(e.message); return; }
+  m.innerHTML = `
+    <h2 class="page-title">Activity log</h2>
+    <p class="page-sub">Every upload, view, search, deletion and membership change is recorded. Admin-only view.</p>
+    <div class="card" style="padding:6px 0"><table>
+      <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Detail</th><th>IP</th></tr></thead><tbody>
+      ${data.events.map(e=>`<tr><td class="small muted" style="white-space:nowrap">${fmtDate(e.at)}</td><td>${esc(e.email)}</td>
+        <td><code class="small">${esc(e.action)}</code></td><td class="small">${esc(e.detail||e.target)}</td><td class="small muted">${esc(e.ip)}</td></tr>`).join("")
+        || `<tr><td colspan="5" class="muted" style="padding:20px;text-align:center">No activity yet.</td></tr>`}
+      </tbody></table></div>`;
+}
+
+async function renderUsage(){
+  const m = $("#main"); if(!m) return;
+  let u; try{ u = await api(`/api/precedents/firms/${state.firm.id}/usage`); }catch(e){ toast(e.message); return; }
+  const statuses = Object.entries(u.documentsByStatus||{});
+  m.innerHTML = `
+    <h2 class="page-title">Usage</h2>
+    <p class="page-sub">Ingestion and storage for ${esc(state.firm.name)}. AI costs are Sopal's wholesale cost, shown for transparency during beta.</p>
+    <div class="card">
+      <span class="stat"><span class="v">${statuses.reduce((a,[,n])=>a+n,0)}</span><br><span class="k">documents</span></span>
+      <span class="stat"><span class="v">${fmtBytes(u.storageBytes)}</span><br><span class="k">stored</span></span>
+      <span class="stat"><span class="v">${(u.inputTokens/1e6).toFixed(2)}M</span><br><span class="k">input tokens</span></span>
+      <span class="stat"><span class="v">$${u.aiCostUsd.toFixed(2)}</span><br><span class="k">AI cost (USD)</span></span>
+    </div>
+    <div class="card"><b>Documents by status</b><table style="margin-top:8px"><tbody>
+      ${statuses.map(([s,n])=>`<tr><td><span class="pill ${esc(s)}">${statusLabel(s)}</span></td><td>${n}</td></tr>`).join("") || "<tr><td class='muted'>No documents.</td></tr>"}
+    </tbody></table></div>`;
+}
+
+/* ---------------- boot ---------------- */
+async function handleInvite(){
+  const params = new URLSearchParams(location.search);
+  const inviteToken = params.get("invite");
+  if(!inviteToken) return;
+  try{
+    const out = await api("/api/precedents/invites/accept", {method:"POST", json:{token:inviteToken}});
+    toast(`You've joined ${out.firmName}.`);
+  }catch(e){ toast(e.message); }
+  history.replaceState({}, "", "/precedents");
+}
+
+async function boot(){
+  if(!state.token) return renderAuth();
+  try{
+    state.me = await api("/api/sopal-v2/auth/me");
+  }catch(e){ return renderAuth(); }
+  await handleInvite();
+  try{ state.firms = (await api("/api/precedents/firms")).firms; }catch(e){ state.firms=[]; }
+  const last = localStorage.getItem("precedents_last_firm");
+  state.firm = state.firms.find(f=>f.id===last) || (state.firms.length===1?state.firms[0]:null);
+  render();
+  if(state.firm) refreshLibrary();
+}
+window.logout = logout;
+boot();
+</script>
+</body>
+</html>

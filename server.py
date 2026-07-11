@@ -399,6 +399,21 @@ from routes.sopal_dev import router as _sopal_dev_router
 app.include_router(_sopal_dev_router)
 # <<< Sopal v2 local prototype
 
+# >>> Firm Precedent Vault — isolated under /precedents + /api/precedents.
+# Own sqlite DB (precedents.db), own GCS prefix; guarded so a failure here
+# can never stop the main site from booting.
+try:
+    from routes.precedents import (
+        page_router as _precedents_page_router,
+        router as _precedents_router,
+    )
+    app.include_router(_precedents_router)
+    app.include_router(_precedents_page_router)
+    print("Precedent Vault routes loaded.")
+except Exception as _precedents_exc:
+    print(f"WARNING: Precedent Vault routes failed to load: {_precedents_exc}", file=sys.stderr)
+# <<< Firm Precedent Vault
+
 # >>> SopalAI (Construction Law Research) — services/bif_research/api.py
 # Mounted at /ai. Brings its own /api/ask SSE endpoint, /api/usage,
 # /api/conversations, etc — all live under /ai/api/*. The SPA shell
@@ -1214,6 +1229,19 @@ def fetch_and_update_rba_rates():
 setup_rba_table()
 scheduler = BackgroundScheduler()
 scheduler.add_job(fetch_and_update_rba_rates, 'interval', days=1)
+# Firm Precedent Vault background jobs (extraction -> Sonnet batch -> tagging,
+# plus a nightly encrypted backup). Guarded: a failure here must never block
+# the scheduler or the main site.
+try:
+    from services.precedents.pipeline import (
+        nightly_backup as _precedents_backup,
+        worker_tick as _precedents_tick,
+    )
+    scheduler.add_job(_precedents_tick, 'interval', seconds=60, max_instances=1, coalesce=True)
+    scheduler.add_job(_precedents_backup, 'interval', days=1)
+    print("Precedent Vault scheduler jobs registered.")
+except Exception as _precedents_job_exc:
+    print(f"WARNING: Precedent Vault scheduler jobs not registered: {_precedents_job_exc}", file=sys.stderr)
 scheduler.start()
 # Run once on startup as well
 fetch_and_update_rba_rates()
