@@ -4,8 +4,8 @@
   <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ANAs | Sopal</title>
-  <meta name="description" content="Statistics for Authorised Nominating Authorities (ANAs) in Queensland construction adjudication - decision counts, award rates, and trends by year.">
+  <title>Nominating Authorities | Sopal</title>
+  <meta name="description" content="Statistics for Nominating Authorities (ANAs) in Queensland construction adjudication - decision counts, award rates, and trends by year.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
@@ -121,6 +121,9 @@
     #trendChart, #generalChart { transition: opacity 0.16s ease; }
     #trendChart.fading, #generalChart.fading { opacity: 0; }
     .trend-svg { width: 100%; height: auto; display: block; }
+    /* line points are invisible until hovered (isolated points stay visible) */
+    .trend-svg .pt-dot { opacity: 0; transition: opacity 0.1s; }
+    .trend-svg .pt:hover .pt-dot { opacity: 1; }
     .trend-legend { display: flex; flex-wrap: wrap; gap: 5px 16px; margin-top: 10px; }
     .trend-legend .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
     .trend-legend .legend-item.off { opacity: 0.35; }
@@ -158,6 +161,18 @@
     .empty-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
     .empty-box p { font-size: 13.5px; color: var(--text-secondary); }
 
+    /* LOCKED (paid feature) — mirrors the adjudicator insights lock UX */
+    .locked-box { background: white; border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); max-width: 420px; margin: 30px auto; padding: 30px; text-align: center; }
+    .locked-box h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.02em; }
+    .locked-box p { color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; font-size: 14px; }
+    .unlock-btn {
+      background: var(--green); color: white; border: none; padding: 13px 30px; border-radius: 10px;
+      font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%;
+      display: inline-block; text-align: center; text-decoration: none;
+    }
+    .unlock-btn:hover { background: var(--green-dark); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,212,126,0.3); }
+    .unlock-btn.secondary { background: #6b6b6b; margin-top: 10px; }
+
     @media (prefers-reduced-motion: reduce) {
       #trendChart, #generalChart { transition: none; }
       .bar-col .bar { transition: none; }
@@ -193,8 +208,7 @@
         <div class="nav-links">
           <a href="/search">Search</a>
           <a href="/adjudicators">Adjudicators</a>
-          <a href="/ana" class="active">ANAs</a>
-          <a href="/ai">SopalAI</a>
+          <a href="/nominating-authorities" class="active">Nominating Authorities</a>
           <a href="/interest-calculator">Interest Calculator</a>
           <a href="/due-date-calculator">Due Date Calculator</a>
           <a href="/how-to">How-To Guide</a>
@@ -207,44 +221,45 @@
 
   <div class="page">
     <div class="page-header">
-      <h1>Authorised Nominating Authorities</h1>
+      <h1>Nominating Authorities</h1>
       <p class="subtitle">
-        Authorised Nominating Authorities received and referred adjudication applications under the
-        <em>Building and Construction Industry Payments Act 2004</em> (Qld), and still administer matters
-        for their adjudicators under the <em>Building Industry Fairness (Security of Payment) Act 2017</em> (Qld),
+        Nominating Authorities (or &ldquo;ANAs&rdquo; in some jurisdictions) received and referred
+        adjudication applications under the <em>Building and Construction Industry Payments Act 2004</em> (Qld),
+        and still administer matters for their adjudicators under the
+        <em>Building Industry Fairness (Security of Payment) Act 2017</em> (Qld),
         where referrals now come from the QBCC's Adjudication Registry.
       </p>
       <p class="subtitle">
-        Compare decision statistics by each authority and by year.
+        Compare decision statistics by each nominating authority and by year.
       </p>
     </div>
 
     <div class="method-notice">
       <h4>Methodology &amp; Disclaimer</h4>
       <p>
-        The statistics on this page are <strong>approximate</strong>. The ANA for each decision is coded
-        automatically from the text of the published decision document, using keyword extraction and AI extraction.
-        Where a decision document does not name the authority, attribution is inferred from the adjudicator's
-        documented ANA affiliations in other decisions, which may be incorrect.
+        The statistics on this page are <strong>approximate</strong>. The nominating authority for each decision
+        is coded automatically from the text of the published decision document, using keyword extraction and AI
+        extraction. Where a decision document does not name the authority, attribution is inferred from the
+        adjudicator's documented affiliations in other decisions, which may be incorrect.
       </p>
       <p>
-        Authorised Nominating Authorities stopped receiving new Queensland adjudication applications from
+        Nominating Authorities stopped receiving new Queensland adjudication applications from
         <strong>December 2014</strong>, when the BCIPA amendments moved referrals to the Adjudication Registry
-        operated by the QBCC; however ANAs continue to administer matters for their adjudicators under the current
+        operated by the QBCC; however they continue to administer matters for their adjudicators under the current
         <em>Building Industry Fairness (Security of Payment) Act 2017</em> (Qld) regime. Statistics are provided
         for general information only, are not legal advice, and say nothing about the quality or fairness of any
-        ANA, adjudicator, or decision.
+        nominating authority, adjudicator, or decision.
       </p>
     </div>
 
     <div id="dashboard">
-      <div class="loading"><div class="loading-spinner"></div>Loading ANA statistics...</div>
+      <div class="loading"><div class="loading-spinner"></div>Loading nominating authority statistics...</div>
     </div>
   </div>
 
   <div id="chartTooltip"></div>
 
-  <footer class="footer"><div class="container"><div class="footer-inner"><div class="footer-brand"><div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div><p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p></div><div class="footer-col"><h4>Tools</h4><a href="/search">Decision Search</a><a href="/adjudicators">Adjudicators</a><a href="/ana">ANAs</a><a href="/ai">SopalAI</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a></div><div class="footer-col"><h4>Resources</h4><a href="/how-to">How-To Guide</a><a href="/feedback">Contact</a></div><div class="footer-col"><h4>Legal</h4><a href="/privacy">Privacy</a><a href="/terms">Terms of Use</a><a href="/account-terms">Account Terms</a><a href="/subscription-terms">Subscription Terms</a></div></div><div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div></div></footer>
+  <footer class="footer"><div class="container"><div class="footer-inner"><div class="footer-brand"><div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div><p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p></div><div class="footer-col"><h4>Tools</h4><a href="/search">Decision Search</a><a href="/adjudicators">Adjudicators</a><a href="/nominating-authorities">Nominating Authorities</a><a href="/ai">SopalAI</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a></div><div class="footer-col"><h4>Resources</h4><a href="/how-to">How-To Guide</a><a href="/pricing">Pricing</a><a href="/feedback">Contact</a></div><div class="footer-col"><h4>Legal</h4><a href="/privacy">Privacy</a><a href="/terms">Terms of Use</a><a href="/account-terms">Account Terms</a><a href="/subscription-terms">Subscription Terms</a></div></div><div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div></div></footer>
 
   <script>
 // ============================================================
@@ -368,20 +383,58 @@ function createDropdown(container, options, selectedId, onChange) {
 // ============================================================
 document.addEventListener('DOMContentLoaded', loadAnas);
 
+// Paid feature: same lock states as adjudicator insights.
+function renderLocked(state, pendingInvoice) {
+    const el = document.getElementById('dashboard');
+    if (state === 401) {
+        el.innerHTML = `
+          <div class="locked-box">
+            <h3>Sign In Required</h3>
+            <p>Create an account or sign in to access nominating authority statistics, decision patterns, and yearly trends.</p>
+            <a href="/register" class="unlock-btn">Create an Account</a>
+            <a href="/login?redirect=${encodeURIComponent('/nominating-authorities')}" class="unlock-btn secondary">Sign In to Existing Account</a>
+          </div>`;
+    } else if (pendingInvoice) {
+        el.innerHTML = `
+          <div class="locked-box">
+            <h3>Invoice Request Pending</h3>
+            <p>Your invoice subscription request is being reviewed. We'll review within 1 business day.</p>
+            <a href="/account?tab=subscription" class="unlock-btn">View Account</a>
+          </div>`;
+    } else {
+        el.innerHTML = `
+          <div class="locked-box">
+            <h3>Subscription Required</h3>
+            <p>Subscribe for unlimited access to nominating authority statistics, decision patterns, and yearly trends.</p>
+            <a href="/pricing" class="unlock-btn">View Subscription Plans</a>
+          </div>`;
+    }
+}
+
 async function loadAnas() {
     const el = document.getElementById('dashboard');
     try {
-        const response = await fetch('/api/anas');
-        if (!response.ok) throw new Error('Failed to fetch ANA statistics');
+        const token = localStorage.getItem('purchase_token');
+        const response = await fetch('/api/anas', {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        if (response.status === 401) { renderLocked(401); return; }
+        if (response.status === 403) {
+            let body = {};
+            try { body = await response.json(); } catch (e) {}
+            renderLocked(403, !!body.pendingInvoice);
+            return;
+        }
+        if (!response.ok) throw new Error('Failed to fetch nominating authority statistics');
         anaData = await response.json();
     } catch (e) {
-        console.error('Error loading ANA statistics:', e);
-        el.innerHTML = '<div class="empty-box"><h3>Unable to load statistics</h3><p>Something went wrong loading ANA statistics. Please try again later.</p></div>';
+        console.error('Error loading nominating authority statistics:', e);
+        el.innerHTML = '<div class="empty-box"><h3>Unable to load statistics</h3><p>Something went wrong loading nominating authority statistics. Please try again later.</p></div>';
         return;
     }
 
     if (!anaData || !anaData.available || !anaData.anas || anaData.anas.length === 0) {
-        el.innerHTML = '<div class="empty-box"><h3>No ANA statistics available yet</h3><p>Decisions have not yet been coded with their authority. Please check back soon.</p></div>';
+        el.innerHTML = '<div class="empty-box"><h3>No statistics available yet</h3><p>Decisions have not yet been coded with their nominating authority. Please check back soon.</p></div>';
         return;
     }
 
@@ -455,15 +508,15 @@ function renderDashboard() {
         <span class="filter-note">Filtering recalculates all statistics below</span>
       </div>
       <div class="section">
-        <h2>Authority comparison</h2>
+        <h2>Nominating authority comparison</h2>
         <div class="section-sub">Averages are per decision with usable data; % of claim awarded is capped at 100% per decision. Hover a heading for the full definition; click to sort.</div>
         <div class="table-wrap"><table class="ana-table"><thead id="anaTableHead"></thead><tbody id="anaTableBody"></tbody></table></div>
       </div>
       <div class="section">
         <div class="section-head">
           <div>
-            <h2>Yearly trends by authority</h2>
-            <div class="section-sub">One line per authority; pick the metric to compare</div>
+            <h2>Yearly trends by nominating authority</h2>
+            <div class="section-sub">One line per nominating authority; pick the metric to compare</div>
           </div>
           <div class="metric-pick">
             <span class="metric-label" id="trendMetricLabel">Metric</span>
@@ -479,7 +532,7 @@ function renderDashboard() {
       <div class="section">
         <div class="section-head">
           <div>
-            <h2>Year-by-year, per authority</h2>
+            <h2>Year-by-year, per nominating authority</h2>
             <div class="section-sub" id="gridSub"></div>
           </div>
           <div class="metric-pick">
@@ -493,7 +546,7 @@ function renderDashboard() {
         <div class="section-head">
           <div>
             <h2>General trends</h2>
-            <div class="section-sub">All ANA-attributed decisions pooled per year</div>
+            <div class="section-sub">All decisions per year</div>
           </div>
           <div class="metric-pick">
             <span class="metric-label" id="generalMetricLabel">Metric</span>
@@ -502,7 +555,7 @@ function renderDashboard() {
         </div>
         <div class="chart-card">
           <div id="generalChart"></div>
-          <div class="chart-note">Includes only decisions where an ANA is identifiable as having received the application &mdash; whether referred by the claimant directly (pre-2015) or via the QBCC Registry (2015 onwards). Decisions with no identifiable ANA are excluded.</div>
+          <div class="chart-note">Covers every decision in the database with a usable decision date, regardless of whether an ANA was identifiable.</div>
         </div>
       </div>
     `;
@@ -527,7 +580,7 @@ function renderDashboard() {
     });
     createDropdown(document.getElementById('generalMetricDD'), metricOptions, generalMetric, id => {
         generalMetric = id;
-        animateSwap('generalChart', () => renderGeneral(filteredAnas()));
+        animateSwap('generalChart', () => renderGeneral());
     });
 
     renderStats();
@@ -546,7 +599,7 @@ function renderStats() {
     renderTable(anas);
     renderTrend(anas);
     renderMultiples(anas);
-    renderGeneral(anas);
+    renderGeneral();
 }
 
 // Crossfade a chart container on metric switches so it isn't jarring.
@@ -738,14 +791,21 @@ function buildLineChartSvg(seriesList, years, metric) {
                 d += `C${cx1.toFixed(1)},${yAt(c1v).toFixed(1)} ${cx2.toFixed(1)},${yAt(c2v).toFixed(1)} ${x2.toFixed(1)},${yAt(vs[k + 1]).toFixed(1)}`;
             }
         });
-        if (d) svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+        if (d) svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.width || 2}" stroke-linejoin="round" stroke-linecap="round"/>`;
 
         s.points.forEach((p, i) => {
             if (p.v === null) return;
-            const x = xAt(i), y = yAt(p.v);
+            const x = xAt(i).toFixed(1), y = yAt(p.v).toFixed(1);
             const tt = (`<span class='tt-title'>${sanitizeHtml(s.name)}</span><br>${p.year}: ${fmtMetric(p.v, metric.type)} &middot; ${fmtInt(p.n)} decision${p.n === 1 ? '' : 's'}`).replace(/"/g, '&quot;');
-            markers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2" fill="${s.color}" stroke="#fff" stroke-width="1.5"/>`;
-            markers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" fill="transparent" data-tt="${tt}"/>`;
+            // Dots are hidden until hovered; an isolated year (no plottable
+            // neighbour) keeps a visible marker or it would vanish entirely.
+            const prev = i > 0 ? s.points[i - 1].v : null;
+            const next = i < s.points.length - 1 ? s.points[i + 1].v : null;
+            const isolated = prev === null && next === null;
+            markers += `<g class="pt">
+              <circle ${isolated ? '' : 'class="pt-dot"'} cx="${x}" cy="${y}" r="3.5" fill="${s.color}" stroke="#fff" stroke-width="1.5"/>
+              <circle cx="${x}" cy="${y}" r="12" fill="transparent" data-tt="${tt}"/>
+            </g>`;
         });
     });
     svg += markers;
@@ -772,6 +832,17 @@ function renderTrend(anas) {
         color: seriesColor[a.name] || OVERFLOW_COLOR,
         points: years.map(y => ({ year: y, ...metricPoint(a, y, metric) })),
     }));
+    // Corpus-wide decision-weighted average over EVERY decision in the
+    // database (same series as General trends). Drawn last (on top),
+    // thicker, black; no min-n gap rule — the pool is always large enough.
+    if (anaData.all && anaData.all.years) {
+        series.push({
+            name: 'All decisions',
+            color: 'rgba(0,0,0,0.75)',
+            width: 5,
+            points: allPoints(years, metric, true),
+        });
+    }
     const visible = series.filter(s => !hiddenSeries.has(s.name));
     const plottable = visible.filter(s => s.points.some(p => p.v !== null));
 
@@ -852,39 +923,36 @@ function renderMultiples(anas) {
     attachTooltips(grid);
 }
 
-// ---------- "General trends": one pooled line across all ANA-attributed decisions ----------
-function pooledPoints(anas, years, metric) {
+// ---------- "General trends": corpus-wide series over EVERY decision ----------
+// Per-year points from the API's corpus-wide buckets (anaData.all.years):
+// every decision with a usable date, regardless of ANA attribution.
+function allPoints(years, metric, ignoreMinN) {
+    const allYears = (anaData.all && anaData.all.years) || {};
     return years.map(y => {
-        const pool = emptyBucket();
-        let has = false;
-        anas.forEach(a => {
-            const b = a.years[String(y)];
-            if (!b) return;
-            has = true;
-            for (const k of Object.keys(pool)) pool[k] += (b[k] || 0);
-        });
-        const n = pool.decisions;
-        if (!has || (metric.minN && n < metric.minN)) return { year: y, v: null, n };
-        const v = metric.value(pool);
+        const b = allYears[String(y)];
+        if (!b) return { year: y, v: null, n: 0 };
+        const n = b.decisions || 0;
+        if (!ignoreMinN && metric.minN && n < metric.minN) return { year: y, v: null, n };
+        const v = metric.value(b);
         return { year: y, v: (v === null || v === undefined || !isFinite(v)) ? null : v, n };
     });
 }
 
-function renderGeneral(anas) {
+function renderGeneral() {
     const el = document.getElementById('generalChart');
     if (!el) return;
     const metric = metricById(generalMetric);
     const years = yearRange();
 
-    if (!anas.length) {
-        el.innerHTML = '<div class="chart-empty">No decisions in the selected year range</div>';
+    if (!anaData.all || !anaData.all.years) {
+        el.innerHTML = '<div class="chart-empty">Corpus-wide statistics are not available yet</div>';
         return;
     }
 
     const series = [{
-        name: 'All ANA-attributed decisions',
+        name: 'All decisions',
         color: 'var(--green-dark)',
-        points: pooledPoints(anas, years, metric),
+        points: allPoints(years, metric),
     }];
 
     el.innerHTML = series[0].points.some(p => p.v !== null)

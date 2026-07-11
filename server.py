@@ -3238,7 +3238,7 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...), authorization: 
 
 
 @app.get("/api/anas")
-def get_anas():
+def get_anas(authorization: Optional[str] = Header(None)):
     """Aggregate statistics for Authorised Nominating Authorities (ANAs).
 
     ANAs referred adjudication applications to adjudicators under BCIPA 2004
@@ -3249,6 +3249,38 @@ def get_anas():
     per-ANA stats. Returns per-ANA totals plus per-year buckets with the raw
     sums/counts needed for client-side year-range refiltering.
     """
+    # ---- paid feature: same gate as adjudicator insights ----
+    # (Bearer JWT from /purchase-login; access = full_access_users row OR an
+    # active subscription. Mirrors /check-adjudicator-access.)
+    email = None
+    if authorization and authorization.startswith("Bearer "):
+        try:
+            payload = jwt.decode(authorization.split(" ", 1)[1], SECRET_KEY, algorithms=[ALGORITHM])
+            email = payload.get("sub")
+        except JWTError:
+            email = None
+    user = get_purchase_user_by_email(email) if email else None
+    if user is None:
+        return JSONResponse(
+            {"error": "auth_required",
+             "message": "Sign in to view Nominating Authority statistics."},
+            status_code=401,
+        )
+    full_access = purchases_con.execute(
+        "SELECT 1 FROM full_access_users WHERE email = ?", (email,)
+    ).fetchone()
+    if not full_access and not has_active_subscription(email):
+        pending = purchases_con.execute(
+            "SELECT 1 FROM invoice_requests WHERE user_email = ? AND status = 'pending' LIMIT 1",
+            (email,),
+        ).fetchone()
+        return JSONResponse(
+            {"error": "subscription_required",
+             "pendingInvoice": pending is not None,
+             "message": "An active subscription is required to view Nominating Authority statistics."},
+            status_code=403,
+        )
+
     empty = {
         "available": False,
         "coverage": {"total": 0, "coded": 0, "unknown": 0, "codedPct": 0,
@@ -3287,36 +3319,11 @@ def get_anas():
         registry_unknown = 0  # referred by the Registry, administering ANA unknown
         sources = {}
         ana_years = {}  # name -> year -> bucket
+        all_years = {}  # year -> bucket over EVERY decision (corpus-wide)
         min_year = max_year = None
 
-        for row in rows:
-            name = (row["ana"] or "").strip()
-            if not name:
-                continue
-            coded += 1
-            src = (row["ana_source"] or "").strip() or "unknown"
-            sources[src] = sources.get(src, 0) + 1
-            is_inferred = src == "inferred_adjudicator"
-            if name == REGISTRY_NAME:
-                registry_unknown += 1
-            else:
-                attributed += 1
-                if is_inferred:
-                    inferred += 1
-
-            if name in EXCLUDED_ANAS:
-                continue  # counted in coverage, hidden from the dashboard
-
-            year = None
-            d = row["decision_date"]
-            if d and len(str(d)) >= 4 and str(d)[:4].isdigit():
-                year = int(str(d)[:4])
-            if year is None or year < 1990 or year > 2100:
-                continue  # can't bucket undated rows for year filtering
-            min_year = year if min_year is None else min(min_year, year)
-            max_year = year if max_year is None else max(max_year, year)
-
-            bucket = ana_years.setdefault(name, {}).setdefault(year, {
+        def _new_bucket():
+            return {
                 "decisions": 0, "inferredCount": 0,
                 "claimedSum": 0.0, "claimedCount": 0,
                 "scheduledSum": 0.0, "scheduledCount": 0,
@@ -3325,7 +3332,9 @@ def get_anas():
                 "jurisdictionUpheldCount": 0, "jurisdictionKnownCount": 0,
                 "feeClaimantSum": 0.0, "feeClaimantCount": 0,
                 "zeroAwards": 0, "nilNoJurCount": 0, "nilNoJurKnownCount": 0,
-            })
+            }
+
+        def _apply_row(bucket, row, is_inferred):
             bucket["decisions"] += 1
             if is_inferred:
                 bucket["inferredCount"] += 1
@@ -3373,6 +3382,41 @@ def get_anas():
             if fee_c is not None and 0 <= fee_c <= 100:
                 bucket["feeClaimantSum"] += fee_c
                 bucket["feeClaimantCount"] += 1
+
+        for row in rows:
+            name = (row["ana"] or "").strip()
+            src = (row["ana_source"] or "").strip() or "unknown"
+            is_inferred = src == "inferred_adjudicator"
+
+            if name:
+                coded += 1
+                sources[src] = sources.get(src, 0) + 1
+                if name == REGISTRY_NAME:
+                    registry_unknown += 1
+                else:
+                    attributed += 1
+                    if is_inferred:
+                        inferred += 1
+
+            year = None
+            d = row["decision_date"]
+            if d and len(str(d)) >= 4 and str(d)[:4].isdigit():
+                year = int(str(d)[:4])
+            if year is None or year < 1990 or year > 2100:
+                continue  # can't bucket undated rows for year filtering
+
+            # Corpus-wide series: every decision with a usable date, whether
+            # or not an ANA was identifiable (drives "General trends" and the
+            # "All decisions" average line).
+            _apply_row(all_years.setdefault(year, _new_bucket()), row, is_inferred)
+            min_year = year if min_year is None else min(min_year, year)
+            max_year = year if max_year is None else max(max_year, year)
+
+            if not name or name == REGISTRY_NAME or name in EXCLUDED_ANAS:
+                continue  # not shown as a per-authority series
+
+            _apply_row(ana_years.setdefault(name, {}).setdefault(year, _new_bucket()),
+                       row, is_inferred)
 
         anas = []
         for name, years in ana_years.items():
@@ -3427,6 +3471,9 @@ def get_anas():
                 "maxYear": max_year,
                 "sources": sources,
             },
+            # Corpus-wide per-year buckets (every decision with a usable
+            # date, regardless of ANA attribution).
+            "all": {"years": {str(y): b for y, b in sorted(all_years.items())}},
             "anas": anas,
         }
 
@@ -3437,8 +3484,14 @@ def get_anas():
 
 @app.get("/anas")
 def anas_redirect():
-    """The ANA statistics page lives at /ana (singular); keep old links working."""
-    return RedirectResponse("/ana", status_code=308)
+    """Historical route; the page lives at /nominating-authorities now."""
+    return RedirectResponse("/nominating-authorities", status_code=308)
+
+
+@app.get("/ana")
+def ana_redirect():
+    """Historical route; the page lives at /nominating-authorities now."""
+    return RedirectResponse("/nominating-authorities", status_code=308)
 
 
 @app.post("/ask-rag")
