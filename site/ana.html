@@ -117,9 +117,9 @@
     .chart-card { background: white; border: 1px solid var(--border-light); border-radius: 10px; padding: 18px 20px 12px; }
     .chart-note { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; }
 
-    /* TREND (transposed: year vertical, metric horizontal) */
-    #trendChart { transition: opacity 0.16s ease; }
-    #trendChart.fading { opacity: 0; }
+    /* TREND / GENERAL line charts (year horizontal, metric vertical) */
+    #trendChart, #generalChart { transition: opacity 0.16s ease; }
+    #trendChart.fading, #generalChart.fading { opacity: 0; }
     .trend-svg { width: 100%; height: auto; display: block; }
     .trend-legend { display: flex; flex-wrap: wrap; gap: 5px 16px; margin-top: 10px; }
     .trend-legend .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
@@ -159,7 +159,7 @@
     .empty-box p { font-size: 13.5px; color: var(--text-secondary); }
 
     @media (prefers-reduced-motion: reduce) {
-      #trendChart { transition: none; }
+      #trendChart, #generalChart { transition: none; }
       .bar-col .bar { transition: none; }
     }
 
@@ -256,6 +256,7 @@ let yearTo = null;
 let tableSort = { key: 'decisions', dir: -1 };
 let trendMetric = 'awardRate';   // trend chart metric
 let gridMetric = 'awardRate';    // small-multiples metric
+let generalMetric = 'awardRate'; // pooled "General trends" metric
 const hiddenSeries = new Set();  // legend toggles (trend chart)
 const seriesColor = {};          // ANA name -> colour, assigned once at load
 
@@ -462,7 +463,7 @@ function renderDashboard() {
         <div class="section-head">
           <div>
             <h2>Yearly trends by authority</h2>
-            <div class="section-sub">Timeline runs top to bottom (oldest first); the selected metric runs across</div>
+            <div class="section-sub">One line per authority; pick the metric to compare</div>
           </div>
           <div class="metric-pick">
             <span class="metric-label" id="trendMetricLabel">Metric</span>
@@ -488,6 +489,22 @@ function renderDashboard() {
         </div>
         <div class="multiples-grid" id="multiplesGrid"></div>
       </div>
+      <div class="section">
+        <div class="section-head">
+          <div>
+            <h2>General trends</h2>
+            <div class="section-sub">All ANA-attributed decisions pooled per year</div>
+          </div>
+          <div class="metric-pick">
+            <span class="metric-label" id="generalMetricLabel">Metric</span>
+            <span id="generalMetricDD"></span>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div id="generalChart"></div>
+          <div class="chart-note">Includes only decisions where an ANA is identifiable as having received the application &mdash; whether referred by the claimant directly (pre-2015) or via the QBCC Registry (2015 onwards). Decisions with no identifiable ANA are excluded.</div>
+        </div>
+      </div>
     `;
 
     document.getElementById('yearFrom').addEventListener('change', onYearChange);
@@ -502,11 +519,15 @@ function renderDashboard() {
     const metricOptions = METRICS.map(m => ({ id: m.id, label: m.label }));
     createDropdown(document.getElementById('trendMetricDD'), metricOptions, trendMetric, id => {
         trendMetric = id;
-        animateTrendSwap();
+        animateSwap('trendChart', () => renderTrend(filteredAnas()));
     });
     createDropdown(document.getElementById('gridMetricDD'), metricOptions, gridMetric, id => {
         gridMetric = id;
         renderMultiples(filteredAnas());
+    });
+    createDropdown(document.getElementById('generalMetricDD'), metricOptions, generalMetric, id => {
+        generalMetric = id;
+        animateSwap('generalChart', () => renderGeneral(filteredAnas()));
     });
 
     renderStats();
@@ -525,16 +546,17 @@ function renderStats() {
     renderTable(anas);
     renderTrend(anas);
     renderMultiples(anas);
+    renderGeneral(anas);
 }
 
-// Crossfade the trend chart on metric switches so it isn't jarring.
-function animateTrendSwap() {
-    const el = document.getElementById('trendChart');
+// Crossfade a chart container on metric switches so it isn't jarring.
+function animateSwap(elId, render) {
+    const el = document.getElementById(elId);
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) { renderTrend(filteredAnas()); return; }
+    if (reduced) { render(); return; }
     el.classList.add('fading');
     setTimeout(() => {
-        renderTrend(filteredAnas());
+        render();
         requestAnimationFrame(() => el.classList.remove('fading'));
     }, 170);
 }
@@ -654,7 +676,84 @@ function monotoneTangents(ts, vs) {
     return m;
 }
 
-// ---------- transposed trend chart: year on Y (oldest at top), metric on X ----------
+// ---------- shared line-chart builder: year on X, metric on Y ----------
+// seriesList: [{ name, color, points: [{year, v, n}, ...] }] (points aligned
+// to `years`). Monotone cubic smoothing, gaps at null points, hover markers.
+function buildLineChartSvg(seriesList, years, metric) {
+    // Y scale: percentages on a fixed 0-100 axis; $/counts scale to data.
+    let yMax = 100;
+    if (metric.type !== 'pct') {
+        const maxV = Math.max(0, ...seriesList.flatMap(s => s.points.map(p => p.v ?? 0)));
+        yMax = niceCeil(maxV * 1.05 || 1);
+    }
+
+    const W = 1000, H = 380, ML = 62, MR = 14, MT = 14, MB = 36;
+    const plotW = W - ML - MR, plotH = H - MT - MB;
+    const xAt = i => ML + (years.length === 1 ? plotW / 2 : (i + 0.5) * plotW / years.length);
+    const yAt = v => MT + plotH - (Math.max(0, Math.min(v, yMax)) / yMax) * plotH;
+
+    // horizontal gridlines + y labels
+    const TICKS = 5;
+    let svg = '';
+    for (let t = 0; t <= TICKS; t++) {
+        const v = yMax * t / TICKS;
+        const y = yAt(v);
+        svg += `<line x1="${ML}" y1="${y}" x2="${W - MR}" y2="${y}" stroke="#f0f0f0" stroke-width="1"/>`;
+        svg += `<text x="${ML - 8}" y="${y + 4}" text-anchor="end" font-size="12" fill="#888">${fmtAxis(v, metric.type)}</text>`;
+    }
+    // x labels (thinned) + baseline
+    const step = years.length > 24 ? 5 : (years.length > 12 ? 2 : 1);
+    years.forEach((y, i) => {
+        if (i % step === 0 || i === years.length - 1) {
+            svg += `<text x="${xAt(i)}" y="${H - 12}" text-anchor="middle" font-size="12" fill="#888">${y}</text>`;
+        }
+    });
+    svg += `<line x1="${ML}" y1="${MT + plotH}" x2="${W - MR}" y2="${MT + plotH}" stroke="#ddd" stroke-width="1"/>`;
+
+    // Lines: monotone cubic (no overshoot) through consecutive plottable years;
+    // gaps where a year is below the min-n rule. t = year index -> X; value -> Y.
+    let markers = '';
+    seriesList.forEach(s => {
+        // split into runs of consecutive non-null points
+        const runs = [];
+        let run = [];
+        s.points.forEach((p, i) => {
+            if (p.v === null) { if (run.length) runs.push(run); run = []; return; }
+            run.push({ i, ...p });
+        });
+        if (run.length) runs.push(run);
+
+        let d = '';
+        runs.forEach(r => {
+            if (r.length === 1) return; // isolated year: marker only
+            const ts = r.map(p => p.i), vs = r.map(p => p.v);
+            const m = monotoneTangents(ts, vs);
+            d += `M${xAt(ts[0]).toFixed(1)},${yAt(vs[0]).toFixed(1)}`;
+            for (let k = 0; k < r.length - 1; k++) {
+                const dt = ts[k + 1] - ts[k];
+                const c1v = vs[k] + m[k] * dt / 3;
+                const c2v = vs[k + 1] - m[k + 1] * dt / 3;
+                const x1 = xAt(ts[k]), x2 = xAt(ts[k + 1]);
+                const cx1 = x1 + (x2 - x1) / 3, cx2 = x1 + 2 * (x2 - x1) / 3;
+                d += `C${cx1.toFixed(1)},${yAt(c1v).toFixed(1)} ${cx2.toFixed(1)},${yAt(c2v).toFixed(1)} ${x2.toFixed(1)},${yAt(vs[k + 1]).toFixed(1)}`;
+            }
+        });
+        if (d) svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+        s.points.forEach((p, i) => {
+            if (p.v === null) return;
+            const x = xAt(i), y = yAt(p.v);
+            const tt = (`<span class='tt-title'>${sanitizeHtml(s.name)}</span><br>${p.year}: ${fmtMetric(p.v, metric.type)} &middot; ${fmtInt(p.n)} decision${p.n === 1 ? '' : 's'}`).replace(/"/g, '&quot;');
+            markers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2" fill="${s.color}" stroke="#fff" stroke-width="1.5"/>`;
+            markers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" fill="transparent" data-tt="${tt}"/>`;
+        });
+    });
+    svg += markers;
+
+    return `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${sanitizeHtml(metric.label)} by year">${svg}</svg>`;
+}
+
+// ---------- per-authority trend chart ----------
 function renderTrend(anas) {
     const el = document.getElementById('trendChart');
     const legendEl = document.getElementById('trendLegend');
@@ -676,80 +775,8 @@ function renderTrend(anas) {
     const visible = series.filter(s => !hiddenSeries.has(s.name));
     const plottable = visible.filter(s => s.points.some(p => p.v !== null));
 
-    // X scale: percentages on a fixed 0-100 axis; $/counts scale to data.
-    let xMax = 100;
-    if (metric.type !== 'pct') {
-        const maxV = Math.max(0, ...plottable.flatMap(s => s.points.map(p => p.v ?? 0)));
-        xMax = niceCeil(maxV * 1.05 || 1);
-    }
-
-    // Height follows the year count so each year row stays readable.
-    const W = 1000, ML = 64, MR = 24, MT = 46, MB = 14, ROW_H = 26;
-    const H = MT + years.length * ROW_H + MB;
-    const plotW = W - ML - MR;
-    const yAt = i => MT + (i + 0.5) * ROW_H;
-    const xAt = v => ML + (Math.max(0, Math.min(v, xMax)) / xMax) * plotW;
-
-    // Metric axis on TOP (visible without scrolling), vertical gridlines.
-    const TICKS = 5;
-    let svg = '';
-    for (let t = 0; t <= TICKS; t++) {
-        const v = xMax * t / TICKS;
-        const x = ML + (t / TICKS) * plotW;
-        svg += `<line x1="${x}" y1="${MT}" x2="${x}" y2="${H - MB}" stroke="#f0f0f0" stroke-width="1"/>`;
-        svg += `<text x="${x}" y="${MT - 12}" text-anchor="middle" font-size="12" fill="#888">${fmtAxis(v, metric.type)}</text>`;
-    }
-    svg += `<line x1="${ML}" y1="${MT}" x2="${W - MR}" y2="${MT}" stroke="#ddd" stroke-width="1"/>`;
-
-    // Year rows: horizontal gridlines + a label for every year (oldest at top).
-    years.forEach((y, i) => {
-        const yy = yAt(i);
-        svg += `<line x1="${ML}" y1="${yy}" x2="${W - MR}" y2="${yy}" stroke="#f7f7f7" stroke-width="1"/>`;
-        svg += `<text x="${ML - 10}" y="${yy + 4}" text-anchor="end" font-size="12" fill="#888">${y}</text>`;
-    });
-
-    // Lines: monotone cubic (no overshoot) through consecutive plottable years;
-    // gaps where a year is below the min-n rule. t = year index -> Y; value -> X.
-    let markers = '';
-    plottable.forEach(s => {
-        // split into runs of consecutive non-null points
-        const runs = [];
-        let run = [];
-        s.points.forEach((p, i) => {
-            if (p.v === null) { if (run.length) runs.push(run); run = []; return; }
-            run.push({ i, ...p });
-        });
-        if (run.length) runs.push(run);
-
-        let d = '';
-        runs.forEach(r => {
-            if (r.length === 1) return; // isolated year: marker only
-            const ts = r.map(p => p.i), vs = r.map(p => p.v);
-            const m = monotoneTangents(ts, vs);
-            d += `M${xAt(vs[0]).toFixed(1)},${yAt(ts[0]).toFixed(1)}`;
-            for (let k = 0; k < r.length - 1; k++) {
-                const dt = ts[k + 1] - ts[k];
-                const c1v = vs[k] + m[k] * dt / 3;
-                const c2v = vs[k + 1] - m[k + 1] * dt / 3;
-                const y1 = yAt(ts[k]), y2 = yAt(ts[k + 1]);
-                const cy1 = y1 + (y2 - y1) / 3, cy2 = y1 + 2 * (y2 - y1) / 3;
-                d += `C${xAt(c1v).toFixed(1)},${cy1.toFixed(1)} ${xAt(c2v).toFixed(1)},${cy2.toFixed(1)} ${xAt(vs[k + 1]).toFixed(1)},${y2.toFixed(1)}`;
-            }
-        });
-        if (d) svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
-
-        s.points.forEach((p, i) => {
-            if (p.v === null) return;
-            const x = xAt(p.v), y = yAt(i);
-            const tt = (`<span class='tt-title'>${sanitizeHtml(s.name)}</span><br>${p.year}: ${fmtMetric(p.v, metric.type)} &middot; ${fmtInt(p.n)} decision${p.n === 1 ? '' : 's'}`).replace(/"/g, '&quot;');
-            markers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2" fill="${s.color}" stroke="#fff" stroke-width="1.5"/>`;
-            markers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" fill="transparent" data-tt="${tt}"/>`;
-        });
-    });
-    svg += markers;
-
     el.innerHTML = plottable.length
-        ? `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${sanitizeHtml(metric.label)} by year (vertical timeline) and authority">${svg}</svg>`
+        ? buildLineChartSvg(plottable, years, metric)
         : `<div class="chart-empty">Not enough data to plot &ldquo;${sanitizeHtml(metric.label)}&rdquo; &mdash; no authority has ${MIN_N}+ decisions in a single year of this range</div>`;
 
     // legend (all series in range, toggleable)
@@ -823,6 +850,47 @@ function renderMultiples(anas) {
         </div>`;
     }).join('');
     attachTooltips(grid);
+}
+
+// ---------- "General trends": one pooled line across all ANA-attributed decisions ----------
+function pooledPoints(anas, years, metric) {
+    return years.map(y => {
+        const pool = emptyBucket();
+        let has = false;
+        anas.forEach(a => {
+            const b = a.years[String(y)];
+            if (!b) return;
+            has = true;
+            for (const k of Object.keys(pool)) pool[k] += (b[k] || 0);
+        });
+        const n = pool.decisions;
+        if (!has || (metric.minN && n < metric.minN)) return { year: y, v: null, n };
+        const v = metric.value(pool);
+        return { year: y, v: (v === null || v === undefined || !isFinite(v)) ? null : v, n };
+    });
+}
+
+function renderGeneral(anas) {
+    const el = document.getElementById('generalChart');
+    if (!el) return;
+    const metric = metricById(generalMetric);
+    const years = yearRange();
+
+    if (!anas.length) {
+        el.innerHTML = '<div class="chart-empty">No decisions in the selected year range</div>';
+        return;
+    }
+
+    const series = [{
+        name: 'All ANA-attributed decisions',
+        color: 'var(--green-dark)',
+        points: pooledPoints(anas, years, metric),
+    }];
+
+    el.innerHTML = series[0].points.some(p => p.v !== null)
+        ? buildLineChartSvg(series, years, metric)
+        : `<div class="chart-empty">Not enough data to plot &ldquo;${sanitizeHtml(metric.label)}&rdquo; in this range</div>`;
+    attachTooltips(el);
 }
 
 // ---------- tooltip ----------
