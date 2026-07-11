@@ -27,37 +27,42 @@
     .nav-links a:hover { color: white; }
     .nav-right { display: flex; align-items: center; gap: 12px; }
 
-    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 40px 0; text-align: center; }
-    .page-header h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; }
-    .page-header p { font-size: 15px; color: var(--text-secondary); }
+    .page-header { background: white; border-bottom: 1px solid var(--border-light); padding: 52px 0 44px; text-align: center; }
+    .page-header .eyebrow { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green-dark); margin-bottom: 10px; }
+    .page-header h1 { font-size: 36px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 10px; }
+    .page-header p { font-size: 16px; color: var(--text-secondary); max-width: 520px; margin: 0 auto; }
 
-    .pricing-content { max-width: 900px; margin: 40px auto; padding: 0 32px; }
+    .pricing-content { max-width: 1000px; margin: 48px auto; padding: 0 32px; }
 
     .status-card { background: #f0fdf4; border: 1px solid var(--green); border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 32px; display: none; }
     .status-card h3 { font-size: 17px; font-weight: 700; color: #166534; margin-bottom: 6px; }
     .status-card p { font-size: 14px; color: #166534; margin: 0; }
     .status-card a { color: var(--green-dark); font-weight: 600; }
 
-    .pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 48px; }
-    .pricing-card { background: white; border: 2px solid var(--border-light); border-radius: 14px; padding: 32px; position: relative; transition: border-color 0.2s; }
-    .pricing-card:hover { border-color: #ccc; }
-    .pricing-card.highlighted { border-color: var(--green); box-shadow: 0 4px 24px rgba(0,212,126,0.12); }
-    .popular-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--green); color: #000; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; }
-    .plan-name { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
-    .plan-price { font-size: 36px; font-weight: 800; color: var(--green-dark); letter-spacing: -0.03em; margin-bottom: 4px; }
-    .plan-price span { font-size: 16px; font-weight: 400; color: var(--text-muted); }
-    .plan-billing { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
-    .plan-features { list-style: none; padding: 0; margin: 0 0 24px; }
-    .plan-features li { padding: 6px 0; font-size: 14px; color: var(--text-secondary); }
-    .plan-features li::before { content: "\2713"; color: var(--green); font-weight: 700; margin-right: 8px; }
-    .plan-btn { display: block; width: 100%; padding: 12px; font-size: 14px; font-weight: 600; border-radius: 8px; background: var(--green); color: #000; text-align: center; transition: background 0.2s; }
-    .plan-btn:hover { background: var(--green-dark); }
+    .pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px; align-items: stretch; margin-bottom: 64px; }
+    .pricing-card { display: flex; flex-direction: column; background: white; border: 2px solid #ececec; border-radius: 16px; padding: 30px 28px 26px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s; }
+    .pricing-card:hover { border-color: #d9d9d9; box-shadow: 0 10px 28px rgba(0,0,0,0.07); transform: translateY(-3px); }
+    .pricing-card.highlighted { border-color: var(--green); box-shadow: 0 8px 28px rgba(0,212,126,0.14); }
+    .pricing-card.highlighted:hover { border-color: var(--green); box-shadow: 0 14px 36px rgba(0,212,126,0.2); }
+    .popular-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: var(--green); color: #003921; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+    .plan-name { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px; }
+    .plan-price { font-size: 40px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.03em; margin-bottom: 4px; line-height: 1.1; }
+    .plan-price span { font-size: 15px; font-weight: 450; color: var(--text-muted); letter-spacing: 0; }
+    .plan-billing { font-size: 13px; color: var(--green-dark); font-weight: 550; padding-bottom: 18px; border-bottom: 1px solid #f1f1f1; margin-bottom: 18px; }
+    .plan-features { list-style: none; padding: 0; margin: 0 0 26px; }
+    .plan-features li { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; font-size: 14px; color: #4b4b4b; line-height: 1.45; }
+    .plan-features li::before { content: "\2713"; flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; background: #e6f9f0; color: var(--green-dark); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+    .plan-btn { display: block; width: 100%; margin-top: auto; padding: 12px; font-size: 14px; font-weight: 600; border-radius: 9px; background: white; border: 1.5px solid #dcdcdc; color: var(--text-primary); text-align: center; transition: border-color 0.2s, background 0.2s, color 0.2s; }
+    .plan-btn:hover { border-color: var(--text-primary); }
+    .pricing-card.highlighted .plan-btn { background: var(--green); border-color: var(--green); color: #003921; }
+    .pricing-card.highlighted .plan-btn:hover { background: var(--green-dark); border-color: var(--green-dark); }
 
-    .faq-section { margin-bottom: 48px; }
-    .faq-section h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; text-align: center; margin-bottom: 24px; }
-    .faq-item { background: white; border: 1px solid var(--border-light); border-radius: 10px; padding: 20px; margin-bottom: 12px; }
-    .faq-item h4 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
-    .faq-item p { font-size: 14px; color: var(--text-secondary); margin: 0; }
+    .faq-section { max-width: 720px; margin: 0 auto 64px; }
+    .faq-section h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; text-align: center; margin-bottom: 28px; }
+    .faq-item { background: white; border: 1px solid var(--border-light); border-radius: 12px; padding: 20px 24px; margin-bottom: 12px; transition: border-color 0.2s; }
+    .faq-item:hover { border-color: #d4d4d4; }
+    .faq-item h4 { font-size: 15px; font-weight: 600; margin-bottom: 7px; }
+    .faq-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin: 0; }
     .faq-item a { color: var(--green-dark); font-weight: 600; }
 
     .footer { background: var(--bg-darker); border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0 28px; color: #777; }
@@ -72,9 +77,14 @@
     .footer-col a:hover { color: white; }
     .footer-bottom { display: flex; align-items: center; justify-content: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #555; }
 
+    @media (max-width: 900px) {
+      .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin-left: auto; margin-right: auto; }
+    }
     @media (max-width: 768px) {
       .nav-links { display: none; }
-      .pricing-grid { grid-template-columns: 1fr; }
+      .page-header { padding: 40px 0 36px; }
+      .page-header h1 { font-size: 30px; }
+      .pricing-content { margin-top: 36px; }
       .footer-inner { grid-template-columns: 1fr; }
     }
   </style>
