@@ -3259,7 +3259,8 @@ def get_anas():
         try:
             rows = con.execute("""
                 SELECT ana, ana_source, decision_date, claimed_amount,
-                       adjudicated_amount, jurisdiction_upheld,
+                       payment_schedule_amount, adjudicated_amount,
+                       jurisdiction_upheld,
                        fee_claimant_proportion, fee_respondent_proportion
                 FROM decision_details
             """).fetchall()
@@ -3275,8 +3276,12 @@ def get_anas():
             except (ValueError, TypeError):
                 return None
 
+        REGISTRY_NAME = "QBCC Registry"
         total = len(rows)
         coded = 0
+        attributed = 0        # attributed to an actual ANA (excl. Registry-unknown)
+        inferred = 0          # of attributed: inferred from the adjudicator's ANA
+        registry_unknown = 0  # referred by the Registry, administering ANA unknown
         sources = {}
         ana_years = {}  # name -> year -> bucket
         min_year = max_year = None
@@ -3288,6 +3293,13 @@ def get_anas():
             coded += 1
             src = (row["ana_source"] or "").strip() or "unknown"
             sources[src] = sources.get(src, 0) + 1
+            is_inferred = src == "inferred_adjudicator"
+            if name == REGISTRY_NAME:
+                registry_unknown += 1
+            else:
+                attributed += 1
+                if is_inferred:
+                    inferred += 1
 
             year = None
             d = row["decision_date"]
@@ -3299,21 +3311,28 @@ def get_anas():
             max_year = year if max_year is None else max(max_year, year)
 
             bucket = ana_years.setdefault(name, {}).setdefault(year, {
-                "decisions": 0,
+                "decisions": 0, "inferredCount": 0,
                 "claimedSum": 0.0, "claimedCount": 0,
+                "scheduledSum": 0.0, "scheduledCount": 0,
                 "adjudicatedSum": 0.0, "adjudicatedCount": 0,
                 "awardRateSum": 0.0, "awardRateCount": 0,
                 "jurisdictionUpheldCount": 0, "jurisdictionKnownCount": 0,
                 "feeClaimantSum": 0.0, "feeClaimantCount": 0,
-                "zeroAwards": 0,
+                "zeroAwards": 0, "nilNoJurCount": 0,
             })
             bucket["decisions"] += 1
+            if is_inferred:
+                bucket["inferredCount"] += 1
 
             claimed = _num(row["claimed_amount"])
+            scheduled = _num(row["payment_schedule_amount"])
             adjudicated = _num(row["adjudicated_amount"])
             if claimed is not None:
                 bucket["claimedSum"] += claimed
                 bucket["claimedCount"] += 1
+            if scheduled is not None:
+                bucket["scheduledSum"] += scheduled
+                bucket["scheduledCount"] += 1
             if adjudicated is not None:
                 bucket["adjudicatedSum"] += adjudicated
                 bucket["adjudicatedCount"] += 1
@@ -3324,10 +3343,16 @@ def get_anas():
                 bucket["awardRateCount"] += 1
 
             juris = row["jurisdiction_upheld"]
+            juris_upheld = juris in (1, "1")
             if juris in (0, 1, "0", "1"):
                 bucket["jurisdictionKnownCount"] += 1
-                if int(juris) == 1:
+                if juris_upheld:
                     bucket["jurisdictionUpheldCount"] += 1
+
+            # "Nil / no jurisdiction": the claimant effectively got nothing —
+            # $0 awarded, or a jurisdictional objection was upheld.
+            if (adjudicated is not None and adjudicated == 0) or juris_upheld:
+                bucket["nilNoJurCount"] += 1
 
             fee_c = _num(row["fee_claimant_proportion"])
             if fee_c is not None and 0 <= fee_c <= 100:
@@ -3347,15 +3372,19 @@ def get_anas():
                 "id": name.replace(" ", "_").lower(),
                 "name": name,
                 "totalDecisions": n,
+                "inferredCount": int(agg["inferredCount"]),
                 "totalClaimed": agg["claimedSum"],
                 "totalAdjudicated": agg["adjudicatedSum"],
                 "avgClaimed": agg["claimedSum"] / agg["claimedCount"] if agg["claimedCount"] else 0,
+                "avgScheduled": agg["scheduledSum"] / agg["scheduledCount"] if agg["scheduledCount"] else 0,
                 "avgAdjudicated": agg["adjudicatedSum"] / agg["adjudicatedCount"] if agg["adjudicatedCount"] else 0,
                 "avgAwardRate": agg["awardRateSum"] / agg["awardRateCount"] if agg["awardRateCount"] else 0,
                 "jurisdictionUpheldRate": (agg["jurisdictionUpheldCount"] / agg["jurisdictionKnownCount"] * 100)
                                           if agg["jurisdictionKnownCount"] else 0,
                 "avgClaimantFeeProportion": agg["feeClaimantSum"] / agg["feeClaimantCount"] if agg["feeClaimantCount"] else 0,
                 "zeroAwardCount": int(agg["zeroAwards"]),
+                "nilNoJurCount": int(agg["nilNoJurCount"]),
+                "nilNoJurRate": (agg["nilNoJurCount"] / n * 100) if n else 0,
                 "years": {str(y): b for y, b in sorted(years.items())},
             })
         anas.sort(key=lambda a: -a["totalDecisions"])
@@ -3367,6 +3396,16 @@ def get_anas():
                 "coded": coded,
                 "unknown": total - coded,
                 "codedPct": (coded / total * 100) if total else 0,
+                # Attribution split: rows attributed to an actual ANA, either
+                # coded from the decision document or inferred from the
+                # adjudicator's documented ANA affiliations. Registry-unknown
+                # rows were referred by the QBCC Registry but the administering
+                # ANA could not be determined.
+                "attributed": attributed,
+                "attributedPct": (attributed / total * 100) if total else 0,
+                "documentCoded": attributed - inferred,
+                "inferred": inferred,
+                "registryUnknown": registry_unknown,
                 "minYear": min_year,
                 "maxYear": max_year,
                 "sources": sources,
@@ -3377,6 +3416,12 @@ def get_anas():
     except Exception as e:
         print(f"Error in /api/anas: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/anas")
+def anas_redirect():
+    """The ANA statistics page lives at /ana (singular); keep old links working."""
+    return RedirectResponse("/ana", status_code=308)
 
 
 @app.post("/ask-rag")

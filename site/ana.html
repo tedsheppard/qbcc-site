@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>if(sessionStorage.getItem("nt-transitioning")){var s=document.createElement("style");s.id="nt-precover";s.textContent="html{background:#0a0a0a!important}body{visibility:hidden!important}";document.head.appendChild(s)}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANAs | Sopal</title>
+  <meta name="description" content="Statistics for Authorised Nominating Authorities (ANAs) that referred adjudication applications under Queensland's BCIPA 2004 - decision counts, award rates, and trends by year.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-dark: #0a0a0a;
+      --bg-darker: #050505;
+      --bg-card-dark: #141414;
+      --bg-light: #ffffff;
+      --green: #00d47e;
+      --green-dark: #00b368;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #888;
+      --border-light: #e5e5e5;
+      --border-dark: #222;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary); background: #fafafa; line-height: 1.5; -webkit-font-smoothing: antialiased; margin: 0; }
+    a { text-decoration: none; color: inherit; }
+    button { border: none; cursor: pointer; font-family: inherit; }
+
+    /* NAV */
+    .nav { background: var(--bg-dark); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top: 0; z-index: 100; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 17px; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #999; font-size: 14px; font-weight: 450; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    .nav-links a.active { color: white; font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .btn-signin { background: transparent; color: white; font-size: 13.5px; font-weight: 500; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; }
+    .btn-signin:hover { background: rgba(255,255,255,0.08); }
+
+    /* PAGE */
+    .page { max-width: 1200px; margin: 0 auto; padding: 36px 32px 60px; }
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+    .page-header .subtitle { font-size: 14.5px; color: var(--text-secondary); max-width: 760px; }
+
+    /* METHODOLOGY NOTICE */
+    .method-notice {
+      background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b;
+      border-radius: 10px; padding: 16px 20px; margin: 22px 0 26px;
+    }
+    .method-notice h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; color: #92400e; text-transform: uppercase; letter-spacing: 0.03em; }
+    .method-notice p { font-size: 13px; color: #78350f; line-height: 1.6; }
+    .method-notice p + p { margin-top: 8px; }
+
+    /* FILTER BAR */
+    .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-bar label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+    select.sopal-select {
+      padding: 8px 28px 8px 12px; font-size: 13px; font-family: inherit; border: 1px solid var(--border-light);
+      border-radius: 8px; background: white; cursor: pointer; appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .filter-bar .filter-note { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+    .filter-reset { padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: white; border: 1px solid var(--border-light); border-radius: 8px; transition: all 0.15s; }
+    .filter-reset:hover { background: #f5f5f5; color: var(--text-primary); }
+
+    /* STAT TILES */
+    .stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+    .stat-card { background: white; border: 1px solid var(--border-light); border-radius: 10px; padding: 16px; position: relative; }
+    .stat-card .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
+    .stat-card .stat-value { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+    .stat-card .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* SECTIONS */
+    .section { margin-bottom: 34px; }
+    .section h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 4px; }
+    .section .section-sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; }
+    .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+    .section-head .metric-pick { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .section-head .metric-pick label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+
+    /* COMPARISON TABLE (dense: 9 columns, no horizontal scroll at >=1280px) */
+    .table-wrap { background: white; border: 1px solid var(--border-light); border-radius: 10px; overflow-x: auto; }
+    table.ana-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 700px; }
+    .ana-table th {
+      text-align: right; padding: 8px 9px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.02em;
+      color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border-light);
+      cursor: pointer; user-select: none; line-height: 1.3; vertical-align: bottom; white-space: nowrap;
+    }
+    .ana-table th:first-child { text-align: left; }
+    .ana-table th .sort-arrow { font-size: 8px; margin-left: 2px; }
+    .ana-table td { padding: 9px 9px; border-bottom: 1px solid #f0f0f0; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .ana-table td:first-child { text-align: left; font-weight: 600; white-space: normal; line-height: 1.3; }
+    .ana-table tr:last-child td { border-bottom: none; }
+    .ana-table tr:hover td { background: #fafafa; }
+
+    /* CHART CARDS */
+    .chart-card { background: white; border: 1px solid var(--border-light); border-radius: 10px; padding: 18px 20px 12px; }
+    .chart-note { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; }
+
+    /* TREND (overlay line chart) */
+    .trend-svg { width: 100%; height: auto; display: block; }
+    .trend-legend { display: flex; flex-wrap: wrap; gap: 5px 16px; margin-top: 10px; }
+    .trend-legend .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
+    .trend-legend .legend-item.off { opacity: 0.35; }
+    .trend-legend .legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+    /* SMALL-MULTIPLE BAR PANELS */
+    .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 90px; padding-top: 8px; border-bottom: 1px solid var(--border-light); }
+    .bar-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; min-width: 0; position: relative; }
+    .bar-col .bar { width: 100%; max-width: 22px; background: var(--green); border-radius: 4px 4px 0 0; transition: background 0.15s; min-height: 1px; }
+    .bar-col:hover .bar { background: var(--green-dark); }
+    .bar-col .bar.low { opacity: 0.35; }
+    .bar-col .bar.nodata { background: #ececec; }
+    .bar-x-labels { display: flex; gap: 4px; margin-top: 6px; }
+    .bar-x-labels span { flex: 1; text-align: center; font-size: 10px; color: var(--text-muted); white-space: nowrap; min-width: 0; }
+    .chart-empty { padding: 30px 0 38px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+    .multiples-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+    .multiple-card { background: white; border: 1px solid var(--border-light); border-radius: 10px; padding: 14px 16px 8px; }
+    .multiple-card h3 { font-size: 13px; font-weight: 700; margin-bottom: 2px; letter-spacing: -0.01em; }
+    .multiple-card .m-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+
+    /* TOOLTIP */
+    #chartTooltip {
+      position: fixed; background: #333; color: white; padding: 8px 11px; border-radius: 6px;
+      font-size: 12px; line-height: 1.45; pointer-events: none; z-index: 1000; display: none; max-width: 260px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    }
+    #chartTooltip .tt-title { font-weight: 600; }
+
+    /* STATES */
+    .loading { text-align: center; padding: 50px 20px; color: var(--text-muted); font-size: 14px; }
+    .loading-spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid #e8e8e8; border-top: 2px solid var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .empty-box { background: white; border: 1px solid var(--border-light); border-radius: 10px; padding: 44px 24px; text-align: center; }
+    .empty-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .empty-box p { font-size: 13.5px; color: var(--text-secondary); }
+
+    /* FOOTER */
+    .footer { background: var(--bg-darker); color: #888; padding: 40px 0 24px; margin-top: 40px; }
+    .footer .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .footer-inner { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 32px; margin-bottom: 28px; }
+    .footer-brand p { font-size: 12.5px; line-height: 1.6; margin-top: 10px; max-width: 300px; }
+    .footer-col h4 { color: white; font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+    .footer-col a { display: block; font-size: 13px; color: #888; margin-bottom: 8px; transition: color 0.2s; }
+    .footer-col a:hover { color: white; }
+    .footer-bottom { border-top: 1px solid #1a1a1a; padding-top: 18px; font-size: 12px; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .stat-cards { grid-template-columns: repeat(2, 1fr); }
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+      .page { padding: 24px 18px 40px; }
+      .filter-bar .filter-note { margin-left: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/" class="nav-logo">
+  <img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 22px; width: auto;">
+</a>
+        <div class="nav-links">
+          <a href="/search">Search</a>
+          <a href="/adjudicators">Adjudicators</a>
+          <a href="/ana" class="active">ANAs</a>
+          <a href="/ai">SopalAI</a>
+          <a href="/interest-calculator">Interest Calculator</a>
+          <a href="/due-date-calculator">Due Date Calculator</a>
+          <a href="/how-to">How-To Guide</a>
+          <a href="/feedback">Contact</a>
+        </div>
+      </div>
+      <div class="nav-right"><a href="#" class="btn-signin">Sign In</a></div>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div class="page-header">
+      <h1>Authorised Nominating Authorities</h1>
+      <p class="subtitle">
+        Compare the bodies that referred adjudication applications to adjudicators under the
+        <em>Building and Construction Industry Payments Act 2004</em> (Qld) &mdash; decision volumes,
+        claim sizes, award rates and fee allocations, by authority and by year.
+      </p>
+    </div>
+
+    <div class="method-notice">
+      <h4>Methodology &amp; Disclaimer</h4>
+      <p>
+        The statistics on this page are <strong>approximate</strong>. Each decision's referring authority is coded
+        automatically from the text of the published decision document, using keyword extraction and AI extraction.
+        Where a decision document does not name the authority, attribution is <strong>inferred</strong> from the
+        adjudicator's documented ANA affiliations in other decisions; inferred attributions are approximate.
+        Coding errors and gaps are possible, and decisions that cannot be attributed either way are excluded from
+        the per-authority statistics below.
+      </p>
+      <p>
+        Authorised Nominating Authorities were abolished for new Queensland adjudication applications from
+        <strong>December 2014</strong>, when the BCIPA amendments moved referrals to the Adjudication Registry
+        operated by the QBCC. Referrals since then are made by the Registry to adjudicators whose matters an ANA
+        administers, so later decisions are attributed to an ANA where the document names one or the adjudicator's
+        ANA is known. Statistics are provided for general information only, are not legal advice, and say nothing
+        about the quality or fairness of any authority, adjudicator, or decision. Data limitations are described
+        in our <a href="/adjudicator-insights-terms" style="text-decoration: underline;">Insights terms</a>.
+      </p>
+    </div>
+
+    <div id="dashboard">
+      <div class="loading"><div class="loading-spinner"></div>Loading ANA statistics...</div>
+    </div>
+  </div>
+
+  <div id="chartTooltip"></div>
+
+  <footer class="footer"><div class="container"><div class="footer-inner"><div class="footer-brand"><div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div><p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p></div><div class="footer-col"><h4>Tools</h4><a href="/search">Decision Search</a><a href="/adjudicators">Adjudicators</a><a href="/ana">ANAs</a><a href="/ai">SopalAI</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a></div><div class="footer-col"><h4>Resources</h4><a href="/how-to">How-To Guide</a><a href="/feedback">Contact</a></div><div class="footer-col"><h4>Legal</h4><a href="/privacy">Privacy</a><a href="/terms">Terms of Use</a><a href="/account-terms">Account Terms</a><a href="/subscription-terms">Subscription Terms</a></div></div><div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div></div></footer>
+
+  <script>
+// ============================================================
+// STATE
+// ============================================================
+let anaData = null;          // raw API payload
+let yearFrom = null;         // active filter (ints)
+let yearTo = null;
+let tableSort = { key: 'decisions', dir: -1 };
+let trendMetric = 'awardRate';   // overlay line chart metric
+let gridMetric = 'awardRate';    // small-multiples metric
+const hiddenSeries = new Set();  // legend toggles (trend chart)
+const seriesColor = {};          // ANA name -> colour, assigned once at load
+
+// Minimum decisions in an ANA-year for a ratio/average to be plotted.
+const MIN_N = 5;
+
+// Validated 9-slot categorical palette (fixed order, assigned by all-time
+// decision volume; identity is never colour-alone — legend + tooltips + table).
+const SERIES_COLORS = ['#2a78d6', '#1baf7a', '#eda100', '#008300', '#4a3aa7',
+                       '#e34948', '#e87ba4', '#eb6834', '#0b84ab'];
+const OVERFLOW_COLOR = '#9a9a9a';
+
+// Rows still carrying 'QBCC Registry' were referred by the Registry but the
+// administering ANA is unknown — they are not an ANA and stay out of the
+// comparison (they count as unattributed in the coverage tile).
+const REGISTRY_NAME = 'QBCC Registry';
+
+// ============================================================
+// METRICS (shared by trend chart + small multiples)
+// ============================================================
+const METRICS = [
+    { id: 'awardRate',   label: 'Avg % of claim awarded',  type: 'pct',      minN: MIN_N,
+      value: b => b.awardRateCount ? b.awardRateSum / b.awardRateCount : null },
+    { id: 'claimantFee', label: 'Avg claimant fee share %', type: 'pct',      minN: MIN_N,
+      value: b => b.feeClaimantCount ? b.feeClaimantSum / b.feeClaimantCount : null },
+    { id: 'nilNoJur',    label: 'Nil / no jurisdiction %',  type: 'pct',      minN: MIN_N,
+      value: b => b.decisions ? (b.nilNoJurCount || 0) / b.decisions * 100 : null },
+    { id: 'decisions',   label: 'Decisions',                type: 'count',    minN: 0,
+      value: b => b.decisions },
+    { id: 'avgClaimed',  label: 'Avg claimed $',            type: 'currency', minN: MIN_N,
+      value: b => b.claimedCount ? b.claimedSum / b.claimedCount : null },
+    { id: 'avgAwarded',  label: 'Avg awarded $',            type: 'currency', minN: MIN_N,
+      value: b => b.adjudicatedCount ? b.adjudicatedSum / b.adjudicatedCount : null },
+];
+function metricById(id) { return METRICS.find(m => m.id === id); }
+function fmtMetric(v, type) {
+    if (v === null || v === undefined) return '–';
+    if (type === 'pct') return v.toFixed(1) + '%';
+    if (type === 'currency') return fmtCurrency(v);
+    return fmtInt(Math.round(v));
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', loadAnas);
+
+async function loadAnas() {
+    const el = document.getElementById('dashboard');
+    try {
+        const response = await fetch('/api/anas');
+        if (!response.ok) throw new Error('Failed to fetch ANA statistics');
+        anaData = await response.json();
+    } catch (e) {
+        console.error('Error loading ANA statistics:', e);
+        el.innerHTML = '<div class="empty-box"><h3>Unable to load statistics</h3><p>Something went wrong loading ANA statistics. Please try again later.</p></div>';
+        return;
+    }
+
+    if (!anaData || !anaData.available || !anaData.anas || anaData.anas.length === 0) {
+        el.innerHTML = '<div class="empty-box"><h3>No ANA statistics available yet</h3><p>Decisions have not yet been coded with their referring authority. Please check back soon.</p></div>';
+        return;
+    }
+
+    // Colour follows the entity: assign once, by all-time volume (API order),
+    // never re-assigned when the year filter changes the visible set.
+    anaData.anas.filter(a => a.name !== REGISTRY_NAME).forEach((a, i) => {
+        seriesColor[a.name] = SERIES_COLORS[i] || OVERFLOW_COLOR;
+    });
+
+    yearFrom = anaData.coverage.minYear;
+    yearTo = anaData.coverage.maxYear;
+    renderDashboard();
+}
+
+// ============================================================
+// FILTERED AGGREGATION (client-side, from per-year buckets)
+// ============================================================
+function emptyBucket() {
+    return { decisions: 0, inferredCount: 0, claimedSum: 0, claimedCount: 0, scheduledSum: 0, scheduledCount: 0,
+             adjudicatedSum: 0, adjudicatedCount: 0,
+             awardRateSum: 0, awardRateCount: 0, jurisdictionUpheldCount: 0, jurisdictionKnownCount: 0,
+             feeClaimantSum: 0, feeClaimantCount: 0, zeroAwards: 0, nilNoJurCount: 0 };
+}
+
+function aggregateAna(ana) {
+    const agg = emptyBucket();
+    for (const [y, b] of Object.entries(ana.years)) {
+        const yr = parseInt(y, 10);
+        if (yr < yearFrom || yr > yearTo) continue;
+        for (const k of Object.keys(agg)) agg[k] += (b[k] || 0);
+    }
+    return {
+        id: ana.id,
+        name: ana.name,
+        decisions: agg.decisions,
+        inferredCount: agg.inferredCount,
+        totalClaimed: agg.claimedSum,
+        totalAdjudicated: agg.adjudicatedSum,
+        avgClaimed: agg.claimedCount ? agg.claimedSum / agg.claimedCount : null,
+        avgScheduled: agg.scheduledCount ? agg.scheduledSum / agg.scheduledCount : null,
+        avgAdjudicated: agg.adjudicatedCount ? agg.adjudicatedSum / agg.adjudicatedCount : null,
+        avgAwardRate: agg.awardRateCount ? agg.awardRateSum / agg.awardRateCount : null,
+        jurisdictionUpheldRate: agg.jurisdictionKnownCount ? (agg.jurisdictionUpheldCount / agg.jurisdictionKnownCount) * 100 : null,
+        avgClaimantFee: agg.feeClaimantCount ? agg.feeClaimantSum / agg.feeClaimantCount : null,
+        zeroAwards: agg.zeroAwards,
+        nilNoJurCount: agg.nilNoJurCount,
+        nilNoJurRate: agg.decisions ? (agg.nilNoJurCount / agg.decisions) * 100 : null,
+        years: ana.years
+    };
+}
+
+function filteredAnas() {
+    return anaData.anas.filter(a => a.name !== REGISTRY_NAME).map(aggregateAna).filter(a => a.decisions > 0);
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function metricOptionsHtml(selected) {
+    return METRICS.map(m => `<option value="${m.id}" ${m.id === selected ? 'selected' : ''}>${m.label}</option>`).join('');
+}
+
+function renderDashboard() {
+    const el = document.getElementById('dashboard');
+    const cov = anaData.coverage;
+    const years = [];
+    for (let y = cov.minYear; y <= cov.maxYear; y++) years.push(y);
+
+    el.innerHTML = `
+      <div class="filter-bar">
+        <label for="yearFrom">Years</label>
+        <select id="yearFrom" class="sopal-select">${years.map(y => `<option value="${y}" ${y === yearFrom ? 'selected' : ''}>${y}</option>`).join('')}</select>
+        <span style="color: var(--text-muted); font-size: 13px;">to</span>
+        <select id="yearTo" class="sopal-select">${years.map(y => `<option value="${y}" ${y === yearTo ? 'selected' : ''}>${y}</option>`).join('')}</select>
+        <button type="button" class="filter-reset" id="yearReset">Reset</button>
+        <span class="filter-note">Filtering recalculates all statistics below</span>
+      </div>
+      <div id="statTiles" class="stat-cards"></div>
+      <div class="section">
+        <h2>Authority comparison</h2>
+        <div class="section-sub">Averages are per decision with usable data; % of claim awarded is capped at 100% per decision. Hover a heading for the full definition; click to sort.</div>
+        <div class="table-wrap"><table class="ana-table"><thead id="anaTableHead"></thead><tbody id="anaTableBody"></tbody></table></div>
+      </div>
+      <div class="section">
+        <div class="section-head">
+          <div>
+            <h2>Yearly trends by authority</h2>
+            <div class="section-sub">One line per authority; pick the metric to compare</div>
+          </div>
+          <div class="metric-pick">
+            <label for="trendMetricSel">Metric</label>
+            <select id="trendMetricSel" class="sopal-select">${metricOptionsHtml(trendMetric)}</select>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div id="trendChart"></div>
+          <div id="trendLegend" class="trend-legend"></div>
+          <div class="chart-note">Years where an authority decided fewer than ${MIN_N} matters are omitted from the lines (gaps), so small samples don't produce misleading swings. The Decisions metric always plots. Click a legend entry to show/hide its line.</div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-head">
+          <div>
+            <h2>Year-by-year, per authority</h2>
+            <div class="section-sub" id="gridSub"></div>
+          </div>
+          <div class="metric-pick">
+            <label for="gridMetricSel">Metric</label>
+            <select id="gridMetricSel" class="sopal-select">${metricOptionsHtml(gridMetric)}</select>
+          </div>
+        </div>
+        <div class="multiples-grid" id="multiplesGrid"></div>
+        <div class="chart-note">Faded bars mark years with fewer than ${MIN_N} decisions &mdash; treat those values with caution.</div>
+      </div>
+    `;
+
+    document.getElementById('yearFrom').addEventListener('change', onYearChange);
+    document.getElementById('yearTo').addEventListener('change', onYearChange);
+    document.getElementById('yearReset').addEventListener('click', () => {
+        yearFrom = cov.minYear; yearTo = cov.maxYear;
+        document.getElementById('yearFrom').value = yearFrom;
+        document.getElementById('yearTo').value = yearTo;
+        renderStats();
+    });
+    document.getElementById('trendMetricSel').addEventListener('change', e => {
+        trendMetric = e.target.value;
+        renderTrend(filteredAnas());
+    });
+    document.getElementById('gridMetricSel').addEventListener('change', e => {
+        gridMetric = e.target.value;
+        renderMultiples(filteredAnas());
+    });
+
+    renderStats();
+}
+
+function onYearChange() {
+    let f = parseInt(document.getElementById('yearFrom').value, 10);
+    let t = parseInt(document.getElementById('yearTo').value, 10);
+    if (f > t) { const tmp = f; f = t; t = tmp; document.getElementById('yearFrom').value = f; document.getElementById('yearTo').value = t; }
+    yearFrom = f; yearTo = t;
+    renderStats();
+}
+
+function renderStats() {
+    const anas = filteredAnas();
+    renderTiles(anas);
+    renderTable(anas);
+    renderTrend(anas);
+    renderMultiples(anas);
+}
+
+// ---------- stat tiles ----------
+function renderTiles(anas) {
+    const cov = anaData.coverage;
+    const totalInRange = anas.reduce((s, a) => s + a.decisions, 0);
+    const rangeLabel = yearFrom === yearTo ? String(yearFrom) : `${yearFrom}&ndash;${yearTo}`;
+
+    // Attribution is corpus-wide and ignores the year filter. Prefer the
+    // API's explicit split; fall back to computing from the ANA list.
+    const nonReg = anaData.anas.filter(a => a.name !== REGISTRY_NAME);
+    const attributed = cov.attributed ?? nonReg.reduce((s, a) => s + a.totalDecisions, 0);
+    const inferred = cov.inferred ?? nonReg.reduce((s, a) => s + (a.inferredCount || 0), 0);
+    const documentCoded = cov.documentCoded ?? (attributed - inferred);
+    const attrPct = cov.total ? (attributed / cov.total * 100) : 0;
+
+    document.getElementById('statTiles').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">ANA decisions</div>
+        <div class="stat-value">${fmtInt(totalInRange)}</div>
+        <div class="stat-sub">attributed to an ANA in ${rangeLabel}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Authorities</div>
+        <div class="stat-value">${anas.length}</div>
+        <div class="stat-sub">with decisions in range</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Date coverage</div>
+        <div class="stat-value">${cov.minYear}&ndash;${cov.maxYear}</div>
+        <div class="stat-sub">earliest to latest attributed decision</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Attribution (all years)</div>
+        <div class="stat-value">${attrPct.toFixed(1)}%</div>
+        <div class="stat-sub">${fmtInt(attributed)} of ${fmtInt(cov.total)} attributed &mdash; ${fmtInt(documentCoded)} from documents, ${fmtInt(inferred)} inferred from the adjudicator's ANA; ${fmtInt(cov.total - attributed)} unattributed</div>
+      </div>
+    `;
+}
+
+// ---------- comparison table ----------
+const TABLE_COLS = [
+    { key: 'name',           label: 'Authority',
+      title: 'Authorised Nominating Authority' },
+    { key: 'decisions',      label: 'Decisions',
+      title: 'Number of decisions attributed to this authority in the selected year range (from documents or inferred from the adjudicator)' },
+    { key: 'avgAwardRate',   label: 'Avg %<br>awarded',
+      title: 'Average percentage of the claimed amount awarded per decision (capped at 100% per decision)' },
+    { key: 'avgClaimantFee', label: 'Claimant<br>fee %',
+      title: "Average share of the adjudicator's fees the claimant was made responsible for" },
+    { key: 'avgClaimed',     label: 'Avg<br>claimed',
+      title: 'Average payment claim amount per decision' },
+    { key: 'avgScheduled',   label: 'Avg<br>scheduled',
+      title: 'Average payment schedule amount per decision (the amount the respondent proposed to pay)' },
+    { key: 'avgAdjudicated', label: 'Avg<br>awarded',
+      title: 'Average adjudicated (awarded) amount per decision' },
+    { key: 'nilNoJurRate',   label: 'Nil / no<br>jur. %',
+      title: 'Share of decisions where the claimant effectively received nothing: $0 awarded or a jurisdictional objection upheld' },
+    { key: 'nilNoJurCount',  label: 'Nil / no<br>jur. #',
+      title: 'Count of decisions where the claimant effectively received nothing: $0 awarded or a jurisdictional objection upheld' },
+];
+
+function renderTable(anas) {
+    const head = document.getElementById('anaTableHead');
+    const body = document.getElementById('anaTableBody');
+
+    head.innerHTML = '<tr>' + TABLE_COLS.map(c => {
+        const arrow = tableSort.key === c.key ? `<span class="sort-arrow">${tableSort.dir === -1 ? '&#9660;' : '&#9650;'}</span>` : '';
+        return `<th data-key="${c.key}" title="${c.title}">${c.label}${arrow}</th>`;
+    }).join('') + '</tr>';
+
+    head.querySelectorAll('th').forEach(th => th.addEventListener('click', () => {
+        const key = th.dataset.key;
+        if (tableSort.key === key) tableSort.dir = -tableSort.dir;
+        else tableSort = { key, dir: key === 'name' ? 1 : -1 };
+        renderTable(filteredAnas());
+    }));
+
+    const sorted = [...anas].sort((a, b) => {
+        const va = a[tableSort.key], vb = b[tableSort.key];
+        if (typeof va === 'string') return tableSort.dir * va.localeCompare(vb);
+        return tableSort.dir * ((va ?? -Infinity) - (vb ?? -Infinity));
+    });
+
+    body.innerHTML = sorted.map(a => {
+        const decTitle = a.inferredCount > 0
+            ? ` title="includes ${fmtInt(a.inferredCount)} inferred from the adjudicator's ANA"` : '';
+        return `
+      <tr>
+        <td>${sanitizeHtml(a.name)}</td>
+        <td${decTitle}>${fmtInt(a.decisions)}</td>
+        <td>${fmtPct(a.avgAwardRate)}</td>
+        <td>${fmtPct(a.avgClaimantFee)}</td>
+        <td>${fmtCurrency(a.avgClaimed)}</td>
+        <td>${fmtCurrency(a.avgScheduled)}</td>
+        <td>${fmtCurrency(a.avgAdjudicated)}</td>
+        <td>${fmtPct(a.nilNoJurRate)}</td>
+        <td>${fmtInt(a.nilNoJurCount)}</td>
+      </tr>`;
+    }).join('');
+}
+
+// ---------- shared chart helpers ----------
+function yearRange() {
+    const years = [];
+    for (let y = yearFrom; y <= yearTo; y++) years.push(y);
+    return years;
+}
+
+// value for one ANA-year under a metric, respecting the min-n rule.
+// Returns { v, n } with v === null when unplottable.
+function metricPoint(ana, year, metric) {
+    const b = ana.years[String(year)];
+    if (!b) return { v: null, n: 0 };
+    const n = b.decisions || 0;
+    if (metric.minN && n < metric.minN) return { v: null, n };
+    const v = metric.value(b);
+    return { v: (v === null || v === undefined || !isFinite(v)) ? null : v, n };
+}
+
+function niceCeil(v) {
+    if (v <= 0) return 1;
+    const exp = Math.pow(10, Math.floor(Math.log10(v)));
+    const f = v / exp;
+    const nice = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
+    return nice * exp;
+}
+
+function fmtAxis(v, type) {
+    if (type === 'pct') return Math.round(v) + '%';
+    if (type === 'currency') {
+        if (v >= 1e6) return '$' + (v / 1e6 >= 10 ? Math.round(v / 1e6) : (v / 1e6).toFixed(1).replace(/\.0$/, '')) + 'M';
+        if (v >= 1e3) return '$' + Math.round(v / 1e3) + 'K';
+        return '$' + Math.round(v);
+    }
+    return fmtInt(Math.round(v));
+}
+
+// ---------- overlay multi-line trend chart (hand-rolled SVG) ----------
+function renderTrend(anas) {
+    const el = document.getElementById('trendChart');
+    const legendEl = document.getElementById('trendLegend');
+    const metric = metricById(trendMetric);
+    const years = yearRange();
+
+    if (!anas.length) {
+        el.innerHTML = '<div class="chart-empty">No decisions in the selected year range</div>';
+        legendEl.innerHTML = '';
+        return;
+    }
+
+    // Build series (colour follows entity via seriesColor).
+    const series = anas.map(a => ({
+        name: a.name,
+        color: seriesColor[a.name] || OVERFLOW_COLOR,
+        points: years.map(y => ({ year: y, ...metricPoint(a, y, metric) })),
+    }));
+    const visible = series.filter(s => !hiddenSeries.has(s.name));
+    const plottable = visible.filter(s => s.points.some(p => p.v !== null));
+
+    // Y scale: percentages on a fixed 0-100 axis; $/counts scale to data.
+    let yMax = 100;
+    if (metric.type !== 'pct') {
+        const maxV = Math.max(0, ...plottable.flatMap(s => s.points.map(p => p.v ?? 0)));
+        yMax = niceCeil(maxV * 1.05 || 1);
+    }
+
+    const W = 1000, H = 380, ML = 62, MR = 14, MT = 14, MB = 36;
+    const plotW = W - ML - MR, plotH = H - MT - MB;
+    const xAt = i => ML + (years.length === 1 ? plotW / 2 : (i + 0.5) * plotW / years.length);
+    const yAt = v => MT + plotH - (v / yMax) * plotH;
+
+    // gridlines + y labels
+    const TICKS = 5;
+    let svg = '';
+    for (let t = 0; t <= TICKS; t++) {
+        const v = yMax * t / TICKS;
+        const y = yAt(v);
+        svg += `<line x1="${ML}" y1="${y}" x2="${W - MR}" y2="${y}" stroke="#f0f0f0" stroke-width="1"/>`;
+        svg += `<text x="${ML - 8}" y="${y + 4}" text-anchor="end" font-size="12" fill="#888">${fmtAxis(v, metric.type)}</text>`;
+    }
+    // x labels (thinned)
+    const step = years.length > 24 ? 5 : (years.length > 12 ? 2 : 1);
+    years.forEach((y, i) => {
+        if (i % step === 0 || i === years.length - 1) {
+            svg += `<text x="${xAt(i)}" y="${H - 12}" text-anchor="middle" font-size="12" fill="#888">${y}</text>`;
+        }
+    });
+    // baseline
+    svg += `<line x1="${ML}" y1="${MT + plotH}" x2="${W - MR}" y2="${MT + plotH}" stroke="#ddd" stroke-width="1"/>`;
+
+    // lines: segments of consecutive plottable years; gaps where v === null
+    let markers = '';
+    plottable.forEach(s => {
+        let d = '', prevNull = true;
+        s.points.forEach((p, i) => {
+            if (p.v === null) { prevNull = true; return; }
+            const x = xAt(i), y = yAt(Math.min(p.v, yMax));
+            d += (prevNull ? `M${x.toFixed(1)},${y.toFixed(1)}` : `L${x.toFixed(1)},${y.toFixed(1)}`);
+            prevNull = false;
+            const tt = (`<span class='tt-title'>${sanitizeHtml(s.name)}</span><br>${p.year}: ${fmtMetric(p.v, metric.type)} &middot; ${fmtInt(p.n)} decision${p.n === 1 ? '' : 's'}`).replace(/"/g, '&quot;');
+            markers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2" fill="${s.color}" stroke="#fff" stroke-width="1.5"/>`;
+            markers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" fill="transparent" data-tt="${tt}"/>`;
+        });
+        svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    });
+    svg += markers;
+
+    el.innerHTML = plottable.length
+        ? `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${sanitizeHtml(metric.label)} by year and authority">${svg}</svg>`
+        : `<div class="chart-empty">Not enough data to plot &ldquo;${sanitizeHtml(metric.label)}&rdquo; &mdash; no authority has ${MIN_N}+ decisions in a single year of this range</div>`;
+
+    // legend (all series in range, toggleable)
+    legendEl.innerHTML = series.map(s => `
+      <span class="legend-item ${hiddenSeries.has(s.name) ? 'off' : ''}" data-name="${sanitizeHtml(s.name).replace(/"/g, '&quot;')}">
+        <span class="legend-swatch" style="background:${s.color};"></span>${sanitizeHtml(s.name)}
+      </span>`).join('');
+    legendEl.querySelectorAll('.legend-item').forEach(item => item.addEventListener('click', () => {
+        const name = item.dataset.name;
+        if (hiddenSeries.has(name)) hiddenSeries.delete(name); else hiddenSeries.add(name);
+        renderTrend(filteredAnas());
+    }));
+
+    attachTooltips(el);
+}
+
+// ---------- per-ANA small multiples (metric bars per year) ----------
+function renderMultiples(anas) {
+    const grid = document.getElementById('multiplesGrid');
+    const metric = metricById(gridMetric);
+    const years = yearRange();
+
+    document.getElementById('gridSub').innerHTML =
+        `${sanitizeHtml(metric.label)} per year. ` +
+        (metric.type === 'pct' ? 'All panels share a 0&ndash;100% scale.' : 'Bar heights are scaled per panel.');
+
+    if (!anas.length) {
+        grid.innerHTML = '<div class="empty-box" style="grid-column: 1/-1;"><h3>No decisions in range</h3><p>Try widening the year filter.</p></div>';
+        return;
+    }
+
+    const sorted = [...anas].sort((a, b) => b.decisions - a.decisions);
+    grid.innerHTML = sorted.map(a => {
+        // For the panels, low-n years are shown (faded) rather than omitted.
+        const pts = years.map(y => {
+            const b = a.years[String(y)];
+            const n = b ? (b.decisions || 0) : 0;
+            const raw = b ? metric.value(b) : null;
+            const v = (raw === null || raw === undefined || !isFinite(raw)) ? null : raw;
+            return { year: y, v, n, low: metric.minN > 0 && n > 0 && n < metric.minN };
+        });
+        const vals = pts.filter(p => p.v !== null).map(p => p.v);
+        if (!vals.length) {
+            return `<div class="multiple-card">
+              <h3>${sanitizeHtml(a.name)}</h3>
+              <div class="m-sub">${fmtInt(a.decisions)} decisions in range</div>
+              <div class="chart-empty">No ${sanitizeHtml(metric.label)} data in range</div>
+            </div>`;
+        }
+        const scaleMax = metric.type === 'pct' ? 100 : Math.max(...vals, 1e-9);
+        const bars = pts.map(p => {
+            if (p.v === null) {
+                const tt = (`<span class='tt-title'>${sanitizeHtml(a.name)}</span><br>${p.year}: no data${p.n ? ` (${fmtInt(p.n)} decision${p.n === 1 ? '' : 's'})` : ''}`).replace(/"/g, '&quot;');
+                return `<div class="bar-col" data-tt="${tt}"><div class="bar nodata" style="height:1px;"></div></div>`;
+            }
+            const h = Math.max(1, Math.round((Math.min(p.v, scaleMax) / scaleMax) * 100));
+            const lowNote = p.low ? ` &middot; low sample (&lt;${MIN_N})` : '';
+            const tt = (`<span class='tt-title'>${sanitizeHtml(a.name)}</span><br>${p.year}: ${fmtMetric(p.v, metric.type)} &middot; ${fmtInt(p.n)} decision${p.n === 1 ? '' : 's'}${lowNote}`).replace(/"/g, '&quot;');
+            return `<div class="bar-col" data-tt="${tt}"><div class="bar ${p.low ? 'low' : ''}" style="height:${h}%;"></div></div>`;
+        }).join('');
+        const step = Math.max(1, Math.ceil(years.length / 4));
+        const labels = years.map((y, i) => `<span>${(i % step === 0 && i <= years.length - Math.ceil(step / 2)) || i === years.length - 1 ? y : ''}</span>`).join('');
+        return `<div class="multiple-card">
+          <h3>${sanitizeHtml(a.name)}</h3>
+          <div class="m-sub">${fmtInt(a.decisions)} decisions in range</div>
+          <div class="bar-chart">${bars}</div><div class="bar-x-labels">${labels}</div>
+        </div>`;
+    }).join('');
+    attachTooltips(grid);
+}
+
+// ---------- tooltip ----------
+function attachTooltips(root) {
+    const tt = document.getElementById('chartTooltip');
+    root.querySelectorAll('[data-tt]').forEach(elm => {
+        elm.addEventListener('mouseenter', () => { tt.innerHTML = elm.dataset.tt; tt.style.display = 'block'; });
+        elm.addEventListener('mousemove', e => {
+            const pad = 14;
+            let x = e.clientX + pad, y = e.clientY + pad;
+            const r = tt.getBoundingClientRect();
+            if (x + r.width > window.innerWidth - 8) x = e.clientX - r.width - pad;
+            if (y + r.height > window.innerHeight - 8) y = e.clientY - r.height - pad;
+            tt.style.left = x + 'px'; tt.style.top = y + 'px';
+        });
+        elm.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
+    });
+}
+
+// ---------- formatting ----------
+function fmtInt(n) { return (n ?? 0).toLocaleString('en-AU'); }
+function fmtPct(v) { return (v === null || v === undefined) ? '&ndash;' : v.toFixed(1) + '%'; }
+function fmtCurrency(v) {
+    if (v === null || v === undefined) return '&ndash;';
+    if (v < 0) return '-' + fmtCurrency(-v);
+    if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+    if (v >= 1e3) return '$' + Math.round(v / 1e3).toLocaleString('en-AU') + 'K';
+    return '$' + Math.round(v).toLocaleString('en-AU');
+}
+function sanitizeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str ?? '');
+    return div.innerHTML;
+}
+  </script>
+
+  <script src="/assets/js/main.js"></script>
+</body>
+</html>
