@@ -240,28 +240,29 @@
 <script>
 const token = localStorage.getItem('purchase_token');
 const params = new URLSearchParams(window.location.search);
-const planParam = params.get('plan');
+// 'weekly' is the legacy plan param from old links; it maps to the monthly plan
+const rawPlanParam = params.get('plan');
+const planParam = rawPlanParam === 'weekly' ? 'monthly' : rawPlanParam;
 
 // Redirect if not logged in
 if (!token) {
-    window.location.href = '/login?redirect=' + encodeURIComponent('/checkout?plan=' + (planParam || 'weekly'));
+    window.location.href = '/login?redirect=' + encodeURIComponent('/checkout?plan=' + (planParam || 'monthly'));
 }
 
 // Redirect if no valid plan
-if (planParam !== 'weekly' && planParam !== 'annual' && planParam !== 'disbursement') {
+if (planParam !== 'monthly' && planParam !== 'annual' && planParam !== 'disbursement') {
     window.location.href = '/pricing';
 }
 
 const isDisbursement = planParam === 'disbursement';
 
-// Map display plan to backend plan
-const backendPlan = isDisbursement ? 'disbursement' : (planParam === 'weekly' ? 'monthly' : 'annual');
+const backendPlan = planParam;
 
 // Populate plan summary
 const planConfig = {
-    weekly: { name: 'Weekly Plan', detail: '$12.95/week — billed weekly or monthly', price: '$12.95/wk' },
-    annual: { name: 'Annual Plan', detail: '$520/year — just $9.95/week, save 23%', price: '$520/yr' },
-    disbursement: { name: 'Disbursement Option', detail: '$39.95 one-time — 7 days unlimited access', price: '$39.95' }
+    monthly: { name: 'Monthly Plan', detail: '$64.95/month — billed monthly', price: '$64.95/mo' },
+    annual: { name: 'Annual Plan', detail: '$594.95/year — $49.58/month, save 24%', price: '$594.95/yr' },
+    disbursement: { name: 'Disbursement Option', detail: '$49.95 one-time — 7 days unlimited access', price: '$49.95' }
 };
 const cfg = planConfig[planParam];
 document.getElementById('summary-plan-name').textContent = cfg.name;

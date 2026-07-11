@@ -4438,14 +4438,14 @@ async def cancel_subscription(current_user: dict = Depends(get_current_purchase_
 async def create_disbursement_intent(
     current_user: dict = Depends(get_current_purchase_user)
 ):
-    """Creates a Stripe PaymentIntent for $39.95 one-time disbursement access."""
+    """Creates a Stripe PaymentIntent for $49.95 one-time disbursement access."""
     if not STRIPE_DISBURSEMENT_PRICE_ID:
         raise HTTPException(status_code=500, detail="Disbursement price not configured.")
 
     try:
         customer = get_or_create_stripe_customer(current_user)
         intent = stripe.PaymentIntent.create(
-            amount=3995,  # $39.95 in cents
+            amount=4995,  # $49.95 in cents
             currency="aud",
             customer=customer.id,
             metadata={
@@ -5037,7 +5037,7 @@ def get_payment_history(current_user: dict = Depends(get_current_purchase_user))
                 metadata = charge.metadata or {}
                 if metadata.get("plan_type"):
                     plan = metadata["plan_type"]
-                    description = "Annual Subscription" if plan == "annual" else "Weekly Subscription"
+                    description = "Annual Subscription" if plan == "annual" else "Monthly Subscription"
                 elif metadata.get("adjudicator_name"):
                     description = f"Adjudicator: {metadata['adjudicator_name']}"
                 elif "subscription" in description.lower():
