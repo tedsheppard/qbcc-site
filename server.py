@@ -3237,6 +3237,146 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...), authorization: 
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+@app.get("/api/anas")
+def get_anas():
+    """Aggregate statistics for Authorised Nominating Authorities (ANAs).
+
+    ANAs referred adjudication applications to adjudicators under BCIPA 2004
+    (Qld) until the Dec-2014 amendments moved referrals to the QBCC
+    Adjudication Registry. Decisions are coded into decision_details.ana by
+    keyword extraction (pre-2015) and AI extraction (2015+), so coverage is
+    approximate; uncoded rows are reported in "coverage" but excluded from
+    per-ANA stats. Returns per-ANA totals plus per-year buckets with the raw
+    sums/counts needed for client-side year-range refiltering.
+    """
+    empty = {
+        "available": False,
+        "coverage": {"total": 0, "coded": 0, "unknown": 0, "codedPct": 0,
+                     "minYear": None, "maxYear": None, "sources": {}},
+        "anas": [],
+    }
+    try:
+        try:
+            rows = con.execute("""
+                SELECT ana, ana_source, decision_date, claimed_amount,
+                       adjudicated_amount, jurisdiction_upheld,
+                       fee_claimant_proportion, fee_respondent_proportion
+                FROM decision_details
+            """).fetchall()
+        except sqlite3.OperationalError as e:
+            # The live DB may not have the ana columns yet; degrade gracefully.
+            if "no such column" in str(e).lower():
+                return empty
+            raise
+
+        def _num(v):
+            try:
+                return float(v) if v not in ("N/A", "", None) else None
+            except (ValueError, TypeError):
+                return None
+
+        total = len(rows)
+        coded = 0
+        sources = {}
+        ana_years = {}  # name -> year -> bucket
+        min_year = max_year = None
+
+        for row in rows:
+            name = (row["ana"] or "").strip()
+            if not name:
+                continue
+            coded += 1
+            src = (row["ana_source"] or "").strip() or "unknown"
+            sources[src] = sources.get(src, 0) + 1
+
+            year = None
+            d = row["decision_date"]
+            if d and len(str(d)) >= 4 and str(d)[:4].isdigit():
+                year = int(str(d)[:4])
+            if year is None or year < 1990 or year > 2100:
+                continue  # can't bucket undated rows for year filtering
+            min_year = year if min_year is None else min(min_year, year)
+            max_year = year if max_year is None else max(max_year, year)
+
+            bucket = ana_years.setdefault(name, {}).setdefault(year, {
+                "decisions": 0,
+                "claimedSum": 0.0, "claimedCount": 0,
+                "adjudicatedSum": 0.0, "adjudicatedCount": 0,
+                "awardRateSum": 0.0, "awardRateCount": 0,
+                "jurisdictionUpheldCount": 0, "jurisdictionKnownCount": 0,
+                "feeClaimantSum": 0.0, "feeClaimantCount": 0,
+                "zeroAwards": 0,
+            })
+            bucket["decisions"] += 1
+
+            claimed = _num(row["claimed_amount"])
+            adjudicated = _num(row["adjudicated_amount"])
+            if claimed is not None:
+                bucket["claimedSum"] += claimed
+                bucket["claimedCount"] += 1
+            if adjudicated is not None:
+                bucket["adjudicatedSum"] += adjudicated
+                bucket["adjudicatedCount"] += 1
+                if adjudicated == 0:
+                    bucket["zeroAwards"] += 1
+            if claimed is not None and claimed > 0 and adjudicated is not None:
+                bucket["awardRateSum"] += min((adjudicated / claimed) * 100, 100.0)
+                bucket["awardRateCount"] += 1
+
+            juris = row["jurisdiction_upheld"]
+            if juris in (0, 1, "0", "1"):
+                bucket["jurisdictionKnownCount"] += 1
+                if int(juris) == 1:
+                    bucket["jurisdictionUpheldCount"] += 1
+
+            fee_c = _num(row["fee_claimant_proportion"])
+            if fee_c is not None and 0 <= fee_c <= 100:
+                bucket["feeClaimantSum"] += fee_c
+                bucket["feeClaimantCount"] += 1
+
+        anas = []
+        for name, years in ana_years.items():
+            agg = {k: 0.0 for k in next(iter(years.values()))}
+            for b in years.values():
+                for k, v in b.items():
+                    agg[k] += v
+            n = int(agg["decisions"])
+            if n == 0:
+                continue
+            anas.append({
+                "id": name.replace(" ", "_").lower(),
+                "name": name,
+                "totalDecisions": n,
+                "totalClaimed": agg["claimedSum"],
+                "totalAdjudicated": agg["adjudicatedSum"],
+                "avgClaimed": agg["claimedSum"] / agg["claimedCount"] if agg["claimedCount"] else 0,
+                "avgAdjudicated": agg["adjudicatedSum"] / agg["adjudicatedCount"] if agg["adjudicatedCount"] else 0,
+                "avgAwardRate": agg["awardRateSum"] / agg["awardRateCount"] if agg["awardRateCount"] else 0,
+                "jurisdictionUpheldRate": (agg["jurisdictionUpheldCount"] / agg["jurisdictionKnownCount"] * 100)
+                                          if agg["jurisdictionKnownCount"] else 0,
+                "avgClaimantFeeProportion": agg["feeClaimantSum"] / agg["feeClaimantCount"] if agg["feeClaimantCount"] else 0,
+                "zeroAwardCount": int(agg["zeroAwards"]),
+                "years": {str(y): b for y, b in sorted(years.items())},
+            })
+        anas.sort(key=lambda a: -a["totalDecisions"])
+
+        return {
+            "available": True,
+            "coverage": {
+                "total": total,
+                "coded": coded,
+                "unknown": total - coded,
+                "codedPct": (coded / total * 100) if total else 0,
+                "minYear": min_year,
+                "maxYear": max_year,
+                "sources": sources,
+            },
+            "anas": anas,
+        }
+
+    except Exception as e:
+        print(f"Error in /api/anas: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.post("/ask-rag")
