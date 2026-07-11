@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ANAs | Sopal</title>
-  <meta name="description" content="Statistics for Authorised Nominating Authorities (ANAs) that referred adjudication applications under Queensland's BCIPA 2004 - decision counts, award rates, and trends by year.">
+  <meta name="description" content="Statistics for Authorised Nominating Authorities (ANAs) in Queensland construction adjudication - decision counts, award rates, and trends by year.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
@@ -56,7 +56,7 @@
     .method-notice p + p { margin-top: 8px; }
 
     /* FILTER BAR */
-    .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
     .filter-bar label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
     select.sopal-select {
       padding: 8px 28px 8px 12px; font-size: 13px; font-family: inherit; border: 1px solid var(--border-light);
@@ -68,12 +68,26 @@
     .filter-reset { padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: white; border: 1px solid var(--border-light); border-radius: 8px; transition: all 0.15s; }
     .filter-reset:hover { background: #f5f5f5; color: var(--text-primary); }
 
-    /* STAT TILES */
-    .stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
-    .stat-card { background: white; border: 1px solid var(--border-light); border-radius: 10px; padding: 16px; position: relative; }
-    .stat-card .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
-    .stat-card .stat-value { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-    .stat-card .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    /* CUSTOM DROPDOWN */
+    .dd { position: relative; display: inline-block; }
+    .dd-btn {
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; font-weight: 500;
+      border: 1px solid var(--border-light); border-radius: 8px; background: white; color: var(--text-primary);
+      cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; min-width: 210px; justify-content: space-between;
+    }
+    .dd-btn:hover { border-color: #d0d0d0; }
+    .dd-btn:focus-visible { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,212,126,0.15); }
+    .dd-btn .dd-chevron { width: 10px; height: 10px; stroke: #888; fill: none; stroke-width: 2; flex-shrink: 0; transition: transform 0.15s; }
+    .dd.open .dd-btn .dd-chevron { transform: rotate(180deg); }
+    .dd-list {
+      position: absolute; right: 0; top: calc(100% + 6px); background: white; border: 1px solid var(--border-light);
+      border-radius: 10px; box-shadow: 0 10px 34px rgba(0,0,0,0.12); list-style: none; padding: 6px; z-index: 300;
+      min-width: 100%; display: none;
+    }
+    .dd.open .dd-list { display: block; }
+    .dd-list li { padding: 8px 12px; font-size: 13px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+    .dd-list li:hover, .dd-list li.focused { background: #f5f5f5; }
+    .dd-list li[aria-selected="true"] { background: #f0fdf4; color: var(--green-dark); font-weight: 600; }
 
     /* SECTIONS */
     .section { margin-bottom: 34px; }
@@ -81,7 +95,7 @@
     .section .section-sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; }
     .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
     .section-head .metric-pick { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-    .section-head .metric-pick label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+    .section-head .metric-pick .metric-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
 
     /* COMPARISON TABLE (dense: 9 columns, no horizontal scroll at >=1280px) */
     .table-wrap { background: white; border: 1px solid var(--border-light); border-radius: 10px; overflow-x: auto; }
@@ -102,7 +116,9 @@
     .chart-card { background: white; border: 1px solid var(--border-light); border-radius: 10px; padding: 18px 20px 12px; }
     .chart-note { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; }
 
-    /* TREND (overlay line chart) */
+    /* TREND (transposed: year vertical, metric horizontal) */
+    #trendChart { transition: opacity 0.16s ease; }
+    #trendChart.fading { opacity: 0; }
     .trend-svg { width: 100%; height: auto; display: block; }
     .trend-legend { display: flex; flex-wrap: wrap; gap: 5px 16px; margin-top: 10px; }
     .trend-legend .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
@@ -112,7 +128,7 @@
     /* SMALL-MULTIPLE BAR PANELS */
     .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 90px; padding-top: 8px; border-bottom: 1px solid var(--border-light); }
     .bar-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; min-width: 0; position: relative; }
-    .bar-col .bar { width: 100%; max-width: 22px; background: var(--green); border-radius: 4px 4px 0 0; transition: background 0.15s; min-height: 1px; }
+    .bar-col .bar { width: 100%; max-width: 22px; background: var(--green); border-radius: 4px 4px 0 0; transition: background 0.15s, height 0.25s ease; min-height: 1px; }
     .bar-col:hover .bar { background: var(--green-dark); }
     .bar-col .bar.low { opacity: 0.35; }
     .bar-col .bar.nodata { background: #ececec; }
@@ -141,6 +157,11 @@
     .empty-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
     .empty-box p { font-size: 13.5px; color: var(--text-secondary); }
 
+    @media (prefers-reduced-motion: reduce) {
+      #trendChart { transition: none; }
+      .bar-col .bar { transition: none; }
+    }
+
     /* FOOTER */
     .footer { background: var(--bg-darker); color: #888; padding: 40px 0 24px; margin-top: 40px; }
     .footer .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
@@ -153,7 +174,6 @@
 
     @media (max-width: 900px) {
       .nav-links { display: none; }
-      .stat-cards { grid-template-columns: repeat(2, 1fr); }
       .footer-inner { grid-template-columns: 1fr 1fr; }
       .page { padding: 24px 18px 40px; }
       .filter-bar .filter-note { margin-left: 0; width: 100%; }
@@ -188,30 +208,30 @@
     <div class="page-header">
       <h1>Authorised Nominating Authorities</h1>
       <p class="subtitle">
-        Compare the bodies that referred adjudication applications to adjudicators under the
-        <em>Building and Construction Industry Payments Act 2004</em> (Qld) &mdash; decision volumes,
-        claim sizes, award rates and fee allocations, by authority and by year.
+        Authorised Nominating Authorities received and referred adjudication applications under the
+        <em>Building and Construction Industry Payments Act 2004</em> (Qld), and still administer matters
+        for their adjudicators under the BIF Act, where referrals now come from the QBCC's Adjudication
+        Registry. Compare decision volumes, claim sizes, award rates and fee allocations by authority and by year.
       </p>
     </div>
 
     <div class="method-notice">
       <h4>Methodology &amp; Disclaimer</h4>
       <p>
-        The statistics on this page are <strong>approximate</strong>. Each decision's referring authority is coded
+        The statistics on this page are <strong>approximate</strong>. Each decision's authority is coded
         automatically from the text of the published decision document, using keyword extraction and AI extraction.
         Where a decision document does not name the authority, attribution is <strong>inferred</strong> from the
         adjudicator's documented ANA affiliations in other decisions; inferred attributions are approximate.
         Coding errors and gaps are possible, and decisions that cannot be attributed either way are excluded from
-        the per-authority statistics below.
+        the per-authority statistics below.<span id="attributionSentence"></span>
       </p>
       <p>
-        Authorised Nominating Authorities were abolished for new Queensland adjudication applications from
+        Authorised Nominating Authorities stopped receiving new Queensland adjudication applications from
         <strong>December 2014</strong>, when the BCIPA amendments moved referrals to the Adjudication Registry
-        operated by the QBCC. Referrals since then are made by the Registry to adjudicators whose matters an ANA
-        administers, so later decisions are attributed to an ANA where the document names one or the adjudicator's
-        ANA is known. Statistics are provided for general information only, are not legal advice, and say nothing
-        about the quality or fairness of any authority, adjudicator, or decision. Data limitations are described
-        in our <a href="/adjudicator-insights-terms" style="text-decoration: underline;">Insights terms</a>.
+        operated by the QBCC; ANAs continue to administer matters for their adjudicators under the current
+        BIF Act regime. Statistics are provided for general information only, are not legal advice, and say
+        nothing about the quality or fairness of any authority, adjudicator, or decision. Data limitations are
+        described in our <a href="/adjudicator-insights-terms" style="text-decoration: underline;">Insights terms</a>.
       </p>
     </div>
 
@@ -232,7 +252,7 @@ let anaData = null;          // raw API payload
 let yearFrom = null;         // active filter (ints)
 let yearTo = null;
 let tableSort = { key: 'decisions', dir: -1 };
-let trendMetric = 'awardRate';   // overlay line chart metric
+let trendMetric = 'awardRate';   // trend chart metric
 let gridMetric = 'awardRate';    // small-multiples metric
 const hiddenSeries = new Set();  // legend toggles (trend chart)
 const seriesColor = {};          // ANA name -> colour, assigned once at load
@@ -248,7 +268,7 @@ const OVERFLOW_COLOR = '#9a9a9a';
 
 // Rows still carrying 'QBCC Registry' were referred by the Registry but the
 // administering ANA is unknown — they are not an ANA and stay out of the
-// comparison (they count as unattributed in the coverage tile).
+// comparison.
 const REGISTRY_NAME = 'QBCC Registry';
 
 // ============================================================
@@ -260,7 +280,7 @@ const METRICS = [
     { id: 'claimantFee', label: 'Avg claimant fee share %', type: 'pct',      minN: MIN_N,
       value: b => b.feeClaimantCount ? b.feeClaimantSum / b.feeClaimantCount : null },
     { id: 'nilNoJur',    label: 'Nil / no jurisdiction %',  type: 'pct',      minN: MIN_N,
-      value: b => b.decisions ? (b.nilNoJurCount || 0) / b.decisions * 100 : null },
+      value: b => b.nilNoJurKnownCount ? (b.nilNoJurCount || 0) / b.nilNoJurKnownCount * 100 : null },
     { id: 'decisions',   label: 'Decisions',                type: 'count',    minN: 0,
       value: b => b.decisions },
     { id: 'avgClaimed',  label: 'Avg claimed $',            type: 'currency', minN: MIN_N,
@@ -274,6 +294,70 @@ function fmtMetric(v, type) {
     if (type === 'pct') return v.toFixed(1) + '%';
     if (type === 'currency') return fmtCurrency(v);
     return fmtInt(Math.round(v));
+}
+
+// ============================================================
+// CUSTOM DROPDOWN (button + listbox; keyboard, Escape, click-outside)
+// ============================================================
+let ddSeq = 0;
+function createDropdown(container, options, selectedId, onChange) {
+    const dd = document.createElement('div');
+    dd.className = 'dd';
+    const listId = `ddList${++ddSeq}`;
+    let selected = selectedId;
+    let focusIdx = Math.max(0, options.findIndex(o => o.id === selected));
+
+    dd.innerHTML = `
+      <button type="button" class="dd-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="${listId}">
+        <span class="dd-label"></span>
+        <svg class="dd-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <ul class="dd-list" id="${listId}" role="listbox" tabindex="-1"></ul>`;
+    const btn = dd.querySelector('.dd-btn');
+    const label = dd.querySelector('.dd-label');
+    const list = dd.querySelector('.dd-list');
+
+    function renderList() {
+        label.textContent = options.find(o => o.id === selected)?.label || '';
+        list.innerHTML = options.map((o, i) => `
+          <li role="option" id="${listId}-opt${i}" data-id="${o.id}"
+              aria-selected="${o.id === selected}" class="${i === focusIdx ? 'focused' : ''}">${o.label}</li>`).join('');
+        list.setAttribute('aria-activedescendant', `${listId}-opt${focusIdx}`);
+        list.querySelectorAll('li').forEach(li => {
+            li.addEventListener('click', () => select(li.dataset.id));
+            li.addEventListener('mousemove', () => setFocus([...list.children].indexOf(li)));
+        });
+    }
+    function setFocus(i) {
+        focusIdx = Math.max(0, Math.min(options.length - 1, i));
+        list.querySelectorAll('li').forEach((li, j) => li.classList.toggle('focused', j === focusIdx));
+        list.setAttribute('aria-activedescendant', `${listId}-opt${focusIdx}`);
+    }
+    function open() { dd.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); setFocus(options.findIndex(o => o.id === selected)); }
+    function close(focusBtn) { dd.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); if (focusBtn) btn.focus(); }
+    function isOpen() { return dd.classList.contains('open'); }
+    function select(id) {
+        if (id !== selected) { selected = id; renderList(); onChange(id); }
+        close(true);
+    }
+
+    btn.addEventListener('click', () => isOpen() ? close() : open());
+    btn.addEventListener('keydown', e => {
+        if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key) && !isOpen()) { e.preventDefault(); open(); return; }
+        if (!isOpen()) return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); setFocus(focusIdx + 1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setFocus(focusIdx - 1); }
+        else if (e.key === 'Home') { e.preventDefault(); setFocus(0); }
+        else if (e.key === 'End') { e.preventDefault(); setFocus(options.length - 1); }
+        else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(options[focusIdx].id); }
+        else if (e.key === 'Escape') { close(true); }
+        else if (e.key === 'Tab') { close(); }
+    });
+    document.addEventListener('click', e => { if (!dd.contains(e.target)) close(); });
+
+    renderList();
+    container.appendChild(dd);
+    return dd;
 }
 
 // ============================================================
@@ -294,7 +378,7 @@ async function loadAnas() {
     }
 
     if (!anaData || !anaData.available || !anaData.anas || anaData.anas.length === 0) {
-        el.innerHTML = '<div class="empty-box"><h3>No ANA statistics available yet</h3><p>Decisions have not yet been coded with their referring authority. Please check back soon.</p></div>';
+        el.innerHTML = '<div class="empty-box"><h3>No ANA statistics available yet</h3><p>Decisions have not yet been coded with their authority. Please check back soon.</p></div>';
         return;
     }
 
@@ -304,8 +388,18 @@ async function loadAnas() {
         seriesColor[a.name] = SERIES_COLORS[i] || OVERFLOW_COLOR;
     });
 
-    yearFrom = anaData.coverage.minYear;
-    yearTo = anaData.coverage.maxYear;
+    // Attribution numbers live in the methodology note (no stat tiles).
+    const cov = anaData.coverage;
+    if (cov.total && cov.attributed !== undefined) {
+        document.getElementById('attributionSentence').innerHTML =
+            ` Of the ${fmtInt(cov.total)} decisions in the database, ${fmtInt(cov.attributed)}` +
+            ` (${(cov.attributedPct ?? 0).toFixed(1)}%) are attributed to an authority &mdash;` +
+            ` ${fmtInt(cov.documentCoded ?? 0)} from the decision documents and ${fmtInt(cov.inferred ?? 0)}` +
+            ` inferred from the adjudicator &mdash; and ${fmtInt(cov.total - cov.attributed)} are unattributed.`;
+    }
+
+    yearFrom = cov.minYear;
+    yearTo = cov.maxYear;
     renderDashboard();
 }
 
@@ -316,7 +410,7 @@ function emptyBucket() {
     return { decisions: 0, inferredCount: 0, claimedSum: 0, claimedCount: 0, scheduledSum: 0, scheduledCount: 0,
              adjudicatedSum: 0, adjudicatedCount: 0,
              awardRateSum: 0, awardRateCount: 0, jurisdictionUpheldCount: 0, jurisdictionKnownCount: 0,
-             feeClaimantSum: 0, feeClaimantCount: 0, zeroAwards: 0, nilNoJurCount: 0 };
+             feeClaimantSum: 0, feeClaimantCount: 0, zeroAwards: 0, nilNoJurCount: 0, nilNoJurKnownCount: 0 };
 }
 
 function aggregateAna(ana) {
@@ -331,17 +425,14 @@ function aggregateAna(ana) {
         name: ana.name,
         decisions: agg.decisions,
         inferredCount: agg.inferredCount,
-        totalClaimed: agg.claimedSum,
-        totalAdjudicated: agg.adjudicatedSum,
         avgClaimed: agg.claimedCount ? agg.claimedSum / agg.claimedCount : null,
         avgScheduled: agg.scheduledCount ? agg.scheduledSum / agg.scheduledCount : null,
         avgAdjudicated: agg.adjudicatedCount ? agg.adjudicatedSum / agg.adjudicatedCount : null,
         avgAwardRate: agg.awardRateCount ? agg.awardRateSum / agg.awardRateCount : null,
-        jurisdictionUpheldRate: agg.jurisdictionKnownCount ? (agg.jurisdictionUpheldCount / agg.jurisdictionKnownCount) * 100 : null,
         avgClaimantFee: agg.feeClaimantCount ? agg.feeClaimantSum / agg.feeClaimantCount : null,
-        zeroAwards: agg.zeroAwards,
         nilNoJurCount: agg.nilNoJurCount,
-        nilNoJurRate: agg.decisions ? (agg.nilNoJurCount / agg.decisions) * 100 : null,
+        // Unknown-outcome decisions are excluded from numerator AND denominator.
+        nilNoJurRate: agg.nilNoJurKnownCount ? (agg.nilNoJurCount / agg.nilNoJurKnownCount) * 100 : null,
         years: ana.years
     };
 }
@@ -353,10 +444,6 @@ function filteredAnas() {
 // ============================================================
 // RENDER
 // ============================================================
-function metricOptionsHtml(selected) {
-    return METRICS.map(m => `<option value="${m.id}" ${m.id === selected ? 'selected' : ''}>${m.label}</option>`).join('');
-}
-
 function renderDashboard() {
     const el = document.getElementById('dashboard');
     const cov = anaData.coverage;
@@ -372,7 +459,6 @@ function renderDashboard() {
         <button type="button" class="filter-reset" id="yearReset">Reset</button>
         <span class="filter-note">Filtering recalculates all statistics below</span>
       </div>
-      <div id="statTiles" class="stat-cards"></div>
       <div class="section">
         <h2>Authority comparison</h2>
         <div class="section-sub">Averages are per decision with usable data; % of claim awarded is capped at 100% per decision. Hover a heading for the full definition; click to sort.</div>
@@ -382,11 +468,11 @@ function renderDashboard() {
         <div class="section-head">
           <div>
             <h2>Yearly trends by authority</h2>
-            <div class="section-sub">One line per authority; pick the metric to compare</div>
+            <div class="section-sub">Timeline runs top to bottom (oldest first); the selected metric runs across</div>
           </div>
           <div class="metric-pick">
-            <label for="trendMetricSel">Metric</label>
-            <select id="trendMetricSel" class="sopal-select">${metricOptionsHtml(trendMetric)}</select>
+            <span class="metric-label" id="trendMetricLabel">Metric</span>
+            <span id="trendMetricDD"></span>
           </div>
         </div>
         <div class="chart-card">
@@ -402,8 +488,8 @@ function renderDashboard() {
             <div class="section-sub" id="gridSub"></div>
           </div>
           <div class="metric-pick">
-            <label for="gridMetricSel">Metric</label>
-            <select id="gridMetricSel" class="sopal-select">${metricOptionsHtml(gridMetric)}</select>
+            <span class="metric-label" id="gridMetricLabel">Metric</span>
+            <span id="gridMetricDD"></span>
           </div>
         </div>
         <div class="multiples-grid" id="multiplesGrid"></div>
@@ -419,12 +505,14 @@ function renderDashboard() {
         document.getElementById('yearTo').value = yearTo;
         renderStats();
     });
-    document.getElementById('trendMetricSel').addEventListener('change', e => {
-        trendMetric = e.target.value;
-        renderTrend(filteredAnas());
+
+    const metricOptions = METRICS.map(m => ({ id: m.id, label: m.label }));
+    createDropdown(document.getElementById('trendMetricDD'), metricOptions, trendMetric, id => {
+        trendMetric = id;
+        animateTrendSwap();
     });
-    document.getElementById('gridMetricSel').addEventListener('change', e => {
-        gridMetric = e.target.value;
+    createDropdown(document.getElementById('gridMetricDD'), metricOptions, gridMetric, id => {
+        gridMetric = id;
         renderMultiples(filteredAnas());
     });
 
@@ -441,48 +529,21 @@ function onYearChange() {
 
 function renderStats() {
     const anas = filteredAnas();
-    renderTiles(anas);
     renderTable(anas);
     renderTrend(anas);
     renderMultiples(anas);
 }
 
-// ---------- stat tiles ----------
-function renderTiles(anas) {
-    const cov = anaData.coverage;
-    const totalInRange = anas.reduce((s, a) => s + a.decisions, 0);
-    const rangeLabel = yearFrom === yearTo ? String(yearFrom) : `${yearFrom}&ndash;${yearTo}`;
-
-    // Attribution is corpus-wide and ignores the year filter. Prefer the
-    // API's explicit split; fall back to computing from the ANA list.
-    const nonReg = anaData.anas.filter(a => a.name !== REGISTRY_NAME);
-    const attributed = cov.attributed ?? nonReg.reduce((s, a) => s + a.totalDecisions, 0);
-    const inferred = cov.inferred ?? nonReg.reduce((s, a) => s + (a.inferredCount || 0), 0);
-    const documentCoded = cov.documentCoded ?? (attributed - inferred);
-    const attrPct = cov.total ? (attributed / cov.total * 100) : 0;
-
-    document.getElementById('statTiles').innerHTML = `
-      <div class="stat-card">
-        <div class="stat-label">ANA decisions</div>
-        <div class="stat-value">${fmtInt(totalInRange)}</div>
-        <div class="stat-sub">attributed to an ANA in ${rangeLabel}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Authorities</div>
-        <div class="stat-value">${anas.length}</div>
-        <div class="stat-sub">with decisions in range</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Date coverage</div>
-        <div class="stat-value">${cov.minYear}&ndash;${cov.maxYear}</div>
-        <div class="stat-sub">earliest to latest attributed decision</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Attribution (all years)</div>
-        <div class="stat-value">${attrPct.toFixed(1)}%</div>
-        <div class="stat-sub">${fmtInt(attributed)} of ${fmtInt(cov.total)} attributed &mdash; ${fmtInt(documentCoded)} from documents, ${fmtInt(inferred)} inferred from the adjudicator's ANA; ${fmtInt(cov.total - attributed)} unattributed</div>
-      </div>
-    `;
+// Crossfade the trend chart on metric switches so it isn't jarring.
+function animateTrendSwap() {
+    const el = document.getElementById('trendChart');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) { renderTrend(filteredAnas()); return; }
+    el.classList.add('fading');
+    setTimeout(() => {
+        renderTrend(filteredAnas());
+        requestAnimationFrame(() => el.classList.remove('fading'));
+    }, 170);
 }
 
 // ---------- comparison table ----------
@@ -498,11 +559,11 @@ const TABLE_COLS = [
     { key: 'avgClaimed',     label: 'Avg<br>claimed',
       title: 'Average payment claim amount per decision' },
     { key: 'avgScheduled',   label: 'Avg<br>scheduled',
-      title: 'Average payment schedule amount per decision (the amount the respondent proposed to pay)' },
+      title: 'Average payment schedule amount per decision (the amount the respondent proposed to pay). Can be negative where schedules certified money owing to the respondent' },
     { key: 'avgAdjudicated', label: 'Avg<br>awarded',
       title: 'Average adjudicated (awarded) amount per decision' },
     { key: 'nilNoJurRate',   label: 'Nil / no<br>jur. %',
-      title: 'Share of decisions where the claimant effectively received nothing: $0 awarded or a jurisdictional objection upheld' },
+      title: 'Share of decisions where the claimant effectively received nothing: $0 awarded or a jurisdictional objection upheld. Decisions with an unknown outcome are excluded from the calculation' },
     { key: 'nilNoJurCount',  label: 'Nil / no<br>jur. #',
       title: 'Count of decisions where the claimant effectively received nothing: $0 awarded or a jurisdictional objection upheld' },
 ];
@@ -583,7 +644,24 @@ function fmtAxis(v, type) {
     return fmtInt(Math.round(v));
 }
 
-// ---------- overlay multi-line trend chart (hand-rolled SVG) ----------
+// Fritsch–Carlson monotone cubic tangents: dv/dt per point. Interpolation
+// through these tangents never overshoots the data (no fake peaks).
+function monotoneTangents(ts, vs) {
+    const n = ts.length;
+    if (n === 1) return [0];
+    const d = [], m = new Array(n);
+    for (let i = 0; i < n - 1; i++) d.push((vs[i + 1] - vs[i]) / (ts[i + 1] - ts[i]));
+    m[0] = d[0]; m[n - 1] = d[n - 2];
+    for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+    for (let i = 0; i < n - 1; i++) {
+        if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+        const a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
+        if (s > 9) { const t = 3 / Math.sqrt(s); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
+    }
+    return m;
+}
+
+// ---------- transposed trend chart: year on Y (oldest at top), metric on X ----------
 function renderTrend(anas) {
     const el = document.getElementById('trendChart');
     const legendEl = document.getElementById('trendLegend');
@@ -605,68 +683,96 @@ function renderTrend(anas) {
     const visible = series.filter(s => !hiddenSeries.has(s.name));
     const plottable = visible.filter(s => s.points.some(p => p.v !== null));
 
-    // Y scale: percentages on a fixed 0-100 axis; $/counts scale to data.
-    let yMax = 100;
+    // X scale: percentages on a fixed 0-100 axis; $/counts scale to data.
+    let xMax = 100;
     if (metric.type !== 'pct') {
         const maxV = Math.max(0, ...plottable.flatMap(s => s.points.map(p => p.v ?? 0)));
-        yMax = niceCeil(maxV * 1.05 || 1);
+        xMax = niceCeil(maxV * 1.05 || 1);
     }
 
-    const W = 1000, H = 380, ML = 62, MR = 14, MT = 14, MB = 36;
-    const plotW = W - ML - MR, plotH = H - MT - MB;
-    const xAt = i => ML + (years.length === 1 ? plotW / 2 : (i + 0.5) * plotW / years.length);
-    const yAt = v => MT + plotH - (v / yMax) * plotH;
+    // Height follows the year count so each year row stays readable.
+    const W = 1000, ML = 64, MR = 24, MT = 46, MB = 14, ROW_H = 26;
+    const H = MT + years.length * ROW_H + MB;
+    const plotW = W - ML - MR;
+    const yAt = i => MT + (i + 0.5) * ROW_H;
+    const xAt = v => ML + (Math.max(0, Math.min(v, xMax)) / xMax) * plotW;
 
-    // gridlines + y labels
+    // Metric axis on TOP (visible without scrolling), vertical gridlines.
     const TICKS = 5;
     let svg = '';
     for (let t = 0; t <= TICKS; t++) {
-        const v = yMax * t / TICKS;
-        const y = yAt(v);
-        svg += `<line x1="${ML}" y1="${y}" x2="${W - MR}" y2="${y}" stroke="#f0f0f0" stroke-width="1"/>`;
-        svg += `<text x="${ML - 8}" y="${y + 4}" text-anchor="end" font-size="12" fill="#888">${fmtAxis(v, metric.type)}</text>`;
+        const v = xMax * t / TICKS;
+        const x = ML + (t / TICKS) * plotW;
+        svg += `<line x1="${x}" y1="${MT}" x2="${x}" y2="${H - MB}" stroke="#f0f0f0" stroke-width="1"/>`;
+        svg += `<text x="${x}" y="${MT - 12}" text-anchor="middle" font-size="12" fill="#888">${fmtAxis(v, metric.type)}</text>`;
     }
-    // x labels (thinned)
-    const step = years.length > 24 ? 5 : (years.length > 12 ? 2 : 1);
-    years.forEach((y, i) => {
-        if (i % step === 0 || i === years.length - 1) {
-            svg += `<text x="${xAt(i)}" y="${H - 12}" text-anchor="middle" font-size="12" fill="#888">${y}</text>`;
-        }
-    });
-    // baseline
-    svg += `<line x1="${ML}" y1="${MT + plotH}" x2="${W - MR}" y2="${MT + plotH}" stroke="#ddd" stroke-width="1"/>`;
+    svg += `<line x1="${ML}" y1="${MT}" x2="${W - MR}" y2="${MT}" stroke="#ddd" stroke-width="1"/>`;
 
-    // lines: segments of consecutive plottable years; gaps where v === null
+    // Year rows: horizontal gridlines + a label for every year (oldest at top).
+    years.forEach((y, i) => {
+        const yy = yAt(i);
+        svg += `<line x1="${ML}" y1="${yy}" x2="${W - MR}" y2="${yy}" stroke="#f7f7f7" stroke-width="1"/>`;
+        svg += `<text x="${ML - 10}" y="${yy + 4}" text-anchor="end" font-size="12" fill="#888">${y}</text>`;
+    });
+
+    // Lines: monotone cubic (no overshoot) through consecutive plottable years;
+    // gaps where a year is below the min-n rule. t = year index -> Y; value -> X.
     let markers = '';
     plottable.forEach(s => {
-        let d = '', prevNull = true;
+        // split into runs of consecutive non-null points
+        const runs = [];
+        let run = [];
         s.points.forEach((p, i) => {
-            if (p.v === null) { prevNull = true; return; }
-            const x = xAt(i), y = yAt(Math.min(p.v, yMax));
-            d += (prevNull ? `M${x.toFixed(1)},${y.toFixed(1)}` : `L${x.toFixed(1)},${y.toFixed(1)}`);
-            prevNull = false;
+            if (p.v === null) { if (run.length) runs.push(run); run = []; return; }
+            run.push({ i, ...p });
+        });
+        if (run.length) runs.push(run);
+
+        let d = '';
+        runs.forEach(r => {
+            if (r.length === 1) return; // isolated year: marker only
+            const ts = r.map(p => p.i), vs = r.map(p => p.v);
+            const m = monotoneTangents(ts, vs);
+            d += `M${xAt(vs[0]).toFixed(1)},${yAt(ts[0]).toFixed(1)}`;
+            for (let k = 0; k < r.length - 1; k++) {
+                const dt = ts[k + 1] - ts[k];
+                const c1v = vs[k] + m[k] * dt / 3;
+                const c2v = vs[k + 1] - m[k + 1] * dt / 3;
+                const y1 = yAt(ts[k]), y2 = yAt(ts[k + 1]);
+                const cy1 = y1 + (y2 - y1) / 3, cy2 = y1 + 2 * (y2 - y1) / 3;
+                d += `C${xAt(c1v).toFixed(1)},${cy1.toFixed(1)} ${xAt(c2v).toFixed(1)},${cy2.toFixed(1)} ${xAt(vs[k + 1]).toFixed(1)},${y2.toFixed(1)}`;
+            }
+        });
+        if (d) svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+        s.points.forEach((p, i) => {
+            if (p.v === null) return;
+            const x = xAt(p.v), y = yAt(i);
             const tt = (`<span class='tt-title'>${sanitizeHtml(s.name)}</span><br>${p.year}: ${fmtMetric(p.v, metric.type)} &middot; ${fmtInt(p.n)} decision${p.n === 1 ? '' : 's'}`).replace(/"/g, '&quot;');
             markers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2" fill="${s.color}" stroke="#fff" stroke-width="1.5"/>`;
             markers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" fill="transparent" data-tt="${tt}"/>`;
         });
-        svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
     });
     svg += markers;
 
     el.innerHTML = plottable.length
-        ? `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${sanitizeHtml(metric.label)} by year and authority">${svg}</svg>`
+        ? `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${sanitizeHtml(metric.label)} by year (vertical timeline) and authority">${svg}</svg>`
         : `<div class="chart-empty">Not enough data to plot &ldquo;${sanitizeHtml(metric.label)}&rdquo; &mdash; no authority has ${MIN_N}+ decisions in a single year of this range</div>`;
 
     // legend (all series in range, toggleable)
     legendEl.innerHTML = series.map(s => `
-      <span class="legend-item ${hiddenSeries.has(s.name) ? 'off' : ''}" data-name="${sanitizeHtml(s.name).replace(/"/g, '&quot;')}">
+      <span class="legend-item ${hiddenSeries.has(s.name) ? 'off' : ''}" data-name="${sanitizeHtml(s.name).replace(/"/g, '&quot;')}" role="button" tabindex="0" aria-pressed="${!hiddenSeries.has(s.name)}">
         <span class="legend-swatch" style="background:${s.color};"></span>${sanitizeHtml(s.name)}
       </span>`).join('');
-    legendEl.querySelectorAll('.legend-item').forEach(item => item.addEventListener('click', () => {
-        const name = item.dataset.name;
-        if (hiddenSeries.has(name)) hiddenSeries.delete(name); else hiddenSeries.add(name);
-        renderTrend(filteredAnas());
-    }));
+    legendEl.querySelectorAll('.legend-item').forEach(item => {
+        const toggle = () => {
+            const name = item.dataset.name;
+            if (hiddenSeries.has(name)) hiddenSeries.delete(name); else hiddenSeries.add(name);
+            renderTrend(filteredAnas());
+        };
+        item.addEventListener('click', toggle);
+        item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+    });
 
     attachTooltips(el);
 }
@@ -710,7 +816,7 @@ function renderMultiples(anas) {
                 const tt = (`<span class='tt-title'>${sanitizeHtml(a.name)}</span><br>${p.year}: no data${p.n ? ` (${fmtInt(p.n)} decision${p.n === 1 ? '' : 's'})` : ''}`).replace(/"/g, '&quot;');
                 return `<div class="bar-col" data-tt="${tt}"><div class="bar nodata" style="height:1px;"></div></div>`;
             }
-            const h = Math.max(1, Math.round((Math.min(p.v, scaleMax) / scaleMax) * 100));
+            const h = Math.max(1, Math.round((Math.min(Math.max(p.v, 0), scaleMax) / scaleMax) * 100));
             const lowNote = p.low ? ` &middot; low sample (&lt;${MIN_N})` : '';
             const tt = (`<span class='tt-title'>${sanitizeHtml(a.name)}</span><br>${p.year}: ${fmtMetric(p.v, metric.type)} &middot; ${fmtInt(p.n)} decision${p.n === 1 ? '' : 's'}${lowNote}`).replace(/"/g, '&quot;');
             return `<div class="bar-col" data-tt="${tt}"><div class="bar ${p.low ? 'low' : ''}" style="height:${h}%;"></div></div>`;

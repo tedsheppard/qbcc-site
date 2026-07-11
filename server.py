@@ -3277,6 +3277,9 @@ def get_anas():
                 return None
 
         REGISTRY_NAME = "QBCC Registry"
+        # Coded in the DB but not shown on the dashboard (single-decision
+        # outfits that aren't meaningful to compare).
+        EXCLUDED_ANAS = {"JDLA Pty Ltd"}
         total = len(rows)
         coded = 0
         attributed = 0        # attributed to an actual ANA (excl. Registry-unknown)
@@ -3301,6 +3304,9 @@ def get_anas():
                 if is_inferred:
                     inferred += 1
 
+            if name in EXCLUDED_ANAS:
+                continue  # counted in coverage, hidden from the dashboard
+
             year = None
             d = row["decision_date"]
             if d and len(str(d)) >= 4 and str(d)[:4].isdigit():
@@ -3318,7 +3324,7 @@ def get_anas():
                 "awardRateSum": 0.0, "awardRateCount": 0,
                 "jurisdictionUpheldCount": 0, "jurisdictionKnownCount": 0,
                 "feeClaimantSum": 0.0, "feeClaimantCount": 0,
-                "zeroAwards": 0, "nilNoJurCount": 0,
+                "zeroAwards": 0, "nilNoJurCount": 0, "nilNoJurKnownCount": 0,
             })
             bucket["decisions"] += 1
             if is_inferred:
@@ -3342,17 +3348,26 @@ def get_anas():
                 bucket["awardRateSum"] += min((adjudicated / claimed) * 100, 100.0)
                 bucket["awardRateCount"] += 1
 
+            # Jurisdiction flag: parse robustly (int/real/text encodings all
+            # occur); anything else is treated as unknown, never as truthy.
             juris = row["jurisdiction_upheld"]
-            juris_upheld = juris in (1, "1")
-            if juris in (0, 1, "0", "1"):
+            js = str(juris).strip().lower() if juris is not None else ""
+            juris_known = js in ("0", "1", "0.0", "1.0", "true", "false")
+            juris_upheld = js in ("1", "1.0", "true")
+            if juris_known:
                 bucket["jurisdictionKnownCount"] += 1
                 if juris_upheld:
                     bucket["jurisdictionUpheldCount"] += 1
 
             # "Nil / no jurisdiction": the claimant effectively got nothing —
-            # $0 awarded, or a jurisdictional objection was upheld.
-            if (adjudicated is not None and adjudicated == 0) or juris_upheld:
-                bucket["nilNoJurCount"] += 1
+            # the adjudicated amount parses to exactly $0, or a jurisdictional
+            # objection was explicitly upheld. Decisions whose outcome amount
+            # is unknown AND whose jurisdiction flag is unknown are excluded
+            # from both numerator and denominator (nilNoJurKnownCount).
+            if adjudicated is not None or juris_known:
+                bucket["nilNoJurKnownCount"] += 1
+                if (adjudicated is not None and adjudicated == 0) or juris_upheld:
+                    bucket["nilNoJurCount"] += 1
 
             fee_c = _num(row["fee_claimant_proportion"])
             if fee_c is not None and 0 <= fee_c <= 100:
@@ -3384,7 +3399,9 @@ def get_anas():
                 "avgClaimantFeeProportion": agg["feeClaimantSum"] / agg["feeClaimantCount"] if agg["feeClaimantCount"] else 0,
                 "zeroAwardCount": int(agg["zeroAwards"]),
                 "nilNoJurCount": int(agg["nilNoJurCount"]),
-                "nilNoJurRate": (agg["nilNoJurCount"] / n * 100) if n else 0,
+                "nilNoJurKnownCount": int(agg["nilNoJurKnownCount"]),
+                "nilNoJurRate": (agg["nilNoJurCount"] / agg["nilNoJurKnownCount"] * 100)
+                                if agg["nilNoJurKnownCount"] else 0,
                 "years": {str(y): b for y, b in sorted(years.items())},
             })
         anas.sort(key=lambda a: -a["totalDecisions"])
