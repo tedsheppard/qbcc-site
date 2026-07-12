@@ -225,21 +225,18 @@
   <div class="page">
     <div class="page-header">
       <h1>Authorised Nominating Authorities</h1>
-      <p class="subtitle">
-        Before December 2014, Queensland adjudication applications were received and referred by
-        Authorised Nominating Authorities <strong>(ANAs)</strong> under the
-        <em>Building and Construction Industry Payments Act 2004</em> (Qld). Since December 2014,
-        applications have instead been made to the Adjudication Registry operated by the QBCC, which
-        refers them directly to adjudicators.
-      </p>
-      <p class="subtitle">
-        Compare published Queensland decision outcomes by the adjudicator's identified or inferred
-        ANA affiliation, by year.
-      </p>
     </div>
 
     <div class="method-notice">
       <h4>Methodology &amp; Disclaimer</h4>
+      <p>
+        Before December 2014, Queensland adjudication applications were received and referred by
+        Authorised Nominating Authorities (<strong>ANAs</strong>) under the
+        <em>Building and Construction Industry Payments Act 2004</em> (Qld). Since December 2014,
+        applications have instead been made to the Adjudication Registry operated by the QBCC, which
+        refers them directly to adjudicators. This page compares published Queensland decision
+        outcomes by the adjudicator's identified or inferred ANA affiliation, by year.
+      </p>
       <p>
         The statistics on this page are <strong>approximate</strong> and are derived from published
         Queensland adjudication decisions. An ANA affiliation may be identified from the decision
@@ -846,6 +843,16 @@ function renderTrend(anas) {
         color: seriesColor[a.name] || OVERFLOW_COLOR,
         points: years.map(y => ({ year: y, ...metricPoint(a, y, metric) })),
     }));
+    // The unattributed balance (Registry-referred with no identifiable ANA
+    // + uncoded), same gap rules as the ANA series, muted grey.
+    if (anaData.noAna && anaData.noAna.years) {
+        const noAnaSeries = { name: NO_ANA_NAME, years: anaData.noAna.years };
+        series.push({
+            name: NO_ANA_NAME,
+            color: '#9e9e9e',
+            points: years.map(y => ({ year: y, ...metricPoint(noAnaSeries, y, metric) })),
+        });
+    }
     // Corpus-wide decision-weighted average over EVERY decision in the
     // database. Drawn last (on top),
     // thicker, black; no min-n gap rule — the pool is always large enough.
@@ -1031,8 +1038,8 @@ function sanitizeHtml(str) {
         <h2 id="anaTermsTitle">Nominating Authority Statistics Terms</h2>
         <p>These statistics group Queensland decisions by an adjudicator's identified or inferred ANA
         affiliation. For decisions made from December 2014, the ANA shown did not receive or refer the
-        application &mdash; referrals come from the QBCC's Adjudication Registry.</p>
-        <p>Please read and accept the dedicated terms before accessing the statistics.</p>
+        application &ndash; referrals come from the QBCC's Adjudication Registry.</p>
+        <p>Please read and accept the relevant terms before accessing the statistics.</p>
         <label class="ana-terms-check"><input type="checkbox" id="anaTermsAccept"><span>I have read and
         agree to the <a href="/nominating-authority-statistics-terms" target="_blank">Nominating Authority
         Statistics Terms</a>.</span></label>
@@ -1046,6 +1053,11 @@ function sanitizeHtml(str) {
     checkbox.addEventListener('change', () => { button.disabled = !checkbox.checked; });
     button.addEventListener('click', () => {
       localStorage.setItem(key, JSON.stringify({ acceptedAt: new Date().toISOString(), version }));
+      // Server-side auditable record (best-effort; email attached when signed in).
+      const headers = { 'Content-Type': 'application/json' };
+      const token = localStorage.getItem('purchase_token');
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      fetch('/api/ana-terms-accept', { method: 'POST', headers, body: JSON.stringify({ version }) }).catch(() => {});
       gate.remove();
       document.body.style.overflow = '';
     });

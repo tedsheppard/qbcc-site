@@ -47,7 +47,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from fastapi import Header, Depends
+from fastapi import Header, Depends, Request
 
 def get_gcs_client():
     """
@@ -590,6 +590,21 @@ purchases_cur.execute("""
 CREATE TABLE IF NOT EXISTS full_access_users (
     email TEXT PRIMARY KEY NOT NULL,
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+purchases_con.commit()
+
+# --- Nominating Authority Statistics Terms acceptances ---
+# Auditable record of each acceptance of the ANA statistics terms gate.
+# email is NULL when the visitor accepted before signing in.
+purchases_cur.execute("""
+CREATE TABLE IF NOT EXISTS ana_terms_acceptances (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT,
+    terms_version TEXT NOT NULL,
+    accepted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip TEXT,
+    user_agent TEXT
 )
 """)
 purchases_con.commit()
@@ -3235,6 +3250,34 @@ def get_adjudicator_decisions(adjudicator_name: str = Path(...), authorization: 
     except Exception as e:
         print(f"Error in /api/adjudicator/{adjudicator_name}: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/ana-terms-accept")
+def record_ana_terms_acceptance(request: Request, body: dict = Body(...),
+                                authorization: Optional[str] = Header(None)):
+    """Auditable server-side record of an ANA statistics terms acceptance.
+
+    Called by the acceptance gate alongside its localStorage flag. The gate can
+    fire before sign-in, so the email is best-effort from the Bearer token.
+    """
+    email = None
+    if authorization and authorization.startswith("Bearer "):
+        try:
+            payload = jwt.decode(authorization.split(" ", 1)[1], SECRET_KEY, algorithms=[ALGORITHM])
+            email = payload.get("sub")
+        except JWTError:
+            email = None
+    version = str(body.get("version", ""))[:40]
+    if not version:
+        return JSONResponse({"error": "version required"}, status_code=422)
+    ua = (request.headers.get("user-agent") or "")[:300]
+    ip = request.client.host if request.client else None
+    purchases_con.execute(
+        "INSERT INTO ana_terms_acceptances (email, terms_version, ip, user_agent) VALUES (?, ?, ?, ?)",
+        (email, version, ip, ua),
+    )
+    purchases_con.commit()
+    return {"recorded": True}
 
 
 @app.get("/api/anas")
