@@ -16,12 +16,10 @@
         overlay.appendChild(col);
     }
 
-    // Overlay covers the page (z-index 9999), then we can safely show body
     document.body.appendChild(overlay);
     var pc = document.getElementById('nt-precover');
     if (pc) pc.remove();
 
-    // Double rAF ensures the browser has committed the overlay to the render tree
     requestAnimationFrame(function() {
         requestAnimationFrame(function() {
             for (var j = 0; j < COLS; j++) {
@@ -39,13 +37,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     await updateNavUI();
     initMobileMenu();
     initPageTransition();
+    initAnaLegalEnhancements();
 });
 
 async function updateNavUI() {
     const navRight = document.querySelector('.nav-right');
     if (!navRight) return;
 
-    // Avoid double-rendering
     if (navRight.querySelector('.profile-avatar')) return;
 
     const token = localStorage.getItem('purchase_token');
@@ -140,14 +138,12 @@ function handleLogout(e, userEmail) {
     location.reload();
 }
 
-/* ── Page Transition (staggered columns) ── */
 function initPageTransition() {
     const COLS = 5;
     const STAGGER = 50;
     const COL_DURATION = 280;
     const PAUSE = 60;
 
-    // Create overlay container
     const overlay = document.createElement('div');
     overlay.id = 'nt-transition';
     overlay.setAttribute('aria-hidden', 'true');
@@ -160,11 +156,6 @@ function initPageTransition() {
 
     const cols = overlay.querySelectorAll('.nt-col');
 
-    // Reveal is now handled by the immediate IIFE at the top of this file.
-    // Clean up the early overlay if it exists (the IIFE removes it after animation).
-    // The overlay created here is for the EXIT animation only.
-
-    // Intercept link clicks
     document.addEventListener('click', (e) => {
         const link = e.target.closest('a[href]');
         if (!link) return;
@@ -174,18 +165,12 @@ function initPageTransition() {
         if (link.target === '_blank') return;
         if (e.ctrlKey || e.metaKey || e.shiftKey) return;
 
-        // Only transition for internal links (skip /reg/, /api/, /assets/)
         if (!href.startsWith('/') || href.startsWith('/reg/') || href.startsWith('/api/') || href.startsWith('/assets/')) return;
-
-        // Skip account pages (tabs switch without full reload)
         if (href.includes('/account')) return;
-
-        // Skip if same page
         if (href === window.location.pathname || href === window.location.pathname + window.location.search) return;
 
         e.preventDefault();
 
-        // Play cover animation (bars sweep down)
         overlay.style.display = 'flex';
         cols.forEach(c => { c.style.transition = 'none'; c.style.transform = 'scaleY(0)'; c.style.transformOrigin = 'bottom'; });
 
@@ -203,13 +188,11 @@ function initPageTransition() {
     });
 }
 
-/* ── Mobile Hamburger Menu ── */
 function initMobileMenu() {
     const navRight = document.querySelector('.nav-right');
     const navLinks = document.querySelector('.nav-links');
     if (!navRight || !navLinks) return;
 
-    // Create hamburger button and inject before first child of .nav-right
     const hamburger = document.createElement('button');
     hamburger.className = 'nt-hamburger';
     hamburger.setAttribute('aria-label', 'Open menu');
@@ -220,7 +203,6 @@ function initMobileMenu() {
     `;
     navRight.insertBefore(hamburger, navRight.firstChild);
 
-    // Create mobile menu overlay
     const overlay = document.createElement('div');
     overlay.className = 'nt-mobile-menu';
     overlay.innerHTML = `
@@ -236,7 +218,6 @@ function initMobileMenu() {
     `;
     document.body.appendChild(overlay);
 
-    // Clone nav links into mobile menu
     const mobileNav = overlay.querySelector('.nt-mobile-nav');
     const links = navLinks.querySelectorAll('a');
     links.forEach(link => {
@@ -260,18 +241,109 @@ function initMobileMenu() {
     }
 
     hamburger.addEventListener('click', () => {
-        if (overlay.classList.contains('open')) {
-            closeMenu();
-        } else {
-            openMenu();
-        }
+        if (overlay.classList.contains('open')) closeMenu();
+        else openMenu();
     });
 
     overlay.querySelector('.nt-mobile-close').addEventListener('click', closeMenu);
+    mobileNav.querySelectorAll('.nt-mobile-link').forEach(link => link.addEventListener('click', closeMenu));
+}
 
-    // Close on link click
-    mobileNav.querySelectorAll('.nt-mobile-link').forEach(link => {
-        link.addEventListener('click', closeMenu);
+/* ANA statistics legal and accuracy enhancements. */
+function initAnaLegalEnhancements() {
+    const termsHref = '/nominating-authority-statistics-terms';
+
+    document.querySelectorAll('.footer-col').forEach(col => {
+        const heading = col.querySelector('h4');
+        if (!heading || heading.textContent.trim().toLowerCase() !== 'legal') return;
+        if (col.querySelector(`a[href="${termsHref}"]`)) return;
+        const link = document.createElement('a');
+        link.href = termsHref;
+        link.textContent = 'Nominating Authority Statistics Terms';
+        col.appendChild(link);
+    });
+
+    if (window.location.pathname === '/register' || window.location.pathname === '/register.html') {
+        const termsLabel = document.querySelector('.terms-label span');
+        if (termsLabel) {
+            termsLabel.innerHTML = 'I agree to the <a href="/account-terms" target="_blank">Account Terms &amp; Conditions</a>, <a href="/terms" target="_blank">Terms of Use</a>, <a href="/privacy" target="_blank">Privacy Policy</a> and <a href="/nominating-authority-statistics-terms" target="_blank">Nominating Authority Statistics Terms</a>';
+        }
+    }
+
+    if (window.location.pathname === '/account-terms' || window.location.pathname === '/account-terms.html') {
+        const notice = document.querySelector('.important-notice p');
+        if (notice && !notice.querySelector(`a[href="${termsHref}"]`)) {
+            notice.insertAdjacentHTML('beforeend', ' Where you access or use the Nominating Authority Statistics, the <a href="/nominating-authority-statistics-terms">Nominating Authority Statistics Terms</a> also apply and form part of these Account Terms.');
+        }
+    }
+
+    if (window.location.pathname === '/nominating-authorities' || window.location.pathname === '/nominating-authorities.html') {
+        updateAnaPageCopy();
+        requireAnaTermsAcceptance();
+    }
+}
+
+function updateAnaPageCopy() {
+    const subtitles = document.querySelectorAll('.page-header .subtitle');
+    if (subtitles[0]) subtitles[0].innerHTML = 'Before December 2014, Queensland adjudication applications were received and referred by authorised nominating authorities. Since December 2014, applications have instead been made to the Queensland Adjudication Registry, which refers them directly to adjudicators.';
+    if (subtitles[1]) subtitles[1].textContent = 'Compare published Queensland decision outcomes by the adjudicator’s identified or inferred ANA affiliation.';
+
+    const methodNotice = document.querySelector('.method-notice');
+    if (methodNotice) {
+        methodNotice.innerHTML = `
+            <h4>Methodology &amp; Disclaimer</h4>
+            <p>The statistics on this page are approximate and are derived from published Queensland adjudication decisions. An ANA affiliation may be identified from the decision itself or inferred from the adjudicator’s documented affiliations in other decisions using automated keyword and AI extraction. Inferred affiliations may be incomplete, outdated, non-exclusive or incorrect.</p>
+            <p>For decisions made from December 2014, the application was referred by the Queensland Adjudication Registry, not by the ANA shown. The figures therefore describe outcomes in decisions made by adjudicators associated with each ANA; they do not measure the ANA’s performance or establish that the ANA selected, referred, administered, controlled or influenced those applications.</p>
+            <p>The results are not adjusted for differences in claim value, dispute type, complexity, time period, statutory regime or other characteristics. They do not establish causation, bias, quality, fairness or the likely outcome of any future application. See the <a href="/nominating-authority-statistics-terms" style="color:#00a964;text-decoration:underline;">Nominating Authority Statistics Terms</a>.</p>`;
+    }
+
+    document.querySelectorAll('.section h2').forEach(h => {
+        const text = h.textContent.trim();
+        if (text === 'ANA comparison') h.textContent = 'Decisions grouped by ANA affiliation';
+        if (text === 'Yearly trends by ANA') h.textContent = 'Yearly trends by adjudicator affiliation';
+        if (text === 'Year-by-year, per ANA') h.textContent = 'Year-by-year outcomes for affiliated adjudicators';
+    });
+
+    document.querySelectorAll('.section-sub').forEach(el => {
+        if (el.textContent.includes('One line per ANA')) el.textContent = 'One line per adjudicator-affiliation grouping; select a metric to compare';
+    });
+}
+
+function requireAnaTermsAcceptance() {
+    const version = '2026-07-12';
+    const key = `sopal_ana_terms_accepted_${version}`;
+    if (localStorage.getItem(key)) return;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .ana-terms-gate{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px}
+      .ana-terms-card{background:#fff;width:100%;max-width:610px;border-radius:14px;padding:28px;box-shadow:0 24px 70px rgba(0,0,0,.35)}
+      .ana-terms-card h2{font-size:21px;margin:0 0 10px}.ana-terms-card p{font-size:14px;color:#555;line-height:1.6;margin:0 0 14px}
+      .ana-terms-check{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:#444;margin:16px 0}.ana-terms-check input{margin-top:3px}
+      .ana-terms-actions{display:flex;gap:10px;justify-content:flex-end}.ana-terms-actions a,.ana-terms-actions button{padding:10px 15px;border-radius:8px;font-size:13px;font-weight:600}
+      .ana-terms-actions a{border:1px solid #ddd}.ana-terms-actions button{border:0;background:#00d47e;color:#000;cursor:pointer}.ana-terms-actions button:disabled{opacity:.45;cursor:not-allowed}`;
+    document.head.appendChild(style);
+
+    const gate = document.createElement('div');
+    gate.className = 'ana-terms-gate';
+    gate.innerHTML = `
+      <div class="ana-terms-card" role="dialog" aria-modal="true" aria-labelledby="anaTermsTitle">
+        <h2 id="anaTermsTitle">Nominating Authority Statistics Terms</h2>
+        <p>These statistics group Queensland decisions by an adjudicator’s identified or inferred ANA affiliation. For post-December 2014 decisions, the ANA shown did not receive or refer the Queensland application.</p>
+        <p>Please read and accept the dedicated terms before accessing the statistics.</p>
+        <label class="ana-terms-check"><input type="checkbox" id="anaTermsAccept"><span>I have read and agree to the <a href="/nominating-authority-statistics-terms" target="_blank" style="color:#00a964;text-decoration:underline;">Nominating Authority Statistics Terms</a>.</span></label>
+        <div class="ana-terms-actions"><a href="/">Leave page</a><button type="button" id="anaTermsContinue" disabled>Continue</button></div>
+      </div>`;
+    document.body.appendChild(gate);
+    document.body.style.overflow = 'hidden';
+
+    const checkbox = document.getElementById('anaTermsAccept');
+    const button = document.getElementById('anaTermsContinue');
+    checkbox.addEventListener('change', () => { button.disabled = !checkbox.checked; });
+    button.addEventListener('click', () => {
+        localStorage.setItem(key, JSON.stringify({ acceptedAt: new Date().toISOString(), version }));
+        gate.remove();
+        document.body.style.overflow = '';
     });
 }
 
@@ -334,11 +406,8 @@ ntStyle.innerHTML = `
     background-color: #333;
     margin: 4px 0;
 }
-/* Ensure dropdown anchors to nav-right */
 .nav-right { position: relative; }
-/* Logo vertical alignment fix */
 .nav-logo img { position: relative; top: -1px; }
-/* Page transition overlay */
 #nt-transition {
     display: none;
     position: fixed;
@@ -352,7 +421,6 @@ ntStyle.innerHTML = `
     transform: scaleY(0);
     transform-origin: bottom;
 }
-/* ── Hamburger Button ── */
 .nt-hamburger {
     display: none;
     flex-direction: column;
@@ -375,7 +443,6 @@ ntStyle.innerHTML = `
     border-radius: 1px;
     transition: all 0.25s ease;
 }
-/* ── Mobile Menu Overlay ── */
 .nt-mobile-menu {
     position: fixed;
     top: 0;
@@ -391,9 +458,7 @@ ntStyle.innerHTML = `
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
-.nt-mobile-menu.open {
-    transform: translateY(0);
-}
+.nt-mobile-menu.open { transform: translateY(0); }
 .nt-mobile-menu-header {
     display: flex;
     justify-content: flex-end;
@@ -428,13 +493,9 @@ ntStyle.innerHTML = `
     border-bottom: 1px solid rgba(255,255,255,0.08);
     transition: background 0.15s;
 }
-.nt-mobile-link:first-child {
-    border-top: 1px solid rgba(255,255,255,0.08);
-}
+.nt-mobile-link:first-child { border-top: 1px solid rgba(255,255,255,0.08); }
 .nt-mobile-link:hover,
-.nt-mobile-link:active {
-    background: rgba(255,255,255,0.05);
-}
+.nt-mobile-link:active { background: rgba(255,255,255,0.05); }
 @media (max-width: 768px) {
     .nt-hamburger { display: flex; }
 }
