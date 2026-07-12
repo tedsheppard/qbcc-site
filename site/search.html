@@ -736,7 +736,9 @@ function renderPagination(currentPage) {
 async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
   let matchedAdjudicator = null;
 
-  if (!bypassAdjudicatorCheck && adjudicatorList.length > 0) {
+  // Paying (unlimited) users are never intercepted; the modal is only for
+  // visitors and free accounts.
+  if (!bypassAdjudicatorCheck && !(searchUsage && searchUsage.is_unlimited) && adjudicatorList.length > 0) {
     const query = normalizeInput($('#q').value);
     matchedAdjudicator = findMatchingAdjudicator(query);
   }
@@ -901,8 +903,9 @@ async function runSearch(page = 1, bypassAdjudicatorCheck = false) {
     finishLoadingBar();
   }
 
-  // Show adjudicator modal after search completes
-  if (matchedAdjudicator) {
+  // Show adjudicator modal after search completes (re-check paid status —
+  // the usage fetch may have resolved since detection).
+  if (matchedAdjudicator && !(searchUsage && searchUsage.is_unlimited)) {
     setTimeout(() => {
       showAdjudicatorModal();
     }, 1000);
