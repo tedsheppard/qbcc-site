@@ -231,7 +231,7 @@
       <h1>Authorised Nominating Authorities</h1>
     </div>
 
-    <div class="method-notice">
+    <div class="method-notice" id="methodNotice" style="display: none;">
       <h4>Methodology &amp; Disclaimer</h4>
       <p>
         Before December 2014, Queensland adjudication applications were received and referred by
@@ -525,6 +525,7 @@ function filteredAnas() {
 // RENDER
 // ============================================================
 function renderDashboard() {
+    document.getElementById('methodNotice').style.display = '';
     const el = document.getElementById('dashboard');
     const cov = anaData.coverage;
     const years = [];

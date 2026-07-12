@@ -1288,7 +1288,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadProfileData();
             loadPurchaseHistory();
             loadSubscription();
-            loadMcpConnector();
+            // loadMcpConnector();  // Claude Connector card hidden for now
 
             const res = await fetch('/purchase-me', { headers });
             if (res.ok) {
