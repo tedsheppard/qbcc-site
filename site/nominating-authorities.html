@@ -66,6 +66,10 @@
       background-repeat: no-repeat; background-position: right 8px center;
     }
     .filter-bar .filter-note { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+    .merge-row { margin: -14px 0 24px; }
+    .merge-check { display: inline-flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+    .merge-check input { margin-top: 2px; accent-color: var(--green); }
+    .table-foot { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
     .filter-reset { padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: white; border: 1px solid var(--border-light); border-radius: 8px; transition: all 0.15s; }
     .filter-reset:hover { background: #f5f5f5; color: var(--text-primary); }
 
@@ -279,6 +283,9 @@ let tableSort = { key: 'decisions', dir: -1 };
 let trendMetric = 'awardRate';   // trend chart metric
 let gridMetric = 'awardRate';    // small-multiples metric
 const hiddenSeries = new Set();  // legend toggles (trend chart)
+let mergeRI = false;             // merge IAMA + LEADR into Resolution Institute
+const RI_NAME = 'Resolution Institute';
+const RI_MEMBERS = ['Institute of Arbitrators & Mediators Australia (IAMA)', 'LEADR'];
 const seriesColor = {};          // ANA name -> colour, assigned once at load
 
 // Minimum decisions in an ANA-year for a ratio/average to be plotted.
@@ -449,6 +456,7 @@ async function loadAnas() {
     anaData.anas.filter(a => a.name !== REGISTRY_NAME).forEach((a, i) => {
         seriesColor[a.name] = SERIES_COLORS[i] || OVERFLOW_COLOR;
     });
+    seriesColor[RI_NAME] = seriesColor[RI_MEMBERS[0]] || OVERFLOW_COLOR;
 
     const cov = anaData.coverage;
 
@@ -491,8 +499,26 @@ function aggregateAna(ana) {
     };
 }
 
+function sourceAnas() {
+    const base = anaData.anas.filter(a => a.name !== REGISTRY_NAME);
+    if (!mergeRI) return base;
+    const members = base.filter(a => RI_MEMBERS.includes(a.name));
+    if (!members.length) return base;
+    // Buckets are pure sums/counts, so the merged entity is a field-wise
+    // sum of the members' per-year buckets.
+    const years = {};
+    members.forEach(m => {
+        for (const [y, b] of Object.entries(m.years)) {
+            const t = years[y] || (years[y] = emptyBucket());
+            for (const k of Object.keys(t)) t[k] += (b[k] || 0);
+        }
+    });
+    return [...base.filter(a => !RI_MEMBERS.includes(a.name)),
+            { id: 'resolution_institute', name: RI_NAME, years }];
+}
+
 function filteredAnas() {
-    return anaData.anas.filter(a => a.name !== REGISTRY_NAME).map(aggregateAna).filter(a => a.decisions > 0);
+    return sourceAnas().map(aggregateAna).filter(a => a.decisions > 0);
 }
 
 // ============================================================
@@ -513,10 +539,17 @@ function renderDashboard() {
         <button type="button" class="filter-reset" id="yearReset">Reset</button>
         <span class="filter-note">Filtering recalculates all statistics below</span>
       </div>
+      <div class="merge-row">
+        <label class="merge-check">
+          <input type="checkbox" id="mergeRICheck"${mergeRI ? ' checked' : ''}>
+          <span>Merge IAMA and LEADR into Resolution Institute across all statistics on this page</span>
+        </label>
+      </div>
       <div class="section">
         <h2>Decisions grouped by ANA affiliation</h2>
         <div class="section-sub">Averages are per decision with usable data. Hover a heading for the full definition; click to sort.</div>
         <div class="table-wrap"><table class="ana-table"><thead id="anaTableHead"></thead><tbody id="anaTableBody"></tbody></table></div>
+        <div class="table-foot" id="tableFoot"></div>
       </div>
       <div class="section">
         <div class="section-head">
@@ -556,6 +589,13 @@ function renderDashboard() {
         yearFrom = cov.minYear; yearTo = cov.maxYear;
         document.getElementById('yearFrom').value = yearFrom;
         document.getElementById('yearTo').value = yearTo;
+        renderStats();
+    });
+
+    document.getElementById('mergeRICheck').addEventListener('change', e => {
+        mergeRI = e.target.checked;
+        // Old individual-entity legend toggles would orphan on merge; clear both ways.
+        [RI_NAME, ...RI_MEMBERS].forEach(n => hiddenSeries.delete(n));
         renderStats();
     });
 
@@ -638,7 +678,7 @@ function tableRowHtml(a, extraClass, nameTt) {
     const nameAttr = nameTt ? ` data-tt="${nameTt.replace(/"/g, '&quot;')}"` : '';
     return `
       <tr${extraClass ? ` class="${extraClass}"` : ''}>
-        <td${nameAttr}>${sanitizeHtml(a.name)}</td>
+        <td${nameAttr}>${sanitizeHtml(a.name)}${!mergeRI && RI_MEMBERS.includes(a.name) ? '<span data-tt="Now merged as Resolution Institute">*</span>' : ''}</td>
         <td${decTt}>${fmtInt(a.decisions)}</td>
         <td>${fmtPct(a.avgAwardRate)}</td>
         <td>${fmtPct(a.avgClaimantFee)}</td>
@@ -682,6 +722,11 @@ function renderTable(anas) {
     const noAna = noAnaEntry();
     body.innerHTML = sorted.map(a => tableRowHtml(a)).join('')
         + (noAna ? tableRowHtml(noAna, 'noana-row', NO_ANA_TT) : '');
+
+    const foot = document.getElementById('tableFoot');
+    if (foot) foot.textContent = mergeRI
+        ? 'Resolution Institute combines the former IAMA and LEADR, which merged in 2016.'
+        : '* IAMA and LEADR merged in 2016 and now operate as Resolution Institute. Tick the box above to view their combined statistics.';
 
     attachTooltips(head);
     attachTooltips(body);
