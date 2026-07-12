@@ -652,9 +652,10 @@ function showAdjudicatorDetail(hasAccess, pendingInvoice) {
     const avgClaimAmount = selectedAdjudicator.totalClaimAmount / selectedAdjudicator.totalDecisions;
     const avgAwardedAmount = selectedAdjudicator.totalAwardedAmount / selectedAdjudicator.totalDecisions;
 
-    const subtitleHtml = !hasAccess ?
+    const termsLink = ' &middot; <a href="/adjudicator-insights-terms" style="text-decoration:underline;color:inherit;">Insights Terms</a>';
+    const subtitleHtml = (!hasAccess ?
         `<span class="blur-value">${selectedAdjudicator.totalDecisions}</span> decisions analysed` :
-        `${selectedAdjudicator.totalDecisions} decisions analysed`;
+        `${selectedAdjudicator.totalDecisions} decisions analysed`) + termsLink;
 
     const isLoggedIn = !!localStorage.getItem('purchase_token');
     let lockedOverlay = '';
