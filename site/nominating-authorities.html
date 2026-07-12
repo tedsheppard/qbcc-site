@@ -226,32 +226,39 @@
     <div class="page-header">
       <h1>Authorised Nominating Authorities</h1>
       <p class="subtitle">
-        Authorised Nominating Authorities <strong>(ANAs)</strong> received and referred adjudication
-        applications under the <em>Building and Construction Industry Payments Act 2004</em> (Qld),
-        and still administer matters for their adjudicators under the
-        <em>Building Industry Fairness (Security of Payment) Act 2017</em> (Qld),
-        where referrals now come from the QBCC's Adjudication Registry.
+        Before December 2014, Queensland adjudication applications were received and referred by
+        Authorised Nominating Authorities <strong>(ANAs)</strong> under the
+        <em>Building and Construction Industry Payments Act 2004</em> (Qld). Since December 2014,
+        applications have instead been made to the Adjudication Registry operated by the QBCC, which
+        refers them directly to adjudicators.
       </p>
       <p class="subtitle">
-        Compare decision statistics by each ANA and by year.
+        Compare published Queensland decision outcomes by the adjudicator's identified or inferred
+        ANA affiliation, by year.
       </p>
     </div>
 
     <div class="method-notice">
       <h4>Methodology &amp; Disclaimer</h4>
       <p>
-        The statistics on this page are <strong>approximate</strong>. The ANA for each decision is coded
-        automatically from the text of the published decision document, using keyword extraction and AI
-        extraction. Where a decision document does not name the ANA, attribution is inferred from the
-        adjudicator's documented ANA affiliations in other decisions, which may be incorrect.
+        The statistics on this page are <strong>approximate</strong> and are derived from published
+        Queensland adjudication decisions. An ANA affiliation may be identified from the decision
+        itself or inferred from the adjudicator's documented affiliations in other decisions, using
+        automated keyword and AI extraction. Inferred affiliations may be incomplete, outdated,
+        non-exclusive or incorrect.
       </p>
       <p>
-        ANAs stopped receiving new Queensland adjudication applications from December 2014, when the
-        BCIPA amendments moved referrals to the Adjudication Registry operated by the QBCC; however ANAs
-        continue to administer matters for their adjudicators under the current
-        <em>Building Industry Fairness (Security of Payment) Act 2017</em> (Qld) regime. Statistics are provided
-        for general information only, are not legal advice, and say nothing about the quality or fairness of any
-        ANA, adjudicator, or decision.
+        For decisions made from December 2014, the application was referred by the QBCC's Adjudication
+        Registry, not by the ANA shown. The figures therefore describe outcomes in decisions made by
+        adjudicators associated with each ANA; they do not measure the ANA's performance or establish
+        that the ANA selected, referred, administered, controlled or influenced those applications.
+      </p>
+      <p>
+        The results are not adjusted for differences in claim value, dispute type, complexity, time
+        period, statutory regime or other characteristics. They do not establish causation, bias,
+        quality, fairness or the likely outcome of any future application, and are not legal advice.
+        See the <a href="/nominating-authority-statistics-terms" style="text-decoration: underline;">Nominating
+        Authority Statistics Terms</a>, which govern use of this page.
       </p>
     </div>
 
@@ -262,7 +269,7 @@
 
   <div id="chartTooltip"></div>
 
-  <footer class="footer"><div class="container"><div class="footer-inner"><div class="footer-brand"><div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div><p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p></div><div class="footer-col"><h4>Tools</h4><a href="/search">Decision Search</a><a href="/adjudicators">Adjudicators</a><a href="/nominating-authorities">Nominating Authorities</a><a href="/ai">SopalAI</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a></div><div class="footer-col"><h4>Resources</h4><a href="/how-to">How-To Guide</a><a href="/pricing">Pricing</a><a href="/feedback">Contact</a></div><div class="footer-col"><h4>Legal</h4><a href="/privacy">Privacy</a><a href="/terms">Terms of Use</a><a href="/account-terms">Account Terms</a><a href="/subscription-terms">Subscription Terms</a></div></div><div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div></div></footer>
+  <footer class="footer"><div class="container"><div class="footer-inner"><div class="footer-brand"><div class="footer-logo"><img src="/assets/sopal_logo_white_v1.png" alt="Sopal" style="height: 18px; width: auto;"></div><p>An intelligent search tool for adjudication decisions under the Building Industry Fairness (Security of Payment) Act 2017 (Qld)</p></div><div class="footer-col"><h4>Tools</h4><a href="/search">Decision Search</a><a href="/adjudicators">Adjudicators</a><a href="/nominating-authorities">Nominating Authorities</a><a href="/ai">SopalAI</a><a href="/interest-calculator">Interest Calculator</a><a href="/due-date-calculator">Due Date Calculator</a></div><div class="footer-col"><h4>Resources</h4><a href="/how-to">How-To Guide</a><a href="/pricing">Pricing</a><a href="/feedback">Contact</a></div><div class="footer-col"><h4>Legal</h4><a href="/privacy">Privacy</a><a href="/terms">Terms of Use</a><a href="/account-terms">Account Terms</a><a href="/subscription-terms">Subscription Terms</a><a href="/nominating-authority-statistics-terms">Nominating Authority Statistics Terms</a></div></div><div class="footer-bottom"><span>&copy; 2026 Sopal Australia. All rights reserved.</span> <a href="/admin" style="color:#444;margin-left:16px;font-size:11px;">Developer Login</a></div></div></footer>
 
   <script>
 // ============================================================
@@ -510,15 +517,15 @@ function renderDashboard() {
         <span class="filter-note">Filtering recalculates all statistics below</span>
       </div>
       <div class="section">
-        <h2>ANA comparison</h2>
+        <h2>Decisions grouped by ANA affiliation</h2>
         <div class="section-sub">Averages are per decision with usable data. Hover a heading for the full definition; click to sort.</div>
         <div class="table-wrap"><table class="ana-table"><thead id="anaTableHead"></thead><tbody id="anaTableBody"></tbody></table></div>
       </div>
       <div class="section">
         <div class="section-head">
           <div>
-            <h2>Yearly trends by ANA</h2>
-            <div class="section-sub">One line per ANA; pick the metric to compare</div>
+            <h2>Yearly trends by adjudicator affiliation</h2>
+            <div class="section-sub">One line per adjudicator-affiliation grouping; select a metric to compare</div>
           </div>
           <div class="metric-pick">
             <span class="metric-label" id="trendMetricLabel">Metric</span>
@@ -534,7 +541,7 @@ function renderDashboard() {
       <div class="section">
         <div class="section-head">
           <div>
-            <h2>Year-by-year, per ANA</h2>
+            <h2>Year-by-year outcomes for affiliated adjudicators</h2>
             <div class="section-sub" id="gridSub"></div>
           </div>
           <div class="metric-pick">
@@ -993,5 +1000,56 @@ function sanitizeHtml(str) {
   </script>
 
   <script src="/assets/js/main.js"></script>
+
+  <style>
+    .ana-terms-gate { position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .ana-terms-card { background: #fff; width: 100%; max-width: 610px; border-radius: 14px; padding: 28px; box-shadow: 0 24px 70px rgba(0,0,0,0.35); }
+    .ana-terms-card h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 10px; }
+    .ana-terms-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px; }
+    .ana-terms-check { display: flex; gap: 9px; align-items: flex-start; font-size: 13px; color: var(--text-primary); margin: 16px 0; cursor: pointer; }
+    .ana-terms-check input { margin-top: 3px; accent-color: var(--green); }
+    .ana-terms-check a { color: var(--green-dark); text-decoration: underline; }
+    .ana-terms-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .ana-terms-actions a, .ana-terms-actions button { padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+    .ana-terms-actions a { border: 1px solid var(--border-light); color: var(--text-secondary); }
+    .ana-terms-actions button { background: var(--green); color: #000; }
+    .ana-terms-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
+  </style>
+  <script>
+  // One-time acceptance gate for the Nominating Authority Statistics Terms.
+  // Acceptance is stored client-side with a version + timestamp; bump the
+  // version to re-prompt everyone after a material change to the terms.
+  (function () {
+    const version = '2026-07-12';
+    const key = 'sopal_ana_terms_accepted_' + version;
+    if (localStorage.getItem(key)) return;
+
+    const gate = document.createElement('div');
+    gate.className = 'ana-terms-gate';
+    gate.innerHTML = `
+      <div class="ana-terms-card" role="dialog" aria-modal="true" aria-labelledby="anaTermsTitle">
+        <h2 id="anaTermsTitle">Nominating Authority Statistics Terms</h2>
+        <p>These statistics group Queensland decisions by an adjudicator's identified or inferred ANA
+        affiliation. For decisions made from December 2014, the ANA shown did not receive or refer the
+        application &mdash; referrals come from the QBCC's Adjudication Registry.</p>
+        <p>Please read and accept the dedicated terms before accessing the statistics.</p>
+        <label class="ana-terms-check"><input type="checkbox" id="anaTermsAccept"><span>I have read and
+        agree to the <a href="/nominating-authority-statistics-terms" target="_blank">Nominating Authority
+        Statistics Terms</a>.</span></label>
+        <div class="ana-terms-actions"><a href="/">Leave page</a><button type="button" id="anaTermsContinue" disabled>Continue</button></div>
+      </div>`;
+    document.body.appendChild(gate);
+    document.body.style.overflow = 'hidden';
+
+    const checkbox = gate.querySelector('#anaTermsAccept');
+    const button = gate.querySelector('#anaTermsContinue');
+    checkbox.addEventListener('change', () => { button.disabled = !checkbox.checked; });
+    button.addEventListener('click', () => {
+      localStorage.setItem(key, JSON.stringify({ acceptedAt: new Date().toISOString(), version }));
+      gate.remove();
+      document.body.style.overflow = '';
+    });
+  })();
+  </script>
 </body>
 </html>
