@@ -1048,14 +1048,18 @@ async function initSearchPage() {
     }
   } catch (e) { gateEnabled = false; }
 
+  // Always fetch usage when logged in (not just when the gate is on) —
+  // searchUsage.is_unlimited is also what exempts paid accounts from the
+  // adjudicator-search interception modal.
+  const token = localStorage.getItem('purchase_token');
+  if (token) {
+    try {
+      const usageRes = await fetch('/api/my-search-usage', { headers: { 'Authorization': `Bearer ${token}` } });
+      if (usageRes.ok) searchUsage = await usageRes.json();
+    } catch (e) {}
+  }
+
   if (gateEnabled) {
-    const token = localStorage.getItem('purchase_token');
-    if (token) {
-      try {
-        const usageRes = await fetch('/api/search-usage', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (usageRes.ok) searchUsage = await usageRes.json();
-      } catch (e) {}
-    }
     renderGateUI();
   }
 
