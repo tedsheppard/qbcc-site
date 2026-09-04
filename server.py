@@ -382,6 +382,14 @@ except Exception as e:
 
 app = FastAPI()
 
+# >>> app.sopal.com.au is served by the Next.js app on Vercel, not from site/.
+# Installed first so it sees the request before anything else. Other hostnames
+# are untouched; see routes/app_proxy.py for why the routing lives here rather
+# than in DNS.
+from routes.app_proxy import install as _install_app_proxy
+_install_app_proxy(app)
+# <<< app.sopal.com.au
+
 # >>> claim-check feature — isolated in routes/claim_check.py (f703011+)
 # The redirect_router carries 301 redirects from the legacy /assist URLs
 # (Sopal Assist suite, archived 2026-04-25; see _archive/contract-assist-2026-04-25/).
