@@ -1,5 +1,5 @@
 """
-app.sopal.com.au -> the drafting and execution app on Vercel.
+app.sopal.com.au -> Sopal Submissions (the firm adjudication-document library) on Vercel.
 
 That hostname is a CNAME to this Render service and the domain's DNS lives at a
 registrar we cannot reach, so the only place the routing can be changed is
@@ -17,7 +17,7 @@ from fastapi import Request
 from fastapi.responses import StreamingResponse
 
 APP_HOST = os.getenv("SOPAL_APP_HOST", "app.sopal.com.au").lower()
-TARGET = os.getenv("SOPAL_APP_PROXY_TARGET", "https://sopal-docs.vercel.app").rstrip("/")
+TARGET = os.getenv("SOPAL_APP_PROXY_TARGET", "https://sopal-submissions.vercel.app").rstrip("/")
 
 # Hop-by-hop headers, plus the ones the ASGI server recalculates itself.
 _STRIP = {
@@ -76,12 +76,13 @@ def install(app) -> None:
                 if k.lower() not in _STRIP
             ]
 
-            return StreamingResponse(
-                relay(),
-                status_code=upstream.status_code,
-                headers=dict(out),
-                media_type=upstream.headers.get("content-type"),
-            )
+            response = StreamingResponse(relay(), status_code=upstream.status_code)
+            # Raw pairs, not a dict: a sign-in sets several cookies, and a dict
+            # would keep only the last Set-Cookie.
+            response.raw_headers = [
+                (k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in out
+            ]
+            return response
         except Exception as exc:  # noqa: BLE001 - falling through is the point
             print(f"[sopal-app-proxy] falling through: {exc}")
             return await call_next(request)
