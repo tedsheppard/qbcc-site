@@ -52,7 +52,13 @@ def install(app) -> None:
 
             body = await request.body()
 
-            client = httpx.AsyncClient(timeout=30.0, follow_redirects=False)
+            # Connecting is quick or it has failed; reading is not. A streamed
+            # answer (the matter AI, a long draft) can go quiet for a minute
+            # while the model thinks, so a read may wait up to ten minutes.
+            client = httpx.AsyncClient(
+                timeout=httpx.Timeout(connect=10.0, read=600.0, write=120.0, pool=10.0),
+                follow_redirects=False,
+            )
             upstream = await client.send(
                 client.build_request(
                     request.method, url, headers=headers, content=body or None
