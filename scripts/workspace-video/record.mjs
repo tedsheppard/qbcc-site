@@ -1,11 +1,12 @@
-// Renders explainer.html to site/assets/workspace/explainer.mp4 (and a poster).
+// Renders explainer.html to site/assets/workspace/explainer-silent.mp4 (copied to
+// explainer.mp4, which voiceover.mjs then replaces with a voiced cut) and a poster.
 //   node scripts/workspace-video/record.mjs            full video, 30 fps
 //   node scripts/workspace-video/record.mjs 5 20 60    stills at those seconds, to ./stills
 // Uses Playwright's Chromium (from any project that has playwright installed:
 // default ../sopal-docs; set PLAYWRIGHT_FROM to another) and ffmpeg on the PATH.
 import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -34,7 +35,7 @@ if (stills.length) {
   mkdirSync(out, { recursive: true });
   const duration = await page.evaluate(() => window.DURATION);
   const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS), "-c:v", "mjpeg", "-i", "-",
-    "-c:v", "libx264", "-preset", "slow", "-crf", "24", "-pix_fmt", "yuv420p", "-movflags", "+faststart", join(out, "explainer.mp4")], { stdio: ["pipe", "inherit", "inherit"] });
+    "-c:v", "libx264", "-preset", "slow", "-crf", "24", "-pix_fmt", "yuv420p", "-movflags", "+faststart", join(out, "explainer-silent.mp4")], { stdio: ["pipe", "inherit", "inherit"] });
   const frames = Math.round(duration * FPS);
   for (let i = 0; i < frames; i++) {
     const buf = await shot(i / FPS);
@@ -44,5 +45,7 @@ if (stills.length) {
   ff.stdin.end();
   await new Promise((r) => ff.on("close", r));
   writeFileSync(join(out, "explainer-poster.jpg"), await shot(53.9));
+  // Until voiceover.mjs adds the voice, the page plays the silent cut.
+  copyFileSync(join(out, "explainer-silent.mp4"), join(out, "explainer.mp4"));
 }
 await browser.close();

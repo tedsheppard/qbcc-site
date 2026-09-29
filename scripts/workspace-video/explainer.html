@@ -26,16 +26,20 @@ body { font-family:Inter, -apple-system, sans-serif; -webkit-font-smoothing:anti
 .hline { position:absolute; height:1px; background:rgba(0,0,0,.045); }
 .vline { position:absolute; width:1px; background:rgba(0,0,0,.045); }
 
-/* Paper and the lens */
-.paper { position:absolute; width:400px; height:500px; background:#fff; border-radius:8px; box-shadow:0 1px 2px rgba(0,0,0,.06), 0 18px 50px rgba(0,0,0,.1); overflow:hidden; }
-.ptext { position:absolute; left:0; top:0; width:400px; height:500px; padding:40px 40px; font-family:var(--tnr); font-size:13.5px; line-height:1.62; color:#2a2a2a; background:#fff; }
-.ptext h6 { font-size:13.5px; font-weight:700; margin-bottom:10px; }
-.ptext p { display:grid; grid-template-columns:30px 1fr; margin-bottom:8px; }
-.hi { background-image:linear-gradient(90deg, rgba(0,212,126,.35), rgba(20,200,180,.35) 30%, rgba(47,124,246,.32) 62%, rgba(194,92,240,.32)); background-repeat:no-repeat; background-size:calc(var(--hk, 0) * 100%) 100%; border-radius:3px; padding:1px 0; }
-#lens { position:absolute; width:190px; height:190px; border-radius:50%; overflow:hidden; opacity:0; z-index:3;
-  box-shadow:inset 0 2px 3px rgba(255,255,255,.95), inset 0 -6px 14px rgba(0,0,0,.12), 0 0 0 1.5px rgba(255,255,255,.9), 0 26px 60px rgba(0,0,0,.18), 0 4px 10px rgba(0,0,0,.08); }
-#lens .ptext { transform-origin:0 0; }
-#lens::after { content:""; position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 32% 24%, rgba(255,255,255,.55), rgba(255,255,255,0) 42%), radial-gradient(circle at 70% 85%, rgba(47,124,246,.10), rgba(255,255,255,0) 50%); pointer-events:none; }
+/* A submission page (A4, text at the equivalent of 10pt) and the lens */
+.a4 { position:absolute; font-size:9.6px; width:59.5em; height:84.2em; padding:5.6em 7.1em; background:#fff; border-radius:3px; box-shadow:0 1px 2px rgba(0,0,0,.06), 0 18px 50px rgba(0,0,0,.1); font-family:var(--tnr); line-height:1.5; color:#111; text-align:justify; overflow:hidden; }
+.a4.blank { background:#fff repeating-linear-gradient(180deg, #e9e9ec 0 .55em, transparent .55em 1.5em) 7.1em 8em / 45.3em 68em no-repeat; }
+.a4-hdr { font-size:.85em; display:flex; justify-content:space-between; gap:2em; border-bottom:1px solid #999; padding-bottom:.4em; margin-bottom:2.4em; color:#444; text-align:left; }
+.a4-h { font-weight:700; text-transform:uppercase; display:grid; grid-template-columns:3.6em 1fr; margin-bottom:1em; text-align:left; }
+.a4-sh { font-weight:700; font-style:italic; margin:1.2em 0 .6em; text-align:left; }
+.a4-p { display:grid; grid-template-columns:3.6em 1fr; margin-bottom:.7em; }
+.a4-s { display:grid; grid-template-columns:3.6em 3.2em 1fr; margin-bottom:.5em; }
+.a4-foot { position:absolute; bottom:3.6em; left:0; right:0; text-align:center; }
+.hi { background-image:linear-gradient(90deg, rgba(0,212,126,.42), rgba(20,200,180,.4) 30%, rgba(47,124,246,.36) 62%, rgba(194,92,240,.36)); background-repeat:no-repeat; background-size:calc(var(--hk, 0) * 100%) 100%; border-radius:2px; }
+#lens { position:absolute; width:250px; height:250px; border-radius:50%; overflow:hidden; opacity:0; z-index:3; background:#fff;
+  box-shadow:inset 0 0 0 8px rgba(255,255,255,.6), inset 0 0 0 9px rgba(0,0,0,.06), inset 0 3px 4px rgba(255,255,255,.95), inset 0 -8px 16px rgba(0,0,0,.1), 0 0 0 1px rgba(0,0,0,.08), 0 30px 70px rgba(0,0,0,.2), 0 4px 10px rgba(0,0,0,.08); }
+#lens .a4 { transform-origin:0 0; box-shadow:none; border-radius:0; left:0; top:0; }
+#lens::after { content:""; position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 30% 22%, rgba(255,255,255,.6), rgba(255,255,255,0) 40%), radial-gradient(circle at 72% 86%, rgba(47,124,246,.1), rgba(255,255,255,0) 50%); pointer-events:none; }
 
 /* Captions */
 .cap { position:absolute; left:120px; top:0; width:590px; opacity:0; }
@@ -44,9 +48,13 @@ body { font-family:Inter, -apple-system, sans-serif; -webkit-font-smoothing:anti
 .center { position:absolute; left:0; right:0; text-align:center; }
 .center h2 { font-size:64px; font-weight:650; letter-spacing:-.035em; line-height:1.1; }
 .center p { font-size:31px; color:var(--ink2); line-height:1.4; letter-spacing:-.012em; }
-.lockup { display:flex; align-items:center; justify-content:center; gap:26px; }
+/* "Workspace" set to the cap height of the wordmark in the logo (the S is 55% of the image height). */
+.lockup { display:flex; align-items:flex-start; justify-content:center; gap:20px; }
 .lockup img { height:82px; }
-.lockup span { font-size:88px; font-weight:600; letter-spacing:-.04em; color:#0d0d0d; line-height:1; transform:translateY(-2px); }
+.lockup span { font-size:62px; font-weight:500; letter-spacing:-.025em; color:#0d0d0d; line-height:1; margin-top:13px; }
+.titleR { position:absolute; left:1010px; top:420px; }
+.titleR .lockup { justify-content:flex-start; }
+.titleR p { font-size:31px; color:var(--ink2); line-height:1.4; letter-spacing:-.012em; margin-top:30px; max-width:760px; }
 
 /* App window */
 #win { position:absolute; left:740px; top:110px; width:1080px; height:860px; border-radius:40px; padding:12px; opacity:0; }
@@ -157,22 +165,35 @@ mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding
 
   <!-- 1. Title: a lens finds the point in a submission -->
   <div class="scene" id="s1">
-    <div class="paper" id="pb1" style="left:600px;top:70px"><div class="ptext"></div></div>
-    <div class="paper" id="pb2" style="left:920px;top:62px"><div class="ptext"></div></div>
-    <div class="paper" id="pf" style="left:760px;top:48px">
-      <div class="ptext" id="ptext">
-        <h6>C.&nbsp;&nbsp;THE PAYMENT SCHEDULE</h6>
-        <p><span>29.</span><span>The claimant gave its payment claim to the respondent by email on 9 July 2024, to the address nominated in the contract.</span></p>
-        <p><span>30.</span><span>The respondent had 15 business days to respond with a payment schedule under s 76 of the Act.</span></p>
-        <p><span>31.</span><span>The <span class="hi">payment schedule was given late</span>, on the sixteenth business day after the payment claim was given.</span></p>
-        <p><span>32.</span><span>The respondent therefore became liable to pay the claimed amount on the due date, and may not give an adjudication response.</span></p>
-        <p><span>33.</span><span>The claimant relies on the statutory declaration of its project manager and the emails exhibited to it.</span></p>
-      </div>
+    <div class="a4 blank" id="pb1" style="left:250px;top:170px"></div>
+    <div class="a4 blank" id="pb2" style="left:360px;top:160px"></div>
+    <div class="a4" id="pf" style="left:300px;top:130px">
+<div class="a4-hdr"><span>Adjudication application &ndash; ABC Subcontractor Pty Ltd v DEF Head Contractor Pty Ltd</span><span>Claimant&rsquo;s submissions</span></div>
+<div class="a4-h"><span>D.</span><span>The payment schedule was not given within time</span></div>
+<div class="a4-sh">The chronology</div>
+<div class="a4-p"><span>41.</span><span>The claimant gave Payment Claim 14 to the respondent at 3.47 pm on Tuesday, 3 March 2026, by email to the address nominated in item 22 of the Contract Particulars (Trevane SD at [18]–[21]; exhibit MT-7).</span></div>
+<div class="a4-p"><span>42.</span><span>The Contract does not fix a period for giving a payment schedule shorter than the period allowed by the Act. The respondent was therefore required to give a payment schedule within 15 business days after the payment claim was given: s 76(1) of the Act.</span></div>
+<div class="a4-p"><span>43.</span><span>The fifteenth business day after 3 March 2026 was Tuesday, 24 March 2026. No day in that period is excluded from the definition of “business day” in schedule 2 of the Act.</span></div>
+<div class="a4-p"><span>44.</span><span>The respondent’s document headed “Payment Schedule – PC14” was sent by email at 6.12 pm on Wednesday, 25 March 2026 (Trevane SD at [24]; exhibit MT-9). It was given on the sixteenth business day, <span class="hi">one day out of time</span>.</span></div>
+<div class="a4-sh">The “draft assessment” of 24 March 2026 was not a payment schedule</div>
+<div class="a4-p"><span>45.</span><span>The claimant anticipates that the respondent will contend that the email sent by its contract administrator at 5.58 pm on 24 March 2026, attaching a spreadsheet headed “PC14 – draft assessment (subject to review)”, was a payment schedule given within time (Trevane SD at [23]; exhibit MT-8).</span></div>
+<div class="a4-p"><span>46.</span><span>It was not. A payment schedule must identify the payment claim to which it responds and state the amount of the payment, if any, that the respondent proposes to make: s 69 of the Act. The draft assessment:</span></div>
+<div class="a4-s"><span></span><span>(a)</span><span>did not identify Payment Claim 14, referring only to “the March claim”;</span></div>
+<div class="a4-s"><span></span><span>(b)</span><span>did not state any amount the respondent proposed to pay, its final line being left blank; and</span></div>
+<div class="a4-s"><span></span><span>(c)</span><span>was expressly provisional, being “subject to review and certification by the Superintendent”.</span></div>
+<div class="a4-p"><span>47.</span><span>A document that leaves open the amount the respondent proposes to pay does not tell the claimant what is in dispute, which is the purpose a payment schedule serves under the Act. It is not saved by having been sent within time.</span></div>
+<div class="a4-sh">Consequences</div>
+<div class="a4-p"><span>48.</span><span>Because no payment schedule was given within time:</span></div>
+<div class="a4-s"><span></span><span>(a)</span><span>the respondent became liable to pay the claimed amount of $412,860.00 on the due date for the progress payment: s 77 of the Act;</span></div>
+<div class="a4-s"><span></span><span>(b)</span><span>the respondent having also failed to pay any part of that amount by the due date, the claimant was entitled to apply for adjudication: s 79 of the Act; and</span></div>
+<div class="a4-s"><span></span><span>(c)</span><span>the respondent is not entitled to give an adjudication response: s 82 of the Act.</span></div>
+<div class="a4-p"><span>49.</span><span>In the alternative, if the adjudicator finds that the draft assessment was a payment schedule, the respondent is confined to the reasons for withholding payment stated in it. Those reasons are answered in Part E below.</span></div>
+<div class="a4-foot">9</div>
     </div>
     <div id="lens"></div>
-    <div class="center" style="top:610px">
+    <div class="titleR">
       <div class="lockup" id="s1h"><img src="../../site/assets/sopal_logo_v1.png" alt=""><span>Workspace</span></div>
-      <p id="s1p" style="margin-top:34px">Your firm&rsquo;s adjudication submissions in one place, powered by AI.</p>
+      <p id="s1p">Your firm&rsquo;s adjudication submissions in one place, powered by AI.</p>
     </div>
   </div>
 
@@ -240,7 +261,7 @@ mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding
 
       <div class="view" id="vDraft" style="padding:0">
         <div id="agent">
-          <div class="bubble" id="db">Draft Part D of our application in Thornquell v Morvenhall, on the late payment schedule. Model it on the Tamsley Glass application.</div>
+          <div class="bubble" id="db">Draft Part D of our application in ABC Subcontractor v DEF Head Contractor, on the late payment schedule. Model it on the Tamsley Glass application.</div>
           <div class="step" id="st1"><i></i><div>Read the Tamsley Glass application<small>From your library</small></div></div>
           <div class="step" id="st2"><i></i><div>Read the Trevane statutory declaration and exhibits MT-7 to MT-9<small>From the project folder</small></div></div>
           <div class="step" id="st3"><i></i><div>Read ss 69, 76, 77, 79 and 82 and schedule 2 of the Act<small>At source, current version</small></div></div>
@@ -249,14 +270,14 @@ mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding
           <span class="btn" id="xbtn" style="display:inline-block;margin-top:26px;opacity:0">Export to Word</span>
         </div>
         <div id="canvas">
-          <div id="sheetScroll"><div class="sheet"><div class="kicker">Thornquell v Morvenhall &middot; Adjudication application &middot; draft</div><div class="doc" id="doc"></div></div></div>
+          <div id="sheetScroll"><div class="sheet"><div class="kicker">ABC Subcontractor v DEF Head Contractor &middot; Adjudication application &middot; draft</div><div class="doc" id="doc"></div></div></div>
                   </div>
         <div id="word">
-          <div class="bar"><span>W</span>Thornquell v Morvenhall &ndash; adjudication application (draft).docx</div>
+          <div class="bar"><span>W</span>ABC v DEF &ndash; adjudication application (draft).docx</div>
           <div class="rib"></div>
           <div id="wscroll">
             <div class="page">
-              <div class="hdr"><span>Adjudication application &ndash; Thornquell Joinery Pty Ltd v Morvenhall Developments Pty Ltd</span><span>Claimant&rsquo;s submissions</span></div>
+              <div class="hdr"><span>Adjudication application &ndash; ABC Subcontractor Pty Ltd v DEF Head Contractor Pty Ltd</span><span>Claimant&rsquo;s submissions</span></div>
               <div class="doc" id="wdoc"></div>
               <div class="foot">9</div>
             </div>
@@ -265,7 +286,7 @@ mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding
       </div>
     </div>
   </div>
-  <div id="file" class="glass"><span>W</span><div><b>Thornquell v Morvenhall &ndash; application (draft).docx</b><small>Word document</small></div></div>
+  <div id="file" class="glass"><span>W</span><div><b>ABC v DEF &ndash; adjudication application (draft).docx</b><small>Word document</small></div></div>
 
   <!-- 8. Private to your firm: the library behind frosted glass -->
   <div class="scene" id="s8">
@@ -284,7 +305,7 @@ mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding
   <div class="scene" id="s9">
     <div class="center" style="top:330px">
       <div class="lockup" id="s9a"><img src="../../site/assets/sopal_logo_v1.png" alt=""><span>Workspace</span></div>
-      <p id="s9b" style="margin-top:50px;font-size:36px;color:var(--ink);font-weight:600;letter-spacing:-.02em">$120 per user a month. First month free.</p>
+      <p id="s9b" style="margin-top:50px;font-size:34px;color:var(--ink);font-weight:600;letter-spacing:-.02em">$140 a month for the first user, $90 for each additional user.<br>First month free.</p>
       <p id="s9c" style="margin-top:16px;font-size:30px;color:var(--greenD);font-weight:600">sopal.com.au/workspace</p>
       <p id="s9d" style="margin-top:120px;font-size:17px;color:var(--ink3)">The firms, parties, people and documents in this video are invented.</p>
     </div>
@@ -308,15 +329,14 @@ const rise = (el, t, a, b, d = 24) => st(el, win(t, a, b), (1 - eo(p(t, a, a + 0
 const DURATION = 72;
 
 /* ---------- Content (all invented) ---------- */
-["#pb1", "#pb2"].forEach((id) => {
-  $(id + " .ptext").innerHTML = Array.from({ length: 16 }, (_, i) => `<div style="height:7px;border-radius:4px;background:#ececef;margin:0 0 13px;width:${[100, 94, 98, 72, 100, 90, 96, 60][i % 8]}%"></div>`).join("");
-});
 // The lens holds a copy of the front page, magnified about the lens centre.
 const lens = $("#lens");
-const lensText = $("#ptext").cloneNode(true);
+const lensText = $("#pf").cloneNode(true);
 lensText.removeAttribute("id");
+lensText.style.left = lensText.style.top = "0";
 lens.appendChild(lensText);
-const LENS_R = 95, ZOOM = 1.45;
+const LENS_R = 125, ZOOM = 2.3;
+const HI = $("#pf .hi");
 
 const FILES = ["Adj Response FINAL v3.pdf", "Application (filed) Stage 2.docx", "AR - reply to s82 issues.pdf", "Further subs 14.10.pdf", "App - Tamsley v Orrindale.pdf", "Response FINAL FINAL.docx", "Scan0041.pdf", "Adj App - variations.docx", "Response - LDs.pdf", "Maudrey app (as filed).pdf", "Draft 7 - response.docx", "Keddlestone further subs.pdf"];
 const files = $("#files");
@@ -425,22 +445,21 @@ function render(t) {
 
   // 1. Title, 0 to 5.5
   st("#s1", win(t, 0, 5.5, 0.01, 0.6));
-  [["#pb1", -7, 0.1], ["#pb2", 6, 0.25], ["#pf", 0, 0.4]].forEach(([id, r, a]) => {
+  [["#pb1", -6, 0.1], ["#pb2", 5, 0.25], ["#pf", 0, 0.4]].forEach(([id, r, a]) => {
     const k = eo(p(t, a, a + 1));
     st(id, k, (1 - k) * 50, 1, 0, r * (0.6 + 0.4 * k));
   });
-  // The lens slides along paragraph 31 and settles on the passage; the highlight follows.
-  const pf = { x: 760, y: 48 };
-  const lk = eio(p(t, 0.9, 2.7));
-  const lx = 80 + lk * 170, ly = 214 + Math.sin(t * 1.4) * 2; // lens centre, in page coordinates
+  // The lens slides along the highlighted passage; the highlight follows it.
+  const pf = { x: 300, y: 130 };
+  const lk = eio(p(t, 0.9, 2.9));
+  const x0 = HI.offsetLeft - 60, x1 = HI.offsetLeft + HI.offsetWidth * 0.55;
+  const lx = x0 + (x1 - x0) * lk, ly = HI.offsetTop + HI.offsetHeight / 2;
   lens.style.opacity = eo(p(t, 0.8, 1.3));
   lens.style.left = pf.x + lx - LENS_R + "px";
   lens.style.top = pf.y + ly - LENS_R + "px";
-  lensText.style.left = LENS_R - lx + "px";
-  lensText.style.top = LENS_R - ly + "px";
   lensText.style.transformOrigin = `${lx}px ${ly}px`;
-  lensText.style.transform = `scale(${ZOOM})`;
-  document.querySelectorAll("#s1 .hi").forEach((h) => h.style.setProperty("--hk", eo(p(t, 1.8, 2.9))));
+  lensText.style.transform = `translate(${LENS_R - lx}px, ${LENS_R - ly}px) scale(${ZOOM})`;
+  document.querySelectorAll("#s1 .hi").forEach((h) => h.style.setProperty("--hk", eo(p(t, 2.0, 3.0))));
   rise($("#s1h"), t, 1.4, 99);
   rise($("#s1p"), t, 2.2, 99);
 
