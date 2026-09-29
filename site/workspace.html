@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sopal Workspace: your firm&#x27;s adjudication submissions, searchable and drafting the next one</title><meta name="description" content="Store and search every adjudication submission your firm has filed. Draft new applications and responses with AI that reads your precedents, the legislation, the case law and past adjudication decisions.">
+<link rel="canonical" href="https://sopal.com.au/workspace">
+<link rel="icon" href="https://app.sopal.com.au/icon.png">
+<style>:root {
+  --bg: #ffffff;
+  --bg-sidebar: #f7f7f5;
+  --bg-elevated: #ffffff;
+  --bg-inset: #f3f3f2;
+  --bg-bubble: hsl(207 92% 95.3%);
+  --bg-panel: #fafaf9;
+  --bg-scrim: rgba(0, 0, 0, 0.45);
+  --ink: #0d0d0d;
+  --ink-2: #5d5d5d;
+  --ink-3: #6b6b6b;
+  --line: rgba(0, 0, 0, 0.1);
+  --line-heavy: rgba(0, 0, 0, 0.16);
+  --line-light: rgba(0, 0, 0, 0.05);
+  --hover: rgba(0, 0, 0, 0.05);
+  --press: rgba(0, 0, 0, 0.08);
+  --selected: rgba(0, 0, 0, 0.06);
+  --link: #2964aa;
+  --accent: #2964aa;
+  --accent-soft: rgba(41, 100, 170, 0.1);
+  --primary-bg: #0d0d0d;
+  --primary-ink: #ffffff;
+  --mark: rgba(255, 213, 0, 0.45);
+  --mark-strong: rgba(255, 170, 0, 0.55);
+  --ok: #1a7f57;
+  --ok-soft: rgba(26, 127, 87, 0.1);
+  --warn: #b7791f;
+  --warn-soft: rgba(183, 121, 31, 0.12);
+  --bad: #d64b3c;
+  --bad-soft: rgba(214, 75, 60, 0.08);
+  --shadow-composer: 0 0 0 1px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 60px 8px rgba(0, 0, 0, 0.03);
+  --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.1), 0 0 1px rgba(0, 0, 0, 0.5);
+  --shadow-window: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 40px rgba(0, 0, 0, 0.08);
+  --sans: ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --serif: Georgia, "Times New Roman", serif;
+  --sidebar-w: 260px;
+  --header-h: 52px;
+  --thread: 760px;
+  color-scheme: light;
+}
+*{box-sizing:border-box}body{margin:0}.brand{display:inline-flex;align-items:center;gap:8px}.brand img{display:block;width:auto}.brand .logo-dark{display:none}
+/* Landing page. Uses the app's tokens (globals.css) so light and dark both work. */
+.wl { background: var(--bg); color: var(--ink); min-height: 100dvh; font-family: var(--sans); }
+.wl-wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+.wl-narrow { max-width: 760px; }
+.wl a { color: inherit; text-decoration: none; }
+
+.wl-nav { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line-light); }
+.wl-nav-in { display: flex; align-items: center; gap: 24px; height: 60px; }
+.wl-links { display: flex; gap: 22px; font-size: 14px; color: var(--ink-2); margin-left: 12px; }
+.wl-links a:hover { color: var(--ink); }
+.wl-nav-cta { margin-left: auto; display: flex; gap: 8px; }
+
+.wl-btn { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
+.wl-lg { height: 46px; padding: 0 24px; font-size: 15px; }
+.wl-solid { background: var(--primary-bg); color: var(--primary-ink) !important; }
+.wl-solid:hover { opacity: 0.88; }
+.wl-ghost { border-color: var(--line-heavy); }
+.wl-ghost:hover { background: var(--hover); }
+
+.wl-hero { padding: 72px 0 64px; background: var(--bg-sidebar); border-bottom: 1px solid var(--line-light); }
+.wl-hero-in { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+.wl-eyebrow { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 14px; }
+.wl h1 { font-family: var(--serif); font-size: clamp(34px, 4.6vw, 52px); line-height: 1.08; letter-spacing: -0.02em; font-weight: 600; margin: 0 0 18px; }
+.wl-sub { font-size: 17.5px; line-height: 1.55; color: var(--ink-2); max-width: 560px; margin: 0 0 28px; }
+.wl-cta { display: flex; flex-wrap: wrap; gap: 10px; }
+.wl-center { justify-content: center; }
+.wl-fine { font-size: 13.5px; color: var(--ink-3); margin-top: 14px; }
+
+.wl-sec { padding: 80px 0; }
+.wl-tint { background: var(--bg-sidebar); }
+.wl-h2 { font-family: var(--serif); font-size: clamp(26px, 3.2vw, 36px); line-height: 1.15; letter-spacing: -0.015em; font-weight: 600; margin: 0 0 32px; max-width: 760px; }
+.wl-final .wl-h2, .wl-final { text-align: center; }
+.wl-final .wl-h2 { margin-left: auto; margin-right: auto; }
+
+.wl-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.wl-cards article { border: 1px solid var(--line); border-radius: 16px; padding: 24px; background: var(--bg-elevated); }
+.wl h3 { font-size: 17px; font-weight: 600; margin: 0 0 8px; }
+.wl-cards p, .wl-steps p { font-size: 15px; line-height: 1.55; color: var(--ink-2); margin: 0; }
+
+.wl-steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.wl-steps li span { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 14px; margin-bottom: 12px; }
+
+.wl-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+.wl-list b { color: var(--ink); }
+
+.wl-price { border: 1px solid var(--line-heavy); border-radius: 20px; background: var(--bg-elevated); display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; box-shadow: var(--shadow-window); }
+.wl-price-main { padding: 32px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.wl-price-main p { margin: 0; color: var(--ink-2); font-size: 15px; line-height: 1.5; }
+.wl-price-main .wl-amt { font-family: var(--serif); font-size: 52px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
+.wl-amt small { font-family: var(--sans); font-size: 15px; font-weight: 500; color: var(--ink-3); letter-spacing: 0; }
+.wl-terms { margin: 0; padding: 32px; background: var(--bg-panel); border-left: 1px solid var(--line); display: grid; gap: 18px; align-content: start; }
+.wl-terms dt { font-size: 12.5px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; }
+.wl-terms dd { margin: 3px 0 0; font-size: 15px; line-height: 1.5; }
+
+.wl-faq details { border-bottom: 1px solid var(--line); padding: 16px 0; }
+.wl-faq summary { cursor: pointer; font-weight: 600; font-size: 16px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.wl-faq summary::after { content: "+"; color: var(--ink-3); font-weight: 400; font-size: 20px; line-height: 1; }
+.wl-faq details[open] summary::after { content: "\2212"; }
+.wl-faq p { margin: 10px 0 0; color: var(--ink-2); line-height: 1.6; font-size: 15px; }
+
+.wl-video { width: 100%; border-radius: 16px; border: 1px solid var(--line); background: #000; display: block; }
+
+.wl-foot { border-top: 1px solid var(--line); padding: 28px 0; font-size: 13.5px; color: var(--ink-3); }
+.wl-foot-in { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; }
+.wl-foot-links { display: flex; gap: 20px; }
+.wl-foot-links a:hover { color: var(--ink); }
+
+/* Explainer animation: three beats on an 18s loop, captions included, no sound. */
+.wl-stage { perspective: 1200px; }
+.wl-win { position: relative; height: 340px; border: 1px solid var(--line-heavy); border-radius: 14px; background: var(--bg); box-shadow: var(--shadow-window); overflow: hidden; }
+.wl-win-bar { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--bg-sidebar); font-size: 12px; color: var(--ink-3); }
+.wl-win-bar i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-heavy); }
+.wl-win-bar span { margin-left: 8px; }
+.wl-beat { position: absolute; inset: 34px 0 0 0; padding: 22px; opacity: 0; animation: wl-beat 18s infinite; }
+.wl-b1 { animation-delay: 0s; } .wl-b2 { animation-delay: 6s; } .wl-b3 { animation-delay: 12s; }
+@keyframes wl-beat { 0% { opacity: 0; transform: translateY(8px); } 4%, 30% { opacity: 1; transform: none; } 34%, 100% { opacity: 0; transform: translateY(-6px); } }
+.wl-cap { position: absolute; left: 22px; bottom: 16px; font-size: 13px; font-weight: 600; color: var(--accent); margin: 0; }
+.wl-q { border: 1px solid var(--line-heavy); border-radius: 12px; padding: 12px 14px; font-size: 14px; box-shadow: var(--shadow-composer); }
+.wl-typing { display: inline-block; overflow: hidden; white-space: nowrap; max-width: 100%; width: 0; animation: wl-type 18s steps(52) infinite; vertical-align: bottom; }
+@keyframes wl-type { 0% { width: 0; } 10% { width: 100%; } 100% { width: 100%; } }
+.wl-res { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+.wl-res li { display: flex; justify-content: space-between; gap: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13px; background: var(--bg-elevated); opacity: 0; animation: wl-pop 18s infinite; }
+.wl-res li:nth-child(1) { --d: 2.2s; } .wl-res li:nth-child(2) { --d: 3s; } .wl-res li:nth-child(3) { --d: 3.8s; }
+.wl-res li span { color: var(--ink-3); }
+@keyframes wl-pop { 0%, 11% { opacity: 0; transform: translateY(6px); } 15%, 100% { opacity: 1; transform: none; } }
+.wl-res li:nth-child(1) { animation-delay: 0s; } .wl-res li:nth-child(2) { animation-delay: .5s; } .wl-res li:nth-child(3) { animation-delay: 1s; }
+
+.wl-doc { border: 1px solid var(--line); border-radius: 10px; padding: 18px; background: var(--bg-elevated); height: 232px; overflow: hidden; }
+.wl-doc h4 { margin: 0 0 12px; font-family: var(--serif); font-size: 15px; }
+.wl-doc p { height: 7px; border-radius: 4px; background: var(--line); margin: 0 0 9px; width: 0; animation: wl-write 18s infinite; animation-delay: 6s; }
+.wl-doc .wl-l1 { --w: 100%; } .wl-doc .wl-l2 { --w: 92%; } .wl-doc .wl-l3 { --w: 96%; } .wl-doc .wl-l4 { --w: 60%; }
+@keyframes wl-write { 0%, 1% { width: 0; } 9%, 100% { width: var(--w, 90%); } }
+.wl-doc .wl-cite { height: auto; width: auto; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; padding: 6px 9px; border-radius: 6px; display: inline-block; margin: 4px 0 12px; opacity: 0; animation: wl-pop2 18s infinite; animation-delay: 6s; }
+@keyframes wl-pop2 { 0%, 9% { opacity: 0; } 13%, 100% { opacity: 1; } }
+
+.wl-file { display: flex; align-items: center; gap: 14px; border: 1px solid var(--line-heavy); border-radius: 12px; padding: 18px; margin-top: 60px; background: var(--bg-elevated); box-shadow: var(--shadow-menu); }
+.wl-file span { display: grid; place-items: center; width: 44px; height: 54px; border-radius: 6px; background: #2b579a; color: #fff; font-weight: 700; font-size: 22px; }
+.wl-file b { display: block; font-size: 15px; }
+.wl-file small { color: var(--ink-3); font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-beat, .wl-typing, .wl-res li, .wl-doc p, .wl-doc .wl-cite { animation: none; }
+  .wl-beat { opacity: 0; position: static; padding: 12px 22px 40px; display: none; }
+  .wl-b1 { display: block; opacity: 1; position: relative; }
+  .wl-typing { width: 100%; }
+  .wl-res li, .wl-doc .wl-cite { opacity: 1; }
+  .wl-doc p { width: var(--w, 90%); }
+}
+
+@media (max-width: 860px) {
+  .wl-hero-in, .wl-price, .wl-cards, .wl-steps { grid-template-columns: 1fr; }
+  .wl-links { display: none; }
+  .wl-hero { padding: 40px 0; }
+  .wl-sec { padding: 56px 0; }
+  .wl-terms { border-left: 0; border-top: 1px solid var(--line); }
+  .wl-nav-in { gap: 12px; }
+}
+</style></head><body><div class="wl"><header class="wl-nav"><div class="wl-wrap wl-nav-in"><a aria-label="Sopal Workspace" href="/workspace"><span class="brand"><img src="https://app.sopal.com.au/sopal_logo_v1.png" alt="Sopal" class="logo-light" style="height:22px"/><img src="https://app.sopal.com.au/sopal_logo_white_v1.png" alt="Sopal" class="logo-dark" style="height:22px"/></span></a><nav class="wl-links" aria-label="Sections"><a href="#how">How it works</a><a href="#confidential">Confidentiality</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav><div class="wl-nav-cta"><a class="wl-btn wl-ghost" href="https://app.sopal.com.au/login">Sign in</a><a class="wl-btn wl-solid" href="https://app.sopal.com.au/signup">Create account</a></div></div></header><main><section class="wl-hero"><div class="wl-wrap wl-hero-in"><div class="wl-hero-copy"><p class="wl-eyebrow">Sopal Workspace</p><h1>Your firm’s adjudication submissions, searchable, and drafting the next one.</h1><p class="wl-sub">Store and search every submission your firm has filed. Draft new applications and responses with AI built specifically for adjudication submissions, reading your precedents, the legislation, the case law and past adjudication decisions.</p><div class="wl-cta"><a class="wl-btn wl-solid wl-lg" href="https://app.sopal.com.au/signup">Start your free month</a><a href="#how" class="wl-btn wl-ghost wl-lg">See how it works</a></div><p class="wl-fine">First month free, up to 100 credits per user. $120 per user per month after.</p></div><div class="wl-stage" role="img" aria-label="Animation: a plain-English search across a firm&#x27;s submissions, a draft built from them with a cited case, and an export to Word."><div class="wl-win"><div class="wl-win-bar"><i></i><i></i><i></i><span>Sopal Workspace</span></div><div class="wl-beat wl-b1"><div class="wl-q"><span class="wl-typing">which of our responses argued the payment schedule was late</span></div><ul class="wl-res"><li><b>Adjudication response</b><span>BIF Act s 76, s 77</span></li><li><b>Adjudication response</b><span>BIF Act s 76</span></li><li><b>Further submissions</b><span>BIF Act s 77, s 78</span></li></ul><p class="wl-cap">Search in plain English</p></div><div class="wl-beat wl-b2"><div class="wl-doc"><h4>Jurisdiction</h4><p class="wl-l1"></p><p class="wl-l2"></p><p class="wl-l3"></p><p class="wl-cite">Cited authority, checked against the source</p><p class="wl-l2"></p><p class="wl-l4"></p></div><p class="wl-cap">Draft from your own precedents</p></div><div class="wl-beat wl-b3"><div class="wl-file"><span>W</span><div><b>Adjudication response.docx</b><small>In your firm’s style</small></div></div><p class="wl-cap">Export to Word</p></div></div></div></div></section><section class="wl-sec" aria-labelledby="pillars"><div class="wl-wrap"><h2 id="pillars" class="wl-h2">One place for the work you have already done, and the work you have to do next.</h2><div class="wl-cards"><article><h3>Search your submissions</h3><p>Ask a question in plain English or use Boolean search. Answers point to the exact page in the submission they came from.</p></article><article><h3>Draft from your precedents</h3><p>Computer mode drafts in a Word-style editor using how your firm has argued the point before, and researches the authority before it writes.</p></article><article><h3>Research built in</h3><p>Case law, legislation and past adjudication decisions are read alongside your library, so the draft cites the source and not a guess.</p></article></div></div></section><section id="how" class="wl-sec" aria-labelledby="how-h"><div class="wl-wrap"><h2 id="how-h" class="wl-h2">How it works</h2><ol class="wl-steps"><li><span>1</span><h3>Upload</h3><p>Drag in a folder or a zip of past submissions. Each is classified, indexed and made searchable.</p></li><li><span>2</span><h3>Ask</h3><p>Search by question or Boolean query. See every submission that argued a point, with the passage.</p></li><li><span>3</span><h3>Draft</h3><p>Ask Computer mode for a section or a whole submission. It reads your precedents and the authorities first.</p></li><li><span>4</span><h3>Export</h3><p>Send the draft to Word, numbered and formatted the way your firm formats.</p></li></ol></div></section><section id="confidential" class="wl-sec wl-tint" aria-labelledby="conf-h"><div class="wl-wrap wl-narrow"><h2 id="conf-h" class="wl-h2">Your firm’s work stays your firm’s</h2><ul class="wl-list"><li><b>The library is private to your firm.</b> Only people you invite can see it.</li><li><b>Matters are private to you</b> unless you share them.</li><li><b>Your documents are not used to train models.</b></li><li><b>Sign-in is protected</b> with an authenticator app, and sessions end when idle.</li><li><b>A separate account system</b> from Sopal Decisions. Nothing crosses between them.</li></ul></div></section><section id="pricing" class="wl-sec" aria-labelledby="price-h"><div class="wl-wrap wl-narrow"><h2 id="price-h" class="wl-h2">Pricing</h2><div class="wl-price"><div class="wl-price-main"><p class="wl-amt">$120<small> per user per month</small></p><p>Includes 100 credits per user each month. Your first month is free, up to 100 credits.</p><a class="wl-btn wl-solid wl-lg" href="https://app.sopal.com.au/signup">Start your free month</a></div><dl class="wl-terms"><div><dt>Credits</dt><dd>100 credits equals about $30 of AI cost.</dd></div><div><dt>More credits</dt><dd>When a user’s 100 credits are used, AI work continues pay as you go.</dd></div><div><dt>Storage, per firm</dt><dd>Up to 500 submissions included, then $1.20 per submission per month.</dd></div><div><dt>Never uses credits</dt><dd>Boolean search, reading, and exporting your own documents.</dd></div></dl></div></div></section><section id="faq" class="wl-sec wl-tint" aria-labelledby="faq-h"><div class="wl-wrap wl-narrow"><h2 id="faq-h" class="wl-h2">Questions</h2><div class="wl-faq"><details><summary>What is a credit?</summary><p>A credit is a unit of AI use. 100 credits cover about $30 of AI cost, so a search answer costs a fraction of a credit and a fully researched draft costs more. Each user gets 100 credits a month with their subscription, and you can see the balance and what used it in Settings.</p></details><details><summary>What happens when my credits run out?</summary><p>Searching by Boolean query, reading and exporting your documents never use credits. Once a user has used their 100 credits, AI work is charged pay as you go, and you are warned at 80% and 100% before that happens.</p></details><details><summary>What counts as a submission for storage?</summary><p>One uploaded adjudication application, response or further submission, including its annexures if they are in the same file. Your firm&#x27;s first 500 are included. After that each stored submission is $1.20 a month, for the firm, not per user.</p></details><details><summary>Is my firm&#x27;s library private?</summary><p>Your library belongs to your firm and is visible only to the people you invite. Matters in Projects are private to their creator unless shared. Documents are not used to train models. Sopal Workspace is a separate account system from Sopal Decisions on sopal.com.au.</p></details><details><summary>Which AI models does it use?</summary><p>Sopal Workspace runs on leading models from OpenAI and Anthropic, with Sopal&#x27;s own retrieval and drafting layers on top. Your firm&#x27;s precedents, the legislation, case law and adjudication decisions are what the models are given to read.</p></details><details><summary>Can I cancel?</summary><p>Yes, at any time. Your library stays available to export for a period after you cancel.</p></details></div></div></section><section class="wl-sec wl-final"><div class="wl-wrap wl-narrow"><h2 class="wl-h2">Put your firm’s submissions to work.</h2><div class="wl-cta wl-center"><a class="wl-btn wl-solid wl-lg" href="https://app.sopal.com.au/signup">Create account</a><a class="wl-btn wl-ghost wl-lg" href="https://app.sopal.com.au/login">Sign in</a></div></div></section></main><footer class="wl-foot"><div class="wl-wrap wl-foot-in"><span>Sopal Workspace, by Sopal. Australian construction law technology.</span><span class="wl-foot-links"><a href="https://sopal.com.au/terms">Terms</a><a href="https://sopal.com.au/privacy">Privacy</a><a href="https://sopal.com.au">Sopal Decisions</a></span></div></footer></div></body></html>
