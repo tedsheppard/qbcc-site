@@ -5,11 +5,14 @@
 <title>Sopal Workspace explainer</title>
 <!-- Source of site/assets/workspace/explainer.mp4. Open in a browser to preview
      (plays in real time; ?t=42 holds one moment). record.mjs drives render(t)
-     frame by frame and pipes the frames to ffmpeg. Every party, document and
-     date shown is invented. -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+     frame by frame and pipes the frames to ffmpeg.
+     Every firm, party, person and document shown is invented. Company names
+     were checked against the ABN register (abr.business.gov.au) on
+     29 September 2026: no active entity uses any of the distinctive words. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root { --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#86868b; --line:rgba(0,0,0,.08); --green:#00d47e; --greenD:#00a862; --blue:#2f7cf6; --serif:"Source Serif 4", Georgia, serif; }
+:root { --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#86868b; --line:rgba(0,0,0,.08); --green:#00d47e; --greenD:#00a862; --tnr:"Times New Roman", Times, serif;
+  --spectrum:linear-gradient(90deg, #00d47e 0%, #14c8b4 28%, #2f7cf6 58%, #7a5cf5 82%, #c25cf0 100%); }
 * { box-sizing:border-box; margin:0; padding:0; }
 html, body { background:#000; }
 body { font-family:Inter, -apple-system, sans-serif; -webkit-font-smoothing:antialiased; color:var(--ink); }
@@ -19,28 +22,40 @@ body { font-family:Inter, -apple-system, sans-serif; -webkit-font-smoothing:anti
 
 /* Liquid glass */
 .glass { background:linear-gradient(180deg, rgba(255,255,255,.62), rgba(255,255,255,.22)); backdrop-filter:blur(10px) saturate(190%); -webkit-backdrop-filter:blur(10px) saturate(190%); border:1.5px solid rgba(255,255,255,.85); box-shadow:inset 0 2px 2px rgba(255,255,255,.95), inset 0 -3px 8px rgba(0,0,0,.05), 0 24px 60px rgba(0,0,0,.09), 0 3px 8px rgba(0,0,0,.05); }
-.guide { position:absolute; border:1px solid rgba(0,0,0,.055); border-radius:50%; }
-.hline { position:absolute; height:1px; background:rgba(0,0,0,.05); }
-.vline { position:absolute; width:1px; background:rgba(0,0,0,.05); }
-.pill-green { background:linear-gradient(180deg, #25e08f, #00c271); border-radius:999px; }
-.spectrum { border-radius:999px; background:linear-gradient(90deg, #00d47e 0%, #14c8b4 28%, #2f7cf6 58%, #7a5cf5 82%, #c25cf0 100%); }
+.guide { position:absolute; border:1px solid rgba(0,0,0,.05); border-radius:50%; }
+.hline { position:absolute; height:1px; background:rgba(0,0,0,.045); }
+.vline { position:absolute; width:1px; background:rgba(0,0,0,.045); }
+
+/* Paper and the lens */
+.paper { position:absolute; width:400px; height:500px; background:#fff; border-radius:8px; box-shadow:0 1px 2px rgba(0,0,0,.06), 0 18px 50px rgba(0,0,0,.1); overflow:hidden; }
+.ptext { position:absolute; left:0; top:0; width:400px; height:500px; padding:40px 40px; font-family:var(--tnr); font-size:13.5px; line-height:1.62; color:#2a2a2a; background:#fff; }
+.ptext h6 { font-size:13.5px; font-weight:700; margin-bottom:10px; }
+.ptext p { display:grid; grid-template-columns:30px 1fr; margin-bottom:8px; }
+.hi { background-image:linear-gradient(90deg, rgba(0,212,126,.35), rgba(20,200,180,.35) 30%, rgba(47,124,246,.32) 62%, rgba(194,92,240,.32)); background-repeat:no-repeat; background-size:calc(var(--hk, 0) * 100%) 100%; border-radius:3px; padding:1px 0; }
+#lens { position:absolute; width:190px; height:190px; border-radius:50%; overflow:hidden; opacity:0; z-index:3;
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.95), inset 0 -6px 14px rgba(0,0,0,.12), 0 0 0 1.5px rgba(255,255,255,.9), 0 26px 60px rgba(0,0,0,.18), 0 4px 10px rgba(0,0,0,.08); }
+#lens .ptext { transform-origin:0 0; }
+#lens::after { content:""; position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 32% 24%, rgba(255,255,255,.55), rgba(255,255,255,0) 42%), radial-gradient(circle at 70% 85%, rgba(47,124,246,.10), rgba(255,255,255,0) 50%); pointer-events:none; }
 
 /* Captions */
-.cap { position:absolute; left:120px; top:0; width:590px; }
-.cap h2 { font-size:58px; line-height:1.07; font-weight:650; letter-spacing:-.035em; }
+.cap { position:absolute; left:120px; top:0; width:590px; opacity:0; }
+.cap h2 { font-size:56px; line-height:1.08; font-weight:650; letter-spacing:-.035em; }
 .cap p { font-size:27px; line-height:1.42; color:var(--ink2); margin-top:26px; letter-spacing:-.01em; }
 .center { position:absolute; left:0; right:0; text-align:center; }
-.center h1 { font-size:96px; font-weight:700; letter-spacing:-.045em; line-height:1.02; }
 .center h2 { font-size:64px; font-weight:650; letter-spacing:-.035em; line-height:1.1; }
-.center p { font-size:32px; color:var(--ink2); line-height:1.4; letter-spacing:-.012em; }
+.center p { font-size:31px; color:var(--ink2); line-height:1.4; letter-spacing:-.012em; }
+.lockup { display:flex; align-items:center; justify-content:center; gap:26px; }
+.lockup img { height:82px; }
+.lockup span { font-size:88px; font-weight:600; letter-spacing:-.04em; color:#0d0d0d; line-height:1; transform:translateY(-2px); }
 
 /* App window */
 #win { position:absolute; left:740px; top:110px; width:1080px; height:860px; border-radius:40px; padding:12px; opacity:0; }
 #app { position:relative; width:100%; height:100%; border-radius:30px; background:#fff; overflow:hidden; box-shadow:0 0 0 1px rgba(0,0,0,.06); }
-#side { position:absolute; left:0; top:0; bottom:0; width:220px; background:#f7f7f5; border-right:1px solid rgba(0,0,0,.05); padding:26px 14px; }
-#side img { height:24px; margin:0 10px 30px; display:block; }
-.nav { display:flex; align-items:center; gap:12px; font-size:17px; color:#3a3a3c; padding:11px 12px; border-radius:11px; margin-bottom:2px; }
-.nav svg { width:19px; height:19px; fill:none; stroke:#8e8e93; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+#side { position:absolute; left:0; top:0; bottom:0; width:220px; background:#f7f7f5; border-right:1px solid rgba(0,0,0,.05); padding:26px 14px; overflow:hidden; }
+#side .logo { height:24px; margin:0 10px 30px; display:block; }
+#side .mark { position:absolute; left:23px; top:24px; height:26px; opacity:0; }
+.nav { display:flex; align-items:center; gap:12px; font-size:17px; color:#3a3a3c; padding:11px 12px; border-radius:11px; margin-bottom:2px; white-space:nowrap; }
+.nav svg { flex:none; width:19px; height:19px; fill:none; stroke:#8e8e93; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
 .nav.on { background:rgba(0,0,0,.06); color:#0d0d0d; font-weight:600; }
 .nav.on svg { stroke:#0d0d0d; }
 .view { position:absolute; left:220px; right:0; top:0; bottom:0; padding:34px 40px; opacity:0; }
@@ -62,7 +77,7 @@ body { font-family:Inter, -apple-system, sans-serif; -webkit-font-smoothing:anti
 #folder { position:absolute; width:150px; height:118px; opacity:0; z-index:5; }
 #folder .tab { position:absolute; left:0; top:0; width:62px; height:22px; border-radius:10px 10px 0 0; background:#9ad8ff; }
 #folder .body { position:absolute; left:0; top:14px; width:150px; height:104px; border-radius:14px; background:linear-gradient(180deg, #7cc8ff, #4aa6f2); box-shadow:0 18px 40px rgba(47,124,246,.3); }
-#folder span { position:absolute; left:0; right:0; top:128px; text-align:center; font-size:16px; font-weight:600; color:var(--ink); }
+#folder span { position:absolute; left:-20px; right:-20px; top:128px; text-align:center; font-size:16px; font-weight:600; color:var(--ink); }
 
 /* Search */
 .sbar { margin-top:24px; border:1.5px solid rgba(0,0,0,.14); border-radius:16px; padding:18px 20px; font-size:20px; font-family:ui-monospace, "SF Mono", Menlo, monospace; letter-spacing:-.01em; min-height:62px; box-shadow:0 2px 10px rgba(0,0,0,.04); }
@@ -71,7 +86,7 @@ body { font-family:Inter, -apple-system, sans-serif; -webkit-font-smoothing:anti
 .res { border:1px solid var(--line); border-radius:16px; padding:18px 20px; margin-bottom:14px; opacity:0; }
 .res b { font-size:16.5px; font-weight:600; }
 .res small { color:var(--ink3); font-size:14px; margin-left:8px; }
-.res p { font-family:var(--serif); font-size:18px; line-height:1.5; color:#333; margin-top:8px; }
+.res p { font-family:var(--tnr); font-size:18.5px; line-height:1.5; color:#333; margin-top:8px; }
 mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding:0 2px; }
 
 /* Ask */
@@ -82,46 +97,57 @@ mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding
 #pagepanel { position:absolute; top:22px; right:22px; bottom:22px; width:300px; border-radius:20px; background:#fafaf9; border:1px solid var(--line); padding:22px; opacity:0; }
 #pagepanel h5 { font-size:14px; font-weight:600; }
 #pagepanel h6 { font-size:13px; color:var(--ink3); font-weight:500; margin:3px 0 16px; }
-.pg { background:#fff; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,.07); padding:22px 20px; font-family:var(--serif); font-size:12.5px; line-height:1.55; color:#444; height:520px; overflow:hidden; }
+.pg { background:#fff; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,.07); padding:22px 20px; font-family:var(--tnr); font-size:13px; line-height:1.55; color:#444; height:520px; overflow:hidden; }
 .pg .ln { height:7px; background:#ececec; border-radius:4px; margin:0 0 9px; }
 .pg mark { background:rgba(0,212,126,.28); }
 .ok { margin-top:14px; font-size:14px; font-weight:600; color:#00804c; opacity:0; }
 
 /* Draft */
-#agent { position:absolute; left:0; top:0; bottom:0; width:330px; border-right:1px solid var(--line); padding:30px 26px; }
-#agent .bubble { max-width:none; margin:0; font-size:16px; }
-.step { display:flex; gap:12px; font-size:15px; line-height:1.4; color:#3a3a3c; margin-top:18px; opacity:0; }
-.step i { flex:none; width:20px; height:20px; border-radius:50%; border:2px solid #c7c7cc; margin-top:1px; position:relative; }
+#agent { position:absolute; left:0; top:0; bottom:0; width:290px; border-right:1px solid var(--line); padding:28px 22px; }
+#agent .bubble { max-width:none; margin:0; font-size:15px; padding:14px 16px; }
+.step { display:flex; gap:11px; font-size:14.5px; line-height:1.4; color:#3a3a3c; margin-top:16px; opacity:0; }
+.step i { flex:none; width:19px; height:19px; border-radius:50%; border:2px solid #c7c7cc; margin-top:1px; position:relative; }
 .step.done i { border-color:var(--green); background:var(--green); }
-.step.done i::after { content:""; position:absolute; left:5px; top:2px; width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
-.step small { display:block; color:var(--ink3); font-size:13.5px; margin-top:2px; }
-#canvas { position:absolute; left:330px; right:0; top:0; bottom:0; background:#f3f3f2; padding:30px; }
-.sheet { background:#fff; border-radius:6px; box-shadow:0 2px 14px rgba(0,0,0,.07); height:100%; padding:44px 50px; font-family:var(--serif); color:#1a1a1a; font-size:17.5px; line-height:1.55; }
-.sheet .kicker { font-family:Inter, sans-serif; font-size:13px; color:var(--ink3); margin-bottom:10px; }
-.sheet h4 { font-size:22px; font-weight:600; margin-bottom:18px; }
-.para { display:grid; grid-template-columns:44px 1fr; margin-bottom:12px; }
-.para.sub { grid-template-columns:44px 40px 1fr; }
+.step.done i::after { content:""; position:absolute; left:4.5px; top:1.5px; width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+.step small { display:block; color:var(--ink3); font-size:13px; margin-top:2px; }
+#canvas { position:absolute; left:290px; right:0; top:0; bottom:0; background:#f3f3f2; padding:26px 26px 0; overflow:hidden; }
+.sheet { background:#fff; border-radius:4px 4px 0 0; box-shadow:0 2px 14px rgba(0,0,0,.07); min-height:810px; padding:46px 54px 60px; font-family:var(--tnr); color:#111; font-size:14.5px; line-height:1.5; }
+.sheet .kicker { font-family:Inter, sans-serif; font-size:12px; color:var(--ink3); margin-bottom:14px; }
+.doc .dh { font-weight:700; text-transform:uppercase; letter-spacing:.01em; margin:0 0 12px; display:grid; grid-template-columns:36px 1fr; }
+.doc .dsh { font-weight:700; font-style:italic; margin:14px 0 8px; }
+.doc .dp { display:grid; grid-template-columns:36px 1fr; margin-bottom:8px; text-align:justify; }
+.doc .ds { display:grid; grid-template-columns:36px 34px 1fr; margin-bottom:6px; text-align:justify; }
 
 /* Word */
-#word { position:absolute; inset:0; background:#e9e9ec; opacity:0; }
-#word .bar { height:54px; background:#185abd; color:#fff; display:flex; align-items:center; gap:14px; padding:0 22px; font-size:15px; font-weight:600; }
+#word { position:absolute; inset:0; background:#e9e9ec; opacity:0; overflow:hidden; }
+#word .bar { position:relative; z-index:2; height:52px; background:#185abd; color:#fff; display:flex; align-items:center; gap:14px; padding:0 22px; font-size:15px; font-weight:600; }
 #word .bar span { width:28px; height:28px; border-radius:6px; background:#fff; color:#185abd; display:grid; place-items:center; font-weight:800; }
-#word .rib { height:40px; background:#f3f3f3; border-bottom:1px solid #ddd; }
-#word .page { position:absolute; left:50%; top:130px; width:600px; height:800px; margin-left:-300px; background:#fff; box-shadow:0 4px 24px rgba(0,0,0,.14); padding:66px 64px; font-family:"Times New Roman", Times, serif; font-size:15px; line-height:1.6; color:#111; }
-#word .page h4 { font-size:16px; font-weight:700; margin-bottom:14px; }
-#word .page .para { grid-template-columns:36px 1fr; margin-bottom:10px; }
-#word .page .para.sub { grid-template-columns:36px 34px 1fr; }
-#word .foot { position:absolute; bottom:40px; left:0; right:0; text-align:center; font-size:13px; }
-#file { position:absolute; left:50%; top:50%; width:440px; background:rgba(255,255,255,.9); margin:-50px 0 0 -210px; border-radius:20px; padding:18px 20px; display:flex; gap:16px; align-items:center; opacity:0; z-index:4; }
-#file span { width:46px; height:58px; border-radius:7px; background:#185abd; color:#fff; font-weight:800; font-size:24px; display:grid; place-items:center; }
+#word .rib { position:relative; z-index:2; height:40px; background:#f3f3f3; border-bottom:1px solid #ddd; }
+#wscroll { position:absolute; left:0; right:0; top:120px; }
+#word .page { width:660px; margin:0 auto 24px; background:#fff; box-shadow:0 4px 24px rgba(0,0,0,.14); padding:60px 66px 70px; font-family:var(--tnr); font-size:12.4px; line-height:1.55; color:#111; position:relative; }
+#word .hdr { font-size:10.5px; color:#555; border-bottom:1px solid #999; padding-bottom:6px; margin-bottom:22px; display:flex; justify-content:space-between; }
+#word .doc .dp, #word .doc .dh { grid-template-columns:32px 1fr; }
+#word .doc .ds { grid-template-columns:32px 30px 1fr; }
+#word .foot { position:absolute; bottom:28px; left:0; right:0; text-align:center; font-size:11px; }
+#file { position:absolute; left:50%; top:50%; width:460px; margin:-50px 0 0 -230px; border-radius:20px; padding:18px 20px; display:flex; gap:16px; align-items:center; opacity:0; z-index:4; background:rgba(255,255,255,.9); }
+#file span { flex:none; width:46px; height:58px; border-radius:7px; background:#185abd; color:#fff; font-weight:800; font-size:24px; display:grid; place-items:center; }
 #file b { display:block; font-size:16px; }
 #file small { color:var(--ink2); font-size:14px; }
+
+/* Close: the library behind frosted glass */
+#vault { position:absolute; left:560px; top:120px; width:800px; height:330px; }
+#vault .rows { position:absolute; inset:0; padding:20px 30px; background:#fff; border-radius:24px; box-shadow:0 18px 50px rgba(0,0,0,.08); overflow:hidden; }
+#vault .row { opacity:1; grid-template-columns:minmax(0,1fr) 70px 150px; }
+#frost { position:absolute; inset:-14px; border-radius:34px; display:grid; place-items:center;
+  background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.3)); backdrop-filter:blur(var(--fb, 0px)) saturate(170%); -webkit-backdrop-filter:blur(var(--fb, 0px)) saturate(170%);
+  border:1.5px solid rgba(255,255,255,.9); box-shadow:inset 0 2px 2px rgba(255,255,255,.95), inset 0 -4px 12px rgba(0,0,0,.05), 0 30px 70px rgba(0,0,0,.12); }
+#frost .lock { width:92px; height:92px; border-radius:50%; display:grid; place-items:center; background:rgba(255,255,255,.75); box-shadow:0 10px 30px rgba(0,0,0,.1); }
+#frost svg { width:40px; height:40px; fill:none; stroke:#0d0d0d; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 </style>
 </head>
 <body>
 <div id="stage">
 
-  <!-- Background construction lines and glass, always present, drifting -->
   <div id="deco" class="abs" style="inset:0">
     <div class="guide" style="left:-180px;top:560px;width:520px;height:520px"></div>
     <div class="guide" style="left:1500px;top:-160px;width:560px;height:560px"></div>
@@ -129,18 +155,24 @@ mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding
     <div class="vline" style="top:0;bottom:0;left:1640px"></div>
   </div>
 
-  <!-- 1. Title -->
+  <!-- 1. Title: a lens finds the point in a submission -->
   <div class="scene" id="s1">
-    <div class="guide" style="left:560px;top:120px;width:300px;height:300px"></div>
-    <div class="guide" style="left:1080px;top:150px;width:240px;height:240px"></div>
-    <div class="pill-green abs" id="g1" style="left:520px;top:210px;width:300px;height:120px"></div>
-    <div class="glass abs" id="g2" style="left:580px;top:190px;width:330px;height:160px;border-radius:999px"></div>
-    <div class="spectrum abs" id="g3" style="left:960px;top:246px;width:520px;height:48px"></div>
-    <div class="glass abs" id="g4" style="left:1200px;top:200px;width:140px;height:140px;border-radius:50%"></div>
-    <div class="glass abs" id="g5" style="left:880px;top:330px;width:120px;height:120px;border-radius:50%;display:grid;place-items:center;font-size:56px;font-weight:300;color:#1d1d1f">&sect;</div>
-    <div class="center" style="top:560px">
-      <h1 id="s1h">Sopal Workspace</h1>
-      <p id="s1p" style="margin-top:26px">Your firm&rsquo;s adjudication submissions, in one place,<br>and a way to draft the next one from them.</p>
+    <div class="paper" id="pb1" style="left:600px;top:70px"><div class="ptext"></div></div>
+    <div class="paper" id="pb2" style="left:920px;top:62px"><div class="ptext"></div></div>
+    <div class="paper" id="pf" style="left:760px;top:48px">
+      <div class="ptext" id="ptext">
+        <h6>C.&nbsp;&nbsp;THE PAYMENT SCHEDULE</h6>
+        <p><span>29.</span><span>The claimant gave its payment claim to the respondent by email on 9 July 2024, to the address nominated in the contract.</span></p>
+        <p><span>30.</span><span>The respondent had 15 business days to respond with a payment schedule under s 76 of the Act.</span></p>
+        <p><span>31.</span><span>The <span class="hi">payment schedule was given late</span>, on the sixteenth business day after the payment claim was given.</span></p>
+        <p><span>32.</span><span>The respondent therefore became liable to pay the claimed amount on the due date, and may not give an adjudication response.</span></p>
+        <p><span>33.</span><span>The claimant relies on the statutory declaration of its project manager and the emails exhibited to it.</span></p>
+      </div>
+    </div>
+    <div id="lens"></div>
+    <div class="center" style="top:610px">
+      <div class="lockup" id="s1h"><img src="../../site/assets/sopal_logo_v1.png" alt=""><span>Workspace</span></div>
+      <p id="s1p" style="margin-top:34px">Your firm&rsquo;s adjudication submissions in one place, powered by AI.</p>
     </div>
   </div>
 
@@ -153,26 +185,25 @@ mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding
     </div>
   </div>
 
-  <!-- Captions for the product scenes -->
-  <div class="cap" id="c3" style="top:300px;opacity:0"><h2>Drag in a folder or a zip.</h2><p id="c3b">Each submission is read and filed by type, parties, State, amount claimed and date. Scanned pages are read as well.</p></div>
-  <div class="cap" id="c4" style="top:300px;opacity:0"><h2>Search it the way you search case law.</h2><p id="c4b">AND, OR, NOT, phrases and proximity, across every submission the firm has filed.</p></div>
-  <div class="cap" id="c5" style="top:300px;opacity:0"><h2>Or ask a question in plain words.</h2><p id="c5b">Each answer cites the page it came from, and quoted passages are checked against that page.</p></div>
-  <div class="cap" id="c6" style="top:270px;opacity:0"><h2>Draft the next submission.</h2><p id="c6b">It reads your firm&rsquo;s precedents first, then the Act, the case law and past adjudication decisions, and writes a numbered draft you can edit.</p></div>
-  <div class="cap" id="c7" style="top:300px;opacity:0"><h2>Export to Word in your firm&rsquo;s format.</h2><p id="c7b">Font, spacing, paragraph numbering and page numbers are set once, for everyone.</p></div>
+  <div class="cap" id="c3" style="top:320px"><h2>Drag in a folder or a zip.</h2><p id="c3b">Each submission is read and filed by type, parties, State, amount claimed and date.</p></div>
+  <div class="cap" id="c4" style="top:300px"><h2>Search it the way you search case law.</h2><p id="c4b">AND, OR, NOT, phrases and proximity, across every submission the firm has filed.</p></div>
+  <div class="cap" id="c5" style="top:300px"><h2>Or ask SopalAI a question in plain words.</h2><p id="c5b">Each answer cites the page it came from, and quoted passages are checked against that page.</p></div>
+  <div class="cap" id="c6" style="top:250px"><h2>Draft submissions drawing on your firm&rsquo;s precedents.</h2><p id="c6b">It reads the firm&rsquo;s precedents first, then the Act, the case law and past adjudication decisions, and writes a draft you can edit.</p></div>
+  <div class="cap" id="c7" style="top:300px"><h2>Export to Word in your firm&rsquo;s format.</h2><p id="c7b">Font, spacing, paragraph numbering and page numbers are set once, for everyone.</p></div>
 
   <div id="folder"><div class="tab"></div><div class="body"></div><span>Submissions 2023&ndash;2025</span></div>
 
-  <!-- The app window, used by scenes 3 to 7 -->
   <div id="win" class="glass">
     <div id="app">
       <div id="side">
-        <img src="../../site/assets/sopal_logo_v1.png" alt="">
-        <div class="nav" data-n="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search</div>
-        <div class="nav" data-n="computer"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Computer</div>
-        <div class="nav" data-n="library"><svg viewBox="0 0 24 24"><path d="M4 5h5v15H4zM10 5h4v15h-4zM15.5 6l3.9-1 3 14-3.9 1z"/></svg>Library</div>
-        <div class="nav" data-n="projects"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects</div>
-        <div class="nav" data-n="team"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3 2.8 3 6"/></svg>Team</div>
-        <div class="nav" data-n="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>Settings</div>
+        <img class="logo" src="../../site/assets/sopal_logo_v1.png" alt="">
+        <img class="mark" src="../../site/assets/sopal_mark.png" alt="">
+        <div class="nav" data-n="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span></div>
+        <div class="nav" data-n="computer"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Computer</span></div>
+        <div class="nav" data-n="library"><svg viewBox="0 0 24 24"><path d="M4 5h5v15H4zM10 5h4v15h-4zM15.5 6l3.9-1 3 14-3.9 1z"/></svg><span>Library</span></div>
+        <div class="nav" data-n="projects"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Projects</span></div>
+        <div class="nav" data-n="team"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3 2.8 3 6"/></svg><span>Team</span></div>
+        <div class="nav" data-n="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span>Settings</span></div>
       </div>
 
       <div class="view" id="vLib">
@@ -186,20 +217,20 @@ mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding
         <div class="vh">Search</div>
         <div class="sbar"><span id="q"></span><span class="caret" id="qc"></span></div>
         <div class="count" id="qn">3 documents, 7 passages</div>
-        <div class="res" id="r1"><b>Adjudication application</b><small>Brindle Street Joinery v Corvid Homes &middot; p 9</small><p>&hellip; the <mark>payment schedule</mark> was given one business day <mark>late</mark>, on the sixteenth business day after the payment claim &hellip;</p></div>
-        <div class="res" id="r2"><b>Adjudication application</b><small>Halden Glass v Oris Built &middot; p 12</small><p>&hellip; the <mark>payment schedule</mark> went to an address the contract did not nominate, and was served <mark>out of time</mark> &hellip;</p></div>
-        <div class="res" id="r3"><b>Further submissions</b><small>Ferrier Electrical v Quayline Constructions &middot; p 4</small><p>&hellip; the respondent&rsquo;s <mark>payment schedule</mark>, served <mark>late</mark> on 2 October, cannot be relied on &hellip;</p></div>
+        <div class="res" id="r1"><b>Adjudication application</b><small>Tamsley Glass v Orrindale Built &middot; p 9</small><p>&hellip; the <mark>payment schedule</mark> was given one business day <mark>late</mark>, on the sixteenth business day after the payment claim &hellip;</p></div>
+        <div class="res" id="r2"><b>Adjudication application</b><small>Maudrey Steel v Belvane Developments &middot; p 12</small><p>&hellip; the <mark>payment schedule</mark> went to an address the contract did not nominate, and was served <mark>out of time</mark> &hellip;</p></div>
+        <div class="res" id="r3"><b>Further submissions</b><small>Keddlestone Electrical v Varnaby Constructions &middot; p 4</small><p>&hellip; the respondent&rsquo;s <mark>payment schedule</mark>, served <mark>late</mark> on 2 October, cannot be relied on &hellip;</p></div>
       </div>
 
       <div class="view" id="vAsk" style="padding-right:350px">
         <div class="bubble" id="ub">Which of our submissions argued the payment schedule was served late?</div>
         <div class="answer" id="ans"></div>
         <div id="pagepanel">
-          <h5>Brindle Street Joinery v Corvid Homes</h5>
+          <h5>Tamsley Glass v Orrindale Built</h5>
           <h6>Adjudication application &middot; page 9</h6>
           <div class="pg">
             <div class="ln"></div><div class="ln" style="width:92%"></div><div class="ln" style="width:96%"></div><div class="ln" style="width:70%"></div>
-            <p style="margin:14px 0">31.&nbsp; <mark>The payment schedule was sent by email at 6.12 pm on 25 March 2026, the sixteenth business day after the payment claim was given.</mark></p>
+            <p style="margin:14px 0">31.&nbsp; <mark>The payment schedule was sent by email at 6.12 pm on 31 July 2024, the sixteenth business day after the payment claim was given.</mark></p>
             <div class="ln"></div><div class="ln" style="width:88%"></div><div class="ln" style="width:94%"></div><div class="ln" style="width:60%"></div>
             <div class="ln" style="margin-top:18px"></div><div class="ln" style="width:90%"></div><div class="ln" style="width:97%"></div><div class="ln" style="width:82%"></div><div class="ln" style="width:40%"></div>
           </div>
@@ -209,46 +240,53 @@ mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding
 
       <div class="view" id="vDraft" style="padding:0">
         <div id="agent">
-          <div class="bubble" id="db">Draft the part of our application on the late payment schedule. Use the Brindle Street application as the model.</div>
-          <div class="step" id="st1"><i></i><div>Read the Brindle Street application<small>From your library</small></div></div>
-          <div class="step" id="st2"><i></i><div>Found two more of the firm&rsquo;s submissions on the point</div></div>
-          <div class="step" id="st3"><i></i><div>Read sections 76, 77 and 82 of the Act<small>At source, current version</small></div></div>
-          <div class="step" id="st4"><i></i><div>Checked the case law and adjudication decisions on late schedules</div></div>
-          <div class="step" id="st5"><i></i><div>Writing the draft</div></div>
+          <div class="bubble" id="db">Draft Part D of our application in Thornquell v Morvenhall, on the late payment schedule. Model it on the Tamsley Glass application.</div>
+          <div class="step" id="st1"><i></i><div>Read the Tamsley Glass application<small>From your library</small></div></div>
+          <div class="step" id="st2"><i></i><div>Read the Trevane statutory declaration and exhibits MT-7 to MT-9<small>From the project folder</small></div></div>
+          <div class="step" id="st3"><i></i><div>Read ss 69, 76, 77, 79 and 82 and schedule 2 of the Act<small>At source, current version</small></div></div>
+          <div class="step" id="st4"><i></i><div>Checked the case law and adjudication decisions on late and provisional schedules</div></div>
+          <div class="step" id="st5"><i></i><div>Writing Part D</div></div>
+          <span class="btn" id="xbtn" style="display:inline-block;margin-top:26px;opacity:0">Export to Word</span>
         </div>
         <div id="canvas">
-          <div class="sheet" id="sheet">
-            <div class="kicker">Adjudication application &middot; draft</div>
-            <h4 id="dh"></h4>
-            <div id="paras"></div>
-          </div>
-          <span class="btn ghost abs" id="xbtn" style="right:52px;top:48px;opacity:0">Export to Word</span>
-        </div>
+          <div id="sheetScroll"><div class="sheet"><div class="kicker">Thornquell v Morvenhall &middot; Adjudication application &middot; draft</div><div class="doc" id="doc"></div></div></div>
+                  </div>
         <div id="word">
-          <div class="bar"><span>W</span>Brindle v Corvid &ndash; application (draft).docx</div>
+          <div class="bar"><span>W</span>Thornquell v Morvenhall &ndash; adjudication application (draft).docx</div>
           <div class="rib"></div>
-          <div class="page">
-            <h4>C.&nbsp;&nbsp;The payment schedule was served late</h4>
-            <div id="wparas"></div>
-            <div class="foot">4</div>
+          <div id="wscroll">
+            <div class="page">
+              <div class="hdr"><span>Adjudication application &ndash; Thornquell Joinery Pty Ltd v Morvenhall Developments Pty Ltd</span><span>Claimant&rsquo;s submissions</span></div>
+              <div class="doc" id="wdoc"></div>
+              <div class="foot">9</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <div id="file" class="glass"><span>W</span><div><b>Brindle v Corvid &ndash; application (draft).docx</b><small>Word document</small></div></div>
+  <div id="file" class="glass"><span>W</span><div><b>Thornquell v Morvenhall &ndash; application (draft).docx</b><small>Word document</small></div></div>
 
-  <!-- 8. Close -->
+  <!-- 8. Private to your firm: the library behind frosted glass -->
   <div class="scene" id="s8">
-    <div class="guide" style="left:700px;top:90px;width:260px;height:260px"></div>
-    <div class="spectrum abs" id="g8a" style="left:620px;top:196px;width:680px;height:44px"></div>
-    <div class="glass abs" id="g8b" style="left:880px;top:150px;width:170px;height:136px;border-radius:999px"></div>
-    <div class="center" style="top:400px">
+    <div id="vault">
+      <div class="rows" id="vrows"></div>
+      <div id="frost"><div class="lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div></div>
+    </div>
+    <div class="center" style="top:540px">
       <h2 id="s8a">Private to your firm.</h2>
-      <p id="s8b" style="margin-top:20px">Only the people you invite can see the library.<br>Your documents are not used to train AI models.</p>
-      <p id="s8c" style="margin-top:56px;font-size:36px;color:var(--ink);font-weight:600;letter-spacing:-.02em">$120 per user a month. First month free.</p>
-      <p id="s8d" style="margin-top:18px;font-size:30px;color:var(--greenD);font-weight:600">sopal.com.au/workspace</p>
-      <p id="s8e" style="margin-top:70px;font-size:17px;color:var(--ink3)">The firms, parties and documents in this video are invented.</p>
+      <p id="s8b" style="margin-top:22px">Only the people you invite can see your library.</p>
+      <p id="s8c" style="margin-top:10px">Sopal has enterprise agreements with frontier model providers<br>so your documents are not used to train AI models.</p>
+    </div>
+  </div>
+
+  <!-- 9. End card -->
+  <div class="scene" id="s9">
+    <div class="center" style="top:330px">
+      <div class="lockup" id="s9a"><img src="../../site/assets/sopal_logo_v1.png" alt=""><span>Workspace</span></div>
+      <p id="s9b" style="margin-top:50px;font-size:36px;color:var(--ink);font-weight:600;letter-spacing:-.02em">$120 per user a month. First month free.</p>
+      <p id="s9c" style="margin-top:16px;font-size:30px;color:var(--greenD);font-weight:600">sopal.com.au/workspace</p>
+      <p id="s9d" style="margin-top:120px;font-size:17px;color:var(--ink3)">The firms, parties, people and documents in this video are invented.</p>
     </div>
   </div>
 </div>
@@ -259,20 +297,28 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const p = (t, a, b) => clamp((t - a) / (b - a));
 const eo = (x) => 1 - Math.pow(1 - x, 3);
 const eio = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
-// Opacity of something shown from a to b, fading in and out.
 const win = (t, a, b, fi = 0.7, fo = 0.6) => Math.min(eo(p(t, a, a + fi)), 1 - eio(p(t, b - fo, b)));
-function st(el, o, y = 0, s = 1, x = 0) {
+function st(el, o, y = 0, s = 1, x = 0, r = 0) {
   if (typeof el === "string") el = $(el);
   el.style.opacity = o;
-  el.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+  el.style.transform = `translate(${x}px, ${y}px) scale(${s})${r ? ` rotate(${r}deg)` : ""}`;
 }
-// Fade and rise in at a, hold to b.
 const rise = (el, t, a, b, d = 24) => st(el, win(t, a, b), (1 - eo(p(t, a, a + 0.8))) * d);
 
-const DURATION = 84;
+const DURATION = 72;
 
-/* ---------- Content ---------- */
-const FILES = ["Adj Response FINAL v3.pdf", "Application (filed) Stage 2.docx", "AR - reply to s82 issues.pdf", "Further subs 14.10.pdf", "App - Brindle v Corvid.pdf", "Response FINAL FINAL.docx", "Scan0041.pdf", "Adj App - variations.docx", "Response - LDs.pdf", "Halden app (as filed).pdf", "Draft 7 - response.docx", "Quayline further subs.pdf"];
+/* ---------- Content (all invented) ---------- */
+["#pb1", "#pb2"].forEach((id) => {
+  $(id + " .ptext").innerHTML = Array.from({ length: 16 }, (_, i) => `<div style="height:7px;border-radius:4px;background:#ececef;margin:0 0 13px;width:${[100, 94, 98, 72, 100, 90, 96, 60][i % 8]}%"></div>`).join("");
+});
+// The lens holds a copy of the front page, magnified about the lens centre.
+const lens = $("#lens");
+const lensText = $("#ptext").cloneNode(true);
+lensText.removeAttribute("id");
+lens.appendChild(lensText);
+const LENS_R = 95, ZOOM = 1.45;
+
+const FILES = ["Adj Response FINAL v3.pdf", "Application (filed) Stage 2.docx", "AR - reply to s82 issues.pdf", "Further subs 14.10.pdf", "App - Tamsley v Orrindale.pdf", "Response FINAL FINAL.docx", "Scan0041.pdf", "Adj App - variations.docx", "Response - LDs.pdf", "Maudrey app (as filed).pdf", "Draft 7 - response.docx", "Keddlestone further subs.pdf"];
 const files = $("#files");
 FILES.forEach((n, i) => {
   const d = document.createElement("div");
@@ -288,15 +334,16 @@ FILES.forEach((n, i) => {
 });
 
 const ROWS = [
-  ["Adjudication application", "Brindle Street Joinery Pty Ltd v Corvid Homes Pty Ltd", "QLD", "$412,860.00", "14 Apr 2025"],
-  ["Adjudication response", "Tallis Civil Pty Ltd v Marrow Bay Developments Pty Ltd", "QLD", "$1,284,000.00", "2 Jun 2025"],
-  ["Further submissions", "Ferrier Electrical Pty Ltd v Quayline Constructions Pty Ltd", "NSW", "$236,410.50", "19 Oct 2023"],
-  ["Adjudication application", "Halden Glass Pty Ltd v Oris Built Pty Ltd", "QLD", "$88,975.00", "7 Aug 2024"],
-  ["Adjudication response", "Penhale Plumbing Pty Ltd v Arcwell Group Pty Ltd", "VIC", "$652,300.00", "23 Nov 2024"],
-  ["Adjudication application", "Oakridge Tiling Pty Ltd v Lumen Residential Pty Ltd", "QLD", "$174,092.40", "11 Feb 2025"],
-  ["Adjudication response", "Castlereagh Form Pty Ltd v Kinsale Projects Pty Ltd", "NSW", "$2,016,775.00", "30 Jul 2024"],
-  ["Further submissions", "Brindle Street Joinery Pty Ltd v Corvid Homes Pty Ltd", "QLD", "$412,860.00", "2 May 2025"],
+  ["Adjudication application", "Tamsley Glass Pty Ltd v Orrindale Built Pty Ltd", "QLD", "$288,975.00", "7 Aug 2024"],
+  ["Adjudication response", "Brenlock Civil Pty Ltd v Ostrova Projects Pty Ltd", "QLD", "$1,284,000.00", "2 Jun 2025"],
+  ["Further submissions", "Keddlestone Electrical Pty Ltd v Varnaby Constructions Pty Ltd", "NSW", "$236,410.50", "19 Oct 2023"],
+  ["Adjudication application", "Pemmerly Tiling Pty Ltd v Aldmere Residential Pty Ltd", "QLD", "$174,092.40", "11 Feb 2025"],
+  ["Adjudication response", "Ellismere Plumbing Pty Ltd v Corradyne Group Pty Ltd", "VIC", "$652,300.00", "23 Nov 2024"],
+  ["Adjudication application", "Maudrey Steel Pty Ltd v Belvane Developments Pty Ltd", "QLD", "$96,520.00", "14 Apr 2025"],
+  ["Adjudication response", "Covenhurst Formwork Pty Ltd v Kilbarra Projects Pty Ltd", "NSW", "$2,016,775.00", "30 Jul 2024"],
+  ["Further submissions", "Tamsley Glass Pty Ltd v Orrindale Built Pty Ltd", "QLD", "$288,975.00", "26 Aug 2024"],
 ];
+const rowHtml = (r) => `<div><b>${r[0]}</b><small>${r[1]}</small></div><span><span class="tag">${r[2]}</span></span><span class="num">${r[3]}</span>`;
 const rowsEl = $("#rows");
 ROWS.forEach((r) => {
   const d = document.createElement("div");
@@ -305,15 +352,15 @@ ROWS.forEach((r) => {
   d._r = r;
   rowsEl.appendChild(d);
 });
+$("#vrows").innerHTML = ROWS.slice(0, 5).map((r) => `<div class="row">${rowHtml(r)}</div>`).join("");
 
 const QUERY = '"payment schedule" w/15 (late OR "out of time")';
 
-// The answer, streamed: text runs and citation chips.
 const ANSWER = [
   ["p", "Three of the firm’s submissions make that argument:"],
-  ["li", "Brindle Street Joinery v Corvid Homes (application, April 2025). The schedule was emailed on the sixteenth business day, one day outside s 76.", "p 9"],
-  ["li", "Halden Glass v Oris Built (application, August 2024). The schedule went to an address the contract did not nominate.", "p 12"],
-  ["li", "Ferrier Electrical v Quayline (further submissions, NSW, 2023). Late service under s 14 of the NSW Act.", "p 4"],
+  ["li", "Tamsley Glass v Orrindale Built (application, August 2024). The schedule was emailed on the sixteenth business day, one day outside s 76.", "p 9"],
+  ["li", "Maudrey Steel v Belvane Developments (application, April 2025). The schedule went to an address the contract did not nominate.", "p 12"],
+  ["li", "Keddlestone Electrical v Varnaby (further submissions, NSW, 2023). Late service under s 14 of the NSW Act.", "p 4"],
 ];
 const ans = $("#ans");
 const ansParts = [];
@@ -330,80 +377,110 @@ ANSWER.forEach((a) => {
 });
 const ANS_LEN = ANSWER.reduce((n, a) => n + a[1].length, 0);
 
-const DRAFT_H = "C. The payment schedule was served late";
-const PARAS = [
-  ["12.", "The claimant gave its payment claim to the respondent on 3 March 2026."],
-  ["13.", "Under s 76 of the Act, the respondent had to give a payment schedule within 15 business days after the payment claim was given, or any shorter period the contract required."],
-  ["14.", "It did not. The payment schedule was given on 25 March 2026, the sixteenth business day."],
-  ["15.", "As a result:"],
-  ["(a)", "the respondent is liable to pay the claimed amount on the due date (s 77 of the Act); and", 1],
-  ["(b)", "the respondent is not entitled to give an adjudication response (s 82 of the Act).", 1],
+// Part D of an invented adjudication application. Only the Act's section
+// numbers are real; the law is described, not quoted.
+const DRAFT = [
+  ["h", "D.", "The payment schedule was not given within time"],
+  ["sh", "The chronology"],
+  ["p", "41.", "The claimant gave Payment Claim 14 to the respondent at 3.47 pm on Tuesday, 3 March 2026, by email to the address nominated in item 22 of the Contract Particulars (Trevane SD at [18]–[21]; exhibit MT-7)."],
+  ["p", "42.", "The Contract does not fix a period for giving a payment schedule shorter than the period allowed by the Act. The respondent was therefore required to give a payment schedule within 15 business days after the payment claim was given: s 76(1) of the Act."],
+  ["p", "43.", "The fifteenth business day after 3 March 2026 was Tuesday, 24 March 2026. No day in that period is excluded from the definition of “business day” in schedule 2 of the Act."],
+  ["p", "44.", "The respondent’s document headed “Payment Schedule – PC14” was sent by email at 6.12 pm on Wednesday, 25 March 2026 (Trevane SD at [24]; exhibit MT-9). It was given on the sixteenth business day, one day out of time."],
+  ["sh", "The “draft assessment” of 24 March 2026 was not a payment schedule"],
+  ["p", "45.", "The claimant anticipates that the respondent will contend that the email sent by its contract administrator at 5.58 pm on 24 March 2026, attaching a spreadsheet headed “PC14 – draft assessment (subject to review)”, was a payment schedule given within time (Trevane SD at [23]; exhibit MT-8)."],
+  ["p", "46.", "It was not. A payment schedule must identify the payment claim to which it responds and state the amount of the payment, if any, that the respondent proposes to make: s 69 of the Act. The draft assessment:"],
+  ["s", "(a)", "did not identify Payment Claim 14, referring only to “the March claim”;"],
+  ["s", "(b)", "did not state any amount the respondent proposed to pay, its final line being left blank; and"],
+  ["s", "(c)", "was expressly provisional, being “subject to review and certification by the Superintendent”."],
+  ["p", "47.", "A document that leaves open the amount the respondent proposes to pay does not tell the claimant what is in dispute, which is the purpose a payment schedule serves under the Act. It is not saved by having been sent within time."],
+  ["sh", "Consequences"],
+  ["p", "48.", "Because no payment schedule was given within time:"],
+  ["s", "(a)", "the respondent became liable to pay the claimed amount of $412,860.00 on the due date for the progress payment: s 77 of the Act;"],
+  ["s", "(b)", "the respondent having also failed to pay any part of that amount by the due date, the claimant was entitled to apply for adjudication: s 79 of the Act; and"],
+  ["s", "(c)", "the respondent is not entitled to give an adjudication response: s 82 of the Act."],
+  ["p", "49.", "In the alternative, if the adjudicator finds that the draft assessment was a payment schedule, the respondent is confined to the reasons for withholding payment stated in it. Those reasons are answered in Part E below."],
 ];
-function paraEls(host) {
-  return PARAS.map((pp) => {
-    const d = document.createElement("div");
-    d.className = "para" + (pp[2] ? " sub" : "");
-    d.innerHTML = pp[2] ? `<span></span><span>${pp[0]}</span><span class="tx"></span>` : `<span>${pp[0]}</span><span class="tx"></span>`;
-    host.appendChild(d);
-    return d;
+function buildDoc(host) {
+  return DRAFT.map((d) => {
+    const el = document.createElement("div");
+    el.className = { h: "dh", sh: "dsh", p: "dp", s: "ds" }[d[0]];
+    if (d[0] === "sh") el.innerHTML = `<span class="tx"></span>`;
+    else if (d[0] === "s") el.innerHTML = `<span></span><span>${d[1]}</span><span class="tx"></span>`;
+    else el.innerHTML = `<span>${d[1]}</span><span class="tx"></span>`;
+    host.appendChild(el);
+    return el;
   });
 }
-const paras = paraEls($("#paras"));
-const wparas = paraEls($("#wparas"));
-wparas.forEach((d, i) => { d.querySelector(".tx").textContent = PARAS[i][1]; });
-const DRAFT_LEN = PARAS.reduce((n, pp) => n + pp[1].length, 0);
+const txt = (d) => (d[0] === "sh" ? d[1] : d[2]);
+const docEls = buildDoc($("#doc"));
+buildDoc($("#wdoc")).forEach((el, i) => (el.querySelector(".tx").textContent = txt(DRAFT[i])));
+const DRAFT_LEN = DRAFT.reduce((n, d) => n + txt(d).length, 0);
 
 function typeInto(el, full, frac) { el.textContent = full.slice(0, Math.round(full.length * frac)); }
 function nav(name) { document.querySelectorAll(".nav").forEach((n) => n.classList.toggle("on", n.dataset.n === name)); }
 
-/* ---------- Timeline ---------- */
+/* ---------- Timeline (seconds) ---------- */
 function render(t) {
-  // Background drift
   $("#deco").style.transform = `translateX(${-t * 1.5}px)`;
 
-  // 1. Title, 0 to 6.5
-  st("#s1", win(t, 0, 6.5, 0.01, 0.7));
-  const f = eo(p(t, 0.2, 2.2));
-  st("#g1", f, (1 - f) * 40 + Math.sin(t * 0.9) * 4);
-  st("#g2", f, (1 - f) * 60 + Math.sin(t * 0.9 + 1) * 6, 1, (1 - f) * -30);
-  st("#g3", eo(p(t, 0.6, 2.4)), 0, 1, (1 - eo(p(t, 0.6, 2.4))) * 80);
-  st("#g4", eo(p(t, 0.8, 2.6)), Math.sin(t * 1.1) * 5, 1, (1 - eo(p(t, 0.8, 2.6))) * -60 + p(t, 2.6, 6.5) * 60);
-  st("#g5", eo(p(t, 1.2, 2.8)), (1 - eo(p(t, 1.2, 2.8))) * 40 + Math.sin(t * 1.3 + 2) * 5);
-  rise($("#s1h"), t, 0.9, 99);
-  rise($("#s1p"), t, 1.7, 99);
+  // 1. Title, 0 to 5.5
+  st("#s1", win(t, 0, 5.5, 0.01, 0.6));
+  [["#pb1", -7, 0.1], ["#pb2", 6, 0.25], ["#pf", 0, 0.4]].forEach(([id, r, a]) => {
+    const k = eo(p(t, a, a + 1));
+    st(id, k, (1 - k) * 50, 1, 0, r * (0.6 + 0.4 * k));
+  });
+  // The lens slides along paragraph 31 and settles on the passage; the highlight follows.
+  const pf = { x: 760, y: 48 };
+  const lk = eio(p(t, 0.9, 2.7));
+  const lx = 80 + lk * 170, ly = 214 + Math.sin(t * 1.4) * 2; // lens centre, in page coordinates
+  lens.style.opacity = eo(p(t, 0.8, 1.3));
+  lens.style.left = pf.x + lx - LENS_R + "px";
+  lens.style.top = pf.y + ly - LENS_R + "px";
+  lensText.style.left = LENS_R - lx + "px";
+  lensText.style.top = LENS_R - ly + "px";
+  lensText.style.transformOrigin = `${lx}px ${ly}px`;
+  lensText.style.transform = `scale(${ZOOM})`;
+  document.querySelectorAll("#s1 .hi").forEach((h) => h.style.setProperty("--hk", eo(p(t, 1.8, 2.9))));
+  rise($("#s1h"), t, 1.4, 99);
+  rise($("#s1p"), t, 2.2, 99);
 
-  // 2. Problem, 6.5 to 13
-  st("#s2", win(t, 6.5, 13, 0.6, 0.6));
+  // 2. Problem, 5.5 to 11
+  st("#s2", win(t, 5.5, 11, 0.5, 0.5));
   files.querySelectorAll(".glass").forEach((d, i) => {
-    const a = 6.6 + i * 0.12;
-    const k = eo(p(t, a, a + 0.9));
-    const drift = (t - 6.5) * (i % 2 ? 4 : -4);
+    const a = 5.6 + i * 0.1;
+    const k = eo(p(t, a, a + 0.8));
+    const drift = (t - 5.5) * (i % 2 ? 4 : -4);
     d.style.opacity = k * 0.95;
     d.style.transform = `translate(${+d.dataset.x + drift}px, ${+d.dataset.y + (1 - k) * 40}px) rotate(${d.dataset.r}deg)`;
   });
-  rise($("#s2a"), t, 7.2, 99);
-  rise($("#s2b"), t, 9.3, 99);
+  rise($("#s2a"), t, 6, 99);
+  rise($("#s2b"), t, 7.7, 99);
 
-  // The window, 13 to 76
-  const w = win(t, 13, 76.5, 0.9, 0.7);
-  st("#win", w, (1 - eo(p(t, 13, 14.2))) * 60);
+  // The window, 11 to 62.8
+  st("#win", win(t, 11, 62.8, 0.8, 0.6), (1 - eo(p(t, 11, 12.1))) * 60);
+  // The sidebar folds to icons while drafting, for room.
+  const fold = eio(p(t, 40.1, 40.9));
+  const sw = 220 - 150 * fold;
+  $("#side").style.width = sw + "px";
+  $("#side .logo").style.opacity = 1 - fold;
+  $("#side .mark").style.opacity = fold;
+  document.querySelectorAll(".nav span").forEach((s) => (s.style.opacity = 1 - fold));
+  document.querySelectorAll(".view").forEach((v) => (v.style.left = sw + "px"));
 
-  // 3. Library, 13 to 26
-  rise($("#c3"), t, 13.4, 26);
-  rise($("#c3b"), t, 14.3, 99, 14);
-  st("#vLib", win(t, 13, 26.2, 0.1, 0.5));
-  if (t < 26.5) nav("library");
-  // Folder travels from under the caption into the window.
-  const fk = eio(p(t, 15, 16.8));
-  const fo = t < 15 ? eo(p(t, 14.4, 15)) : 1 - p(t, 16.8, 17.2);
-  const fx = 300 + fk * 1000, fy = 720 - fk * 240;
+  // 3. Library, 11 to 21
+  rise($("#c3"), t, 11.3, 21);
+  rise($("#c3b"), t, 12, 99, 14);
+  st("#vLib", win(t, 11, 21.2, 0.1, 0.5));
+  if (t < 21.3) nav("library");
+  const fk = eio(p(t, 12.6, 14.1));
+  const fo = t < 12.6 ? eo(p(t, 12.1, 12.6)) : 1 - p(t, 14.1, 14.4);
   $("#folder").style.opacity = fo;
-  $("#folder").style.transform = `translate(${fx}px, ${fy}px) scale(${1 - fk * 0.15}) rotate(${-4 + fk * 6}deg)`;
-  $("#drop").style.opacity = win(t, 15.9, 17.4, 0.3, 0.3);
+  $("#folder").style.transform = `translate(${300 + fk * 1000}px, ${720 - fk * 240}px) scale(${1 - fk * 0.15}) rotate(${-4 + fk * 6}deg)`;
+  $("#drop").style.opacity = win(t, 13.3, 14.6, 0.25, 0.25);
   rowsEl.querySelectorAll(".row").forEach((d, i) => {
-    const a = 17.3 + i * 0.35;
-    d.style.opacity = eo(p(t, a, a + 0.4));
-    const filed = t > a + 1.4 + i * 0.12;
+    const a = 14.5 + i * 0.28;
+    d.style.opacity = eo(p(t, a, a + 0.35));
+    const filed = t > a + 1.1 + i * 0.08;
     if (filed && !d._filed) {
       const r = d._r;
       d.querySelector(".rt").textContent = r[0];
@@ -420,76 +497,87 @@ function render(t) {
     }
   });
 
-  // 4. Boolean search, 26 to 38
-  rise($("#c4"), t, 26.3, 38);
-  rise($("#c4b"), t, 27.3, 99, 14);
-  st("#vSearch", win(t, 26, 38.2, 0.5, 0.5));
-  if (t >= 26.5 && t < 38.5) nav("search");
-  typeInto($("#q"), QUERY, p(t, 27, 31));
-  $("#qc").style.opacity = t < 31.6 && Math.floor(t * 2.2) % 2 === 0 ? 1 : t < 31 ? 1 : 0;
-  rise($("#qn"), t, 31.6, 99, 8);
-  ["#r1", "#r2", "#r3"].forEach((id, i) => rise($(id), t, 32 + i * 0.45, 99, 18));
+  // 4. Boolean search, 21 to 30
+  rise($("#c4"), t, 21.3, 30);
+  rise($("#c4b"), t, 22, 99, 14);
+  st("#vSearch", win(t, 21, 30.2, 0.5, 0.5));
+  if (t >= 21.3 && t < 40.3) nav("search");
+  typeInto($("#q"), QUERY, p(t, 21.8, 24.6));
+  $("#qc").style.opacity = t < 24.6 ? 1 : Math.floor(t * 2.2) % 2 === 0 && t < 25.4 ? 1 : 0;
+  rise($("#qn"), t, 25, 99, 8);
+  ["#r1", "#r2", "#r3"].forEach((id, i) => rise($(id), t, 25.3 + i * 0.35, 99, 18));
 
-  // 5. Ask, 38 to 51
-  rise($("#c5"), t, 38.4, 51);
-  rise($("#c5b"), t, 39.4, 99, 14);
-  st("#vAsk", win(t, 38, 51.2, 0.5, 0.5));
-  rise($("#ub"), t, 38.8, 99, 16);
-  let left = Math.round(ANS_LEN * p(t, 40.2, 45.6));
+  // 5. Ask, 30 to 40
+  rise($("#c5"), t, 30.3, 40);
+  rise($("#c5b"), t, 31, 99, 14);
+  st("#vAsk", win(t, 30, 40.2, 0.5, 0.5));
+  rise($("#ub"), t, 30.6, 99, 16);
+  let left = Math.round(ANS_LEN * p(t, 31.6, 35.8));
   ansParts.forEach((a) => {
     const n = Math.min(a.full.length, left);
     a.txt.textContent = a.full.slice(0, n);
     left -= n;
     if (a.chip) a.chip.style.opacity = n === a.full.length ? 1 : 0;
   });
-  const pk = eo(p(t, 46.2, 47.2));
+  const pk = eo(p(t, 36.2, 37));
   st("#pagepanel", pk, 0, 1, (1 - pk) * 60);
-  $("#ok").style.opacity = eo(p(t, 47.8, 48.4));
+  $("#ok").style.opacity = eo(p(t, 37.5, 38));
 
-  // 6. Draft, 51 to 68; 7. Word, 68 to 76
-  rise($("#c6"), t, 51.4, 68);
-  rise($("#c6b"), t, 52.4, 99, 14);
-  rise($("#c7"), t, 68.3, 76.5);
-  rise($("#c7b"), t, 69.2, 99, 14);
-  st("#vDraft", win(t, 51, 77, 0.5, 0.01));
-  if (t >= 51) nav("computer");
-  rise($("#db"), t, 51.6, 99, 16);
-  const steps = [[52.8, 54.3], [54.3, 55.6], [55.6, 57.2], [57.2, 58.8], [58.8, 99]];
+  // 6. Draft, 40 to 55.3; 7. Word, 55.3 to 62.8
+  rise($("#c6"), t, 40.3, 55.5);
+  rise($("#c6b"), t, 41, 99, 14);
+  rise($("#c7"), t, 55.8, 62.8);
+  rise($("#c7b"), t, 56.4, 99, 14);
+  st("#vDraft", win(t, 40, 63, 0.5, 0.01));
+  if (t >= 40.3) nav("computer");
+  rise($("#db"), t, 40.9, 99, 16);
+  const steps = [[41.8, 42.9], [42.9, 44], [44, 45.1], [45.1, 46.3], [46.3, 99]];
   steps.forEach(([a, b], i) => {
     const el = $("#st" + (i + 1));
     rise(el, t, a, 99, 10);
     el.classList.toggle("done", t >= b);
   });
-  typeInto($("#dh"), DRAFT_H, p(t, 59, 59.8));
-  let dl = Math.round(DRAFT_LEN * p(t, 59.8, 66.5));
-  paras.forEach((d, i) => {
-    const full = PARAS[i][1];
+  let dl = Math.round(DRAFT_LEN * p(t, 46.5, 53.8));
+  docEls.forEach((el, i) => {
+    const full = txt(DRAFT[i]);
     const n = Math.min(full.length, dl);
     dl -= n;
-    d.querySelector(".tx").textContent = full.slice(0, n);
-    d.style.opacity = n > 0 ? 1 : 0;
+    el.querySelector(".tx").textContent = full.slice(0, n);
+    el.style.display = n > 0 ? "" : "none";
   });
-  if (t >= 66.5) $("#st5").classList.add("done");
-  // Export button pressed, the file lifts out, Word opens.
-  const xb = eo(p(t, 67, 67.5));
-  const press = t > 68 && t < 68.3 ? 0.94 : 1;
-  st("#xbtn", xb, 0, press);
-  $("#xbtn").style.background = t > 68 && t < 68.5 ? "#e8e8ea" : "#fff";
-  const fl = win(t, 68.5, 70.8, 0.5, 0.5);
-  st("#file", fl, (1 - eo(p(t, 68.5, 69.2))) * 40 - 40, 0.96 + 0.04 * eo(p(t, 68.5, 69.2)), 500);
-  const wk = eo(p(t, 70.2, 71.2));
+  if (t >= 53.9) $("#st5").classList.add("done");
+  // Keep the line being written in view.
+  const doc = $("#doc");
+  const bottom = doc.offsetTop + doc.offsetHeight + 60;
+  const room = $("#canvas").clientHeight - 60;
+  $("#sheetScroll").style.transform = `translateY(${-Math.max(0, bottom - room)}px)`;
+  const xb = eo(p(t, 54, 54.5));
+  st("#xbtn", xb, 0, t > 54.9 && t < 55.2 ? 0.94 : 1);
+  $("#xbtn").style.background = t > 54.9 && t < 55.4 ? "#3a3a3c" : "#0d0d0d";
+  const fl = win(t, 55.3, 57.4, 0.4, 0.5);
+  st("#file", fl, (1 - eo(p(t, 55.3, 55.9))) * 40 - 40, 0.96 + 0.04 * eo(p(t, 55.3, 55.9)), 500);
+  const wk = eo(p(t, 56.9, 57.8));
   st("#word", wk, (1 - wk) * 30);
+  $("#wscroll").style.transform = `translateY(${-eio(p(t, 58.3, 62)) * 190}px)`;
 
-  // 8. Close, 76.5 to 84
-  st("#s8", win(t, 76.6, DURATION + 1, 0.8, 0.01));
-  const ck = eo(p(t, 76.8, 78.6));
-  st("#g8a", ck, 0, 1, (1 - ck) * -120);
-  st("#g8b", ck, Math.sin(t * 1.2) * 4, 1, (1 - ck) * 120 + p(t, 78.6, 84) * 180);
-  rise($("#s8a"), t, 77.3, 99);
-  rise($("#s8b"), t, 78.1, 99);
-  rise($("#s8c"), t, 79.6, 99);
-  rise($("#s8d"), t, 80.3, 99);
-  rise($("#s8e"), t, 81, 99, 8);
+  // 8. Private, 62.8 to 67.6
+  st("#s8", win(t, 62.8, 67.6, 0.6, 0.5));
+  const vk = eo(p(t, 62.9, 63.8));
+  st("#vault", vk, (1 - vk) * 40);
+  $("#frost").style.setProperty("--fb", `${eio(p(t, 63.5, 64.6)) * 16}px`);
+  $("#frost").style.opacity = eo(p(t, 63.4, 64));
+  $("#frost .lock").style.transform = `scale(${0.8 + 0.2 * eo(p(t, 64.2, 64.8))})`;
+  $("#frost .lock").style.opacity = eo(p(t, 64.2, 64.7));
+  rise($("#s8a"), t, 63.9, 99);
+  rise($("#s8b"), t, 64.5, 99);
+  rise($("#s8c"), t, 65.1, 99);
+
+  // 9. End card, 67.4 to 72
+  st("#s9", win(t, 67.4, DURATION + 1, 0.6, 0.01));
+  rise($("#s9a"), t, 67.6, 99);
+  rise($("#s9b"), t, 68.3, 99);
+  rise($("#s9c"), t, 68.8, 99);
+  rise($("#s9d"), t, 69.3, 99, 8);
 }
 window.render = render;
 window.DURATION = DURATION;

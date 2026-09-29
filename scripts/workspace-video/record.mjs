@@ -43,6 +43,6 @@ if (stills.length) {
   }
   ff.stdin.end();
   await new Promise((r) => ff.on("close", r));
-  writeFileSync(join(out, "explainer-poster.jpg"), await shot(64));
+  writeFileSync(join(out, "explainer-poster.jpg"), await shot(53.9));
 }
 await browser.close();

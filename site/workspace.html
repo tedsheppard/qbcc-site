@@ -80,18 +80,27 @@
     .ring { border: 1px solid rgba(0,0,0,0.06); border-radius: 50%; }
     .hl { height: 1px; background: rgba(0,0,0,0.06); }
     .vl { width: 1px; background: rgba(0,0,0,0.06); }
-    .edge { border: 1.5px solid rgba(255,255,255,0.9); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.03), 0 30px 80px rgba(0,0,0,0.06); }
-    .g-pill { background: linear-gradient(180deg, #25e08f, #00c271); border-radius: 999px; }
     .g-spectrum { background: var(--spectrum); border-radius: 999px; }
     .g-search { display: flex; align-items: center; gap: 12px; padding: 0 22px; border-radius: 999px; font-size: 17px; color: #3a3a3c; font-family: ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: -0.01em; }
     .g-search svg { width: 20px; height: 20px; flex: none; }
-    .g-sect { display: grid; place-items: center; border-radius: 50%; font-size: 52px; font-weight: 300; color: var(--ink); }
+    .sheet-p { width: 360px; height: 410px; background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 18px 50px rgba(0,0,0,0.1); overflow: hidden; }
+    .sheet-p.back { background: #fff repeating-linear-gradient(180deg, transparent 0 34px, #ececef 34px 41px, transparent 41px 54px) 34px 40px / 280px 330px no-repeat; }
+    .ptext { position: absolute; left: 0; top: 0; width: 360px; height: 410px; padding: 34px 34px; font-family: "Times New Roman", Times, serif; font-size: 12.5px; line-height: 1.62; color: #2a2a2a; background: #fff; text-align: left; }
+    .ptext h6 { font-size: 12.5px; font-weight: 700; margin-bottom: 9px; }
+    .ptext p { display: grid; grid-template-columns: 28px 1fr; margin-bottom: 7px; }
+    .hi { background-image: linear-gradient(90deg, rgba(0,212,126,.38), rgba(20,200,180,.36) 30%, rgba(47,124,246,.32) 62%, rgba(194,92,240,.32)); border-radius: 3px; padding: 1px 0; }
+    .lens { position: absolute; width: 170px; height: 170px; border-radius: 50%; overflow: hidden; z-index: 3; box-shadow: inset 0 2px 3px rgba(255,255,255,0.95), inset 0 -6px 14px rgba(0,0,0,0.12), 0 0 0 1.5px rgba(255,255,255,0.9), 0 26px 60px rgba(0,0,0,0.18), 0 4px 10px rgba(0,0,0,0.08); }
+    .lens .ptext { transform-origin: 0 0; }
+    .lens::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 32% 24%, rgba(255,255,255,0.55), rgba(255,255,255,0) 42%), radial-gradient(circle at 70% 85%, rgba(47,124,246,0.1), rgba(255,255,255,0) 50%); pointer-events: none; }
+    .g-cite { display: flex; gap: 12px; align-items: center; border-radius: 18px; padding: 14px 18px; white-space: nowrap; }
+    .g-cite b { display: block; font-size: 14.5px; font-weight: 600; }
+    .g-cite small { display: block; font-size: 13px; color: var(--green-ink); font-weight: 500; }
+    .g-cite .dotc { width: 26px; height: 26px; border-radius: 50%; background: var(--green); position: relative; flex: none; }
+    .g-cite .dotc::after { content: ""; position: absolute; left: 9.5px; top: 5.5px; width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
     .float-a { animation: floatA 9s ease-in-out infinite; }
     .float-b { animation: floatB 11s ease-in-out infinite; }
-    .knob { animation: knob 12s cubic-bezier(.65,0,.35,1) infinite alternate; }
     @keyframes floatA { 50% { transform: translateY(-8px); } }
     @keyframes floatB { 50% { transform: translate(6px, 6px); } }
-    @keyframes knob { from { transform: translateX(0); } to { transform: translateX(300px); } }
     .hero-copy { position: relative; text-align: center; margin-top: 8px; }
     .hero h1 { font-size: 56px; font-weight: 700; line-height: 1.07; letter-spacing: -0.035em; max-width: 900px; margin: 0 auto 22px; }
     .hero .lede { font-size: 19px; line-height: 1.6; color: #515154; max-width: 720px; margin: 0 auto 32px; }
@@ -116,7 +125,7 @@
     .split.flip { grid-template-columns: 1.15fr 1fr; }
     .split.flip .shot { order: -1; }
     .shot { border-radius: 26px; padding: 8px; }
-    .shot img { border-radius: 19px; width: 100%; }
+    .shot img { border-radius: 19px; width: 100%; aspect-ratio: 1056 / 836; object-fit: contain; }
 
     /* Sources graphic */
     .sources { margin-top: 70px; position: relative; display: grid; grid-template-columns: 300px 1fr 360px; align-items: center; min-height: 420px; }
@@ -144,9 +153,33 @@
     .sources.on .sheet .cite { opacity: 1; transition-delay: 2.2s; }
     @keyframes flow { to { stroke-dashoffset: -36; } }
 
+    /* Demo search */
+    .demo-lede { text-align: center; max-width: 700px; margin: 0 auto 40px; font-size: 17px; line-height: 1.6; color: #515154; }
+    .demo { border-radius: 30px; padding: 10px; max-width: 980px; margin: 0 auto; }
+    .demo-in { background: #fff; border-radius: 21px; padding: 30px 32px 26px; position: relative; }
+    .demo-flag { position: absolute; top: -12px; right: 28px; font-size: 12.5px; font-weight: 600; color: #7a4b00; background: #ffe7b0; border-radius: 999px; padding: 4px 12px; }
+    .demo-bar { display: flex; align-items: center; gap: 10px; border: 1.5px solid rgba(0,0,0,0.14); border-radius: 16px; padding: 6px 6px 6px 16px; }
+    .demo-bar svg { width: 20px; height: 20px; color: var(--ink-3); flex: none; }
+    .demo-bar input { flex: 1; min-width: 0; border: 0; outline: 0; font: 16px ui-monospace, "SF Mono", Menlo, monospace; color: var(--ink); background: transparent; padding: 8px 0; }
+    .demo-bar .btn { padding: 10px 20px; border: 0; cursor: pointer; font-family: inherit; }
+    .demo-bar:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,212,126,0.18); }
+    .demo-eg { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0 6px; font-size: 13.5px; color: var(--ink-3); }
+    .demo-eg button { font: 13px ui-monospace, "SF Mono", Menlo, monospace; color: var(--ink); background: var(--grey); border: 1px solid rgba(0,0,0,0.06); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+    .demo-eg button:hover { background: #ebebee; }
+    .demo-count { font-size: 14px; color: var(--ink-2); margin: 18px 2px 10px; min-height: 20px; }
+    .demo-results { max-height: 460px; overflow-y: auto; display: grid; gap: 12px; }
+    .demo-doc { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+    .demo-doc header { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin-bottom: 6px; }
+    .demo-doc header b { font-size: 15.5px; font-weight: 600; }
+    .demo-doc header span { font-size: 13.5px; color: var(--ink-3); }
+    .demo-doc p { font-family: "Times New Roman", Times, serif; font-size: 16.5px; line-height: 1.55; color: #333; margin-top: 8px; }
+    .demo-doc mark { background: rgba(0,212,126,0.24); color: inherit; border-radius: 3px; padding: 0 2px; }
+    .demo-page { font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; color: var(--green-ink); background: rgba(0,212,126,0.12); border-radius: 6px; padding: 2px 7px; margin-left: 8px; white-space: nowrap; }
+    .demo-help { font-size: 13px; color: var(--ink-3); margin-top: 16px; line-height: 1.5; }
+
     /* Other features */
     .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 48px; }
-    .feature { background: #fff; border-radius: 22px; padding: 32px; border: 1px solid rgba(0,0,0,0.05); }
+    .feature { background: var(--grey); border-radius: 22px; padding: 32px; }
     .feature h3 { font-size: 20px; font-weight: 600; letter-spacing: -0.015em; margin-bottom: 8px; }
     .feature p { font-size: 16px; line-height: 1.6; color: #515154; }
     .feature .dot { width: 34px; height: 6px; border-radius: 3px; background: var(--spectrum); margin-bottom: 20px; }
@@ -202,7 +235,7 @@
     .footer-bottom { display: flex; align-items: center; justify-content: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #555; }
 
     @media (prefers-reduced-motion: reduce) {
-      .float-a, .float-b, .knob, .sources.on .flows path { animation: none; }
+      .float-a, .float-b, .sources.on .flows path { animation: none; }
       .src, .draftcard, .sheet .ln, .sheet .cite, .flows path { transition: none; }
     }
     @media (max-width: 1100px) {
@@ -229,6 +262,8 @@
       .price-main, .price-side { padding: 28px; }
       .footer-inner { grid-template-columns: 1fr; }
       .film { margin-top: -90px; }
+      .demo-in { padding: 24px 16px 18px; }
+      .demo-bar .btn { padding: 10px 14px; }
     }
     @media (max-width: 520px) {
       .hero-actions .btn { width: 100%; }
@@ -263,6 +298,7 @@
       <div class="subnav-links">
         <a href="#library">Library</a>
         <a href="#search">Search</a>
+        <a href="#try">Try it</a>
         <a href="#drafting">Drafting</a>
         <a href="#privacy">Privacy</a>
         <a href="#pricing">Pricing</a>
@@ -276,27 +312,32 @@
   <header class="hero" id="top">
     <div class="art-wrap" aria-hidden="true">
       <div class="art" id="art">
-        <div class="ring" style="left:-80px;top:40px;width:380px;height:380px"></div>
-        <div class="ring" style="left:10px;top:130px;width:200px;height:200px"></div>
-        <div class="ring" style="left:760px;top:60px;width:300px;height:300px"></div>
-        <div class="hl" style="left:-200px;right:-200px;top:150px"></div>
-        <div class="hl" style="left:-200px;right:-200px;top:360px"></div>
+        <div class="ring" style="left:-60px;top:40px;width:360px;height:360px"></div>
+        <div class="ring" style="left:900px;top:30px;width:320px;height:320px"></div>
+        <div class="hl" style="left:-200px;right:-200px;top:118px"></div>
+        <div class="hl" style="left:-200px;right:-200px;top:392px"></div>
         <div class="vl" style="top:0;bottom:0;left:600px"></div>
-        <div class="vl" style="top:0;bottom:0;left:910px"></div>
-        <div class="edge" style="left:-60px;top:-40px;width:360px;height:360px;border-radius:0 0 60px 0;border-top:0;border-left:0"></div>
-        <div class="edge" style="left:930px;top:280px;width:420px;height:160px;border-radius:70px 70px 0 0;border-bottom:0"></div>
 
-        <div class="g-pill float-a" style="left:250px;top:110px;width:230px;height:90px"></div>
-        <div class="glass float-b" style="left:300px;top:92px;width:250px;height:126px;border-radius:999px"></div>
+        <div class="sheet-p back" style="left:330px;top:44px;transform:rotate(-7deg)"></div>
+        <div class="sheet-p back" style="left:510px;top:38px;transform:rotate(6deg)"></div>
+        <div class="sheet-p" id="hero-page" style="left:420px;top:22px">
+          <div class="ptext">
+            <h6>C.&nbsp;&nbsp;THE PAYMENT SCHEDULE</h6>
+            <p><span>29.</span><span>The claimant gave its payment claim to the respondent by email on 9 July 2024, to the address nominated in the contract.</span></p>
+            <p><span>30.</span><span>The respondent had 15 business days to respond with a payment schedule under s 76 of the Act.</span></p>
+            <p><span>31.</span><span>The <span class="hi">payment schedule was given late</span>, on the sixteenth business day after the payment claim was given.</span></p>
+            <p><span>32.</span><span>The respondent therefore became liable to pay the claimed amount on the due date, and may not give an adjudication response.</span></p>
+            <p><span>33.</span><span>The claimant relies on the statutory declaration of its project manager and the emails exhibited to it.</span></p>
+          </div>
+        </div>
+        <div class="lens" id="hero-lens"></div>
 
-        <div class="g-spectrum" style="left:640px;top:128px;width:560px;height:44px"></div>
-        <div class="glass knob" style="left:700px;top:86px;width:128px;height:128px;border-radius:50%"></div>
-
-        <div class="glass g-sect float-a" style="left:540px;top:236px;width:112px;height:112px;animation-delay:-3s">&sect;</div>
-
-        <div class="glass g-search float-b" style="left:130px;top:292px;width:390px;height:64px;animation-delay:-4s;white-space:nowrap">
+        <div class="glass g-search float-b" style="left:60px;top:150px;width:390px;height:64px">
           <svg viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-          <span>"payment schedule" w/10 late</span>
+          <span>"payment schedule" w/15 late</span>
+        </div>
+        <div class="glass g-cite float-a" style="left:800px;top:250px">
+          <span class="dotc"></span><div><b>Tamsley Glass v Orrindale Built</b><small>Page 9 &middot; quote checked against the page</small></div>
         </div>
       </div>
     </div>
@@ -305,7 +346,7 @@
       <p class="lede">Sopal Workspace keeps every adjudication application and response your firm has filed in one private library. You can search it by keyword or by question, and draft new submissions that build on how the firm has argued the point before, with the legislation, case law and past adjudication decisions checked along the way.</p>
       <div class="hero-actions">
         <a href="https://app.sopal.com.au/signup" class="btn btn-green">Start your free month</a>
-        <a href="#overview" class="btn btn-glass"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Watch the overview (1:24)</a>
+        <a href="#overview" class="btn btn-glass"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Watch the overview (1:12)</a>
       </div>
       <p class="hero-note">$120 per user a month after the first month. Separate account from Sopal Decisions.</p>
     </div>
@@ -318,7 +359,7 @@
           <source src="/assets/workspace/explainer.mp4" type="video/mp4">
         </video>
       </div>
-      <p class="film-note">Uploading, searching and drafting, in a minute and a half. The firms, parties and documents in the video are made up.</p>
+      <p class="film-note">Uploading, searching and drafting, in just over a minute. The firms, parties and documents in the video are made up.</p>
     </div>
   </div>
 
@@ -339,23 +380,51 @@
       <div class="body">
         <h2 class="h2">Find how the firm argued a point last time</h2>
         <p>Boolean search works the way it does on the case law databases: AND, OR, NOT, phrases, truncation, and proximity such as <code>w/10</code>. It runs across every page of every submission in the library.</p>
-        <p>You can also ask a question in plain English, for example which responses argued that a payment claim didn&rsquo;t identify the work it related to. The answer lists the submissions that made the argument and cites the page each point came from. Any passage it quotes is checked against that page before it&rsquo;s shown to you.</p>
+        <p>You can also ask SopalAI a question in plain English, for example which responses argued that a payment claim didn&rsquo;t identify the work it related to. The answer lists the submissions that made the argument and cites the page each point came from. Any passage it quotes is checked against that page before it&rsquo;s shown to you.</p>
         <p>Click a citation and the page opens beside the answer, so you can read it in context.</p>
       </div>
       <div class="shot glass"><img src="/assets/workspace/ask.jpg" alt="A question about late payment schedules, answered with page citations and the cited page open beside it" loading="lazy" width="1056" height="836"></div>
     </div>
   </section>
 
-  <section class="block" id="drafting">
+
+  <section class="block" id="try">
+    <div class="container">
+      <h2 class="h2 h2-center">Try the search</h2>
+      <p class="demo-lede">This searches a demo library of <span id="demo-total">12</span> made-up submissions, so you can see how Boolean search works. None of the firms, parties or documents are real. In Sopal Workspace it searches your own library, and SopalAI can answer questions about it too.</p>
+      <div class="demo glass">
+        <div class="demo-in">
+          <div class="demo-flag">Demo data</div>
+          <form id="demo-form" class="demo-bar" role="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="demo-q" type="search" autocomplete="off" spellcheck="false" aria-label="Search the demo library">
+            <button type="submit" class="btn btn-green">Search</button>
+          </form>
+          <div class="demo-eg"><span>Try:</span>
+            <button type="button" data-demo-q='"payment schedule" w/15 (late OR "out of time")'>late payment schedule</button>
+            <button type="button" data-demo-q='"liquidated damages"'>liquidated damages</button>
+            <button type="button" data-demo-q='variation* AND (oral* OR writing)'>variation* AND (oral* OR writing)</button>
+            <button type="button" data-demo-q='defect* NOT painting'>defect* NOT painting</button>
+            <button type="button" data-demo-q='"time bar" OR notice w/5 delay'>time bar OR notice w/5 delay</button>
+          </div>
+          <div id="demo-count" class="demo-count" aria-live="polite"></div>
+          <div id="demo-results" class="demo-results"></div>
+          <p class="demo-help">AND, OR and NOT, "exact phrases", brackets, an asterisk for any ending (defect*), and w/N for words within N of each other.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block grey" id="drafting">
     <div class="container">
       <div class="split">
         <div class="body">
-          <h2 class="h2">Draft the next submission from your own precedents</h2>
+          <h2 class="h2">Draft submissions drawing on your firm&rsquo;s precedents</h2>
           <p>Computer mode takes an instruction the way you&rsquo;d give it to a junior, such as &ldquo;draft the part of our response on the late payment claim, using last year&rsquo;s response for the same client as the model&rdquo;.</p>
           <p>It reads the firm&rsquo;s precedents first. It then reads the relevant sections of the Act at source, the case law, and past adjudication decisions on the point, and only then writes. The draft follows the structure and depth of the firm&rsquo;s own best work rather than a generic template.</p>
           <p>The draft appears in an editor with proper paragraph numbering, so you can change it directly or ask for changes. When it&rsquo;s ready, export it to Word.</p>
         </div>
-        <div class="shot glass"><img src="/assets/workspace/draft.jpg" alt="Computer mode: the steps it took on the left, and a numbered draft section on the right" loading="lazy" width="1056" height="836"></div>
+        <div class="shot glass"><img src="/assets/workspace/draft.jpg" alt="Computer mode: the steps it took on the left, and Part D of an adjudication application being drafted on the right" loading="lazy" width="1056" height="836"></div>
       </div>
 
       <div class="sources" id="sources">
@@ -392,7 +461,7 @@
     </div>
   </section>
 
-  <section class="block grey">
+  <section class="block">
     <div class="container">
       <h2 class="h2 h2-center">The rest of it</h2>
       <div class="features">
@@ -404,13 +473,13 @@
     </div>
   </section>
 
-  <section class="block" id="privacy">
+  <section class="block grey" id="privacy">
     <div class="container">
       <h2 class="h2 h2-center">Private to your firm</h2>
       <p class="body" style="text-align:center;max-width:680px;margin:0 auto"><span style="font-size:18px;line-height:1.65;color:#424245">Your submissions contain your clients&rsquo; information and your firm&rsquo;s work. This is how they&rsquo;re handled.</span></p>
       <div class="privacy">
         <div><h3>Only your firm can see it</h3><p>The library is visible only to people your firm has invited. No one outside the firm, including other Sopal users, can search it.</p></div>
-        <div><h3>Not used for training</h3><p>Your documents and questions are not used to train AI models.</p></div>
+        <div><h3>Not used for training</h3><p>Sopal has special enterprise agreements with frontier model providers to ensure your documents are not used to train AI models.</p></div>
         <div><h3>Stored in Australia</h3><p>Documents and the library are stored in Sydney.</p></div>
         <div><h3>Private matters</h3><p>Projects are private to the person who created them until they choose to share them.</p></div>
         <div><h3>Sign-in</h3><p>Accounts can require a code from an authenticator app, and sessions end after eight hours without activity.</p></div>
@@ -524,6 +593,31 @@
     window.addEventListener("resize", fit);
   })();
 
+  // The hero lens: a magnified copy of the page, moving slowly along the
+  // highlighted passage.
+  (function () {
+    var page = document.getElementById("hero-page"), lens = document.getElementById("hero-lens");
+    var src = page.querySelector(".ptext"), hi = page.querySelector(".hi");
+    var copy = src.cloneNode(true);
+    lens.appendChild(copy);
+    var R = 85, Z = 1.45, still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function place(f) {
+      var x0 = hi.offsetLeft + 40, x1 = hi.offsetLeft + hi.offsetWidth - 30;
+      var lx = x0 + (x1 - x0) * f, ly = hi.offsetTop + hi.offsetHeight / 2;
+      lens.style.left = page.offsetLeft + lx - R + "px";
+      lens.style.top = page.offsetTop + ly - R + "px";
+      copy.style.left = R - lx + "px";
+      copy.style.top = R - ly + "px";
+      copy.style.transformOrigin = lx + "px " + ly + "px";
+      copy.style.transform = "scale(" + Z + ")";
+    }
+    place(0.75);
+    if (document.fonts) document.fonts.ready.then(function () { place(0.75); });
+    if (still) return;
+    var t0 = performance.now();
+    (function tick(now) { place(0.5 + 0.45 * Math.sin((now - t0) / 2600)); requestAnimationFrame(tick); })(t0);
+  })();
+
   // Start the sources graphic when it scrolls into view.
   (function () {
     var el = document.getElementById("sources");
@@ -533,5 +627,6 @@
     }, { threshold: 0.35 }).observe(el);
   })();
 </script>
+<script src="/assets/workspace/demo-search.js" defer></script>
 </body>
 </html>
