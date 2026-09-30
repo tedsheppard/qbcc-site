@@ -15,6 +15,13 @@ const from = process.env.PLAYWRIGHT_FROM || resolve(here, "../../../sopal-docs")
 const { chromium } = createRequire(join(from, "package.json"))("playwright");
 const out = resolve(here, "../../site/assets/workspace");
 const FPS = 30;
+// The voiceover's second line is longer than the second scene, so that scene
+// is played more slowly: real seconds 5.5 to 13.9 show video seconds 5.5 to 11,
+// and everything after it starts 2.9 seconds later.
+const SLOW = { from: 5.5, to: 11, extra: 2.9 };
+const videoTime = (t) => t < SLOW.from ? t
+  : t < SLOW.to + SLOW.extra ? SLOW.from + (t - SLOW.from) * (SLOW.to - SLOW.from) / (SLOW.to - SLOW.from + SLOW.extra)
+  : t - SLOW.extra;
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
@@ -36,9 +43,9 @@ if (stills.length) {
   const duration = await page.evaluate(() => window.DURATION);
   const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS), "-c:v", "mjpeg", "-i", "-",
     "-c:v", "libx264", "-preset", "slow", "-crf", "24", "-pix_fmt", "yuv420p", "-movflags", "+faststart", join(out, "explainer-silent.mp4")], { stdio: ["pipe", "inherit", "inherit"] });
-  const frames = Math.round(duration * FPS);
+  const frames = Math.round((duration + SLOW.extra) * FPS);
   for (let i = 0; i < frames; i++) {
-    const buf = await shot(i / FPS);
+    const buf = await shot(videoTime(i / FPS));
     if (!ff.stdin.write(buf)) await new Promise((r) => ff.stdin.once("drain", r));
     if (i % 300 === 0) console.log(`${i}/${frames}`);
   }
