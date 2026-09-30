@@ -54,7 +54,7 @@ if (stills.length) {
   }
   ff.stdin.end();
   await new Promise((r) => ff.on("close", r));
-  writeFileSync(join(out, `${PAGE}-poster.jpg`), await shot(IS_EXPLAINER ? 53.9 : 46));
+  writeFileSync(join(out, `${PAGE}-poster.jpg`), await shot(IS_EXPLAINER ? 53.9 : 58));
   // Until voiceover.mjs adds the voice, the page plays the silent cut.
   copyFileSync(join(out, `${PAGE}-silent.mp4`), join(out, `${PAGE}.mp4`));
 }
