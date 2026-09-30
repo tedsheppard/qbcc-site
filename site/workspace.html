@@ -168,6 +168,27 @@
     .feature:nth-child(3) .dot { background: linear-gradient(90deg, #2f7cf6, #7a5cf5); }
     .feature:nth-child(4) .dot { background: linear-gradient(90deg, #7a5cf5, #c25cf0); }
 
+    /* Privacy: the heading stays while the points rise in beside it */
+    .ps { padding: 60px 0; }
+    .ps-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 64px; }
+    .ps-sticky { position: sticky; top: 160px; padding: 60px 0; }
+    .ps-sticky p { font-size: 18px; line-height: 1.65; color: #424245; max-width: 420px; }
+    .ps-badge { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 20px; margin-bottom: 22px; position: relative; }
+    .ps-badge::before { content: ""; position: absolute; inset: 10px; border-radius: 14px; background: var(--spectrum); opacity: 0.85; z-index: -1; filter: blur(0.5px); }
+    .ps-badge svg { width: 28px; height: 28px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .ps-dots { display: flex; gap: 8px; margin-top: 28px; }
+    .ps-dots i { width: 26px; height: 5px; border-radius: 3px; background: rgba(0,0,0,0.1); transition: background .4s; }
+    .ps-dots i.on { background: var(--green); }
+    .ps-item { min-height: 62vh; display: flex; align-items: center; }
+    .ps-card { display: flex; gap: 20px; align-items: flex-start; border-radius: 24px; padding: 30px; width: 100%; opacity: 0; transform: translateY(40px) scale(0.98); transition: opacity .7s ease, transform .7s ease; background: rgba(255,255,255,0.7); }
+    .ps-item.in .ps-card { opacity: 1; transform: none; }
+    .ps-card h3 { font-size: 20px; font-weight: 600; letter-spacing: -0.015em; margin-bottom: 8px; }
+    .ps-card p { font-size: 16.5px; line-height: 1.6; color: #515154; }
+    .ps-icon { flex: none; width: 54px; height: 54px; border-radius: 17px; display: grid; place-items: center; background: linear-gradient(135deg, var(--a), var(--b)); box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), inset 0 -6px 12px rgba(0,0,0,0.12), 0 10px 24px color-mix(in srgb, var(--b) 35%, transparent); position: relative; }
+    .ps-icon::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(255,255,255,0.45), rgba(255,255,255,0) 55%); }
+    .ps-icon svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; position: relative; z-index: 1; }
+    .small-note { font-size: 13.5px !important; color: var(--ink-3) !important; }
+
     /* Privacy */
     .privacy { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px 40px; margin-top: 52px; }
     .privacy h3 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
@@ -181,6 +202,9 @@
     .price-main { padding: 40px; }
     .price-main .amount { font-size: 60px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
     .price-main .per { font-size: 16px; color: var(--ink-2); margin: 8px 0 18px; }
+    .free-big { font-size: 64px; font-weight: 800; letter-spacing: -0.045em; line-height: 1; background: var(--spectrum); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .free-big span { display: block; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; color: var(--ink); -webkit-text-fill-color: var(--ink); margin-top: 8px; }
+    .price-main .then { font-size: 16px; line-height: 1.55; color: #3a3a3c; margin: 18px 0 22px; }
     .price-main .amount2 { font-size: 30px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 22px; }
     .price-main .amount2 span { font-size: 16px; font-weight: 400; letter-spacing: 0; color: var(--ink-2); }
     .price-main .free { font-size: 16px; line-height: 1.55; margin-bottom: 28px; }
@@ -200,6 +224,7 @@
     .faq summary::after { content: "+"; font-size: 24px; font-weight: 300; color: var(--ink-3); line-height: 1; transition: transform .2s; }
     .faq details[open] summary::after { transform: rotate(45deg); }
     .faq details p { font-size: 16.5px; line-height: 1.65; color: #515154; padding: 0 40px 24px 0; }
+    .faq details p a { color: var(--green-ink); text-decoration: underline; }
 
     /* Closing */
     .closing { text-align: center; padding: 110px 0 120px; }
@@ -240,6 +265,9 @@
       .sources { grid-template-columns: 1fr; gap: 24px; min-height: 0; }
       .flows { display: none; }
       .features, .privacy { grid-template-columns: 1fr; }
+      .ps-grid { grid-template-columns: 1fr; gap: 0; }
+      .ps-sticky { position: static; padding: 40px 0 10px; }
+      .ps-item { min-height: 0; padding: 12px 0; }
       .price-in { grid-template-columns: 1fr; }
       .price-side { border-left: 0; border-top: 1px solid rgba(0,0,0,0.06); }
       .price-main, .price-side { padding: 28px; }
@@ -335,13 +363,13 @@
       </div>
     </div>
     <div class="container hero-copy">
-      <h1>Search your firm&rsquo;s past adjudication submissions and draft new ones from them.</h1>
-      <p class="lede">Sopal Workspace keeps every adjudication application and response your firm has filed in one private library. You can search it by keyword or by question, and draft new submissions that build on how the firm has argued the point before, with the legislation, case law and past adjudication decisions checked along the way.</p>
+      <h1>Put your firm&rsquo;s adjudication precedents to use.</h1>
+      <p class="lede">Search every adjudication submission your firm has filed, or draft new submissions drawing on that knowledge, in your firm&rsquo;s style.</p>
       <div class="hero-actions">
         <a href="https://app.sopal.com.au/signup" class="btn btn-green">Start your free month</a>
         <a href="#overview" class="btn btn-glass"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Watch the overview (1:12)</a>
       </div>
-      <p class="hero-note">After the first month, $140 a month for the first user and $90 for each additional user.</p>
+      <p class="hero-note"><b>Free for your first month.</b> Then $140 a month for the first user and $90 for each additional user.</p>
     </div>
   </header>
 
@@ -352,7 +380,6 @@
           <source src="/assets/workspace/explainer.mp4" type="video/mp4">
         </video>
       </div>
-      <p class="film-note">Uploading, searching and drafting, in just over a minute. The firms, parties and documents in the video are made up.</p>
     </div>
   </div>
 
@@ -360,9 +387,7 @@
     <div class="container split">
       <div class="body">
         <h2 class="h2">One library for everything the firm has filed</h2>
-        <p>Drag in a folder or a zip file of past submissions. Each one is read, including scanned pages, and filed with its document type, the parties, the State, the amount claimed and the date. If something is read wrong you can correct it, and your correction is kept.</p>
-        <p>Adjudication applications, responses and further submissions all go in. PDF and Word files both work. If the same submission is uploaded twice it&rsquo;s flagged, so the library doesn&rsquo;t fill up with copies of the same document.</p>
-        <p>The library belongs to the firm, so it stays when people come and go.</p>
+        <p>Sopal Workspace will automatically categorise each set of submissions and pull the key details, making them easy to search, view and download.</p>
       </div>
       <div class="shot glass"><img src="/assets/workspace/library.jpg" alt="The Library: a list of submissions with document type, parties, State, amount claimed and date" loading="lazy" width="1056" height="836"></div>
     </div>
@@ -372,9 +397,8 @@
     <div class="container split flip">
       <div class="body">
         <h2 class="h2">Find how the firm argued a point last time</h2>
-        <p>Boolean search works the way it does on the case law databases: AND, OR, NOT, phrases, truncation, and proximity such as <code>w/10</code>. It runs across every page of every submission in the library.</p>
-        <p>You can also ask SopalAI a question in plain English, for example which responses argued that a payment claim didn&rsquo;t identify the work it related to. The answer lists the submissions that made the argument and cites the page each point came from. Any passage it quotes is checked against that page before it&rsquo;s shown to you.</p>
-        <p>Click a citation and the page opens beside the answer, so you can read it in context.</p>
+        <p>Search your adjudication submissions library the same way you would with Lexis, Westlaw or Sopal Decisions. Sopal Workspace supports Boolean searches (AND, OR, NOT, phrases, truncation, and proximity such as <code>w/10</code>).</p>
+        <p>In addition, users can ask SopalAI a question in plain English. It will look through your submissions library to find the answer, and produce the relevant paragraph(s) of those submissions for ease of reference.</p>
       </div>
       <div class="shot glass"><img src="/assets/workspace/ask.jpg" alt="A question about late payment schedules, answered with page citations and the cited page open beside it" loading="lazy" width="1056" height="836"></div>
     </div>
@@ -386,9 +410,9 @@
       <div class="split">
         <div class="body">
           <h2 class="h2">Draft submissions drawing on your firm&rsquo;s precedents</h2>
-          <p>Computer mode takes an instruction the way you&rsquo;d give it to a junior, such as &ldquo;draft the part of our response on the late payment claim, using last year&rsquo;s response for the same client as the model&rdquo;.</p>
-          <p>It reads the firm&rsquo;s precedents first. It then reads the relevant sections of the Act at source, the case law, and past adjudication decisions on the point, and only then writes. The draft follows the structure and depth of the firm&rsquo;s own best work rather than a generic template.</p>
-          <p>The draft appears in an editor with proper paragraph numbering, so you can change it directly or ask for changes. When it&rsquo;s ready, export it to Word.</p>
+          <p>SopalAI is integrated into Sopal Workspace. In a first-of-its-kind feature, users can ask frontier AI models to draft submissions (and other documents, such as memos and letters) based on your firm&rsquo;s precedents, the current legislation, and Australian case law.</p>
+          <p>SopalAI (via Computer mode) can produce sets of submissions hundreds of pages in length where required, in proper legal language, structured in accordance with your preferences, saving users potentially days of work.</p>
+          <p class="small-note">SopalAI is still an AI model. Always check its accuracy before relying on it.</p>
         </div>
         <div class="shot glass"><img src="/assets/workspace/draft.jpg" alt="Computer mode: the steps it took on the left, and Part D of an adjudication application being drafted on the right" loading="lazy" width="1056" height="836"></div>
       </div>
@@ -431,25 +455,29 @@
     <div class="container">
       <h2 class="h2 h2-center">The rest of it</h2>
       <div class="features">
-        <div class="feature"><div class="dot"></div><h3>Projects</h3><p>Keep each matter&rsquo;s working drafts, the documents as filed, and the project documents together. Projects are private to the person who created them unless they share them. Project files are kept out of the firm&rsquo;s library search.</p></div>
+        <div class="feature"><div class="dot"></div><h3>Projects</h3><p>Users can set up Projects and upload the relevant material to prepare submissions automatically with SopalAI.</p></div>
         <div class="feature"><div class="dot"></div><h3>Your firm&rsquo;s format</h3><p>Set the font, size, line and paragraph spacing, paragraph numbering and page numbers once, either for the whole firm or for each person. Drafts, printouts and Word exports all follow them.</p></div>
         <div class="feature"><div class="dot"></div><h3>Your team</h3><p>Invite colleagues with a link. The firm&rsquo;s owner and admins decide who has access, and everyone signs in with their own account.</p></div>
-        <div class="feature"><div class="dot"></div><h3>Every State</h3><p>Submissions under the security of payment legislation in any Australian State or Territory, or New Zealand, can be stored and searched. Research reads the relevant Act for the jurisdiction you&rsquo;re working in.</p></div>
+        <div class="feature"><div class="dot"></div><h3>Every State</h3><p>Submissions under the security of payment legislation in any Australian State or Territory can be stored and searched. Research reads the relevant Act for the jurisdiction you&rsquo;re working in.</p></div>
       </div>
     </div>
   </section>
 
-  <section class="block grey" id="privacy">
-    <div class="container">
-      <h2 class="h2 h2-center">Private to your firm</h2>
-      <p class="body" style="text-align:center;max-width:680px;margin:0 auto"><span style="font-size:18px;line-height:1.65;color:#424245">Your submissions contain your clients&rsquo; information and your firm&rsquo;s work. This is how they&rsquo;re handled.</span></p>
-      <div class="privacy">
-        <div><h3>Only your firm can see it</h3><p>The library is visible only to people your firm has invited. No one outside the firm, including other Sopal users, can search it.</p></div>
-        <div><h3>Not used for training</h3><p>Sopal has special enterprise agreements with frontier model providers to ensure your documents are not used to train AI models.</p></div>
-        <div><h3>Stored in Australia</h3><p>Documents and the library are stored in Sydney.</p></div>
-        <div><h3>Private matters</h3><p>Projects are private to the person who created them until they choose to share them.</p></div>
-        <div><h3>Sign-in</h3><p>Accounts can require a code from an authenticator app, and sessions end after eight hours without activity.</p></div>
-        <div><h3>A separate account</h3><p>Sopal Workspace doesn&rsquo;t share accounts or data with Sopal Decisions on sopal.com.au.</p></div>
+  <section class="grey ps" id="privacy">
+    <div class="container ps-grid">
+      <div class="ps-left">
+        <div class="ps-sticky">
+          <span class="ps-badge glass"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+          <h2 class="h2">Private to your firm</h2>
+          <p>Your submissions contain your clients&rsquo; information and your firm&rsquo;s work. This is how they&rsquo;re handled.</p>
+          <div class="ps-dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        </div>
+      </div>
+      <div class="ps-right">
+          <div class="ps-item"><div class="ps-card glass"><span class="ps-icon" style="--a:#00c271;--b:#14c8b4"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><div><h3>Only your firm can see it</h3><p>The library is visible only to people your firm has invited. No one outside the firm, including other Sopal users, can search it.</p></div></div></div>
+          <div class="ps-item"><div class="ps-card glass"><span class="ps-icon" style="--a:#14c8b4;--b:#2f7cf6"><svg viewBox="0 0 24 24"><path d="M12 5a3 3 0 0 0-5.8 1A3 3 0 0 0 4 11a3 3 0 0 0 2 5 3 3 0 0 0 6 1V5z"/><path d="M12 5a3 3 0 0 1 5.8 1A3 3 0 0 1 20 11a3 3 0 0 1-2 5 3 3 0 0 1-6 1"/><path d="M4 4l16 16"/></svg></span><div><h3>Not used for training</h3><p>Sopal has special enterprise agreements with frontier model providers to ensure your documents are not used to train AI models.</p></div></div></div>
+          <div class="ps-item"><div class="ps-card glass"><span class="ps-icon" style="--a:#2f7cf6;--b:#7a5cf5"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span><div><h3>Stored in Australia</h3><p>Documents and the library are stored in Sydney.</p></div></div></div>
+          <div class="ps-item"><div class="ps-card glass"><span class="ps-icon" style="--a:#7a5cf5;--b:#c25cf0"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="7" height="14" rx="2"/><rect x="14" y="5" width="7" height="14" rx="2"/></svg></span><div><h3>A separate account</h3><p>Sopal Workspace doesn&rsquo;t share accounts or data with Sopal Decisions on sopal.com.au.</p></div></div></div>
       </div>
     </div>
   </section>
@@ -461,12 +489,12 @@
       <div class="price-card glass" style="margin-top:36px">
         <div class="price-in">
           <div class="price-main">
-            <div class="amount">$140</div>
-            <div class="per">per month for the first user</div>
-            <div class="amount2">$90 <span>per month for each additional user</span></div>
-            <p class="free">Your first month is free, up to 100 credits. Each user you add gets their own free first month and their own 100 credits too.</p>
+            <div class="free-big">Free <span>for your first month</span></div>
+            <p class="then">Then <b>$140 a month</b> for the first user and <b>$90 a month</b> for each additional user. GST included.</p>
             <ul>
               <li>100 SopalAI credits for each user, every month</li>
+              <li>Each user you add gets their own free first month</li>
+              <li>An email reminder 5 days before your free month ends</li>
               <li>Up to 500 sets of submissions included</li>
               <li>Search, drafting, Projects and Word export</li>
               <li>Cancel at any time</li>
@@ -475,7 +503,7 @@
           </div>
           <div class="price-side">
             <div><h3>How do SopalAI credits work</h3><p>Credits are used when SopalAI does work for you: answering a question, researching, and drafting. A short answer uses a fraction of a credit; a researched draft of a full section uses more. Each user gets 100 credits a month. Uploading, Boolean search, reading documents, editing and exporting to Word don&rsquo;t use credits.</p></div>
-            <div><h3>PAYG credits</h3><p>Once someone has used their 100 credits for the month, work continues on the firm&rsquo;s pay-as-you-go credits: $50 buys 60 credits. Buy them when you need them, or turn on auto top-up, which buys $50 at a time (or an amount you choose) when the balance runs low, up to a monthly limit you set. The owner and admins manage this.</p></div>
+            <div><h3>PAYG credits</h3><p>Once someone has used their 100 credits for the month, work continues on the firm&rsquo;s pay-as-you-go credits: $50 buys 22 credits. Buy them when you need them, or turn on auto top-up, which buys $50 at a time (or an amount you choose) when the balance runs low, up to a monthly limit you set. The owner and admins manage this.</p></div>
             <div><h3>Up to 500 sets of submissions included</h3><p>Your firm can store up to 500 sets of submissions at no extra cost. Beyond that, each additional set is $1.20 a month, charged once for the firm, not per user.</p></div>
           </div>
         </div>
@@ -487,20 +515,28 @@
     <div class="container narrow">
       <h2 class="h2 h2-center">Questions</h2>
       <div class="faq">
-        <details><summary>How do we get started?</summary><p>Create a firm account, upload a folder or zip of past submissions, and invite colleagues. Documents become searchable as soon as they&rsquo;ve been read, and you can start searching while the rest are still being filed.</p></details>
-        <details><summary>What files can we upload?</summary><p>PDF and Word documents, one at a time, as a folder, or as a zip file. Scanned PDFs are read too. Statutory declarations aren&rsquo;t kept in the library, because they&rsquo;re a witness&rsquo;s own evidence rather than the firm&rsquo;s work.</p></details>
-        <details><summary>Can the AI get things wrong?</summary><p>Yes, which is why it shows its sources. Answers from your library cite the page each point came from, and quoted passages are checked against that page. Drafts should be read and checked before they&rsquo;re filed, the same as you would with anyone else&rsquo;s draft.</p></details>
-        <details><summary>What happens after the free month?</summary><p>From then on it&rsquo;s $140 a month for the first user and $90 a month for each additional user, charged to the card you added when you signed up. We&rsquo;ll remind you 5 days before your free month ends, and you can cancel before then and won&rsquo;t be charged. Each user you add later has their own free first month before their $90 starts.</p></details>
+        <details><summary>How do we get started?</summary><p>Create an account for your firm and add a card. Nothing is charged for the first month. Then drag in a folder or a zip of your past submissions and invite your colleagues. Documents become searchable as soon as they&rsquo;ve been read, so you can start searching while the rest are still being filed. A short checklist in the app walks you through the first search, question and draft.</p></details>
+        <details><summary>What counts as a set of submissions?</summary><p>One adjudication application, adjudication response or set of further submissions, together with anything in the same file, such as its annexures. Your firm&rsquo;s first 500 are included in the subscription. After that, each additional set is $1.20 a month.</p></details>
+        <details><summary>What files can we upload?</summary><p>PDF and Word documents, one at a time, as a whole folder, or as a zip file of any size. Scanned PDFs are read too. Statutory declarations aren&rsquo;t kept in the library, because they&rsquo;re a witness&rsquo;s own evidence rather than the firm&rsquo;s work.</p></details>
+        <details><summary>How are our submissions filed?</summary><p>Each set is read and categorised automatically: the document type, the parties, the State, the amounts claimed and scheduled, and the date. You can correct any of these, and your correction is kept. If the same submission is uploaded twice, it&rsquo;s flagged so the library doesn&rsquo;t fill up with copies.</p></details>
+        <details><summary>How is this different from searching our shared drive?</summary><p>A shared drive searches file names, and at best finds a word. Sopal Workspace searches the full text of every page with Boolean and proximity searching, and SopalAI can answer a question across the whole library, showing you the paragraphs that answer it and where they came from.</p></details>
+        <details><summary>How does SopalAI draft submissions?</summary><p>Tell it what you need the way you would brief a junior, and name a precedent to follow if you like. It reads your firm&rsquo;s precedents first, then the current legislation, Australian case law and past adjudication decisions on the point, and then writes. The draft appears in an editor with proper paragraph numbering, in your firm&rsquo;s format, ready to edit or export to Word.</p></details>
+        <details><summary>Can the AI get things wrong?</summary><p>Yes. SopalAI is an AI model, so its work should be checked before it&rsquo;s relied on or filed, the same as anyone else&rsquo;s draft. Answers from your library show the paragraphs they came from, so you can check them quickly.</p></details>
+        <details><summary>Who can see our documents, and are they used to train AI?</summary><p>Only the people your firm invites can see your library. Documents are stored in Sydney. Sopal has special enterprise agreements with frontier model providers to ensure your documents are not used to train AI models.</p></details>
+        <details><summary>How do credits work, and what happens when they run out?</summary><p>Each user has 100 SopalAI credits a month, used when SopalAI answers questions, researches or drafts. Uploading, Boolean search, reading and exporting don&rsquo;t use credits. Once a user&rsquo;s 100 are used, work continues on the firm&rsquo;s pay-as-you-go credits, which the owner or an admin buys in $50 steps or tops up automatically, up to a monthly limit they set.</p></details>
+        <details><summary>What happens after the free month?</summary><p>From then on it&rsquo;s $140 a month for the first user and $90 a month for each additional user, GST included, charged to the card you added when you signed up. We&rsquo;ll email you 5 days before your free month ends, and you can cancel before then and won&rsquo;t be charged.</p></details>
+        <details><summary>How does billing work when we add people?</summary><p>Each person you invite gets their own free first month and their own 100 credits. Their $90 a month starts only once their free month is over, and is charged pro rata with the firm&rsquo;s subscription. The owner and admins can see who is on the account, and download tax invoices, in Settings.</p></details>
+        <details><summary>Can we cancel, and what happens to our library?</summary><p>You can cancel at any time in Settings. The firm keeps access until the end of the period it has paid for. The documents you upload are yours, and you can download them at any time.</p></details>
         <details><summary>Is this the same account as Sopal Decisions?</summary><p>No. Sopal Workspace has its own accounts, separate from sopal.com.au. A Sopal Decisions subscription doesn&rsquo;t include Workspace, and nothing is shared between the two.</p></details>
-        <details><summary>Can we take our documents with us if we leave?</summary><p>Yes. The documents you upload are yours, and you can download them at any time.</p></details>
+        <details><summary>Can we get a walkthrough?</summary><p>Yes. <a href="mailto:info@sopal.com.au?subject=Sopal%20Workspace%20walkthrough">Book a 15-minute walkthrough</a> and we&rsquo;ll show you around with your own questions in mind.</p></details>
       </div>
     </div>
   </section>
 
   <section class="grey closing">
     <div class="container">
-      <h2 class="h2">Try it with your own submissions</h2>
-      <p>Your first month is free.</p>
+      <h2 class="h2">Try Sopal Workspace today</h2>
+      <p>Free for your first month.</p>
       <div class="hero-actions">
         <a href="https://app.sopal.com.au/signup" class="btn btn-green">Create account</a>
         <a href="https://app.sopal.com.au/login" class="btn btn-glass">Sign in</a>
@@ -581,6 +617,21 @@
     if (still) return;
     var t0 = performance.now();
     (function tick(now) { place(0.5 + 0.5 * Math.sin((now - t0) / 2400)); requestAnimationFrame(tick); })(t0);
+  })();
+
+  // Privacy: each point rises in as it reaches the middle of the screen.
+  (function () {
+    var items = document.querySelectorAll(".ps-item"), dots = document.querySelectorAll(".ps-dots i");
+    if (!("IntersectionObserver" in window)) { items.forEach(function (i) { i.classList.add("in"); }); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add("in");
+        var n = Array.prototype.indexOf.call(items, e.target);
+        dots.forEach(function (d, i) { d.classList.toggle("on", i <= n); });
+      });
+    }, { rootMargin: "-35% 0px -35% 0px" });
+    items.forEach(function (i) { io.observe(i); });
   })();
 
   // Start the sources graphic when it scrolls into view.
