@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>Sopal Workspace demo: from precedent to submission</title>
+<!-- Source of site/assets/workspace/demo.mp4 (record.mjs demo). Open in a
+     browser to preview; ?t=30 holds one moment. The matter, parties,
+     precedents and clauses shown are invented. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#86868b; --line:rgba(0,0,0,.08); --green:#00d47e; --greenD:#00a862; --acc:#2964aa; --tnr:"Times New Roman", Times, serif;
+  --spectrum:linear-gradient(90deg, #00d47e 0%, #14c8b4 28%, #2f7cf6 58%, #7a5cf5 82%, #c25cf0 100%); }
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:#000; }
+body { font-family:Inter, -apple-system, sans-serif; -webkit-font-smoothing:antialiased; color:var(--ink); }
+#stage { position:relative; width:1920px; height:1080px; overflow:hidden; background:radial-gradient(1400px 800px at 72% 18%, #ffffff 0%, #f5f5f7 55%, #ebebee 100%); }
+.abs { position:absolute; }
+.scene { position:absolute; inset:0; opacity:0; }
+.glass { background:linear-gradient(180deg, rgba(255,255,255,.62), rgba(255,255,255,.22)); backdrop-filter:blur(10px) saturate(190%); -webkit-backdrop-filter:blur(10px) saturate(190%); border:1.5px solid rgba(255,255,255,.85); box-shadow:inset 0 2px 2px rgba(255,255,255,.95), inset 0 -3px 8px rgba(0,0,0,.05), 0 24px 60px rgba(0,0,0,.09), 0 3px 8px rgba(0,0,0,.05); }
+.guide { position:absolute; border:1px solid rgba(0,0,0,.05); border-radius:50%; }
+
+/* Captions */
+.cap { position:absolute; left:110px; top:0; width:520px; opacity:0; }
+.cap h2 { font-size:50px; line-height:1.1; font-weight:650; letter-spacing:-.035em; }
+.cap p { font-size:25px; line-height:1.45; color:var(--ink2); margin-top:22px; letter-spacing:-.01em; }
+.center { position:absolute; left:0; right:0; text-align:center; }
+.center h1 { font-size:84px; font-weight:700; letter-spacing:-.045em; line-height:1.04; }
+.center p { font-size:31px; color:var(--ink2); line-height:1.4; letter-spacing:-.012em; }
+.lockup { display:flex; align-items:flex-start; justify-content:center; gap:18px; }
+.lockup img { height:70px; }
+.lockup span { font-size:53px; font-weight:500; letter-spacing:-.025em; color:#0d0d0d; line-height:1; margin-top:11px; }
+
+/* App window */
+#win { position:absolute; left:680px; top:70px; width:1180px; height:940px; border-radius:40px; padding:12px; opacity:0; }
+#app { position:relative; width:100%; height:100%; border-radius:30px; background:#fff; overflow:hidden; box-shadow:0 0 0 1px rgba(0,0,0,.06); display:flex; }
+#side { flex:none; width:200px; background:#f7f7f5; border-right:1px solid rgba(0,0,0,.05); padding:24px 12px; }
+#side img { height:22px; margin:0 8px 26px; display:block; }
+.nav { display:flex; align-items:center; gap:10px; font-size:15.5px; color:#3a3a3c; padding:9px 10px; border-radius:10px; margin-bottom:2px; white-space:nowrap; }
+.nav svg { flex:none; width:17px; height:17px; fill:none; stroke:#8e8e93; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+.nav.on { background:rgba(0,0,0,.06); color:#0d0d0d; font-weight:600; }
+.side-label { font-size:12.5px; color:var(--ink3); margin:18px 10px 6px; }
+.proj { font-size:14.5px; padding:7px 10px; border-radius:9px; color:#3a3a3c; display:flex; gap:8px; align-items:center; }
+.proj.on { background:rgba(0,0,0,.06); font-weight:600; color:#0d0d0d; }
+#main { position:relative; flex:1; min-width:0; }
+#chat { position:absolute; inset:0 auto 0 0; width:100%; padding:30px 40px 0; transition:none; }
+.hdr { font-size:17px; font-weight:600; color:#3a3a3c; margin-bottom:18px; }
+.umsg { margin-left:auto; max-width:520px; background:#eaf2fb; border-radius:20px; padding:13px 18px; font-size:16.5px; line-height:1.45; margin-bottom:18px; opacity:0; }
+.ans { font-size:16.5px; line-height:1.6; margin-bottom:18px; }
+.ans li { margin:8px 0 0 20px; }
+.ans .line { opacity:0; }
+.chip { display:inline-block; font-size:12.5px; font-weight:600; color:#00804c; background:rgba(0,212,126,.13); border-radius:6px; padding:1px 7px; margin-left:5px; }
+.wait i { display:block; height:10px; border-radius:6px; margin:10px 0; background:linear-gradient(90deg, #eee 0%, #dfe8f3 40%, #eee 80%); background-size:240% 100%; }
+
+/* Composer */
+#cmp { position:absolute; left:40px; right:40px; bottom:28px; border:1.5px solid rgba(0,0,0,.12); border-radius:22px; background:#fff; padding:16px 18px 12px; box-shadow:0 4px 20px rgba(0,0,0,.05); }
+#cmp.computer { border-color:transparent; box-shadow:0 0 0 2px rgba(0,212,126,.55), 0 0 30px rgba(0,212,126,.25); }
+#cmpText { font-size:16.5px; min-height:48px; line-height:1.45; color:var(--ink); }
+#cmpText.ph { color:#9a9aa0; }
+.caret { display:inline-block; width:2px; height:19px; background:var(--ink); vertical-align:-3px; margin-left:1px; }
+.cmp-row { display:flex; align-items:center; gap:10px; margin-top:8px; }
+.seg { display:flex; background:#f2f2f4; border-radius:999px; padding:3px; position:relative; }
+.seg span { position:relative; z-index:1; font-size:14px; padding:6px 13px; border-radius:999px; color:#6e6e73; display:flex; gap:6px; align-items:center; }
+.seg span.on { color:#0d0d0d; font-weight:600; }
+.seg i { position:absolute; top:3px; bottom:3px; left:3px; width:84px; border-radius:999px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+#projChip { font-size:13.5px; font-weight:600; color:#00804c; background:rgba(0,212,126,.12); border-radius:999px; padding:5px 12px; opacity:0; }
+.send { margin-left:auto; width:34px; height:34px; border-radius:50%; background:#0d0d0d; }
+#toast { position:absolute; left:50%; top:24px; transform:translateX(-50%); background:#0d0d0d; color:#fff; font-size:15px; font-weight:500; padding:10px 18px; border-radius:999px; opacity:0; white-space:nowrap; box-shadow:0 10px 30px rgba(0,0,0,.2); z-index:5; }
+
+/* Computer: steps on the left, the draft on the right */
+#steps { position:absolute; left:0; top:0; bottom:0; width:330px; padding:28px 24px; border-right:1px solid var(--line); opacity:0; background:#fff; }
+.step { display:flex; gap:10px; font-size:14px; line-height:1.4; color:#3a3a3c; margin-top:14px; opacity:0; }
+.step i { flex:none; width:18px; height:18px; border-radius:50%; border:2px solid #c7c7cc; margin-top:1px; position:relative; }
+.step.done i { border-color:var(--green); background:var(--green); }
+.step.done i::after { content:""; position:absolute; left:4px; top:1px; width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+.step small { display:block; color:var(--ink3); font-size:12.5px; }
+#ask { margin-top:20px; border:1px solid var(--line); border-radius:16px; padding:14px 16px; opacity:0; background:#fff; box-shadow:0 8px 24px rgba(0,0,0,.06); }
+#ask b { display:block; font-size:14.5px; line-height:1.45; font-weight:600; }
+#ask .opts { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+#ask .opts span { font-size:13px; border:1px solid rgba(0,0,0,.14); border-radius:999px; padding:6px 11px; background:#fff; }
+#ask .opts span.hit { background:#0d0d0d; color:#fff; border-color:#0d0d0d; }
+#doc { position:absolute; left:330px; right:0; top:0; bottom:0; background:#f3f3f2; padding:22px 24px 0; overflow:hidden; opacity:0; }
+.docbar { font-size:13px; color:var(--ink2); margin-bottom:12px; display:flex; justify-content:space-between; }
+.sheet { background:#fff; box-shadow:0 2px 14px rgba(0,0,0,.07); padding:50px 60px 80px; font-family:var(--tnr); font-size:15px; line-height:1.55; color:#111; will-change:transform; }
+.sheet .h1 { font-weight:700; margin:18px 0 10px; }
+.sheet .h2 { font-weight:700; font-style:italic; margin:14px 0 8px; display:flex; gap:8px; }
+.sheet .p, .sheet .s { display:grid; grid-template-columns:40px 1fr; margin-bottom:8px; text-align:justify; }
+.sheet .s { grid-template-columns:40px 36px 1fr; }
+.num { display:inline-block; font-variant-numeric:tabular-nums; }
+.bump { color:var(--acc); }
+#newsec { overflow:hidden; }
+.focus { border-radius:4px; box-shadow:0 0 0 6px rgba(41,100,170,0); }
+.cursor { position:absolute; width:24px; height:24px; z-index:9; opacity:0; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="deco" class="abs" style="inset:0">
+    <div class="guide" style="left:-180px;top:560px;width:520px;height:520px"></div>
+    <div class="guide" style="left:1500px;top:-160px;width:560px;height:560px"></div>
+  </div>
+
+  <!-- 1. Title -->
+  <div class="scene" id="s1">
+    <div class="center" style="top:370px">
+      <h1 id="s1a">From precedent to submission.</h1>
+      <p id="s1b" style="margin-top:28px">Find how your firm argued a point before, then build on it.</p>
+    </div>
+  </div>
+
+  <div class="cap" id="c2" style="top:330px"><h2>Find how the firm argued it before.</h2><p>Ask in plain English. SopalAI finds the submissions, and the paragraphs that answer it.</p></div>
+  <div class="cap" id="c3" style="top:330px"><h2>Then ask for the draft.</h2><p>&ldquo;Draft this for the King Street Project.&rdquo;</p></div>
+  <div class="cap" id="c4" style="top:310px"><h2>It moves to Computer, in that project.</h2><p>No switching modes or menus. It finds the submissions already under way.</p></div>
+  <div class="cap" id="c5" style="top:310px"><h2>It finds where the point belongs.</h2><p>And asks before it writes.</p></div>
+  <div class="cap" id="c6" style="top:290px"><h2>Written in place, in your firm&rsquo;s style.</h2><p>Drawing on your precedents, the Act and case law. The headings and paragraph numbers after it move on by themselves.</p></div>
+
+  <div id="win" class="glass">
+    <div id="app">
+      <div id="side">
+        <img src="../../site/assets/sopal_logo_v1.png" alt="">
+        <div class="nav" id="navNew"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New query</div>
+        <div class="nav"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Boolean Search</div>
+        <div class="nav"><svg viewBox="0 0 24 24"><path d="M4 5h5v15H4zM10 5h4v15h-4zM15.5 6l3.9-1 3 14-3.9 1z"/></svg>Library</div>
+        <div class="nav"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Team</div>
+        <div class="side-label">Projects</div>
+        <div class="proj" id="projKS"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.9"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>King Street Project</div>
+        <div class="proj"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.9"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Harbour Road</div>
+      </div>
+      <div id="main">
+        <div id="toast">Moving to Computer, in King Street Project</div>
+        <div id="chat">
+          <div class="hdr">New query</div>
+          <div class="umsg" id="u1">Find the submissions we did a few years ago where we argued that a notice of delay under clause 34.1 was not a condition precedent to an extension of time.</div>
+          <div class="ans" id="a1">
+            <div class="wait" id="w1"><i style="width:92%"></i><i style="width:78%"></i><i style="width:55%"></i></div>
+            <p class="line">Two of the firm&rsquo;s submissions make that argument:</p>
+            <ol>
+              <li class="line"><b>Tamsley Glass v Orrindale Built</b> (application, 2023). Clause 34.1 required notice within 7 days, but nothing in it made the extension conditional on notice; clause 34.3, by contrast, used express time-bar words.<span class="chip">p 14</span></li>
+              <li class="line"><b>Brenlock Civil v Ostrova Projects</b> (further submissions, 2024). The Superintendent&rsquo;s power to extend time &ldquo;whether or not notice was given&rdquo; is inconsistent with a condition precedent.<span class="chip">p 6</span></li>
+            </ol>
+          </div>
+          <div class="umsg" id="u2">Drawing on those submissions and anything else you find relevant, draft submissions on this point for the King Street Project adjudication.</div>
+        </div>
+
+        <div id="steps">
+          <div class="umsg" style="opacity:1;margin:0 0 6px;max-width:none;font-size:14.5px;padding:11px 14px">Drawing on those submissions&hellip; draft submissions on this point for the King Street Project adjudication.</div>
+          <div class="step" id="st1"><i></i><div>Found the submissions in progress<small>King Street &ndash; adjudication application (working draft)</small></div></div>
+          <div class="step" id="st2"><i></i><div>Read the Tamsley Glass and Brenlock Civil submissions<small>From your library</small></div></div>
+          <div class="step" id="st3"><i></i><div>Read clause 34 of the Subcontract<small>From the project documents</small></div></div>
+          <div class="step" id="st4"><i></i><div>Found the place in Part 4</div></div>
+          <div id="ask">
+            <b>Add this as section 4.4, &ldquo;Notice under clause 34.1 is not a condition precedent&rdquo;, before 4.4 The extension claimed (which becomes 4.5)?</b>
+            <div class="opts"><span id="optYes">Yes, add it as 4.4</span><span>Put it somewhere else</span><span>Show me first</span></div>
+          </div>
+          <div class="step" id="st5"><i></i><div>Checked the case law on notice provisions<small>Queensland and New South Wales</small></div></div>
+          <div class="step" id="st6"><i></i><div>Wrote section 4.4<small>Headings after it renumbered</small></div></div>
+        </div>
+
+        <div id="doc">
+          <div class="docbar"><span>King Street &ndash; adjudication application (working draft)</span><span>Saved</span></div>
+          <div class="sheet" id="sheet">
+            <div class="h1">PART 1 &ndash; INTRODUCTION</div>
+            <div class="p"><span>1.</span><span>These are the claimant&rsquo;s submissions in support of its adjudication application under s 79 of the <i>Building Industry Fairness (Security of Payment) Act 2017</i> (Qld) (the Act).</span></div>
+            <div class="p"><span>2.</span><span>The claimant, ABC Builder Pty Ltd, claims $1,184,500.00 under Payment Claim 11 for work on the King Street apartments.</span></div>
+            <div class="h1">PART 4 &ndash; EXTENSIONS OF TIME</div>
+            <div class="h2"><span>4.1</span><span>The Subcontract</span></div>
+            <div class="p"><span>3.</span><span>Clause 34 of the Subcontract provides for extensions of time to the Date for Practical Completion.</span></div>
+            <div class="h2"><span>4.2</span><span>The delays</span></div>
+            <div class="p"><span>4.</span><span>The Works were delayed by 37 days, by the late issue of structural drawings and by 11 days of inclement weather.</span></div>
+            <div class="h2"><span>4.3</span><span>The claimant&rsquo;s notices</span></div>
+            <div class="p"><span>5.</span><span>The claimant gave written notice of each delay, although notice of the drawing delay was given 9 days after the delay began.</span></div>
+            <div id="newsec">
+              <div class="h2 nl"><span>4.4</span><span>Notice under clause 34.1 is not a condition precedent</span></div>
+              <div class="p nl"><span>6.</span><span>The respondent says that, because notice of the drawing delay was given 9 days after it began, clause 34.1 bars any extension of time for it.</span></div>
+              <div class="p nl"><span>7.</span><span>Clause 34.1 does not say so. It requires notice &ldquo;within 7 days&rdquo;, but it does not make an extension of time conditional on that notice, nor provide that the entitlement is lost if notice is late.</span></div>
+              <div class="p nl"><span>8.</span><span>Where the parties intended a time bar, they said so. Clause 34.3 provides that a claim for delay costs &ldquo;is barred&rdquo; unless made within 28 days. The absence of those words from clause 34.1 is telling:</span></div>
+              <div class="s nl"><span></span><span>(a)</span><span>the parties are taken to have chosen their words deliberately; and</span></div>
+              <div class="s nl"><span></span><span>(b)</span><span>a provision that forfeits an accrued entitlement is construed strictly, and is not implied where the contract does not express it.</span></div>
+              <div class="p nl"><span>9.</span><span>Clause 34.4 empowers the Superintendent to extend time &ldquo;whether or not the Subcontractor has given notice&rdquo;. That power is inconsistent with notice being a condition precedent.</span></div>
+              <div class="p nl"><span>10.</span><span>The late notice therefore does not disentitle the claimant to the extension of 37 days addressed in section 4.5 below.</span></div>
+            </div>
+            <div class="h2 focus" id="hExt"><span class="num" id="nExt">4.4</span><span>The extension claimed</span></div>
+            <div class="p"><span class="num" id="p6">6.</span><span>The claimant is entitled to an extension of 37 days, and so the respondent is not entitled to liquidated damages.</span></div>
+            <div class="h2"><span class="num" id="nQ">4.5</span><span>Quantum</span></div>
+            <div class="p"><span class="num" id="p7">7.</span><span>The value of the variations claimed is set out in the schedule at Tab 8.</span></div>
+            <div class="h1">PART 5 &ndash; CONCLUSION</div>
+            <div class="p"><span class="num" id="p8">8.</span><span>The adjudicator should determine the adjudicated amount to be $1,184,500.00.</span></div>
+          </div>
+        </div>
+
+        <div id="cmp">
+          <div id="cmpText" class="ph">Ask anything about your firm&rsquo;s documents...</div>
+          <div class="cmp-row">
+            <div class="seg"><i id="segI"></i><span id="segS">Search</span><span id="segC">Computer</span></div>
+            <span id="projChip">King Street Project</span>
+            <span class="send"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg class="cursor" id="cursor" viewBox="0 0 24 24"><path d="M4 2l15 9-7 1.5L9 20z" fill="#0d0d0d" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+
+  <!-- End card -->
+  <div class="scene" id="s9">
+    <div class="center" style="top:360px">
+      <div class="lockup" id="s9a"><img src="../../site/assets/sopal_logo_v1.png" alt=""><span>Workspace</span></div>
+      <h1 id="s9b" style="margin-top:40px;font-size:62px">Put your firm&rsquo;s precedents to work.</h1>
+      <p id="s9c" style="margin-top:26px;font-size:30px;color:var(--greenD);font-weight:600">sopal.com.au/workspace</p>
+      <p id="s9d" style="margin-top:110px;font-size:17px;color:var(--ink3)">The matter, parties, precedents and clauses in this video are invented.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const p = (t, a, b) => clamp((t - a) / (b - a));
+const eo = (x) => 1 - Math.pow(1 - x, 3);
+const eio = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const win = (t, a, b, fi = 0.7, fo = 0.6) => Math.min(eo(p(t, a, a + fi)), 1 - eio(p(t, b - fo, b)));
+function st(el, o, y = 0, s = 1, x = 0) { if (typeof el === "string") el = $(el); el.style.opacity = o; el.style.transform = `translate(${x}px, ${y}px) scale(${s})`; }
+const rise = (el, t, a, b, d = 22) => st(el, win(t, a, b), (1 - eo(p(t, a, a + 0.7))) * d);
+const reveal = (el, t, a) => { const k = eo(p(t, a, a + 0.55)); el.style.opacity = k; el.style.filter = `blur(${(1 - k) * 6}px)`; el.style.transform = `translateY(${(1 - k) * 6}px)`; };
+
+const DURATION = 60;
+const Q1 = $("#u1").textContent, Q2 = $("#u2").textContent;
+const PH = "Ask anything about your firm’s documents...";
+
+function typing(t, a, b, text) {
+  const n = Math.round(text.length * p(t, a, b));
+  const el = $("#cmpText");
+  if (n <= 0) { el.className = "ph"; el.textContent = PH; return; }
+  el.className = ""; el.textContent = text.slice(0, n);
+  if (t < b + 0.3) { const c = document.createElement("span"); c.className = "caret"; el.appendChild(c); }
+}
+
+function cursorTo(t, a, b, from, to) {
+  const k = eio(p(t, a, b));
+  const c = $("#cursor");
+  c.style.opacity = win(t, a - 0.2, b + 1.2, 0.2, 0.4);
+  c.style.transform = `translate(${from[0] + (to[0] - from[0]) * k}px, ${from[1] + (to[1] - from[1]) * k}px) scale(${t > b && t < b + 0.25 ? 0.85 : 1})`;
+}
+
+function render(t) {
+  $("#deco").style.transform = `translateX(${-t * 1.5}px)`;
+  // 1. Title, 0 to 4.5
+  st("#s1", win(t, 0, 4.5, 0.01, 0.6));
+  rise($("#s1a"), t, 0.3, 99); rise($("#s1b"), t, 1.1, 99);
+
+  // The window, 4.5 to 55
+  st("#win", win(t, 4.5, 55, 0.8, 0.6), (1 - eo(p(t, 4.5, 5.5))) * 50);
+  $("#navNew").classList.toggle("on", t < 21);
+
+  // 2. The question, 4.5 to 15
+  rise($("#c2"), t, 4.8, 15);
+  typing(t, 5.4, 8.6, Q1);
+  if (t >= 8.9) typing(t, 99, 100, "");
+  rise($("#u1"), t, 8.9, 99, 12);
+  $("#w1").style.opacity = win(t, 9.2, 10.6, 0.2, 0.3);
+  $("#w1").style.display = t < 10.6 ? "" : "none";
+  $("#w1").querySelectorAll("i").forEach((i, k) => (i.style.backgroundPosition = `${120 - ((t * 110 + k * 30) % 240)}% 0`));
+  document.querySelectorAll("#a1 .line").forEach((el, k) => reveal(el, t, 10.6 + k * 0.9));
+
+  // 3. The follow-up, 15 to 21
+  rise($("#c3"), t, 15.2, 21);
+  if (t >= 15.4 && t < 19.4) typing(t, 15.4, 19, Q2);
+  rise($("#u2"), t, 19.4, 99, 12);
+  $("#chat").style.transform = `translateY(${-eio(p(t, 19.4, 20.2)) * 120}px)`;
+
+  // 4. To Computer, in the project, 21 to 26
+  rise($("#c4"), t, 21.2, 26);
+  const sw = eio(p(t, 20.4, 21.2));
+  $("#segI").style.transform = `translateX(${sw * 84}px)`;
+  $("#segS").classList.toggle("on", sw < 0.5); $("#segC").classList.toggle("on", sw >= 0.5);
+  $("#cmp").classList.toggle("computer", sw >= 0.5);
+  st("#projChip", eo(p(t, 21, 21.5)), 0, 0.9 + 0.1 * eo(p(t, 21, 21.5)));
+  $("#projKS").classList.toggle("on", t >= 21);
+  st("#toast", win(t, 21, 24.4, 0.3, 0.4), (1 - eo(p(t, 21, 21.3))) * -10, 1, 0);
+  $("#toast").style.transform += " translateX(-50%)";
+  const chatOut = eo(p(t, 22.2, 23));
+  $("#chat").style.opacity = 1 - chatOut;
+  st("#steps", eo(p(t, 22.4, 23.1)), 0, 1, (1 - eo(p(t, 22.4, 23.1))) * -20);
+  st("#doc", eo(p(t, 23, 23.9)), 0, 1, (1 - eo(p(t, 23, 23.9))) * 40);
+  $("#cmp").style.opacity = 1 - eo(p(t, 22.2, 22.8));
+  const steps = [[23.2, 24.3], [24.3, 25.6], [25.6, 26.8], [26.8, 28]];
+  steps.forEach(([a, b], k) => { const el = $("#st" + (k + 1)); rise(el, t, a, 99, 8); el.classList.toggle("done", t >= b); });
+
+  // 5. The place, and the question, 26 to 36
+  rise($("#c5"), t, 26.2, 36);
+  // The draft scrolls to Part 4, and 4.4 lights up.
+  const sheet = $("#sheet");
+  const newsec = $("#newsec");
+  // Each line of the new section opens its own space as it is written.
+  newsec.querySelectorAll(".nl").forEach((el, k, all) => {
+    const a = 37.2 + k * (6.4 / all.length);
+    const h = eio(p(t, a - 0.15, a + 0.35));
+    el.style.maxHeight = `${h * 160}px`; el.style.marginBottom = `${h * 8}px`; el.style.overflow = "hidden";
+    reveal(el, t, a);
+  });
+  const scrollTo = eio(p(t, 26.2, 28.2)) * 300 + eio(p(t, 38, 45)) * 140;
+  sheet.style.transform = `translateY(${-scrollTo}px)`;
+  const f = t >= 27.4 && t < 36.8 ? Math.min(eo(p(t, 27.4, 28)), 1 - eio(p(t, 36.2, 36.8))) : 0;
+  $("#hExt").style.boxShadow = `0 0 0 ${6 * f}px rgba(41,100,170,${0.22 * f})`;
+  $("#hExt").style.background = `rgba(41,100,170,${0.16 * f})`;
+  rise($("#ask"), t, 28.6, 99, 12);
+  cursorTo(t, 31.6, 33.2, [1060, 820], [965, 578]);
+  $("#optYes").classList.toggle("hit", t >= 33.3);
+  $("#ask").style.opacity = t < 34.2 ? $("#ask").style.opacity : String(1 - eo(p(t, 34.2, 34.8)));
+  $("#ask").style.display = t < 34.9 ? "" : "none";
+  [[35, 36.4], [36.4, 45.2]].forEach(([a, b], k) => { const el = $("#st" + (k + 5)); rise(el, t, a, 99, 8); el.classList.toggle("done", t >= b); });
+
+  // 6. Written in place; numbering moves on, 36 to 55
+  rise($("#c6"), t, 36.8, 55);
+  const moved = t >= 44.6;
+  const set = (id, a, b) => { const el = $(id); el.textContent = moved ? b : a; el.classList.toggle("bump", moved && t < 50); };
+  set("#nExt", "4.4", "4.5"); set("#nQ", "4.5", "4.6"); set("#p6", "6.", "11."); set("#p7", "7.", "12."); set("#p8", "8.", "13.");
+  ["#nExt", "#nQ", "#p6", "#p7", "#p8"].forEach((id) => { const k = moved ? eo(p(t, 44.6, 45.2)) : 1; $(id).style.transform = `translateY(${(1 - k) * -8}px)`; $(id).style.opacity = 0.3 + 0.7 * k; });
+
+  // End card, 55 to 60
+  st("#s9", win(t, 55, DURATION + 1, 0.6, 0.01));
+  rise($("#s9a"), t, 55.3, 99); rise($("#s9b"), t, 55.9, 99); rise($("#s9c"), t, 56.6, 99); rise($("#s9d"), t, 57.2, 99, 8);
+}
+window.render = render;
+window.DURATION = DURATION;
+const q = new URLSearchParams(location.search);
+if (q.has("t")) render(+q.get("t"));
+else if (!q.has("record")) { const t0 = performance.now(); const loop = () => { render(((performance.now() - t0) / 1000) % DURATION); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+</script>
+</body>
+</html>

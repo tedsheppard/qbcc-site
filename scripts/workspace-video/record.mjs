@@ -15,17 +15,20 @@ const from = process.env.PLAYWRIGHT_FROM || resolve(here, "../../../sopal-docs")
 const { chromium } = createRequire(join(from, "package.json"))("playwright");
 const out = resolve(here, "../../site/assets/workspace");
 const FPS = 30;
+// --page=demo renders demo.html to demo.mp4 instead of the explainer.
+const PAGE = (process.argv.find((a) => a.startsWith("--page=")) || "--page=explainer").slice(7);
+const IS_EXPLAINER = PAGE === "explainer";
 // The voiceover's second line is longer than the second scene, so that scene
 // is played more slowly: real seconds 5.5 to 13.9 show video seconds 5.5 to 11,
 // and everything after it starts 2.9 seconds later.
-const SLOW = { from: 5.5, to: 11, extra: 2.9 };
+const SLOW = IS_EXPLAINER ? { from: 5.5, to: 11, extra: 2.9 } : { from: 1e9, to: 1e9, extra: 0 };
 const videoTime = (t) => t < SLOW.from ? t
   : t < SLOW.to + SLOW.extra ? SLOW.from + (t - SLOW.from) * (SLOW.to - SLOW.from) / (SLOW.to - SLOW.from + SLOW.extra)
   : t - SLOW.extra;
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
-await page.goto(pathToFileURL(join(here, "explainer.html")).href + "?record=1");
+await page.goto(pathToFileURL(join(here, `${PAGE}.html`)).href + "?record=1");
 await page.evaluate(() => document.fonts.ready);
 await page.waitForTimeout(500);
 const shot = async (t, type = "jpeg") => {
@@ -33,7 +36,7 @@ const shot = async (t, type = "jpeg") => {
   return page.screenshot({ type, quality: type === "jpeg" ? 93 : undefined, clip: { x: 0, y: 0, width: 1920, height: 1080 } });
 };
 
-const stills = process.argv.slice(2).map(Number);
+const stills = process.argv.slice(2).filter((a) => !a.startsWith("--")).map(Number);
 if (stills.length) {
   const dir = join(here, "stills");
   mkdirSync(dir, { recursive: true });
@@ -42,7 +45,7 @@ if (stills.length) {
   mkdirSync(out, { recursive: true });
   const duration = await page.evaluate(() => window.DURATION);
   const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS), "-c:v", "mjpeg", "-i", "-",
-    "-c:v", "libx264", "-preset", "slow", "-crf", "24", "-pix_fmt", "yuv420p", "-movflags", "+faststart", join(out, "explainer-silent.mp4")], { stdio: ["pipe", "inherit", "inherit"] });
+    "-c:v", "libx264", "-preset", "slow", "-crf", "24", "-pix_fmt", "yuv420p", "-movflags", "+faststart", join(out, `${PAGE}-silent.mp4`)], { stdio: ["pipe", "inherit", "inherit"] });
   const frames = Math.round((duration + SLOW.extra) * FPS);
   for (let i = 0; i < frames; i++) {
     const buf = await shot(videoTime(i / FPS));
@@ -51,8 +54,8 @@ if (stills.length) {
   }
   ff.stdin.end();
   await new Promise((r) => ff.on("close", r));
-  writeFileSync(join(out, "explainer-poster.jpg"), await shot(53.9));
+  writeFileSync(join(out, `${PAGE}-poster.jpg`), await shot(IS_EXPLAINER ? 53.9 : 46));
   // Until voiceover.mjs adds the voice, the page plays the silent cut.
-  copyFileSync(join(out, "explainer-silent.mp4"), join(out, "explainer.mp4"));
+  copyFileSync(join(out, `${PAGE}-silent.mp4`), join(out, `${PAGE}.mp4`));
 }
 await browser.close();
