@@ -150,6 +150,10 @@ mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding
   background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.3)); backdrop-filter:blur(var(--fb, 0px)) saturate(170%); -webkit-backdrop-filter:blur(var(--fb, 0px)) saturate(170%);
   border:1.5px solid rgba(255,255,255,.9); box-shadow:inset 0 2px 2px rgba(255,255,255,.95), inset 0 -4px 12px rgba(0,0,0,.05), 0 30px 70px rgba(0,0,0,.12); }
 #frost .lock { width:92px; height:92px; border-radius:50%; display:grid; place-items:center; background:rgba(255,255,255,.75); box-shadow:0 10px 30px rgba(0,0,0,.1); }
+.chips { display:flex; gap:18px; justify-content:center; margin-top:40px; }
+.chip2 { display:inline-flex; align-items:center; gap:12px; border-radius:999px; padding:10px 22px 10px 10px; font-size:22px; font-weight:600; color:var(--ink); background:rgba(255,255,255,.8); }
+.chip2 i { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:linear-gradient(135deg, var(--a), var(--b)); box-shadow:inset 0 1px 1px rgba(255,255,255,.6), inset 0 -4px 8px rgba(0,0,0,.12); }
+.chip2 svg { width:22px; height:22px; fill:none; stroke:#fff; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 #frost svg { width:40px; height:40px; fill:none; stroke:#0d0d0d; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 </style>
 </head>
@@ -294,20 +298,25 @@ mark { background:rgba(0,212,126,.24); color:inherit; border-radius:4px; padding
       <div class="rows" id="vrows"></div>
       <div id="frost"><div class="lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div></div>
     </div>
-    <div class="center" style="top:540px">
+    <div class="center" id="s8one" style="top:540px">
       <h2 id="s8a">Private to your firm.</h2>
-      <p id="s8b" style="margin-top:22px">Only the people you invite can see your library.</p>
-      <p id="s8c" style="margin-top:10px">Sopal has enterprise agreements with frontier model providers<br>so your documents are not used to train AI models.</p>
+      <p id="s8b" style="margin-top:22px">Your data is private to your firm, and your documents<br>are not used to train AI models.</p>
+    </div>
+    <div class="center" id="s8two" style="top:540px">
+      <h2 id="s8c">Stored onshore in Australia.</h2>
+      <p id="s8d" style="margin-top:22px">Sopal has enterprise agreements with frontier LLM providers,<br>including a Zero Data Retention policy.</p>
+      <div class="chips" id="s8e"><span class="glass chip2"><i style="--a:#00c271;--b:#14c8b4"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></i>Sydney, Australia</span><span class="glass chip2"><i style="--a:#2f7cf6;--b:#7a5cf5"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></i>Zero Data Retention</span></div>
     </div>
   </div>
 
   <!-- 9. End card -->
   <div class="scene" id="s9">
-    <div class="center" style="top:330px">
+    <div class="center" style="top:250px">
       <div class="lockup" id="s9a"><img src="../../site/assets/sopal_logo_v1.png" alt=""><span>Workspace</span></div>
-      <p id="s9b" style="margin-top:50px;font-size:34px;color:var(--ink);font-weight:600;letter-spacing:-.02em">$140 a month for the first user, $90 for each additional user.<br>First month free.</p>
+      <h2 id="s9e" style="margin-top:44px;font-size:56px">Put your firm&rsquo;s precedents to work.</h2>
+      <p id="s9b" style="margin-top:40px;font-size:34px;color:var(--ink);font-weight:600;letter-spacing:-.02em">$140 a month for the first user, $90 for each additional user.<br>First month free.</p>
       <p id="s9c" style="margin-top:16px;font-size:30px;color:var(--greenD);font-weight:600">sopal.com.au/workspace</p>
-      <p id="s9d" style="margin-top:120px;font-size:17px;color:var(--ink3)">The firms, parties, people and documents in this video are invented.</p>
+      <p id="s9d" style="margin-top:90px;font-size:17px;color:var(--ink3)">The firms, parties, people and documents in this video are invented.</p>
     </div>
   </div>
 </div>
@@ -326,7 +335,7 @@ function st(el, o, y = 0, s = 1, x = 0, r = 0) {
 }
 const rise = (el, t, a, b, d = 24) => st(el, win(t, a, b), (1 - eo(p(t, a, a + 0.8))) * d);
 
-const DURATION = 72;
+const DURATION = 85.5;
 
 /* ---------- Content (all invented) ---------- */
 // The lens holds a copy of the front page, magnified about the lens centre.
@@ -579,24 +588,29 @@ function render(t) {
   st("#word", wk, (1 - wk) * 30);
   $("#wscroll").style.transform = `translateY(${-eio(p(t, 58.3, 62)) * 190}px)`;
 
-  // 8. Private, 62.8 to 67.6
-  st("#s8", win(t, 62.8, 67.6, 0.6, 0.5));
+  // 8. Private and stored in Australia, 62.8 to 79.2
+  st("#s8", win(t, 62.8, 79.2, 0.6, 0.5));
   const vk = eo(p(t, 62.9, 63.8));
   st("#vault", vk, (1 - vk) * 40);
   $("#frost").style.setProperty("--fb", `${eio(p(t, 63.5, 64.6)) * 16}px`);
   $("#frost").style.opacity = eo(p(t, 63.4, 64));
   $("#frost .lock").style.transform = `scale(${0.8 + 0.2 * eo(p(t, 64.2, 64.8))})`;
   $("#frost .lock").style.opacity = eo(p(t, 64.2, 64.7));
+  st("#s8one", win(t, 63.5, 68.6, 0.01, 0.5));
   rise($("#s8a"), t, 63.9, 99);
   rise($("#s8b"), t, 64.5, 99);
-  rise($("#s8c"), t, 65.1, 99);
+  st("#s8two", win(t, 68.6, 99, 0.01, 0.01));
+  rise($("#s8c"), t, 68.8, 99);
+  rise($("#s8d"), t, 69.4, 99);
+  rise($("#s8e"), t, 70.4, 99, 14);
 
-  // 9. End card, 67.4 to 72
-  st("#s9", win(t, 67.4, DURATION + 1, 0.6, 0.01));
-  rise($("#s9a"), t, 67.6, 99);
-  rise($("#s9b"), t, 68.3, 99);
-  rise($("#s9c"), t, 68.8, 99);
-  rise($("#s9d"), t, 69.3, 99, 8);
+  // 9. End card, 79 to 85.5
+  st("#s9", win(t, 79, DURATION + 1, 0.6, 0.01));
+  rise($("#s9a"), t, 79.2, 99);
+  rise($("#s9e"), t, 79.6, 99);
+  rise($("#s9b"), t, 81.4, 99);
+  rise($("#s9c"), t, 81.9, 99);
+  rise($("#s9d"), t, 82.4, 99, 8);
 }
 window.render = render;
 window.DURATION = DURATION;
