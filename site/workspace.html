@@ -279,6 +279,29 @@
     @media (max-width: 520px) {
       .hero-actions .btn { width: 100%; }
     }
+
+    /* Walkthrough booking */
+    .bk-back { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.32); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; padding: 16px; }
+    .bk-back.open { display: flex; }
+    .bk { width: 100%; max-width: 620px; max-height: calc(100vh - 32px); overflow: auto; background: #fff; border-radius: 22px; box-shadow: 0 30px 80px rgba(0,0,0,0.25); padding: 28px; position: relative; }
+    .bk h3 { font-size: 22px; font-weight: 650; letter-spacing: -0.02em; }
+    .bk .sub { color: #6e6e73; font-size: 14.5px; margin-top: 4px; }
+    .bk-x { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%; border: 0; background: var(--grey); font-size: 18px; cursor: pointer; color: #3a3a3c; }
+    .bk-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; margin-top: 20px; }
+    .bk-day { border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 8px 4px; text-align: center; cursor: pointer; font: inherit; color: var(--ink); }
+    .bk-day small { display: block; font-size: 11.5px; color: #86868b; }
+    .bk-day b { display: block; font-size: 15px; font-weight: 600; }
+    .bk-day.on { border-color: var(--green); background: rgba(0,212,126,0.1); }
+    .bk-times { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; min-height: 42px; }
+    .bk-time { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 9px 16px; font: inherit; font-size: 14.5px; font-weight: 500; cursor: pointer; color: var(--ink); }
+    .bk-time.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .bk-form { display: grid; gap: 10px; margin-top: 20px; }
+    .bk-form input, .bk-form textarea { width: 100%; font: inherit; font-size: 15px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 11px; }
+    .bk-form textarea { min-height: 70px; resize: vertical; }
+    .bk-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+    .bk-msg { font-size: 14px; color: #b3261e; }
+    .bk-done { text-align: center; padding: 24px 8px 8px; }
+    .bk-done h3 { margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -543,7 +566,7 @@
         <details><summary>How does billing work when we add people?</summary><p>Each person you invite gets their own free first month and their own 100 credits. Their $90 a month starts only once their free month is over, and is charged pro rata with the firm&rsquo;s subscription. The owner and admins can see who is on the account, and download tax invoices, in Settings.</p></details>
         <details><summary>How do we cancel, and what happens to our library?</summary><p>Your firm&rsquo;s administrator can cancel at any time in Settings, including during the free month, and nothing more is charged. Everyone keeps full access until the end of the free month or the period already paid for. After that, the firm&rsquo;s account, its library and every member&rsquo;s account are closed and deleted, so download anything you want to keep first. If a colleague would like to keep using Sopal Workspace, contact us before cancelling and we can move the subscription to them, so everyone else keeps their account and their work.</p></details>
         <details><summary>Is this the same account as Sopal Decisions?</summary><p>No. Sopal Workspace has its own accounts, separate from sopal.com.au. A Sopal Decisions subscription doesn&rsquo;t include Workspace, and nothing is shared between the two.</p></details>
-        <details><summary>Can we get a walkthrough?</summary><p>Yes. <a href="https://bookings.cloud.microsoft/bookwithme/user/8a5aff364364411ab740ad2addca3fab@sopal.com.au/meetingtype/VmyaRM9slUar_pOpqDYNZw2?anonymous" target="_blank" rel="noopener">Book a 15-minute walkthrough</a> and we&rsquo;ll show you around with your own questions in mind.</p></details>
+        <details><summary>Can we get a walkthrough?</summary><p>Yes. <a href="#book" data-book>Book a 15-minute walkthrough</a> and we&rsquo;ll show you around with your own questions in mind.</p></details>
       </div>
     </div>
   </section>
@@ -554,7 +577,7 @@
       <p>Free for your first month.</p>
       <div class="hero-actions">
         <a href="https://app.sopal.com.au/signup" class="btn btn-green">Create account</a>
-        <a href="https://bookings.cloud.microsoft/bookwithme/user/8a5aff364364411ab740ad2addca3fab@sopal.com.au/meetingtype/VmyaRM9slUar_pOpqDYNZw2?anonymous" class="btn btn-glass" target="_blank" rel="noopener">Book a 15-minute walkthrough</a>
+        <a href="#book" class="btn btn-glass" data-book>Book a 15-minute walkthrough</a>
       </div>
     </div>
   </section>
@@ -657,6 +680,85 @@
       if (entries[0].isIntersecting) { el.classList.add("on"); obs.disconnect(); }
     }, { threshold: 0.35 }).observe(el);
   })();
+</script>
+
+<div class="bk-back" id="bk" role="dialog" aria-modal="true" aria-labelledby="bkTitle">
+  <div class="bk">
+    <button class="bk-x" type="button" aria-label="Close" data-bk-close>&times;</button>
+    <div id="bkPick">
+      <h3 id="bkTitle">Book a 15-minute walkthrough</h3>
+      <p class="sub">Choose a time. All times are Brisbane time.</p>
+      <div class="bk-days" id="bkDays"></div>
+      <div class="bk-times" id="bkTimes"></div>
+      <form class="bk-form" id="bkForm">
+        <input name="name" placeholder="Your name" required autocomplete="name">
+        <input name="email" type="email" placeholder="Work email" required autocomplete="email">
+        <input name="firm" placeholder="Firm" autocomplete="organization">
+        <textarea name="note" placeholder="Anything you'd like us to cover (optional)"></textarea>
+        <div class="bk-foot"><span class="bk-msg" id="bkMsg"></span><button class="btn btn-green" type="submit" id="bkGo" disabled>Book</button></div>
+      </form>
+    </div>
+    <div class="bk-done" id="bkDone" hidden>
+      <h3>You&rsquo;re booked in</h3>
+      <p class="sub" id="bkWhen"></p>
+      <p class="sub" style="margin-top:10px">We&rsquo;ve emailed you a calendar invite, and we&rsquo;ll send a Teams link before the call.</p>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  const bk = document.getElementById("bk"), days = document.getElementById("bkDays"), times = document.getElementById("bkTimes");
+  const form = document.getElementById("bkForm"), go = document.getElementById("bkGo"), msg = document.getElementById("bkMsg");
+  let slots = [], day = null, slot = null;
+  const d0 = (s) => new Date(s.slice(0, 10) + "T12:00:00");
+  const t12 = (hm) => { const [h, m] = hm.split(":").map(Number); return `${h % 12 || 12}:${String(m).padStart(2, "0")}${h < 12 ? "am" : "pm"}`; };
+  function draw() {
+    const byDay = {};
+    slots.forEach((s) => (byDay[s.slice(0, 10)] ||= []).push(s));
+    const keys = Object.keys(byDay);
+    if (!day || !byDay[day]) day = keys[0] || null;
+    days.innerHTML = keys.length ? "" : '<p class="sub">No times are open at the moment. Email <a href="mailto:info@sopal.com.au">info@sopal.com.au</a> and we will find one.</p>';
+    keys.forEach((k) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "bk-day" + (k === day ? " on" : "");
+      const d = d0(k);
+      b.innerHTML = `<small>${d.toLocaleDateString("en-AU", { weekday: "short" })}</small><b>${d.getDate()} ${d.toLocaleDateString("en-AU", { month: "short" })}</b>`;
+      b.onclick = () => { day = k; slot = null; draw(); };
+      days.appendChild(b);
+    });
+    times.innerHTML = "";
+    (byDay[day] || []).forEach((s) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "bk-time" + (s === slot ? " on" : "");
+      b.textContent = t12(s.slice(11)); b.onclick = () => { slot = s; draw(); };
+      times.appendChild(b);
+    });
+    go.disabled = !slot;
+  }
+  async function load() {
+    try { const r = await fetch("/api/walkthrough/slots"); slots = (await r.json()).slots || []; } catch { slots = []; }
+    draw();
+  }
+  function open(e) {
+    e.preventDefault(); msg.textContent = ""; slot = null;
+    document.getElementById("bkPick").hidden = false; document.getElementById("bkDone").hidden = true;
+    bk.classList.add("open"); load();
+  }
+  document.querySelectorAll("[data-book]").forEach((a) => a.addEventListener("click", open));
+  bk.addEventListener("click", (e) => { if (e.target === bk || e.target.closest("[data-bk-close]")) bk.classList.remove("open"); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") bk.classList.remove("open"); });
+  if (location.hash === "#book") open(new Event("x"));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault(); if (!slot) return;
+    go.disabled = true; msg.textContent = "";
+    const body = Object.fromEntries(new FormData(form)); body.slot = slot;
+    try {
+      const r = await fetch("/api/walkthrough/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const j = await r.json();
+      if (!r.ok) { msg.textContent = j.detail || "Could not book that time."; if (r.status === 409) { slot = null; await load(); } else go.disabled = false; return; }
+      document.getElementById("bkWhen").textContent = j.when;
+      document.getElementById("bkPick").hidden = true; document.getElementById("bkDone").hidden = false; form.reset();
+    } catch { msg.textContent = "Could not book that time. Please try again."; go.disabled = false; }
+  });
+})();
 </script>
 </body>
 </html>

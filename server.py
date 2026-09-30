@@ -398,6 +398,10 @@ app.include_router(_claim_check_router)
 app.include_router(_claim_check_redirect_router)
 # <<< claim-check feature
 
+# Walkthrough bookings from /workspace (fixed October slots, own sqlite).
+from routes.walkthrough import router as _walkthrough_router
+app.include_router(_walkthrough_router)
+
 # >>> Sopal v2 local prototype - isolated under /sopal-v2 and /api/sopal-v2
 from routes.sopal_v2 import page_router as _sopal_v2_page_router, router as _sopal_v2_router
 app.include_router(_sopal_v2_router)
