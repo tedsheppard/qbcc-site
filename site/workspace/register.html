@@ -381,11 +381,10 @@
             <select name="acts"><option value="">Choose</option><option>Claimants</option><option>Respondents</option><option>Both</option></select>
           </label>
           <label>Sets of submissions your firm has
-            <select name="library"><option value="">Choose</option><option>Fewer than 50</option><option>50 to 200</option><option>200 to 500</option><option>More than 500</option></select>
+            <select name="library"><option value="">Choose</option><option>Fewer than 50</option><option>50 to 200</option><option>200 to 500</option><option>More than 500</option><option>Unsure</option></select>
           </label>
         </div>
         <label><span>Anything we should know <span class="opt">(optional)</span></span><textarea name="notes" placeholder="How you prepare submissions now, what you'd want it to do, timing"></textarea></label>
-        <label class="check"><input type="checkbox" name="walkthrough" value="yes"> I&rsquo;d like a 15-minute walkthrough</label>
         <div class="foot">
           <span class="msg" id="msg"></span>
           <button class="btn btn-green" type="submit" id="go">Register interest</button>
@@ -445,7 +444,7 @@
     if (!body.name || !body.firm || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email || "")) { msg.textContent = "Please give your name, firm and work email."; return; }
     go.disabled = true;
     try {
-      const r = await fetch("/api/workspace/interest", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const r = await fetch("https://app.sopal.com.au/api/public/interest", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(body) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { msg.textContent = j.detail || "That didn't go through. Please try again."; go.disabled = false; return; }
       document.getElementById("regForm").hidden = true; document.getElementById("done").hidden = false; window.scrollTo(0, 0);
