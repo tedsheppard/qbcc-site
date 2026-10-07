@@ -261,15 +261,15 @@ mark { background:rgba(255,213,0,.45); color:inherit; }
               </div>
               <div class="sec" id="hExt"><span class="num" id="nExt">4.4</span><span>The extension claimed</span></div>
               <div class="p"><span class="num" id="p84">84.</span><span>The Claimant is entitled to an extension of the Date for Practical Completion of 37 days, to 23 March 2025. Practical Completion was achieved on 21 March 2025 (Tab 64).</span></div>
-              <div class="p"><span class="num" id="p85">85.</span><span>It follows that the Respondent was not entitled to deduct liquidated damages of $185,000.00 (37 days at $5,000.00 per day), and that amount forms part of the adjudicated amount.</span></div>
-              <div class="sec"><span class="num" id="nVar">4.5</span><span>Interest</span></div>
-              <div class="p"><span class="num" id="p86">86.</span><span>Interest is payable on the adjudicated amount under s 73 of the Act from the due date for payment, 30 March 2025.</span></div>
-              <div class="part">Part 5 &ndash; The adjudicated amount</div>
-              <div class="p"><span class="num" id="p87">87.</span><span>For the reasons above, the Adjudicator should determine that the adjudicated amount is $1,146,318.40 (incl. GST), made up as follows:</span></div>
-              <div class="s"><span></span><span>(a)</span><span>contract works (Part 2): $748,838.40;</span></div>
-              <div class="s"><span></span><span>(b)</span><span>Variations 12 to 19 (Part 3): $212,480.00; and</span></div>
-              <div class="s"><span></span><span>(c)</span><span>liquidated damages wrongly deducted (Part 4): $185,000.00.</span></div>
-              <div class="p"><span class="num" id="p88">88.</span><span>The Claimant also seeks a determination that the Respondent pay the whole of the Adjudicator&rsquo;s fees, under s 95(4) of the Act.</span></div>
+              <div class="p"><span class="num" id="p85">85.</span><span>The extension is not disputed in its length: the Respondent's own programme analysis accepts that the revision C drawings delayed the critical path by 26 days (Payment Schedule, item 7; Tab 62).</span></div>
+              <div class="sec"><span class="num" id="nVar">4.5</span><span>Liquidated damages</span></div>
+              <div class="p"><span class="num" id="p86">86.</span><span>Clause 35.6 entitles the Respondent to liquidated damages only for each day after the Date for Practical Completion, as extended, until Practical Completion is achieved. With the extension of 37 days, Practical Completion was achieved two days before the extended date.</span></div>
+              <div class="p"><span class="num" id="p87">87.</span><span>The Respondent's deduction of $185,000.00 as liquidated damages (Payment Schedule, item 9) was therefore not open to it, and that amount should be included in the adjudicated amount.</span></div>
+              <div class="sec"><span class="num" id="nCon">4.6</span><span>Conclusion on Part 4</span></div>
+              <div class="p"><span class="num" id="p88">88.</span><span>For the reasons in this Part, the Claimant is entitled to an extension of 37 days and to payment of the $185,000.00 the Respondent withheld.</span></div>
+              <div class="part">Part 5 &ndash; Variation 14: additional piling at gridline C</div>
+              <div class="sec"><span>5.1</span><span>Introduction</span></div>
+              <div class="p"><span class="num" id="p89">89.</span><span>In Part 5 the Claimant claims $64,280.00 (excl. GST) for nine additional piles at gridline C, directed by the Respondent's Site Instruction 22 of 4 October 2024 (Tab 71).</span></div>
             </div>
           </div>
         </div>
@@ -427,7 +427,7 @@ function render(t) {
   });
   const moved = t >= 54.8;
   const set = (id, a, b) => { const el = $(id); el.textContent = moved ? b : a; el.classList.toggle("bump", moved && t < 61); const k = moved ? eo(p(t, 54.8, 55.4)) : 1; el.style.opacity = 0.3 + 0.7 * k; el.style.transform = `translateY(${(1 - k) * -7}px)`; };
-  set("#nExt", "4.4", "4.5"); set("#nVar", "4.5", "4.6"); set("#p84", "84.", "90."); set("#p85", "85.", "91."); set("#p86", "86.", "92."); set("#p87", "87.", "93."); set("#p88", "88.", "94.");
+  set("#nExt", "4.4", "4.5"); set("#nVar", "4.5", "4.6"); set("#nCon", "4.6", "4.7"); set("#p84", "84.", "90."); set("#p85", "85.", "91."); set("#p86", "86.", "92."); set("#p87", "87.", "93."); set("#p88", "88.", "94."); set("#p89", "89.", "95.");
 
   cursor(t);
   st("#s9", win(t, 66, DURATION + 1, 0.6, 0.01));
