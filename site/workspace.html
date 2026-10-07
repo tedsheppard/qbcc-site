@@ -734,7 +734,7 @@
     go.disabled = !slot;
   }
   async function load() {
-    try { const r = await fetch("/api/walkthrough/slots"); slots = (await r.json()).slots || []; } catch { slots = []; }
+    try { const r = await fetch("https://app.sopal.com.au/api/public/walkthrough"); slots = (await r.json()).slots || []; } catch { slots = []; }
     draw();
   }
   function open(e) {
@@ -751,7 +751,7 @@
     go.disabled = true; msg.textContent = "";
     const body = Object.fromEntries(new FormData(form)); body.slot = slot;
     try {
-      const r = await fetch("/api/walkthrough/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const r = await fetch("https://app.sopal.com.au/api/public/walkthrough", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(body) });
       const j = await r.json();
       if (!r.ok) { msg.textContent = j.detail || "Could not book that time."; if (r.status === 409) { slot = null; await load(); } else go.disabled = false; return; }
       document.getElementById("bkWhen").textContent = j.when;
