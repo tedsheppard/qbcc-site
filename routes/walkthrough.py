@@ -128,3 +128,35 @@ async def book(b: dict = Body(...)):
     except Exception as e:  # the booking stands; Sopal can follow up from the database
         print(f"Walkthrough email failed for {slot}: {e}")
     return {"ok": True, "when": when}
+
+
+# ── Registrations of interest in Sopal Workspace (sopal.com.au/workspace/register) ──
+
+_con.execute("""CREATE TABLE IF NOT EXISTS workspace_interest (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, created_at TEXT, name TEXT, email TEXT, firm TEXT, phone TEXT, role TEXT,
+  users TEXT, states TEXT, acts TEXT, library TEXT, notes TEXT, walkthrough INTEGER)""")
+_con.commit()
+
+
+@router.post("/api/workspace/interest")
+async def register_interest(b: dict = Body(...)):
+    s = lambda k, n=200: str(b.get(k) or "").strip()[:n]
+    name, email, firm = s("name", 120), s("email"), s("firm", 160)
+    if not name or not firm or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise HTTPException(400, "Please give your name, firm and work email.")
+    states = ", ".join(str(x)[:4] for x in (b.get("states") or [])[:8] if isinstance(x, str))
+    row = dict(name=name, email=email, firm=firm, phone=s("phone", 40), role=s("role", 60), users=s("users", 30), states=states,
+               acts=s("acts", 30), library=s("library", 40), notes=s("notes", 2000), walkthrough=1 if b.get("walkthrough") else 0)
+    with _lock:
+        _con.execute("INSERT INTO workspace_interest (created_at, name, email, firm, phone, role, users, states, acts, library, notes, walkthrough) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                     (datetime.now(timezone.utc).isoformat(), *row.values()))
+        _con.commit()
+    lines = "\n".join(f"{k.capitalize()}: {v}" for k, v in row.items() if v not in ("", 0))
+    try:
+        await _send(TO, f"Workspace interest: {name}, {firm}{' (wants a walkthrough)' if row['walkthrough'] else ''}", lines, reply_to=email)
+        await _send(email, "Sopal Workspace: we've got your registration",
+                    f"Hi {name.split()[0]},\n\nThanks for registering {firm}'s interest in Sopal Workspace. We'll be in touch about access soon"
+                    f"{' and to arrange a walkthrough' if row['walkthrough'] else ''}.\n\nKind regards\nSopal")
+    except Exception as e:  # the registration stands; Sopal can follow up from the database
+        print(f"Workspace interest email failed for {email}: {e}")
+    return {"ok": True}
