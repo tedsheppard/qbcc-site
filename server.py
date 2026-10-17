@@ -1,4 +1,4 @@
-import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io, json, sys, threading
+import os, re, shutil, sqlite3, requests, unicodedata, pandas as pd, io, json, sys, threading, hmac, uuid
 from urllib.parse import unquote_plus
 from fastapi import FastAPI, Query, Form, Path, HTTPException, UploadFile, File, Body
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse, Response
@@ -891,7 +891,12 @@ CREATE TABLE IF NOT EXISTS users (
 lexi_con.commit()
 
 # ---------------- Auth setup ----------------
-SECRET_KEY = os.getenv("LEXIFILE_SECRET_KEY", "dev-secret-key")
+SECRET_KEY = os.getenv("LEXIFILE_SECRET_KEY") or ""
+if not SECRET_KEY:
+    # Never sign tokens with a known fallback in production.
+    if os.path.isdir("/var/data"):
+        raise RuntimeError("LEXIFILE_SECRET_KEY is not set")
+    SECRET_KEY = "dev-secret-key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 43200 # 30 days
 
@@ -1192,7 +1197,7 @@ async def verify_email(token: str = Query(...)):
 # --- CORS Middleware ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://sopal.com.au", "https://www.sopal.com.au", "https://app.sopal.com.au"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1882,11 +1887,8 @@ def _djb2(s: str) -> int:
 
 @app.post("/admin/code-auth")
 def admin_code_auth(code: str = Form(...)):
-    if _djb2(code) != _ADMIN_CODE_HASH:
-        raise HTTPException(status_code=403, detail="Invalid code.")
-    admin_email = next(iter(ADMIN_EMAILS))
-    token = create_access_token({"sub": admin_email})
-    return {"access_token": token, "token_type": "bearer"}
+    # Retired: a short code could be guessed. Admins sign in with their email and password.
+    raise HTTPException(status_code=410, detail="Sign in with your admin email and password.")
 
 
 class PageUpdateRequest(BaseModel):
@@ -3627,24 +3629,7 @@ def ask_rag(query: str = Form(...)):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 # Add this helper endpoint to debug the database schema
-@app.get("/debug/schema")
-def debug_schema():
-    """Debug endpoint to check database schema"""
-    try:
-        # Get decision_details table schema
-        meta_columns = con.execute("PRAGMA table_info(decision_details)").fetchall()
-        
-        # Get a sample row to see what data looks like
-        sample_row = con.execute("SELECT * FROM decision_details LIMIT 1").fetchone()
-        
-        return {
-            "decision_details_columns": [{"name": col[1], "type": col[2]} for col in meta_columns],
-            "sample_data": dict(sample_row) if sample_row else None
-        }
-    except Exception as e:
-        return {"error": str(e)}
-
-# ---------- FEEDBACK FORM ----------
+# /debug/schema retired: it showed the database layout to anyone.
 @app.post("/send-feedback")
 async def send_feedback(
     type: str = Form(...),
@@ -4164,9 +4149,22 @@ async def create_project(projectName: str = Form(...), clientName: str = Form(..
 
 
 # ---------- DB Download ----------
-@app.get("/download-db")
-async def download_db():
-    return FileResponse("/tmp/qbcc.db", filename="qbcc.db")
+# ---------- Migration export (temporary) ----------
+# A consistent copy of a database on the disk, for the move to Supabase. Only with the
+# MIGRATION_EXPORT_KEY header; the endpoint goes once the move is done.
+_EXPORTABLE = {"purchases": PURCHASES_DB_PATH}
+
+@app.get("/admin/migration-export/{name}")
+def migration_export(name: str, x_migration_key: str = Header(default="")):
+    want = os.getenv("MIGRATION_EXPORT_KEY") or ""
+    if len(want) < 32 or not hmac.compare_digest(x_migration_key, want) or name not in _EXPORTABLE:
+        raise HTTPException(status_code=404, detail="Not Found")
+    out = f"/tmp/export-{name}-{uuid.uuid4().hex}.db"
+    src = sqlite3.connect(_EXPORTABLE[name])
+    dst = sqlite3.connect(out)
+    src.backup(dst)
+    dst.close(); src.close()
+    return FileResponse(out, filename=f"{name}.db")
 
 
 
